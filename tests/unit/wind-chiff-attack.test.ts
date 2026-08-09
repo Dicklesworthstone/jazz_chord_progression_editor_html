@@ -49,8 +49,27 @@ describe("expressive wind chiff attack", () => {
     });
   });
 
+  /* flute@1 deliberately falls back to the plain export: the expressive
+   * (chiff) flute path was measured numerically broken (2026-08-08 -- see
+   * the rationale block at the flute@1 registration in
+   * src/audio/dsp-renderer.ts), so tongued and legato replay the identical
+   * certified plain render until the Rust exports pass their gate. */
+  test(`${WAVEGUIDE_FLUTE_ALGORITHM_ID} articulation replays the certified plain render (deliberate fallback)`, async () => {
+    const renderer = (await loadWaveguideRenderers()).get(WAVEGUIDE_FLUTE_ALGORITHM_ID);
+    expect(renderer).toBeDefined();
+    const plain = renderer?.renderNote(72, 110, 48_000, 1);
+    const tongued = renderer?.renderNote(72, 110, 48_000, 1, 0, "tongued");
+    const legato = renderer?.renderNote(72, 110, 48_000, 1, 0, "legato");
+    expect(plain).not.toBeNull();
+    expect(tongued?.left).toEqual(plain?.left);
+    expect(legato?.left).toEqual(plain?.left);
+    /* The articulation vocabulary stays validated even in fallback. */
+    expect(
+      renderer?.renderNote(72, 110, 48_000, 1, 0, "invalid" as "tongued"),
+    ).toBeNull();
+  });
+
   for (const [algorithmId, instrument] of [
-    [WAVEGUIDE_FLUTE_ALGORITHM_ID, contract.flute],
     [WAVEGUIDE_CLARINET_ALGORITHM_ID, contract.clarinet],
   ] as const) {
     test(`${algorithmId} makes tongue turbulence audible without changing sustain`, async () => {

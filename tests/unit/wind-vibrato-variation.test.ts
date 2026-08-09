@@ -51,8 +51,25 @@ describe("seeded wind vibrato variation", () => {
     });
   });
 
+  /* flute@1 deliberately falls back to the plain export for every slot:
+   * the seeded/expressive flute paths were measured numerically broken
+   * (2026-08-08: slots 1-7 detune -171..+1062 cents and go NaN after ~1 s
+   * -- see the rationale block at the flute@1 registration in
+   * src/audio/dsp-renderer.ts). Until the Rust exports pass a per-slot
+   * tuning + finite-output gate, every slot must replay the identical
+   * certified plain render. */
+  test(`${WAVEGUIDE_FLUTE_ALGORITHM_ID} slots all replay the certified plain render (deliberate fallback)`, async () => {
+    const renderer = (await loadWaveguideRenderers()).get(WAVEGUIDE_FLUTE_ALGORITHM_ID);
+    expect(renderer).toBeDefined();
+    const plain = renderer?.renderNote(72, 96, 48_000, 1);
+    expect(plain).not.toBeNull();
+    for (const slot of [0, 1, 7, variationContract.slotCount]) {
+      const seeded = renderer?.renderNote(72, 96, 48_000, 1, slot);
+      expect(seeded?.left, `slot ${String(slot)}`).toEqual(plain?.left);
+    }
+  });
+
   for (const algorithmId of [
-    WAVEGUIDE_FLUTE_ALGORITHM_ID,
     WAVEGUIDE_CLARINET_ALGORITHM_ID,
   ]) {
     test(`${algorithmId} is deterministic per slot and distinct across slots`, async () => {

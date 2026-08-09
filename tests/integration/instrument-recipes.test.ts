@@ -206,6 +206,16 @@ const RECIPE_CASES: readonly Readonly<{
     attackSeconds: 0.002,
     releaseSeconds: 0.24,
   },
+  {
+    caseId: "X0-RENDER-046",
+    instrumentId: "trumpet",
+    label: "Trumpet",
+    outputLevel: 0.55,
+    polyphonyLimit: 16,
+    scheduledSourceCount: 1,
+    attackSeconds: 0.005,
+    releaseSeconds: 0.16,
+  },
 ];
 
 function oneEvent(
@@ -298,7 +308,10 @@ function expectOscillatorComponent(
 describe("TR-X0-RECIPES instrument recipes", () => {
   test("X0-RENDER-001/X0-RENDER-004/X0-RENDER-007/X0-RENDER-010/X0-RENDER-013/X0-RENDER-016/X0-RENDER-019/X0-RENDER-022/X0-RENDER-025/X0-RENDER-028/X0-RENDER-031/X0-RENDER-034/X0-RENDER-037 schedules every exact source-owned recipe", async () => {
     const { engine, fake, context } = await readyEngine();
-    expect(AUDIO_INSTRUMENT_RECIPES).toHaveLength(15);
+    // 16 recipes since the round-11 trumpet wiring (waveguide-trumpet@1)
+    // joined the reviewed surface; re-pinned during the trumpet go-live
+    // independent gate-diff review.
+    expect(AUDIO_INSTRUMENT_RECIPES).toHaveLength(16);
 
     for (let index = 0; index < RECIPE_CASES.length; index += 1) {
       const expected = RECIPE_CASES[index];
@@ -699,6 +712,12 @@ describe("TR-X0-RECIPES instrument recipes", () => {
             maximumRenderSeconds: 3,
             bufferCacheLimit: 64,
           },
+          trumpet: {
+            algorithmId: "changes.dsp.waveguide-trumpet@1",
+            channels: 2,
+            maximumRenderSeconds: 3,
+            bufferCacheLimit: 48,
+          },
         };
         const expectedRenderer = RENDERER_BY_ID[reviewed.id];
         if (expectedRenderer === undefined) {
@@ -753,6 +772,7 @@ describe("TR-X0-RECIPES instrument recipes", () => {
       "X0-RENDER-037",
       "X0-RENDER-040",
       "X0-RENDER-043",
+      "X0-RENDER-046",
     ]);
   });
 

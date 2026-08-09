@@ -49,11 +49,13 @@ const DENSE_CASES: readonly Readonly<{
   { caseId: "X0-RENDER-026", instrumentId: "guitar", outputLevel: 0.5, sourcesPerVoice: 1 },
   /* The sampled instruments also schedule one PCM buffer source per voice. */
   { caseId: "X0-RENDER-029", instrumentId: "upright-bass", outputLevel: 2.06, sourcesPerVoice: 1 },
-  { caseId: "X0-RENDER-032", instrumentId: "concert-vibes", outputLevel: 0.1, sourcesPerVoice: 1 },
+  { caseId: "X0-RENDER-032", instrumentId: "concert-vibes", outputLevel: 1.312, sourcesPerVoice: 1 },
   { caseId: "X0-RENDER-035", instrumentId: "blues-guitar", outputLevel: 0.46, sourcesPerVoice: 1 },
   { caseId: "X0-RENDER-038", instrumentId: "clarinet", outputLevel: 1.1, sourcesPerVoice: 1 },
   { caseId: "X0-RENDER-041", instrumentId: "dreadnought-guitar", outputLevel: 0.5, sourcesPerVoice: 1 },
   { caseId: "X0-RENDER-044", instrumentId: "ukulele", outputLevel: 0.65, sourcesPerVoice: 1 },
+  /* The physical trumpet renders one PCM buffer source per voice. */
+  { caseId: "X0-RENDER-047", instrumentId: "trumpet", outputLevel: 0.55, sourcesPerVoice: 1 },
 ];
 
 const PLUCKED_PHYSICAL_CHORDS: Readonly<

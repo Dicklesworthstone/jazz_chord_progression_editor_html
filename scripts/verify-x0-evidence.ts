@@ -808,6 +808,7 @@ function validateRenderRecord(
     "clarinet",
     "dreadnought-guitar",
     "ukulele",
+    "trumpet",
   ];
   const expectedCreatedBuffers = renderedInstrumentIds.includes(
     String(fixture["instrumentId"]),
@@ -1326,8 +1327,8 @@ export async function validateX0AutomatedEvidence(
     addFinding(findings, "X0_EVIDENCE_BROWSER_AUTHORITY", "renderMatrix", "Browser support and unsupported-capability policy must equal the reviewed authority.");
   }
   const fixtureCases = records(renderMatrix["cases"]);
-  if (fixtureCases.length !== 45) {
-    addFinding(findings, "X0_EVIDENCE_RENDER_AUTHORITY_COUNT", "renderMatrix.cases", "The reviewed render authority must contain exactly forty-five cases.");
+  if (fixtureCases.length !== 48) {
+    addFinding(findings, "X0_EVIDENCE_RENDER_AUTHORITY_COUNT", "renderMatrix.cases", "The reviewed render authority must contain exactly forty-eight cases.");
   }
   const fixtureById = new Map<string, JsonRecord>();
   for (const fixture of fixtureCases) {
