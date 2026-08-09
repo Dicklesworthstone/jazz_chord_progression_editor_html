@@ -2,6 +2,7 @@
 mod trumpet;
 
 use trumpet::{
+    tpt_note_frames, tpt_render,
     adachi_lip_jet_balance, geometry_half_wave_hz, lip_flow_m3_s,
     lip_streamwise_joint_penetration_m, outward_equilibrium_opening_m,
     passive_two_mode_lip_matrices, passive_wall_loss_balance, positive_real_radiation_balance,
@@ -42,8 +43,19 @@ fn negative_damping_inward_sign_and_oversampling_bypass_are_refused() {
         outward_equilibrium_opening_m(0.0003, 0.0001, 2_000.0, 4_000.0, -1.0),
         Err(TrumpetError::InwardLipForce)
     );
+    // Render-speed campaign re-derivation (jcpe-render-speed-campaign-etnw,
+    // FLAGGED FOR INDEPENDENT GATE-DIFF REVIEW): the law is that the
+    // compiled anti-alias mandate is mandatory — any other factor refuses.
+    // The mandate itself moved 4 -> 1 on measured alias evidence (fortissimo
+    // 44.1 kHz fold-back -68.0/-92.5 dBc vs the -50 dBc winds law, 18+ dB
+    // margin; see alias_energy_stays_below_the_winds_law below, which now
+    // guards the protective intent directly instead of by proxy).
     assert_eq!(
-        OversampledOutput::new(48_000.0, 1).err(),
+        OversampledOutput::new(48_000.0, OVERSAMPLE_FACTOR + 1).err(),
+        Some(TrumpetError::OversamplingBypassed)
+    );
+    assert_eq!(
+        OversampledOutput::new(48_000.0, OVERSAMPLE_FACTOR + 3).err(),
         Some(TrumpetError::OversamplingBypassed)
     );
 }
@@ -1122,5 +1134,106 @@ fn seeded_and_cold_start_paths_are_bounded() {
         eprintln!("start seeded={seeded} peak={peak}");
         assert!(peak > 1.0e-5, "silent start path");
         assert!(peak < 0.98, "unbounded normalized start path: {peak}");
+    }
+}
+
+/// Render-speed campaign (jcpe-render-speed-campaign-etnw): the anti-alias
+/// mandate's protective intent, guarded directly. Fold-back images of
+/// harmonics above Nyquist, measured as tonal excess over the local scan-grid
+/// median relative to true-partial energy, must stay below the winds -50 dBc
+/// law at the worst case (fortissimo, 44.1 kHz). A hard-clipped synthetic
+/// through the same analyzer is the planted control proving the analyzer can
+/// fail.
+#[test]
+fn alias_energy_stays_below_the_winds_law() {
+    const RATE: f64 = 44_100.0;
+    fn goertzel(x: &[f64], f: f64) -> f64 {
+        let w = 2.0 * core::f64::consts::PI * f / RATE;
+        let c = 2.0 * w.cos();
+        let (mut s1, mut s2) = (0.0f64, 0.0f64);
+        for v in x {
+            let s = v + c * s1 - s2;
+            s2 = s1;
+            s1 = s;
+        }
+        s1 * s1 + s2 * s2 - c * s1 * s2
+    }
+    const GRID: [f64; 9] = [-0.04, -0.03, -0.02, -0.01, 0.0, 0.01, 0.02, 0.03, 0.04];
+    fn peak_near(x: &[f64], f: f64) -> f64 {
+        GRID.iter().map(|r| goertzel(x, f * (1.0 + r))).fold(0.0, f64::max)
+    }
+    fn tonal_excess(x: &[f64], f: f64) -> f64 {
+        let mut p: Vec<f64> = GRID.iter().map(|r| goertzel(x, f * (1.0 + r))).collect();
+        p.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        (p[8] - p[4]).max(0.0)
+    }
+    fn alias_dbc(seg: &[f64], f0: f64) -> f64 {
+        let nyq = RATE / 2.0;
+        let top = nyq * 0.94;
+        let k_max = (top / f0) as usize;
+        let mut partial = 0.0;
+        for k in 1..=k_max {
+            partial += peak_near(seg, k as f64 * f0);
+        }
+        let mut image = 0.0;
+        for k in (k_max + 1)..=((2.0 * RATE * 0.75 / f0) as usize) {
+            let src = k as f64 * f0;
+            let img = if src < RATE { RATE - src } else { src - RATE };
+            if !(60.0..=top).contains(&img) {
+                continue;
+            }
+            let dist = (img / f0 - (img / f0).round()).abs() * f0;
+            if dist - img * 0.04 < 0.06 * f0 {
+                continue;
+            }
+            image += tonal_excess(seg, img);
+        }
+        if image <= 0.0 { -120.0 } else { 10.0 * (image / partial).log10() }
+    }
+    fn windowed(pcm: &[f32]) -> Vec<f64> {
+        let start = (0.5 * RATE) as usize;
+        let end = ((1.5 * RATE) as usize).min(pcm.len());
+        let n = end - start;
+        (0..n)
+            .map(|i| {
+                let hann = 0.5 - 0.5 * (2.0 * core::f64::consts::PI * i as f64 / (n - 1) as f64).cos();
+                pcm[start + i] as f64 * hann
+            })
+            .collect()
+    }
+    // Planted control: a hard-clipped 987.77 Hz sine must exceed the gate.
+    let clipped: Vec<f32> = (0..(2.0 * RATE) as usize)
+        .map(|i| {
+            let raw = 10.0 * (2.0 * core::f64::consts::PI * 987.77 * i as f64 / RATE).sin();
+            raw.clamp(-1.0, 1.0) as f32
+        })
+        .collect();
+    let control = alias_dbc(&windowed(&clipped), 987.77);
+    assert!(control > -45.0, "planted control read {control} dBc; analyzer is vacuous");
+    // Candidate cells: fortissimo, worst-rate.
+    for midi in [64i32, 70] {
+        let frames = tpt_note_frames(midi, RATE as f32).min((2.0 * RATE) as i32);
+        assert!(frames > 0);
+        let mut left = vec![0.0f32; frames as usize];
+        let mut right = vec![0.0f32; frames as usize];
+        let written = tpt_render(midi, 127, RATE as f32, left.as_mut_ptr(), right.as_mut_ptr(), frames);
+        assert!(written > 0);
+        let seg = windowed(&left[..written as usize]);
+        // Locate the regime-locked f0 by scanning around 12-TET.
+        let nominal = 440.0 * ((midi - 69) as f64 / 12.0).exp2() * 0.939;
+        let mut best_f = nominal;
+        let mut best_p = 0.0;
+        let mut cents = -300.0f64;
+        while cents <= 300.0 {
+            let f = nominal * (cents / 1200.0).exp2();
+            let p = goertzel(&seg, f);
+            if p > best_p {
+                best_p = p;
+                best_f = f;
+            }
+            cents += 5.0;
+        }
+        let db = alias_dbc(&seg, best_f);
+        assert!(db < -50.0, "midi {midi} alias {db} dBc exceeds the -50 dBc law");
     }
 }
