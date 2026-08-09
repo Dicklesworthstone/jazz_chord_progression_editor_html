@@ -480,6 +480,21 @@ type ConcertGrandExports = Readonly<{
     maxFrames: number,
   ) => number;
   flt2_note_frames: (midi: number, sampleRate: number) => number;
+  flt2_state_max_bytes: () => number;
+  flt2_render_phrase: (
+    midi: number,
+    velocity: number,
+    sampleRate: number,
+    variationSlot: number,
+    articulation: number,
+    left: number,
+    right: number,
+    maxFrames: number,
+    stateInput: number,
+    stateInputBytes: number,
+    stateOutput: number,
+    stateOutputCapacity: number,
+  ) => number;
   flt2_render: (
     midi: number,
     velocity: number,
@@ -1597,6 +1612,14 @@ async function instantiate(): Promise<DspCore> {
       rawExports,
       "flt2_note_frames",
     ) as ConcertGrandExports["flt2_note_frames"],
+    flt2_state_max_bytes: requireExportedFunction(
+      rawExports,
+      "flt2_state_max_bytes",
+    ) as ConcertGrandExports["flt2_state_max_bytes"],
+    flt2_render_phrase: requireExportedFunction(
+      rawExports,
+      "flt2_render_phrase",
+    ) as ConcertGrandExports["flt2_render_phrase"],
     flt2_render: requireExportedFunction(
       rawExports,
       "flt2_render",
@@ -2069,6 +2092,50 @@ async function instantiate(): Promise<DspCore> {
     };
   };
 
+  const renderFluteV2PhraseFresh = (
+    midi: number,
+    requestedVelocity: number,
+    rate: number,
+    variationSlot: number,
+    articulation: number,
+    leftPointer: number,
+    rightPointer: number,
+    maxFrames: number,
+  ): number => {
+    /*
+     * Drive stays inside the reference-certified dynamics envelope. The
+     * register-2 fingerings collapse to the fundamental an octave down when
+     * blown past it (measured 2026-08-08: m72 clean at velocity 36/72,
+     * -1197 cents at 108; the upper-register ff cells were never admitted
+     * by the UIowa matrix -- the documented two-mode wall). Loudness still
+     * follows the true velocity through the voice gain curve; forte renders
+     * the certified mf-side timbre instead of the wrong octave. Lift the
+     * cap only when the two-mode coexistence work certifies ff cells.
+     */
+    const velocity = Math.min(requestedVelocity, midi >= 72 ? 72 : 90);
+    const stateCapacity = Number(exports.flt2_state_max_bytes());
+    const statePointer = (rightPointer + maxFrames * 4 + 7) & ~7;
+    ensureCapacity(
+      memory,
+      statePointer,
+      Math.max(0, stateCapacity),
+    );
+    return exports.flt2_render_phrase(
+      midi,
+      velocity,
+      rate,
+      variationSlot,
+      articulation,
+      leftPointer,
+      rightPointer,
+      maxFrames,
+      0,
+      0,
+      statePointer,
+      stateCapacity,
+    );
+  };
+
   const makePluckedChordRenders = (
     packIndex: number,
   ): PluckedChordRenderFunctions => createPluckedChordRenderFunctions({
@@ -2333,29 +2400,43 @@ async function instantiate(): Promise<DspCore> {
     ],
     [
       WAVEGUIDE_FLUTE_ALGORITHM_ID,
+      /*
+       * Gesture renders deliberately fall back to the plain export. The
+       * seeded/expressive flute paths are numerically broken in the shipped
+       * wasm: measured 2026-08-08, slots 1-7 detune -171..+1062 cents
+       * (wrong-regime locks) and every slot render goes NaN after ~1 s,
+       * which browsers play as silence. The owner heard both ("out of
+       * tune", "quiet"). The plain path measures +-2 cents at every chart
+       * velocity and articulation. Re-enable seeded dispatch only after the
+       * Rust exports pass a per-slot tuning + finite-output gate.
+       */
       makeWaveguideRenderNote(
         exports.flt_note_frames,
         (m, v, r, l, rt, mx) => exports.flt_render(m, v, r, l, rt, mx),
-        (m, v, r, slot, l, rt, mx) =>
-          exports.flt_render_seeded(m, v, r, slot, l, rt, mx),
-        (m, v, r, slot, articulation, l, rt, mx) =>
-          exports.flt_render_expressive(
-            m,
-            v,
-            r,
-            slot,
-            articulation,
-            l,
-            rt,
-            mx,
-          ),
       ),
     ],
     [
       WAVEGUIDE_FLUTE_V2_ALGORITHM_ID,
+      /*
+       * Every flute@2 render goes through flt2_render_phrase with a fresh
+       * (zero-length) incoming state -- the exact call the UIowa reference
+       * matrix certifies. The standalone flt2_render entry was measured
+       * 2026-08-08 rendering the second register octave-wrong through the
+       * production wrapper (m72/75/77/78/79/87/88 at -1200 cents, m81 +622,
+       * m83 -1902) while the phrase path is calibrated; shipping the
+       * uncertified sibling path is the same oracle-fidelity trap this
+       * campaign has hit before. Slot/articulation pass through when the
+       * engine provides them (gesture path); the plain path keeps the
+       * reviewed slot-0/tongued defaults.
+       */
       makeWaveguideRenderNote(
         exports.flt2_note_frames,
-        (m, v, r, l, rt, mx) => exports.flt2_render(m, v, r, 0, 1, l, rt, mx),
+        (m, v, r, l, rt, mx) =>
+          renderFluteV2PhraseFresh(m, v, r, 0, 1, l, rt, mx),
+        (m, v, r, slot, l, rt, mx) =>
+          renderFluteV2PhraseFresh(m, v, r, slot, 1, l, rt, mx),
+        (m, v, r, slot, articulation, l, rt, mx) =>
+          renderFluteV2PhraseFresh(m, v, r, slot, articulation, l, rt, mx),
       ),
     ],
     [
