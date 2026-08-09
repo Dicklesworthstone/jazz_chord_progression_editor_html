@@ -1015,6 +1015,7 @@ dependencies = [
  "fs-material",
  "fs-modal",
  "fs-plate",
+ "fs-sparse",
  "serde",
  "serde_json",
  "sha2 0.10.9",

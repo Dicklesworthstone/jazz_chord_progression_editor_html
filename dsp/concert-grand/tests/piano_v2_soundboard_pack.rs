@@ -16,27 +16,27 @@ const RUST_PACK: &str = include_str!("../src/piano_v2_soundboard.rs");
 fn generated_pack_is_bound_to_the_reviewed_frankensim_input() {
     assert_eq!(
         PIANO_V2_SOUNDBOARD_PACK_SCHEMA,
-        "changes.piano-v2-soundboard-pack.v1"
+        "changes.piano-v2-soundboard-pack.v2"
     );
     assert_eq!(
         PIANO_V2_SOUNDBOARD_PACK_FRANKENSIM_COMMIT,
-        "61824b0210356ddb7aec0e43ceef51ffa62e0775"
+        "f630aaf8968f9c3ef52cee23ef4badfccfa54252"
     );
     assert_eq!(
         PIANO_V2_SOUNDBOARD_PACK_GENERATOR_SHA256,
-        "e73d1ea5c668d3aa89da2615f94e2755ffb8a5eec242c6a88fcecafae021cb1f"
+        "ca21179a541c28c2c052ae20109609b8752a81e7bc268c606dc51e09edef7273"
     );
     assert_eq!(
         PIANO_V2_SOUNDBOARD_PACK_INPUT_SHA256,
-        "e395695c4cd60fa193bc1098448be060a0a52973e87250c1d9be0882b07634ef"
+        "560f3ef1de0f73e1b71a1ab2ae73c381cca267c9ff01463550f9c46fef2a7a6c"
     );
     assert_eq!(
         PIANO_V2_SOUNDBOARD_PACK_TOOL_MANIFEST_SHA256,
-        "c212184ec61525a06d458b1e5b33b35ef3784b964d052483776f91bc7253fb72"
+        "a6754dadc38e48809cdf123133144c4af9e874f1621c98a7b38d38a1cfef7774"
     );
     assert_eq!(
         PIANO_V2_SOUNDBOARD_PACK_TOOL_LOCK_SHA256,
-        "402853e38d48b3563abf7fb0af179ff908d5c9a0782246a2497ab8182ee674ca"
+        "c195adfbc3ab5169aca15d530b6e008b57aec145570459ca7958f063f8409df4"
     );
     assert!(JSON_PACK.contains(PIANO_V2_SOUNDBOARD_PACK_INPUT_SHA256));
     assert!(JSON_PACK.contains(PIANO_V2_SOUNDBOARD_PACK_GENERATOR_SHA256));
@@ -44,30 +44,36 @@ fn generated_pack_is_bound_to_the_reviewed_frankensim_input() {
     assert!(JSON_PACK.contains(PIANO_V2_SOUNDBOARD_PACK_TOOL_LOCK_SHA256));
     assert!(JSON_PACK.contains(PIANO_V2_SOUNDBOARD_PACK_FRANKENSIM_COMMIT));
     assert!(RUST_PACK.contains(PIANO_V2_SOUNDBOARD_PACK_INPUT_SHA256));
-    assert_eq!(JSON_PACK.matches("\"frequencyHz\"").count(), 288);
-    assert_eq!(JSON_PACK.matches("\"nodeWInverseSqrtKg\"").count(), 288);
+    assert_eq!(JSON_PACK.matches("\"frequencyHz\"").count(), 1_239);
+    assert_eq!(JSON_PACK.matches("\"nodeWInverseSqrtKg\"").count(), 1_239);
+    assert!(JSON_PACK.contains("\"certifiedSliceCount\": 12"));
+    assert!(JSON_PACK.contains("\"refinedModeCount\": 2"));
+    assert!(JSON_PACK.contains("\"maximumRefinedMassOrthogonalityDefect\""));
 }
 
 #[test]
 fn dkt_modes_match_independently_frozen_known_answers_and_residual_bounds() {
-    assert_eq!(PIANO_V2_SOUNDBOARD_MODE_PACK.len(), 288);
+    assert_eq!(PIANO_V2_SOUNDBOARD_MODE_PACK.len(), 1_239);
     let known = [
-        (0, 39.061_918_469_525_08),
-        (31, 605.334_072_356_179_1),
-        (95, 1_523.587_725_435_037),
-        (191, 2_115.408_317_392_734),
-        (255, 2_900.229_724_552_747),
-        (287, 3_876.760_575_988_39),
+        (0, 39.083_986_320_762_27),
+        (31, 608.554_756_151_908_5),
+        (95, 1_723.708_851_954_870_9),
+        (191, 2_350.886_327_995_278_4),
+        (287, 2_764.070_934_430_351_4),
+        (511, 5_662.704_089_523_185),
+        (767, 7_379.552_660_048_264),
+        (1_023, 10_796.703_034_698_176),
+        (1_238, 11_999.415_786_947_086),
     ];
     for (index, expected_hz) in known {
         let actual = PIANO_V2_SOUNDBOARD_MODE_PACK[index].frequency_hz;
         assert!((actual - expected_hz).abs() < 1.0e-9, "mode {index}");
     }
-    assert!(PIANO_V2_SOUNDBOARD_PACK_MAXIMUM_RESIDUAL < 3.0e-9);
+    assert!(PIANO_V2_SOUNDBOARD_PACK_MAXIMUM_RESIDUAL <= 1.0e-8);
     let mut previous = 0.0;
     for (index, mode) in PIANO_V2_SOUNDBOARD_MODE_PACK.iter().enumerate() {
         assert!(mode.frequency_hz.is_finite() && mode.frequency_hz > previous);
-        assert!(mode.eigen_residual.is_finite() && mode.eigen_residual <= 3.0e-9);
+        assert!(mode.eigen_residual.is_finite() && mode.eigen_residual <= 1.0e-8);
         assert!(mode
             .bridge_residue_inverse_sqrt_kg
             .iter()
@@ -90,12 +96,32 @@ fn dkt_modes_match_independently_frozen_known_answers_and_residual_bounds() {
 fn production_uses_the_dkt_pack_and_refuses_to_relabel_it_as_new_geometry() {
     let canonical = PianoParameters::canonical();
     let voice = PianoVoice::new(60, 96_000.0, canonical).unwrap();
-    for index in [0, 31, 95, 191, 255, 287] {
+    let mut previous_pack_index = None;
+    for mode_index in 0..288 {
+        let pack_index = voice.soundboard_mode_pack_index(mode_index).unwrap();
         assert_eq!(
-            voice.soundboard_mode_frequency_hz(index),
-            Some(PIANO_V2_SOUNDBOARD_MODE_PACK[index].frequency_hz)
+            voice.soundboard_mode_frequency_hz(mode_index),
+            Some(PIANO_V2_SOUNDBOARD_MODE_PACK[pack_index].frequency_hz)
         );
+        assert!(previous_pack_index.is_none_or(|previous| pack_index > previous));
+        previous_pack_index = Some(pack_index);
     }
+    assert_eq!(voice.soundboard_mode_frequency_hz(288), None);
+
+    let treble = PianoVoice::new(108, 96_000.0, canonical).unwrap();
+    let treble_pack_indices = (0..288)
+        .map(|mode_index| treble.soundboard_mode_pack_index(mode_index).unwrap())
+        .collect::<Vec<_>>();
+    assert!(
+        treble_pack_indices.iter().any(|index| *index > 287),
+        "the note-aware reduction collapsed back to the old first-288 truncation"
+    );
+    assert!(
+        treble_pack_indices
+            .iter()
+            .any(|index| PIANO_V2_SOUNDBOARD_MODE_PACK[*index].frequency_hz > 8_000.0),
+        "the treble note lost the certified high-frequency board response"
+    );
 
     // The old smeared simply-supported sine-grid answer is deliberately not
     // the live plate fundamental. This planted near-miss catches a production

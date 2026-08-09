@@ -1501,6 +1501,13 @@ impl PianoVoice {
             .and_then(|mode| mode.mode.active.then_some(mode.mode.frequency_hz))
     }
 
+    #[cfg(test)]
+    pub fn soundboard_mode_pack_index(&self, mode_index: usize) -> Option<usize> {
+        self.soundboard
+            .get(mode_index)
+            .and_then(|mode| mode.mode.active.then_some(mode.pack_index as usize))
+    }
+
     pub fn soundboard_mode_energy_j(&self, mode_index: usize) -> Option<f64> {
         self.soundboard
             .get(mode_index)
@@ -3275,6 +3282,9 @@ fn build_soundboard_modes<'a>(
                 best_index = candidate_index;
             }
         }
+        if best_score <= 0.0 {
+            return Err(PianoError::InvalidParameters);
+        }
         if !selected[best_index] {
             if selected_count >= selection_limit {
                 break;
@@ -3298,6 +3308,9 @@ fn build_soundboard_modes<'a>(
             }
         }
         let best_index = best_index.ok_or(PianoError::NonFiniteState)?;
+        if best_score <= 0.0 {
+            return Err(PianoError::InvalidParameters);
+        }
         selected[best_index] = true;
         selected_count += 1;
     }

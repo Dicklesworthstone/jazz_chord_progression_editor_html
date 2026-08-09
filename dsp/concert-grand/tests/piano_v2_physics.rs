@@ -565,24 +565,18 @@ fn string_pack_is_geometry_derived_and_keeps_the_measured_fundamental() {
 }
 
 #[test]
-fn soundboard_active_modes_are_sorted_before_bandlimited_empty_slots() {
+fn soundboard_active_modes_are_sorted_and_bandlimited_at_the_minimum_rate() {
     let voice = PianoVoice::new(60, 8_000.0, PianoParameters::canonical()).unwrap();
-    let mut saw_empty = false;
+    let mut previous_frequency_hz = 0.0;
     for index in 0..piano_v2::SOUNDBOARD_MODES {
-        match voice.soundboard_mode_frequency_hz(index) {
-            Some(frequency_hz) => {
-                assert!(
-                    !saw_empty,
-                    "an active soundboard mode followed an inactive slot"
-                );
-                assert!(frequency_hz < 0.44 * 8_000.0);
-            }
-            None => saw_empty = true,
-        }
+        let frequency_hz = voice.soundboard_mode_frequency_hz(index).unwrap();
+        assert!(frequency_hz > previous_frequency_hz);
+        assert!(frequency_hz < 0.44 * 8_000.0);
+        previous_frequency_hz = frequency_hz;
     }
-    assert!(
-        saw_empty,
-        "8 kHz fixture did not exercise band-edge mode culling"
+    assert_eq!(
+        voice.soundboard_mode_frequency_hz(piano_v2::SOUNDBOARD_MODES),
+        None
     );
 }
 

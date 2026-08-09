@@ -1,6 +1,8 @@
 use fs_material::elastic::OrthotropicElastic;
-use fs_modal::{SliceOptions, slice_window};
-use fs_plate::{AssemblyOptions, EdgeSupport, PlateMesh, PlateSection, Stiffener, assemble};
+use fs_modal::{slice_window, ModePair, SliceOptions};
+use fs_plate::{assemble, AssemblyOptions, EdgeSupport, PlateMesh, PlateSection, Stiffener};
+use fs_sparse::direct::{DirectOrdering, LdltFactor, LdltOptions, SymbolicLdlt};
+use fs_sparse::{Coo, Csr};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 use std::env;
@@ -32,6 +34,11 @@ const NY: usize = 24;
 const MINIMUM_MODE_FREQUENCY_HZ: f64 = 1.0;
 const MAXIMUM_MODE_FREQUENCY_HZ: f64 = 12_000.125;
 const MODE_SLICE_WIDTH_HZ: f64 = 1_000.0;
+const MAXIMUM_REFINED_MODES: usize = 16;
+const LOW_MODE_REFINEMENT_STEPS: usize = 4;
+const REFINEMENT_SHIFT_RELATIVE_OFFSET: f64 = 1.0e-4;
+const MAXIMUM_RELATIVE_EIGEN_RESIDUAL: f64 = 1.0e-8;
+const MAXIMUM_REFINED_MASS_ORTHOGONALITY_DEFECT: f64 = 1.0e-6;
 const AIR_DENSITY_KG_M3: f64 = 1.2041;
 const AIR_SOUND_SPEED_M_PER_S: f64 = 343.21;
 const RADIATION_DISTANCE_M: f64 = 1.0;
@@ -39,9 +46,10 @@ const MIDI_MIN: i32 = 21;
 const MIDI_MAX: i32 = 108;
 const JSON_OUTPUT: &str = "physical/parameter-packs/piano-v2-soundboard.json";
 const RUST_OUTPUT: &str = "dsp/concert-grand/src/piano_v2_soundboard.rs";
-const PACK_SCHEMA: &str = "changes.piano-v2-soundboard-pack.v1";
-const SOLVER_ID: &str = "frankensim-fs-plate-dkt-plus-fs-modal-certified-slices-v2";
-const FRANKENSIM_EXPECTED_HEAD: &str = "61824b0210356ddb7aec0e43ceef51ffa62e0775";
+const PACK_SCHEMA: &str = "changes.piano-v2-soundboard-pack.v2";
+const SOLVER_ID: &str =
+    "frankensim-fs-plate-dkt-plus-fs-modal-certified-slices-inverse-refinement-v3";
+const FRANKENSIM_EXPECTED_HEAD: &str = "f630aaf8968f9c3ef52cee23ef4badfccfa54252";
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -75,6 +83,10 @@ struct WorkRecord {
     factorization_count: usize,
     lanczos_iterations: usize,
     deflation_restarts: usize,
+    refined_mode_count: usize,
+    refinement_factorization_count: usize,
+    refinement_solve_count: usize,
+    maximum_refined_mass_orthogonality_defect: f64,
     maximum_factor_peak_bytes: usize,
 }
 
@@ -114,6 +126,230 @@ struct SolvedMode {
     observer: [f64; 4],
 }
 
+#[derive(Clone, Copy, Debug, Default)]
+struct RefinementWork {
+    refined_mode_count: usize,
+    factorization_count: usize,
+    solve_count: usize,
+    maximum_mass_orthogonality_defect: f64,
+    maximum_factor_peak_bytes: usize,
+}
+
+struct ModeRefiner {
+    mass_factor: LdltFactor,
+    pencil_symbolic: SymbolicLdlt,
+    options: LdltOptions,
+    work: RefinementWork,
+}
+
+fn shifted_pencil(k: &Csr, m: &Csr, sigma: f64) -> Csr {
+    let mut entries = Coo::new(k.nrows(), k.ncols());
+    for row in 0..k.nrows() {
+        let (columns, values) = k.row(row);
+        for (&column, &value) in columns.iter().zip(values) {
+            entries.push(row, column, value);
+        }
+        let (columns, values) = m.row(row);
+        for (&column, &value) in columns.iter().zip(values) {
+            entries.push(row, column, -sigma * value);
+        }
+    }
+    entries.assemble()
+}
+
+fn pencil_symbolic_union(k: &Csr, m: &Csr) -> Csr {
+    assert_eq!(k.nrows(), m.nrows(), "pencil row dimensions disagree");
+    assert_eq!(k.ncols(), m.ncols(), "pencil column dimensions disagree");
+    let mut entries = Coo::new(k.nrows(), k.ncols());
+    for row in 0..k.nrows() {
+        let (stiffness_columns, _) = k.row(row);
+        for &column in stiffness_columns {
+            entries.push(row, column, 1.0);
+        }
+        let (mass_columns, _) = m.row(row);
+        for &column in mass_columns {
+            // A nonzero symbolic sentinel is deliberate. Building this with
+            // `shifted_pencil(k, m, 0)` lets an assembler discard every
+            // mass-only zero and is not the union pattern it claims to be.
+            entries.push(row, column, 1.0);
+        }
+    }
+    entries.assemble()
+}
+
+fn refined_mass_orthogonality_defect(
+    m: &Csr,
+    modes: &[ModePair],
+    refined_indices: &[usize],
+) -> f64 {
+    let mut maximum = 0.0_f64;
+    let mut mass_times_refined = vec![0.0_f64; m.nrows()];
+    for &refined_index in refined_indices {
+        let refined = &modes[refined_index].phi;
+        m.spmv(refined, &mut mass_times_refined);
+        let diagonal = refined
+            .iter()
+            .zip(&mass_times_refined)
+            .map(|(left, right)| left * right)
+            .sum::<f64>();
+        maximum = maximum.max((diagonal - 1.0).abs());
+        for (other_index, other) in modes.iter().enumerate() {
+            if other_index == refined_index {
+                continue;
+            }
+            let cross = other
+                .phi
+                .iter()
+                .zip(&mass_times_refined)
+                .map(|(left, right)| left * right)
+                .sum::<f64>()
+                .abs();
+            maximum = maximum.max(cross);
+        }
+    }
+    maximum
+}
+
+fn certify_mode(
+    k: &Csr,
+    m: &Csr,
+    mass_factor: &fs_sparse::direct::LdltFactor,
+    mode: &mut ModePair,
+) {
+    let mut mass_times_mode = vec![0.0_f64; mode.phi.len()];
+    m.spmv(&mode.phi, &mut mass_times_mode);
+    let mass_norm = mode
+        .phi
+        .iter()
+        .zip(&mass_times_mode)
+        .map(|(left, right)| left * right)
+        .sum::<f64>()
+        .sqrt();
+    assert!(
+        mass_norm.is_finite() && mass_norm > 0.0,
+        "refined mode has zero mass norm"
+    );
+    for value in &mut mode.phi {
+        *value /= mass_norm;
+    }
+    m.spmv(&mode.phi, &mut mass_times_mode);
+    let mut stiffness_times_mode = vec![0.0_f64; mode.phi.len()];
+    k.spmv(&mode.phi, &mut stiffness_times_mode);
+    let rayleigh_numerator = mode
+        .phi
+        .iter()
+        .zip(&stiffness_times_mode)
+        .map(|(left, right)| left * right)
+        .sum::<f64>();
+    let rayleigh_denominator = mode
+        .phi
+        .iter()
+        .zip(&mass_times_mode)
+        .map(|(left, right)| left * right)
+        .sum::<f64>();
+    mode.lambda = rayleigh_numerator / rayleigh_denominator;
+    assert!(
+        mode.lambda.is_finite() && mode.lambda > 0.0,
+        "refined eigenvalue is invalid"
+    );
+    let residual: Vec<f64> = stiffness_times_mode
+        .iter()
+        .zip(&mass_times_mode)
+        .map(|(stiffness, mass)| mode.lambda.mul_add(-mass, *stiffness))
+        .collect();
+    let inverse_mass_residual = mass_factor.solve(&residual);
+    mode.residual = residual
+        .iter()
+        .zip(&inverse_mass_residual)
+        .map(|(left, right)| left * right)
+        .sum::<f64>()
+        .max(0.0)
+        .sqrt();
+    assert!(mode.residual.is_finite(), "refined residual is non-finite");
+    mode.interval = (mode.lambda - mode.residual, mode.lambda + mode.residual);
+}
+
+impl ModeRefiner {
+    fn new(k: &Csr, m: &Csr) -> Self {
+        let options = LdltOptions::default();
+        let mass_symbolic = SymbolicLdlt::analyze(m, DirectOrdering::Amd)
+            .expect("analyze soundboard mass matrix for refinement");
+        let mass_factor = mass_symbolic
+            .factor(m, &options)
+            .expect("factor soundboard mass matrix for refinement");
+        let mass_inertia = mass_factor.inertia();
+        assert_eq!(
+            mass_inertia.negative, 0,
+            "soundboard mass matrix must be SPD"
+        );
+        assert_eq!(
+            mass_inertia.positive,
+            m.nrows(),
+            "soundboard mass matrix must have full positive inertia"
+        );
+        let union_pattern = pencil_symbolic_union(k, m);
+        let pencil_symbolic = SymbolicLdlt::analyze(&union_pattern, DirectOrdering::Amd)
+            .expect("analyze soundboard pencil for refinement");
+        let work = RefinementWork {
+            factorization_count: 1,
+            maximum_factor_peak_bytes: mass_factor.stats().peak_front_bytes,
+            ..RefinementWork::default()
+        };
+        Self {
+            mass_factor,
+            pencil_symbolic,
+            options,
+            work,
+        }
+    }
+
+    fn refine(&mut self, k: &Csr, m: &Csr, modes: &mut [ModePair]) {
+        let mut refined_indices = Vec::new();
+        for (mode_index, mode) in modes.iter_mut().enumerate() {
+            let relative_residual = mode.residual / mode.lambda.abs().max(1.0);
+            if relative_residual <= MAXIMUM_RELATIVE_EIGEN_RESIDUAL {
+                continue;
+            }
+            assert!(
+                self.work.refined_mode_count < MAXIMUM_REFINED_MODES,
+                "too many soundboard modes require inverse refinement"
+            );
+            let original_interval = mode.interval;
+            let shift = mode.lambda * (1.0 - REFINEMENT_SHIFT_RELATIVE_OFFSET);
+            let shifted = shifted_pencil(k, m, shift);
+            let factor = self
+                .pencil_symbolic
+                .factor(&shifted, &self.options)
+                .expect("factor low-mode inverse-refinement shift");
+            self.work.refined_mode_count += 1;
+            self.work.factorization_count += 1;
+            self.work.maximum_factor_peak_bytes = self
+                .work
+                .maximum_factor_peak_bytes
+                .max(factor.stats().peak_front_bytes);
+            for _ in 0..LOW_MODE_REFINEMENT_STEPS {
+                let mut right_hand_side = vec![0.0_f64; mode.phi.len()];
+                m.spmv(&mode.phi, &mut right_hand_side);
+                mode.phi = factor.solve(&right_hand_side);
+                certify_mode(k, m, &self.mass_factor, mode);
+                self.work.solve_count += 2;
+            }
+            assert!(
+                mode.interval.1 >= original_interval.0 && mode.interval.0 <= original_interval.1,
+                "inverse refinement changed the certified eigenvalue identity"
+            );
+            refined_indices.push(mode_index);
+        }
+        let defect = refined_mass_orthogonality_defect(m, modes, &refined_indices);
+        assert!(
+            defect <= MAXIMUM_REFINED_MASS_ORTHOGONALITY_DEFECT,
+            "inverse refinement collapsed distinct modal vectors: {defect:.17e}"
+        );
+        self.work.maximum_mass_orthogonality_defect =
+            self.work.maximum_mass_orthogonality_defect.max(defect);
+    }
+}
+
 fn rectangle_torsion_constant(width: f64, height: f64) -> f64 {
     let (long, short) = if width >= height {
         (width, height)
@@ -151,41 +387,77 @@ fn bridge_position_for_midi(midi: i32) -> (f64, f64) {
     (x, y)
 }
 
-fn bilinear_node_w(node_w: &[f64], x_normalized: f64, y_normalized: f64) -> f64 {
-    let x_grid = x_normalized.clamp(0.0, 1.0) * NX as f64;
-    let y_grid = y_normalized.clamp(0.0, 1.0) * NY as f64;
-    let x0 = (x_grid.floor() as usize).min(NX - 1);
-    let y0 = (y_grid.floor() as usize).min(NY - 1);
-    let tx = x_grid - x0 as f64;
-    let ty = y_grid - y0 as f64;
-    let node = |x: usize, y: usize| node_w[y * (NX + 1) + x];
-    (1.0 - ty) * ((1.0 - tx) * node(x0, y0) + tx * node(x0 + 1, y0))
-        + ty * ((1.0 - tx) * node(x0, y0 + 1) + tx * node(x0 + 1, y0 + 1))
+fn triangle_twice_area(mesh: &PlateMesh, triangle: [usize; 3]) -> f64 {
+    let [(x0, y0), (x1, y1), (x2, y2)] = triangle.map(|node| mesh.nodes[node]);
+    (x1 - x0) * (y2 - y0) - (x2 - x0) * (y1 - y0)
 }
 
-fn observer_integral(node_w: &[f64], wave_number: f64, direction_x: f64) -> (f64, f64) {
-    let dx = LENGTH_M / NX as f64;
-    let dy = WIDTH_M / NY as f64;
+/// Generalized displacement at a point-load port.
+///
+/// Classical DKT deliberately defines no interior transverse-displacement
+/// polynomial; Batoz, Bathe & Ho (1980), section 3.1.2, instead represents
+/// transverse loading through nodal forces.  A point force is therefore
+/// distributed conservatively to the containing triangle's three w DOFs by
+/// barycentric weights, and the modal residue is `phi^T f / F`.  The removed
+/// bilinear rectangular-grid interpolation crossed the actual triangle
+/// diagonal and invented an interior field that the DKT element does not own.
+fn point_load_modal_residue(
+    mesh: &PlateMesh,
+    node_w: &[f64],
+    x_normalized: f64,
+    y_normalized: f64,
+) -> f64 {
+    assert_eq!(node_w.len(), mesh.node_count());
+    assert!((0.0..=1.0).contains(&x_normalized));
+    assert!((0.0..=1.0).contains(&y_normalized));
+    let x = x_normalized * LENGTH_M;
+    let y = y_normalized * WIDTH_M;
+    let coordinate_scale = LENGTH_M.max(WIDTH_M).max(1.0);
+    let admission_tolerance = 64.0 * f64::EPSILON * coordinate_scale;
+    for &triangle in &mesh.tris {
+        let [(x0, y0), (x1, y1), (x2, y2)] = triangle.map(|node| mesh.nodes[node]);
+        let twice_area = triangle_twice_area(mesh, triangle);
+        assert!(twice_area > 0.0 && twice_area.is_finite());
+        let first = ((x1 - x) * (y2 - y) - (x2 - x) * (y1 - y)) / twice_area;
+        let second = ((x2 - x) * (y0 - y) - (x0 - x) * (y2 - y)) / twice_area;
+        let third = 1.0 - first - second;
+        if first >= -admission_tolerance
+            && second >= -admission_tolerance
+            && third >= -admission_tolerance
+        {
+            return first * node_w[triangle[0]]
+                + second * node_w[triangle[1]]
+                + third * node_w[triangle[2]];
+        }
+    }
+    panic!("reviewed bridge point is outside the DKT mesh: ({x}, {y})");
+}
+
+/// Plane-wave generalized observation using the DKT nodal-load measure.
+///
+/// Batoz et al. equation 75 assigns a uniform transverse load `q*A/3` to
+/// each triangle vertex.  Sampling the far-field plane-wave phase at those
+/// same vertices extends that power-conjugate nodal port without pretending
+/// that an interior w polynomial exists.  At zero wave number this reduces
+/// exactly to the reviewed uniform-load vector and integrates a constant
+/// modal shape to the physical plate area.
+fn observer_integral(
+    mesh: &PlateMesh,
+    node_w: &[f64],
+    wave_number: f64,
+    direction_x: f64,
+) -> (f64, f64) {
+    assert_eq!(node_w.len(), mesh.node_count());
     let mut real = 0.0;
     let mut imaginary = 0.0;
-    for y_index in 0..=NY {
-        let y = y_index as f64 * dy;
-        let y_weight = if y_index == 0 || y_index == NY {
-            0.5
-        } else {
-            1.0
-        };
-        for x_index in 0..=NX {
-            let x = x_index as f64 * dx;
-            let x_weight = if x_index == 0 || x_index == NX {
-                0.5
-            } else {
-                1.0
-            };
+    for &triangle in &mesh.tris {
+        let nodal_area = triangle_twice_area(mesh, triangle) / 6.0;
+        assert!(nodal_area > 0.0 && nodal_area.is_finite());
+        for node in triangle {
+            let (x, y) = mesh.nodes[node];
             let phase =
                 -wave_number * (direction_x * (x - 0.5 * LENGTH_M) + 0.12 * (y - 0.5 * WIDTH_M));
-            let weighted_shape =
-                node_w[y_index * (NX + 1) + x_index] * dx * dy * x_weight * y_weight;
+            let weighted_shape = node_w[node] * nodal_area;
             real += weighted_shape * phase.cos();
             imaginary += weighted_shape * phase.sin();
         }
@@ -208,7 +480,7 @@ fn frankensim_head() -> String {
     let status = Command::new("git")
         .arg("-C")
         .arg(&frankensim_root)
-        .args(["status", "--porcelain", "--untracked-files=no"])
+        .args(["status", "--porcelain"])
         .output()
         .expect("read FrankenSim worktree status");
     assert!(
@@ -217,7 +489,7 @@ fn frankensim_head() -> String {
     );
     assert!(
         status.stdout.is_empty(),
-        "FrankenSim has tracked worktree/index changes; refusing to stamp only its HEAD"
+        "FrankenSim worktree/index is not clean; refusing to stamp only its HEAD"
     );
     String::from_utf8(output.stdout)
         .expect("FrankenSim HEAD is UTF-8")
@@ -289,21 +561,22 @@ fn solve_pack() -> SoundboardPack {
     let mut deflation_restarts = 0usize;
     let mut maximum_factor_peak_bytes = 0usize;
     let mut certified_modes = Vec::new();
+    let mut refiner = ModeRefiner::new(&model.k, &model.m);
     let mut lower_hz = MINIMUM_MODE_FREQUENCY_HZ;
     while lower_hz < MAXIMUM_MODE_FREQUENCY_HZ {
         let upper_hz = (lower_hz + MODE_SLICE_WIDTH_HZ).min(MAXIMUM_MODE_FREQUENCY_HZ);
         let lower_lambda = (2.0 * PI * lower_hz).powi(2);
         let upper_lambda = (2.0 * PI * upper_hz).powi(2);
-        let report = slice_window(
+        let mut report = slice_window(
             &model.k,
             &model.m,
             (lower_lambda, upper_lambda),
             &SliceOptions {
-                // The default 1e-10 Ritz gate was sufficient for convergence
-                // but one returned plate mode exceeded this pack's independent
-                // 1e-8 relative eigen-residual law. Tighten the solve itself;
-                // do not relax the release bound.
-                ritz_tol: 1.0e-12,
+                // A 1e-12 shift-invert Ritz estimate still admitted one low
+                // plate mode whose explicit M^-1 residual exceeded this
+                // pack's independent 1e-8 law. Tighten the solve itself; do
+                // not relax the release bound.
+                ritz_tol: 1.0e-14,
                 ..SliceOptions::default()
             },
         )
@@ -311,13 +584,24 @@ fn solve_pack() -> SoundboardPack {
             panic!("certified modal slice ({lower_hz}, {upper_hz}] Hz: {error}")
         });
         assert_eq!(report.expected, report.modes.len());
-        let slice_maximum_relative_residual = report
+        refiner.refine(&model.k, &model.m, &mut report.modes);
+        let (slice_maximum_relative_residual, worst_frequency_hz) = report
             .modes
             .iter()
-            .map(|mode| mode.residual / mode.lambda.abs().max(1.0))
-            .fold(0.0_f64, f64::max);
+            .map(|mode| {
+                (
+                    mode.residual / mode.lambda.abs().max(1.0),
+                    mode.lambda.sqrt() / (2.0 * PI),
+                )
+            })
+            .max_by(|left, right| left.0.total_cmp(&right.0))
+            .unwrap_or((0.0, 0.0));
+        assert!(
+            slice_maximum_relative_residual <= MAXIMUM_RELATIVE_EIGEN_RESIDUAL,
+            "certified modal slice ({lower_hz}, {upper_hz}] exceeds the relative residual law: {slice_maximum_relative_residual:.17e}"
+        );
         eprintln!(
-            "certified_slice=({lower_hz:.3},{upper_hz:.3}] modes={} max_relative_residual={slice_maximum_relative_residual:.6e} factorizations={} lanczos={} restarts={} factor_peak_bytes={}",
+            "certified_slice=({lower_hz:.3},{upper_hz:.3}] modes={} max_relative_residual={slice_maximum_relative_residual:.6e} worst_frequency_hz={worst_frequency_hz:.9} factorizations={} lanczos={} restarts={} factor_peak_bytes={}",
             report.expected,
             report.stats.factorizations,
             report.stats.lanczos_iters,
@@ -332,6 +616,10 @@ fn solve_pack() -> SoundboardPack {
         certified_modes.extend(report.modes);
         lower_hz = upper_hz;
     }
+    let refinement_work = refiner.work;
+    factorization_count += refinement_work.factorization_count;
+    maximum_factor_peak_bytes =
+        maximum_factor_peak_bytes.max(refinement_work.maximum_factor_peak_bytes);
     certified_modes.sort_by(|left, right| left.lambda.total_cmp(&right.lambda));
     assert!(
         !certified_modes.is_empty(),
@@ -368,13 +656,13 @@ fn solve_pack() -> SoundboardPack {
         let bridge_residue = (MIDI_MIN..=MIDI_MAX)
             .map(|midi| {
                 let (x, y) = bridge_position_for_midi(midi);
-                bilinear_node_w(&node_w, x, y)
+                point_load_modal_residue(&mesh, &node_w, x, y)
             })
             .collect();
         let omega = 2.0 * PI * frequency_hz;
         let wave_number = omega / AIR_SOUND_SPEED_M_PER_S;
-        let (left_re, left_im) = observer_integral(&node_w, wave_number, -0.35);
-        let (right_re, right_im) = observer_integral(&node_w, wave_number, 0.35);
+        let (left_re, left_im) = observer_integral(&mesh, &node_w, wave_number, -0.35);
+        let (right_re, right_im) = observer_integral(&mesh, &node_w, wave_number, 0.35);
         let scale = AIR_DENSITY_KG_M3 * omega / (2.0 * PI * RADIATION_DISTANCE_M);
         solved.push(SolvedMode {
             frequency_hz,
@@ -390,7 +678,7 @@ fn solve_pack() -> SoundboardPack {
         });
     }
     assert!(
-        maximum_residual <= 1.0e-8,
+        maximum_residual <= MAXIMUM_RELATIVE_EIGEN_RESIDUAL,
         "eigen residual is not release-bounded: {maximum_residual:.17e}"
     );
     let generator_sha256 = sha256_hex(include_bytes!("main.rs"));
@@ -439,10 +727,16 @@ fn solve_pack() -> SoundboardPack {
             factorization_count,
             lanczos_iterations,
             deflation_restarts,
+            refined_mode_count: refinement_work.refined_mode_count,
+            refinement_factorization_count: refinement_work.factorization_count,
+            refinement_solve_count: refinement_work.solve_count,
+            maximum_refined_mass_orthogonality_defect: refinement_work
+                .maximum_mass_orthogonality_defect,
             maximum_factor_peak_bytes,
         },
         bridge_anchor_source: "Miranda-Valiente-et-al-JASA-2024-Fig-2-five-plan-view-points",
-        radiation_law: "mass-normal-node-shape-trapezoid-quadrature-infinite-baffle-Rayleigh-1m",
+        radiation_law:
+            "Batoz-1980-equation-75-triangle-area-over-3-nodal-load-infinite-baffle-Rayleigh-1m",
         modes: solved
             .into_iter()
             .enumerate()
@@ -580,7 +874,7 @@ fn main() {
     check_or_write(JSON_OUTPUT, &json, check);
     check_or_write(RUST_OUTPUT, &rust, check);
     println!(
-        "schema={} input={} free_dofs={} modes={} f_first={:.9} f_32={:.9} f_96={:.9} f_last={:.9} max_residual={:.3e} slices={} factorizations={} lanczos={} restarts={} factor_peak_bytes={} check={}",
+        "schema={} input={} free_dofs={} modes={} f_first={:.9} f_32={:.9} f_96={:.9} f_last={:.9} max_residual={:.3e} slices={} factorizations={} lanczos={} restarts={} refined_modes={} refinement_factorizations={} refinement_solves={} refined_mass_orthogonality={:.3e} factor_peak_bytes={} check={}",
         pack.schema,
         pack.input_sha256,
         pack.work.free_dofs,
@@ -594,7 +888,127 @@ fn main() {
         pack.work.factorization_count,
         pack.work.lanczos_iterations,
         pack.work.deflation_restarts,
+        pack.work.refined_mode_count,
+        pack.work.refinement_factorization_count,
+        pack.work.refinement_solve_count,
+        pack.work.maximum_refined_mass_orthogonality_defect,
         pack.work.maximum_factor_peak_bytes,
         check,
     );
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn matrix(rows: usize, entries: &[(usize, usize, f64)]) -> Csr {
+        let mut coo = Coo::new(rows, rows);
+        for &(row, column, value) in entries {
+            coo.push(row, column, value);
+        }
+        coo.assemble()
+    }
+
+    #[test]
+    fn symbolic_pencil_union_keeps_mass_only_coordinates() {
+        let stiffness = matrix(2, &[(0, 0, 4.0), (1, 1, 9.0)]);
+        let mass = matrix(2, &[(0, 0, 1.0), (0, 1, 0.25), (1, 0, 0.25), (1, 1, 1.0)]);
+        let union = pencil_symbolic_union(&stiffness, &mass);
+        assert_eq!(union.row(0).0, &[0, 1]);
+        assert_eq!(union.row(1).0, &[0, 1]);
+        assert_ne!(union.row(0).0, stiffness.row(0).0);
+        assert_ne!(union.row(1).0, stiffness.row(1).0);
+    }
+
+    #[test]
+    fn inverse_refinement_reduces_residual_without_collapsing_modes() {
+        let stiffness = matrix(2, &[(0, 0, 4.0), (1, 1, 9.0)]);
+        let mass = matrix(2, &[(0, 0, 1.0), (1, 1, 1.0)]);
+        let mut modes = vec![
+            ModePair {
+                lambda: 4.05,
+                phi: vec![0.995, 0.1],
+                residual: 1.0,
+                interval: (3.0, 5.0),
+            },
+            ModePair {
+                lambda: 9.0,
+                phi: vec![0.0, 1.0],
+                residual: 0.0,
+                interval: (9.0, 9.0),
+            },
+        ];
+        let mut refiner = ModeRefiner::new(&stiffness, &mass);
+        refiner.refine(&stiffness, &mass, &mut modes);
+        assert!((modes[0].lambda - 4.0).abs() < 1.0e-12);
+        assert!(
+            modes[0].residual / modes[0].lambda < MAXIMUM_RELATIVE_EIGEN_RESIDUAL,
+            "relative residual was {:.17e}",
+            modes[0].residual / modes[0].lambda
+        );
+        assert!(
+            refiner.work.maximum_mass_orthogonality_defect
+                < MAXIMUM_REFINED_MASS_ORTHOGONALITY_DEFECT
+        );
+
+        let collapsed = vec![
+            ModePair {
+                lambda: 4.0,
+                phi: vec![1.0, 0.0],
+                residual: 0.0,
+                interval: (4.0, 4.0),
+            },
+            ModePair {
+                lambda: 4.0,
+                phi: vec![1.0, 0.0],
+                residual: 0.0,
+                interval: (4.0, 4.0),
+            },
+        ];
+        assert_eq!(
+            refined_mass_orthogonality_defect(&mass, &collapsed, &[0]),
+            1.0
+        );
+    }
+
+    #[test]
+    fn dkt_point_load_uses_the_containing_triangle_not_a_bilinear_quad() {
+        let mesh = PlateMesh::rectangle(LENGTH_M, WIDTH_M, 1, 1);
+        // Only the upper-right w DOF is nonzero. The reviewed mesh splits the
+        // cell along the lower-left -> upper-right diagonal, so the lower
+        // triangle's barycentric residue at (0.75, 0.25) is exactly 0.25.
+        // The removed rectangular bilinear interpolant would return 0.1875.
+        let node_w = [0.0, 0.0, 0.0, 1.0];
+        let actual = point_load_modal_residue(&mesh, &node_w, 0.75, 0.25);
+        assert!((actual - 0.25).abs() < 1.0e-15);
+        assert!((actual - 0.1875).abs() > 0.05);
+
+        // A conservative nodal point-load port reproduces every affine field
+        // exactly on either triangle and at their shared diagonal.
+        let affine = mesh
+            .nodes
+            .iter()
+            .map(|(x, y)| 2.0 + 3.0 * x - 5.0 * y)
+            .collect::<Vec<_>>();
+        for (x, y) in [(0.2, 0.7), (0.8, 0.1), (0.4, 0.4)] {
+            let actual = point_load_modal_residue(&mesh, &affine, x, y);
+            let expected = 2.0 + 3.0 * x * LENGTH_M - 5.0 * y * WIDTH_M;
+            assert!((actual - expected).abs() < 1.0e-14);
+        }
+    }
+
+    #[test]
+    fn dkt_nodal_radiation_replays_the_equation_75_uniform_load() {
+        let mesh = PlateMesh::rectangle(LENGTH_M, WIDTH_M, 3, 2);
+        let constant = vec![1.0; mesh.node_count()];
+        let (real, imaginary) = observer_integral(&mesh, &constant, 0.0, -0.35);
+        assert!((real - LENGTH_M * WIDTH_M).abs() < 1.0e-14);
+        assert_eq!(imaginary, 0.0);
+
+        // The triangle A/3 nodal-load rule is exact for an affine w field.
+        let linear_x = mesh.nodes.iter().map(|(x, _)| *x).collect::<Vec<_>>();
+        let (real, imaginary) = observer_integral(&mesh, &linear_x, 0.0, 0.35);
+        assert!((real - 0.5 * LENGTH_M * LENGTH_M * WIDTH_M).abs() < 1.0e-14);
+        assert_eq!(imaginary, 0.0);
+    }
 }
