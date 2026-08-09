@@ -10,14 +10,93 @@ mod piano_v2;
 use libm::sqrt;
 use piano_v2::piano_v2_scale::{reviewed_string_scale_row, REVIEWED_STRING_SCALE};
 use piano_v2::{
-    bridge_contact_pair_midpoint_step, duplex_length_m_for_midi, hammer_head_radius_m_for_midi,
-    hammer_mass_kg_for_midi, hammer_strike_position_over_length, midi_frequency_hz,
-    render_piano_note, soundboard_bridge_mode_residue_for_midi,
+    bridge_contact_pair_midpoint_step, component_string_reduction_snapshot,
+    duplex_length_m_for_midi, hammer_head_radius_m_for_midi, hammer_mass_kg_for_midi,
+    hammer_strike_position_over_length, midi_frequency_hz, render_piano_note,
+    separate_unison_bridge_contact_coordinates, soundboard_bridge_mode_residue_for_midi,
     soundboard_bridge_position_for_midi, soundboard_damping_ratio, soundboard_mode_frequency_hz,
     stiff_string_mode_frequency_hz, string_geometry, PianoError, PianoParameters, PianoStem,
     PianoStrike, PianoVoice, CONTACT_SOLVE_STEPS, MAXIMUM_BRIDGE_CONTACTS,
     MAXIMUM_BRIDGE_SOLVE_SCALAR_UPDATES, MAXIMUM_STATE_BYTES,
 };
+
+#[test]
+fn component_string_reduction_has_the_reviewed_mass_law_and_bounded_eigenpairs() {
+    const MODES: usize = 24;
+    const SPEAKING_MODES: usize = 20;
+    let midi = 96;
+    let geometry = string_geometry(midi).unwrap();
+    let snapshot = component_string_reduction_snapshot(midi, 0).unwrap();
+    let mu = geometry.linear_density_kg_m;
+    let speaking = geometry.speaking_length_m;
+    let duplex = geometry.duplex_length_m;
+    let second_moment = core::f64::consts::PI * geometry.equivalent_diameter_m.powi(4) / 64.0;
+    let bending_tension_equivalent = core::f64::consts::PI.powi(2) * 2.02e11 * second_moment
+        / geometry.speaking_length_m.powi(2);
+    let tension = (geometry.tension_n + bending_tension_equivalent)
+        * (geometry.unison_frequencies_hz[0] / geometry.fundamental_hz).powi(2)
+        - bending_tension_equivalent;
+
+    // Independently integrated Craig--Bampton constraint/sine products.
+    // The bridge coordinate is x/L on the speaking segment and 1-x/L on
+    // the duplex segment. A global fixed-fixed sine bank does not have this
+    // exact coordinate and was the planted treble-detuning near miss.
+    assert!((snapshot.mass[0][0] - mu * (speaking + duplex) / 3.0).abs() < 1.0e-15);
+    assert!((snapshot.mass[0][1] - mu * speaking / core::f64::consts::PI).abs() < 1.0e-15);
+    assert!((snapshot.mass[0][2] + mu * speaking / (2.0 * core::f64::consts::PI)).abs() < 1.0e-15);
+    assert!(
+        (snapshot.mass[0][1 + SPEAKING_MODES] - mu * duplex / core::f64::consts::PI).abs()
+            < 1.0e-15
+    );
+    assert!(
+        (snapshot.stiffness_diagonal[0] - tension * (1.0 / speaking + 1.0 / duplex)).abs() < 1.0e-8
+    );
+
+    for row in 0..MODES {
+        assert!(snapshot.mass[row][row] > 0.0);
+        assert!(snapshot.stiffness_diagonal[row] > 0.0);
+        for column in 0..MODES {
+            assert_eq!(snapshot.mass[row][column], snapshot.mass[column][row]);
+        }
+    }
+    for pair in snapshot.frequencies_hz.windows(2) {
+        assert!(pair[0] > 0.0 && pair[0] < pair[1]);
+    }
+
+    // This is a generalized Kq=lambda Mq check over the emitted physical
+    // vectors, not a comparison with production's transformed matrix. It
+    // catches a wrong Cholesky orientation, eigenvector permutation, or a
+    // mass/stiffness edit that leaves plausible-looking frequencies.
+    for mode in 0..MODES {
+        let vector = snapshot.eigenvectors[mode];
+        let lambda = (2.0 * core::f64::consts::PI * snapshot.frequencies_hz[mode]).powi(2);
+        let mut residual_squared = 0.0;
+        let mut scale_squared = 0.0;
+        for row in 0..MODES {
+            let mass_product = (0..MODES)
+                .map(|column| snapshot.mass[row][column] * vector[column])
+                .sum::<f64>();
+            let stiffness_product = snapshot.stiffness_diagonal[row] * vector[row];
+            let residual = stiffness_product - lambda * mass_product;
+            residual_squared += residual * residual;
+            scale_squared += stiffness_product * stiffness_product
+                + lambda * lambda * mass_product * mass_product;
+        }
+        assert!(sqrt(residual_squared / scale_squared.max(1.0e-300)) < 2.0e-10);
+        for other in 0..MODES {
+            let other_vector = snapshot.eigenvectors[other];
+            let mut mass_inner_product = 0.0;
+            for row in 0..MODES {
+                for column in 0..MODES {
+                    mass_inner_product +=
+                        vector[row] * snapshot.mass[row][column] * other_vector[column];
+                }
+            }
+            let expected = if mode == other { 1.0 } else { 0.0 };
+            assert!((mass_inner_product - expected).abs() < 2.0e-10);
+        }
+    }
+}
 
 #[test]
 fn reviewed_hammer_mass_and_strike_position_vary_by_register() {
@@ -111,12 +190,72 @@ fn separate_key_contacts_cannot_cancel_through_one_aggregate_port() {
     let receipt = PianoVoice::new(60, 48_000.0, parameters)
         .unwrap()
         .work_receipt();
-    assert_eq!(receipt.maximum_bridge_contacts, 1);
-    assert_eq!(MAXIMUM_BRIDGE_CONTACTS, 8);
+    assert_eq!(receipt.maximum_bridge_contacts, 3);
+    assert_eq!(MAXIMUM_BRIDGE_CONTACTS, 24);
     assert_eq!(
         receipt.maximum_bridge_solve_scalar_updates,
         MAXIMUM_BRIDGE_SOLVE_SCALAR_UPDATES
     );
+}
+
+#[test]
+fn separate_unison_contacts_preserve_internal_bridge_strain() {
+    let parameters = PianoParameters::canonical();
+    let mut voice = PianoVoice::new(60, 48_000.0, parameters).unwrap();
+    voice
+        .set_test_unison_bridge_displacement_m(0, 1.0e-5)
+        .unwrap();
+    voice
+        .set_test_unison_bridge_displacement_m(1, -1.0e-5)
+        .unwrap();
+    assert!((voice.bridge_contact_energy_j() - 4.8e-4).abs() < 2.0e-15);
+
+    // The removed one-spring reduction summed all unison endpoints before
+    // applying one contact spring, erasing the equal-and-opposite strain.
+    let planted_aggregate_energy = 0.5 * 4.8e6 * (1.0e-5_f64 - 1.0e-5).powi(2);
+    assert_eq!(planted_aggregate_energy, 0.0);
+
+    let mut in_phase = PianoVoice::new(60, 48_000.0, parameters).unwrap();
+    for string_index in 0..3 {
+        in_phase
+            .set_test_unison_bridge_displacement_m(string_index, 1.0e-5)
+            .unwrap();
+    }
+    let three_independent_springs = 3.0 * 0.5 * 4.8e6 * 1.0e-10;
+    assert!((in_phase.bridge_contact_energy_j() - three_independent_springs).abs() < 2.0e-15);
+    let planted_summed_displacement = 0.5 * 4.8e6 * (3.0e-5_f64).powi(2);
+    assert!((planted_summed_displacement / three_independent_springs - 3.0).abs() < 1.0e-15);
+}
+
+#[test]
+fn reduced_unison_bridge_solve_matches_the_full_three_contact_system() {
+    // Independently solved full system:
+    // M_ij = delta_ij * (1 + a*S_i) + a*B,
+    // M*c = string_rhs - body_rhs.
+    // These literals come from direct Gaussian elimination of the displayed
+    // 3x3 matrix, not from the production diagonal reduction.
+    let (coordinates, aggregate) = separate_unison_bridge_contact_coordinates(
+        [0.7, 1.1, 0.3],
+        [0.4, -0.2, 0.6],
+        0.05,
+        0.8,
+        0.02,
+    )
+    .unwrap();
+    let expected = [
+        0.335_415_973_381_178_3,
+        -0.254_293_740_696_169_56,
+        0.536_890_454_282_817_8,
+    ];
+    for (actual, expected) in coordinates.into_iter().zip(expected) {
+        assert!((actual - expected).abs() < 2.0e-15);
+    }
+    assert!((aggregate - 0.618_012_686_967_826_5).abs() < 2.0e-15);
+
+    // Old aggregate-string reduction: diagonal string compliances disappear
+    // into one sum, so it cannot reproduce the three distinct contact forces.
+    let planted_aggregate = (0.4 - 0.2 + 0.6 - 0.05) / (1.0 + 0.02 * (2.1 + 0.8));
+    assert!((planted_aggregate - aggregate).abs() > 1.0e-2);
 }
 
 #[test]
@@ -307,9 +446,26 @@ fn string_pack_is_geometry_derived_and_keeps_the_measured_fundamental() {
     // complete C1..B7 wrapped Steinway-D scale rather than four interpolation
     // anchors from a second instrument.
     assert_eq!(REVIEWED_STRING_SCALE.len(), 84);
+    // Independently derived from every Appendix-A L/d/rho/T0 cell, in printed
+    // note order.  The selected literal rows below make failures readable;
+    // this compact full-table pin catches a bad digit in any of the other 76
+    // rows without copying production's table back into the test.
+    let mut reviewed_scale_digest = 0xcbf2_9ce4_8422_2325_u64;
+    let mut digest_bytes = |bytes: &[u8]| {
+        for byte in bytes {
+            reviewed_scale_digest ^= u64::from(*byte);
+            reviewed_scale_digest = reviewed_scale_digest.wrapping_mul(0x0000_0100_0000_01b3);
+        }
+    };
     for (index, row) in REVIEWED_STRING_SCALE.iter().enumerate() {
         assert_eq!(row.midi, 24 + index as i32);
+        digest_bytes(&row.midi.to_le_bytes());
+        digest_bytes(&row.speaking_length_m.to_bits().to_le_bytes());
+        digest_bytes(&row.diameter_m.to_bits().to_le_bytes());
+        digest_bytes(&row.density_kg_m3.to_bits().to_le_bytes());
+        digest_bytes(&row.reported_tension_n.to_bits().to_le_bytes());
     }
+    assert_eq!(reviewed_scale_digest, 0xc7b0_a7ca_9b85_fdf7);
     for (midi, length_m, diameter_m, density_kg_m3, reported_tension_n) in [
         (24, 2.007, 0.001_480, 57_787.0, 1_722.0),
         (36, 1.602, 0.001_051, 23_919.0, 915.0),
@@ -328,21 +484,27 @@ fn string_pack_is_geometry_derived_and_keeps_the_measured_fundamental() {
         let geometry = string_geometry(midi).unwrap();
         let expected_linear_density =
             density_kg_m3 * core::f64::consts::PI * diameter_m * diameter_m / 4.0;
-        let expected_tension = expected_linear_density
+        let flexible_string_tension = expected_linear_density
             * (2.0 * length_m * midi_frequency_hz(midi))
             * (2.0 * length_m * midi_frequency_hz(midi));
+        let second_moment = core::f64::consts::PI * diameter_m.powi(4) / 64.0;
+        let bending_rigidity = 2.02e11 * second_moment;
+        let expected_tension = flexible_string_tension
+            - core::f64::consts::PI.powi(2) * bending_rigidity / length_m.powi(2);
         assert_eq!(geometry.speaking_length_m, length_m);
         assert_eq!(geometry.equivalent_diameter_m, diameter_m);
         assert!((geometry.linear_density_kg_m - expected_linear_density).abs() < 1.0e-15);
         assert!((geometry.tension_n - expected_tension).abs() < 1.0e-10);
-        // Integer-rounded tension and A4=441 in the report may differ slightly
-        // from this app's exact A4=440 tuning, but never by an invented scale.
+        // The report's integer-rounded A4=441 tension remains an independent
+        // check on L/d/rho before the analytically required bending correction.
+        // Comparing it to the corrected tension would falsely interpret EI as
+        // a change to the reviewed scale rather than part of the eigenvalue.
         assert!(
-            ((expected_tension / reported_tension_n) - 1.0).abs() < 0.025,
-            "tuned tension left the reviewed rounded row: midi={midi}, tuned={expected_tension}, reported={reported_tension_n}"
+            ((flexible_string_tension / reported_tension_n) - 1.0).abs() < 0.025,
+            "reviewed geometry left the rounded row: midi={midi}, flexible={flexible_string_tension}, reported={reported_tension_n}"
         );
-        let second_moment = core::f64::consts::PI * diameter_m.powi(4) / 64.0;
-        let expected_b = core::f64::consts::PI.powi(2) * 2.02e11 * second_moment
+        assert!(expected_tension < flexible_string_tension);
+        let expected_b = core::f64::consts::PI.powi(2) * bending_rigidity
             / (expected_tension * length_m * length_m);
         assert!((geometry.inharmonicity_coefficient - expected_b).abs() < 1.0e-15);
     }
@@ -361,8 +523,14 @@ fn string_pack_is_geometry_derived_and_keeps_the_measured_fundamental() {
 
     for midi in 21..=108 {
         let geometry = string_geometry(midi).unwrap();
-        let geometry_pitch_hz = sqrt(geometry.tension_n / geometry.linear_density_kg_m)
-            / (2.0 * geometry.speaking_length_m);
+        let second_moment = core::f64::consts::PI * geometry.equivalent_diameter_m.powi(4) / 64.0;
+        let bending_rigidity = 2.02e11 * second_moment;
+        let geometry_pitch_hz = sqrt(
+            (geometry.tension_n
+                + core::f64::consts::PI.powi(2) * bending_rigidity
+                    / geometry.speaking_length_m.powi(2))
+                / geometry.linear_density_kg_m,
+        ) / (2.0 * geometry.speaking_length_m);
         assert!(
             cents(geometry_pitch_hz, geometry.fundamental_hz).abs() < 1.0e-9,
             "string geometry silently retunes a non-causal length: midi={midi}, physical={geometry_pitch_hz}, target={}",
@@ -450,6 +618,50 @@ fn orthotropic_soundboard_obeys_independent_scaling_laws() {
     );
     let base_frequency = soundboard_mode_frequency_hz(base, 1, 1).unwrap();
     assert!(base_frequency > 10.0 && base_frequency < 500.0);
+
+    // Independent orthotropic Navier known answer for mode (2,3).  The major
+    // Poisson ratio must be reciprocated before forming 1-nu_LR*nu_RL, and
+    // D66=G*h^3/12 enters the mixed term as 2*(D12+2*D66).
+    let h3 = base.soundboard_thickness_m.powi(3);
+    let nu_rl = base.soundboard_poisson_ratio * base.soundboard_radial_modulus_pa
+        / base.soundboard_longitudinal_modulus_pa;
+    let denominator = 12.0 * (1.0 - base.soundboard_poisson_ratio * nu_rl);
+    let d11 = base.soundboard_longitudinal_modulus_pa * h3 / denominator;
+    let bare_d22 = base.soundboard_radial_modulus_pa * h3 / denominator;
+    let d12 = base.soundboard_poisson_ratio * base.soundboard_radial_modulus_pa * h3 / denominator;
+    let d66 = base.soundboard_shear_modulus_pa * h3 / 12.0;
+    let rib_spacing = base.soundboard_length_m / (base.soundboard_rib_count + 1) as f64;
+    let rib_second_moment =
+        base.soundboard_rib_width_m * base.soundboard_rib_height_m.powi(3) / 12.0;
+    let d22 = bare_d22 + base.soundboard_rib_modulus_pa * rib_second_moment / rib_spacing;
+    let areal_density = base.soundboard_density_kg_m3
+        * (base.soundboard_thickness_m
+            + base.soundboard_rib_width_m * base.soundboard_rib_height_m / rib_spacing);
+    let kx = 2.0 / base.soundboard_length_m;
+    let ky = 3.0 / base.soundboard_width_m;
+    let expected_23 = (core::f64::consts::PI.powi(4)
+        * (d11 * kx.powi(4) + 2.0 * (d12 + 2.0 * d66) * kx * kx * ky * ky + d22 * ky.powi(4))
+        / areal_density)
+        .sqrt()
+        / (2.0 * core::f64::consts::PI);
+    let actual_23 = soundboard_mode_frequency_hz(base, 2, 3).unwrap();
+    assert!((actual_23 - expected_23).abs() < 1.0e-12);
+    assert!((actual_23 - 140.470_476_118_061_4).abs() < 1.0e-12);
+
+    // Planted superseded law: isotropic 1-nu^2 plus G*h^3 in the cross term
+    // over-stiffens this mixed mode by more than five percent.
+    let old_denominator = 12.0 * (1.0 - base.soundboard_poisson_ratio.powi(2));
+    let old_d11 = base.soundboard_longitudinal_modulus_pa * h3 / old_denominator;
+    let old_bare_d22 = base.soundboard_radial_modulus_pa * h3 / old_denominator;
+    let old_cross = base.soundboard_shear_modulus_pa * h3
+        + base.soundboard_poisson_ratio * (old_d11 * old_bare_d22).sqrt();
+    let old_d22 = old_bare_d22 + base.soundboard_rib_modulus_pa * rib_second_moment / rib_spacing;
+    let old_23 = (core::f64::consts::PI.powi(4)
+        * (old_d11 * kx.powi(4) + 2.0 * old_cross * kx * kx * ky * ky + old_d22 * ky.powi(4))
+        / areal_density)
+        .sqrt()
+        / (2.0 * core::f64::consts::PI);
+    assert!(old_23 / actual_23 > 1.05);
 
     let mut thicker = base;
     thicker.soundboard_thickness_m *= 1.10;
@@ -550,6 +762,14 @@ fn baffled_modal_observer_matches_independent_plane_integrals() {
     }
     assert!((analytic_re - numeric_re).abs() < 2.0e-5);
     assert!((analytic_im - numeric_im).abs() < 2.0e-5);
+
+    // Independent phasor known answer. For q(t)=Q cos(omega t), qdot is
+    // -omega Q sin(omega t), so H=(2+3i), qdot=5, omega*q=7 gives
+    // Re(H*qdot_phasor) = 2*5 - 3*7 = -11. The superseded plus sign would
+    // produce +31 and conjugate every observer phase.
+    let pressure = piano_v2::modal_observer_pressure_pa(2.0, 3.0, 5.0, 7.0);
+    assert_eq!(pressure, -11.0);
+    assert_ne!(pressure, 2.0 * 5.0 + 3.0 * 7.0);
 
     assert_eq!(
         piano_v2::modal_plane_integral_m2(1, 1, length, width, 1.0, 1.0, 1.0),

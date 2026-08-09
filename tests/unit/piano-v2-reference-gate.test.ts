@@ -10,6 +10,7 @@ import {
   PIANO_V2_REFERENCE_SOURCE_PATHS,
   profileDistanceDb,
   reviewedPianoInharmonicityCoefficient,
+  runBoundedPianoRuntimeSteps,
   runPianoV2ReferenceGate,
   stiffPianoPartialHz,
   verifyPianoV2ReferenceEvidence,
@@ -211,6 +212,29 @@ function validEvidenceFixture(): PianoV2ReferenceEvidence {
 }
 
 describe("piano-v2 exact-WASM Salamander reference gate", () => {
+  test("cooperative replay never steps beyond the declared work bound", () => {
+    let calls = 0;
+    expect(runBoundedPianoRuntimeSteps(2, () => {
+      calls += 1;
+      return calls === 2 ? 2 : 1;
+    })).toBe(2);
+    expect(calls).toBe(2);
+
+    calls = 0;
+    expect(() => runBoundedPianoRuntimeSteps(2, () => {
+      calls += 1;
+      return calls === 3 ? 2 : 1;
+    })).toThrow("PIANO_REFERENCE_RENDER_STEP_BOUND_EXHAUSTED");
+    expect(calls).toBe(2);
+
+    calls = 0;
+    expect(() => runBoundedPianoRuntimeSteps(0, () => {
+      calls += 1;
+      return 2;
+    })).toThrow("PIANO_REFERENCE_RENDER_STEP_BOUND_INVALID");
+    expect(calls).toBe(0);
+  });
+
   test("analysis is deterministic and keeps onset and harmonic profiles independent", () => {
     const sampleRate = PIANO_V2_REFERENCE_POLICY.sampleRateHz;
     const samples = new Float32Array(Math.floor(0.32 * sampleRate));
@@ -244,7 +268,11 @@ describe("piano-v2 exact-WASM Salamander reference gate", () => {
     const midi = 84;
     const f0 = 440 * 2 ** ((midi - 69) / 12);
     const inharmonicity = reviewedPianoInharmonicityCoefficient(midi);
-    expect(inharmonicity).toBeCloseTo(0.002731203381, 10);
+    // Independent RT-0425 MIDI 84 known answer using the reviewed L/d/rho
+    // row and exact A4=440 concert-pitch tension. The paper's rounded 697 N
+    // A4=441 tension gives 0.002731203381 and must not re-enter this gate.
+    expect(inharmonicity).toBeCloseTo(0.002747756403, 10);
+    expect(inharmonicity).not.toBeCloseTo(0.002731203381, 10);
     expect(1200 * Math.log2(stiffPianoPartialHz(f0, inharmonicity, 8) / (8 * f0)))
       .toBeGreaterThan(130);
     const samples = new Float32Array(Math.floor(0.32 * sampleRate));

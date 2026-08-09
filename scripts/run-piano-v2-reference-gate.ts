@@ -27,11 +27,11 @@ import {
 } from "../src/audio/wasm/piano-attack-samples";
 
 export const PIANO_V2_REFERENCE_EVIDENCE_SCHEMA =
-  "changes.evidence.piano-v2-reference.v3" as const;
+  "changes.evidence.piano-v2-reference.v5" as const;
 
 export const PIANO_V2_REFERENCE_POLICY = Object.freeze({
-  schema: "changes.policy.piano-v2-reference.v3" as const,
-  analyzerId: "changes.analysis.piano-reference.v3" as const,
+  schema: "changes.policy.piano-v2-reference.v5" as const,
+  analyzerId: "changes.analysis.piano-reference.v5" as const,
   algorithmId: "changes.dsp.concert-grand@2" as const,
   sampleRateHz: PIANO_ATTACK_SAMPLE_RATE_HZ,
   renderSeconds: 0.32,
@@ -79,12 +79,30 @@ export const PIANO_V2_REFERENCE_POLICY = Object.freeze({
     pdfSha256: "d7c06e51bebfa46d3f29190dc3c1a6b4c8b3212008778dddfa9bb02271ed66d1" as const,
     youngModulusPa: 2.02e11,
     strings: Object.freeze([
-      Object.freeze({ midi: 36, lengthM: 1.602, diameterM: 0.001051, tensionN: 915 }),
-      Object.freeze({ midi: 48, lengthM: 1.259, diameterM: 0.001063, tensionN: 759 }),
-      Object.freeze({ midi: 60, lengthM: 0.657, diameterM: 0.001006, tensionN: 741 }),
-      Object.freeze({ midi: 72, lengthM: 0.344, diameterM: 0.000932, tensionN: 696 }),
-      Object.freeze({ midi: 84, lengthM: 0.180, diameterM: 0.000891, tensionN: 697 }),
-      Object.freeze({ midi: 96, lengthM: 0.095, diameterM: 0.000831, tensionN: 670 }),
+      Object.freeze({
+        midi: 36, lengthM: 1.602, diameterM: 0.001051,
+        densityKgM3: 23_919, reportedTensionN: 915,
+      }),
+      Object.freeze({
+        midi: 48, lengthM: 1.259, diameterM: 0.001063,
+        densityKgM3: 7_850, reportedTensionN: 759,
+      }),
+      Object.freeze({
+        midi: 60, lengthM: 0.657, diameterM: 0.001006,
+        densityKgM3: 7_850, reportedTensionN: 741,
+      }),
+      Object.freeze({
+        midi: 72, lengthM: 0.344, diameterM: 0.000932,
+        densityKgM3: 7_850, reportedTensionN: 696,
+      }),
+      Object.freeze({
+        midi: 84, lengthM: 0.180, diameterM: 0.000891,
+        densityKgM3: 7_850, reportedTensionN: 697,
+      }),
+      Object.freeze({
+        midi: 96, lengthM: 0.095, diameterM: 0.000831,
+        densityKgM3: 7_850, reportedTensionN: 670,
+      }),
     ]),
   }),
 });
@@ -200,10 +218,15 @@ export const PIANO_V2_REFERENCE_SOURCE_PATHS = Object.freeze([
   "dsp/concert-grand/src/lib.rs",
   "dsp/concert-grand/src/piano_v2.rs",
   "dsp/concert-grand/src/piano_v2_scale.rs",
+  "dsp/concert-grand/src/piano_v2_soundboard.rs",
+  "physical/parameter-packs/piano-v2-soundboard.json",
   "scripts/build-dsp.ts",
   "scripts/run-piano-v2-reference-gate.ts",
   "src/audio/wasm/concert-grand-wasm.ts",
   "src/audio/wasm/piano-attack-samples.ts",
+  "tools/piano-v2-soundboard-pack/Cargo.toml",
+  "tools/piano-v2-soundboard-pack/Cargo.lock",
+  "tools/piano-v2-soundboard-pack/src/main.rs",
 ] as const);
 
 function canonicalize(value: unknown): unknown {
@@ -337,10 +360,24 @@ export function reviewedPianoInharmonicityCoefficient(midi: number): number {
   if (string === undefined) {
     throw new Error(`PIANO_REFERENCE_STRING_AUTHORITY_MISSING:m${String(midi)}`);
   }
+  const areaM2 = Math.PI * string.diameterM ** 2 / 4;
+  const linearDensityKgM = string.densityKgM3 * areaM2;
+  const fundamentalHz = midiHz(midi);
+  // RT-0425's tension column is integer-rounded for A4=441 Hz. Production
+  // retains the reviewed L/d/rho geometry but retunes it to exact A4=440.
+  // The stiff-string eigenvalue contains T*k^2 + EI*k^4, so the physical
+  // tension must subtract the bending contribution that would otherwise be
+  // counted twice. Derive that same law independently here.
+  const flexibleStringTensionN = linearDensityKgM *
+    (2 * string.lengthM * fundamentalHz) ** 2;
   const areaMomentM4 = Math.PI * string.diameterM ** 4 / 64;
+  const bendingRigidityNM2 =
+    PIANO_V2_REFERENCE_POLICY.stringAuthority.youngModulusPa * areaMomentM4;
+  const concertTensionN = flexibleStringTensionN -
+    Math.PI ** 2 * bendingRigidityNM2 / string.lengthM ** 2;
   const coefficient = Math.PI ** 2 *
-    PIANO_V2_REFERENCE_POLICY.stringAuthority.youngModulusPa * areaMomentM4 /
-    (string.tensionN * string.lengthM ** 2);
+    bendingRigidityNM2 /
+    (concertTensionN * string.lengthM ** 2);
   if (!finite(coefficient) || coefficient <= 0) {
     throw new Error(`PIANO_REFERENCE_INHARMONICITY_INVALID:m${String(midi)}`);
   }
@@ -620,6 +657,29 @@ function requirePianoWasm(exports: PianoWasmRawExports): PianoWasm {
   });
 }
 
+/**
+ * Drive a cooperative renderer without ever exceeding its declared work cap.
+ * Returning progress on the final admitted call is a terminal contract
+ * violation; the caller must not perform one speculative extra step to learn
+ * that the renderer is stuck.
+ */
+export function runBoundedPianoRuntimeSteps(
+  maximumSteps: number,
+  step: () => number,
+): number {
+  if (!Number.isSafeInteger(maximumSteps) || maximumSteps <= 0) {
+    throw new Error("PIANO_REFERENCE_RENDER_STEP_BOUND_INVALID");
+  }
+  for (let calls = 1; calls <= maximumSteps; calls += 1) {
+    const status = step();
+    if (status === 2) return calls;
+    if (status !== 1) {
+      throw new Error(`PIANO_REFERENCE_RENDER_STEP_REFUSED:${String(status)}`);
+    }
+  }
+  throw new Error("PIANO_REFERENCE_RENDER_STEP_BOUND_EXHAUSTED");
+}
+
 class PianoCandidateRenderer {
   readonly #wasm: PianoWasm;
   readonly #frames: number;
@@ -666,20 +726,16 @@ class PianoCandidateRenderer {
     );
     if (handle <= 0) throw new Error(`PIANO_REFERENCE_RENDER_INIT_REFUSED:m${String(midi)}v${String(velocity)}`);
     const maximumSteps = this.#wasm.runtimeMaxSteps(this.#frames);
-    let calls = 0;
-    for (;;) {
-      calls += 1;
-      const status = this.#wasm.runtimeStep(
+    try {
+      runBoundedPianoRuntimeSteps(maximumSteps, () => this.#wasm.runtimeStep(
         handle,
         this.#leftPointer,
         this.#rightPointer,
         this.#frames,
-      );
-      if (status === 2) break;
-      if (status !== 1 || calls > maximumSteps) {
-        this.#wasm.runtimeReset(handle);
-        throw new Error(`PIANO_REFERENCE_RENDER_STEP_REFUSED:${String(status)}`);
-      }
+      ));
+    } catch (error) {
+      this.#wasm.runtimeReset(handle);
+      throw error;
     }
     const left = new Float32Array(this.#frames);
     const right = new Float32Array(this.#frames);

@@ -14,12 +14,13 @@
 //!   shared orthotropic soundboard modal reduction; and
 //! - a baffled Rayleigh far-field observer formed from modal velocity.
 //!
-//! The modal convention and observer realization follow the recent
-//! FrankenSim `fs-modal` / `fs-couple::modal_acoustic_time` work, but this
-//! no-std WASM core has fixed arrays and imports no FrankenSim crate.  The
-//! soundboard remains a bounded rectangular reduction rather than a claim of
-//! a scanned concert-grand plate. This candidate itself reads no samples; the
-//! shipping `@1` recipe still retains its recorded attack until an independent
+//! The soundboard is an offline FrankenSim `fs-plate` DKT reduction with
+//! explicit eccentric ribs. Its mass-normal modes, bridge residues, and
+//! baffled observer coefficients are checked into a fixed pack, so the no-std
+//! WASM core imports no FrankenSim crate at runtime. The geometry is still a
+//! bounded reviewed rectangular approximation, not a claim of a scanned
+//! concert-grand plate. This candidate itself reads no samples; the shipping
+//! `@1` recipe still retains its recorded attack until an independent
 //! reference comparison and owner listening gate approve the physical `@2`.
 
 use core::{
@@ -32,6 +33,10 @@ use libm::{cos, exp, pow, sin, sqrt, tan};
 #[path = "piano_v2_scale.rs"]
 pub mod piano_v2_scale;
 use piano_v2_scale::reviewed_string_scale_row;
+#[rustfmt::skip]
+#[path = "piano_v2_soundboard.rs"]
+pub(crate) mod piano_v2_soundboard;
+use piano_v2_soundboard::PIANO_V2_SOUNDBOARD_MODE_PACK;
 
 const PI: f64 = core::f64::consts::PI;
 const TAU: f64 = 2.0 * PI;
@@ -42,22 +47,36 @@ pub const MAX_MIDI: i32 = 108;
 pub const MAX_UNISON_STRINGS: usize = 3;
 pub const MAX_PIANO_CHORD_NOTES: usize = 8;
 pub const STRING_MODES: usize = 24;
+// Craig--Bampton string reduction: one explicit bridge constraint coordinate,
+// twenty fixed-interface speaking modes, and three fixed-interface duplex
+// modes.  A global agraffe-to-hitch sine bank needs many ultrasonic modes to
+// represent the sharp internal bridge node; after band-limiting, that basis
+// detuned the audible C7 comb by more than half a semitone.  The component
+// basis represents the bridge displacement exactly before modal truncation.
+const STRING_SPEAKING_COMPONENT_MODES: usize = 20;
+const STRING_DUPLEX_COMPONENT_MODES: usize = STRING_MODES - 1 - STRING_SPEAKING_COMPONENT_MODES;
+const STRING_EIGEN_JACOBI_SWEEPS: usize = 48;
 pub const SOUNDBOARD_MODES: usize = 288;
 pub const CONTACT_SOLVE_STEPS: usize = 8;
-pub const MAXIMUM_BRIDGE_CONTACTS: usize = MAX_PIANO_CHORD_NOTES;
+/// Maximum physical string-to-bridge contacts in one rendered chord.  Every
+/// unison string owns its own local contact spring; contacts at one key share
+/// the same soundboard driving point but must not be collapsed into one summed
+/// string displacement.
+pub const MAXIMUM_BRIDGE_CONTACTS: usize = MAX_PIANO_CHORD_NOTES * MAX_UNISON_STRINGS;
+const MAXIMUM_BRIDGE_SOLVE_DIMENSION: usize = MAX_PIANO_CHORD_NOTES;
 /// Conservative bound for the fixed-size bridge-contact Cholesky solve.
-/// The implementation performs fewer operations, but never iterates beyond
-/// an 8 by 8 matrix and never falls back to a search.
-pub const MAXIMUM_BRIDGE_SOLVE_SCALAR_UPDATES: usize =
-    MAXIMUM_BRIDGE_CONTACTS * MAXIMUM_BRIDGE_CONTACTS * MAXIMUM_BRIDGE_CONTACTS;
+/// Exact diagonal elimination reduces the at-most 24 independent string
+/// contacts to one aggregate board-force coordinate per key.  The remaining
+/// solve therefore never exceeds an 8 by 8 matrix and never falls back to a
+/// search.
+pub const MAXIMUM_BRIDGE_SOLVE_SCALAR_UPDATES: usize = MAXIMUM_BRIDGE_SOLVE_DIMENSION
+    * MAXIMUM_BRIDGE_SOLVE_DIMENSION
+    * MAXIMUM_BRIDGE_SOLVE_DIMENSION;
 pub const MAXIMUM_STATE_BYTES: usize = 64 * 1024;
 
-const AIR_DENSITY_KG_M3: f64 = 1.2041;
-const AIR_SOUND_SPEED_M_PER_S: f64 = 343.21;
 // INRIA RT-0425, section 3.2. The full wrapped-string parameter pack uses
 // this modulus together with its reported diameter and equivalent density.
 const STEEL_YOUNG_MODULUS_PA: f64 = 2.02e11;
-const RADIATION_DISTANCE_M: f64 = 1.0;
 // A bare piano string is an extremely poor acoustic radiator because its
 // transverse dimension is tiny compared with the wavelength and its acoustic
 // impedance is badly mismatched to air.  The audible instrument is the
@@ -114,7 +133,7 @@ pub struct PianoParameters {
     pub soundboard_radial_modulus_pa: f64,
     pub soundboard_shear_modulus_pa: f64,
     pub soundboard_poisson_ratio: f64,
-    /// Number of transverse ribs represented by the smeared-rigidity model.
+    /// Number of explicit transverse ribs represented by the offline DKT pack.
     pub soundboard_rib_count: usize,
     pub soundboard_rib_width_m: f64,
     pub soundboard_rib_height_m: f64,
@@ -419,14 +438,14 @@ fn finish_midpoint_contact_mode(
 }
 
 fn solve_bridge_contact_coordinates(
-    matrix: [[f64; MAXIMUM_BRIDGE_CONTACTS]; MAXIMUM_BRIDGE_CONTACTS],
-    right_hand_side: [f64; MAXIMUM_BRIDGE_CONTACTS],
+    matrix: [[f64; MAXIMUM_BRIDGE_SOLVE_DIMENSION]; MAXIMUM_BRIDGE_SOLVE_DIMENSION],
+    right_hand_side: [f64; MAXIMUM_BRIDGE_SOLVE_DIMENSION],
     contact_count: usize,
-) -> Result<[f64; MAXIMUM_BRIDGE_CONTACTS], PianoError> {
-    if contact_count == 0 || contact_count > MAXIMUM_BRIDGE_CONTACTS {
+) -> Result<[f64; MAXIMUM_BRIDGE_SOLVE_DIMENSION], PianoError> {
+    if contact_count == 0 || contact_count > MAXIMUM_BRIDGE_SOLVE_DIMENSION {
         return Err(PianoError::InvalidParameters);
     }
-    let mut lower = [[0.0_f64; MAXIMUM_BRIDGE_CONTACTS]; MAXIMUM_BRIDGE_CONTACTS];
+    let mut lower = [[0.0_f64; MAXIMUM_BRIDGE_SOLVE_DIMENSION]; MAXIMUM_BRIDGE_SOLVE_DIMENSION];
     for row in 0..contact_count {
         for column in 0..=row {
             let mut value = matrix[row][column];
@@ -443,7 +462,7 @@ fn solve_bridge_contact_coordinates(
             }
         }
     }
-    let mut intermediate = [0.0_f64; MAXIMUM_BRIDGE_CONTACTS];
+    let mut intermediate = [0.0_f64; MAXIMUM_BRIDGE_SOLVE_DIMENSION];
     for row in 0..contact_count {
         let mut value = right_hand_side[row];
         for column in 0..row {
@@ -451,7 +470,7 @@ fn solve_bridge_contact_coordinates(
         }
         intermediate[row] = value / lower[row][row];
     }
-    let mut solution = [0.0_f64; MAXIMUM_BRIDGE_CONTACTS];
+    let mut solution = [0.0_f64; MAXIMUM_BRIDGE_SOLVE_DIMENSION];
     for row in (0..contact_count).rev() {
         let mut value = intermediate[row];
         for column in row + 1..contact_count {
@@ -463,6 +482,145 @@ fn solve_bridge_contact_coordinates(
         }
     }
     Ok(solution)
+}
+
+/// Solve independent per-string contact springs while retaining an 8 by 8
+/// key-level system.  For contact `s` at key `k`, diagonal elimination gives
+///
+/// `D_ks c_ks + a sum_l B_kl C_l = r_ks`, `C_k = sum_s c_ks`.
+///
+/// Scaling `C_k = sqrt(A_k) y_k`, where `A_k = sum_s 1/D_ks`, produces the
+/// symmetric positive-definite reduced matrix
+/// `I + a sqrt(A) B sqrt(A)`.  This is algebraically identical to solving all
+/// physical string contacts, but avoids a 24 by 24 factorization per sample.
+fn solve_separate_string_bridge_contacts(
+    string_compliance: [[f64; MAX_UNISON_STRINGS]; MAX_PIANO_CHORD_NOTES],
+    string_right_hand_side: [[f64; MAX_UNISON_STRINGS]; MAX_PIANO_CHORD_NOTES],
+    string_counts: [usize; MAX_PIANO_CHORD_NOTES],
+    body_right_hand_side: [f64; MAX_PIANO_CHORD_NOTES],
+    body_compliance: [[f64; MAX_PIANO_CHORD_NOTES]; MAX_PIANO_CHORD_NOTES],
+    note_count: usize,
+    half_dt_squared_stiffness: f64,
+) -> Result<
+    (
+        [[f64; MAX_UNISON_STRINGS]; MAX_PIANO_CHORD_NOTES],
+        [f64; MAX_PIANO_CHORD_NOTES],
+    ),
+    PianoError,
+> {
+    if note_count == 0
+        || note_count > MAX_PIANO_CHORD_NOTES
+        || !half_dt_squared_stiffness.is_finite()
+        || half_dt_squared_stiffness <= 0.0
+    {
+        return Err(PianoError::InvalidParameters);
+    }
+    let mut inverse_diagonal = [[0.0_f64; MAX_UNISON_STRINGS]; MAX_PIANO_CHORD_NOTES];
+    let mut aggregate_inverse_diagonal = [0.0_f64; MAX_PIANO_CHORD_NOTES];
+    let mut aggregate_right_hand_side = [0.0_f64; MAX_PIANO_CHORD_NOTES];
+    for key_index in 0..note_count {
+        let string_count = string_counts[key_index];
+        if string_count == 0 || string_count > MAX_UNISON_STRINGS {
+            return Err(PianoError::InvalidParameters);
+        }
+        for string_index in 0..string_count {
+            let diagonal =
+                1.0 + half_dt_squared_stiffness * string_compliance[key_index][string_index];
+            if !diagonal.is_finite() || diagonal <= 0.0 {
+                return Err(PianoError::NonFiniteState);
+            }
+            let inverse = 1.0 / diagonal;
+            let relative_right_hand_side =
+                string_right_hand_side[key_index][string_index] - body_right_hand_side[key_index];
+            inverse_diagonal[key_index][string_index] = inverse;
+            aggregate_inverse_diagonal[key_index] += inverse;
+            aggregate_right_hand_side[key_index] += inverse * relative_right_hand_side;
+        }
+    }
+
+    let mut reduced_matrix =
+        [[0.0_f64; MAXIMUM_BRIDGE_SOLVE_DIMENSION]; MAXIMUM_BRIDGE_SOLVE_DIMENSION];
+    let mut reduced_right_hand_side = [0.0_f64; MAXIMUM_BRIDGE_SOLVE_DIMENSION];
+    let mut square_root_inverse_sum = [0.0_f64; MAX_PIANO_CHORD_NOTES];
+    for key_index in 0..note_count {
+        square_root_inverse_sum[key_index] = sqrt(aggregate_inverse_diagonal[key_index]);
+        reduced_right_hand_side[key_index] =
+            aggregate_right_hand_side[key_index] / square_root_inverse_sum[key_index];
+        for other_key_index in 0..note_count {
+            reduced_matrix[key_index][other_key_index] = half_dt_squared_stiffness
+                * square_root_inverse_sum[key_index]
+                * body_compliance[key_index][other_key_index]
+                * square_root_inverse_sum[other_key_index];
+        }
+        reduced_matrix[key_index][key_index] += 1.0;
+    }
+    let reduced_coordinates =
+        solve_bridge_contact_coordinates(reduced_matrix, reduced_right_hand_side, note_count)?;
+    let mut aggregate_coordinates = [0.0_f64; MAX_PIANO_CHORD_NOTES];
+    for key_index in 0..note_count {
+        aggregate_coordinates[key_index] =
+            square_root_inverse_sum[key_index] * reduced_coordinates[key_index];
+    }
+
+    let mut physical_coordinates = [[0.0_f64; MAX_UNISON_STRINGS]; MAX_PIANO_CHORD_NOTES];
+    for key_index in 0..note_count {
+        let mut body_correction = 0.0;
+        for other_key_index in 0..note_count {
+            body_correction += body_compliance[key_index][other_key_index]
+                * aggregate_coordinates[other_key_index];
+        }
+        for string_index in 0..string_counts[key_index] {
+            let relative_right_hand_side =
+                string_right_hand_side[key_index][string_index] - body_right_hand_side[key_index];
+            physical_coordinates[key_index][string_index] = inverse_diagonal[key_index]
+                [string_index]
+                * (relative_right_hand_side - half_dt_squared_stiffness * body_correction);
+            if !physical_coordinates[key_index][string_index].is_finite() {
+                return Err(PianoError::NonFiniteState);
+            }
+        }
+        // Use the actual sum of the recovered physical contacts for the board
+        // force.  This keeps the string and board generalized work conjugate
+        // down to floating-point roundoff.
+        aggregate_coordinates[key_index] = physical_coordinates[key_index]
+            [..string_counts[key_index]]
+            .iter()
+            .sum();
+    }
+    Ok((physical_coordinates, aggregate_coordinates))
+}
+
+/// Exact production-solver seam for an independently calculated three-string
+/// known answer.  The test supplies already accumulated midpoint compliances
+/// and right-hand sides, so it does not reuse the modal reduction under test.
+#[cfg(test)]
+pub fn separate_unison_bridge_contact_coordinates(
+    string_compliance: [f64; MAX_UNISON_STRINGS],
+    string_right_hand_side: [f64; MAX_UNISON_STRINGS],
+    body_right_hand_side: f64,
+    body_compliance: f64,
+    half_dt_squared_stiffness: f64,
+) -> Result<([f64; MAX_UNISON_STRINGS], f64), PianoError> {
+    let mut all_string_compliance = [[0.0_f64; MAX_UNISON_STRINGS]; MAX_PIANO_CHORD_NOTES];
+    all_string_compliance[0] = string_compliance;
+    let mut all_string_right_hand_side = [[0.0_f64; MAX_UNISON_STRINGS]; MAX_PIANO_CHORD_NOTES];
+    all_string_right_hand_side[0] = string_right_hand_side;
+    let mut string_counts = [0usize; MAX_PIANO_CHORD_NOTES];
+    string_counts[0] = MAX_UNISON_STRINGS;
+    let mut all_body_right_hand_side = [0.0_f64; MAX_PIANO_CHORD_NOTES];
+    all_body_right_hand_side[0] = body_right_hand_side;
+    let mut all_body_compliance = [[0.0_f64; MAX_PIANO_CHORD_NOTES]; MAX_PIANO_CHORD_NOTES];
+    all_body_compliance[0][0] = body_compliance;
+    let (physical, aggregate) = solve_separate_string_bridge_contacts(
+        all_string_compliance,
+        all_string_right_hand_side,
+        string_counts,
+        all_body_right_hand_side,
+        all_body_compliance,
+        1,
+        half_dt_squared_stiffness,
+    )?;
+    Ok((physical[0], aggregate[0]))
 }
 
 /// Narrow exact-source seam used by the independent bridge known-answer test.
@@ -513,10 +671,10 @@ pub fn bridge_contact_pair_midpoint_step(
         accumulate_midpoint_contact_terms(string_mode, string_residue_m_neg_half_kg, half_dt);
     let (body_compliance, body_right_hand_side) =
         accumulate_midpoint_contact_terms(body_mode, body_residue_m_neg_half_kg, half_dt);
-    let mut matrix = [[0.0_f64; MAXIMUM_BRIDGE_CONTACTS]; MAXIMUM_BRIDGE_CONTACTS];
+    let mut matrix = [[0.0_f64; MAXIMUM_BRIDGE_SOLVE_DIMENSION]; MAXIMUM_BRIDGE_SOLVE_DIMENSION];
     matrix[0][0] =
         1.0 + half_dt * half_dt * contact_stiffness_n_per_m * (string_compliance + body_compliance);
-    let mut right_hand_side = [0.0_f64; MAXIMUM_BRIDGE_CONTACTS];
+    let mut right_hand_side = [0.0_f64; MAXIMUM_BRIDGE_SOLVE_DIMENSION];
     right_hand_side[0] = string_right_hand_side - body_right_hand_side;
     let coordinate = solve_bridge_contact_coordinates(matrix, right_hand_side, 1)?[0];
     finish_midpoint_contact_mode(
@@ -554,27 +712,69 @@ impl StringBank {
     };
 }
 
+fn string_bank_bridge_displacement_m(bank: &StringBank) -> f64 {
+    bank.modes
+        .iter()
+        .map(|mode| mode.bridge_residue_m_neg_half_kg * mode.position)
+        .sum()
+}
+
 #[derive(Clone, Copy, Debug)]
 struct SoundboardMode {
     mode: Mode,
-    order_x: u8,
-    order_y: u8,
+    pack_index: u16,
     left_pressure_per_velocity_re: f64,
     left_pressure_per_velocity_im: f64,
     right_pressure_per_velocity_re: f64,
     right_pressure_per_velocity_im: f64,
 }
 
+const MAXIMUM_SOUNDBOARD_SELECTION_TARGETS: usize =
+    MAX_PIANO_CHORD_NOTES * MAX_UNISON_STRINGS * STRING_MODES;
+
+#[derive(Clone, Copy, Debug)]
+struct SoundboardSelectionTarget {
+    midi_index: usize,
+    frequency_hz: f64,
+    drive_weight_squared: f64,
+    required: bool,
+}
+
+impl SoundboardSelectionTarget {
+    const ZERO: Self = Self {
+        midi_index: 0,
+        frequency_hz: 0.0,
+        drive_weight_squared: 0.0,
+        required: false,
+    };
+}
+
 impl SoundboardMode {
     const ZERO: Self = Self {
         mode: Mode::ZERO,
-        order_x: 0,
-        order_y: 0,
+        pack_index: 0,
         left_pressure_per_velocity_re: 0.0,
         left_pressure_per_velocity_im: 0.0,
         right_pressure_per_velocity_re: 0.0,
         right_pressure_per_velocity_im: 0.0,
     };
+}
+
+/// Reconstruct a real pressure sample from a complex modal-velocity transfer.
+///
+/// With the generator convention `q(t) = Re(Q exp(i omega t))`, modal
+/// velocity has phasor `i omega Q`. Therefore
+/// `Re((H_re + i H_im) i omega Q exp(i omega t))` is
+/// `H_re * q_dot - H_im * omega * q`. The minus sign is essential: using a
+/// plus sign conjugates the observer phase and corrupts interference between
+/// soundboard modes without changing their mechanical energy.
+pub fn modal_observer_pressure_pa(
+    transfer_re: f64,
+    transfer_im: f64,
+    modal_velocity: f64,
+    omega_times_position: f64,
+) -> f64 {
+    transfer_re * modal_velocity - transfer_im * omega_times_position
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -588,10 +788,319 @@ struct ContactState {
     dissipated_energy_j: f64,
 }
 
+type StringReductionMatrix = [[f64; STRING_MODES]; STRING_MODES];
+
+#[derive(Clone, Copy, Debug)]
+struct StringReduction {
+    mass: StringReductionMatrix,
+    stiffness_diagonal: [f64; STRING_MODES],
+}
+
+fn component_string_reduction(
+    geometry: StringGeometry,
+    string_index: usize,
+) -> Result<StringReduction, PianoError> {
+    if string_index >= geometry.string_count
+        || geometry.speaking_length_m <= 0.0
+        || geometry.duplex_length_m <= 0.0
+        || geometry.linear_density_kg_m <= 0.0
+    {
+        return Err(PianoError::InvalidParameters);
+    }
+    let speaking_length = geometry.speaking_length_m;
+    let duplex_length = geometry.duplex_length_m;
+    let linear_density = geometry.linear_density_kg_m;
+    let frequency_ratio = geometry.unison_frequencies_hz[string_index] / geometry.fundamental_hz;
+    let second_moment = PI * pow(geometry.equivalent_diameter_m, 4.0) / 64.0;
+    let bending_rigidity = STEEL_YOUNG_MODULUS_PA * second_moment;
+    let bending_tension_equivalent =
+        PI * PI * bending_rigidity / (speaking_length * speaking_length);
+    // Only the flexible-string part scales with f^2. Scaling the already
+    // bending-corrected tension would also scale EI and detune each unison by
+    // a small, register-dependent amount.
+    let tension =
+        (geometry.tension_n + bending_tension_equivalent) * frequency_ratio * frequency_ratio
+            - bending_tension_equivalent;
+    if !tension.is_finite() || tension <= 0.0 || !bending_rigidity.is_finite() {
+        return Err(PianoError::InvalidParameters);
+    }
+
+    // Craig--Bampton component coordinates. Coordinate zero is the bridge
+    // displacement. The remaining coordinates are fixed-interface sine modes
+    // on the speaking and duplex segments. Their only inertial coupling is to
+    // the bridge constraint mode; the elastic matrix is diagonal.
+    let mut mass = [[0.0_f64; STRING_MODES]; STRING_MODES];
+    let mut stiffness_diagonal = [0.0_f64; STRING_MODES];
+    mass[0][0] = linear_density * (speaking_length + duplex_length) / 3.0;
+    stiffness_diagonal[0] = tension * (1.0 / speaking_length + 1.0 / duplex_length);
+    for component_index in 0..STRING_SPEAKING_COMPONENT_MODES {
+        let coordinate = 1 + component_index;
+        let order = (component_index + 1) as f64;
+        let wave_number = order * PI / speaking_length;
+        let sign = if component_index % 2 == 0 { 1.0 } else { -1.0 };
+        let coupling = linear_density * speaking_length * sign / (order * PI);
+        mass[0][coordinate] = coupling;
+        mass[coordinate][0] = coupling;
+        mass[coordinate][coordinate] = 0.5 * linear_density * speaking_length;
+        stiffness_diagonal[coordinate] = 0.5
+            * speaking_length
+            * (tension * wave_number * wave_number
+                + bending_rigidity * wave_number * wave_number * wave_number * wave_number);
+    }
+    for component_index in 0..STRING_DUPLEX_COMPONENT_MODES {
+        let coordinate = 1 + STRING_SPEAKING_COMPONENT_MODES + component_index;
+        let order = (component_index + 1) as f64;
+        let wave_number = order * PI / duplex_length;
+        let coupling = linear_density * duplex_length / (order * PI);
+        mass[0][coordinate] = coupling;
+        mass[coordinate][0] = coupling;
+        mass[coordinate][coordinate] = 0.5 * linear_density * duplex_length;
+        stiffness_diagonal[coordinate] = 0.5
+            * duplex_length
+            * (tension * wave_number * wave_number
+                + bending_rigidity * wave_number * wave_number * wave_number * wave_number);
+    }
+    if mass
+        .iter()
+        .flatten()
+        .chain(stiffness_diagonal.iter())
+        .any(|value| !value.is_finite())
+    {
+        return Err(PianoError::NonFiniteState);
+    }
+    Ok(StringReduction {
+        mass,
+        stiffness_diagonal,
+    })
+}
+
+fn cholesky_lower(matrix: StringReductionMatrix) -> Result<StringReductionMatrix, PianoError> {
+    let mut lower = [[0.0_f64; STRING_MODES]; STRING_MODES];
+    for row in 0..STRING_MODES {
+        for column in 0..=row {
+            let mut value = matrix[row][column];
+            for inner in 0..column {
+                value -= lower[row][inner] * lower[column][inner];
+            }
+            if row == column {
+                if !value.is_finite() || value <= 0.0 {
+                    return Err(PianoError::InvalidParameters);
+                }
+                lower[row][column] = sqrt(value);
+            } else {
+                lower[row][column] = value / lower[column][column];
+            }
+        }
+    }
+    Ok(lower)
+}
+
+fn inverse_lower(lower: StringReductionMatrix) -> Result<StringReductionMatrix, PianoError> {
+    let mut inverse = [[0.0_f64; STRING_MODES]; STRING_MODES];
+    for column in 0..STRING_MODES {
+        for row in 0..STRING_MODES {
+            let mut value = if row == column { 1.0 } else { 0.0 };
+            for inner in 0..row {
+                value -= lower[row][inner] * inverse[inner][column];
+            }
+            inverse[row][column] = value / lower[row][row];
+            if !inverse[row][column].is_finite() {
+                return Err(PianoError::NonFiniteState);
+            }
+        }
+    }
+    Ok(inverse)
+}
+
+fn symmetric_jacobi_eigenvectors(
+    mut matrix: StringReductionMatrix,
+) -> Result<([f64; STRING_MODES], StringReductionMatrix), PianoError> {
+    let mut eigenvectors = [[0.0_f64; STRING_MODES]; STRING_MODES];
+    for index in 0..STRING_MODES {
+        eigenvectors[index][index] = 1.0;
+    }
+    for _ in 0..STRING_EIGEN_JACOBI_SWEEPS {
+        let mut rotations = 0usize;
+        for first in 0..STRING_MODES - 1 {
+            for second in first + 1..STRING_MODES {
+                let off_diagonal = matrix[first][second];
+                let local_scale = matrix[first][first].abs() + matrix[second][second].abs();
+                if off_diagonal.abs() <= 1.0e-14 * local_scale.max(1.0) {
+                    continue;
+                }
+                rotations += 1;
+                let tau = (matrix[second][second] - matrix[first][first]) / (2.0 * off_diagonal);
+                let tangent = if tau >= 0.0 {
+                    1.0 / (tau + sqrt(1.0 + tau * tau))
+                } else {
+                    -1.0 / (-tau + sqrt(1.0 + tau * tau))
+                };
+                let cosine = 1.0 / sqrt(1.0 + tangent * tangent);
+                let sine = tangent * cosine;
+                let first_diagonal = matrix[first][first];
+                let second_diagonal = matrix[second][second];
+                matrix[first][first] = cosine * cosine * first_diagonal
+                    - 2.0 * sine * cosine * off_diagonal
+                    + sine * sine * second_diagonal;
+                matrix[second][second] = sine * sine * first_diagonal
+                    + 2.0 * sine * cosine * off_diagonal
+                    + cosine * cosine * second_diagonal;
+                matrix[first][second] = 0.0;
+                matrix[second][first] = 0.0;
+                for index in 0..STRING_MODES {
+                    if index != first && index != second {
+                        let first_value = matrix[index][first];
+                        let second_value = matrix[index][second];
+                        matrix[index][first] = cosine * first_value - sine * second_value;
+                        matrix[first][index] = matrix[index][first];
+                        matrix[index][second] = sine * first_value + cosine * second_value;
+                        matrix[second][index] = matrix[index][second];
+                    }
+                    let first_vector = eigenvectors[index][first];
+                    let second_vector = eigenvectors[index][second];
+                    eigenvectors[index][first] = cosine * first_vector - sine * second_vector;
+                    eigenvectors[index][second] = sine * first_vector + cosine * second_vector;
+                }
+            }
+        }
+        if rotations == 0 {
+            break;
+        }
+    }
+    let mut eigenvalues = [0.0_f64; STRING_MODES];
+    for index in 0..STRING_MODES {
+        eigenvalues[index] = matrix[index][index];
+        if !eigenvalues[index].is_finite() || eigenvalues[index] <= 0.0 {
+            return Err(PianoError::InvalidParameters);
+        }
+    }
+    Ok((eigenvalues, eigenvectors))
+}
+
+fn component_string_eigensystem(
+    geometry: StringGeometry,
+    string_index: usize,
+) -> Result<([f64; STRING_MODES], StringReductionMatrix), PianoError> {
+    let reduction = component_string_reduction(geometry, string_index)?;
+    let inverse_lower = inverse_lower(cholesky_lower(reduction.mass)?)?;
+    let mut standard = [[0.0_f64; STRING_MODES]; STRING_MODES];
+    for row in 0..STRING_MODES {
+        for column in 0..STRING_MODES {
+            let mut value = 0.0;
+            for inner in 0..STRING_MODES {
+                value += inverse_lower[row][inner]
+                    * reduction.stiffness_diagonal[inner]
+                    * inverse_lower[column][inner];
+            }
+            standard[row][column] = value;
+        }
+    }
+    let (unsorted_values, standard_vectors) = symmetric_jacobi_eigenvectors(standard)?;
+    let mut frequencies = [0.0_f64; STRING_MODES];
+    let mut physical_vectors = [[0.0_f64; STRING_MODES]; STRING_MODES];
+    let mut consumed = [false; STRING_MODES];
+    for output_mode in 0..STRING_MODES {
+        let mut selected = None;
+        for candidate in 0..STRING_MODES {
+            if !consumed[candidate]
+                && selected
+                    .is_none_or(|current| unsorted_values[candidate] < unsorted_values[current])
+            {
+                selected = Some(candidate);
+            }
+        }
+        let selected = selected.ok_or(PianoError::InvalidParameters)?;
+        consumed[selected] = true;
+        frequencies[output_mode] = sqrt(unsorted_values[selected]) / TAU;
+        for coordinate in 0..STRING_MODES {
+            let mut value = 0.0;
+            for transformed_coordinate in 0..STRING_MODES {
+                value += inverse_lower[transformed_coordinate][coordinate]
+                    * standard_vectors[transformed_coordinate][selected];
+            }
+            physical_vectors[output_mode][coordinate] = value;
+        }
+        if !frequencies[output_mode].is_finite()
+            || physical_vectors[output_mode]
+                .iter()
+                .any(|value| !value.is_finite())
+        {
+            return Err(PianoError::NonFiniteState);
+        }
+    }
+    Ok((frequencies, physical_vectors))
+}
+
+fn build_component_string_modes(
+    geometry: StringGeometry,
+    string_index: usize,
+    midi: i32,
+    sample_rate_hz: f64,
+    dt_seconds: f64,
+) -> Result<([Mode; STRING_MODES], usize), PianoError> {
+    let (frequencies, eigenvectors) = component_string_eigensystem(geometry, string_index)?;
+    let strike_ratio = hammer_strike_position_over_length(midi)?;
+    let mut modes = [Mode::ZERO; STRING_MODES];
+    let mut active_count = 0usize;
+    for mode_index in 0..STRING_MODES {
+        let frequency_hz = frequencies[mode_index];
+        if frequency_hz >= 0.44 * sample_rate_hz {
+            continue;
+        }
+        let vector = eigenvectors[mode_index];
+        let mut hammer_residue = strike_ratio * vector[0];
+        for component_index in 0..STRING_SPEAKING_COMPONENT_MODES {
+            let order = (component_index + 1) as f64;
+            hammer_residue += vector[1 + component_index] * sin(PI * order * strike_ratio);
+        }
+        let effective_order =
+            (frequency_hz / geometry.unison_frequencies_hz[string_index]).max(1.0);
+        let fundamental_t60 = 14.0 * exp(-0.020 * (midi - MIN_MIDI) as f64) + 1.4;
+        let t60 = fundamental_t60 / (1.0 + 0.020 * effective_order * effective_order);
+        modes[mode_index] = Mode {
+            active: true,
+            position: 0.0,
+            velocity: 0.0,
+            frequency_hz,
+            omega: TAU * frequency_hz,
+            midpoint_omega: prewarped_midpoint_omega(frequency_hz, dt_seconds),
+            half_velocity_decay: split_t60_half_velocity_decay(t60, dt_seconds),
+            contact_residue_m_neg_half_kg: hammer_residue / geometry.string_count as f64,
+            bridge_residue_m_neg_half_kg: vector[0],
+        };
+        active_count += 1;
+    }
+    Ok((modes, active_count))
+}
+
+#[cfg(test)]
+#[derive(Clone, Copy, Debug)]
+pub struct ComponentStringReductionSnapshot {
+    pub mass: StringReductionMatrix,
+    pub stiffness_diagonal: [f64; STRING_MODES],
+    pub frequencies_hz: [f64; STRING_MODES],
+    pub eigenvectors: StringReductionMatrix,
+}
+
+#[cfg(test)]
+pub fn component_string_reduction_snapshot(
+    midi: i32,
+    string_index: usize,
+) -> Result<ComponentStringReductionSnapshot, PianoError> {
+    let geometry = string_geometry(midi)?;
+    let reduction = component_string_reduction(geometry, string_index)?;
+    let (frequencies_hz, eigenvectors) = component_string_eigensystem(geometry, string_index)?;
+    Ok(ComponentStringReductionSnapshot {
+        mass: reduction.mass,
+        stiffness_diagonal: reduction.stiffness_diagonal,
+        frequencies_hz,
+        eigenvectors,
+    })
+}
+
 #[derive(Clone, Debug)]
 struct PianoKeyState {
     geometry: StringGeometry,
-    soundboard_bridge_position: (f64, f64),
     strings: [StringBank; MAX_UNISON_STRINGS],
     contact: ContactState,
     active_string_modes: usize,
@@ -603,61 +1112,21 @@ struct PianoKeyState {
 impl PianoKeyState {
     fn new(midi: i32, sample_rate_hz: f64) -> Result<Self, PianoError> {
         let geometry = string_geometry(midi)?;
-        let soundboard_bridge_position = soundboard_bridge_position_for_midi(midi)?;
         let dt = 1.0 / sample_rate_hz;
         let mut strings = [StringBank::ZERO; MAX_UNISON_STRINGS];
         let mut active_string_modes = 0usize;
         for string_index in 0..geometry.string_count {
             strings[string_index].active = true;
-            // Miranda Valiente et al. (JASA 2024), Sec. II, model the string
-            // from agraffe to hitch pin and couple the soundboard at the
-            // internal speaking-length location.  The previous reduction used
-            // speaking-length modes and then placed the bridge at a fixed
-            // 1.8% residue, which is neither that coupled model nor a rigid
-            // speaking-string boundary and badly mis-weights treble partials.
-            let length_ratio = geometry.speaking_length_m / geometry.total_length_m;
-            let string_fundamental = geometry.unison_frequencies_hz[string_index] * length_ratio;
-            let full_string_inharmonicity =
-                geometry.inharmonicity_coefficient * length_ratio * length_ratio;
-            let modal_mass = 0.5 * geometry.linear_density_kg_m * geometry.total_length_m;
-            let modal_norm = 1.0 / sqrt(modal_mass);
-            for mode_index in 0..STRING_MODES {
-                let order = (mode_index + 1) as f64;
-                let frequency_hz = stiff_string_mode_frequency_hz(
-                    string_fundamental,
-                    full_string_inharmonicity,
-                    mode_index + 1,
-                );
-                if frequency_hz >= 0.44 * sample_rate_hz {
-                    continue;
-                }
-                active_string_modes += 1;
-                let omega = TAU * frequency_hz;
-                let hammer_shape =
-                    sin(PI * order * hammer_strike_position_over_length(midi)? * length_ratio);
-                let bridge_shape = sin(PI * order * length_ratio);
-                let fundamental_t60 = 14.0 * exp(-0.020 * (midi - MIN_MIDI) as f64) + 1.4;
-                let t60 = fundamental_t60 / (1.0 + 0.020 * order * order);
-                strings[string_index].modes[mode_index] = Mode {
-                    active: true,
-                    position: 0.0,
-                    velocity: 0.0,
-                    frequency_hz,
-                    omega,
-                    midpoint_omega: prewarped_midpoint_omega(frequency_hz, dt),
-                    half_velocity_decay: split_t60_half_velocity_decay(t60, dt),
-                    contact_residue_m_neg_half_kg: hammer_shape * modal_norm
-                        / geometry.string_count as f64,
-                    bridge_residue_m_neg_half_kg: bridge_shape * modal_norm,
-                };
-            }
+            let (modes, count) =
+                build_component_string_modes(geometry, string_index, midi, sample_rate_hz, dt)?;
+            strings[string_index].modes = modes;
+            active_string_modes += count;
         }
         if active_string_modes == 0 {
             return Err(PianoError::InvalidSampleRate);
         }
         Ok(Self {
             geometry,
-            soundboard_bridge_position,
             strings,
             contact: ContactState::INACTIVE,
             active_string_modes,
@@ -907,7 +1376,6 @@ pub struct PianoVoice {
     dt: f64,
     parameters: PianoParameters,
     geometry: StringGeometry,
-    soundboard_bridge_position: (f64, f64),
     strings: [StringBank; MAX_UNISON_STRINGS],
     soundboard: [SoundboardMode; SOUNDBOARD_MODES],
     contact: ContactState,
@@ -933,13 +1401,13 @@ impl PianoVoice {
         let parameters = parameters.validate()?;
         let dt = 1.0 / sample_rate_hz;
         let key = PianoKeyState::new(midi, sample_rate_hz)?;
-        let soundboard = build_soundboard_modes(parameters, sample_rate_hz)?;
+        let soundboard =
+            build_soundboard_modes(parameters, sample_rate_hz, core::iter::once(&key))?;
         let voice = Self {
             sample_rate_hz,
             dt,
             parameters,
             geometry: key.geometry,
-            soundboard_bridge_position: key.soundboard_bridge_position,
             strings: key.strings,
             soundboard,
             contact: key.contact,
@@ -1039,12 +1507,6 @@ impl PianoVoice {
             .and_then(|mode| mode.mode.active.then_some(mode.mode.energy_j()))
     }
 
-    pub fn soundboard_mode_orders(&self, mode_index: usize) -> Option<(u8, u8)> {
-        self.soundboard
-            .get(mode_index)
-            .and_then(|mode| mode.mode.active.then_some((mode.order_x, mode.order_y)))
-    }
-
     pub fn contact_active(&self) -> bool {
         self.contact.active
     }
@@ -1093,10 +1555,17 @@ impl PianoVoice {
     }
 
     pub fn bridge_contact_energy_j(&self) -> f64 {
-        let relative_displacement_m = self.bridge_relative_displacement_m();
-        0.5 * self.parameters.bridge_contact_stiffness_n_per_m
-            * relative_displacement_m
-            * relative_displacement_m
+        let body_displacement_m = self.soundboard_bridge_displacement_m();
+        let relative_squared_sum: f64 = self
+            .strings
+            .iter()
+            .filter(|bank| bank.active)
+            .map(|bank| {
+                let relative = string_bank_bridge_displacement_m(bank) - body_displacement_m;
+                relative * relative
+            })
+            .sum();
+        0.5 * self.parameters.bridge_contact_stiffness_n_per_m * relative_squared_sum
     }
 
     pub fn work_receipt(&self) -> PianoWorkReceipt {
@@ -1110,7 +1579,7 @@ impl PianoVoice {
             maximum_contact_iterations: CONTACT_SOLVE_STEPS,
             last_contact_iterations: self.last_contact_iterations,
             total_contact_iterations: self.total_contact_iterations,
-            maximum_bridge_contacts: 1,
+            maximum_bridge_contacts: self.geometry.string_count,
             maximum_bridge_solve_scalar_updates: MAXIMUM_BRIDGE_SOLVE_SCALAR_UPDATES,
             state_bytes: core::mem::size_of::<Self>(),
         }
@@ -1142,76 +1611,73 @@ impl PianoVoice {
         );
     }
 
-    fn bridge_relative_displacement_m(&self) -> f64 {
-        let string_displacement_m: f64 = self
-            .strings
+    fn soundboard_bridge_displacement_m(&self) -> f64 {
+        self.soundboard
             .iter()
-            .flat_map(|bank| bank.modes.iter())
-            .map(|mode| mode.bridge_residue_m_neg_half_kg * mode.position)
-            .sum();
-        let modal_norm = soundboard_modal_norm(self.parameters);
-        let body_displacement_m: f64 = self
-            .soundboard
-            .iter()
-            .map(|body| {
-                soundboard_bridge_residue_at(body, self.soundboard_bridge_position, modal_norm)
-                    * body.mode.position
-            })
-            .sum();
-        string_displacement_m - body_displacement_m
+            .map(|body| soundboard_bridge_residue_at(body, self.geometry.midi) * body.mode.position)
+            .sum()
     }
 
     fn advance_bridge_contact_midpoint(&mut self) -> Result<(), PianoError> {
         let half_dt = 0.5 * self.dt;
         let half_dt_squared_stiffness =
             half_dt * half_dt * self.parameters.bridge_contact_stiffness_n_per_m;
-        let mut string_compliance = 0.0;
-        let mut string_right_hand_side = 0.0;
-        for bank in &self.strings {
+        let mut string_compliance = [[0.0_f64; MAX_UNISON_STRINGS]; MAX_PIANO_CHORD_NOTES];
+        let mut string_right_hand_side = [[0.0_f64; MAX_UNISON_STRINGS]; MAX_PIANO_CHORD_NOTES];
+        for (string_index, bank) in self.strings.iter().enumerate() {
+            if !bank.active {
+                continue;
+            }
             for mode in &bank.modes {
                 let (compliance, right_hand_side) = accumulate_midpoint_contact_terms(
                     *mode,
                     mode.bridge_residue_m_neg_half_kg,
                     half_dt,
                 );
-                string_compliance += compliance;
-                string_right_hand_side += right_hand_side;
+                string_compliance[0][string_index] += compliance;
+                string_right_hand_side[0][string_index] += right_hand_side;
             }
         }
-        let mut body_right_hand_side = 0.0;
-        let mut body_compliance = 0.0;
-        let modal_norm = soundboard_modal_norm(self.parameters);
+        let mut body_right_hand_side = [0.0_f64; MAX_PIANO_CHORD_NOTES];
+        let mut body_compliance = [[0.0_f64; MAX_PIANO_CHORD_NOTES]; MAX_PIANO_CHORD_NOTES];
         for body in &self.soundboard {
-            let residue =
-                soundboard_bridge_residue_at(body, self.soundboard_bridge_position, modal_norm);
+            let residue = soundboard_bridge_residue_at(body, self.geometry.midi);
             let (compliance, right_hand_side) =
                 accumulate_midpoint_contact_terms(body.mode, residue, half_dt);
-            body_compliance += compliance;
-            body_right_hand_side += right_hand_side;
+            body_compliance[0][0] += compliance;
+            body_right_hand_side[0] += right_hand_side;
         }
-        let mut matrix = [[0.0_f64; MAXIMUM_BRIDGE_CONTACTS]; MAXIMUM_BRIDGE_CONTACTS];
-        matrix[0][0] = 1.0 + half_dt_squared_stiffness * (string_compliance + body_compliance);
-        let mut right_hand_side = [0.0_f64; MAXIMUM_BRIDGE_CONTACTS];
-        right_hand_side[0] = string_right_hand_side - body_right_hand_side;
-        let coordinates = solve_bridge_contact_coordinates(matrix, right_hand_side, 1)?;
-        for bank in &mut self.strings {
+        let mut string_counts = [0usize; MAX_PIANO_CHORD_NOTES];
+        string_counts[0] = self.geometry.string_count;
+        let (physical_coordinates, aggregate_coordinates) = solve_separate_string_bridge_contacts(
+            string_compliance,
+            string_right_hand_side,
+            string_counts,
+            body_right_hand_side,
+            body_compliance,
+            1,
+            half_dt_squared_stiffness,
+        )?;
+        for (string_index, bank) in self.strings.iter_mut().enumerate() {
+            if !bank.active {
+                continue;
+            }
             for mode in &mut bank.modes {
                 finish_midpoint_contact_mode(
                     mode,
                     mode.bridge_residue_m_neg_half_kg,
-                    coordinates[0],
+                    physical_coordinates[0][string_index],
                     half_dt,
                     self.parameters.bridge_contact_stiffness_n_per_m,
                 );
             }
         }
         for body in &mut self.soundboard {
-            let residue =
-                soundboard_bridge_residue_at(body, self.soundboard_bridge_position, modal_norm);
+            let residue = soundboard_bridge_residue_at(body, self.geometry.midi);
             finish_midpoint_contact_mode(
                 &mut body.mode,
                 -residue,
-                coordinates[0],
+                aggregate_coordinates[0],
                 half_dt,
                 self.parameters.bridge_contact_stiffness_n_per_m,
             );
@@ -1219,55 +1685,49 @@ impl PianoVoice {
         Ok(())
     }
 
+    #[cfg(test)]
+    pub fn set_test_unison_bridge_displacement_m(
+        &mut self,
+        string_index: usize,
+        displacement_m: f64,
+    ) -> Result<(), PianoError> {
+        if string_index >= self.geometry.string_count || !displacement_m.is_finite() {
+            return Err(PianoError::InvalidParameters);
+        }
+        let bank = &mut self.strings[string_index];
+        let mode = bank
+            .modes
+            .iter_mut()
+            .find(|mode| mode.active && mode.bridge_residue_m_neg_half_kg.abs() > 1.0e-12)
+            .ok_or(PianoError::InvalidParameters)?;
+        mode.position = displacement_m / mode.bridge_residue_m_neg_half_kg;
+        mode.velocity = 0.0;
+        Ok(())
+    }
+
     fn observe_pressure_pa(&self) -> (f64, f64) {
         let mut left_pressure_pa = 0.0;
         let mut right_pressure_pa = 0.0;
         for body in &self.soundboard {
-            left_pressure_pa += body.left_pressure_per_velocity_re * body.mode.velocity
-                + body.left_pressure_per_velocity_im * body.mode.omega * body.mode.position;
-            right_pressure_pa += body.right_pressure_per_velocity_re * body.mode.velocity
-                + body.right_pressure_per_velocity_im * body.mode.omega * body.mode.position;
+            let omega_times_position = body.mode.omega * body.mode.position;
+            left_pressure_pa += modal_observer_pressure_pa(
+                body.left_pressure_per_velocity_re,
+                body.left_pressure_per_velocity_im,
+                body.mode.velocity,
+                omega_times_position,
+            );
+            right_pressure_pa += modal_observer_pressure_pa(
+                body.right_pressure_per_velocity_re,
+                body.right_pressure_per_velocity_im,
+                body.mode.velocity,
+                omega_times_position,
+            );
         }
-        let mut left_string_volume_acceleration = 0.0;
-        let mut right_string_volume_acceleration = 0.0;
-        let string_modal_mass =
-            0.5 * self.geometry.linear_density_kg_m * self.geometry.speaking_length_m;
-        let string_modal_norm = 1.0 / sqrt(string_modal_mass);
-        for (string_index, bank) in self.strings.iter().enumerate() {
-            if !bank.active {
-                continue;
-            }
-            for (mode_index, mode) in bank.modes.iter().enumerate() {
-                if !mode.active || mode_index % 2 == 1 {
-                    continue;
-                }
-                let order = (mode_index + 1) as f64;
-                let integrated_mode_length_m = 2.0 * self.geometry.speaking_length_m / (PI * order);
-                let dipole_efficiency = (mode.omega * self.geometry.equivalent_diameter_m
-                    / AIR_SOUND_SPEED_M_PER_S)
-                    .min(0.25);
-                let volume_residue_m2_per_sqrt_kg = self.geometry.equivalent_diameter_m
-                    * integrated_mode_length_m
-                    * string_modal_norm
-                    * dipole_efficiency;
-                let modal_acceleration = -mode.omega * mode.omega * mode.position;
-                let string_pan = if self.geometry.string_count <= 1 {
-                    0.0
-                } else {
-                    string_index as f64 / (self.geometry.string_count - 1) as f64 - 0.5
-                };
-                left_string_volume_acceleration +=
-                    (1.0 - 0.18 * string_pan) * volume_residue_m2_per_sqrt_kg * modal_acceleration;
-                right_string_volume_acceleration +=
-                    (1.0 + 0.18 * string_pan) * volume_residue_m2_per_sqrt_kg * modal_acceleration;
-            }
-        }
-        let scale =
-            DIRECT_STRING_RADIATION_SCALE * AIR_DENSITY_KG_M3 / (4.0 * PI * RADIATION_DISTANCE_M);
-        (
-            left_pressure_pa + scale * left_string_volume_acceleration,
-            right_pressure_pa + scale * right_string_volume_acceleration,
-        )
+        // Direct string radiation is deliberately excluded: the audible path
+        // is string -> bridge -> soundboard. Do not traverse every retained
+        // string mode to compute a diagnostic term and then multiply it by
+        // the reviewed zero scale on every audio frame.
+        (left_pressure_pa, right_pressure_pa)
     }
 }
 
@@ -1355,14 +1815,17 @@ impl PianoStem {
             begin_key_strike(&mut key.contact, strike, sample_rate_hz, dt)?;
             keys[index] = Some(key);
         }
-        let soundboard = build_soundboard_modes(parameters, sample_rate_hz)?;
-        let modal_norm = soundboard_modal_norm(parameters);
+        let soundboard = build_soundboard_modes(
+            parameters,
+            sample_rate_hz,
+            keys[..midis.len()].iter().filter_map(Option::as_ref),
+        )?;
         let mut soundboard_bridge_residues = [[0.0_f64; SOUNDBOARD_MODES]; MAX_PIANO_CHORD_NOTES];
         for key_index in 0..midis.len() {
             let key = keys[key_index].as_ref().ok_or(PianoError::NonFiniteState)?;
             for (mode_index, body) in soundboard.iter().enumerate() {
                 soundboard_bridge_residues[key_index][mode_index] =
-                    soundboard_bridge_residue_at(body, key.soundboard_bridge_position, modal_norm);
+                    soundboard_bridge_residue_at(body, key.geometry.midi);
             }
         }
         let half_dt = 0.5 * dt;
@@ -1563,12 +2026,6 @@ impl PianoStem {
     pub fn bridge_contact_energy_j(&self) -> f64 {
         let mut relative_squared_sum = 0.0;
         for (key_index, key) in self.keys.iter().flatten().enumerate() {
-            let string_displacement_m: f64 = key
-                .strings
-                .iter()
-                .flat_map(|bank| bank.modes.iter())
-                .map(|mode| mode.bridge_residue_m_neg_half_kg * mode.position)
-                .sum();
             let body_displacement_m: f64 = self
                 .soundboard
                 .iter()
@@ -1577,8 +2034,10 @@ impl PianoStem {
                     self.soundboard_bridge_residues[key_index][mode_index] * body.mode.position
                 })
                 .sum();
-            let relative = string_displacement_m - body_displacement_m;
-            relative_squared_sum += relative * relative;
+            for bank in key.strings.iter().filter(|bank| bank.active) {
+                let relative = string_bank_bridge_displacement_m(bank) - body_displacement_m;
+                relative_squared_sum += relative * relative;
+            }
         }
         0.5 * self.parameters.bridge_contact_stiffness_n_per_m * relative_squared_sum
     }
@@ -1610,7 +2069,7 @@ impl PianoStem {
         let half_dt = 0.5 * self.dt;
         let half_dt_squared_stiffness =
             half_dt * half_dt * self.parameters.bridge_contact_stiffness_n_per_m;
-        let mut body_right_hand_side = [0.0_f64; MAXIMUM_BRIDGE_CONTACTS];
+        let mut body_right_hand_side = [0.0_f64; MAX_PIANO_CHORD_NOTES];
         for (mode_index, body) in self.soundboard.iter().enumerate() {
             if !body.mode.active {
                 continue;
@@ -1623,55 +2082,53 @@ impl PianoStem {
             }
         }
 
-        let mut string_compliance = [0.0_f64; MAXIMUM_BRIDGE_CONTACTS];
-        let mut right_hand_side = [0.0_f64; MAXIMUM_BRIDGE_CONTACTS];
+        let mut string_compliance = [[0.0_f64; MAX_UNISON_STRINGS]; MAX_PIANO_CHORD_NOTES];
+        let mut string_right_hand_side = [[0.0_f64; MAX_UNISON_STRINGS]; MAX_PIANO_CHORD_NOTES];
+        let mut string_counts = [0usize; MAX_PIANO_CHORD_NOTES];
         for key_index in 0..self.note_count {
             let key = self.keys[key_index]
                 .as_ref()
                 .ok_or(PianoError::NonFiniteState)?;
-            let mut string_right_hand_side = 0.0;
-            for bank in &key.strings {
+            string_counts[key_index] = key.geometry.string_count;
+            for (string_index, bank) in key.strings.iter().enumerate() {
+                if !bank.active {
+                    continue;
+                }
                 for mode in &bank.modes {
                     let (compliance, modal_right_hand_side) = accumulate_midpoint_contact_terms(
                         *mode,
                         mode.bridge_residue_m_neg_half_kg,
                         half_dt,
                     );
-                    string_compliance[key_index] += compliance;
-                    string_right_hand_side += modal_right_hand_side;
+                    string_compliance[key_index][string_index] += compliance;
+                    string_right_hand_side[key_index][string_index] += modal_right_hand_side;
                 }
             }
-            right_hand_side[key_index] = string_right_hand_side - body_right_hand_side[key_index];
         }
-
-        let mut matrix = [[0.0_f64; MAXIMUM_BRIDGE_CONTACTS]; MAXIMUM_BRIDGE_CONTACTS];
-        for row in 0..self.note_count {
-            for column in 0..self.note_count {
-                matrix[row][column] =
-                    half_dt_squared_stiffness * self.soundboard_compliance[row][column];
-            }
-            // Match the conditioned one-key solve exactly: the diagonal sees
-            // one product of the combined string+board compliance. Adding two
-            // separately rounded products made a one-note chord differ from
-            // the same physical voice at the first output frame.
-            matrix[row][row] = 1.0
-                + half_dt_squared_stiffness
-                    * (string_compliance[row] + self.soundboard_compliance[row][row]);
-        }
-        let coordinates =
-            solve_bridge_contact_coordinates(matrix, right_hand_side, self.note_count)?;
+        let (physical_coordinates, aggregate_coordinates) = solve_separate_string_bridge_contacts(
+            string_compliance,
+            string_right_hand_side,
+            string_counts,
+            body_right_hand_side,
+            self.soundboard_compliance,
+            self.note_count,
+            half_dt_squared_stiffness,
+        )?;
 
         for key_index in 0..self.note_count {
             let key = self.keys[key_index]
                 .as_mut()
                 .ok_or(PianoError::NonFiniteState)?;
-            for bank in &mut key.strings {
+            for (string_index, bank) in key.strings.iter_mut().enumerate() {
+                if !bank.active {
+                    continue;
+                }
                 for mode in &mut bank.modes {
                     let residue = mode.bridge_residue_m_neg_half_kg;
                     finish_midpoint_contact_mode(
                         mode,
                         residue,
-                        coordinates[key_index],
+                        physical_coordinates[key_index][string_index],
                         half_dt,
                         self.parameters.bridge_contact_stiffness_n_per_m,
                     );
@@ -1681,8 +2138,8 @@ impl PianoStem {
         for (mode_index, body) in self.soundboard.iter_mut().enumerate() {
             let mut coordinate_sum = 0.0;
             for key_index in 0..self.note_count {
-                coordinate_sum +=
-                    self.soundboard_bridge_residues[key_index][mode_index] * coordinates[key_index];
+                coordinate_sum += self.soundboard_bridge_residues[key_index][mode_index]
+                    * aggregate_coordinates[key_index];
             }
             // A positive bridge contact coordinate pulls the string modes toward
             // the board and the board mode in the opposite generalized-force
@@ -1702,56 +2159,21 @@ impl PianoStem {
         let mut left_pressure_pa = 0.0;
         let mut right_pressure_pa = 0.0;
         for body in &self.soundboard {
-            left_pressure_pa += body.left_pressure_per_velocity_re * body.mode.velocity
-                + body.left_pressure_per_velocity_im * body.mode.omega * body.mode.position;
-            right_pressure_pa += body.right_pressure_per_velocity_re * body.mode.velocity
-                + body.right_pressure_per_velocity_im * body.mode.omega * body.mode.position;
+            let omega_times_position = body.mode.omega * body.mode.position;
+            left_pressure_pa += modal_observer_pressure_pa(
+                body.left_pressure_per_velocity_re,
+                body.left_pressure_per_velocity_im,
+                body.mode.velocity,
+                omega_times_position,
+            );
+            right_pressure_pa += modal_observer_pressure_pa(
+                body.right_pressure_per_velocity_re,
+                body.right_pressure_per_velocity_im,
+                body.mode.velocity,
+                omega_times_position,
+            );
         }
-        let mut left_string_volume_acceleration = 0.0;
-        let mut right_string_volume_acceleration = 0.0;
-        for key in self.keys.iter().flatten() {
-            let string_modal_mass =
-                0.5 * key.geometry.linear_density_kg_m * key.geometry.speaking_length_m;
-            let string_modal_norm = 1.0 / sqrt(string_modal_mass);
-            for (string_index, bank) in key.strings.iter().enumerate() {
-                if !bank.active {
-                    continue;
-                }
-                for (mode_index, mode) in bank.modes.iter().enumerate() {
-                    if !mode.active || mode_index % 2 == 1 {
-                        continue;
-                    }
-                    let order = (mode_index + 1) as f64;
-                    let integrated_mode_length_m =
-                        2.0 * key.geometry.speaking_length_m / (PI * order);
-                    let dipole_efficiency = (mode.omega * key.geometry.equivalent_diameter_m
-                        / AIR_SOUND_SPEED_M_PER_S)
-                        .min(0.25);
-                    let volume_residue_m2_per_sqrt_kg = key.geometry.equivalent_diameter_m
-                        * integrated_mode_length_m
-                        * string_modal_norm
-                        * dipole_efficiency;
-                    let modal_acceleration = -mode.omega * mode.omega * mode.position;
-                    let string_pan = if key.geometry.string_count <= 1 {
-                        0.0
-                    } else {
-                        string_index as f64 / (key.geometry.string_count - 1) as f64 - 0.5
-                    };
-                    left_string_volume_acceleration += (1.0 - 0.18 * string_pan)
-                        * volume_residue_m2_per_sqrt_kg
-                        * modal_acceleration;
-                    right_string_volume_acceleration += (1.0 + 0.18 * string_pan)
-                        * volume_residue_m2_per_sqrt_kg
-                        * modal_acceleration;
-                }
-            }
-        }
-        let scale =
-            DIRECT_STRING_RADIATION_SCALE * AIR_DENSITY_KG_M3 / (4.0 * PI * RADIATION_DISTANCE_M);
-        (
-            left_pressure_pa + scale * left_string_volume_acceleration,
-            right_pressure_pa + scale * right_string_volume_acceleration,
-        )
+        (left_pressure_pa, right_pressure_pa)
     }
 }
 
@@ -1887,17 +2309,25 @@ pub fn string_geometry(midi: i32) -> Result<StringGeometry, PianoError> {
     let equivalent_diameter_m = reviewed.diameter_m;
     let cross_section_area_m2 = PI * equivalent_diameter_m * equivalent_diameter_m / 4.0;
     let linear_density_kg_m = reviewed.density_kg_m3 * cross_section_area_m2;
+    let second_moment_m4 = PI * pow(equivalent_diameter_m, 4.0) / 64.0;
+    let bending_rigidity_n_m2 = STEEL_YOUNG_MODULUS_PA * second_moment_m4;
     // Appendix tensions are integer-rounded and use A4=441 Hz. Retain the
     // measured length/diameter/density and derive the exact concert-pitch
-    // tension, so the geometry and modal bank describe the same tuned string.
-    let tension_n = linear_density_kg_m
+    // tension. The transverse eigenfrequency contains both T*k^2 and EI*k^4:
+    // adding EI after using the flexible-string tension double-counts the
+    // treble stiffness and makes every partial sharp.
+    let flexible_string_tension_n = linear_density_kg_m
         * (2.0 * speaking_length_m * fundamental_hz)
         * (2.0 * speaking_length_m * fundamental_hz);
+    let tension_n = flexible_string_tension_n
+        - PI * PI * bending_rigidity_n_m2 / (speaking_length_m * speaking_length_m);
+    if !tension_n.is_finite() || tension_n <= 0.0 {
+        return Err(PianoError::InvalidParameters);
+    }
     let duplex_length_m = duplex_length_m_for_midi(midi)?;
     let total_length_m = speaking_length_m + duplex_length_m;
-    let second_moment_m4 = PI * pow(equivalent_diameter_m, 4.0) / 64.0;
-    let inharmonicity_coefficient = PI * PI * STEEL_YOUNG_MODULUS_PA * second_moment_m4
-        / (tension_n * speaking_length_m * speaking_length_m);
+    let inharmonicity_coefficient =
+        PI * PI * bending_rigidity_n_m2 / (tension_n * speaking_length_m * speaking_length_m);
     let string_count = if midi < 32 {
         1
     } else if midi < 49 {
@@ -1950,15 +2380,21 @@ pub fn soundboard_mode_frequency_hz(
     if order_x == 0 || order_y == 0 {
         return Err(PianoError::InvalidParameters);
     }
-    let nu = parameters.soundboard_poisson_ratio;
+    let nu_lr = parameters.soundboard_poisson_ratio;
+    let nu_rl = nu_lr * parameters.soundboard_radial_modulus_pa
+        / parameters.soundboard_longitudinal_modulus_pa;
     let thickness_cubed = parameters.soundboard_thickness_m
         * parameters.soundboard_thickness_m
         * parameters.soundboard_thickness_m;
-    let denominator = 12.0 * (1.0 - nu * nu);
+    // Orthotropic Kirchhoff--Love rigidity.  Reciprocity requires
+    // nu_RL/E_R = nu_LR/E_L; using the isotropic 1-nu^2 denominator and a
+    // geometric-mean D12 materially over-stiffens a spruce board.  These are
+    // the same D11/D22/D12/D66 definitions used by FrankenSim fs-plate.
+    let denominator = 12.0 * (1.0 - nu_lr * nu_rl);
     let d_long = parameters.soundboard_longitudinal_modulus_pa * thickness_cubed / denominator;
     let bare_d_radial = parameters.soundboard_radial_modulus_pa * thickness_cubed / denominator;
-    let d_cross = parameters.soundboard_shear_modulus_pa * thickness_cubed
-        + nu * sqrt(d_long * bare_d_radial);
+    let d_poisson = nu_lr * parameters.soundboard_radial_modulus_pa * thickness_cubed / denominator;
+    let d_shear = parameters.soundboard_shear_modulus_pa * thickness_cubed / 12.0;
     // Smear the equally spaced transverse ribs into the bending direction
     // they reinforce.  EI/spacing has the plate-rigidity unit N m; the same
     // geometry contributes rho*A/spacing to areal mass.  This is the bounded
@@ -1979,7 +2415,9 @@ pub fn soundboard_mode_frequency_hz(
     let kx = order_x as f64 / parameters.soundboard_length_m;
     let ky = order_y as f64 / parameters.soundboard_width_m;
     let omega_squared = pow(PI, 4.0)
-        * (d_long * pow(kx, 4.0) + 2.0 * d_cross * kx * kx * ky * ky + d_radial * pow(ky, 4.0))
+        * (d_long * pow(kx, 4.0)
+            + 2.0 * (d_poisson + 2.0 * d_shear) * kx * kx * ky * ky
+            + d_radial * pow(ky, 4.0))
         / areal_density_kg_m2;
     Ok(sqrt(omega_squared) / TAU)
 }
@@ -2682,107 +3120,220 @@ pub fn soundboard_bridge_mode_residue_for_midi(
         * soundboard_modal_norm(parameters))
 }
 
-fn soundboard_bridge_residue_at(
-    body: &SoundboardMode,
-    bridge_position: (f64, f64),
-    modal_norm: f64,
-) -> f64 {
+fn soundboard_bridge_residue_at(body: &SoundboardMode, midi: i32) -> f64 {
     if !body.mode.active {
         return 0.0;
     }
-    sin(PI * body.order_x as f64 * bridge_position.0)
-        * sin(PI * body.order_y as f64 * bridge_position.1)
-        * modal_norm
+    let midi_index = (midi - MIN_MIDI) as usize;
+    PIANO_V2_SOUNDBOARD_MODE_PACK[body.pack_index as usize].bridge_residue_inverse_sqrt_kg
+        [midi_index]
 }
 
-fn build_soundboard_modes(
-    parameters: PianoParameters,
-    sample_rate_hz: f64,
-) -> Result<[SoundboardMode; SOUNDBOARD_MODES], PianoError> {
-    let modal_norm = soundboard_modal_norm(parameters);
-    let mut modes = [SoundboardMode::ZERO; SOUNDBOARD_MODES];
-    let mut index = 0usize;
-    for order_y in 1_u8..=12 {
-        for order_x in 1_u8..=24 {
-            let frequency_hz =
-                soundboard_mode_frequency_hz(parameters, order_x as usize, order_y as usize)?;
-            if frequency_hz < 0.44 * sample_rate_hz {
-                let omega = TAU * frequency_hz;
-                // Far-field Rayleigh observer at this mode's natural
-                // frequency. `modal_plane_integral_m2` exactly integrates the
-                // sine mode against directional phase, retaining finite
-                // spatial cancellation while admitting real high-mode
-                // multipoles. The stored real/imaginary transfer follows the
-                // fs-couple narrow-band pressure-per-modal-velocity law.
-                let wave_number_per_m = omega / AIR_SOUND_SPEED_M_PER_S;
-                let (left_integral_re, left_integral_im) = modal_plane_integral_m2(
-                    order_x,
-                    order_y,
-                    parameters.soundboard_length_m,
-                    parameters.soundboard_width_m,
-                    wave_number_per_m,
-                    -0.35,
-                    0.12,
-                )?;
-                let (right_integral_re, right_integral_im) = modal_plane_integral_m2(
-                    order_x,
-                    order_y,
-                    parameters.soundboard_length_m,
-                    parameters.soundboard_width_m,
-                    wave_number_per_m,
-                    0.35,
-                    0.12,
-                )?;
-                // Infinite-baffle Rayleigh radiation has `2*pi*r` in the
-                // denominator.  The earlier free-space `4*pi*r` factor was
-                // inconsistent with a piano soundboard mounted in its rim
-                // and with FrankenSim's baffled-plate observer contract.
-                let observer_scale =
-                    AIR_DENSITY_KG_M3 * omega * modal_norm / (2.0 * PI * RADIATION_DISTANCE_M);
-                let damping_ratio = soundboard_damping_ratio(frequency_hz)?;
-                let t60 = LN_1000 / (TAU * frequency_hz * damping_ratio);
-                modes[index] = SoundboardMode {
-                    mode: Mode {
-                        active: true,
-                        position: 0.0,
-                        velocity: 0.0,
-                        frequency_hz,
-                        omega,
-                        midpoint_omega: prewarped_midpoint_omega(
-                            frequency_hz,
-                            1.0 / sample_rate_hz,
-                        ),
-                        half_velocity_decay: split_t60_half_velocity_decay(
-                            t60,
-                            1.0 / sample_rate_hz,
-                        ),
-                        contact_residue_m_neg_half_kg: 0.0,
-                        // A board mode has several simultaneous bridge ports.
-                        // Their note-dependent residues are evaluated from
-                        // Fig. 2 geometry in the voice/stem coupling solve.
-                        bridge_residue_m_neg_half_kg: 0.0,
-                    },
-                    order_x,
-                    order_y,
-                    left_pressure_per_velocity_re: -observer_scale * left_integral_im,
-                    left_pressure_per_velocity_im: observer_scale * left_integral_re,
-                    right_pressure_per_velocity_re: -observer_scale * right_integral_im,
-                    right_pressure_per_velocity_im: observer_scale * right_integral_re,
-                };
+fn append_soundboard_selection_targets(
+    key: &PianoKeyState,
+    targets: &mut [SoundboardSelectionTarget; MAXIMUM_SOUNDBOARD_SELECTION_TARGETS],
+    target_count: &mut usize,
+) -> Result<(), PianoError> {
+    let midi_index = (key.geometry.midi - MIN_MIDI) as usize;
+    for (string_index, bank) in key.strings.iter().enumerate() {
+        if !bank.active {
+            continue;
+        }
+        for mode in &bank.modes {
+            if !mode.active {
+                continue;
             }
-            index += 1;
+            if *target_count >= targets.len() {
+                return Err(PianoError::BudgetExceeded);
+            }
+            let drive_weight =
+                mode.contact_residue_m_neg_half_kg * mode.bridge_residue_m_neg_half_kg;
+            targets[*target_count] = SoundboardSelectionTarget {
+                midi_index,
+                frequency_hz: mode.frequency_hz,
+                drive_weight_squared: drive_weight * drive_weight,
+                // One target per retained string mode and key is enough to
+                // guarantee spectral coverage. The detuned unisons still
+                // contribute to the aggregate score below, but cannot consume
+                // the entire 288-mode budget with near-duplicate requirements.
+                required: string_index == 0 && drive_weight * drive_weight > 1.0e-24,
+            };
+            *target_count += 1;
         }
     }
-    for index in 1..SOUNDBOARD_MODES {
-        let mut cursor = index;
-        while cursor > 0
-            && ((modes[cursor].mode.active && !modes[cursor - 1].mode.active)
-                || (modes[cursor].mode.active == modes[cursor - 1].mode.active
-                    && modes[cursor].mode.frequency_hz < modes[cursor - 1].mode.frequency_hz))
-        {
-            modes.swap(cursor, cursor - 1);
-            cursor -= 1;
+    Ok(())
+}
+
+fn soundboard_candidate_target_score(
+    candidate_index: usize,
+    target: SoundboardSelectionTarget,
+) -> Result<f64, PianoError> {
+    let candidate = &PIANO_V2_SOUNDBOARD_MODE_PACK[candidate_index];
+    let body_frequency_hz = candidate.frequency_hz;
+    let string_frequency_hz = target.frequency_hz;
+    let damping_ratio = soundboard_damping_ratio(body_frequency_hz)?;
+    let resonance_denominator = 2.0 * damping_ratio * body_frequency_hz * string_frequency_hz;
+    if !resonance_denominator.is_finite() || resonance_denominator <= 0.0 {
+        return Err(PianoError::NonFiniteState);
+    }
+    // This is the normalized magnitude-squared response of a damped board
+    // oscillator driven at the retained string-mode frequency.  The physical
+    // score uses both sides of the power path: hammer/string-to-bridge drive,
+    // signed bridge controllability at this key, and far-field stereo
+    // observability.  It is a deterministic model reduction, not a reference-
+    // audio fit or an EQ curve.
+    let normalized_detuning = (body_frequency_hz * body_frequency_hz
+        - string_frequency_hz * string_frequency_hz)
+        / resonance_denominator;
+    let bridge_residue = candidate.bridge_residue_inverse_sqrt_kg[target.midi_index];
+    let observer_squared: f64 = candidate
+        .observer_pa_s_per_m_sqrt_kg
+        .iter()
+        .map(|value| value * value)
+        .sum();
+    let score = observer_squared * bridge_residue * bridge_residue * target.drive_weight_squared
+        / (1.0 + normalized_detuning * normalized_detuning);
+    if !score.is_finite() || score < 0.0 {
+        return Err(PianoError::NonFiniteState);
+    }
+    Ok(score)
+}
+
+fn build_soundboard_modes<'a>(
+    parameters: PianoParameters,
+    sample_rate_hz: f64,
+    keys: impl Iterator<Item = &'a PianoKeyState>,
+) -> Result<[SoundboardMode; SOUNDBOARD_MODES], PianoError> {
+    let canonical = PianoParameters::canonical();
+    if parameters.soundboard_length_m != canonical.soundboard_length_m
+        || parameters.soundboard_width_m != canonical.soundboard_width_m
+        || parameters.soundboard_thickness_m != canonical.soundboard_thickness_m
+        || parameters.soundboard_density_kg_m3 != canonical.soundboard_density_kg_m3
+        || parameters.soundboard_longitudinal_modulus_pa
+            != canonical.soundboard_longitudinal_modulus_pa
+        || parameters.soundboard_radial_modulus_pa != canonical.soundboard_radial_modulus_pa
+        || parameters.soundboard_shear_modulus_pa != canonical.soundboard_shear_modulus_pa
+        || parameters.soundboard_poisson_ratio != canonical.soundboard_poisson_ratio
+        || parameters.soundboard_rib_count != canonical.soundboard_rib_count
+        || parameters.soundboard_rib_width_m != canonical.soundboard_rib_width_m
+        || parameters.soundboard_rib_height_m != canonical.soundboard_rib_height_m
+        || parameters.soundboard_rib_modulus_pa != canonical.soundboard_rib_modulus_pa
+    {
+        // The runtime consumes a fixed offline DKT pack. Accepting arbitrary
+        // geometry here would silently relabel the same modes as another
+        // instrument; changed geometry must first regenerate and review the
+        // pack.
+        return Err(PianoError::InvalidParameters);
+    }
+    if PIANO_V2_SOUNDBOARD_MODE_PACK.len() > u16::MAX as usize {
+        return Err(PianoError::BudgetExceeded);
+    }
+    let mut targets = [SoundboardSelectionTarget::ZERO; MAXIMUM_SOUNDBOARD_SELECTION_TARGETS];
+    let mut target_count = 0usize;
+    for key in keys {
+        append_soundboard_selection_targets(key, &mut targets, &mut target_count)?;
+    }
+    if target_count == 0 {
+        return Err(PianoError::InvalidSampleRate);
+    }
+
+    let cutoff_hz = 0.44 * sample_rate_hz;
+    let mut selected = [false; PIANO_V2_SOUNDBOARD_MODE_PACK.len()];
+    let mut aggregate_scores = [0.0_f64; PIANO_V2_SOUNDBOARD_MODE_PACK.len()];
+    let eligible_count = PIANO_V2_SOUNDBOARD_MODE_PACK
+        .iter()
+        .take_while(|candidate| candidate.frequency_hz < cutoff_hz)
+        .count();
+    if eligible_count == 0 {
+        return Err(PianoError::InvalidSampleRate);
+    }
+
+    for candidate_index in 0..eligible_count {
+        let mut aggregate_score = 0.0;
+        for target in &targets[..target_count] {
+            aggregate_score += soundboard_candidate_target_score(candidate_index, *target)?;
         }
+        if !aggregate_score.is_finite() {
+            return Err(PianoError::NonFiniteState);
+        }
+        aggregate_scores[candidate_index] = aggregate_score;
+    }
+
+    let selection_limit = eligible_count.min(SOUNDBOARD_MODES);
+    let mut selected_count = 0usize;
+    for target in targets[..target_count]
+        .iter()
+        .copied()
+        .filter(|target| target.required)
+    {
+        let mut best_index = 0usize;
+        let mut best_score = -1.0_f64;
+        for candidate_index in 0..eligible_count {
+            let score = soundboard_candidate_target_score(candidate_index, target)?;
+            if score > best_score {
+                best_score = score;
+                best_index = candidate_index;
+            }
+        }
+        if !selected[best_index] {
+            if selected_count >= selection_limit {
+                break;
+            }
+            selected[best_index] = true;
+            selected_count += 1;
+        }
+    }
+
+    while selected_count < selection_limit {
+        let mut best_index = None;
+        let mut best_score = -1.0_f64;
+        for candidate_index in 0..eligible_count {
+            if selected[candidate_index] {
+                continue;
+            }
+            let score = aggregate_scores[candidate_index];
+            if score > best_score {
+                best_score = score;
+                best_index = Some(candidate_index);
+            }
+        }
+        let best_index = best_index.ok_or(PianoError::NonFiniteState)?;
+        selected[best_index] = true;
+        selected_count += 1;
+    }
+
+    let mut modes = [SoundboardMode::ZERO; SOUNDBOARD_MODES];
+    let mut output_index = 0usize;
+    for (pack_index, packed) in PIANO_V2_SOUNDBOARD_MODE_PACK.iter().enumerate() {
+        if !selected[pack_index] {
+            continue;
+        }
+        let frequency_hz = packed.frequency_hz;
+        let omega = TAU * frequency_hz;
+        let damping_ratio = soundboard_damping_ratio(frequency_hz)?;
+        let t60 = LN_1000 / (omega * damping_ratio);
+        modes[output_index] = SoundboardMode {
+            mode: Mode {
+                active: true,
+                position: 0.0,
+                velocity: 0.0,
+                frequency_hz,
+                omega,
+                midpoint_omega: prewarped_midpoint_omega(frequency_hz, 1.0 / sample_rate_hz),
+                half_velocity_decay: split_t60_half_velocity_decay(t60, 1.0 / sample_rate_hz),
+                contact_residue_m_neg_half_kg: 0.0,
+                bridge_residue_m_neg_half_kg: 0.0,
+            },
+            pack_index: pack_index as u16,
+            left_pressure_per_velocity_re: packed.observer_pa_s_per_m_sqrt_kg[0],
+            left_pressure_per_velocity_im: packed.observer_pa_s_per_m_sqrt_kg[1],
+            right_pressure_per_velocity_re: packed.observer_pa_s_per_m_sqrt_kg[2],
+            right_pressure_per_velocity_im: packed.observer_pa_s_per_m_sqrt_kg[3],
+        };
+        output_index += 1;
+    }
+    if output_index != selection_limit {
+        return Err(PianoError::NonFiniteState);
     }
     Ok(modes)
 }

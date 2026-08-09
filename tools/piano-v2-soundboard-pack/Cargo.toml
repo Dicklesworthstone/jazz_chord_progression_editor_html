@@ -1,0 +1,13 @@
+[package]
+name = "piano-v2-soundboard-pack"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+fs-material = { path = "../../../frankensim/crates/fs-material" }
+fs-modal = { path = "../../../frankensim/crates/fs-modal" }
+fs-plate = { path = "../../../frankensim/crates/fs-plate" }
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
+sha2 = "0.10.8"
