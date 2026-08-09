@@ -170,6 +170,8 @@ pub struct PianoStrike {
     pub impact_energy_j: f64,
     pub felt_stiffness_n_per_m_pow_exponent: f64,
     pub felt_exponent: f64,
+    /// Stulov hereditary time constant [s].
+    pub felt_relaxation_seconds: f64,
     pub maximum_force_n: f64,
     pub maximum_contact_seconds: f64,
 }
@@ -187,13 +189,14 @@ impl PianoStrike {
         let hammer_velocity_m_per_s = 0.28 + 4.15 * pow(amount, 0.82);
         let impact_energy_j =
             0.5 * hammer_mass_kg * hammer_velocity_m_per_s * hammer_velocity_m_per_s;
-        let felt_exponent = 2.25 + 0.55 * hardness;
-        // Compressed piano felt hardens rapidly: the velocity-dependent
-        // coefficient must rise faster than impact speed or a loud blow has a
-        // longer force pulse and becomes darker than a soft blow.  The
-        // exponential is a bounded reduced law for that densification, not an
-        // output spectral control.
-        let felt_stiffness = 1.0e8 * exp(5.5 * hardness);
+        // Stulov's independently measured three-parameter medium-hammer law:
+        // Q0=70.4 N/mm^p, p=3.95, alpha=0.25 ms.  Converting Q0 to SI keeps
+        // hardness in the contact dynamics rather than scheduling an output
+        // brightness coefficient from MIDI velocity.
+        // DOI: 10.1121/1.411912; reduced law reported in ISNA 2004 Eq. (7).
+        let felt_exponent = 3.95;
+        let felt_stiffness = 70.4 * pow(1_000.0, felt_exponent);
+        let felt_relaxation_seconds = 0.000_25;
         let peak_indent = pow(
             (felt_exponent + 1.0) * impact_energy_j / felt_stiffness,
             1.0 / (felt_exponent + 1.0),
@@ -207,6 +210,7 @@ impl PianoStrike {
             impact_energy_j,
             felt_stiffness_n_per_m_pow_exponent: felt_stiffness,
             felt_exponent,
+            felt_relaxation_seconds,
             maximum_force_n,
             maximum_contact_seconds: 0.012 - 0.0075 * hardness,
         })
@@ -346,6 +350,7 @@ impl ContactState {
             impact_energy_j: 0.0,
             felt_stiffness_n_per_m_pow_exponent: 1.0,
             felt_exponent: 2.5,
+            felt_relaxation_seconds: 0.000_25,
             maximum_force_n: 0.0,
             maximum_contact_seconds: 0.001,
         },
@@ -463,9 +468,11 @@ impl PianoVoice {
             || !strike.impact_energy_j.is_finite()
             || !(0.0..=1.0).contains(&strike.impact_energy_j)
             || !strike.felt_stiffness_n_per_m_pow_exponent.is_finite()
-            || !(1.0e6..=2.0e10).contains(&strike.felt_stiffness_n_per_m_pow_exponent)
+            || !(1.0e12..=1.0e16).contains(&strike.felt_stiffness_n_per_m_pow_exponent)
             || !strike.felt_exponent.is_finite()
             || !(1.5..=4.0).contains(&strike.felt_exponent)
+            || !strike.felt_relaxation_seconds.is_finite()
+            || !(1.0e-6..=0.005).contains(&strike.felt_relaxation_seconds)
             || !strike.maximum_force_n.is_finite()
             || !(0.0..=20_000.0).contains(&strike.maximum_force_n)
             || !strike.maximum_contact_seconds.is_finite()
@@ -685,13 +692,15 @@ impl PianoVoice {
         let upper_compression = (compression
             + self.dt * (relative_velocity - 0.5 * upper * inverse_effective_mass))
             .max(0.0);
-        let upper_gradient = felt_potential_gradient(
+        let upper_force = felt_hysteretic_force_n(
             strike.felt_stiffness_n_per_m_pow_exponent,
             strike.felt_exponent,
+            strike.felt_relaxation_seconds,
             compression,
             upper_compression,
+            self.dt,
         );
-        if upper < self.dt * upper_gradient {
+        if upper < self.dt * upper_force {
             self.escaped_hammer_energy_j += 0.5
                 * strike.hammer_mass_kg
                 * self.contact.hammer_velocity_m_per_s
@@ -707,13 +716,15 @@ impl PianoVoice {
             let after = (compression
                 + self.dt * (relative_velocity - 0.5 * impulse * inverse_effective_mass))
                 .max(0.0);
-            let gradient = felt_potential_gradient(
+            let force = felt_hysteretic_force_n(
                 strike.felt_stiffness_n_per_m_pow_exponent,
                 strike.felt_exponent,
+                strike.felt_relaxation_seconds,
                 compression,
                 after,
+                self.dt,
             );
-            if impulse >= self.dt * gradient {
+            if impulse >= self.dt * force {
                 upper = impulse;
             } else {
                 lower = impulse;
@@ -1186,6 +1197,25 @@ fn felt_potential_gradient(stiffness: f64, exponent: f64, before_m: f64, after_m
             - felt_potential_j(stiffness, exponent, before_m))
             / delta
     }
+}
+
+fn felt_hysteretic_force_n(
+    stiffness: f64,
+    exponent: f64,
+    relaxation_seconds: f64,
+    before_m: f64,
+    after_m: f64,
+    dt: f64,
+) -> f64 {
+    let before = before_m.max(0.0);
+    let after = after_m.max(0.0);
+    let elastic = felt_potential_gradient(stiffness, exponent, before, after);
+    // Q=Q0[u^p + alpha*d(u^p)/dt].  The exact discrete power-law
+    // difference makes the hereditary term dissipative for loading and
+    // unloading alike.  Zero-clamping refuses the unphysical tensile branch
+    // once the felt has unloaded.
+    let power_rate = (pow(after, exponent) - pow(before, exponent)) / dt;
+    (elastic + stiffness * relaxation_seconds * power_rate).max(0.0)
 }
 
 fn smooth_step(value: f64) -> f64 {

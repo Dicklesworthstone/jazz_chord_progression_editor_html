@@ -341,6 +341,13 @@ fn malformed_or_active_parameters_refuse_and_force_cap_releases_dissipatively() 
     assert!(!voice.contact_active());
     assert!(voice.represented_energy_j() <= before + 1.0e-12);
     assert!(voice.accounted_energy_j() >= before - 1.0e-9);
+
+    let mut memoryless = PianoStrike::from_velocity(80, parameters.hammer_mass_kg).unwrap();
+    memoryless.felt_relaxation_seconds = 0.0;
+    assert_eq!(
+        voice.begin_strike(memoryless),
+        Err(PianoError::InvalidContact)
+    );
 }
 
 #[test]
