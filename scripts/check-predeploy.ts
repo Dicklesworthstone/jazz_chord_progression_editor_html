@@ -51,6 +51,9 @@ import {
   verifyTrumpetReleaseEvidence,
 } from "./run-trumpet-release-gate";
 import {
+  verifySampleReplacementEvidence,
+} from "./run-sample-replacement-gate";
+import {
   verifyPluckedV2ReleaseEvidence,
 } from "./run-plucked-v2-release-gate";
 
@@ -246,6 +249,11 @@ export function evaluateGate(
           evidencedAlgorithmIds = matrix.algorithmIds;
           evidencedWasmSha256 = matrix.wasmSha256;
         } else if (verifyTrumpetReleaseEvidence(evidence)) {
+          const matrix = evidence;
+          semanticPass = true;
+          evidencedAlgorithmIds = matrix.algorithmIds;
+          evidencedWasmSha256 = matrix.wasmSha256;
+        } else if (verifySampleReplacementEvidence(evidence)) {
           const matrix = evidence;
           semanticPass = true;
           evidencedAlgorithmIds = matrix.algorithmIds;

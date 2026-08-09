@@ -119,8 +119,18 @@ export const UPRIGHT_BASS_REPLACEMENT_POLICY: SampleReplacementPolicy =
     maximumLateToEarlyRmsRatio: 0.45,
     minimumEarlyRms: 1.0e-4,
     maximumPeak: 0.98,
-    proximityMidi: Object.freeze([31, 38, 43]),
-    impostorAlgorithmId: "changes.dsp.plucked-ukulele@1",
+    /*
+     * Same-pitch impostor cells need an impostor that can render the pitch:
+     * every other plucked model's playable window starts at E2 (midi 40),
+     * so the same-pitch overlap is the corpus rows at/above E2. Rows 40 and
+     * 45 measure >35 cents off their own labels (the recordings are simply
+     * detuned; the sampled recipe shipped that detune) and refuse as
+     * references (49 reads -179 cents: the source corpus labels are simply
+     * unreliable up there); 42 is the one row that measures true. The lower corpus rows are still
+     * covered by the pitch/decay/dynamics cells.
+     */
+    proximityMidi: Object.freeze([42]),
+    impostorAlgorithmId: "changes.dsp.plucked-dreadnought@1",
     minimumImpostorMarginDb: 1.5,
   });
 

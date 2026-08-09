@@ -23,15 +23,6 @@
  */
 import type { RenderedNotePcm } from "./dsp-renderer";
 import {
-  UPRIGHT_BASS_SAMPLES_ATTRIBUTION,
-  UPRIGHT_BASS_SAMPLES_BASE64,
-  UPRIGHT_BASS_SAMPLES_BYTE_LENGTH,
-  UPRIGHT_BASS_SAMPLES_LICENSE,
-  UPRIGHT_BASS_SAMPLES_RATE_HZ,
-  UPRIGHT_BASS_SAMPLES_SHA256,
-  UPRIGHT_BASS_SAMPLES_SLICE_INDEX,
-} from "./wasm/upright-bass-samples";
-import {
   VIBRAPHONE_SAMPLES_ATTRIBUTION,
   VIBRAPHONE_SAMPLES_BASE64,
   VIBRAPHONE_SAMPLES_BYTE_LENGTH,
@@ -41,14 +32,19 @@ import {
   VIBRAPHONE_SAMPLES_SLICE_INDEX,
 } from "./wasm/vibraphone-samples";
 
-export const UPRIGHT_BASS_RENDERER_ALGORITHM_ID =
-  "changes.dsp.sampled-upright-bass@1";
+/*
+ * The sampled upright bass was replaced by the physical
+ * changes.dsp.plucked-upright-bass@1 model (bead
+ * jcpe-sample-elimination-physical-qzgo); its 1.0 MB CC0 payload left the
+ * shipping module graph with it. The recordings remain in the repository as
+ * the replacement gate's reference corpus
+ * (src/audio/wasm/upright-bass-samples.ts, imported by the gate only).
+ */
 export const VIBRAPHONE_RENDERER_ALGORITHM_ID =
   "changes.dsp.sampled-vibraphone@1";
 
 export type SampledRendererAlgorithmId =
-  | typeof UPRIGHT_BASS_RENDERER_ALGORITHM_ID
-  | typeof VIBRAPHONE_RENDERER_ALGORITHM_ID;
+  typeof VIBRAPHONE_RENDERER_ALGORITHM_ID;
 
 export const SAMPLED_RENDERER_POLICY = Object.freeze({
   id: "changes.dsp.sampled-instrument.v1",
@@ -82,16 +78,6 @@ type SampledPayloadSource = Readonly<{
 }>;
 
 const PAYLOAD_SOURCES: readonly SampledPayloadSource[] = Object.freeze([
-  Object.freeze({
-    algorithmId: UPRIGHT_BASS_RENDERER_ALGORITHM_ID,
-    attribution: UPRIGHT_BASS_SAMPLES_ATTRIBUTION,
-    license: UPRIGHT_BASS_SAMPLES_LICENSE,
-    payloadSha256: UPRIGHT_BASS_SAMPLES_SHA256,
-    payloadByteLength: UPRIGHT_BASS_SAMPLES_BYTE_LENGTH,
-    payloadBase64: UPRIGHT_BASS_SAMPLES_BASE64,
-    payloadRateHz: UPRIGHT_BASS_SAMPLES_RATE_HZ,
-    slices: UPRIGHT_BASS_SAMPLES_SLICE_INDEX,
-  }),
   Object.freeze({
     algorithmId: VIBRAPHONE_RENDERER_ALGORITHM_ID,
     attribution: VIBRAPHONE_SAMPLES_ATTRIBUTION,

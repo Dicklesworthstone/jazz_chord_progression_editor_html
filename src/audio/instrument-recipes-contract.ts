@@ -366,17 +366,23 @@ export const AUDIO_INSTRUMENT_RECIPES = Object.freeze([
     id: "upright-bass",
     label: "Upright Bass",
     designClaim:
-      "recorded solo contrabass pizzicato, nearest recorded key transposed onto pitch",
+      "physical pizzicato contrabass: bidirectional string waves into the DKT soundboard authority",
     synthesis: "rendered",
-    outputLevel: 0.17,
+    /*
+     * Loudness-matched to the retired sampled recipe it replaces (bead
+     * jcpe-sample-elimination-physical-qzgo): the physical render's chart
+     * RMS is 12.1x quieter at the ABI's numeric range, so the recipe level
+     * carries the measured ratio against the browser-calibrated 0.17.
+     */
+    outputLevel: 2.06,
     polyphonyLimit: 32,
     renderer: Object.freeze({
-      algorithmId: "changes.dsp.sampled-upright-bass@1",
+      algorithmId: "changes.dsp.plucked-upright-bass@1",
       channels: 2,
       maximumRenderSeconds: 4,
       bufferCacheLimit: 64,
     }),
-    /* Click guard and pizzicato damp: the recorded PCM is the envelope. */
+    /* Click guard and pizzicato damp: the physical decay is the envelope. */
     amplitude: Object.freeze({ attackSeconds: 0.002, decaySeconds: 0, sustainLevel: 1, releaseSeconds: 0.25 }),
     filter: Object.freeze({ type: "lowpass", attackHz: 16_000, peakHz: 16_000, sustainHz: 16_000, q: 0.5, decaySeconds: 0.1 }),
   }),

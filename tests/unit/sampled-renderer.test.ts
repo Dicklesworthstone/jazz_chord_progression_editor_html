@@ -11,7 +11,6 @@ import { createHash } from "node:crypto";
 
 import {
   SAMPLED_RENDERER_POLICY,
-  UPRIGHT_BASS_RENDERER_ALGORITHM_ID,
   VIBRAPHONE_RENDERER_ALGORITHM_ID,
   loadSampledInstrumentRenderer,
 } from "../../src/audio/sampled-renderer";
@@ -109,9 +108,10 @@ describe("payload integrity", () => {
 });
 
 describe("renderer laws", () => {
-  const bass = loadSampledInstrumentRenderer(
-    UPRIGHT_BASS_RENDERER_ALGORITHM_ID,
-  );
+  /* The sampled upright bass left the shipping graph with its physical
+   * replacement (jcpe-sample-elimination-physical-qzgo); its payload stays
+   * in the repository as the replacement gate's reference corpus, and the
+   * vibraphone is the remaining sampled renderer carrying these laws. */
   const vibes = loadSampledInstrumentRenderer(
     VIBRAPHONE_RENDERER_ALGORITHM_ID,
   );
@@ -123,13 +123,13 @@ describe("renderer laws", () => {
   });
 
   test("out-of-contract requests return null, in-contract never do", () => {
-    expect(bass.renderNote(20, 64, OUTPUT_RATE_HZ)).toBeNull();
-    expect(bass.renderNote(109, 64, OUTPUT_RATE_HZ)).toBeNull();
-    expect(bass.renderNote(40.5, 64, OUTPUT_RATE_HZ)).toBeNull();
-    expect(bass.renderNote(40, 0, OUTPUT_RATE_HZ)).toBeNull();
-    expect(bass.renderNote(40, 128, OUTPUT_RATE_HZ)).toBeNull();
-    expect(bass.renderNote(40, 64, 7_999)).toBeNull();
-    expect(bass.renderNote(40, 64, OUTPUT_RATE_HZ, 0)).toBeNull();
+    expect(vibes.renderNote(20, 64, OUTPUT_RATE_HZ)).toBeNull();
+    expect(vibes.renderNote(109, 64, OUTPUT_RATE_HZ)).toBeNull();
+    expect(vibes.renderNote(60.5, 64, OUTPUT_RATE_HZ)).toBeNull();
+    expect(vibes.renderNote(60, 0, OUTPUT_RATE_HZ)).toBeNull();
+    expect(vibes.renderNote(60, 128, OUTPUT_RATE_HZ)).toBeNull();
+    expect(vibes.renderNote(60, 64, 7_999)).toBeNull();
+    expect(vibes.renderNote(60, 64, OUTPUT_RATE_HZ, 0)).toBeNull();
     const contractPitches = Array.from(
       {
         length:
@@ -140,18 +140,14 @@ describe("renderer laws", () => {
       (_, offset) => SAMPLED_RENDERER_POLICY.minimumMidiPitch + offset,
     );
     for (const midiPitch of contractPitches) {
-      expect(bass.renderNote(midiPitch, 64, OUTPUT_RATE_HZ, 0.25)).not.toBeNull();
       expect(vibes.renderNote(midiPitch, 64, OUTPUT_RATE_HZ, 0.25)).not.toBeNull();
     }
   });
 
   test("nearest recorded key is selected, ties to the higher key", () => {
-    for (const renderer of [bass, vibes]) {
+    for (const renderer of [vibes]) {
       const keys = [...new Set(
-        (renderer === bass
-          ? UPRIGHT_BASS_SAMPLES_SLICE_INDEX
-          : VIBRAPHONE_SAMPLES_SLICE_INDEX
-        ).map((slice) => slice.midiPitch),
+        VIBRAPHONE_SAMPLES_SLICE_INDEX.map((slice) => slice.midiPitch),
       )].sort((a, b) => a - b);
       for (let midiPitch = 21; midiPitch <= 108; midiPitch += 1) {
         const chosen = renderer.sliceFor(midiPitch).midiPitch;
@@ -173,11 +169,7 @@ describe("renderer laws", () => {
     /* 43 and 44 are unrecorded bass keys; 26 stretches below the corpus.
      * 62 and 90 exercise vibraphone transposition and above-corpus stretch
      * (both stay in the vibraphone's own register). */
-    const cases: ReadonlyArray<readonly [typeof bass, number]> = [
-      [bass, 33],
-      [bass, 43],
-      [bass, 44],
-      [bass, 55],
+    const cases: ReadonlyArray<readonly [typeof vibes, number]> = [
       [vibes, 62],
       [vibes, 79],
       [vibes, 90],
@@ -201,8 +193,8 @@ describe("renderer laws", () => {
   });
 
   test("rendering is deterministic and channels are identical", () => {
-    const first = bass.renderNote(40, 80, OUTPUT_RATE_HZ);
-    const second = bass.renderNote(40, 80, OUTPUT_RATE_HZ);
+    const first = vibes.renderNote(67, 80, OUTPUT_RATE_HZ);
+    const second = vibes.renderNote(67, 80, OUTPUT_RATE_HZ);
     expect(first).not.toBeNull();
     expect(second).not.toBeNull();
     if (first === null || second === null) return;
@@ -221,8 +213,8 @@ describe("renderer laws", () => {
   });
 
   test("maxSeconds truncates with a click guard, absent it renders the natural length", () => {
-    const natural = bass.renderNote(40, 64, OUTPUT_RATE_HZ);
-    const truncated = bass.renderNote(40, 64, OUTPUT_RATE_HZ, 0.25);
+    const natural = vibes.renderNote(67, 64, OUTPUT_RATE_HZ);
+    const truncated = vibes.renderNote(67, 64, OUTPUT_RATE_HZ, 0.25);
     expect(natural).not.toBeNull();
     expect(truncated).not.toBeNull();
     if (natural === null || truncated === null) return;

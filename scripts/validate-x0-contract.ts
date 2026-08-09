@@ -404,9 +404,15 @@ export const X0_REVIEWED_RECIPE_IDS = [
  * concert-vibes 0.42->0.1 (was +11.0 dB), upright-bass 0.5->0.17
  * (was +9.4 dB), ukulele 0.54->0.65 (was -2.2 dB). Recipe order matches
  * X0_REVIEWED_RECIPE_IDS.
+ *
+ * 2026-08-09: upright-bass 0.17->2.06 — the recipe swapped from the sampled
+ * renderer to the physical plucked-upright model, whose ABI range renders
+ * 12.1x quieter at the same chart level; the ratio was measured at midi 38
+ * v100 against the browser-calibrated sampled level it replaces (bead
+ * jcpe-sample-elimination-physical-qzgo).
  */
 export const X0_REVIEWED_RECIPE_LEVELS = [
-  0.62, 0.48, 0.5, 0.3, 0.34, 0.3, 2.8, 0.44, 0.5, 0.17, 0.1, 0.46, 1.1,
+  0.62, 0.48, 0.5, 0.3, 0.34, 0.3, 2.8, 0.44, 0.5, 2.06, 0.1, 0.46, 1.1,
   0.5, 0.65,
 ] as const;
 export const X0_REVIEWED_RECIPE_POLYPHONY = [

@@ -10,7 +10,30 @@ import type {
 } from "../../src/ui/studio/studio-contract";
 
 const BASE_VIEW: Omit<StudioShellView, "layout"> = Object.freeze({
-  /* This harness proves responsive ownership, not the import surface. */
+  /* This harness proves responsive ownership, not the export surface. */
+  midiExport: Object.freeze({
+    state: null,
+    readiness: "ready",
+    blockers: Object.freeze([]),
+    realization: Object.freeze({
+      storedManualCount: 0,
+      storedFrozenCount: 0,
+      generatedCount: 0,
+      externalBassEventIds: Object.freeze([]),
+    }),
+    ppq: 960,
+    trackCount: 2,
+    tempoBpm: 0,
+    meter: Object.freeze({ beatsPerBar: 4, beatUnit: 4 }),
+    losses: Object.freeze([]),
+    markerOmissions: Object.freeze([]),
+    titleNotice: null,
+    derivedTitle: "",
+    artifact: null,
+    stale: false,
+    refusal: null,
+    announcement: null,
+  }),
   midiImport: Object.freeze({
     available: false,
     statusLabel: "MIDI import is not available in this session.",
@@ -218,8 +241,14 @@ function ResponsiveStaleOwnerHarness() {
     onMidiImportChooseFile: () => undefined,
     onMidiImportCommit: () => undefined,
     onMidiImportDiscard: () => undefined,
-  onMidiImportAudition: () => undefined,
+    onMidiImportAudition: () => undefined,
   onMidiImportOverridesChange: () => undefined,
+    onOpenMidiExport: () => undefined,
+    onMidiExportGenerate: () => undefined,
+    onMidiExportDownload: () => undefined,
+    onMidiExportClose: () => undefined,
+    onMidiExportRepreview: () => undefined,
+    onMidiExportBlockedEventActivate: () => undefined,
     onTitleDraftChange: () => undefined,
     onCommitTitle: () => undefined,
     onResetTitleDraft: () => undefined,
@@ -316,6 +345,7 @@ function ResponsiveStaleOwnerHarness() {
         romanForEvent: () => null,
       },
       callbacks,
+      midiExportAvailable: false,
       // U0 harness: the transport is out of scope for these layout proofs.
       transport: {
         canPlay: false,

@@ -6,7 +6,7 @@ import { resolve } from "node:path";
  * and verify the run survives the swap on the deployed-equivalent artifact.
  */
 
-const ARTIFACT = process.env.J4HJ_URL ?? `file://${resolve("jazz_chord_progression_editor.html")}`;
+const ARTIFACT = process.env["J4HJ_URL"] ?? `file://${resolve("jazz_chord_progression_editor.html")}`;
 
 async function audioState(page: Page): Promise<string> {
   return (
