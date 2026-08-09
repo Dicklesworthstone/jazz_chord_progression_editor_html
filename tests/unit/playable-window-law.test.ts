@@ -85,11 +85,136 @@ describe("Rust plucked windows assert-equal the TS windows", () => {
     }
   });
 
+  test("trumpet window matches the Rust operating table", () => {
+    /*
+     * The trumpet window is the TRUMPET_NOTE_TABLE span (round-11 sweep,
+     * jcpe-trumpet-lock-completion-el46). Parsed from the committed
+     * trumpet.rs like the plucked windows above.
+     */
+    const trumpetSource = execFileSync(
+      "git",
+      ["show", "HEAD:dsp/concert-grand/src/trumpet.rs"],
+      { cwd: import.meta.dir + "/../..", encoding: "utf8", maxBuffer: 16 * 1024 * 1024 },
+    );
+    const rows = [...trumpetSource.matchAll(/^\s*\((\d+),\s*\[/gmu)].map((m) => Number(m[1]));
+    expect(rows.length).toBeGreaterThan(0);
+    const windows = AUDIO_PLAYABLE_MIDI_WINDOWS as Readonly<
+      Record<string, Readonly<{ low: number; high: number }>>
+    >;
+    expect(windows["trumpet"], "trumpet").toEqual({
+      low: Math.min(...rows),
+      high: Math.max(...rows),
+    });
+  });
+
   test("ukulele window matches Rust", () => {
     const rust = rustRange(/PLK2_UKULELE_PACK => \((\d+)\.\.=(\d+)\)\.contains/u);
     const windows = AUDIO_PLAYABLE_MIDI_WINDOWS as Readonly<
       Record<string, Readonly<{ low: number; high: number }>>
     >;
     expect(windows["ukulele"], "ukulele").toEqual(rust);
+  });
+});
+
+/*
+ * Course-capacity parity (trumpet go-live gate-diff review round): the TS
+ * PLUCKED_CHORD_COURSE_CAPACITY map that drives bottom-up chord voicing at
+ * the realization seam must equal the Rust packs' physical `string_count`.
+ * A drifted capacity either re-opens the 5-voice bass prepare refusal (too
+ * high) or silently drops playable voices (too low).
+ */
+import {
+  PLUCKED_CHORD_COURSE_CAPACITY,
+  PLUCKED_OPEN_STRING_MIDIS,
+  pluckedChordAssignmentFeasible,
+} from "../../src/audio/instrument-recipes-contract";
+
+describe("plucked chord course capacity", () => {
+  test("TS capacities equal Rust pack string counts, in pack order", () => {
+    const source = Bun.spawnSync([
+      "git",
+      "show",
+      "HEAD:dsp/concert-grand/src/plucked_v2.rs",
+    ]).stdout.toString();
+    const counts = [...source.matchAll(/^\s*string_count:\s*(\d+),/gmu)].map(
+      (m) => Number(m[1]),
+    );
+    /*
+     * Four literals in source order: dreadnought(6), ukulele(4),
+     * marshall_electric(6), upright_bass(4). archtop_pack() clones
+     * dreadnought_pack() (asserted below), so its capacity inherits 6.
+     */
+    expect(counts).toEqual([6, 4, 6, 4]);
+    expect(/pub fn archtop_pack\(\)[^}]*dreadnought_pack\(\)/u.test(source)).toBe(true);
+    const expected: Readonly<Record<string, number>> = {
+      "changes.dsp.plucked-dreadnought@1": 6,
+      "changes.dsp.plucked-ukulele@1": 4,
+      "changes.dsp.plucked-electric@2": 6,
+      "changes.dsp.plucked-upright-bass@1": 4,
+      "changes.dsp.plucked-archtop@2": 6,
+    };
+    expect({ ...PLUCKED_CHORD_COURSE_CAPACITY }).toEqual(expected);
+  });
+});
+
+describe("plucked open-string parity", () => {
+  test("TS open-string tables equal the Rust pack constructors", async () => {
+    const source = await Bun.file(
+      "dsp/concert-grand/src/plucked_v2.rs",
+    ).text();
+    const packOpens = (name: string): number[] => {
+      const start = source.indexOf(`pub fn ${name}()`);
+      expect(start).toBeGreaterThan(-1);
+      const next = source.indexOf("pub fn ", start + 8);
+      const body = source.slice(start, next === -1 ? source.length : next);
+      return [...body.matchAll(/strings\[\d+\] = string\((\d+),/gu)].map((m) =>
+        Number(m[1])
+      );
+    };
+    const dreadnought = packOpens("dreadnought_pack");
+    expect(dreadnought).toEqual([
+      ...PLUCKED_OPEN_STRING_MIDIS["changes.dsp.plucked-dreadnought@1"] ?? [],
+    ]);
+    /* archtop clones dreadnought_pack() (no string literals of its own);
+     * electric restates standard tuning. */
+    expect(/pub fn archtop_pack\(\)[^}]*dreadnought_pack\(\)/u.test(source)).toBe(true);
+    expect(packOpens("marshall_electric_pack")).toEqual(dreadnought);
+    expect(packOpens("ukulele_pack")).toEqual([
+      ...PLUCKED_OPEN_STRING_MIDIS["changes.dsp.plucked-ukulele@1"] ?? [],
+    ]);
+    expect(packOpens("upright_bass_pack")).toEqual([
+      ...PLUCKED_OPEN_STRING_MIDIS["changes.dsp.plucked-upright-bass@1"] ?? [],
+    ]);
+  });
+
+  test("the fret law mirrors plk2_chord_string_frets on measured cases", () => {
+    /* The production failure: a chart comp chord folded to the top of the
+     * bass window is unassignable on four bass strings (fret > 24 on the
+     * low course); one octave down it lands. Measured against the real
+     * wasm ABI 2026-08-09. */
+    expect(
+      pluckedChordAssignmentFeasible(
+        "changes.dsp.plucked-upright-bass@1",
+        [59, 60, 64, 67],
+      ),
+    ).toBe(false);
+    expect(
+      pluckedChordAssignmentFeasible(
+        "changes.dsp.plucked-upright-bass@1",
+        [47, 48, 52, 55],
+      ),
+    ).toBe(true);
+    expect(
+      pluckedChordAssignmentFeasible(
+        "changes.dsp.plucked-upright-bass@1",
+        [64, 67],
+      ),
+    ).toBe(false);
+    expect(
+      pluckedChordAssignmentFeasible(
+        "changes.dsp.plucked-upright-bass@1",
+        [48, 55, 60, 64],
+      ),
+    ).toBe(true);
   });
 });

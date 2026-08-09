@@ -56,6 +56,10 @@ const PLUCKED_INSTRUMENTS = new Set<InstrumentId>([
   "blues-guitar",
   "dreadnought-guitar",
   "ukulele",
+  /* The physical upright bass (plucked-upright-bass@1) replaced the sampled
+   * contrabass: cache-only attack, so hostile voicings prepare in pairs
+   * like the rest of the plucked family. */
+  "upright-bass",
 ]);
 
 function pairs<Value>(values: readonly Value[]): readonly (readonly Value[])[] {
