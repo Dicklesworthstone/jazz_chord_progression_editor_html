@@ -98,7 +98,6 @@ const REVIEWED_BAR_ANCHORS: [ReviewedBarAnchor; 4] = [
 /// A wide felt damper couples most strongly to the low flexural modes.
 const DAMPER_SHAPE: [f64; BAR_MODES] = [1.0, 0.88, 0.72, 0.56, 0.43, 0.32, 0.24];
 
-
 /// Bar radiation grows with mode frequency but rolls off once the wavelength
 /// approaches the finite bar width.
 const BAR_RADIATION_SHAPE: [f64; BAR_MODES] = [0.10, -0.18, 0.23, -0.24, 0.22, -0.18, 0.14];
@@ -490,7 +489,9 @@ impl VibraphoneVoice {
         {
             return Err(VibesError::InvalidContact);
         }
-        let stated_energy = 0.5 * gesture.mallet_mass_kg * (gesture.strike_velocity_m_per_s * gesture.strike_velocity_m_per_s);
+        let stated_energy = 0.5
+            * gesture.mallet_mass_kg
+            * (gesture.strike_velocity_m_per_s * gesture.strike_velocity_m_per_s);
         let energy_tolerance = (1.0e-9_f64).max(0.01 * stated_energy);
         if (gesture.impact_energy_j - stated_energy).abs() > energy_tolerance {
             return Err(VibesError::InvalidContact);
@@ -1181,14 +1182,46 @@ fn contact_potential_gradient(stiffness: f64, before_m: f64, after_m: f64) -> f6
 /// buffers at 4 s and the bar+resonator T60 law keeps audible energy inside
 /// that span at every playable pitch.
 const VBS2_CAP_SECONDS: f64 = 4.0;
-/// Medium-soft yarn mallet per the sampled recipe's design claim. Measured
-/// against the recorded corpus (2026-08-09): the strike POSITION shape owns
-/// the mode balance (a center strike cannot excite the tuned 4x partial and
-/// over-drives mode 3), while hardness owns the contact bandwidth — 0.12
-/// left the 6 ms contact unable to reach the 4x partial at D5 (2.3 kHz) at
-/// all, and 0.35 with the x/L=0.41 shape lands the recorded balance.
-/// Velocity moves impact energy, never the damping law.
-const VBS2_HARDNESS: f64 = 0.20;
+/// Per-register mallet calibration for the shipping render, measured
+/// against the recorded CC0 corpus through the sample-replacement gate
+/// (2026-08-09 2D campaign, position x hardness per register; every row's
+/// number comes from a full canonical gate run on the rebuilt embed —
+/// no screening shim, per the oracle-fidelity law).
+///
+/// Physics recorded by the earlier single-point sweeps and preserved here:
+/// the strike POSITION owns the mode balance (a centre strike sits on the
+/// tuned 4x partial's node and over-drives mode 3), while HARDNESS owns
+/// the contact bandwidth (soft contact cannot reach the 4x partial at all
+/// in the top octave). Real players do exactly this: softer mallets and a
+/// nearer-centre strike on the low bars, harder mallets toward the bar
+/// edge as the bars shorten. Velocity moves impact energy, never the
+/// damping law. Rows: (inclusive upper MIDI bound, x/L position, hardness).
+///
+/// 2026-08-09 20-point canonical grid (position 0.32-0.50 x hardness
+/// 0.12-0.42, every point a full gate run; /tmp/vibes-sweep-results.tsv
+/// archived in the bead dossier): m60 group peaks at centre+soft
+/// (margin +3.50 dB), the m67 group at centre+HARD (+3.23 — the earlier
+/// "structurally short" verdict was a hardness ceiling: soft contact
+/// cannot reach that bar group's 4x-partial bandwidth), the m74 group
+/// off-centre+medium (+2.80). End registers keep the round-1 point
+/// (m53 +9.30, m84 +5.98).
+const VBS2_REGISTER_TABLE: [(i32, f64, f64); 5] = [
+    (56, 0.41, 0.20),
+    (63, 0.50, 0.12),
+    (70, 0.50, 0.42),
+    (78, 0.32, 0.30),
+    (89, 0.41, 0.20),
+];
+
+fn vbs2_register_calibration(midi: i32) -> (f64, f64) {
+    for (bound, position, hardness) in VBS2_REGISTER_TABLE {
+        if midi <= bound {
+            return (position, hardness);
+        }
+    }
+    let last = VBS2_REGISTER_TABLE[VBS2_REGISTER_TABLE.len() - 1];
+    (last.1, last.2)
+}
 /// Pressure-to-float scale, measured against the model (2026-08-09): the
 /// radiated pressure of a velocity-100 F4 strike peaks at 0.177 Pa at the
 /// 1 m radiation distance, so 1.58 lands the float peak at 0.28 — the same
@@ -1197,7 +1230,8 @@ const VBS2_HARDNESS: f64 = 0.20;
 const VBS2_PRESSURE_SCALE: f64 = 1.58;
 
 fn vbs2_disjoint(a: usize, a_len: usize, b: usize, b_len: usize) -> bool {
-    a.checked_add(a_len).is_some_and(|a_end| a_end <= b || b.checked_add(b_len).is_some_and(|b_end| b_end <= a))
+    a.checked_add(a_len)
+        .is_some_and(|a_end| a_end <= b || b.checked_add(b_len).is_some_and(|b_end| b_end <= a))
 }
 
 /// Maximum frame count written by [`vbs2_render`]. Zero refuses an invalid
@@ -1248,7 +1282,8 @@ pub extern "C" fn vbs2_render(
         Ok(voice) => voice,
         Err(_) => return 0,
     };
-    let mut gesture = match StrikeGesture::from_velocity(velocity, VBS2_HARDNESS) {
+    let (strike_position, hardness) = vbs2_register_calibration(midi);
+    let mut gesture = match StrikeGesture::from_velocity(velocity, hardness) {
         Ok(gesture) => gesture,
         Err(_) => return 0,
     };
@@ -1258,15 +1293,18 @@ pub extern "C" fn vbs2_render(
      * a centre node) receives ~zero contact coupling through the model's
      * patch-integrated mode shapes — the replacement gate measured it 54 dB
      * under the fundamental at D5 while the recorded corpus holds it at
-     * -15 dB (2026-08-09). x/L = 0.41 is the documented playing position
-     * and restores the recorded partial balance through the contact
-     * geometry itself.
+     * -15 dB (2026-08-09). The per-register table above carries the
+     * measured position and hardness for each bar group.
      */
-    gesture.strike_position_over_length = 0.41;
+    gesture.strike_position_over_length = strike_position;
     if voice.begin_strike(gesture).is_err() {
         return 0;
     }
-    let controls = VibesControls { pedal_position: 1.0, motor_hz: 0.0, fan_depth: 0.0 };
+    let controls = VibesControls {
+        pedal_position: 1.0,
+        motor_hz: 0.0,
+        fan_depth: 0.0,
+    };
     let fade_frames = ((0.1 * rate) as usize).min(frames / 8).max(1);
     let fade_start = frames - fade_frames;
     for frame in 0..frames {
