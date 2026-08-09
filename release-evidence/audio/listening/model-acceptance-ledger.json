@@ -73,17 +73,31 @@
       "date": "2026-08-07"
     },
     {
+      "algorithmId": "changes.dsp.sampled-upright-bass@1",
+      "status": "approved",
+      "evidence": "owner-approved artifact 67b9ae08 (commit 031c667); CC0 sampled recipe live on all hosts 2026-08-06; restored by owner mandate 2026-08-09 (bead jcpe-3q4c)",
+      "decidedBy": "owner",
+      "date": "2026-08-09"
+    },
+    {
       "algorithmId": "changes.dsp.plucked-upright-bass@1",
-      "status": "machine-delegated",
-      "evidence": "release-evidence/audio/listening/upright-bass-replacement-evidence.json",
-      "decidedBy": "owner-delegated-machine-gate",
+      "status": "red",
+      "evidence": "owner rejected temporal character on live c2be1e5d/638a104f (2026-08-09, bead jcpe-bass-vibes-temporal-character-9g4t); dark until it beats the sampled reference in the owner's ears",
+      "decidedBy": "owner",
+      "date": "2026-08-09"
+    },
+    {
+      "algorithmId": "changes.dsp.sampled-vibraphone@1",
+      "status": "approved",
+      "evidence": "owner-approved artifact 67b9ae08 (commit 031c667); CC0 sampled recipe live on all hosts 2026-08-06; restored by owner mandate 2026-08-09 (bead jcpe-3q4c)",
+      "decidedBy": "owner",
       "date": "2026-08-09"
     },
     {
       "algorithmId": "changes.dsp.vibes@2",
-      "status": "machine-delegated",
-      "evidence": "release-evidence/audio/listening/vibes-replacement-evidence.json",
-      "decidedBy": "owner-delegated-machine-gate",
+      "status": "red",
+      "evidence": "owner rejected temporal character on live c2be1e5d/638a104f (2026-08-09, bead jcpe-bass-vibes-temporal-character-9g4t); dark until it beats the sampled reference in the owner's ears",
+      "decidedBy": "owner",
       "date": "2026-08-09"
     },
     {

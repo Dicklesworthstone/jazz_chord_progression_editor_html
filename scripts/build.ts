@@ -13,6 +13,22 @@ import {
   PIANO_ATTACK_SAMPLES_SHA256,
   PIANO_ATTACK_SAMPLE_RATE_HZ,
 } from "../src/audio/wasm/piano-attack-samples";
+import {
+  UPRIGHT_BASS_SAMPLES_ATTRIBUTION,
+  UPRIGHT_BASS_SAMPLES_BASE64,
+  UPRIGHT_BASS_SAMPLES_BYTE_LENGTH,
+  UPRIGHT_BASS_SAMPLES_LICENSE,
+  UPRIGHT_BASS_SAMPLES_RATE_HZ,
+  UPRIGHT_BASS_SAMPLES_SHA256,
+} from "../src/audio/wasm/upright-bass-samples";
+import {
+  VIBRAPHONE_SAMPLES_ATTRIBUTION,
+  VIBRAPHONE_SAMPLES_BASE64,
+  VIBRAPHONE_SAMPLES_BYTE_LENGTH,
+  VIBRAPHONE_SAMPLES_LICENSE,
+  VIBRAPHONE_SAMPLES_RATE_HZ,
+  VIBRAPHONE_SAMPLES_SHA256,
+} from "../src/audio/wasm/vibraphone-samples";
 import { inspectArtifact } from "./artifact-policy";
 import {
   assertByteEqual,
@@ -284,12 +300,59 @@ async function inventoriedEmbeddedAssets(
     );
   }
 
-  /*
-   * The sampled upright bass and vibraphone were replaced by physical models
-   * (jcpe-sample-elimination-physical-qzgo); their CC0 payloads no longer
-   * ship in the artifact, so no bundling assertion or license row remains.
-   * The recordings stay in the repository as the replacement gate's corpora.
-   */
+  const sampledPayloads = [
+    {
+      id: "vsco2-contrabass-pizz-pcm",
+      base64: UPRIGHT_BASS_SAMPLES_BASE64,
+      byteLength: UPRIGHT_BASS_SAMPLES_BYTE_LENGTH,
+      sha256: UPRIGHT_BASS_SAMPLES_SHA256,
+      rateHz: UPRIGHT_BASS_SAMPLES_RATE_HZ,
+      source: "VSCO-2-CE/Strings/Contrabass/pizz",
+      license: UPRIGHT_BASS_SAMPLES_LICENSE,
+      attribution: UPRIGHT_BASS_SAMPLES_ATTRIBUTION,
+    },
+    {
+      id: "vcsl-vibraphone-soft-pcm",
+      base64: VIBRAPHONE_SAMPLES_BASE64,
+      byteLength: VIBRAPHONE_SAMPLES_BYTE_LENGTH,
+      sha256: VIBRAPHONE_SAMPLES_SHA256,
+      rateHz: VIBRAPHONE_SAMPLES_RATE_HZ,
+      source: "VCSL/Idiophones/Struck Idiophones/Vibraphone - Soft Mallets",
+      license: VIBRAPHONE_SAMPLES_LICENSE,
+      attribution: VIBRAPHONE_SAMPLES_ATTRIBUTION,
+    },
+  ] as const;
+  const sampledAssets = [];
+  for (const payload of sampledPayloads) {
+    if (!html.includes(payload.base64)) {
+      throw new Error(
+        `ASSET_SAMPLED_PCM_MISSING: the embedded ${payload.id} payload was not bundled.`,
+      );
+    }
+    const payloadBytes = Uint8Array.from(Buffer.from(payload.base64, "base64"));
+    const payloadSha256 = await sha256Hex(payloadBytes);
+    if (
+      payloadBytes.byteLength !== payload.byteLength ||
+      payloadSha256 !== payload.sha256
+    ) {
+      throw new Error(
+        `ASSET_SAMPLED_PCM_DRIFT: the ${payload.id} base64 does not match its ` +
+          "pinned sha256/byte length; regenerate with " +
+          "bun scripts/build-instrument-samples.ts.",
+      );
+    }
+    sampledAssets.push({
+      id: payload.id,
+      mime: `audio/L16;rate=${String(payload.rateHz)};channels=1`,
+      bytes: payloadBytes.byteLength,
+      sha256: payloadSha256,
+      source: payload.source,
+      generator: "scripts/build-instrument-samples.ts",
+      license: payload.license,
+      embedding: "inline-script-base64" as const,
+      attribution: payload.attribution,
+    });
+  }
 
   return [
     {
@@ -322,6 +385,7 @@ async function inventoriedEmbeddedAssets(
       embedding: "inline-script-base64",
       attribution: PIANO_ATTACK_SAMPLES_ATTRIBUTION,
     },
+    ...sampledAssets,
   ];
 }
 
@@ -350,6 +414,13 @@ Third-party notice: recorded piano attack transients embedded in the audio
 engine come from ${PIANO_ATTACK_SAMPLES_ATTRIBUTION},
 <https://creativecommons.org/licenses/by/3.0/>. Sliced and re-encoded by
 scripts/build-piano-samples.ts; see dist/licenses.json for the payload digest.
+
+Third-party notice: recorded upright bass and vibraphone notes embedded in
+the audio engine come from ${UPRIGHT_BASS_SAMPLES_ATTRIBUTION} and
+${VIBRAPHONE_SAMPLES_ATTRIBUTION},
+<https://creativecommons.org/publicdomain/zero/1.0/> (public-domain
+dedications; credit given voluntarily). Sliced and re-encoded by
+scripts/build-instrument-samples.ts; see dist/licenses.json for the digests.
 -->`;
   body = body.replace(/^<!doctype html>/i, (doctype) => `${doctype}\n${notice}`);
   const csp = await contentSecurityPolicy(body);

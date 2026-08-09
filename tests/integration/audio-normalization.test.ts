@@ -47,10 +47,11 @@ const DENSE_CASES: readonly Readonly<{
   { caseId: "X0-RENDER-023", instrumentId: "organ", outputLevel: 0.44, sourcesPerVoice: 6 },
   /* Plucked families use one composite source for the whole physical chord. */
   { caseId: "X0-RENDER-026", instrumentId: "guitar", outputLevel: 0.5, sourcesPerVoice: 1 },
-  /* Physical bass uses one shared chord source; the physical vibes note ABI
-   * currently schedules one PCM buffer source per logical voice. */
-  { caseId: "X0-RENDER-029", instrumentId: "upright-bass", outputLevel: 2.06, sourcesPerVoice: 1 },
-  { caseId: "X0-RENDER-032", instrumentId: "concert-vibes", outputLevel: 1.312, sourcesPerVoice: 1 },
+  /* Sampled recipes schedule one PCM buffer source per logical voice
+   * (owner mandate 2026-08-09, bead jcpe-3q4c: samples ship until the
+   * physical models close the heard quality gap). */
+  { caseId: "X0-RENDER-029", instrumentId: "upright-bass", outputLevel: 0.17, sourcesPerVoice: 1 },
+  { caseId: "X0-RENDER-032", instrumentId: "concert-vibes", outputLevel: 0.1, sourcesPerVoice: 1 },
   { caseId: "X0-RENDER-035", instrumentId: "blues-guitar", outputLevel: 0.46, sourcesPerVoice: 1 },
   { caseId: "X0-RENDER-038", instrumentId: "clarinet", outputLevel: 1.1, sourcesPerVoice: 1 },
   { caseId: "X0-RENDER-041", instrumentId: "dreadnought-guitar", outputLevel: 0.5, sourcesPerVoice: 1 },

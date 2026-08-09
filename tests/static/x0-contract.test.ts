@@ -245,13 +245,13 @@ function sourceCount(recipe: (typeof AUDIO_INSTRUMENT_RECIPES)[number]): number 
         bufferCacheLimit: 96,
       },
       "upright-bass": {
-        algorithmId: "changes.dsp.plucked-upright-bass@1",
+        algorithmId: "changes.dsp.sampled-upright-bass@1",
         channels: 2,
         maximumRenderSeconds: 4,
         bufferCacheLimit: 64,
       },
       "concert-vibes": {
-        algorithmId: "changes.dsp.vibes@2",
+        algorithmId: "changes.dsp.sampled-vibraphone@1",
         channels: 2,
         maximumRenderSeconds: 4,
         bufferCacheLimit: 64,

@@ -396,13 +396,13 @@
   {
    "id": "upright-bass",
    "label": "Upright Bass",
-   "designClaim": "physical pizzicato contrabass: bidirectional string waves into the DKT soundboard authority",
+   "designClaim": "recorded solo contrabass pizzicato, nearest recorded key transposed onto pitch",
    "synthesis": "rendered",
-   "outputLevel": 2.06,
+   "outputLevel": 0.17,
    "polyphonyLimit": 32,
    "scheduledSourceCount": 1,
    "renderer": {
-    "algorithmId": "changes.dsp.plucked-upright-bass@1",
+    "algorithmId": "changes.dsp.sampled-upright-bass@1",
     "channels": 2,
     "maximumRenderSeconds": 4,
     "bufferCacheLimit": 64
@@ -425,13 +425,13 @@
   {
    "id": "concert-vibes",
    "label": "Concert Vibes",
-   "designClaim": "physical vibraphone: tuned free-free bars, per-register mallet calibration, rotating-baffle tremolo",
+   "designClaim": "recorded vibraphone, soft mallets, nearest recorded key transposed onto pitch",
    "synthesis": "rendered",
-   "outputLevel": 1.312,
+   "outputLevel": 0.1,
    "polyphonyLimit": 48,
    "scheduledSourceCount": 1,
    "renderer": {
-    "algorithmId": "changes.dsp.vibes@2",
+    "algorithmId": "changes.dsp.sampled-vibraphone@1",
     "channels": 2,
     "maximumRenderSeconds": 4,
     "bufferCacheLimit": 64

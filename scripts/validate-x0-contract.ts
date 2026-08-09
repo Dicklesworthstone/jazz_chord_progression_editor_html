@@ -200,7 +200,7 @@ export const X0_REVIEWED_BYTE_DIGESTS: Readonly<
   "impulse-golden.json":
     "9330b747b85defb801b6456ad7d4ee519f78bdf83ea22a4b6ab47268b3b79888",
   "instrument-recipes.json":
-    "a56d813a0f678433de2cd8f1f8d33c441d8facbe9a158ca19f75c6721ebdfae6",
+    "5d0a0032683818925a8ec180116d73a5b01a35ac24fdc0500f353ca262c89bd5",
   "lifecycle-cases.json":
     "3ad712126fe22bf314ea76e41fb501ee549be2ef944a45aafbe1c1f2e8b8dcf5",
   "listening-rubric.json":
@@ -415,9 +415,15 @@ export const X0_REVIEWED_RECIPE_IDS = [
  * renderer to the physical vibes@2 model, which renders a 13.1x geomean RMS
  * deficit across the five replacement-gate registers at v100 against the
  * browser-calibrated sampled level it replaces (same bead as the bass swap).
+ *
+ * 2026-08-09 (later, owner mandate, bead jcpe-3q4c): both swaps reverted —
+ * upright-bass 2.06->0.17 and concert-vibes 1.312->0.1, back on the sampled
+ * renderers at their browser-calibrated levels. The owner rejected the
+ * physical models' temporal character on the live studio; the samples ship
+ * until pure synthesis closes the heard gap.
  */
 export const X0_REVIEWED_RECIPE_LEVELS = [
-  0.62, 0.48, 0.5, 0.3, 0.34, 0.3, 2.8, 0.44, 0.5, 2.06, 1.312, 0.46, 1.1,
+  0.62, 0.48, 0.5, 0.3, 0.34, 0.3, 2.8, 0.44, 0.5, 0.17, 0.1, 0.46, 1.1,
   0.5, 0.65,
 ] as const;
 export const X0_REVIEWED_RECIPE_POLYPHONY = [
@@ -532,13 +538,13 @@ export const X0_REVIEWED_RENDERED_RECIPES = [
   id: "upright-bass",
   label: "Upright Bass",
   designClaim:
-    "physical pizzicato contrabass: bidirectional string waves into the DKT soundboard authority",
+    "recorded solo contrabass pizzicato, nearest recorded key transposed onto pitch",
   synthesis: "rendered",
-  outputLevel: 2.06,
+  outputLevel: 0.17,
   polyphonyLimit: 32,
   scheduledSourceCount: 1,
   renderer: {
-    algorithmId: "changes.dsp.plucked-upright-bass@1",
+    algorithmId: "changes.dsp.sampled-upright-bass@1",
     channels: 2,
     maximumRenderSeconds: 4,
     bufferCacheLimit: 64,
@@ -562,13 +568,13 @@ export const X0_REVIEWED_RENDERED_RECIPES = [
   id: "concert-vibes",
   label: "Concert Vibes",
   designClaim:
-    "physical vibraphone: tuned free-free bars, per-register mallet calibration, rotating-baffle tremolo",
+    "recorded vibraphone, soft mallets, nearest recorded key transposed onto pitch",
   synthesis: "rendered",
-  outputLevel: 1.312,
+  outputLevel: 0.1,
   polyphonyLimit: 48,
   scheduledSourceCount: 1,
   renderer: {
-    algorithmId: "changes.dsp.vibes@2",
+    algorithmId: "changes.dsp.sampled-vibraphone@1",
     channels: 2,
     maximumRenderSeconds: 4,
     bufferCacheLimit: 64,
@@ -797,7 +803,7 @@ const REVIEWED_CANONICAL_DIGESTS = {
   graphEdges: "86f0e0d8307ab85e40d9ed1f1f1d7547f34018bf117a754521d3814ca4c526b0",
   graphSettings: "ed4816e5e4ea9fbcb1a941cddb2479db072453f54a44272f35717a6ebf9c53a5",
   routingCases: "cb78dae03ce88d9bc853f8c8a6339f6de64f53ad8d38d566d7b311191834b2cc",
-  recipes: "713cff27b045092eab769069f8d0973481686a99ada309e68afc55c27e87a3ef",
+  recipes: "6bf6232e019c0d133d106d9ac6ed4ae808dd3aca5c17d88210d4c4e2e2528352",
   normalization: "8e7ef43050fda93f9ab646b72a51f96da666385a812172df1a8c2cbded7534bc",
   pulse: "e5bad32f09dbfe03ef87124d811125144145168bc8f07a48ef78b530b1c1e839",
   impulseCheckpoints: "29ffb97240f4a5f80f24812ff592df1a15413bf2a21d1b8f314ef0e2ee15c1d8",
