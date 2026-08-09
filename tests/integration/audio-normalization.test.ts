@@ -48,7 +48,7 @@ const DENSE_CASES: readonly Readonly<{
   /* Plucked families use one composite source for the whole physical chord. */
   { caseId: "X0-RENDER-026", instrumentId: "guitar", outputLevel: 0.5, sourcesPerVoice: 1 },
   /* The sampled instruments also schedule one PCM buffer source per voice. */
-  { caseId: "X0-RENDER-029", instrumentId: "upright-bass", outputLevel: 0.17, sourcesPerVoice: 1 },
+  { caseId: "X0-RENDER-029", instrumentId: "upright-bass", outputLevel: 2.06, sourcesPerVoice: 1 },
   { caseId: "X0-RENDER-032", instrumentId: "concert-vibes", outputLevel: 0.1, sourcesPerVoice: 1 },
   { caseId: "X0-RENDER-035", instrumentId: "blues-guitar", outputLevel: 0.46, sourcesPerVoice: 1 },
   { caseId: "X0-RENDER-038", instrumentId: "clarinet", outputLevel: 1.1, sourcesPerVoice: 1 },
@@ -65,6 +65,9 @@ const PLUCKED_PHYSICAL_CHORDS: Readonly<
   "dreadnought-guitar": Object.freeze([40, 45, 50, 55, 59, 64]),
   /* The re-entrant ukulele is physically four-course, never six. */
   ukulele: Object.freeze([60, 64, 67, 69]),
+  /* Physical pizzicato bass (jcpe-sample-elimination-physical-qzgo): four
+   * strings, one playable pitch per course inside the E1-D3 window. */
+  "upright-bass": Object.freeze([28, 33, 38, 43]),
 });
 
 describe("TR-X0-NORMALIZATION audio normalization", () => {
