@@ -99,13 +99,6 @@
       "evidence": "release-evidence/audio/listening/clarinet-v2-uiowa-evidence.json",
       "decidedBy": "owner-delegated-machine-gate",
       "date": "2026-08-07"
-    },
-    {
-      "algorithmId": "changes.dsp.waveguide-trumpet@1",
-      "status": "machine-delegated",
-      "evidence": "release-evidence/audio/listening/trumpet-release-gate-evidence.json",
-      "decidedBy": "owner-delegated-machine-gate",
-      "date": "2026-08-08"
     }
   ]
 }

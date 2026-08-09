@@ -566,35 +566,6 @@
     "q": 0.5,
     "decaySeconds": 0.1
    }
-  },
-  {
-   "id": "trumpet",
-   "label": "Trumpet",
-   "designClaim": "physically modeled Bb trumpet: outward-striking two-mode lip pair, measured valve table, three-band viscothermal bore with MC-limited Menguy-Gilbert steepening, and the round-11 co-designed embouchure dynamics",
-   "synthesis": "rendered",
-   "outputLevel": 0.55,
-   "polyphonyLimit": 16,
-   "scheduledSourceCount": 1,
-   "renderer": {
-    "algorithmId": "changes.dsp.waveguide-trumpet@1",
-    "channels": 2,
-    "maximumRenderSeconds": 3,
-    "bufferCacheLimit": 48
-   },
-   "amplitude": {
-    "attackSeconds": 0.005,
-    "decaySeconds": 0,
-    "sustainLevel": 1,
-    "releaseSeconds": 0.16
-   },
-   "filter": {
-    "type": "lowpass",
-    "attackHz": 16000,
-    "peakHz": 16000,
-    "sustainHz": 16000,
-    "q": 0.5,
-    "decaySeconds": 0.1
-   }
   }
  ],
  "pulseWave": {

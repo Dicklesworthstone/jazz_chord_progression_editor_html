@@ -195,10 +195,8 @@ describe("U0 component gallery fixture ownership", () => {
     const runtimeSource = await readFile(resolve(root, "src/ui/runtime.ts"), "utf8");
     /* jcpe-v2r-gates-xaib: runtime.ts also re-exports the theme module (the
      * v2 paper/night pin) — value then type export, hence the pair. */
-    /* U7 midi-export-delivery joined the runtime surface (b3000e2). */
     expect(moduleSpecifiers("src/ui/runtime.ts", runtimeSource)).toEqual([
       "./App",
-      "./midi-export-delivery",
       "./theme",
       "./theme",
       "./App",

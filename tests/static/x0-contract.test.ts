@@ -292,12 +292,6 @@ function sourceCount(recipe: (typeof AUDIO_INSTRUMENT_RECIPES)[number]): number 
         maximumRenderSeconds: 3,
         bufferCacheLimit: 64,
       },
-      trumpet: {
-        algorithmId: "changes.dsp.waveguide-trumpet@1",
-        channels: 2,
-        maximumRenderSeconds: 3,
-        bufferCacheLimit: 48,
-      },
     };
     const expectedRenderer = RENDERER_BY_ID[recipe.id];
     if (expectedRenderer === undefined) {

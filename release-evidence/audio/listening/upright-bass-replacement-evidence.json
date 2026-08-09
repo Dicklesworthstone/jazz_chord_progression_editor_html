@@ -41,12 +41,12 @@
   "algorithmIds": [
     "changes.dsp.plucked-upright-bass@1"
   ],
-  "wasmSha256": "540b7a0556c3403bedba6ccec7f8934498d1e4d3298790f4cfe11901b4c1cf49",
+  "wasmSha256": "108cbfae1435f389c014848f50d0e8579699f230fb080fc11c54ff116aaa9dd7",
   "corpusSha256": "d39c685343bd49c4c424f74eabdca501161ae94a9a14d8acdba6e604f496f5a9",
   "sourceBindings": [
     {
       "path": "dsp/concert-grand/src/vibes_v2.rs",
-      "sha256": "67fe59a4f40949bdda516b3fe02b54ddaba172d55f09de3302a5856224ee68bc"
+      "sha256": "c1719192f466ab421856d8e7194d5c6f1cacc8a5debf16747d18e616ed2b4b24"
     },
     {
       "path": "dsp/concert-grand/src/plucked_v2.rs",
@@ -54,10 +54,10 @@
     },
     {
       "path": "src/audio/wasm/concert-grand-wasm.ts",
-      "sha256": "970186be1a7d17a0a583f4a76dfea602d0ccd6eb40342393ec089b5920f93b8b"
+      "sha256": "8f4ff3b01019266498c21689f4102ff6d5b60db700a70dbc5803ea298debd561"
     }
   ],
-  "sourceClosureSha256": "89c540bd3158a486ba432353dee7b1722b0efeb6c3a37d0ecd29ba82aaf5090a",
+  "sourceClosureSha256": "bec2bb9b62ff1a787175d6098e26728a8cdb84f7c5336a22f6314accdf964d3c",
   "cells": [
     {
       "id": "m28v64",
@@ -248,5 +248,5 @@
     "passedDynamicsCellCount": 4,
     "passedProximityCellCount": 1
   },
-  "evidenceSha256": "9d0ff97d452a1e40ee9284e0a5e84bf1ba02b1cbf4933a4e3bd0dd60e7e6394d"
+  "evidenceSha256": "36a887c4ab29b267167cb81ce6db9297c964f20166059e8320f627d38cd9c337"
 }

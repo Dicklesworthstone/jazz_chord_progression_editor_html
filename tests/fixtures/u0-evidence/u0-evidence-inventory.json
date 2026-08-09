@@ -104,7 +104,7 @@
   },
   {
    "path": "tests/static/u0-gallery-exclusion.test.ts",
-   "sha256": "f336c730d220b48a24b3e3fc91d1be1159b437ef59ca7fa083a7e4b624d0603b"
+   "sha256": "63876d8f57ad6c1204d3e125b5f62d46fb0c8989020f2b1c9f539669ac0dfc11"
   },
   {
    "path": "tests/static/u0-layer-boundary.test.ts",

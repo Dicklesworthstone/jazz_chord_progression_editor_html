@@ -356,18 +356,15 @@ describe("A0/E0 bridge production source policy: composition privacy", () => {
             return null;
           })
           .filter((name): name is string => name !== null);
-        /* The reviewed composition return is exactly this triple (midiExport
-           joined it in b3000e2, the U7 MIDI-export panel). */
-        const reviewedComposition = ["controller", "interchangeOwner", "midiExport"];
         if (
           names.includes("controller") &&
           names.includes("interchangeOwner") &&
-          names.length === reviewedComposition.length &&
-          reviewedComposition.every((name) => names.includes(name))
+          names.length === 2
         ) {
           compositionReturns += 1;
-        } else if (names.includes("interchangeOwner")) {
-          /* No other literal may re-expose the owner aggregate. */
+        }
+        /* No larger literal may re-expose the owner aggregate. */
+        if (names.includes("interchangeOwner") && names.length !== 2) {
           violations.push("interchangeOwner-widened");
         }
         if (names.includes("dispatch") || names.includes("markExported")) {

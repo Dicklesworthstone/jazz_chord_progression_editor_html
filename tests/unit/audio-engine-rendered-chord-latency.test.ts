@@ -26,10 +26,6 @@ type RenderCalls = {
   chord: number;
 };
 
-/* Separate from RenderCalls so literal call-count toEqual assertions stay
- * exact; records the pitch list each chord render actually received. */
-type ChordPitchLog = { last?: readonly number[] };
-
 function deterministicPcm(
   pitches: readonly number[],
   sampleRateHz: number,
@@ -43,10 +39,7 @@ function deterministicPcm(
   return Object.freeze({ sampleRateHz, frameCount, left, right });
 }
 
-function fakeDreadnoughtRenderer(
-  calls: RenderCalls,
-  pitchLog?: ChordPitchLog,
-): WaveguideRenderer {
+function fakeDreadnoughtRenderer(calls: RenderCalls): WaveguideRenderer {
   return Object.freeze({
     algorithmId: ALGORITHM_ID,
     wasmSha256: "f012ce54".padEnd(64, "0"),
@@ -56,7 +49,6 @@ function fakeDreadnoughtRenderer(
     },
     renderChord: (midiPitches, _velocities, sampleRateHz) => {
       calls.chord += 1;
-      if (pitchLog !== undefined) pitchLog.last = [...midiPitches];
       return deterministicPcm(midiPitches, sampleRateHz);
     },
     renderChordCooperatively: async (
@@ -65,19 +57,15 @@ function fakeDreadnoughtRenderer(
       sampleRateHz,
     ) => {
       calls.chord += 1;
-      if (pitchLog !== undefined) pitchLog.last = [...midiPitches];
       await new Promise<void>((resolve) => setTimeout(resolve, 0));
       return deterministicPcm(midiPitches, sampleRateHz);
     },
   });
 }
 
-async function readyWithFakeRenderer(
-  calls: RenderCalls,
-  pitchLog?: ChordPitchLog,
-) {
+async function readyWithFakeRenderer(calls: RenderCalls) {
   const fake = createFakeAudioPlatform({ sampleRate: 48_000 });
-  const renderer = fakeDreadnoughtRenderer(calls, pitchLog);
+  const renderer = fakeDreadnoughtRenderer(calls);
   const engine = createAudioEngineWithWaveguideRenderersForTest(
     fake.platform,
     new Map([[ALGORITHM_ID, renderer]]),
@@ -229,8 +217,7 @@ test("a cold attack never runs the slow renderer and a prepared chord is one sam
 
 test("the composite cache binds pitch order, quantized velocity, and gate bucket", async () => {
   const calls: RenderCalls = { note: 0, chord: 0 };
-  const pitchLog: ChordPitchLog = {};
-  const { engine } = await readyWithFakeRenderer(calls, pitchLog);
+  const { engine } = await readyWithFakeRenderer(calls);
   const prepare = (
     pitches: readonly number[],
     velocity: number,
@@ -311,45 +298,15 @@ test("the composite cache binds pitch order, quantized velocity, and gate bucket
   expect(forward.normalizationGain).toBe(reverse.normalizationGain);
   expect(calls.chord).toBe(4);
 
-  /* Course-capacity voicing: a 7-note chart chord keeps its lowest 6
-   * pitches on a 6-course dreadnought and renders one chord buffer. The
-   * voiced 6-note request must then be a cache hit under the same key. */
-  const beforeVoiced = { ...calls };
-  expect(requireSuccess(await engine.prepareRenderedAudioVoices({
+  const beforeOversized = { ...calls };
+  requireFailure(await engine.prepareRenderedAudioVoices({
     instrumentId: "dreadnought-guitar",
     notes: [48, 50, 52, 53, 55, 57, 59].map((pitch) => ({
       midiPitch: midi(pitch),
       velocity: 96,
     })),
-  }))).toMatchObject({ renderedCount: 1, cachedCount: 0 });
-  expect(calls.chord).toBe(beforeVoiced.chord + 1);
-  /* Capacity voicing keeps the lowest six, then assignability voicing
-   * mirrors plk2_chord_string_frets: the close cluster 48-57 cannot occupy
-   * six distinct courses at fret 0..=24 on standard tuning and sits at the
-   * instrument floor (no octave shift available), so the top voices drop
-   * until the chord is playable — deterministic, never silently mangled. */
-  expect(pitchLog.last).toEqual([48, 50, 52]);
-  expect(requireSuccess(await engine.prepareRenderedAudioVoices({
-    instrumentId: "dreadnought-guitar",
-    notes: [48, 50, 52, 53, 55, 57].map((pitch) => ({
-      midiPitch: midi(pitch),
-      velocity: 96,
-    })),
-  }))).toMatchObject({ renderedCount: 0, cachedCount: 1 });
-  expect(calls.chord).toBe(beforeVoiced.chord + 1);
-
-  /* The 12-voice group ceiling is checked on the raw group BEFORE capacity
-   * voicing: no legitimate chart event carries 13 voices, so a 13-note
-   * gesture-less pseudo-group refuses without touching the renderer. */
-  const beforeExtreme = { ...calls };
-  requireFailure(await engine.prepareRenderedAudioVoices({
-    instrumentId: "dreadnought-guitar",
-    notes: Array.from({ length: 13 }, (_, index) => ({
-      midiPitch: midi(36 + index),
-      velocity: 96,
-    })),
   }), "audio.renderer_unavailable");
-  expect(calls).toEqual(beforeExtreme);
+  expect(calls).toEqual(beforeOversized);
 });
 
 test("render-ahead warms a single plucked event cooperatively and attack remains cache-only", async () => {

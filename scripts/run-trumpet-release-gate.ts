@@ -21,9 +21,15 @@ import { resolve } from "node:path";
 
 import {
   loadWaveguideRenderers,
-  WAVEGUIDE_TRUMPET_ALGORITHM_ID,
   type RenderedNotePcm,
 } from "../src/audio/dsp-renderer";
+
+/*
+ * Defined locally: the algorithm id is registered in dsp-renderer only when
+ * the trumpet is wired live; this gate script must typecheck while the
+ * model is dark so the go-live round can run it unchanged.
+ */
+const WAVEGUIDE_TRUMPET_ALGORITHM_ID = "changes.dsp.waveguide-trumpet@1";
 import { CONCERT_GRAND_WASM_SHA256 } from "../src/audio/wasm/concert-grand-wasm";
 
 export const TRUMPET_RELEASE_POLICY = Object.freeze({

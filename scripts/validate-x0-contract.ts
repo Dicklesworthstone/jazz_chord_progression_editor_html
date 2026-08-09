@@ -190,7 +190,7 @@ const EXPECTED_SCHEMAS: Readonly<Record<ExpectedFilename, string>> = {
 };
 
 export const X0_REVIEWED_CONTRACT_BYTE_DIGEST =
-  "22ae821c6f7366dd9466c01639b5ea3841b70ca845458043b5221ce988574434";
+  "ae9f2100fed7ce636112ee4d01bec988f50b2a38e7824148039015802445b971";
 
 export const X0_REVIEWED_BYTE_DIGESTS: Readonly<
   Record<CompanionFilename, string>
@@ -200,7 +200,7 @@ export const X0_REVIEWED_BYTE_DIGESTS: Readonly<
   "impulse-golden.json":
     "9330b747b85defb801b6456ad7d4ee519f78bdf83ea22a4b6ab47268b3b79888",
   "instrument-recipes.json":
-    "427a26d36e62d6802d5cf16d16617ecb728908287b0c17f5dd7a5d1648985075",
+    "a56d813a0f678433de2cd8f1f8d33c441d8facbe9a158ca19f75c6721ebdfae6",
   "lifecycle-cases.json":
     "3ad712126fe22bf314ea76e41fb501ee549be2ef944a45aafbe1c1f2e8b8dcf5",
   "listening-rubric.json":
@@ -212,9 +212,9 @@ export const X0_REVIEWED_BYTE_DIGESTS: Readonly<
   "registry-cases.json":
     "2f373b5d3fb35e99dc9c7dddf6b324a33cf76f94d62bfb210453c74788e391c8",
   "render-matrix.json":
-    "ab0880a24e090619dcdc41c9caa16debd8f715ca20de05f3cec010a166d7872e",
+    "e440cb2ebbb1b6bb6521b990c546a56c9f5810edd12d503224bebef8f7228d7d",
   "trace-ledger.json":
-    "66eb138b704700df038e986546027bd6c6d7d52d4e7ca86007bd487e47b8398c",
+    "bd9e9f6b3d3236468f6f0874fda9b287fc31b1026fe4d61b6cfe6384823bed2a",
 };
 
 export const X0_REVIEWED_OPERATION_ORDER = [
@@ -393,7 +393,6 @@ export const X0_REVIEWED_RECIPE_IDS = [
   "clarinet",
   "dreadnought-guitar",
   "ukulele",
-  "trumpet",
 ] as const;
 
 /*
@@ -419,13 +418,13 @@ export const X0_REVIEWED_RECIPE_IDS = [
  */
 export const X0_REVIEWED_RECIPE_LEVELS = [
   0.62, 0.48, 0.5, 0.3, 0.34, 0.3, 2.8, 0.44, 0.5, 2.06, 1.312, 0.46, 1.1,
-  0.5, 0.65, 0.55,
+  0.5, 0.65,
 ] as const;
 export const X0_REVIEWED_RECIPE_POLYPHONY = [
-  64, 48, 48, 32, 48, 64, 32, 48, 48, 32, 48, 48, 32, 48, 32, 16,
+  64, 48, 48, 32, 48, 64, 32, 48, 48, 32, 48, 48, 32, 48, 32,
 ] as const;
 export const X0_REVIEWED_RECIPE_SOURCE_COUNTS = [
-  3, 2, 4, 3, 3, 1, 1, 6, 1, 1, 1, 1, 1, 1, 1, 1,
+  3, 2, 4, 3, 3, 1, 1, 6, 1, 1, 1, 1, 1, 1, 1,
 ] as const;
 
 /**
@@ -709,36 +708,6 @@ export const X0_REVIEWED_RENDERED_RECIPES = [
     decaySeconds: 0.1,
   },
 },
-{
-  id: "trumpet",
-  label: "Trumpet",
-  designClaim:
-    "physically modeled Bb trumpet: outward-striking two-mode lip pair, measured valve table, three-band viscothermal bore with MC-limited Menguy-Gilbert steepening, and the round-11 co-designed embouchure dynamics",
-  synthesis: "rendered",
-  outputLevel: 0.55,
-  polyphonyLimit: 16,
-  scheduledSourceCount: 1,
-  renderer: {
-    algorithmId: "changes.dsp.waveguide-trumpet@1",
-    channels: 2,
-    maximumRenderSeconds: 3,
-    bufferCacheLimit: 48,
-  },
-  amplitude: {
-    attackSeconds: 0.005,
-    decaySeconds: 0,
-    sustainLevel: 1,
-    releaseSeconds: 0.16,
-  },
-  filter: {
-    type: "lowpass",
-    attackHz: 16_000,
-    peakHz: 16_000,
-    sustainHz: 16_000,
-    q: 0.5,
-    decaySeconds: 0.1,
-  },
-},
 ] as const;
 
 export const X0_REVIEWED_IMPULSE = {
@@ -811,11 +780,11 @@ export const X0_REVIEWED_RELEASE_SECONDS = {
 export const X0_REVIEWED_COUNTS = {
   companions: 10,
   routingCases: 14,
-  recipes: 16,
+  recipes: 15,
   impulseCheckpoints: 8,
   lifecycleCases: 46,
   registryCases: 32,
-  renderCases: 48,
+  renderCases: 45,
   listeningInstrumentRows: 13,
   listeningScenarioRows: 9,
   mutationControls: 31,
@@ -828,21 +797,21 @@ const REVIEWED_CANONICAL_DIGESTS = {
   graphEdges: "86f0e0d8307ab85e40d9ed1f1f1d7547f34018bf117a754521d3814ca4c526b0",
   graphSettings: "ed4816e5e4ea9fbcb1a941cddb2479db072453f54a44272f35717a6ebf9c53a5",
   routingCases: "cb78dae03ce88d9bc853f8c8a6339f6de64f53ad8d38d566d7b311191834b2cc",
-  recipes: "5871903f06a956d79f2069291b6bb01dec63c6afcda8122b2c617fa871b8e58d",
+  recipes: "713cff27b045092eab769069f8d0973481686a99ada309e68afc55c27e87a3ef",
   normalization: "8e7ef43050fda93f9ab646b72a51f96da666385a812172df1a8c2cbded7534bc",
   pulse: "e5bad32f09dbfe03ef87124d811125144145168bc8f07a48ef78b530b1c1e839",
   impulseCheckpoints: "29ffb97240f4a5f80f24812ff592df1a15413bf2a21d1b8f314ef0e2ee15c1d8",
   lifecycleCases: "2c62e2859e3b9f38f146d7ffd8d6546580f6ee43153c9be68b39330684760c2e",
   registryCases: "97191f50abef6e929f508244f2c5e260d4c9a3616380cb87477a841f02d598f1",
   renderPolicy: "2f48761e269d258d5768c5a708b744c663897140871f9eeadef083ab594cd5db",
-  renderCases: "0414892626c1fc15c08570c03c444d8766ec8e07f51e4f511efb4a9bd2d1ce53",
+  renderCases: "ce7d9bc8d9a9109f231c72a84652ca86a0e69c39f5b9de4ac97e2fa08221e3e3",
   listeningInstruments:
     "4c8f46bada773c2e85ff4a4cdbfec555dd0d821e13baaf3e9d0d8c65872551bc",
   listeningScenarios:
     "ac4e15093fb990ec23eadb7c9470002442cafc732dbf3b7ac8457e3787424e31",
   authorities: "b964ac82a872c50a40454571225f1a033b25c08f1b25f7a18ca61947b5d52040",
   controls: "dfd0d0df78484042f29d7825c376219d5adf81c2d69f53194e7838f44c8bd2aa",
-  traces: "d0edd2b64a0225f555d31f5fff6c65d29467e8bed73bf78973fc985367747151",
+  traces: "3a4a16253b0df83f63a7560ac5b63c091970806c825280c8bb0fc1873a16e4b4",
 } as const;
 
 type ParsedFixture = Readonly<{
