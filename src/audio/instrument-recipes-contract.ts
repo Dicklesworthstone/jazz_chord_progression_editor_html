@@ -195,6 +195,78 @@ export type AudioInstrumentRecipe =
   | AudioFmInstrumentRecipe
   | AudioRenderedInstrumentRecipe;
 
+/*
+ * Physical course capacity per shared-plucked algorithm: how many distinct
+ * strings the modeled instrument actually has (mirrors `string_count` in
+ * dsp/concert-grand/src/plucked_v2.rs pack constructors; parity is frozen by
+ * tests/unit/playable-window-law.test.ts). Chart chords wider than the
+ * instrument's courses are VOICED FROM THE BOTTOM at the realization seam —
+ * the same documented realization-policy charter as foldMidiPitchIntoWindow:
+ * a four-string bassist plays the bottom of a six-note chart chord; the
+ * document and MIDI export never change. The Rust chord ABI keeps refusing
+ * over-capacity requests as the physical backstop.
+ */
+/**
+ * Open-string MIDI pitches per plucked algorithm, mirroring the pack
+ * constructors in dsp/concert-grand/src/plucked_v2.rs (ukulele retains its
+ * re-entrant course order). The Rust chord ABI assigns each simultaneous
+ * note to a distinct course at fret 0..=24 (`plk2_chord_string_frets`) and
+ * refuses otherwise; this table lets the realization seam prove
+ * assignability BEFORE calling the renderer, so an unplayable chart cluster
+ * is revoiced instead of refused mid-playback.
+ */
+export const PLUCKED_OPEN_STRING_MIDIS: Readonly<
+  Record<string, readonly number[]>
+> = Object.freeze({
+  "changes.dsp.plucked-archtop@2": Object.freeze([40, 45, 50, 55, 59, 64]),
+  "changes.dsp.plucked-electric@2": Object.freeze([40, 45, 50, 55, 59, 64]),
+  "changes.dsp.plucked-dreadnought@1": Object.freeze([40, 45, 50, 55, 59, 64]),
+  "changes.dsp.plucked-ukulele@1": Object.freeze([67, 60, 64, 69]),
+  "changes.dsp.plucked-upright-bass@1": Object.freeze([28, 33, 38, 43]),
+});
+
+const PLUCKED_MAX_FRET = 24;
+
+/**
+ * True when every pitch can occupy a distinct course at fret 0..=24 —
+ * the exact feasibility law of `plk2_chord_string_frets`. Brute force is
+ * fine: at most 6 notes over 6 courses.
+ */
+export function pluckedChordAssignmentFeasible(
+  algorithmId: string,
+  midiPitches: readonly number[],
+): boolean {
+  const opens = PLUCKED_OPEN_STRING_MIDIS[algorithmId];
+  if (opens === undefined) return true;
+  if (midiPitches.length === 0 || midiPitches.length > opens.length) {
+    return false;
+  }
+  const assign = (noteIndex: number, usedCourses: number): boolean => {
+    if (noteIndex === midiPitches.length) return true;
+    const pitch = midiPitches[noteIndex];
+    if (pitch === undefined) return false;
+    for (let course = 0; course < opens.length; course += 1) {
+      if ((usedCourses & (1 << course)) !== 0) continue;
+      const open = opens[course];
+      if (open === undefined) continue;
+      const fret = pitch - open;
+      if (fret < 0 || fret > PLUCKED_MAX_FRET) continue;
+      if (assign(noteIndex + 1, usedCourses | (1 << course))) return true;
+    }
+    return false;
+  };
+  return assign(0, 0);
+}
+
+export const PLUCKED_CHORD_COURSE_CAPACITY: Readonly<Record<string, number>> =
+  Object.freeze({
+    "changes.dsp.plucked-archtop@2": 6,
+    "changes.dsp.plucked-electric@2": 6,
+    "changes.dsp.plucked-dreadnought@1": 6,
+    "changes.dsp.plucked-ukulele@1": 4,
+    "changes.dsp.plucked-upright-bass@1": 4,
+  });
+
 export const AUDIO_INSTRUMENT_RECIPES = Object.freeze([
   Object.freeze({
     id: "mellow-keys",

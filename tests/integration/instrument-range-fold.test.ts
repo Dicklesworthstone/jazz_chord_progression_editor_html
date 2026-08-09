@@ -190,3 +190,55 @@ describe("the document and export layers never consume the fold", () => {
     }
   });
 });
+
+/*
+ * jcpe review 2026-08-09: a0bf172 silently reverted c5265ba's
+ * course-capacity/assignability voicing and replaced it with refusals; no
+ * test sent an over-capacity cluster to a plucked instrument, so the
+ * regression shipped dark. These cases pin the law: chart clusters wider
+ * than the physical courses REVOICE (bottom of the chord survives) and
+ * play — they never refuse.
+ */
+describe("over-capacity plucked clusters revoice instead of refusing", () => {
+  const CLUSTERS = [
+    /* Five voices onto four ukulele courses. */
+    { instrumentId: "ukulele" as InstrumentId, pitches: [60, 64, 67, 71, 74] },
+    /* Seven voices onto six dreadnought courses. */
+    {
+      instrumentId: "dreadnought-guitar" as InstrumentId,
+      pitches: [40, 47, 52, 56, 59, 64, 67],
+    },
+  ] as const;
+  for (const { instrumentId, pitches } of CLUSTERS) {
+    test(`${instrumentId}: ${String(pitches.length)}-voice cluster prepares and attacks`, async () => {
+      const { engine } = await readyEngine();
+      requireSuccess(
+        await engine.prepareRenderedAudioVoices({
+          instrumentId,
+          notes: pitches.map((pitch) => ({
+            midiPitch: midi(pitch),
+            velocity: 100,
+            gateSeconds: 0.55,
+            eventId: "cluster-event",
+          })),
+        }),
+      );
+      const attacked = requireSuccess(
+        engine.attackAudioVoices(
+          attackRequest(
+            pitches.map((pitch, index) =>
+              voice(`cluster-${String(index)}`, pitch, 100),
+            ),
+            {
+              eventId: "cluster-event",
+              instrumentId,
+              startTimeSeconds: 0.05,
+              releaseTimeSeconds: 0.6,
+            },
+          ),
+        ),
+      );
+      expect(attacked.snapshot.activeVoices.length).toBe(pitches.length);
+    });
+  }
+});

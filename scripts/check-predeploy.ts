@@ -116,6 +116,53 @@ export function collectEngineRoutedAlgorithmIds(
   return [...ids].sort();
 }
 
+/**
+ * Rule 4 (2026-08-09 review): a constant emitted as an `…AlgorithmId`
+ * PROPERTY on a renderer object is a capability route — the engine can
+ * invoke the model through the renderer surface without ever naming the
+ * constant (the piano_v2 physical-attack capability ships exactly this
+ * shape as `physicalAttackAlgorithmId`, invisible to rule 3). Pure scan;
+ * the gate main decides shipping-ness by checking the embedded WASM
+ * actually backs the route.
+ */
+export function collectCapabilityRoutedAlgorithmIds(
+  dspRendererSource: string,
+): readonly string[] {
+  const ids = new Set<string>();
+  const constantPattern =
+    /export const ([A-Z0-9_]+)\s*=\s*\n?\s*"(changes\.dsp\.[a-z0-9-]+@[0-9]+)"/g;
+  for (const match of dspRendererSource.matchAll(constantPattern)) {
+    const constantName = match[1];
+    const algorithmId = match[2];
+    if (
+      constantName !== undefined &&
+      algorithmId !== undefined &&
+      new RegExp(`[a-zA-Z]AlgorithmId:\\s*${constantName}\\b`).test(
+        dspRendererSource,
+      )
+    ) {
+      ids.add(algorithmId);
+    }
+  }
+  return [...ids].sort();
+}
+
+/**
+ * WASM exports that make each known capability route real. A routed id
+ * with no row here fails closed (the map is maintenance-forced); a routed
+ * id whose exports are absent from the shipping payload is dark and does
+ * not require a ledger row — the moment the payload gains the exports,
+ * the id joins the shipping set and demands acceptance evidence.
+ */
+export const CAPABILITY_ROUTE_REQUIRED_EXPORTS: Readonly<
+  Record<string, readonly string[]>
+> = Object.freeze({
+  "changes.dsp.concert-grand@2": Object.freeze([
+    "pno2_runtime_init",
+    "pno2_runtime_step",
+  ]),
+});
+
 export function parseLedger(value: unknown): readonly LedgerRow[] | GateFinding {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     return { code: "LEDGER_SHAPE", detail: "ledger root must be an object" };
@@ -323,10 +370,33 @@ async function main(): Promise<number> {
     resolve(root, "src/audio/audio-engine.ts"),
     "utf8",
   );
+  const wasmBytes = new Uint8Array(
+    Buffer.from(CONCERT_GRAND_WASM_BASE64, "base64"),
+  );
+  const wasmExportNames = new Set(
+    WebAssembly.Module.exports(new WebAssembly.Module(wasmBytes)).map(
+      (entry) => entry.name,
+    ),
+  );
+  const capabilityRouted = collectCapabilityRoutedAlgorithmIds(dspRendererSource);
+  const capabilityShipping: string[] = [];
+  for (const id of capabilityRouted) {
+    const required = CAPABILITY_ROUTE_REQUIRED_EXPORTS[id];
+    if (required === undefined) {
+      console.error(
+        `FAIL MODEL_CAPABILITY_UNMAPPED ${id} is capability-routed in dsp-renderer but has no CAPABILITY_ROUTE_REQUIRED_EXPORTS row (fails closed)`,
+      );
+      process.exit(1);
+    }
+    if (required.every((name) => wasmExportNames.has(name))) {
+      capabilityShipping.push(id);
+    }
+  }
   const shippingIds = [
     ...new Set([
       ...collectRecipeAlgorithmIds(),
       ...collectEngineRoutedAlgorithmIds(dspRendererSource, audioEngineSource),
+      ...capabilityShipping,
     ]),
   ].sort();
   const needsFluteV2Replay = shippingIds.includes(

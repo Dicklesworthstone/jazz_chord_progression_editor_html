@@ -91,9 +91,11 @@ const creation = createStudioComposition({
     },
     createAnchor: () => document.createElement("a"),
     attachToDocument: (anchor) => {
-      /* The shim is structural so tests can stub it; the real anchor is an
-       * HTMLAnchorElement and Firefox only downloads attached anchors. */
-      document.body.append(anchor as unknown as Node);
+      /* The shim is structural so tests can stub it; this composition only
+       * ever receives the real HTMLAnchorElement it created above, and
+       * Firefox only downloads attached anchors. instanceof narrows without
+       * an escape cast. */
+      if (anchor instanceof HTMLAnchorElement) document.body.append(anchor);
     },
   }),
 });

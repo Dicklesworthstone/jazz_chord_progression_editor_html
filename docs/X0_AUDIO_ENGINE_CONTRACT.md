@@ -320,13 +320,14 @@ no instantiation step, so a load failure lane specific to them does not
 exist; a corrupt payload throws at first render and the engine's existing
 `audio.renderer_unavailable` refusal covers it.
 
-The 2026-08-09 physical replacement supersedes the runtime part of this
-historical amendment. Upright Bass now renders through
-`changes.dsp.plucked-upright-bass@1`; Concert Vibes renders through
-`changes.dsp.vibes@2`. The reviewed CC0 recordings remain checked-in only as
-independent comparison corpora and corpus-integrity inputs. They are absent
-from the production module graph, and `src/audio/sampled-renderer.ts` has an
-empty payload registry. This amendment does not affect Concert Grand: its
+The 2026-08-09 physical replacement (`changes.dsp.plucked-upright-bass@1`,
+`changes.dsp.vibes@2`) was reverted the same day by owner mandate (bead
+jcpe-3q4c): the owner rejected the physical models' temporal character on
+the live studio, both physical ids sit red in the model-acceptance ledger,
+and the sampled recipes are the shipping path again. The reviewed CC0
+recordings are LIVE production payloads (`src/audio/sampled-renderer.ts`
+registers both rows) and simultaneously serve as the replacement gates'
+reference corpora. This amendment does not affect Concert Grand: its
 Salamander attack layer remains live and attributed until the dark physical
 `changes.dsp.concert-grand@2` candidate passes its separate acoustic,
 exact-WASM, browser, and owner-listening gates.

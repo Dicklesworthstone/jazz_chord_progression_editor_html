@@ -653,6 +653,7 @@ export function createStudioAudio(
             midiPitch: note.midiPitch,
             velocity: note.velocity,
             ...(note.gateSeconds === undefined ? {} : { gateSeconds: note.gateSeconds }),
+            ...(note.eventId === undefined ? {} : { eventId: note.eventId }),
             ...(physicalGesture === undefined ? {} : { physicalGesture }),
           });
         });
@@ -671,10 +672,28 @@ export function createStudioAudio(
       ) {
         return false;
       }
-      const outcome = await engine.prepareRenderedAudioVoices({
+      let outcome = await engine.prepareRenderedAudioVoices({
         instrumentId,
         notes: physicalPhraseNotes,
       });
+      /*
+       * A concurrent prepare supersedes this one through the engine's
+       * preparation generation and it reports ok-but-incomplete. That race
+       * is real on slow physical instruments (measured: the upright bass's
+       * instrument-change warm-up still rendering when Play issues its own
+       * prepare), and the superseding call caches the same leading buffers,
+       * so a bounded re-issue converges instead of refusing the Play.
+       */
+      for (
+        let attempt = 0;
+        attempt < 4 && outcome.ok && !outcome.value.completed;
+        attempt += 1
+      ) {
+        outcome = await engine.prepareRenderedAudioVoices({
+          instrumentId,
+          notes: physicalPhraseNotes,
+        });
+      }
       /*
        * One extra macrotask before the caller submits transport commands:
        * the browser gets a full event-loop turn to refresh the audio clock

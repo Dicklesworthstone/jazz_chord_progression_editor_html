@@ -492,14 +492,17 @@ same rules as the wasm payload, plus attribution:
   corrupt payload demotes the whole instrument to synthesis rather than
   refusing to play.
 
-### Retired CC0 instrument sample payloads (amended 2026-08-09)
+### CC0 instrument sample payloads (amended 2026-08-09, twice)
 
-Upright Bass and Concert Vibes previously rendered deterministic PCM from the
-two CC0 payloads below. Their live recipes now use the sample-free physical
-renderers `changes.dsp.plucked-upright-bass@1` and `changes.dsp.vibes@2`.
-`src/audio/sampled-renderer.ts` consequently has an empty payload registry.
-The recordings remain checked in only as independent comparison corpora and
-corpus-integrity fixtures; they are not in the production module graph:
+Upright Bass and Concert Vibes render deterministic PCM from the two CC0
+payloads below through `changes.dsp.sampled-upright-bass@1` and
+`changes.dsp.sampled-vibraphone@1`. The physical replacements
+(`changes.dsp.plucked-upright-bass@1`, `changes.dsp.vibes@2`) briefly took
+over on 2026-08-09 but the owner rejected their temporal character on the
+live studio the same day (bead jcpe-3q4c); both physical ids sit **red** in
+the model-acceptance ledger and stay dark until they beat the samples in
+the owner's ears. The sampled payload registry is therefore LIVE and both
+payloads ship in the production module graph:
 
 - The payloads are checked in as generated TypeScript at
   `src/audio/wasm/upright-bass-samples.ts` (raw mono 16-bit PCM at
@@ -522,11 +525,13 @@ corpus-integrity fixtures; they are not in the production module graph:
   inventoried anyway, exactly like the Salamander credit, and
   `bun run verify:licenses` fails if a credit, digest, or byte count drifts
   from the generated modules.
-- The retained sampled-renderer machinery is synchronous, pure TypeScript,
-  but its payload registry is empty. It therefore cannot make either retired
-  sampled algorithm reachable. The physical renderers own the live note path;
-  the PCM modules are consumed only by the replacement gates and
-  corpus-integrity tests.
+- The sampled-renderer machinery is synchronous, pure TypeScript, with both
+  payload rows registered. The recordings double as the replacement gates'
+  reference corpora: any physical model that wants these recipes back must
+  beat the shipping samples there and in the owner's ears
+  (release-evidence/audio/listening/model-acceptance-ledger.json is the
+  authority; do NOT delete the payload modules as "unused" — they are the
+  live note path).
 
 ## Reproducibility and reports
 

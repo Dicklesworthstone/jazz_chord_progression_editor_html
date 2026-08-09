@@ -3046,6 +3046,22 @@ async function instantiate(): Promise<DspCore> {
       const right = new Float32Array(written);
       left.set(new Float32Array(memory.buffer, leftPointer, written));
       right.set(new Float32Array(memory.buffer, rightPointer, written));
+      /*
+       * Finite-output guard (2026-08-09 review): the Rust finalize path
+       * only rejects rms <= 0.0, and NaN fails every comparison — a
+       * waveguide instability can hand back a "successful" buffer full of
+       * NaN (the measured 2026-08-08 flute failure mode). The piano and
+       * plucked paths already guard; winds must refuse loudly too, never
+       * ship silence into an AudioBuffer.
+       */
+      for (let index = 0; index < written; index += 1) {
+        if (
+          !Number.isFinite(left[index] ?? 0) ||
+          !Number.isFinite(right[index] ?? 0)
+        ) {
+          return null;
+        }
+      }
       if (written === capacity && capacity < natural) {
         /* Truncated by the caller: fade ~15 ms so the cut cannot click. */
         const fade = Math.min(Math.round(0.015 * sampleRateHz), written);
