@@ -16,8 +16,10 @@
 //! - rotating resonator fans that modulate radiated aperture only, never the
 //!   mechanical state or pitch.
 //!
-//! This module is deliberately dark.  It has no exported WASM entry point and
-//! no recipe pointer until independent reference and browser checks exist.
+//! The exported `vbs2_*` ABI renders one stateless note for the reviewed
+//! replacement recipe.  The richer [`VibraphoneStem`] retains shared bars,
+//! frame, pedal, and fan state, but that stateful surface is not exported by
+//! this per-note ABI.
 
 use libm::{cos, exp, pow, sin, sqrt};
 
@@ -1230,8 +1232,13 @@ fn vbs2_register_calibration(midi: i32) -> (f64, f64) {
 const VBS2_PRESSURE_SCALE: f64 = 1.58;
 
 fn vbs2_disjoint(a: usize, a_len: usize, b: usize, b_len: usize) -> bool {
-    a.checked_add(a_len)
-        .is_some_and(|a_end| a_end <= b || b.checked_add(b_len).is_some_and(|b_end| b_end <= a))
+    let Some(a_end) = a.checked_add(a_len) else {
+        return false;
+    };
+    let Some(b_end) = b.checked_add(b_len) else {
+        return false;
+    };
+    a_end <= b || b_end <= a
 }
 
 /// Maximum frame count written by [`vbs2_render`]. Zero refuses an invalid
@@ -1272,6 +1279,10 @@ pub extern "C" fn vbs2_render(
         Some(value) => value,
         None => return 0,
     };
+    let alignment = core::mem::align_of::<f32>();
+    if (left as usize) % alignment != 0 || (right as usize) % alignment != 0 {
+        return 0;
+    }
     if !vbs2_disjoint(left as usize, channel_bytes, right as usize, channel_bytes) {
         return 0;
     }

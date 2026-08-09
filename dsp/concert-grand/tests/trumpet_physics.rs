@@ -2,13 +2,12 @@
 mod trumpet;
 
 use trumpet::{
-    tpt_note_frames, tpt_render,
     adachi_lip_jet_balance, geometry_half_wave_hz, lip_flow_m3_s,
     lip_streamwise_joint_penetration_m, outward_equilibrium_opening_m,
     passive_two_mode_lip_matrices, passive_wall_loss_balance, positive_real_radiation_balance,
-    two_dimensional_lip_pressure_port_balance, unilateral_lip_contact_balance,
-    valve_added_length_m, OversampledOutput, TrumpetControls, TrumpetError, TrumpetModel,
-    TrumpetParameters, BORE_CELLS, OVERSAMPLE_FACTOR,
+    tpt_note_frames, tpt_render, two_dimensional_lip_pressure_port_balance,
+    unilateral_lip_contact_balance, valve_added_length_m, OversampledOutput, TrumpetControls,
+    TrumpetError, TrumpetModel, TrumpetParameters, BORE_CELLS, OVERSAMPLE_FACTOR,
 };
 
 fn silent_controls() -> TrumpetControls {
@@ -880,7 +879,9 @@ fn fixed_controls_pressure_ramp_drifts_monotonically() {
     // pressure schedule dips mid-band because lip authority collapses at
     // closure onset while valve-slide authority saturates near 5.5 Hz
     // (sweep tables on jcpe-trumpet-lock-completion-el46).
-    let pressures_pa = [5_500.0, 7_000.0, 7_750.0, 8_500.0, 9_250.0, 10_000.0, 12_000.0];
+    let pressures_pa = [
+        5_500.0, 7_000.0, 7_750.0, 8_500.0, 9_250.0, 10_000.0, 12_000.0,
+    ];
     let mut model = TrumpetModel::new(48_000.0, TrumpetParameters::canonical()).unwrap();
     let mut controls = TrumpetControls {
         mouth_pressure_pa: 0.0,
@@ -1160,7 +1161,9 @@ fn alias_energy_stays_below_the_winds_law() {
     }
     const GRID: [f64; 9] = [-0.04, -0.03, -0.02, -0.01, 0.0, 0.01, 0.02, 0.03, 0.04];
     fn peak_near(x: &[f64], f: f64) -> f64 {
-        GRID.iter().map(|r| goertzel(x, f * (1.0 + r))).fold(0.0, f64::max)
+        GRID.iter()
+            .map(|r| goertzel(x, f * (1.0 + r)))
+            .fold(0.0, f64::max)
     }
     fn tonal_excess(x: &[f64], f: f64) -> f64 {
         let mut p: Vec<f64> = GRID.iter().map(|r| goertzel(x, f * (1.0 + r))).collect();
@@ -1188,7 +1191,11 @@ fn alias_energy_stays_below_the_winds_law() {
             }
             image += tonal_excess(seg, img);
         }
-        if image <= 0.0 { -120.0 } else { 10.0 * (image / partial).log10() }
+        if image <= 0.0 {
+            -120.0
+        } else {
+            10.0 * (image / partial).log10()
+        }
     }
     fn windowed(pcm: &[f32]) -> Vec<f64> {
         let start = (0.5 * RATE) as usize;
@@ -1196,7 +1203,8 @@ fn alias_energy_stays_below_the_winds_law() {
         let n = end - start;
         (0..n)
             .map(|i| {
-                let hann = 0.5 - 0.5 * (2.0 * core::f64::consts::PI * i as f64 / (n - 1) as f64).cos();
+                let hann =
+                    0.5 - 0.5 * (2.0 * core::f64::consts::PI * i as f64 / (n - 1) as f64).cos();
                 pcm[start + i] as f64 * hann
             })
             .collect()
@@ -1209,14 +1217,24 @@ fn alias_energy_stays_below_the_winds_law() {
         })
         .collect();
     let control = alias_dbc(&windowed(&clipped), 987.77);
-    assert!(control > -45.0, "planted control read {control} dBc; analyzer is vacuous");
+    assert!(
+        control > -45.0,
+        "planted control read {control} dBc; analyzer is vacuous"
+    );
     // Candidate cells: fortissimo, worst-rate.
     for midi in [64i32, 70] {
         let frames = tpt_note_frames(midi, RATE as f32).min((2.0 * RATE) as i32);
         assert!(frames > 0);
         let mut left = vec![0.0f32; frames as usize];
         let mut right = vec![0.0f32; frames as usize];
-        let written = tpt_render(midi, 127, RATE as f32, left.as_mut_ptr(), right.as_mut_ptr(), frames);
+        let written = tpt_render(
+            midi,
+            127,
+            RATE as f32,
+            left.as_mut_ptr(),
+            right.as_mut_ptr(),
+            frames,
+        );
         assert!(written > 0);
         let seg = windowed(&left[..written as usize]);
         // Locate the regime-locked f0 by scanning around 12-TET.
@@ -1234,6 +1252,46 @@ fn alias_energy_stays_below_the_winds_law() {
             cents += 5.0;
         }
         let db = alias_dbc(&seg, best_f);
-        assert!(db < -50.0, "midi {midi} alias {db} dBc exceeds the -50 dBc law");
+        assert!(
+            db < -50.0,
+            "midi {midi} alias {db} dBc exceeds the -50 dBc law"
+        );
     }
+}
+
+#[test]
+fn trumpet_note_abi_refuses_invalid_velocity_alignment_and_aliasing() {
+    let mut left = [0.0f32; 1];
+    let mut right = [0.0f32; 1];
+
+    for invalid_velocity in [i32::MIN, -1, 0, 128, i32::MAX] {
+        assert_eq!(
+            tpt_render(
+                60,
+                invalid_velocity,
+                48_000.0,
+                left.as_mut_ptr(),
+                right.as_mut_ptr(),
+                1,
+            ),
+            0,
+            "invalid velocity {invalid_velocity} must fail closed",
+        );
+    }
+
+    assert_eq!(
+        tpt_render(60, 64, 48_000.0, left.as_mut_ptr(), left.as_mut_ptr(), 1,),
+        0,
+        "aliased output channels must be refused",
+    );
+
+    // These addresses are deliberately invalid as storage. The ABI must
+    // reject their alignment before constructing Rust slices or dereferencing
+    // them; the old ordering instead crossed into undefined behavior.
+    let misaligned_left = 1usize as *mut f32;
+    let misaligned_right = 9usize as *mut f32;
+    assert_eq!(
+        tpt_render(60, 64, 48_000.0, misaligned_left, misaligned_right, 1,),
+        0,
+    );
 }

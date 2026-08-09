@@ -979,17 +979,15 @@ impl TrumpetModel {
         let dt = 1.0 / self.internal_sample_rate_hz;
         for cell in 0..BORE_CELLS {
             self.dt_over_cell_length[cell] = dt / self.cell_length_m[cell];
-            self.cell_compliance_inverse[cell] = AIR_DENSITY_KG_M3
-                * SOUND_SPEED_M_S
-                * SOUND_SPEED_M_S
-                / (self.cell_area_m2[cell] * self.cell_length_m[cell]);
+            self.cell_compliance_inverse[cell] =
+                AIR_DENSITY_KG_M3 * SOUND_SPEED_M_S * SOUND_SPEED_M_S
+                    / (self.cell_area_m2[cell] * self.cell_length_m[cell]);
         }
         for face in 1..BORE_CELLS {
             let dx = 0.5 * (self.cell_length_m[face - 1] + self.cell_length_m[face]);
             self.face_rho_dx[face] = AIR_DENSITY_KG_M3 * dx;
         }
     }
-
 
     pub fn new(
         output_sample_rate_hz: f64,
@@ -1053,10 +1051,8 @@ impl TrumpetModel {
         let mut wall_pole_state_multiplier = [0.0; WALL_LOSS_POLES];
         let mut wall_pole_coordinate_multiplier = [0.0; WALL_LOSS_POLES];
         for pole in 0..WALL_LOSS_POLES {
-            let omega = 2.0
-                * PI
-                * parameters.wall_loss_relaxation_hz
-                * WALL_LOSS_FREQUENCY_RATIOS[pole];
+            let omega =
+                2.0 * PI * parameters.wall_loss_relaxation_hz * WALL_LOSS_FREQUENCY_RATIOS[pole];
             let half_step_omega = 0.5 * internal_step_seconds * omega;
             wall_pole_omega_rad_s[pole] = omega;
             wall_pole_denominator_inverse[pole] = 1.0 / (1.0 + half_step_omega);
@@ -1315,11 +1311,10 @@ impl TrumpetModel {
                 self.lip_streamwise_displacement_m,
             )
             .max(0.0);
-        let jet_area_m2 =
-            self.parameters.lip_width_m * opening_m * {
-                let open = 1.0 - controls.tongue_contact;
-                open * open
-            };
+        let jet_area_m2 = self.parameters.lip_width_m * opening_m * {
+            let open = 1.0 - controls.tongue_contact;
+            open * open
+        };
         if jet_area_m2 > 0.0 {
             let jet_inertance_pa_s2_m3 = AIR_DENSITY_KG_M3 * LIP_THICKNESS_M / jet_area_m2;
             energy +=
@@ -1330,8 +1325,7 @@ impl TrumpetModel {
             let compliance = volume / (AIR_DENSITY_KG_M3 * SOUND_SPEED_M_S * SOUND_SPEED_M_S);
             energy += 0.5 * compliance * self.pressure_pa[cell] * self.pressure_pa[cell];
             for pole in 0..WALL_LOSS_POLES {
-                energy += 0.5 * compliance
-                    * self.cell_wall_strength_per_second[cell][pole]
+                energy += 0.5 * compliance * self.cell_wall_strength_per_second[cell][pole]
                     / self.wall_pole_omega_rad_s[pole]
                     * self.pressure_wall_memory_pa[cell][pole]
                     * self.pressure_wall_memory_pa[cell][pole];
@@ -1340,23 +1334,18 @@ impl TrumpetModel {
         for face in 1..BORE_CELLS {
             let dx = 0.5 * (self.cell_length_m[face - 1] + self.cell_length_m[face]);
             let inertance = AIR_DENSITY_KG_M3 * dx / self.face_area_m2[face];
-            energy += 0.5
-                * inertance
-                * self.volume_flow_m3_s[face]
-                * self.volume_flow_m3_s[face];
+            energy += 0.5 * inertance * self.volume_flow_m3_s[face] * self.volume_flow_m3_s[face];
             for pole in 0..WALL_LOSS_POLES {
-                energy += 0.5 * inertance
-                    * self.face_wall_strength_per_second[face][pole]
+                energy += 0.5 * inertance * self.face_wall_strength_per_second[face][pole]
                     / self.wall_pole_omega_rad_s[pole]
                     * self.flow_wall_memory_m3_s[face][pole]
                     * self.flow_wall_memory_m3_s[face][pole];
             }
         }
         // Storage for Z(s)=R*s/(s+w): E=R*q^2/(2w).
-        energy += self.bell_resistance_pa_s_m3
-            * self.bell_memory_flow_m3_s
-            * self.bell_memory_flow_m3_s
-            / (2.0 * self.bell_corner_rad_s);
+        energy +=
+            self.bell_resistance_pa_s_m3 * self.bell_memory_flow_m3_s * self.bell_memory_flow_m3_s
+                / (2.0 * self.bell_corner_rad_s);
         energy
     }
 
@@ -1739,7 +1728,8 @@ impl TrumpetModel {
             let excess_m = (self.lip_displacement_mean_m - LIP_EMBOUCHURE_KNEE_M).max(0.0);
             // Uses the previous sample's characteristic mean, so the value is
             // constant through this sample's Newton solve.
-            let knee_force_n = mechanics.normal_stiffness_n_m * LIP_EMBOUCHURE_SERVO_GAIN * excess_m;
+            let knee_force_n =
+                mechanics.normal_stiffness_n_m * LIP_EMBOUCHURE_SERVO_GAIN * excess_m;
             // Closure-grazing term: pull the mean toward the grazing target
             // derived from the developed oscillation amplitude (2a/pi
             // rectified mean), fading in with oscillation so startup is
@@ -2537,7 +2527,12 @@ fn monotonized_central(left: f64, right: f64) -> f64 {
         return 0.0;
     }
     let central = 0.5 * (left + right);
-    let bound = 2.0 * if fabs(left) < fabs(right) { left } else { right };
+    let bound = 2.0
+        * if fabs(left) < fabs(right) {
+            left
+        } else {
+            right
+        };
     if fabs(central) < fabs(bound) {
         central
     } else {
@@ -2662,25 +2657,120 @@ const TPT_CAP_SECONDS: f64 = 3.0;
 /// periodicity >= 0.99; parametric (linear/quadratic-in-excess) laws were
 /// measured and left +-33-cent mid-band residuals on the lowest notes.
 pub const TPT_LIP_COMP: [(i32, [f64; 9]); 19] = [
-    (52, [1.00000, 0.96514, 0.82374, 0.81049, 0.80152, 0.79459, 0.78917, 0.78917, 0.78610]),
-    (53, [1.00000, 0.98113, 0.95693, 0.93933, 0.84056, 0.83254, 0.82687, 0.82687, 0.82196]),
-    (54, [1.00000, 0.98329, 0.97361, 0.95064, 0.93650, 0.90179, 0.89378, 0.88644, 0.88002]),
-    (55, [1.00000, 0.98594, 0.97568, 0.96672, 0.95191, 0.93898, 0.92703, 0.91659, 0.90698]),
-    (56, [1.00000, 0.98928, 0.97823, 0.96897, 0.96088, 0.94920, 0.93817, 0.92790, 0.91835]),
-    (57, [1.00000, 0.99246, 0.98054, 0.97095, 0.96248, 0.95508, 0.94627, 0.93694, 0.92764]),
-    (58, [1.00000, 0.97679, 0.96542, 0.95546, 0.94682, 0.93923, 0.93254, 0.92092, 0.91332]),
-    (59, [1.00000, 0.97966, 0.96680, 0.95599, 0.94676, 0.93881, 0.93192, 0.93192, 0.91885]),
-    (60, [1.00000, 0.98278, 0.96856, 0.95686, 0.94691, 0.93837, 0.93096, 0.93096, 0.91731]),
-    (61, [1.00000, 0.99038, 0.97686, 0.96368, 0.95210, 0.94215, 0.93358, 0.92617, 0.91973]),
-    (62, [1.00000, 1.00621, 0.99754, 0.98479, 0.97233, 0.96130, 0.95176, 0.94352, 0.93638]),
-    (63, [1.00000, 1.00000, 1.00000, 0.99013, 0.97777, 0.96596, 0.95557, 0.94657, 0.93877]),
-    (64, [1.00000, 1.00769, 1.00769, 1.00769, 1.00124, 0.98945, 0.97812, 0.96816, 0.95952]),
-    (65, [1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 0.98770, 0.97711, 0.96757]),
-    (66, [1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00197, 1.00197]),
-    (67, [1.00000, 0.98898, 0.98898, 0.98898, 0.98898, 0.98898, 0.98898, 0.98898, 0.98898]),
-    (68, [1.00000, 0.98830, 0.98345, 0.98345, 0.98345, 0.98345, 0.98345, 0.98345, 0.98345]),
-    (69, [1.00000, 1.00000, 0.98556, 0.98556, 0.98556, 0.97967, 0.97967, 0.97967, 0.97967]),
-    (70, [1.00000, 0.99061, 0.98317, 0.96757, 0.96757, 0.96757, 0.96757, 0.95900, 0.95900]),
+    (
+        52,
+        [
+            1.00000, 0.96514, 0.82374, 0.81049, 0.80152, 0.79459, 0.78917, 0.78917, 0.78610,
+        ],
+    ),
+    (
+        53,
+        [
+            1.00000, 0.98113, 0.95693, 0.93933, 0.84056, 0.83254, 0.82687, 0.82687, 0.82196,
+        ],
+    ),
+    (
+        54,
+        [
+            1.00000, 0.98329, 0.97361, 0.95064, 0.93650, 0.90179, 0.89378, 0.88644, 0.88002,
+        ],
+    ),
+    (
+        55,
+        [
+            1.00000, 0.98594, 0.97568, 0.96672, 0.95191, 0.93898, 0.92703, 0.91659, 0.90698,
+        ],
+    ),
+    (
+        56,
+        [
+            1.00000, 0.98928, 0.97823, 0.96897, 0.96088, 0.94920, 0.93817, 0.92790, 0.91835,
+        ],
+    ),
+    (
+        57,
+        [
+            1.00000, 0.99246, 0.98054, 0.97095, 0.96248, 0.95508, 0.94627, 0.93694, 0.92764,
+        ],
+    ),
+    (
+        58,
+        [
+            1.00000, 0.97679, 0.96542, 0.95546, 0.94682, 0.93923, 0.93254, 0.92092, 0.91332,
+        ],
+    ),
+    (
+        59,
+        [
+            1.00000, 0.97966, 0.96680, 0.95599, 0.94676, 0.93881, 0.93192, 0.93192, 0.91885,
+        ],
+    ),
+    (
+        60,
+        [
+            1.00000, 0.98278, 0.96856, 0.95686, 0.94691, 0.93837, 0.93096, 0.93096, 0.91731,
+        ],
+    ),
+    (
+        61,
+        [
+            1.00000, 0.99038, 0.97686, 0.96368, 0.95210, 0.94215, 0.93358, 0.92617, 0.91973,
+        ],
+    ),
+    (
+        62,
+        [
+            1.00000, 1.00621, 0.99754, 0.98479, 0.97233, 0.96130, 0.95176, 0.94352, 0.93638,
+        ],
+    ),
+    (
+        63,
+        [
+            1.00000, 1.00000, 1.00000, 0.99013, 0.97777, 0.96596, 0.95557, 0.94657, 0.93877,
+        ],
+    ),
+    (
+        64,
+        [
+            1.00000, 1.00769, 1.00769, 1.00769, 1.00124, 0.98945, 0.97812, 0.96816, 0.95952,
+        ],
+    ),
+    (
+        65,
+        [
+            1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 0.98770, 0.97711, 0.96757,
+        ],
+    ),
+    (
+        66,
+        [
+            1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00000, 1.00197, 1.00197,
+        ],
+    ),
+    (
+        67,
+        [
+            1.00000, 0.98898, 0.98898, 0.98898, 0.98898, 0.98898, 0.98898, 0.98898, 0.98898,
+        ],
+    ),
+    (
+        68,
+        [
+            1.00000, 0.98830, 0.98345, 0.98345, 0.98345, 0.98345, 0.98345, 0.98345, 0.98345,
+        ],
+    ),
+    (
+        69,
+        [
+            1.00000, 1.00000, 0.98556, 0.98556, 0.98556, 0.97967, 0.97967, 0.97967, 0.97967,
+        ],
+    ),
+    (
+        70,
+        [
+            1.00000, 0.99061, 0.98317, 0.96757, 0.96757, 0.96757, 0.96757, 0.95900, 0.95900,
+        ],
+    ),
 ];
 
 /// Test-visible alias for the compensation interpolator.
@@ -2703,7 +2793,6 @@ fn tpt_lip_comp_multiplier(midi: i32, excess_kpa: f64) -> f64 {
     let fraction = position - lower as f64;
     row[lower] + (row[lower + 1] - row[lower]) * fraction
 }
-
 
 /// Round-11 phonation floors (tests/trumpet_dynamics_calibration.rs,
 /// per_note_pressure_floors): the measured minimum mouth pressure at which
@@ -2778,7 +2867,14 @@ pub extern "C" fn tpt_render(
     max_frames: i32,
 ) -> i32 {
     let natural = tpt_note_frames(midi, sample_rate);
-    if natural == 0 || max_frames <= 0 || left.is_null() || right.is_null() {
+    if natural == 0
+        || !(1..=127).contains(&velocity)
+        || max_frames <= 0
+        || left.is_null()
+        || right.is_null()
+        || (left as usize) % core::mem::align_of::<f32>() != 0
+        || (right as usize) % core::mem::align_of::<f32>() != 0
+    {
         return 0;
     }
     let row = match tpt_note_row(midi) {
@@ -2796,7 +2892,7 @@ pub extern "C" fn tpt_render(
     let out_left = unsafe { core::slice::from_raw_parts_mut(left, frames) };
     let out_right = unsafe { core::slice::from_raw_parts_mut(right, frames) };
     let rate = sample_rate as f64;
-    let clamped_velocity = velocity.clamp(1, 127) as f64;
+    let velocity = velocity as f64;
     /*
      * Velocity map anchored at the note's phonation floor and capped at the
      * calibrated 10.5 kPa (excess 5) band edge of TPT_LIP_COMP.
@@ -2806,8 +2902,7 @@ pub extern "C" fn tpt_render(
         .find(|entry| entry.0 == midi)
         .map(|entry| entry.1)
         .unwrap_or(3_200.0);
-    let pressure_pa =
-        pressure_floor_pa + (10_500.0 - pressure_floor_pa) * (clamped_velocity / 127.0);
+    let pressure_pa = pressure_floor_pa + (10_500.0 - pressure_floor_pa) * (velocity / 127.0);
     let target_hz = 440.0 * libm::pow(2.0, (midi as f64 - 69.0) / 12.0);
     /*
      * Round-11 embouchure dynamics: the sounding pitch of a fixed lip
@@ -2840,8 +2935,7 @@ pub extern "C" fn tpt_render(
         };
         controls.mouth_pressure_pa = pressure_pa * attack * release;
         let excess_kpa = ((controls.mouth_pressure_pa - 5_500.0) / 1_000.0).clamp(0.0, 5.0);
-        controls.lip_resonance_hz =
-            lip_base_hz * tpt_lip_comp_multiplier(midi, excess_kpa);
+        controls.lip_resonance_hz = lip_base_hz * tpt_lip_comp_multiplier(midi, excess_kpa);
         controls.lip_damping_ratio =
             (1.0 / 3.0 + TPT_DAMPING_SLOPE_PER_KPA * excess_kpa).clamp(0.05, 0.95);
         if frame == attack_frames {
@@ -2852,11 +2946,14 @@ pub extern "C" fn tpt_render(
         }
         let sample = match model.process_sample(controls) {
             Ok(sample) => sample,
-            Err(_) => return frame as i32,
+            // A positive return is a complete playable render.  Do not make a
+            // solver failure look like a valid, merely shorter note: callers
+            // cache any positive frame count as audio.
+            Err(_) => return 0,
         };
         let value = sample as f32;
         if !value.is_finite() {
-            return frame as i32;
+            return 0;
         }
         out_left[frame] = value;
         out_right[frame] = value;

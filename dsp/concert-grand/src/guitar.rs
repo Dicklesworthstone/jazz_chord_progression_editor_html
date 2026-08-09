@@ -73,7 +73,11 @@ struct Allpass {
 
 impl Allpass {
     fn new(a: f64) -> Self {
-        Self { a, x1: 0.0, y1: 0.0 }
+        Self {
+            a,
+            x1: 0.0,
+            y1: 0.0,
+        }
     }
 
     #[inline]
@@ -324,7 +328,14 @@ pub extern "C" fn gtr_render(
     let (drive, asymmetry, pre_hp_hz, cab_lp_hz, presence, sag_depth) = if profile == 0 {
         (1.25, 0.12, 55.0, 4_200.0, None, 0.22)
     } else {
-        (1.55, 0.18, 70.0, 6_500.0, Some(Mode::new(3_200.0, 2.4, 0.5, sr)), 0.3)
+        (
+            1.55,
+            0.18,
+            70.0,
+            6_500.0,
+            Some(Mode::new(3_200.0, 2.4, 0.5, sr)),
+            0.3,
+        )
     };
     let mut presence_mode = presence;
     let pre_hp_alpha = 1.0 - exp(-TAU * pre_hp_hz / sr);
@@ -364,8 +375,7 @@ pub extern "C" fn gtr_render(
         /* Advance each polarization one sample. */
         let mut outs = [0.0f64; 2];
         for (which, pol) in [&mut vertical, &mut horizontal].into_iter().enumerate() {
-            let line: &mut [f64; GTR_MAX_DELAY] =
-                if which == 0 { string_v } else { string_h };
+            let line: &mut [f64; GTR_MAX_DELAY] = if which == 0 { string_v } else { string_h };
             let read = pol.write;
             let raw = line[read];
             /* Damping average with S samples of delay built into layout. */
@@ -386,8 +396,16 @@ pub extern "C" fn gtr_render(
         }
         /* Bridge coupling: the planes exchange, never create, energy. */
         {
-            let v_slot = if vertical.write == 0 { vertical.length - 1 } else { vertical.write - 1 };
-            let h_slot = if horizontal.write == 0 { horizontal.length - 1 } else { horizontal.write - 1 };
+            let v_slot = if vertical.write == 0 {
+                vertical.length - 1
+            } else {
+                vertical.write - 1
+            };
+            let h_slot = if horizontal.write == 0 {
+                horizontal.length - 1
+            } else {
+                horizontal.write - 1
+            };
             let exchange = coupling * (outs[1] - outs[0]);
             string_v[v_slot] += exchange;
             string_h[h_slot] -= exchange;
@@ -407,7 +425,11 @@ pub extern "C" fn gtr_render(
         pre_hp_state = flush_denormal(pre_hp_state + pre_hp_alpha * (instrument - pre_hp_state));
         let pre = instrument - pre_hp_state;
         let magnitude = if pre >= 0.0 { pre } else { -pre };
-        let sag_step = if magnitude > sag_env { sag_attack } else { sag_release };
+        let sag_step = if magnitude > sag_env {
+            sag_attack
+        } else {
+            sag_release
+        };
         sag_env = flush_denormal(sag_env + sag_step * (magnitude - sag_env));
         let sagged = pre / (1.0 + sag_depth * sag_env);
         let asym = sagged + asymmetry * sagged * sagged;

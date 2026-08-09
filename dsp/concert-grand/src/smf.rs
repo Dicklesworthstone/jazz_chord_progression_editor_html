@@ -280,12 +280,7 @@ fn tolerated_meta_kind(meta_type: u8) -> Option<i32> {
 /// `input` must address `input_len` readable bytes and `out` must address
 /// `out_cap` writable `i32` words, both inside this module's linear memory.
 #[no_mangle]
-pub extern "C" fn smf_decode(
-    input: *const u8,
-    input_len: i32,
-    out: *mut i32,
-    out_cap: i32,
-) -> i32 {
+pub extern "C" fn smf_decode(input: *const u8, input_len: i32, out: *mut i32, out_cap: i32) -> i32 {
     if input.is_null() || out.is_null() || input_len < 0 || out_cap < 0 {
         return 0;
     }

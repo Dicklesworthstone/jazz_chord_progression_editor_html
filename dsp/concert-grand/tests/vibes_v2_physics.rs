@@ -2,7 +2,7 @@
 mod vibes_v2;
 
 use vibes_v2::{
-    geometry_for_midi, midi_frequency_hz, StrikeGesture, VibesControls, VibesError,
+    geometry_for_midi, midi_frequency_hz, vbs2_render, StrikeGesture, VibesControls, VibesError,
     VibesParameters, VibraphoneStem, VibraphoneVoice, BAR_MODES, MAX_FAN_RATE_HZ, MAX_MIDI,
     MIN_MIDI,
 };
@@ -291,4 +291,43 @@ fn pressure_output_is_finite_distinct_and_deterministic() {
     assert_ne!(left, high);
     assert!(left.iter().all(|sample| sample.is_finite()));
     assert!(left.iter().any(|sample| sample.abs() > 1.0e-8));
+}
+
+#[test]
+fn shipping_abi_refuses_misaligned_and_wrapping_output_ranges_before_slice_construction() {
+    const FRAMES: usize = 32;
+    let mut raw_left = vec![0_u8; FRAMES * core::mem::size_of::<f32>() + 4];
+    let base = raw_left.as_mut_ptr() as usize;
+    let misaligned_offset = (0..core::mem::align_of::<f32>())
+        .find(|offset| (base + offset) % core::mem::align_of::<f32>() != 0)
+        .unwrap();
+    let misaligned_left = unsafe { raw_left.as_mut_ptr().add(misaligned_offset) }.cast::<f32>();
+    let mut right = [f32::from_bits(0x7f7f_ffff); FRAMES];
+    assert_eq!(
+        vbs2_render(
+            60,
+            96,
+            SAMPLE_RATE as f32,
+            misaligned_left,
+            right.as_mut_ptr(),
+            FRAMES as i32,
+        ),
+        0
+    );
+    assert!(right.iter().all(|sample| sample.to_bits() == 0x7f7f_ffff));
+
+    let dangling_left = core::ptr::NonNull::<f32>::dangling().as_ptr();
+    let wrapping_right_address = usize::MAX & !(core::mem::align_of::<f32>() - 1);
+    let wrapping_right = wrapping_right_address as *mut f32;
+    assert_eq!(
+        vbs2_render(
+            60,
+            96,
+            SAMPLE_RATE as f32,
+            dangling_left,
+            wrapping_right,
+            FRAMES as i32,
+        ),
+        0
+    );
 }

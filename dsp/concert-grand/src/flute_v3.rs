@@ -173,7 +173,13 @@ fn lerp_anchors(anchors: &[f32; 3], velocity_norm: f32) -> f32 {
     const V_PP: f32 = 36.0 / 127.0;
     const V_MF: f32 = 72.0 / 127.0;
     const V_FF: f32 = 108.0 / 127.0;
-    let v = if velocity_norm < 0.0 { 0.0 } else if velocity_norm > 1.0 { 1.0 } else { velocity_norm };
+    let v = if velocity_norm < 0.0 {
+        0.0
+    } else if velocity_norm > 1.0 {
+        1.0
+    } else {
+        velocity_norm
+    };
     if v <= V_PP {
         anchors[0]
     } else if v <= V_MF {
@@ -214,7 +220,6 @@ fn pp_onset_hold_seconds_for(midi: i32, velocity_norm: f32) -> f32 {
     }
 }
 
-
 /// Row-1 (72-83) jet-growth-cap anchors (pp/mf/ff). The steady-state jet
 /// excursion is set by loop gain, not velocity: at cap 4.15 (gain 63x) every
 /// dynamic drives the labium split rail-to-rail, leaving the odd-harmonic
@@ -230,7 +235,7 @@ const GROWTH_SETTLE_SECONDS: f32 = 0.070;
 /// pp 2.4 -> m72 locks 2x mode, m82 drops a register; pp 3.0 -> all lock).
 /// Values sweep-derived; the v2 per-note pull table is the precedent.
 const PP_GROWTH_CAP_BY_NOTE_R1: [f32; 12] = [
-        3.5572, 3.05, 3.00, 2.90, 2.5000, 2.80, 2.90, 2.8500, 3.00, 3.10, 3.3500, 3.30,
+    3.5572, 3.05, 3.00, 2.90, 2.5000, 2.80, 2.90, 2.8500, 3.00, 3.10, 3.3500, 3.30,
 ];
 
 /// Per-note ff growth-cap multiplier for register-1. The all-closed C5
@@ -240,13 +245,13 @@ const PP_GROWTH_CAP_BY_NOTE_R1: [f32; 12] = [
 /// path is structurally suppressed, so the loud drive itself must carry the
 /// dynamic. Neutral 1.0 elsewhere.
 const FF_GROWTH_CAP_MUL_BY_NOTE_R1: [f32; 12] = [
-        1.00, 1.0, 1.0, 1.0, 0.8000, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+    1.00, 1.0, 1.0, 1.0, 0.8000, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
 ];
 /// Per-note MF growth-cap multiplier (round 7): m76's jet ladder fails the
 /// harmonic/high-band laws at mf where neither the pp table nor the ff
 /// multiplier reaches; neutral 1.0 elsewhere.
 const MF_GROWTH_CAP_MUL_BY_NOTE_R1: [f32; 12] = [
-        1.0, 1.0, 1.0, 1.0, 0.7500, 1.0, 1.0, 0.8300, 1.0, 1.0, 1.0, 1.0,
+    1.0, 1.0, 1.0, 1.0, 0.7500, 1.0, 1.0, 0.8300, 1.0, 1.0, 1.0, 1.0,
 ];
 /// Round-7 per-note pp onset-hold seconds: sustain caps near the phonation
 /// floor grow their limit cycle slowly, pushing attack-to-90%-sustain past
@@ -256,15 +261,14 @@ const MF_GROWTH_CAP_MUL_BY_NOTE_R1: [f32; 12] = [
 /// fast, articulate attack without touching the sustain spectrum. 0.0 is
 /// bit-neutral.
 const PP_ONSET_HOLD_SECONDS_BY_NOTE_R1: [f32; 12] = [
-        0.0, 0.0, 0.0, 0.0, 0.3000, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1200, 0.0,
+    0.0, 0.0, 0.0, 0.0, 0.3000, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1200, 0.0,
 ];
 /// Round-7 per-note ff saturation trim for register 1: m76's forte cell is
 /// growth-cap-insensitive (measured flat across mul 0.7-0.85) because its
 /// ladder comes from the register-wide saturation half-width railing at ff;
 /// a per-note trim de-rails just that cell. 1.0 is bit-neutral.
-const FF_SATURATION_TRIM_BY_NOTE_R1: [f32; 12] = [
-    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-];
+const FF_SATURATION_TRIM_BY_NOTE_R1: [f32; 12] =
+    [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0];
 
 /// Round-8 forte jet-offset boost (bead jcpe-flute-v3-integration-dw1q).
 ///
@@ -316,9 +320,8 @@ fn jet_offset_ff_boost_for(midi: i32, velocity_norm: f32) -> f32 {
 /// per-note shift ramps in with the shared ff_blend, moving the jet transit
 /// phase toward the second passive bore mode at forte while pp/mf keep
 /// their calibrated stage. 0.0 is bit-neutral.
-const CONVECTIVE_PHASE_FF_SHIFT_BY_NOTE_R1: [f32; 12] = [
-    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-];
+const CONVECTIVE_PHASE_FF_SHIFT_BY_NOTE_R1: [f32; 12] =
+    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
 
 /// Round-9 two-mode coexistence gain (bead jcpe-flute-v3-integration-dw1q).
 /// The reference m76-ff spectrum is h2-dominant (+16.1 dB over h1): the
@@ -347,9 +350,8 @@ const CONVECTIVE_PHASE_FF_SHIFT_BY_NOTE_R1: [f32; 12] = [
 /// resonator-side variant (a mode-2 partial reflection, candidate (b) of
 /// the round-9 order) is the recorded next mechanism; this table stays
 /// neutral until it exists.
-const MODE2_COEXIST_GAIN_BY_NOTE_R1: [f32; 12] = [
-    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-];
+const MODE2_COEXIST_GAIN_BY_NOTE_R1: [f32; 12] =
+    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
 /// Convective-phase cycles for the mode-2 branch read, in cycles of 2*f0.
 /// Independent of the mode-1 phase law: the branch supports the octave
 /// resonance at its own transit phase; swept per-note only where the
@@ -545,7 +547,10 @@ fn bright_weight_for(midi: i32, velocity_norm: f32) -> f32 {
     base * note_trim(&NOTE_BRIGHT_TRIM_R1, midi, velocity_norm)
 }
 fn radiation_corner_hz_for(midi: i32, velocity_norm: f32) -> f32 {
-    lerp_anchors(&RADIATION_CORNER_TABLE[dynamics_row_index(midi)], velocity_norm)
+    lerp_anchors(
+        &RADIATION_CORNER_TABLE[dynamics_row_index(midi)],
+        velocity_norm,
+    )
 }
 
 /// Round-7 direct breath-noise radiation (bead jcpe-flute-v3-integration).
@@ -574,7 +579,7 @@ const BREATH_NOISE_CORNER_HZ: f32 = 2_000.0;
 /// instrument's breath signature) while m79's high-band budget wants less;
 /// one scalar per note across dynamics. 1.0 neutral.
 const BREATH_NOISE_NOTE_TRIM_R1: [f32; 12] = [
-        1.6000, 1.0, 1.0, 1.0, 1.1000, 1.0, 1.0, 0.8500, 1.0, 1.0, 1.0, 1.0,
+    1.6000, 1.0, 1.0, 1.0, 1.1000, 1.0, 1.0, 0.8500, 1.0, 1.0, 1.0, 1.0,
 ];
 
 /// Round-7 foot-field corner scale (bead jcpe-flute-v3-integration-dw1q).
@@ -606,9 +611,9 @@ const DIGITAL_PER_PASCAL: f32 = 0.42;
 // midpoint; at audio wavelengths this is both better conditioned and more
 // accurate than forcing an artificial one-sample tube between them.
 const PATH_END_M: [f32; SEGMENTS] = [
-    0.028375, 0.056750, 0.085125, 0.113500, 0.154500, 0.200700, 0.218000,
-    0.234400, 0.266900, 0.286100, 0.307100, 0.330300, 0.352250, 0.376900,
-    0.402600, 0.429900, 0.458700, 0.490300, 0.524300, 0.557300, 0.600400,
+    0.028375, 0.056750, 0.085125, 0.113500, 0.154500, 0.200700, 0.218000, 0.234400, 0.266900,
+    0.286100, 0.307100, 0.330300, 0.352250, 0.376900, 0.402600, 0.429900, 0.458700, 0.490300,
+    0.524300, 0.557300, 0.600400,
 ];
 
 const TAPER_BOUNDARY_RADIUS_M: [f32; 5] = [
@@ -625,30 +630,29 @@ const NODE_HOLE_A: [i8; NODES] = [
     -1, -1, -1, -1, -1, 0, 1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15,
 ];
 const NODE_HOLE_B: [i8; NODES] = [
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 8, -1, -1, -1, -1, -1,
-    -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 8, -1, -1, -1, -1, -1, -1, -1,
 ];
 
 const HOLE_POSITION_M: [f32; HOLES] = [
-    0.2007, 0.2180, 0.2344, 0.2669, 0.2861, 0.3071, 0.3303, 0.3520, 0.3525,
-    0.3769, 0.4026, 0.4299, 0.4587, 0.4903, 0.5243, 0.5573,
+    0.2007, 0.2180, 0.2344, 0.2669, 0.2861, 0.3071, 0.3303, 0.3520, 0.3525, 0.3769, 0.4026, 0.4299,
+    0.4587, 0.4903, 0.5243, 0.5573,
 ];
 const HOLE_RADIUS_M: [f32; HOLES] = [
-    0.0037, 0.0039, 0.0035, 0.0066, 0.0066, 0.0066, 0.0066, 0.0067, 0.0067,
-    0.0071, 0.0071, 0.0071, 0.0071, 0.0077, 0.0077, 0.0077,
+    0.0037, 0.0039, 0.0035, 0.0066, 0.0066, 0.0066, 0.0066, 0.0067, 0.0067, 0.0071, 0.0071, 0.0071,
+    0.0071, 0.0077, 0.0077, 0.0077,
 ];
 const HOLE_CHIMNEY_M: [f32; HOLES] = [0.0019; HOLES];
 const KEY_PAD_RADIUS_M: [f32; HOLES] = [
-    0.0065, 0.0065, 0.0065, 0.0095, 0.0095, 0.0095, 0.0095, 0.0095, 0.0095,
-    0.0095, 0.0095, 0.0095, 0.0095, 0.0103, 0.0103, 0.0103,
+    0.0065, 0.0065, 0.0065, 0.0095, 0.0095, 0.0095, 0.0095, 0.0095, 0.0095, 0.0095, 0.0095, 0.0095,
+    0.0095, 0.0103, 0.0103, 0.0103,
 ];
 const KEY_HEIGHT_M: [f32; HOLES] = [
-    0.0016, 0.0016, 0.0019, 0.0026, 0.0022, 0.0025, 0.0024, 0.0024, 0.0025,
-    0.0021, 0.0023, 0.0025, 0.0024, 0.0028, 0.0028, 0.0028,
+    0.0016, 0.0016, 0.0019, 0.0026, 0.0022, 0.0025, 0.0024, 0.0024, 0.0025, 0.0021, 0.0023, 0.0025,
+    0.0024, 0.0028, 0.0028, 0.0028,
 ];
 const KEY_CUP_DEPTH_M: [f32; HOLES] = [
-    0.0015, 0.0015, 0.0015, 0.0015, 0.0015, 0.0015, 0.0015, 0.0015, 0.0015,
-    0.0015, 0.0015, 0.0015, 0.0015, 0.0015, 0.0015, 0.0015,
+    0.0015, 0.0015, 0.0015, 0.0015, 0.0015, 0.0015, 0.0015, 0.0015, 0.0015, 0.0015, 0.0015, 0.0015,
+    0.0015, 0.0015, 0.0015, 0.0015,
 ];
 
 // X = acoustically closed, O = acoustically open.  Rows are MIDI 60..=96.
@@ -723,10 +727,9 @@ struct PlayerGesture {
 // fixed.  Values above one cycle select a higher jet oscillation stage, a
 // standard behavior of edge-tone systems rather than a hidden pitch oscillator.
 const CONVECTIVE_PHASE_CYCLES: [f32; 37] = [
-    0.14, 1.18, 1.18, 1.22, 0.24, 0.28, 0.30, 0.34, 0.38, 0.38, 0.42, 0.42,
-    0.42, 0.42, 0.40, 0.34, 0.34, 0.34, 0.36, 0.36, 0.40, 0.40, 0.42, 0.42,
-    0.42, 0.40, 0.40, 0.38, 0.38, 0.36, 1.24, 0.15, 0.10, 0.10, 1.00, 0.96,
-    0.96,
+    0.14, 1.18, 1.18, 1.22, 0.24, 0.28, 0.30, 0.34, 0.38, 0.38, 0.42, 0.42, 0.42, 0.42, 0.40, 0.34,
+    0.34, 0.34, 0.36, 0.36, 0.40, 0.40, 0.42, 0.42, 0.42, 0.40, 0.40, 0.38, 0.38, 0.36, 1.24, 0.15,
+    0.10, 0.10, 1.00, 0.96, 0.96,
 ];
 
 fn player_gesture_for_midi(midi: i32) -> Option<PlayerGesture> {
@@ -925,13 +928,15 @@ struct PhraseState {
 
 impl PhraseState {
     fn at_rest(midi: i32, velocity: i32, sample_rate: f32, fingering: Fingering) -> Self {
-        let mixed_seed = 0x464c_5433
-            ^ ((midi as u32) << 16)
-            ^ ((velocity as u32) << 8)
-            ^ sample_rate.to_bits();
+        let mixed_seed =
+            0x464c_5433 ^ ((midi as u32) << 16) ^ ((velocity as u32) << 8) ^ sample_rate.to_bits();
         Self {
             prior_midi: midi,
-            seed: if mixed_seed == 0 { 0x6d2b_79f5 } else { mixed_seed },
+            seed: if mixed_seed == 0 {
+                0x6d2b_79f5
+            } else {
+                mixed_seed
+            },
             elapsed_internal_frames: 0,
             mouth_pressure_pa: 0.0,
             prior_edge_split: 0.0,
@@ -1121,10 +1126,10 @@ fn radiation_layout(
     let mut gain_right = [0.0; RADIATION_GROUPS];
     let mut maximum_delay = 0.0f32;
     for group in 0..RADIATION_GROUPS {
-        delay_left[group] =
-            (distance_left[group] - minimum_distance) * internal_rate / REFERENCE_SOUND_SPEED_M_PER_S;
-        delay_right[group] =
-            (distance_right[group] - minimum_distance) * internal_rate / REFERENCE_SOUND_SPEED_M_PER_S;
+        delay_left[group] = (distance_left[group] - minimum_distance) * internal_rate
+            / REFERENCE_SOUND_SPEED_M_PER_S;
+        delay_right[group] = (distance_right[group] - minimum_distance) * internal_rate
+            / REFERENCE_SOUND_SPEED_M_PER_S;
         maximum_delay = maximum_delay.max(delay_left[group]).max(delay_right[group]);
         gain_left[group] = 1.0 / distance_left[group];
         gain_right[group] = 1.0 / distance_right[group];
@@ -1200,9 +1205,8 @@ fn segment_layout(sample_rate: f32, variation_slot: u32) -> Option<SegmentLayout
 
     let foot_radius = segment_radius_m(SEGMENTS - 1);
     let foot_end_correction_m = 0.6133 * foot_radius;
-    let foot_delay = (2.0 * foot_end_correction_m * internal_rate
-        / sound_speed_m_per_s(BORE_LENGTH_M))
-        .max(1.0);
+    let foot_delay =
+        (2.0 * foot_end_correction_m * internal_rate / sound_speed_m_per_s(BORE_LENGTH_M)).max(1.0);
     let (foot_delay_integer, foot_thiran_a, foot_capacity) = thiran_parameters(foot_delay)?;
     if foot_capacity > MAX_FOOT_HISTORY {
         return None;
@@ -1342,8 +1346,7 @@ fn passive_junction(
     shunt_history_flow: f32,
 ) -> (f32, f32, f32) {
     let total = left_admittance + right_admittance + shunt_conductance;
-    let pressure = (2.0 * left_admittance * from_left
-        + 2.0 * right_admittance * from_right
+    let pressure = (2.0 * left_admittance * from_left + 2.0 * right_admittance * from_right
         - shunt_history_flow)
         / total.max(1.0e-20);
     (pressure - from_right, pressure - from_left, pressure)
@@ -1361,21 +1364,18 @@ fn tonehole_static(hole: usize, sample_rate: f32) -> ToneholeStatic {
     let density = air_density_kg_per_m3(position);
     let sound_speed = sound_speed_m_per_s(position);
     let full_area = PI * HOLE_RADIUS_M[hole] * HOLE_RADIUS_M[hole];
-    let annular_area_at_full_lift =
-        TAU * KEY_PAD_RADIUS_M[hole] * KEY_HEIGHT_M[hole];
+    let annular_area_at_full_lift = TAU * KEY_PAD_RADIUS_M[hole] * KEY_HEIGHT_M[hole];
     let full_open_area = annular_area_at_full_lift.min(full_area);
     let full_area_ratio = (full_open_area / full_area).clamp(0.0, 1.0);
     let base_effective_length = HOLE_CHIMNEY_M[hole] + 0.76 * HOLE_RADIUS_M[hole];
     let shading_length = 0.42 * KEY_PAD_RADIUS_M[hole];
-    let full_effective_length =
-        base_effective_length + shading_length * (1.0 - full_area_ratio);
+    let full_effective_length = base_effective_length + shading_length * (1.0 - full_area_ratio);
     let full_mass_rate = density * full_effective_length / full_open_area * sample_rate;
     let characteristic_numerator = density * sound_speed;
-    let full_linear_resistance = characteristic_numerator / full_open_area
-        * (0.004 + 0.018 * full_area_ratio);
-    let closed_compliance_rate = tonehole_closed_volume_m3(hole)
-        / (density * sound_speed * sound_speed)
-        * sample_rate;
+    let full_linear_resistance =
+        characteristic_numerator / full_open_area * (0.004 + 0.018 * full_area_ratio);
+    let closed_compliance_rate =
+        tonehole_closed_volume_m3(hole) / (density * sound_speed * sound_speed) * sample_rate;
     ToneholeStatic {
         density,
         characteristic_numerator,
@@ -1401,8 +1401,7 @@ fn acoustic_precompute(sample_rate: f32) -> AcousticPrecompute {
     let density = air_density_kg_per_m3(0.0);
     let sound_speed = sound_speed_m_per_s(0.0);
     let embouchure_area = PI * EMB_RADIUS_IN_M * EMB_RADIUS_OUT_M;
-    let embouchure_length =
-        EMB_LENGTH_M + FACE_INERTANCE_LENGTH_M + 0.42 * EMB_RADIUS_OUT_M;
+    let embouchure_length = EMB_LENGTH_M + FACE_INERTANCE_LENGTH_M + 0.42 * EMB_RADIUS_OUT_M;
     let embouchure = EmbouchureStatic {
         density,
         area: embouchure_area,
@@ -1442,20 +1441,19 @@ fn tonehole_coefficients(
             (0.0, 0.0, 0.0, 0.0)
         } else {
             let area_ratio = (open_area / constants.full_area).clamp(0.0, 1.0);
-            let effective_length = constants.base_effective_length
-                + constants.shading_length * (1.0 - area_ratio);
+            let effective_length =
+                constants.base_effective_length + constants.shading_length * (1.0 - area_ratio);
             let mass_rate =
                 constants.density * effective_length / open_area * constants.sample_rate;
-            let linear_resistance = constants.characteristic_numerator / open_area
-                * (0.004 + 0.018 * area_ratio);
+            let linear_resistance =
+                constants.characteristic_numerator / open_area * (0.004 + 0.018 * area_ratio);
             (open_area, area_ratio, mass_rate, linear_resistance)
         }
     };
 
     let (open_g, open_history) = if open_area > 1.0e-10 {
         let vortex_resistance =
-            (constants.vortex_numerator * prior_flow.abs() / (open_area * open_area))
-                .min(5.0e7);
+            (constants.vortex_numerator * prior_flow.abs() / (open_area * open_area)).min(5.0e7);
         let denominator = mass_rate + linear_resistance + vortex_resistance;
         let conductance = 1.0 / denominator.max(1.0e-20);
         (conductance, mass_rate * conductance * prior_flow)
@@ -1483,13 +1481,10 @@ fn tonehole_open_area_m2_from_static(constants: &ToneholeStatic, openness: f32) 
 }
 
 #[inline(always)]
-fn embouchure_coefficients(
-    constants: &EmbouchureStatic,
-    prior_flow: f32,
-) -> (f32, f32) {
-    let vortex_resistance =
-        (0.72 * constants.density * prior_flow.abs() / (constants.area * constants.area))
-            .min(4.0e7);
+fn embouchure_coefficients(constants: &EmbouchureStatic, prior_flow: f32) -> (f32, f32) {
+    let vortex_resistance = (0.72 * constants.density * prior_flow.abs()
+        / (constants.area * constants.area))
+        .min(4.0e7);
     let denominator = constants.mass_rate + constants.linear_resistance + vortex_resistance;
     let conductance = 1.0 / denominator.max(1.0e-20);
     let history = constants.mass_rate * conductance * prior_flow;
@@ -1628,12 +1623,7 @@ impl<'a> StateReader<'a> {
         Some(())
     }
 
-    fn canonical_ring(
-        &mut self,
-        values: &mut [f32],
-        offset: usize,
-        capacity: usize,
-    ) -> Option<()> {
+    fn canonical_ring(&mut self, values: &mut [f32], offset: usize, capacity: usize) -> Option<()> {
         if capacity == 0 || offset.checked_add(capacity)? > values.len() {
             return None;
         }
@@ -1878,7 +1868,10 @@ fn decode_state(
     }
     if reader.cursor != bytes.len()
         || !(0.0..=2_600.0).contains(&state.mouth_pressure_pa)
-        || state.hole_open.iter().any(|value| !(-0.001..=1.001).contains(value))
+        || state
+            .hole_open
+            .iter()
+            .any(|value| !(-0.001..=1.001).contains(value))
     {
         return None;
     }
@@ -1940,8 +1933,7 @@ fn update_hole_radiation(
     let flow_derivative = (open_flow - state.hole_radiation_flow[hole]) * sample_rate;
     state.hole_radiation_flow[hole] = open_flow;
     let monopole = radiation_scale * flow_derivative;
-    state.hole_radiation_lp[hole] +=
-        lowpass_alpha * (monopole - state.hole_radiation_lp[hole]);
+    state.hole_radiation_lp[hole] += lowpass_alpha * (monopole - state.hole_radiation_lp[hole]);
     state.hole_radiation_lp[hole]
 }
 
@@ -2010,15 +2002,16 @@ fn render_with_storage(
 
     let internal_rate = layout.internal_rate;
     let acoustics = acoustic_precompute(internal_rate);
-    let target_pressure = (target_mouth_pressure_pa(
-        midi,
-        velocity,
-        acoustics.embouchure.density,
-    ) * gesture.pressure_scale)
+    let target_pressure = (target_mouth_pressure_pa(midi, velocity, acoustics.embouchure.density)
+        * gesture.pressure_scale)
         .min(2_500.0);
     let fresh_note = state_input.is_none();
     let pressure_attack_seconds = if fresh_note {
-        if articulation == 1 { 0.052 } else { 0.078 }
+        if articulation == 1 {
+            0.052
+        } else {
+            0.078
+        }
     } else {
         0.018
     };
@@ -2054,17 +2047,17 @@ fn render_with_storage(
     // (even-dominant ladder, starved h1). Centering the operating window
     // keeps the cycle inside the transition band: h1-dominant with the
     // reference's mild h2 asymmetry restored by the residual offset.
-    let jet_offset_ratio = ((JET_OFFSET_SCALE * (0.16 + 0.060 * register_level
-        - 0.085 * (velocity_norm - 0.50))
+    let jet_offset_ratio = ((JET_OFFSET_SCALE
+        * (0.16 + 0.060 * register_level - 0.085 * (velocity_norm - 0.50))
         + 0.006 * (variation_slot as f32 - 3.5))
         * jet_offset_ff_boost_for(midi, velocity_norm))
-        .clamp(-0.05, 0.48);
+    .clamp(-0.05, 0.48);
     let feedback_gain = (1.8 + 0.55 * register_level) * gesture.feedback_scale;
 
     let feedback_hp_pole = expf(-TAU * 55.0 / internal_rate);
     let band_omega = (TAU * mode_center_hz / internal_rate).min(0.92 * PI);
-    let band_q = (2.8 + 1.7 * register_level + 0.8 * (1.0 - velocity_norm))
-        * gesture.instability_q_scale;
+    let band_q =
+        (2.8 + 1.7 * register_level + 0.8 * (1.0 - velocity_norm)) * gesture.instability_q_scale;
     let band_alpha = sinf(band_omega) / (2.0 * band_q);
     let band_a0 = 1.0 + band_alpha;
     let band_b0 = band_alpha / band_a0;
@@ -2087,7 +2080,8 @@ fn render_with_storage(
     let turbulence_fast_alpha = 1.0 - expf(-TAU * TURBULENCE_CORNER_HZ / internal_rate);
     let turbulence_slow_alpha = 1.0 - expf(-TAU * 420.0 / internal_rate);
     let turbulence_meander_alpha = 1.0 - expf(-TAU * 85.0 / internal_rate);
-    let turbulence_level = 0.20 * (TURBULENCE_BASE + TURBULENCE_SLOPE * velocity_norm)
+    let turbulence_level = 0.20
+        * (TURBULENCE_BASE + TURBULENCE_SLOPE * velocity_norm)
         * note_trim(&NOTE_TURB_TRIM_R1, midi, velocity_norm);
     let meander_level = 0.20 * (0.00020 + 0.00032 * (1.0 - velocity_norm));
 
@@ -2134,20 +2128,15 @@ fn render_with_storage(
                 1.0
             };
 
-            state.mouth_pressure_pa +=
-                pressure_alpha * (target_pressure - state.mouth_pressure_pa);
+            state.mouth_pressure_pa += pressure_alpha * (target_pressure - state.mouth_pressure_pa);
             let elapsed_seconds = (state.elapsed_internal_frames as f32
                 + local_internal_frame as f32)
                 / internal_rate;
             let vibrato_onset = smoothstep(((elapsed_seconds - 0.24) / 0.30).clamp(0.0, 1.0));
-            let pressure_vibrato =
-                1.0 + 0.026 * vibrato_onset * state.vibrato_sin;
-            let jet_pressure =
-                (state.mouth_pressure_pa * pressure_vibrato).clamp(0.0, 2_500.0);
-            let jet_speed = jet_speed_m_per_s(
-                jet_pressure,
-                acoustics.embouchure.density,
-            ) * tongue_opening;
+            let pressure_vibrato = 1.0 + 0.026 * vibrato_onset * state.vibrato_sin;
+            let jet_pressure = (state.mouth_pressure_pa * pressure_vibrato).clamp(0.0, 2_500.0);
+            let jet_speed =
+                jet_speed_m_per_s(jet_pressure, acoustics.embouchure.density) * tongue_opening;
 
             for hole in 0..HOLES {
                 let target = fingering.target_open[hole];
@@ -2197,10 +2186,8 @@ fn render_with_storage(
                     + (1.0 - layout.head_loss_high_gain) * state.head_loss_state);
 
             let noise = rng.bipolar() as f32;
-            state.turbulence_fast +=
-                turbulence_fast_alpha * (noise - state.turbulence_fast);
-            state.turbulence_slow +=
-                turbulence_slow_alpha * (noise - state.turbulence_slow);
+            state.turbulence_fast += turbulence_fast_alpha * (noise - state.turbulence_fast);
+            state.turbulence_slow += turbulence_slow_alpha * (noise - state.turbulence_slow);
             state.turbulence_meander +=
                 turbulence_meander_alpha * (noise - state.turbulence_meander);
             let band_noise = state.turbulence_fast - state.turbulence_slow;
@@ -2226,8 +2213,7 @@ fn render_with_storage(
             let mode2_component = if mode2_gain > 0.0 {
                 let band2_feedback = band2_b0 * resonator_input + state.jet_band2_s1;
                 state.jet_band2_s1 = -band2_a1 * band2_feedback + state.jet_band2_s2;
-                state.jet_band2_s2 =
-                    band2_b2 * resonator_input - band2_a2 * band2_feedback;
+                state.jet_band2_s2 = band2_b2 * resonator_input - band2_a2 * band2_feedback;
                 mode2_gain * feedback_gain * band2_feedback / jet_speed.max(8.0)
             } else {
                 0.0
@@ -2241,8 +2227,7 @@ fn render_with_storage(
             // keep the convective disturbance phase on the selected passive
             // bore mode.  The small sinusoidal modulation is true pitch
             // vibrato; pressure vibrato remains independently present above.
-            let pitch_vibrato =
-                1.0 + 0.0045 * vibrato_onset * state.vibrato_sin;
+            let pitch_vibrato = 1.0 + 0.0045 * vibrato_onset * state.vibrato_sin;
             // Flow-form source removes the differentiator's +90 deg loop
             // phase; restore it convectively (quarter cycle less transit).
             // The two-component source leads the pure flow term by
@@ -2251,8 +2236,7 @@ fn render_with_storage(
             let flow_form_active = SOURCE_FORM == 1 && register_level < 2.5;
             let effective_phase_cycles = (if flow_form_active {
                 let bright_weight = bright_weight_for(midi, velocity_norm);
-                gesture.convective_phase_cycles - 0.25
-                    + atanf(bright_weight) / TAU
+                gesture.convective_phase_cycles - 0.25 + atanf(bright_weight) / TAU
             } else {
                 gesture.convective_phase_cycles
             }) + convective_phase_ff_shift_for(midi, velocity_norm);
@@ -2260,13 +2244,8 @@ fn render_with_storage(
                 / (mode_center_hz * pitch_vibrato))
                 .clamp(1.0, (MAX_JET_HISTORY - 2) as f32)
                 * law.jet_delay_scale;
-            let delayed_jet = read_current_delay(
-                &storage.jet,
-                0,
-                MAX_JET_HISTORY,
-                state.jet_write,
-                jet_delay,
-            );
+            let delayed_jet =
+                read_current_delay(&storage.jet, 0, MAX_JET_HISTORY, state.jet_write, jet_delay);
             // Round-9: mode-2 read of the same co-propagating disturbance at
             // the octave's own convective phase. Reading the shared line at a
             // second delay is the discrete form of one jet carrying two
@@ -2307,23 +2286,18 @@ fn render_with_storage(
             // displacement is the physical nonlinearity, and its
             // two-frequency input is what generates the h2-dominant forte
             // spectrum (round-9 mechanism).
-            let linear_half_widths =
-                jet_growth * (delayed_jet + mode2_gain * delayed_jet_mode2);
+            let linear_half_widths = jet_growth * (delayed_jet + mode2_gain * delayed_jet_mode2);
             let saturation = jet_saturation_half_width_for(midi, velocity_norm);
-            let saturated_half_widths =
-                saturation * fast_tanh(linear_half_widths / saturation);
+            let saturated_half_widths = saturation * fast_tanh(linear_half_widths / saturation);
             let edge_displacement = JET_HALF_WIDTH_M * saturated_half_widths;
-            let offset = JET_HALF_WIDTH_M
-                * (jet_offset_ratio + 0.025 * vibrato_onset * state.vibrato_sin);
+            let offset =
+                JET_HALF_WIDTH_M * (jet_offset_ratio + 0.025 * vibrato_onset * state.vibrato_sin);
             let edge_split = fast_tanh((edge_displacement - offset) / JET_HALF_WIDTH_M);
-            let edge_split_derivative =
-                (edge_split - state.prior_edge_split) * internal_rate;
+            let edge_split_derivative = (edge_split - state.prior_edge_split) * internal_rate;
             state.prior_edge_split = edge_split;
-            let jet_source_coefficient = acoustics.embouchure.density
-                * JET_DIPOLE_LENGTH_M
-                * JET_HALF_WIDTH_M
-                * jet_speed
-                / channel_to_edge;
+            let jet_source_coefficient =
+                acoustics.embouchure.density * JET_DIPOLE_LENGTH_M * JET_HALF_WIDTH_M * jet_speed
+                    / channel_to_edge;
             // CAL-SWEEP: flow-form source. The differentiated split injects a
             // flat odd ladder (each transition is an impulse pair); the
             // canonical jet-drive alternative injects the split as volume
@@ -2340,23 +2314,19 @@ fn render_with_storage(
                 gesture.source_scale
                     * jet_source_coefficient
                     * (edge_split * (TAU * mode_center_hz)
-                        + bright_weight_for(midi, velocity_norm)
-                            * edge_split_derivative)
+                        + bright_weight_for(midi, velocity_norm) * edge_split_derivative)
             } else {
-                gesture.source_scale
-                    * jet_source_coefficient
-                    * edge_split_derivative
+                gesture.source_scale * jet_source_coefficient * edge_split_derivative
             };
-            let jet_source_pressure = unsaturated_jet_pressure
-                / (1.0 + unsaturated_jet_pressure.abs() / 1_200.0);
+            let jet_source_pressure =
+                unsaturated_jet_pressure / (1.0 + unsaturated_jet_pressure.abs() / 1_200.0);
 
             let body_return = backward_out[0];
             let prior_emb_flow = state.emb_flow;
             let (emb_g, emb_history) =
                 embouchure_coefficients(&acoustics.embouchure, state.emb_flow);
             let emb_history_with_source = emb_history - emb_g * jet_source_pressure;
-            let emb_denominator =
-                layout.admittance[0] + acoustics.head_admittance + emb_g;
+            let emb_denominator = layout.admittance[0] + acoustics.head_admittance + emb_g;
             let emb_pressure = (2.0 * layout.admittance[0] * body_return
                 + 2.0 * acoustics.head_admittance * head_return
                 - emb_history_with_source)
@@ -2451,10 +2421,9 @@ fn render_with_storage(
             }
 
             let foot_incident = forward_out[SEGMENTS - 1];
-            state.foot_reflection_lp += layout.foot_reflection_alpha
-                * (foot_incident - state.foot_reflection_lp);
-            let foot_reflection_drive =
-                0.16 * foot_incident + 0.84 * state.foot_reflection_lp;
+            state.foot_reflection_lp +=
+                layout.foot_reflection_alpha * (foot_incident - state.foot_reflection_lp);
+            let foot_reflection_drive = 0.16 * foot_incident + 0.84 * state.foot_reflection_lp;
             storage.foot[state.foot_write] = foot_reflection_drive;
             let foot_delayed = read_current_delay(
                 &storage.foot,
@@ -2483,8 +2452,7 @@ fn render_with_storage(
                 };
             }
 
-            let body_volume_flow =
-                layout.admittance[0] * (body_outgoing - body_return);
+            let body_volume_flow = layout.admittance[0] * (body_outgoing - body_return);
             state.feedback_velocity = body_volume_flow / acoustics.embouchure.area;
 
             let emb_flow_derivative = (emb_flow - prior_emb_flow) * internal_rate;
@@ -2493,8 +2461,7 @@ fn render_with_storage(
             // compact sources whose radiation efficiency rolls off. The hole
             // fields already pass a one-pole; embouchure and foot must too --
             // this was the unfiltered path carrying the high-band excess.
-            let (emb_bore_weight, emb_jet_weight) =
-                emb_radiation_weights_for(midi, velocity_norm);
+            let (emb_bore_weight, emb_jet_weight) = emb_radiation_weights_for(midi, velocity_norm);
             let embouchure_raw =
                 0.72 * emb_bore_weight * acoustics.radiation_scale * emb_flow_derivative
                     + emb_jet_weight * jet_source_pressure;
@@ -2505,24 +2472,18 @@ fn render_with_storage(
             // pressure envelope as the coherent jet so onset/release track
             // the player's air (no gate steps). One-pole via the shared
             // radiation corner keeps it deterministic and rate-compensated.
-            let breath_gain =
-                lerp_anchors(&BREATH_NOISE_RADIATION_ANCHORS, velocity_norm)
-                    * note_trim_scalar(&BREATH_NOISE_NOTE_TRIM_R1, midi);
-            let breath_raw =
-                breath_gain * jet_speed * (rng.bipolar() as f32);
-            let breath_alpha =
-                1.0 - expf(-TAU * BREATH_NOISE_CORNER_HZ / internal_rate);
-            state.breath_noise_lp +=
-                breath_alpha * (breath_raw - state.breath_noise_lp);
+            let breath_gain = lerp_anchors(&BREATH_NOISE_RADIATION_ANCHORS, velocity_norm)
+                * note_trim_scalar(&BREATH_NOISE_NOTE_TRIM_R1, midi);
+            let breath_raw = breath_gain * jet_speed * (rng.bipolar() as f32);
+            let breath_alpha = 1.0 - expf(-TAU * BREATH_NOISE_CORNER_HZ / internal_rate);
+            state.breath_noise_lp += breath_alpha * (breath_raw - state.breath_noise_lp);
             let embouchure_field = state.emb_radiation_lp + state.breath_noise_lp;
-            let foot_volume_flow = layout.admittance[SEGMENTS - 1]
-                * (foot_incident - foot_reflection);
-            let foot_flow_derivative =
-                (foot_volume_flow - state.foot_flow) * internal_rate;
+            let foot_volume_flow =
+                layout.admittance[SEGMENTS - 1] * (foot_incident - foot_reflection);
+            let foot_flow_derivative = (foot_volume_flow - state.foot_flow) * internal_rate;
             state.foot_flow = foot_volume_flow;
             let foot_raw = acoustics.radiation_scale * foot_flow_derivative;
-            state.foot_radiation_lp +=
-                foot_radiation_alpha * (foot_raw - state.foot_radiation_lp);
+            state.foot_radiation_lp += foot_radiation_alpha * (foot_raw - state.foot_radiation_lp);
             let foot_field = state.foot_radiation_lp;
             let groups = [
                 embouchure_field,
@@ -2565,24 +2526,23 @@ fn render_with_storage(
             let raw_right = DIGITAL_PER_PASCAL * microphone_right;
             state.downsample_left_1 +=
                 layout.downsample_alpha * (raw_left - state.downsample_left_1);
-            state.downsample_left_2 += layout.downsample_alpha
-                * (state.downsample_left_1 - state.downsample_left_2);
+            state.downsample_left_2 +=
+                layout.downsample_alpha * (state.downsample_left_1 - state.downsample_left_2);
             state.downsample_right_1 +=
                 layout.downsample_alpha * (raw_right - state.downsample_right_1);
-            state.downsample_right_2 += layout.downsample_alpha
-                * (state.downsample_right_1 - state.downsample_right_2);
+            state.downsample_right_2 +=
+                layout.downsample_alpha * (state.downsample_right_1 - state.downsample_right_2);
             accumulated_left += state.downsample_left_2;
             accumulated_right += state.downsample_right_2;
 
-            let next_vibrato_sin = state.vibrato_sin * vibrato_step_cos
-                + state.vibrato_cos * vibrato_step_sin;
-            state.vibrato_cos = state.vibrato_cos * vibrato_step_cos
-                - state.vibrato_sin * vibrato_step_sin;
+            let next_vibrato_sin =
+                state.vibrato_sin * vibrato_step_cos + state.vibrato_cos * vibrato_step_sin;
+            state.vibrato_cos =
+                state.vibrato_cos * vibrato_step_cos - state.vibrato_sin * vibrato_step_sin;
             state.vibrato_sin = next_vibrato_sin;
             if (state.elapsed_internal_frames as usize + local_internal_frame) & 4095 == 0 {
                 let norm = sqrtf(
-                    state.vibrato_sin * state.vibrato_sin
-                        + state.vibrato_cos * state.vibrato_cos,
+                    state.vibrato_sin * state.vibrato_sin + state.vibrato_cos * state.vibrato_cos,
                 )
                 .max(1.0e-12);
                 state.vibrato_sin /= norm;
@@ -2605,9 +2565,12 @@ fn render_with_storage(
         let averaged_right = accumulated_right / layout.oversample as f32;
         let dc_left = averaged_left - state.dc_left_input + dc_pole * state.dc_left_output;
         state.dc_left_input = averaged_left;
-        state.dc_left_output = if dc_left.abs() < 1.0e-20 { 0.0 } else { dc_left };
-        let dc_right =
-            averaged_right - state.dc_right_input + dc_pole * state.dc_right_output;
+        state.dc_left_output = if dc_left.abs() < 1.0e-20 {
+            0.0
+        } else {
+            dc_left
+        };
+        let dc_right = averaged_right - state.dc_right_input + dc_pole * state.dc_right_output;
         state.dc_right_input = averaged_right;
         state.dc_right_output = if dc_right.abs() < 1.0e-20 {
             0.0
@@ -2916,7 +2879,9 @@ mod tests {
 
     #[test]
     fn layout_is_fixed_across_notes_and_supports_browser_rates() {
-        for sample_rate in [8_000.0, 11_025.0, 16_000.0, 22_050.0, 44_100.0, 48_000.0, 96_000.0] {
+        for sample_rate in [
+            8_000.0, 11_025.0, 16_000.0, 22_050.0, 44_100.0, 48_000.0, 96_000.0,
+        ] {
             let layout = segment_layout(sample_rate, 0).unwrap();
             assert!(layout.internal_rate >= MIN_INTERNAL_RATE_HZ);
             assert!(layout.internal_rate <= MAX_SAMPLE_RATE_HZ);
@@ -2948,15 +2913,9 @@ mod tests {
         assert!(decode_state(&state, 72, 76, fingering, layout, &mut storage).is_some());
 
         let incompatible_layout = segment_layout(48_000.0, 1).unwrap();
-        assert!(decode_state(
-            &state,
-            72,
-            76,
-            fingering,
-            incompatible_layout,
-            &mut storage,
-        )
-        .is_none());
+        assert!(
+            decode_state(&state, 72, 76, fingering, incompatible_layout, &mut storage,).is_none()
+        );
 
         let mut corrupt = state;
         corrupt[STATE_HEADER_BYTES + 7] ^= 0x40;
@@ -2971,8 +2930,14 @@ mod tests {
                 render_test(midi, 42, frames, PHYSICAL_RENDER_LAW);
             let (loud_left, loud_right, loud_state) =
                 render_test(midi, 108, frames, PHYSICAL_RENDER_LAW);
-            assert!(soft_left.iter().chain(&soft_right).all(|sample| sample.is_finite()));
-            assert!(loud_left.iter().chain(&loud_right).all(|sample| sample.is_finite()));
+            assert!(soft_left
+                .iter()
+                .chain(&soft_right)
+                .all(|sample| sample.is_finite()));
+            assert!(loud_left
+                .iter()
+                .chain(&loud_right)
+                .all(|sample| sample.is_finite()));
             assert!(soft_state.len() <= STATE_MAX_BYTES && loud_state.len() <= STATE_MAX_BYTES);
             let settled_soft = &soft_left[frames / 2..];
             let settled_loud = &loud_left[frames / 2..];
@@ -3026,7 +2991,10 @@ mod tests {
             let cents = 1_200.0 * libm::log2(pitch / expected);
             assert!(rms(settled) > 1.0e-5, "midi {midi} did not phonate");
             assert!(periodicity > 0.35, "midi {midi} periodicity {periodicity}");
-            assert!(cents.abs() < 70.0, "midi {midi} pitch {pitch} ({cents} cents)");
+            assert!(
+                cents.abs() < 70.0,
+                "midi {midi} pitch {pitch} ({cents} cents)"
+            );
         }
     }
 

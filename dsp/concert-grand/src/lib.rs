@@ -30,6 +30,12 @@
 #![cfg_attr(all(not(test), target_arch = "wasm32"), no_std)]
 #![allow(clippy::excessive_precision)]
 
+use core::{
+    cell::UnsafeCell,
+    mem::MaybeUninit,
+    sync::atomic::{AtomicBool, Ordering},
+};
+
 #[cfg(all(not(test), target_arch = "wasm32"))]
 #[panic_handler]
 fn panic(_info: &core::panic::PanicInfo) -> ! {
@@ -48,6 +54,12 @@ mod flute_v2;
 mod flute_v3;
 mod guitar;
 mod physical;
+// Dark sample-free concert-grand attack candidate.  The ABI is compiled only
+// for tests and explicit calibration builds until independent reference,
+// browser-cost, and owner-listening gates approve replacing the recorded
+// attack layer.
+#[cfg(any(test, feature = "dark-models"))]
+mod piano_v2;
 mod plucked_v2;
 mod smf;
 
@@ -135,6 +147,13 @@ pub(crate) fn vibrato_variation(slot: u32) -> Option<VibratoVariation> {
 const MAX_PARTIALS: usize = 24;
 const MAX_STRINGS: usize = 3;
 const MAX_OSCILLATORS: usize = MAX_PARTIALS * MAX_STRINGS;
+/// Bounded work per browser turn for the cooperative sample-free sustain.
+/// 2,048 frames keeps the 72-oscillator worst case below one animation frame
+/// on the reviewed browser while avoiding thousands of scheduler yields.
+pub const CG_RUNTIME_STEP_FRAMES: usize = 2_048;
+pub const CG_RUNTIME_STEP_PROGRESS: i32 = 1;
+pub const CG_RUNTIME_STEP_COMPLETE: i32 = 2;
+const CG_MAX_RENDER_FRAMES: usize = 1_536_000; // 8 seconds at 192 kHz.
 
 /// Natural decay cap per register, seconds. Bass strings ring far longer than
 /// the damperless treble, and the cap is also the cache-memory bound.
@@ -284,18 +303,19 @@ pub extern "C" fn cg_render(
     );
 
     let mut oscillators = 0usize;
-    let mut states: [OscillatorState; MAX_OSCILLATORS] = core::array::from_fn(|_| OscillatorState {
-        re: 0.0,
-        im: 0.0,
-        rot_re: 1.0,
-        rot_im: 0.0,
-        env_fast: 0.0,
-        env_slow: 0.0,
-        decay_fast: 1.0,
-        decay_slow: 1.0,
-        gain_left: 0.0,
-        gain_right: 0.0,
-    });
+    let mut states: [OscillatorState; MAX_OSCILLATORS] =
+        core::array::from_fn(|_| OscillatorState {
+            re: 0.0,
+            im: 0.0,
+            rot_re: 1.0,
+            rot_im: 0.0,
+            env_fast: 0.0,
+            env_slow: 0.0,
+            decay_fast: 1.0,
+            decay_slow: 1.0,
+            gain_left: 0.0,
+            gain_right: 0.0,
+        });
 
     for string in 0..strings {
         let offset = string_offset_scale[string] * detune_cents;
@@ -425,9 +445,7 @@ pub extern "C" fn cg_render(
             }
             /* |lp|,|thump_state| <= 1 (lowpassed unit noise), so these terms
              * bound the strike/thump contributions for every later frame. */
-            let bound = oscillator_bound
-                + noise_env * noise_level
-                + thump_env * thump_level;
+            let bound = oscillator_bound + noise_env * noise_level + thump_env * thump_level;
             if frame + 1 >= early_guard && bound < 1.0e-9 {
                 for silent in frame + 1..frames {
                     out_left[silent] = 0.0;
@@ -488,6 +506,477 @@ pub extern "C" fn cg_render(
         last -= 256;
     }
     last.min(frames) as i32
+}
+
+/// Retained state for the existing sample-free Concert Grand sustain.
+///
+/// This intentionally mirrors `cg_render`'s reviewed arithmetic instead of
+/// changing the shipping `@1` renderer. The independent cooperative ABI test
+/// requires bit identity across the entire keyboard/rate boundary, so either
+/// implementation drifting from the other is a release-visible failure.
+struct ConcertGrandSession {
+    frames: usize,
+    rendered_frames: usize,
+    written_frames: usize,
+    sample_rate_hz: f64,
+    states: [OscillatorState; MAX_OSCILLATORS],
+    oscillators: usize,
+    noise_left: XorShift32,
+    noise_right: XorShift32,
+    noise_alpha: f64,
+    noise_decay: f64,
+    noise_level: f64,
+    thump_alpha: f64,
+    thump_decay: f64,
+    thump_level: f64,
+    noise_env: f64,
+    thump_env: f64,
+    lp_left: f64,
+    lp_right: f64,
+    thump_state: f64,
+    attack_step: f64,
+    attack: f64,
+    early_guard: usize,
+    checkpoint_countdown: u32,
+}
+
+impl ConcertGrandSession {
+    fn new(midi: i32, velocity: i32, sample_rate: f32, max_frames: i32) -> Option<Self> {
+        let natural = cg_note_frames(midi, sample_rate);
+        if natural == 0 || max_frames <= 0 || !(1..=127).contains(&velocity) {
+            return None;
+        }
+        let frames = natural.min(max_frames) as usize;
+        if frames == 0 || frames > CG_MAX_RENDER_FRAMES {
+            return None;
+        }
+
+        let sr = sample_rate as f64;
+        let m = midi as f64;
+        let v_norm = velocity as f64 / 127.0;
+        let f0 = midi_frequency_hz(m);
+        let b = inharmonicity_b(m);
+        let strings = string_count(midi);
+        let nyquist_guard = 0.47 * sr;
+        let rolloff_power = 1.9 + 1.2 * (1.0 - v_norm);
+        let corner_hz = 500.0 + 2_600.0 * pow(v_norm, 1.6);
+        let strike_point = 0.115;
+        let t60_fundamental = 26.0 * exp(-(m - 21.0) / 26.0) + 0.55;
+        let detune_cents = 1.0 + 0.012 * (m - 21.0);
+        let string_offset_scale: [f64; MAX_STRINGS] = match strings {
+            1 => [0.0, 0.0, 0.0],
+            2 => [-0.5, 0.5, 0.0],
+            _ => [-1.0, 0.12, 1.0],
+        };
+        let pan = ((m - 21.0) / 87.0) * 0.20 - 0.10;
+        let mut seed = XorShift32::new(
+            0x434f_4e43 ^ ((midi as u32) << 16) ^ ((velocity as u32) << 8) ^ sample_rate as u32,
+        );
+        let mut oscillators = 0usize;
+        let mut states: [OscillatorState; MAX_OSCILLATORS] =
+            core::array::from_fn(|_| OscillatorState {
+                re: 0.0,
+                im: 0.0,
+                rot_re: 1.0,
+                rot_im: 0.0,
+                env_fast: 0.0,
+                env_slow: 0.0,
+                decay_fast: 1.0,
+                decay_slow: 1.0,
+                gain_left: 0.0,
+                gain_right: 0.0,
+            });
+        for string in 0..strings {
+            let offset = string_offset_scale[string] * detune_cents;
+            let string_f0 = f0 * pow(2.0, offset / 1_200.0);
+            for n in 1..=MAX_PARTIALS {
+                let nf = n as f64;
+                let frequency = nf * string_f0 * sqrt(1.0 + b * nf * nf);
+                if frequency >= nyquist_guard {
+                    break;
+                }
+                let comb = sin(core::f64::consts::PI * nf * strike_point).abs();
+                let corner = 1.0 / (1.0 + (frequency / corner_hz) * (frequency / corner_hz));
+                let amplitude = comb * corner / pow(nf, rolloff_power);
+                if amplitude < 1.0e-5 {
+                    continue;
+                }
+                let partial_scale = 1.0 + 0.02 * nf + 0.012 * nf * nf;
+                let tau = t60_fundamental / 6.9078 / partial_scale;
+                let tau_fast = tau / 3.5;
+                let tau_slow = tau * 1.6;
+                let phase = seed.bipolar() * 0.15;
+                let spread = if n % 2 == 0 { 0.10 } else { -0.10 };
+                let position = (pan + spread).clamp(-1.0, 1.0);
+                let angle = (position + 1.0) * core::f64::consts::PI / 4.0;
+                let state = &mut states[oscillators];
+                state.re = amplitude * cos(phase);
+                state.im = amplitude * sin(phase);
+                let step = TAU * frequency / sr;
+                state.rot_re = cos(step);
+                state.rot_im = sin(step);
+                state.env_fast = 0.72;
+                state.env_slow = 0.28;
+                state.decay_fast = exp(-1.0 / (tau_fast * sr));
+                state.decay_slow = exp(-1.0 / (tau_slow * sr));
+                state.gain_left = cos(angle);
+                state.gain_right = sin(angle);
+                oscillators += 1;
+                if oscillators == MAX_OSCILLATORS {
+                    break;
+                }
+            }
+        }
+        if oscillators == 0 {
+            return None;
+        }
+        let noise_left = XorShift32::new(seed.next());
+        let noise_right = XorShift32::new(seed.next());
+        let noise_corner_hz = 1_200.0 + 6_000.0 * v_norm;
+        let noise_alpha = 1.0 - exp(-TAU * noise_corner_hz / sr);
+        let noise_decay = exp(-1.0 / (0.004 * sr));
+        let noise_level = 0.16 * pow(v_norm, 1.5);
+        let thump_alpha = 1.0 - exp(-TAU * 150.0 / sr);
+        let thump_decay = exp(-1.0 / (0.015 * sr));
+        let thump_level = if midi < 60 { 0.05 } else { 0.015 };
+        let attack_seconds = 0.0035 - 0.0025 * v_norm;
+        let attack_step = 1.0 - exp(-1.0 / (attack_seconds * sr));
+        Some(Self {
+            frames,
+            rendered_frames: 0,
+            written_frames: 0,
+            sample_rate_hz: sr,
+            states,
+            oscillators,
+            noise_left,
+            noise_right,
+            noise_alpha,
+            noise_decay,
+            noise_level,
+            thump_alpha,
+            thump_decay,
+            thump_level,
+            noise_env: 1.0,
+            thump_env: 1.0,
+            lp_left: 0.0,
+            lp_right: 0.0,
+            thump_state: 0.0,
+            attack_step,
+            attack: 0.0,
+            early_guard: (0.2 * sr) as usize,
+            checkpoint_countdown: 256,
+        })
+    }
+
+    fn advance(&mut self, out_left: &mut [f32], out_right: &mut [f32]) -> i32 {
+        if out_left.len() < self.frames
+            || out_right.len() < self.frames
+            || self.rendered_frames >= self.frames
+        {
+            return 0;
+        }
+        let end = self
+            .rendered_frames
+            .saturating_add(CG_RUNTIME_STEP_FRAMES)
+            .min(self.frames);
+        for frame in self.rendered_frames..end {
+            let mut sum_left = 0.0f64;
+            let mut sum_right = 0.0f64;
+            for state in self.states[..self.oscillators].iter_mut() {
+                let sample = state.im * (state.env_fast + state.env_slow);
+                sum_left += sample * state.gain_left;
+                sum_right += sample * state.gain_right;
+                let re = state.re * state.rot_re - state.im * state.rot_im;
+                let im = state.re * state.rot_im + state.im * state.rot_re;
+                state.re = re;
+                state.im = im;
+                state.env_fast *= state.decay_fast;
+                state.env_slow *= state.decay_slow;
+            }
+            self.attack += (1.0 - self.attack) * self.attack_step;
+            self.lp_left += self.noise_alpha * (self.noise_left.bipolar() - self.lp_left);
+            self.lp_right += self.noise_alpha * (self.noise_right.bipolar() - self.lp_right);
+            self.thump_state += self.thump_alpha * (self.noise_left.bipolar() - self.thump_state);
+            let strike_left = self.lp_left * self.noise_env * self.noise_level;
+            let strike_right = self.lp_right * self.noise_env * self.noise_level;
+            let thump = self.thump_state * self.thump_env * self.thump_level;
+            self.noise_env *= self.noise_decay;
+            self.thump_env *= self.thump_decay;
+            out_left[frame] = ((sum_left * self.attack) + strike_left + thump) as f32;
+            out_right[frame] = ((sum_right * self.attack) + strike_right + thump) as f32;
+
+            self.checkpoint_countdown -= 1;
+            if self.checkpoint_countdown == 0 {
+                self.checkpoint_countdown = 256;
+                self.noise_env = physical::flush_denormal(self.noise_env);
+                self.thump_env = physical::flush_denormal(self.thump_env);
+                let mut oscillator_bound = 0.0f64;
+                for state in self.states[..self.oscillators].iter_mut() {
+                    state.env_fast = physical::flush_denormal(state.env_fast);
+                    state.env_slow = physical::flush_denormal(state.env_slow);
+                    let magnitude = state.re.abs() + state.im.abs();
+                    oscillator_bound += magnitude * (state.env_fast + state.env_slow);
+                }
+                let bound = oscillator_bound
+                    + self.noise_env * self.noise_level
+                    + self.thump_env * self.thump_level;
+                if frame + 1 >= self.early_guard && bound < 1.0e-9 {
+                    out_left[frame + 1..self.frames].fill(0.0);
+                    out_right[frame + 1..self.frames].fill(0.0);
+                    self.rendered_frames = self.frames;
+                    self.written_frames = finalize_concert_grand_output(
+                        &mut out_left[..self.frames],
+                        &mut out_right[..self.frames],
+                        self.sample_rate_hz,
+                    );
+                    return CG_RUNTIME_STEP_COMPLETE;
+                }
+            }
+        }
+        self.rendered_frames = end;
+        if end < self.frames {
+            CG_RUNTIME_STEP_PROGRESS
+        } else {
+            self.written_frames = finalize_concert_grand_output(
+                &mut out_left[..self.frames],
+                &mut out_right[..self.frames],
+                self.sample_rate_hz,
+            );
+            CG_RUNTIME_STEP_COMPLETE
+        }
+    }
+}
+
+fn finalize_concert_grand_output(
+    out_left: &mut [f32],
+    out_right: &mut [f32],
+    sample_rate_hz: f64,
+) -> usize {
+    let frames = out_left.len().min(out_right.len());
+    let early = (0.2 * sample_rate_hz) as usize;
+    let mut energy = 0.0f64;
+    for frame in 0..early.min(frames) {
+        let left = out_left[frame] as f64;
+        let right = out_right[frame] as f64;
+        energy += left * left + right * right;
+    }
+    let rms = sqrt(energy / (2.0 * early.min(frames).max(1) as f64));
+    if rms <= 0.0 {
+        return 0;
+    }
+    let mut scale = 0.22 / rms;
+    let mut peak = 0.0f64;
+    for frame in 0..frames {
+        let left = (out_left[frame] as f64 * scale).abs();
+        let right = (out_right[frame] as f64 * scale).abs();
+        if left > peak {
+            peak = left;
+        }
+        if right > peak {
+            peak = right;
+        }
+    }
+    if peak > 0.95 {
+        scale *= 0.95 / peak;
+    }
+    for frame in 0..frames {
+        out_left[frame] = (out_left[frame] as f64 * scale) as f32;
+        out_right[frame] = (out_right[frame] as f64 * scale) as f32;
+    }
+    let threshold = 1.0e-4f32;
+    let mut last = frames;
+    'trim: while last > 256 {
+        let block = &out_left[last - 256..last];
+        let block_right = &out_right[last - 256..last];
+        for index in 0..256 {
+            if block[index].abs() > threshold || block_right[index].abs() > threshold {
+                break 'trim;
+            }
+        }
+        last -= 256;
+    }
+    last.min(frames)
+}
+
+fn cg_buffers_are_disjoint(left: *mut f32, right: *mut f32, frames: usize) -> bool {
+    let Some(channel_bytes) = frames.checked_mul(core::mem::size_of::<f32>()) else {
+        return false;
+    };
+    let left_start = left as usize;
+    let right_start = right as usize;
+    let Some(left_end) = left_start.checked_add(channel_bytes) else {
+        return false;
+    };
+    let Some(right_end) = right_start.checked_add(channel_bytes) else {
+        return false;
+    };
+    left_end <= right_start || right_end <= left_start
+}
+
+#[derive(Clone, Copy)]
+struct ConcertGrandRuntimeControl {
+    active_handle: u32,
+    next_handle: u32,
+}
+
+struct ConcertGrandRuntimeCell<T>(UnsafeCell<T>);
+
+// SAFETY: every access is excluded by CG_RUNTIME_BUSY. Shipping WASM is
+// single-threaded; the atomic also refuses accidental callback re-entry and
+// makes the native hostile-boundary test race-free.
+unsafe impl<T> Sync for ConcertGrandRuntimeCell<T> {}
+
+static CG_RUNTIME_BUSY: AtomicBool = AtomicBool::new(false);
+static CG_RUNTIME_CONTROL: ConcertGrandRuntimeCell<ConcertGrandRuntimeControl> =
+    ConcertGrandRuntimeCell(UnsafeCell::new(ConcertGrandRuntimeControl {
+        active_handle: 0,
+        next_handle: 1,
+    }));
+static CG_RUNTIME_SESSION: ConcertGrandRuntimeCell<MaybeUninit<ConcertGrandSession>> =
+    ConcertGrandRuntimeCell(UnsafeCell::new(MaybeUninit::uninit()));
+
+fn with_cg_runtime<ResultValue>(
+    operation: impl FnOnce(
+        &mut ConcertGrandRuntimeControl,
+        &mut MaybeUninit<ConcertGrandSession>,
+    ) -> ResultValue,
+) -> Option<ResultValue> {
+    if CG_RUNTIME_BUSY
+        .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
+        .is_err()
+    {
+        return None;
+    }
+    struct Release;
+    impl Drop for Release {
+        fn drop(&mut self) {
+            CG_RUNTIME_BUSY.store(false, Ordering::Release);
+        }
+    }
+    let _release = Release;
+    // SAFETY: the atomic flag above excludes concurrent and re-entrant access.
+    Some(unsafe {
+        operation(
+            &mut *CG_RUNTIME_CONTROL.0.get(),
+            &mut *CG_RUNTIME_SESSION.0.get(),
+        )
+    })
+}
+
+#[no_mangle]
+pub extern "C" fn cg_runtime_max_steps(output_capacity: i32) -> i32 {
+    let Ok(frames) = usize::try_from(output_capacity) else {
+        return 0;
+    };
+    if frames == 0 || frames > CG_MAX_RENDER_FRAMES {
+        return 0;
+    }
+    i32::try_from(frames.div_ceil(CG_RUNTIME_STEP_FRAMES)).unwrap_or(0)
+}
+
+#[no_mangle]
+pub extern "C" fn cg_runtime_init(
+    midi: i32,
+    velocity: i32,
+    sample_rate: f32,
+    max_frames: i32,
+) -> i32 {
+    let Some(session) = ConcertGrandSession::new(midi, velocity, sample_rate, max_frames) else {
+        return 0;
+    };
+    with_cg_runtime(|runtime, session_slot| {
+        let handle = runtime.next_handle;
+        if handle == 0 || handle > i32::MAX as u32 {
+            return 0;
+        }
+        runtime.next_handle = if handle == i32::MAX as u32 {
+            0
+        } else {
+            handle + 1
+        };
+        if runtime.active_handle != 0 {
+            // SAFETY: the active handle is the initialization bit.
+            unsafe { session_slot.assume_init_drop() };
+        }
+        session_slot.write(session);
+        runtime.active_handle = handle;
+        handle as i32
+    })
+    .unwrap_or(0)
+}
+
+#[no_mangle]
+pub extern "C" fn cg_runtime_step(
+    handle: i32,
+    left: *mut f32,
+    right: *mut f32,
+    output_capacity: i32,
+) -> i32 {
+    if handle <= 0
+        || cg_runtime_max_steps(output_capacity) == 0
+        || left.is_null()
+        || right.is_null()
+        || !(left as usize).is_multiple_of(core::mem::align_of::<f32>())
+        || !(right as usize).is_multiple_of(core::mem::align_of::<f32>())
+    {
+        return 0;
+    }
+    let frames = output_capacity as usize;
+    if !cg_buffers_are_disjoint(left, right, frames) {
+        return 0;
+    }
+    with_cg_runtime(|runtime, session_slot| {
+        if runtime.active_handle != handle as u32 {
+            return 0;
+        }
+        // SAFETY: the matching active handle proves initialization.
+        let session = unsafe { session_slot.assume_init_mut() };
+        if session.frames != frames {
+            return 0;
+        }
+        // SAFETY: pointer presence, alignment, checked span arithmetic,
+        // disjointness, and the exact retained capacity were established.
+        let out_left = unsafe { core::slice::from_raw_parts_mut(left, frames) };
+        let out_right = unsafe { core::slice::from_raw_parts_mut(right, frames) };
+        session.advance(out_left, out_right)
+    })
+    .unwrap_or(0)
+}
+
+#[no_mangle]
+pub extern "C" fn cg_runtime_written_frames(handle: i32) -> i32 {
+    if handle <= 0 {
+        return 0;
+    }
+    with_cg_runtime(|runtime, session_slot| {
+        if runtime.active_handle != handle as u32 {
+            return 0;
+        }
+        // SAFETY: the matching active handle proves initialization.
+        let session = unsafe { session_slot.assume_init_ref() };
+        if session.rendered_frames != session.frames {
+            return 0;
+        }
+        i32::try_from(session.written_frames).unwrap_or(0)
+    })
+    .unwrap_or(0)
+}
+
+#[no_mangle]
+pub extern "C" fn cg_runtime_reset(handle: i32) -> i32 {
+    if handle <= 0 {
+        return 0;
+    }
+    with_cg_runtime(|runtime, session_slot| {
+        if runtime.active_handle != handle as u32 {
+            return 0;
+        }
+        // SAFETY: the matching active handle proves initialization.
+        unsafe { session_slot.assume_init_drop() };
+        runtime.active_handle = 0;
+        1
+    })
+    .unwrap_or(0)
 }
 
 /// Shared post-processing for the waveguide renderers (`gtr_*`, `flt_*`):
@@ -563,7 +1052,10 @@ static mut FFT_IM: [f64; MAX_FFT] = [0.0; MAX_FFT];
 #[no_mangle]
 pub extern "C" fn an_spectrum(input: *const f32, frames: i32, magnitudes: *mut f32) -> i32 {
     let n = frames as usize;
-    if !(64..=MAX_FFT).contains(&n) || !n.is_power_of_two() || input.is_null() || magnitudes.is_null()
+    if !(64..=MAX_FFT).contains(&n)
+        || !n.is_power_of_two()
+        || input.is_null()
+        || magnitudes.is_null()
     {
         return 0;
     }
@@ -575,8 +1067,7 @@ pub extern "C" fn an_spectrum(input: *const f32, frames: i32, magnitudes: *mut f
     /* Hann window into bit-reversed positions. */
     let bits = n.trailing_zeros();
     for (index, sample) in samples.iter().enumerate() {
-        let window =
-            0.5 - 0.5 * cos(TAU * index as f64 / (n - 1) as f64);
+        let window = 0.5 - 0.5 * cos(TAU * index as f64 / (n - 1) as f64);
         let target = (index.reverse_bits() >> (usize::BITS - bits)) & (n - 1);
         re[target] = *sample as f64 * window;
         im[target] = 0.0;
@@ -708,9 +1199,7 @@ pub extern "C" fn an_notes(
             let cents = 1_200.0 * log2(ratio / (harmonic * inharmonic_slack));
             let tolerance = 40.0 + 6.0 * harmonic;
             if cents.abs() <= tolerance {
-                if (harmonic == 2.0 || harmonic == 4.0)
-                    && magnitude > 0.55 * note_peak_mag[note]
-                {
+                if (harmonic == 2.0 || harmonic == 4.0) && magnitude > 0.55 * note_peak_mag[note] {
                     octave_double = true;
                 } else {
                     note_strength[note] += magnitude / harmonic;
@@ -994,7 +1483,13 @@ mod tests {
         let bins = an_spectrum(mix[2_400..].as_ptr(), fft as i32, mags.as_mut_ptr());
         let mut chroma = [0.0f32; 12];
         assert_eq!(
-            an_chroma(mags.as_ptr(), bins, sample_rate, fft as i32, chroma.as_mut_ptr()),
+            an_chroma(
+                mags.as_ptr(),
+                bins,
+                sample_rate,
+                fft as i32,
+                chroma.as_mut_ptr()
+            ),
             12
         );
         /* C, E, G above every non-chord class. */
@@ -1017,6 +1512,7 @@ mod tests {
         }
     }
 }
+
 /*
  * Round-11 trumpet (declared at end-of-file so the dark module shifts no
  * panic-location line numbers above it — any mid-file edit re-hashes the
@@ -1025,11 +1521,10 @@ mod tests {
  * trumpet_note_sweep.rs, trumpet_dynamics_calibration.rs), but the model
  * renders ~4.5x slower than realtime in browser wasm (96-cell bore x 4x
  * oversampling at O2+LTO; a first chart chord = 4+ serial 3 s renders =
- * ~50 s of dead air) BEFORE the render-speed campaign
- * (jcpe-render-speed-campaign-etnw): now 0.83-0.96x across the full
- * operating map (independently re-measured), so it ships. EOF position
- * preserved so future gating flips shift no panic-location line numbers.
+ * ~50 s of dead air), so it stays dark until the render-cost round lands.
+ * Test builds and the dev feature keep it.
  */
+#[cfg(any(test, feature = "dark-models"))]
 mod trumpet;
 
 /*

@@ -7,11 +7,156 @@
 #[path = "../src/piano_v2.rs"]
 mod piano_v2;
 
+use libm::sqrt;
 use piano_v2::{
-    midi_frequency_hz, render_piano_note, soundboard_mode_frequency_hz,
-    stiff_string_mode_frequency_hz, string_geometry, PianoError, PianoParameters, PianoStrike,
-    PianoVoice, CONTACT_SOLVE_STEPS, MAXIMUM_STATE_BYTES,
+    bridge_contact_pair_midpoint_step, duplex_length_m_for_midi, hammer_head_radius_m_for_midi,
+    hammer_mass_kg_for_midi, hammer_strike_position_over_length, midi_frequency_hz,
+    render_piano_note, soundboard_damping_ratio, soundboard_mode_frequency_hz,
+    stiff_string_mode_frequency_hz, string_geometry, PianoError, PianoParameters, PianoStem,
+    PianoStrike, PianoVoice, CONTACT_SOLVE_STEPS, MAXIMUM_BRIDGE_CONTACTS,
+    MAXIMUM_BRIDGE_SOLVE_SCALAR_UPDATES, MAXIMUM_STATE_BYTES,
 };
+
+#[test]
+fn reviewed_hammer_mass_and_strike_position_vary_by_register() {
+    let anchors = [
+        (21, 0.0130, 0.017, 243.0 / 2_016.0),
+        (57, 0.0106, 0.011, 91.0 / 777.0),
+        (60, 0.0089, 0.008, 74.4 / 620.0),
+        (93, 0.0082, 0.005, 8.1 / 115.0),
+    ];
+    for (midi, expected_mass, expected_radius, expected_position) in anchors {
+        assert!((hammer_mass_kg_for_midi(midi).unwrap() - expected_mass).abs() < 1.0e-15);
+        assert!((hammer_head_radius_m_for_midi(midi).unwrap() - expected_radius).abs() < 1.0e-15);
+        assert!(
+            (hammer_strike_position_over_length(midi).unwrap() - expected_position).abs() < 1.0e-15
+        );
+    }
+    assert!(hammer_mass_kg_for_midi(21).unwrap() > hammer_mass_kg_for_midi(93).unwrap());
+    assert!(
+        hammer_strike_position_over_length(21).unwrap()
+            > hammer_strike_position_over_length(93).unwrap()
+    );
+
+    // The superseded implementation used one 52 g hammer for every key.
+    // It is outside the measured grand-piano envelope and must fail closed.
+    let geometry = string_geometry(60).unwrap();
+    let mut planted_constant_mass =
+        PianoStrike::from_velocity(80, 60, geometry.equivalent_diameter_m).unwrap();
+    planted_constant_mass.hammer_mass_kg = 0.052;
+    let mut voice = PianoVoice::new(60, 48_000.0, PianoParameters::canonical()).unwrap();
+    assert_eq!(
+        voice.begin_strike(planted_constant_mass),
+        Err(PianoError::InvalidContact)
+    );
+}
+
+#[test]
+fn bridge_contact_midpoint_matches_an_independent_known_answer() {
+    // Independently evaluated two-mode Hamiltonian:
+    // H=.5(vs^2+ws^2*qs^2+vb^2+wb^2*qb^2)+.5*k(rs*qs-rb*qb)^2.
+    let initial = [1.0e-5, 0.2, -2.0e-5, -0.1];
+    let next =
+        bridge_contact_pair_midpoint_step(1.0 / 48_000.0, 4.8e6, 220.0, 3.0, 180.0, 0.4, initial)
+            .unwrap();
+    let expected = [
+        1.402_279_163_130_800_5e-5,
+        0.186_187_996_605_568_45,
+        -2.205_897_621_322_928_7e-5,
+        -0.097_661_716_470_011_37,
+    ];
+    for (actual, expected) in next.into_iter().zip(expected) {
+        assert!((actual - expected).abs() < 2.0e-15);
+    }
+
+    let energy = |state: [f64; 4]| {
+        let dt = 1.0 / 48_000.0;
+        let string_omega = 2.0 / dt * libm::tan(core::f64::consts::PI * 220.0 * dt);
+        let body_omega = 2.0 / dt * libm::tan(core::f64::consts::PI * 180.0 * dt);
+        0.5 * (state[1] * state[1]
+            + string_omega * string_omega * state[0] * state[0]
+            + state[3] * state[3]
+            + body_omega * body_omega * state[2] * state[2])
+            + 0.5 * 4.8e6 * (3.0 * state[0] - 0.4 * state[2]).powi(2)
+    };
+    assert!((energy(next) - energy(initial)).abs() < 1.0e-15);
+
+    // Planted old velocity rotation: with both velocities zero it leaves the
+    // state unchanged, so it cannot realize the nonzero contact force stored
+    // by a displaced spring.
+    let displaced = [1.0e-5, 0.0, -2.0e-5, 0.0];
+    let advanced =
+        bridge_contact_pair_midpoint_step(1.0 / 48_000.0, 4.8e6, 220.0, 3.0, 180.0, 0.4, displaced)
+            .unwrap();
+    assert!(advanced[1].abs() > 1.0e-4);
+    assert!(advanced[3].abs() > 1.0e-4);
+}
+
+#[test]
+fn separate_key_contacts_cannot_cancel_through_one_aggregate_port() {
+    let parameters = PianoParameters::canonical();
+    assert_eq!(parameters.bridge_contact_stiffness_n_per_m, 4.8e6);
+    let mut stem = PianoStem::new(&[60, 64], &[1, 1], 48_000.0, parameters).unwrap();
+    stem.set_test_key_bridge_displacement_m(0, 1.0e-5).unwrap();
+    stem.set_test_key_bridge_displacement_m(1, -1.0e-5).unwrap();
+    assert!((stem.bridge_contact_energy_j() - 4.8e-4).abs() < 2.0e-15);
+
+    // The removed aggregate port sums the two displacements first and would
+    // certify this physically strained state as exactly zero bridge energy.
+    let old_aggregate_energy = 0.5 * 4.8e6 * (1.0e-5_f64 - 1.0e-5).powi(2);
+    assert_eq!(old_aggregate_energy, 0.0);
+
+    let receipt = PianoVoice::new(60, 48_000.0, parameters)
+        .unwrap()
+        .work_receipt();
+    assert_eq!(receipt.maximum_bridge_contacts, 1);
+    assert_eq!(MAXIMUM_BRIDGE_CONTACTS, 8);
+    assert_eq!(
+        receipt.maximum_bridge_solve_scalar_updates,
+        MAXIMUM_BRIDGE_SOLVE_SCALAR_UPDATES
+    );
+}
+
+#[test]
+fn cooperative_pressure_steps_preserve_the_full_energy_ledger() {
+    let parameters = PianoParameters::canonical();
+    let mut audited = PianoStem::new(&[60, 64], &[81, 73], 48_000.0, parameters).unwrap();
+    let mut cooperative = audited.clone();
+
+    // The removed bug applied both modal half-losses on this path but did not
+    // add their exact kinetic-energy decrease to cumulative_loss_j. PCM and
+    // retained modal state therefore stayed bit-identical while the energy
+    // audit silently drifted.
+    for _ in 0..255 {
+        audited.step().unwrap();
+        cooperative.step_render_pressure_for_test().unwrap();
+    }
+    assert_eq!(
+        cooperative.represented_energy_j().to_bits(),
+        audited.represented_energy_j().to_bits()
+    );
+    assert_eq!(
+        cooperative.cumulative_loss_j_for_test().to_bits(),
+        audited.cumulative_loss_j_for_test().to_bits()
+    );
+
+    // A full boundary audit after the cooperative slice must remain exactly
+    // the same continuation, including the public cumulative-loss report.
+    let audited_output = audited.step().unwrap();
+    let cooperative_output = cooperative.step().unwrap();
+    assert_eq!(
+        cooperative_output.left_pressure_pa.to_bits(),
+        audited_output.left_pressure_pa.to_bits()
+    );
+    assert_eq!(
+        cooperative_output.right_pressure_pa.to_bits(),
+        audited_output.right_pressure_pa.to_bits()
+    );
+    assert_eq!(
+        cooperative_output.cumulative_loss_j.to_bits(),
+        audited_output.cumulative_loss_j.to_bits()
+    );
+}
 
 fn cents(actual: f64, expected: f64) -> f64 {
     1_200.0 * libm::log2(actual / expected)
@@ -134,14 +279,62 @@ fn string_pack_is_geometry_derived_and_keeps_the_measured_fundamental() {
     assert_eq!(string_geometry(49).unwrap().string_count, 3);
     assert!(low.speaking_length_m > middle.speaking_length_m);
     assert!(middle.speaking_length_m > high.speaking_length_m);
+    assert!((duplex_length_m_for_midi(33).unwrap() - 0.11).abs() < 1.0e-15);
+    assert!((duplex_length_m_for_midi(62).unwrap() - 0.15).abs() < 1.0e-15);
+    assert!((duplex_length_m_for_midi(74).unwrap() - 0.05).abs() < 1.0e-15);
+    for midi in [21, 33, 60, 62, 74, 96, 108] {
+        let geometry = string_geometry(midi).unwrap();
+        assert_eq!(
+            geometry.duplex_length_m,
+            duplex_length_m_for_midi(midi).unwrap()
+        );
+        assert!(
+            (geometry.total_length_m - geometry.speaking_length_m - geometry.duplex_length_m).abs()
+                < 1.0e-15
+        );
+        let reviewed_bridge_coordinate = geometry.speaking_length_m / geometry.total_length_m;
+        assert!((0.5..1.0).contains(&reviewed_bridge_coordinate));
+        // The removed fixed 1.8%-from-end port does not reproduce the
+        // reviewed duplex afterlength at any of the three measured anchors.
+        assert!((reviewed_bridge_coordinate - 0.982).abs() > 0.02);
+    }
     assert!(low.linear_density_kg_m > middle.linear_density_kg_m);
     assert!(middle.linear_density_kg_m > high.linear_density_kg_m);
     assert!(low.equivalent_diameter_m > high.equivalent_diameter_m);
-    assert!((690.0..=880.0).contains(&low.tension_n));
-    assert!((690.0..=880.0).contains(&high.tension_n));
-
-    for midi in [21, 40, 60, 69, 84, 108] {
+    // Stulov table 1 is independently literal here. The reported values are
+    // rounded, so production consumes T/mu/diameter exactly and derives the
+    // causally tuned length, which must remain within 0.7% of the table row.
+    for (midi, reported_length_m, tension_n, density_kg_m, diameter_m) in [
+        (21, 2.016, 1_629.0, 0.1307, 0.0049),
+        (57, 0.777, 834.0, 0.0071, 0.001_075),
+        (60, 0.620, 670.0, 0.0063, 0.001_025),
+        (93, 0.115, 774.0, 0.0047, 0.000_875),
+    ] {
         let geometry = string_geometry(midi).unwrap();
+        assert!((geometry.tension_n - tension_n).abs() < 1.0e-12);
+        assert!((geometry.linear_density_kg_m - density_kg_m).abs() < 1.0e-15);
+        assert!((geometry.equivalent_diameter_m - diameter_m).abs() < 1.0e-15);
+        assert!(
+            ((geometry.speaking_length_m / reported_length_m) - 1.0).abs() < 0.007,
+            "derived length no longer agrees with rounded Table-I row: midi={midi}, derived={}, reported={reported_length_m}",
+            geometry.speaking_length_m,
+        );
+        let table_pitch_hz = sqrt(tension_n / density_kg_m) / (2.0 * reported_length_m);
+        assert!(
+            cents(table_pitch_hz, midi_frequency_hz(midi)).abs() < 15.0,
+            "rounded table row no longer describes the named key: midi={midi}, table={table_pitch_hz}"
+        );
+    }
+
+    for midi in 21..=108 {
+        let geometry = string_geometry(midi).unwrap();
+        let geometry_pitch_hz = sqrt(geometry.tension_n / geometry.linear_density_kg_m)
+            / (2.0 * geometry.speaking_length_m);
+        assert!(
+            cents(geometry_pitch_hz, geometry.fundamental_hz).abs() < 1.0e-9,
+            "string geometry silently retunes a non-causal length: midi={midi}, physical={geometry_pitch_hz}, target={}",
+            geometry.fundamental_hz,
+        );
         let fundamental = stiff_string_mode_frequency_hz(
             geometry.unison_frequencies_hz[0],
             geometry.inharmonicity_coefficient,
@@ -153,7 +346,14 @@ fn string_pack_is_geometry_derived_and_keeps_the_measured_fundamental() {
             geometry.inharmonicity_coefficient,
             4,
         );
-        assert!(fourth > 4.0 * geometry.unison_frequencies_hz[0]);
+        let planted_harmonic_sine_bank = 4.0 * geometry.unison_frequencies_hz[0];
+        assert!(fourth > planted_harmonic_sine_bank);
+        assert!(cents(fourth, planted_harmonic_sine_bank) > 0.0);
+        // Any fixed linear post-EQ can change a sine bank's amplitudes but
+        // cannot move its spectral lines.  Its fourth remains exactly 4*f1,
+        // so the same planted near-miss also rejects a post-EQ harmonic bank.
+        let planted_post_eq_fourth = planted_harmonic_sine_bank;
+        assert!(fourth > planted_post_eq_fourth);
         assert!(geometry.inharmonicity_coefficient > 0.0);
         assert!((geometry.fundamental_hz - midi_frequency_hz(midi)).abs() < 1.0e-12);
     }
@@ -164,8 +364,57 @@ fn string_pack_is_geometry_derived_and_keeps_the_measured_fundamental() {
 }
 
 #[test]
+fn soundboard_active_modes_are_sorted_before_bandlimited_empty_slots() {
+    let voice = PianoVoice::new(60, 8_000.0, PianoParameters::canonical()).unwrap();
+    let mut saw_empty = false;
+    for index in 0..piano_v2::SOUNDBOARD_MODES {
+        match voice.soundboard_mode_frequency_hz(index) {
+            Some(frequency_hz) => {
+                assert!(
+                    !saw_empty,
+                    "an active soundboard mode followed an inactive slot"
+                );
+                assert!(frequency_hz < 0.44 * 8_000.0);
+            }
+            None => saw_empty = true,
+        }
+    }
+    assert!(
+        saw_empty,
+        "8 kHz fixture did not exercise band-edge mode culling"
+    );
+}
+
+#[test]
 fn orthotropic_soundboard_obeys_independent_scaling_laws() {
     let base = PianoParameters::canonical();
+    assert_eq!(base.soundboard_length_m, 1.66);
+    assert_eq!(base.soundboard_width_m, 1.39);
+    assert_eq!(base.soundboard_thickness_m, 0.008);
+    assert_eq!(base.soundboard_density_kg_m3, 600.0);
+    assert_eq!(base.soundboard_longitudinal_modulus_pa, 17.1e9);
+    assert_eq!(base.soundboard_radial_modulus_pa, 1.04e9);
+    assert_eq!(base.soundboard_shear_modulus_pa, 1.0e9);
+    assert_eq!(base.soundboard_poisson_ratio, 0.37);
+    assert_eq!(
+        piano_v2::DIRECT_STRING_RADIATION_SCALE,
+        0.0,
+        "the audible tap must not bypass the bridge/soundboard mobility"
+    );
+    for (frequency, expected) in [
+        (75.0, 0.040),
+        (118.8, 0.034),
+        (145.3, 0.019),
+        (182.8, 0.024),
+        (242.2, 0.025),
+        (260.9, 0.018),
+    ] {
+        assert!((soundboard_damping_ratio(frequency).unwrap() - expected).abs() < 1.0e-15);
+    }
+    assert_eq!(
+        soundboard_damping_ratio(0.0),
+        Err(PianoError::InvalidParameters)
+    );
     let base_frequency = soundboard_mode_frequency_hz(base, 1, 1).unwrap();
     assert!(base_frequency > 10.0 && base_frequency < 500.0);
 
@@ -255,7 +504,8 @@ fn baffled_modal_observer_matches_independent_plane_integrals() {
 #[test]
 fn finite_hammer_contact_and_bridge_never_create_represented_energy() {
     let parameters = PianoParameters::canonical();
-    let strike = PianoStrike::from_velocity(108, parameters.hammer_mass_kg).unwrap();
+    let diameter = string_geometry(60).unwrap().equivalent_diameter_m;
+    let strike = PianoStrike::from_velocity(108, 60, diameter).unwrap();
     let mut voice = PianoVoice::new(60, 48_000.0, parameters).unwrap();
     voice.begin_strike(strike).unwrap();
     let initial = voice.represented_energy_j();
@@ -298,7 +548,7 @@ fn finite_hammer_contact_and_bridge_never_create_represented_energy() {
 #[test]
 fn malformed_or_active_parameters_refuse_and_force_cap_releases_dissipatively() {
     let mut active_bridge = PianoParameters::canonical();
-    active_bridge.bridge_coupling_rate_per_second = -1.0;
+    active_bridge.bridge_contact_stiffness_n_per_m = -1.0;
     assert_eq!(
         PianoVoice::new(60, 48_000.0, active_bridge).unwrap_err(),
         PianoError::InvalidParameters
@@ -319,12 +569,22 @@ fn malformed_or_active_parameters_refuse_and_force_cap_releases_dissipatively() 
     );
 
     let parameters = PianoParameters::canonical();
-    let mut inconsistent = PianoStrike::from_velocity(80, parameters.hammer_mass_kg).unwrap();
+    let diameter = string_geometry(60).unwrap().equivalent_diameter_m;
+    let mut inconsistent = PianoStrike::from_velocity(80, 60, diameter).unwrap();
     inconsistent.impact_energy_j *= 0.5;
     let mut voice = PianoVoice::new(60, 48_000.0, parameters).unwrap();
-    let valid = PianoStrike::from_velocity(80, parameters.hammer_mass_kg).unwrap();
+    let valid = PianoStrike::from_velocity(80, 60, diameter).unwrap();
     voice.begin_strike(valid).unwrap();
+    for _ in 0..4 {
+        voice.step().unwrap();
+    }
+    let accounted_before_refused_retrigger = voice.accounted_energy_j();
     assert_eq!(voice.begin_strike(valid), Err(PianoError::InvalidContact));
+    assert_eq!(
+        voice.accounted_energy_j(),
+        accounted_before_refused_retrigger,
+        "a refused retrigger duplicated the retained contact-loss ledger"
+    );
     while voice.contact_active() {
         voice.step().unwrap();
     }
@@ -333,7 +593,7 @@ fn malformed_or_active_parameters_refuse_and_force_cap_releases_dissipatively() 
         Err(PianoError::InvalidContact)
     );
 
-    let mut capped = PianoStrike::from_velocity(80, parameters.hammer_mass_kg).unwrap();
+    let mut capped = PianoStrike::from_velocity(80, 60, diameter).unwrap();
     capped.maximum_force_n = 1.0e-9;
     voice.begin_strike(capped).unwrap();
     let before = voice.represented_energy_j();
@@ -342,10 +602,10 @@ fn malformed_or_active_parameters_refuse_and_force_cap_releases_dissipatively() 
     assert!(voice.represented_energy_j() <= before + 1.0e-12);
     assert!(voice.accounted_energy_j() >= before - 1.0e-9);
 
-    let mut memoryless = PianoStrike::from_velocity(80, parameters.hammer_mass_kg).unwrap();
-    memoryless.felt_relaxation_seconds = 0.0;
+    let mut linear_felt = PianoStrike::from_velocity(80, 60, diameter).unwrap();
+    linear_felt.felt_exponent = 1.0;
     assert_eq!(
-        voice.begin_strike(memoryless),
+        voice.begin_strike(linear_felt),
         Err(PianoError::InvalidContact)
     );
 }
@@ -355,7 +615,10 @@ fn state_continuation_is_bit_deterministic() {
     let parameters = PianoParameters::canonical();
     let mut voice = PianoVoice::new(64, 48_000.0, parameters).unwrap();
     voice
-        .begin_strike(PianoStrike::from_velocity(91, parameters.hammer_mass_kg).unwrap())
+        .begin_strike(
+            PianoStrike::from_velocity(91, 64, string_geometry(64).unwrap().equivalent_diameter_m)
+                .unwrap(),
+        )
         .unwrap();
     for _ in 0..777 {
         voice.step().unwrap();
@@ -392,17 +655,22 @@ fn render_is_finite_audible_bounded_and_hard_strikes_are_brighter() {
 
     let frames = 4_096;
     let parameters = PianoParameters::canonical();
+    let diameter = string_geometry(60).unwrap().equivalent_diameter_m;
     let mut soft_voice = PianoVoice::new(60, 48_000.0, parameters).unwrap();
     soft_voice
-        .begin_strike(PianoStrike::from_velocity(24, parameters.hammer_mass_kg).unwrap())
+        .begin_strike(PianoStrike::from_velocity(24, 60, diameter).unwrap())
         .unwrap();
     let mut hard_voice = PianoVoice::new(60, 48_000.0, parameters).unwrap();
     hard_voice
-        .begin_strike(PianoStrike::from_velocity(120, parameters.hammer_mass_kg).unwrap())
+        .begin_strike(PianoStrike::from_velocity(120, 60, diameter).unwrap())
         .unwrap();
     let mut soft_contact_frames = 0usize;
     let mut hard_contact_frames = 0usize;
+    let mut soft_separation_centroid = None;
+    let mut hard_separation_centroid = None;
     for frame in 0..1_024 {
+        let soft_was_active = soft_voice.contact_active();
+        let hard_was_active = hard_voice.contact_active();
         soft_voice.step().unwrap();
         hard_voice.step().unwrap();
         if soft_voice.contact_active() {
@@ -411,14 +679,22 @@ fn render_is_finite_audible_bounded_and_hard_strikes_are_brighter() {
         if hard_voice.contact_active() {
             hard_contact_frames = frame + 1;
         }
+        if soft_was_active && !soft_voice.contact_active() {
+            soft_separation_centroid = Some(string_energy_centroid_hz(&soft_voice));
+        }
+        if hard_was_active && !hard_voice.contact_active() {
+            hard_separation_centroid = Some(string_energy_centroid_hz(&hard_voice));
+        }
     }
+    let soft_contact_centroid = soft_separation_centroid.expect("soft hammer never separated");
+    let hard_contact_centroid = hard_separation_centroid.expect("hard hammer never separated");
     let soft_string_centroid = string_energy_centroid_hz(&soft_voice);
     let hard_string_centroid = string_energy_centroid_hz(&hard_voice);
     let soft_board_centroid = soundboard_energy_centroid_hz(&soft_voice);
     let hard_board_centroid = soundboard_energy_centroid_hz(&hard_voice);
     assert!(
-        hard_string_centroid > 1.04 * soft_string_centroid,
-        "felt contact itself did not brighten: soft={soft_string_centroid}, hard={hard_string_centroid}, contact_frames={soft_contact_frames}/{hard_contact_frames}"
+        hard_contact_centroid > 1.04 * soft_contact_centroid,
+        "felt contact itself did not brighten at separation: soft={soft_contact_centroid}, hard={hard_contact_centroid}, late={soft_string_centroid}/{hard_string_centroid}, contact_frames={soft_contact_frames}/{hard_contact_frames}"
     );
     assert!(
         hard_board_centroid > 1.03 * soft_board_centroid,
@@ -439,9 +715,19 @@ fn render_is_finite_audible_bounded_and_hard_strikes_are_brighter() {
     let hard_stereo_centroid = normalized_stereo_centroid(&hard_left, &hard_right, 48_000.0);
     let soft_attack_centroid = normalized_centroid(&soft_left[..512], 48_000.0);
     let hard_attack_centroid = normalized_centroid(&hard_left[..512], 48_000.0);
+    let level_ratio = rms(&hard_left) / rms(&soft_left);
+    let planted_level_only_hard: Vec<f32> = soft_left
+        .iter()
+        .map(|sample| (*sample as f64 * level_ratio) as f32)
+        .collect();
+    let planted_level_only_centroid = normalized_centroid(&planted_level_only_hard, 48_000.0);
+    assert!(
+        (planted_level_only_centroid - soft_centroid).abs() < 1.0e-3,
+        "level-only/post-gain near-miss changed normalized spectrum"
+    );
     assert!(
         hard_stereo_centroid > 1.04 * soft_stereo_centroid,
-        "felt contact did not brighten: left={soft_centroid}/{hard_centroid}, right={soft_right_centroid}/{hard_right_centroid}, stereo={soft_stereo_centroid}/{hard_stereo_centroid}, attack={soft_attack_centroid}/{hard_attack_centroid}, string={soft_string_centroid}/{hard_string_centroid}, board={soft_board_centroid}/{hard_board_centroid}, contact_frames={soft_contact_frames}/{hard_contact_frames}"
+        "felt contact did not brighten: left={soft_centroid}/{hard_centroid}, right={soft_right_centroid}/{hard_right_centroid}, stereo={soft_stereo_centroid}/{hard_stereo_centroid}, attack={soft_attack_centroid}/{hard_attack_centroid}, planted_level_only={planted_level_only_centroid}, string={soft_string_centroid}/{hard_string_centroid}, board={soft_board_centroid}/{hard_board_centroid}, contact_frames={soft_contact_frames}/{hard_contact_frames}"
     );
     assert!(rms(&hard_left) > rms(&soft_left));
 }
