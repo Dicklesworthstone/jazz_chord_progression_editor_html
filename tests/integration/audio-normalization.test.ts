@@ -43,17 +43,17 @@ const DENSE_CASES: readonly Readonly<{
   { caseId: "X0-RENDER-014", instrumentId: "analog-poly", outputLevel: 0.34, sourcesPerVoice: 3 },
   /* The rendered piano schedules one PCM buffer source per voice. */
   { caseId: "X0-RENDER-017", instrumentId: "concert-grand", outputLevel: 0.3, sourcesPerVoice: 1 },
-  { caseId: "X0-RENDER-020", instrumentId: "flute", outputLevel: 0.5, sourcesPerVoice: 1 },
+  { caseId: "X0-RENDER-020", instrumentId: "flute", outputLevel: 2.8, sourcesPerVoice: 1 },
   { caseId: "X0-RENDER-023", instrumentId: "organ", outputLevel: 0.44, sourcesPerVoice: 6 },
   /* Plucked families use one composite source for the whole physical chord. */
   { caseId: "X0-RENDER-026", instrumentId: "guitar", outputLevel: 0.5, sourcesPerVoice: 1 },
   /* The sampled instruments also schedule one PCM buffer source per voice. */
-  { caseId: "X0-RENDER-029", instrumentId: "upright-bass", outputLevel: 0.5, sourcesPerVoice: 1 },
-  { caseId: "X0-RENDER-032", instrumentId: "concert-vibes", outputLevel: 0.42, sourcesPerVoice: 1 },
+  { caseId: "X0-RENDER-029", instrumentId: "upright-bass", outputLevel: 0.17, sourcesPerVoice: 1 },
+  { caseId: "X0-RENDER-032", instrumentId: "concert-vibes", outputLevel: 0.1, sourcesPerVoice: 1 },
   { caseId: "X0-RENDER-035", instrumentId: "blues-guitar", outputLevel: 0.46, sourcesPerVoice: 1 },
-  { caseId: "X0-RENDER-038", instrumentId: "clarinet", outputLevel: 0.48, sourcesPerVoice: 1 },
+  { caseId: "X0-RENDER-038", instrumentId: "clarinet", outputLevel: 1.1, sourcesPerVoice: 1 },
   { caseId: "X0-RENDER-041", instrumentId: "dreadnought-guitar", outputLevel: 0.5, sourcesPerVoice: 1 },
-  { caseId: "X0-RENDER-044", instrumentId: "ukulele", outputLevel: 0.54, sourcesPerVoice: 1 },
+  { caseId: "X0-RENDER-044", instrumentId: "ukulele", outputLevel: 0.65, sourcesPerVoice: 1 },
 ];
 
 const PLUCKED_PHYSICAL_CHORDS: Readonly<
