@@ -251,7 +251,7 @@ function sourceCount(recipe: (typeof AUDIO_INSTRUMENT_RECIPES)[number]): number 
         bufferCacheLimit: 64,
       },
       "concert-vibes": {
-        algorithmId: "changes.dsp.sampled-vibraphone@1",
+        algorithmId: "changes.dsp.vibes@2",
         channels: 2,
         maximumRenderSeconds: 4,
         bufferCacheLimit: 64,

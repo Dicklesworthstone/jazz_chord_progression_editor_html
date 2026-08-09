@@ -158,7 +158,7 @@ const RECIPE_CASES: readonly Readonly<{
     caseId: "X0-RENDER-031",
     instrumentId: "concert-vibes",
     label: "Concert Vibes",
-    outputLevel: 0.1,
+    outputLevel: 1.312,
     polyphonyLimit: 48,
     scheduledSourceCount: 1,
     attackSeconds: 0.002,
@@ -658,7 +658,7 @@ describe("TR-X0-RECIPES instrument recipes", () => {
             bufferCacheLimit: 64,
           },
           "concert-vibes": {
-            algorithmId: "changes.dsp.sampled-vibraphone@1",
+            algorithmId: "changes.dsp.vibes@2",
             channels: 2,
             maximumRenderSeconds: 4,
             bufferCacheLimit: 64,

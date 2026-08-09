@@ -152,6 +152,8 @@ describe("waveguide renderer laws", () => {
       "changes.dsp.plucked-electric@2",
       "changes.dsp.plucked-ukulele@1",
       "changes.dsp.plucked-upright-bass@1",
+      /* Physical vibraphone (jcpe-sample-elimination-physical-qzgo). */
+      "changes.dsp.vibes@2",
       WAVEGUIDE_CLARINET_ALGORITHM_ID,
       WAVEGUIDE_CLARINET_V2_ALGORITHM_ID,
       WAVEGUIDE_FLUTE_ALGORITHM_ID,

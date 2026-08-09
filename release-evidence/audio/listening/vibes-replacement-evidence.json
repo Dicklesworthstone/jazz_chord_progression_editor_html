@@ -46,12 +46,12 @@
   "algorithmIds": [
     "changes.dsp.vibes@2"
   ],
-  "wasmSha256": "0a2243efc40b0f5b8fd4fa45236516f799650a2560b4cfe5e1ff6cb4aa523695",
+  "wasmSha256": "108cbfae1435f389c014848f50d0e8579699f230fb080fc11c54ff116aaa9dd7",
   "corpusSha256": "a7f01856ffcf58271613fd2ee42b342877f0cfb7d30595137724fa2fa1b752cc",
   "sourceBindings": [
     {
       "path": "dsp/concert-grand/src/vibes_v2.rs",
-      "sha256": "c7e5c4f100e5d1a1a650c8f738228a2ef1f9b73957f94b4abbcb7de2213a9653"
+      "sha256": "c1719192f466ab421856d8e7194d5c6f1cacc8a5debf16747d18e616ed2b4b24"
     },
     {
       "path": "dsp/concert-grand/src/plucked_v2.rs",
@@ -59,10 +59,10 @@
     },
     {
       "path": "src/audio/wasm/concert-grand-wasm.ts",
-      "sha256": "bcb3692c74217f2c69c968375d1e0b71a3265c24d3a052540f5ad5ed1038f277"
+      "sha256": "8f4ff3b01019266498c21689f4102ff6d5b60db700a70dbc5803ea298debd561"
     }
   ],
-  "sourceClosureSha256": "7fd12a16b6a0fe8ffb05dad31dc8f15f7460e29fed42660e145bd2d6fba8bf4b",
+  "sourceClosureSha256": "bec2bb9b62ff1a787175d6098e26728a8cdb84f7c5336a22f6314accdf964d3c",
   "cells": [
     {
       "id": "m53v64",
@@ -104,13 +104,13 @@
       "midi": 60,
       "velocity": 64,
       "sampleRateHz": 48000,
-      "pcmSha256": "d5ebee6e4da6e202eefb1890a9f588630154f0eebaeea7809536cf82c6289db1",
+      "pcmSha256": "81ec907d3410f9c749c4de78db60913c3fa12f18168e57792042384251dabf52",
       "features": {
-        "pitchCents": -0.9469797239744784,
-        "periodicity": 0.9956379560793978,
-        "earlyRms": 0.018558840378287186,
-        "lateToEarlyRmsRatio": 0.05538652279702638,
-        "peak": 0.16922800242900848
+        "pitchCents": -0.7307691921166815,
+        "periodicity": 0.996937326886142,
+        "earlyRms": 0.011839806064080556,
+        "lateToEarlyRmsRatio": 0.09567320063399379,
+        "peak": 0.14977027475833893
       },
       "outcome": "pass",
       "findings": []
@@ -121,13 +121,13 @@
       "midi": 60,
       "velocity": 110,
       "sampleRateHz": 48000,
-      "pcmSha256": "ea61f8eb6ac8fc9bd6a032d588982b50a13e9707206615baa3a4b456360c20ca",
+      "pcmSha256": "850f8baf12ff5fd8eb3f11cecb65db084e662f2665a90b214ba5034ed516dd92",
       "features": {
-        "pitchCents": -0.9692630472278907,
-        "periodicity": 0.995638805405881,
-        "earlyRms": 0.03203384355481754,
-        "lateToEarlyRmsRatio": 0.04966502903846687,
-        "peak": 0.41696131229400635
+        "pitchCents": -0.7929979885453817,
+        "periodicity": 0.996751541414179,
+        "earlyRms": 0.019378953192985195,
+        "lateToEarlyRmsRatio": 0.09251516865962568,
+        "peak": 0.18858471512794495
       },
       "outcome": "pass",
       "findings": []
@@ -138,13 +138,13 @@
       "midi": 67,
       "velocity": 64,
       "sampleRateHz": 48000,
-      "pcmSha256": "ad56a69ff0926e8ed1d76fab9636a6fcc44c3e86e364a72f9163a7909dd2f437",
+      "pcmSha256": "4997787c18fa281b7c0d18ffd2a71227c608290eafbfc835d4b060c4da266ad4",
       "features": {
-        "pitchCents": -0.4643274771957237,
-        "periodicity": 0.9978688523070579,
-        "earlyRms": 0.023681187520502956,
-        "lateToEarlyRmsRatio": 0.049112517100058255,
-        "peak": 0.23304446041584015
+        "pitchCents": -0.6297458455514692,
+        "periodicity": 0.9972729141215065,
+        "earlyRms": 0.02094527534887387,
+        "lateToEarlyRmsRatio": 0.06238743772916207,
+        "peak": 0.18030743300914764
       },
       "outcome": "pass",
       "findings": []
@@ -155,13 +155,13 @@
       "midi": 67,
       "velocity": 110,
       "sampleRateHz": 48000,
-      "pcmSha256": "556819e41f1ab27cc68b27c0540493fac4aa88cd8eca20658689ec999f5d5040",
+      "pcmSha256": "3534b0f1c20a22bfbff160a5cafafd3b751b775ae59fd6c2d9f2c127c1fa944c",
       "features": {
-        "pitchCents": -0.48927084159438977,
-        "periodicity": 0.9978573119324377,
-        "earlyRms": 0.0387989833673669,
-        "lateToEarlyRmsRatio": 0.04736488876088289,
-        "peak": 0.437934935092926
+        "pitchCents": -0.5948826134016842,
+        "periodicity": 0.9975591694125467,
+        "earlyRms": 0.029165864755015307,
+        "lateToEarlyRmsRatio": 0.069049400499975,
+        "peak": 0.3509649336338043
       },
       "outcome": "pass",
       "findings": []
@@ -172,13 +172,13 @@
       "midi": 74,
       "velocity": 64,
       "sampleRateHz": 48000,
-      "pcmSha256": "8b2fa20ae8b2fee5cffb2f71da8f9c86116803c68cd77fa47afca29393907190",
+      "pcmSha256": "1cabaa40bf11b7b3e6b160e8873b81ba07c977dd04a8b8704ccc2c54dc2a9a4e",
       "features": {
-        "pitchCents": -0.18440513655762997,
-        "periodicity": 0.9995502451837736,
-        "earlyRms": 0.025921707438835786,
-        "lateToEarlyRmsRatio": 0.044841118229387474,
-        "peak": 0.15810593962669373
+        "pitchCents": -0.17055509923133585,
+        "periodicity": 0.9996532036159993,
+        "earlyRms": 0.01860985550580969,
+        "lateToEarlyRmsRatio": 0.034996256438971904,
+        "peak": 0.1638449877500534
       },
       "outcome": "pass",
       "findings": []
@@ -189,13 +189,13 @@
       "midi": 74,
       "velocity": 110,
       "sampleRateHz": 48000,
-      "pcmSha256": "bbb29ec1e94a4acd75d7c598cb3e94f84c209a28d70de98fe151b099a7045d97",
+      "pcmSha256": "96b82d8699e49fca5c27582e296a0318066dea8751cf55ebb96eb3edb9eb1bf8",
       "features": {
-        "pitchCents": -0.16330764487995683,
-        "periodicity": 0.9995945900526094,
-        "earlyRms": 0.04312919907930364,
-        "lateToEarlyRmsRatio": 0.04265305639695771,
-        "peak": 0.3630354404449463
+        "pitchCents": -0.150345336008051,
+        "periodicity": 0.999680576144389,
+        "earlyRms": 0.036136657302028204,
+        "lateToEarlyRmsRatio": 0.02880911652547923,
+        "peak": 0.39283618330955505
       },
       "outcome": "pass",
       "findings": []
@@ -245,19 +245,19 @@
     {
       "id": "m60-dynamics",
       "midi": 60,
-      "rmsRise": 0.013475003176530352,
+      "rmsRise": 0.007539147128904638,
       "outcome": "pass"
     },
     {
       "id": "m67-dynamics",
       "midi": 67,
-      "rmsRise": 0.015117795846863947,
+      "rmsRise": 0.008220589406141437,
       "outcome": "pass"
     },
     {
       "id": "m74-dynamics",
       "midi": 74,
-      "rmsRise": 0.017207491640467854,
+      "rmsRise": 0.017526801796218513,
       "outcome": "pass"
     },
     {
@@ -281,28 +281,28 @@
       "id": "m60-proximity",
       "midi": 60,
       "corpusPitchCents": 0.37059216277994234,
-      "candidateDistanceDb": 14.060155097993958,
+      "candidateDistanceDb": 11.266215162912662,
       "impostorDistanceDb": 14.770709852134546,
-      "marginDb": 0.7105547541405883,
-      "outcome": "fail"
+      "marginDb": 3.5044946892218842,
+      "outcome": "pass"
     },
     {
       "id": "m67-proximity",
       "midi": 67,
       "corpusPitchCents": -0.7835381678324331,
-      "candidateDistanceDb": 15.049752798664024,
+      "candidateDistanceDb": 9.902278776502756,
       "impostorDistanceDb": 13.130484504767391,
-      "marginDb": -1.9192682938966321,
-      "outcome": "fail"
+      "marginDb": 3.2282057282646353,
+      "outcome": "pass"
     },
     {
       "id": "m74-proximity",
       "midi": 74,
       "corpusPitchCents": -0.2053901699623026,
-      "candidateDistanceDb": 7.507261082706397,
+      "candidateDistanceDb": 6.146186195873116,
       "impostorDistanceDb": 8.94293569784387,
-      "marginDb": 1.435674615137473,
-      "outcome": "fail"
+      "marginDb": 2.796749501970754,
+      "outcome": "pass"
     },
     {
       "id": "m84-proximity",
@@ -321,13 +321,13 @@
     "clippingRejected": true,
     "sustainedRejected": true,
     "flatDynamicsRejected": true,
-    "impostorRejected": false
+    "impostorRejected": true
   },
   "summary": {
-    "outcome": "fail",
+    "outcome": "pass",
     "passedCellCount": 10,
     "passedDynamicsCellCount": 5,
-    "passedProximityCellCount": 2
+    "passedProximityCellCount": 5
   },
-  "evidenceSha256": "caaf9cc7dbb128df27a4ed3ec68ea11ae51a8e4abd2ff84bbb960f3359728b5b"
+  "evidenceSha256": "28466b67959587f741f4e217c2fe1e90452c577e60172a7d884cc0a2cb8fa833"
 }

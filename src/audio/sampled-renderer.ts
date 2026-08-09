@@ -1,11 +1,12 @@
 /**
- * Deterministic sampled-instrument renderer.
+ * Deterministic sampled-instrument renderer (registry now empty — see the
+ * retirement note below).
  *
- * The upright bass and the vibraphone are recorded instruments: their
- * payloads are checked-in, pitch-verified mono PCM slices (see
- * `scripts/build-instrument-samples.ts`), and rendering a note is nothing
- * but reading the nearest recorded key through a Catmull-Rom interpolator
- * at the ratio that lands it exactly on the requested 12-TET pitch. The
+ * A recorded instrument's payload is checked-in, pitch-verified mono PCM
+ * slices (see `scripts/build-instrument-samples.ts`), and rendering a note
+ * is nothing but reading the nearest recorded key through a Catmull-Rom
+ * interpolator at the ratio that lands it exactly on the requested 12-TET
+ * pitch. The
  * whole path is synchronous, pure, and byte-deterministic: no wasm, no
  * browser media API, no state beyond a lazily decoded payload.
  *
@@ -22,23 +23,20 @@
  * velocities.
  */
 import type { RenderedNotePcm } from "./dsp-renderer";
-import {
-  VIBRAPHONE_SAMPLES_ATTRIBUTION,
-  VIBRAPHONE_SAMPLES_BASE64,
-  VIBRAPHONE_SAMPLES_BYTE_LENGTH,
-  VIBRAPHONE_SAMPLES_LICENSE,
-  VIBRAPHONE_SAMPLES_RATE_HZ,
-  VIBRAPHONE_SAMPLES_SHA256,
-  VIBRAPHONE_SAMPLES_SLICE_INDEX,
-} from "./wasm/vibraphone-samples";
 
 /*
- * The sampled upright bass was replaced by the physical
- * changes.dsp.plucked-upright-bass@1 model (bead
- * jcpe-sample-elimination-physical-qzgo); its 1.0 MB CC0 payload left the
- * shipping module graph with it. The recordings remain in the repository as
- * the replacement gate's reference corpus
- * (src/audio/wasm/upright-bass-samples.ts, imported by the gate only).
+ * Both sampled instruments have been replaced by physical models (bead
+ * jcpe-sample-elimination-physical-qzgo): the upright bass by
+ * changes.dsp.plucked-upright-bass@1 and the vibraphone by
+ * changes.dsp.vibes@2. Their CC0 payloads (1.0 MB + 1.6 MB) left the
+ * shipping module graph with them; the recordings remain in the repository
+ * as the replacement gate's reference corpora
+ * (src/audio/wasm/upright-bass-samples.ts and
+ * src/audio/wasm/vibraphone-samples.ts, imported by the gate and the
+ * corpus-integrity tests only). The renderer machinery below is retained
+ * verbatim so a future recorded instrument only needs a payload row; with
+ * an empty registry every load refuses loudly and the engine's dispatch
+ * caches the refusal as null.
  */
 export const VIBRAPHONE_RENDERER_ALGORITHM_ID =
   "changes.dsp.sampled-vibraphone@1";
@@ -77,18 +75,7 @@ type SampledPayloadSource = Readonly<{
   slices: readonly SampledSlice[];
 }>;
 
-const PAYLOAD_SOURCES: readonly SampledPayloadSource[] = Object.freeze([
-  Object.freeze({
-    algorithmId: VIBRAPHONE_RENDERER_ALGORITHM_ID,
-    attribution: VIBRAPHONE_SAMPLES_ATTRIBUTION,
-    license: VIBRAPHONE_SAMPLES_LICENSE,
-    payloadSha256: VIBRAPHONE_SAMPLES_SHA256,
-    payloadByteLength: VIBRAPHONE_SAMPLES_BYTE_LENGTH,
-    payloadBase64: VIBRAPHONE_SAMPLES_BASE64,
-    payloadRateHz: VIBRAPHONE_SAMPLES_RATE_HZ,
-    slices: VIBRAPHONE_SAMPLES_SLICE_INDEX,
-  }),
-]);
+const PAYLOAD_SOURCES: readonly SampledPayloadSource[] = Object.freeze([]);
 
 export type SampledInstrumentRenderer = Readonly<{
   algorithmId: SampledRendererAlgorithmId;

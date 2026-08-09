@@ -190,7 +190,7 @@ const EXPECTED_SCHEMAS: Readonly<Record<ExpectedFilename, string>> = {
 };
 
 export const X0_REVIEWED_CONTRACT_BYTE_DIGEST =
-  "19dc2916d19b8b3a3f4554f7b05eec38bbeb5e4042b025001e56f817a4b416c9";
+  "ae9f2100fed7ce636112ee4d01bec988f50b2a38e7824148039015802445b971";
 
 export const X0_REVIEWED_BYTE_DIGESTS: Readonly<
   Record<CompanionFilename, string>
@@ -200,7 +200,7 @@ export const X0_REVIEWED_BYTE_DIGESTS: Readonly<
   "impulse-golden.json":
     "9330b747b85defb801b6456ad7d4ee519f78bdf83ea22a4b6ab47268b3b79888",
   "instrument-recipes.json":
-    "21f48770e60097035c9a9b8b625060a428c563882d0148cf6a28c8f790048643",
+    "a56d813a0f678433de2cd8f1f8d33c441d8facbe9a158ca19f75c6721ebdfae6",
   "lifecycle-cases.json":
     "3ad712126fe22bf314ea76e41fb501ee549be2ef944a45aafbe1c1f2e8b8dcf5",
   "listening-rubric.json":
@@ -410,9 +410,14 @@ export const X0_REVIEWED_RECIPE_IDS = [
  * 12.1x quieter at the same chart level; the ratio was measured at midi 38
  * v100 against the browser-calibrated sampled level it replaces (bead
  * jcpe-sample-elimination-physical-qzgo).
+ *
+ * 2026-08-09: concert-vibes 0.1->1.312 — the recipe swapped from the sampled
+ * renderer to the physical vibes@2 model, which renders a 13.1x geomean RMS
+ * deficit across the five replacement-gate registers at v100 against the
+ * browser-calibrated sampled level it replaces (same bead as the bass swap).
  */
 export const X0_REVIEWED_RECIPE_LEVELS = [
-  0.62, 0.48, 0.5, 0.3, 0.34, 0.3, 2.8, 0.44, 0.5, 2.06, 0.1, 0.46, 1.1,
+  0.62, 0.48, 0.5, 0.3, 0.34, 0.3, 2.8, 0.44, 0.5, 2.06, 1.312, 0.46, 1.1,
   0.5, 0.65,
 ] as const;
 export const X0_REVIEWED_RECIPE_POLYPHONY = [
@@ -557,13 +562,13 @@ export const X0_REVIEWED_RENDERED_RECIPES = [
   id: "concert-vibes",
   label: "Concert Vibes",
   designClaim:
-    "recorded vibraphone, soft mallets, nearest recorded key transposed onto pitch",
+    "physical vibraphone: tuned free-free bars, per-register mallet calibration, rotating-baffle tremolo",
   synthesis: "rendered",
-  outputLevel: 0.1,
+  outputLevel: 1.312,
   polyphonyLimit: 48,
   scheduledSourceCount: 1,
   renderer: {
-    algorithmId: "changes.dsp.sampled-vibraphone@1",
+    algorithmId: "changes.dsp.vibes@2",
     channels: 2,
     maximumRenderSeconds: 4,
     bufferCacheLimit: 64,
@@ -792,7 +797,7 @@ const REVIEWED_CANONICAL_DIGESTS = {
   graphEdges: "86f0e0d8307ab85e40d9ed1f1f1d7547f34018bf117a754521d3814ca4c526b0",
   graphSettings: "ed4816e5e4ea9fbcb1a941cddb2479db072453f54a44272f35717a6ebf9c53a5",
   routingCases: "cb78dae03ce88d9bc853f8c8a6339f6de64f53ad8d38d566d7b311191834b2cc",
-  recipes: "9e024a2a695ff07ff01045c9d1479ca0291e39669158e9b5a088ac2b177613ef",
+  recipes: "713cff27b045092eab769069f8d0973481686a99ada309e68afc55c27e87a3ef",
   normalization: "8e7ef43050fda93f9ab646b72a51f96da666385a812172df1a8c2cbded7534bc",
   pulse: "e5bad32f09dbfe03ef87124d811125144145168bc8f07a48ef78b530b1c1e839",
   impulseCheckpoints: "29ffb97240f4a5f80f24812ff592df1a15413bf2a21d1b8f314ef0e2ee15c1d8",

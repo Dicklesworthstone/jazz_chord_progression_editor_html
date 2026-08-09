@@ -390,17 +390,23 @@ export const AUDIO_INSTRUMENT_RECIPES = Object.freeze([
     id: "concert-vibes",
     label: "Concert Vibes",
     designClaim:
-      "recorded vibraphone, soft mallets, nearest recorded key transposed onto pitch",
+      "physical vibraphone: tuned free-free bars, per-register mallet calibration, rotating-baffle tremolo",
     synthesis: "rendered",
-    outputLevel: 0.1,
+    /*
+     * Physical vibes level: the sampled recipe's 0.1 was browser-calibrated
+     * in the loudness round; the physical render measures a 13.1x geomean
+     * RMS deficit against it across the five gate registers at v100
+     * (2026-08-09), so 0.1 x 13.117 lands the same perceived level.
+     */
+    outputLevel: 1.312,
     polyphonyLimit: 48,
     renderer: Object.freeze({
-      algorithmId: "changes.dsp.sampled-vibraphone@1",
+      algorithmId: "changes.dsp.vibes@2",
       channels: 2,
       maximumRenderSeconds: 4,
       bufferCacheLimit: 64,
     }),
-    /* Click guard and a ringing damp: the recorded PCM is the envelope. */
+    /* Click guard and a ringing damp: the physical render owns the decay. */
     amplitude: Object.freeze({ attackSeconds: 0.002, decaySeconds: 0, sustainLevel: 1, releaseSeconds: 1.1 }),
     filter: Object.freeze({ type: "lowpass", attackHz: 16_000, peakHz: 16_000, sustainHz: 16_000, q: 0.5, decaySeconds: 0.1 }),
   }),

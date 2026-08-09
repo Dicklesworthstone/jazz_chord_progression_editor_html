@@ -80,11 +80,11 @@
       "date": "2026-08-09"
     },
     {
-      "algorithmId": "changes.dsp.sampled-vibraphone@1",
-      "status": "approved",
-      "evidence": "owner-approved artifact 67b9ae08 (commit 031c667); CC0 sampled recipe live on all hosts 2026-08-06",
-      "decidedBy": "owner",
-      "date": "2026-08-06"
+      "algorithmId": "changes.dsp.vibes@2",
+      "status": "machine-delegated",
+      "evidence": "release-evidence/audio/listening/vibes-replacement-evidence.json",
+      "decidedBy": "owner-delegated-machine-gate",
+      "date": "2026-08-09"
     },
     {
       "algorithmId": "changes.audio.impulse.hall-quartic-q15.v2",

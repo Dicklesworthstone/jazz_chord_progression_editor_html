@@ -425,13 +425,13 @@
   {
    "id": "concert-vibes",
    "label": "Concert Vibes",
-   "designClaim": "recorded vibraphone, soft mallets, nearest recorded key transposed onto pitch",
+   "designClaim": "physical vibraphone: tuned free-free bars, per-register mallet calibration, rotating-baffle tremolo",
    "synthesis": "rendered",
-   "outputLevel": 0.1,
+   "outputLevel": 1.312,
    "polyphonyLimit": 48,
    "scheduledSourceCount": 1,
    "renderer": {
-    "algorithmId": "changes.dsp.sampled-vibraphone@1",
+    "algorithmId": "changes.dsp.vibes@2",
     "channels": 2,
     "maximumRenderSeconds": 4,
     "bufferCacheLimit": 64
