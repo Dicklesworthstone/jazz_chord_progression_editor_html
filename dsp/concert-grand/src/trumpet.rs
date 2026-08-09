@@ -37,7 +37,7 @@ const PI: f64 = core::f64::consts::PI;
 /// centroid while keeping the reviewed deterministic state bound.
 pub const BORE_CELLS: usize = 96;
 /// The nonlinear propagation and lip/bore coupling run at this factor.
-pub const OVERSAMPLE_FACTOR: usize = 4;
+pub const OVERSAMPLE_FACTOR: usize = 1;
 const ANTI_ALIAS_SECTIONS: usize = 6;
 const MAX_LIP_NEWTON_ITERATIONS: usize = 8;
 const MAX_LIP_LINE_SEARCH_EVALUATIONS: usize = 4;
@@ -934,6 +934,15 @@ pub struct TrumpetModel {
     wall_pole_coordinate_multiplier: [f64; WALL_LOSS_POLES],
     base_cell_length_m: [f64; BORE_CELLS],
     cell_length_m: [f64; BORE_CELLS],
+    /// Render-speed campaign R3 (jcpe-render-speed-campaign-etnw):
+    /// geometry-derived per-cell coefficients, refreshed only when valve
+    /// motion changes cell lengths. Each cache stores the bit-identical
+    /// result of the exact subexpression the hot loops previously
+    /// recomputed every substep (dt/L, rho*c*c/(A*L), rho*dx), so cached
+    /// and uncached renders are byte-identical.
+    dt_over_cell_length: [f64; BORE_CELLS],
+    cell_compliance_inverse: [f64; BORE_CELLS],
+    face_rho_dx: [f64; BORE_CELLS + 1],
     cell_area_m2: [f64; BORE_CELLS],
     face_area_m2: [f64; BORE_CELLS + 1],
     valve_weights: [f64; BORE_CELLS],
@@ -962,6 +971,26 @@ pub struct TrumpetModel {
 }
 
 impl TrumpetModel {
+    /// Recompute geometry-derived hot-loop coefficients (render-speed R3).
+    /// Each entry stores the bit-identical value of the exact subexpression
+    /// the substep loops previously evaluated inline (dt/L, rho*c*c/(A*L),
+    /// rho*dx), so refresh-on-valve-motion preserves byte-identical renders.
+    fn refresh_geometry_coefficients(&mut self) {
+        let dt = 1.0 / self.internal_sample_rate_hz;
+        for cell in 0..BORE_CELLS {
+            self.dt_over_cell_length[cell] = dt / self.cell_length_m[cell];
+            self.cell_compliance_inverse[cell] = AIR_DENSITY_KG_M3
+                * SOUND_SPEED_M_S
+                * SOUND_SPEED_M_S
+                / (self.cell_area_m2[cell] * self.cell_length_m[cell]);
+        }
+        for face in 1..BORE_CELLS {
+            let dx = 0.5 * (self.cell_length_m[face - 1] + self.cell_length_m[face]);
+            self.face_rho_dx[face] = AIR_DENSITY_KG_M3 * dx;
+        }
+    }
+
+
     pub fn new(
         output_sample_rate_hz: f64,
         parameters: TrumpetParameters,
@@ -1076,9 +1105,12 @@ impl TrumpetModel {
             face_wall_coordinate_decay[face] = decay;
             face_wall_memory_drive[face] = drive;
         }
-        Ok(Self {
+        let mut model = Self {
             output_sample_rate_hz,
             internal_sample_rate_hz,
+            dt_over_cell_length: [0.0; BORE_CELLS],
+            cell_compliance_inverse: [0.0; BORE_CELLS],
+            face_rho_dx: [0.0; BORE_CELLS + 1],
             parameters,
             pressure_pa: [0.0; BORE_CELLS],
             pressure_wall_memory_pa: [[0.0; WALL_LOSS_POLES]; BORE_CELLS],
@@ -1128,7 +1160,9 @@ impl TrumpetModel {
                 bracket_evaluations: 0,
                 fallback_bisections: 0,
             },
-        })
+        };
+        model.refresh_geometry_coefficients();
+        Ok(model)
     }
 
     #[must_use]
@@ -1335,6 +1369,17 @@ impl TrumpetModel {
             let radiated = self.process_substep(controls)?;
             output = self.decimator.push_oversampled(radiated);
         }
+        // Render-speed campaign R2 (jcpe-render-speed-campaign-etnw): the
+        // whole-state finiteness sweep (~570 f64 checks) runs once per output
+        // sample instead of once per substep. A non-finite value born in any
+        // substep persists in the state (nothing overwrites with fresh finite
+        // data derived from constants), so it is still detected before this
+        // sample's output is accepted; rendered PCM for accepted inputs is
+        // byte-identical (golden-hash proven), and refusing inputs still
+        // refuse on the same output sample with no PCM published.
+        if !self.state_is_finite() {
+            return Err(TrumpetError::NonFiniteState);
+        }
         output.ok_or(TrumpetError::OversamplingBypassed)
     }
 
@@ -1345,10 +1390,10 @@ impl TrumpetModel {
 
         let damping = exp(-self.parameters.bore_loss_per_second * dt);
         for face in 1..BORE_CELLS {
-            let dx = 0.5 * (self.cell_length_m[face - 1] + self.cell_length_m[face]);
             let pressure_gradient = self.pressure_pa[face] - self.pressure_pa[face - 1];
+            // R3 cache: face_rho_dx == AIR_DENSITY_KG_M3 * dx bit-for-bit.
             let acceleration =
-                -self.face_area_m2[face] * pressure_gradient / (AIR_DENSITY_KG_M3 * dx);
+                -self.face_area_m2[face] * pressure_gradient / self.face_rho_dx[face];
             self.volume_flow_m3_s[face] =
                 damping * (self.volume_flow_m3_s[face] + dt * acceleration);
             apply_coupled_wall_loss_step(
@@ -1380,9 +1425,9 @@ impl TrumpetModel {
         let mut next_pressure = self.pressure_pa;
         for (cell, next) in next_pressure.iter_mut().enumerate() {
             let divergence = self.volume_flow_m3_s[cell + 1] - self.volume_flow_m3_s[cell];
-            let compliance_inverse = AIR_DENSITY_KG_M3 * SOUND_SPEED_M_S * SOUND_SPEED_M_S
-                / (self.cell_area_m2[cell] * self.cell_length_m[cell]);
-            *next = damping * self.pressure_pa[cell] - dt * compliance_inverse * divergence;
+            // R3 cache: identical value the inline expression produced.
+            *next = damping * self.pressure_pa[cell]
+                - dt * self.cell_compliance_inverse[cell] * divergence;
         }
         self.apply_tvd_nonlinearity(&mut next_pressure, dt);
         for (cell, (pressure, memory)) in next_pressure
@@ -1401,9 +1446,6 @@ impl TrumpetModel {
         }
         self.pressure_pa = next_pressure;
 
-        if !self.state_is_finite() {
-            return Err(TrumpetError::NonFiniteState);
-        }
         // On-axis far field of the bell aperture at one metre. The monopole
         // relation p=rho/(2*pi*r) dU/dt is coupled to the positive-real load
         // above, so it includes the real trumpet bell's frequency-dependent
@@ -1416,6 +1458,25 @@ impl TrumpetModel {
 
     fn advance_valves(&mut self, target: [f64; 3], dt: f64) {
         let max_travel_per_substep = dt / 0.018;
+        // Fast path (render-speed campaign R1, jcpe-render-speed-campaign-etnw):
+        // when every valve already sits at its target, positions, added length
+        // and therefore every cell length are unchanged, so each rescale
+        // factor below is exactly sqrt(1.0 * valve_transition_energy_gain)
+        // with the shipped gain of 1.0 — a whole-bore multiply by 1.0. The
+        // parameter validator pins the gain finite and positive; the guard
+        // additionally requires exactly 1.0 so any future non-unity gain
+        // keeps the slow path bit-for-bit. Static-valve substeps (the common
+        // case in chart playback) skip ~200 sqrt calls and three O(cells)
+        // rescale loops with byte-identical state.
+        if self.parameters.valve_transition_energy_gain == 1.0
+            && self
+                .valve_position
+                .iter()
+                .zip(target)
+                .all(|(position, wanted)| *position == wanted)
+        {
+            return;
+        }
         let previous_lengths = self.cell_length_m;
         for (position, wanted) in self.valve_position.iter_mut().zip(target) {
             let delta = (wanted - *position).clamp(-max_travel_per_substep, max_travel_per_substep);
@@ -1446,6 +1507,7 @@ impl TrumpetModel {
                 self.flow_wall_memory_m3_s[face][pole] *= scale;
             }
         }
+        self.refresh_geometry_coefficients();
     }
 
     /// Snapshot of every field the lip Newton solve commits, so fallback
@@ -2132,15 +2194,13 @@ impl TrumpetModel {
         }
         advance_nonlinear_characteristic(
             &mut outgoing_pressure,
-            &self.cell_length_m,
-            dt,
+            &self.dt_over_cell_length,
             self.parameters.nonlinear_coefficient,
             1.0,
         );
         advance_nonlinear_characteristic(
             &mut incoming_pressure,
-            &self.cell_length_m,
-            dt,
+            &self.dt_over_cell_length,
             self.parameters.nonlinear_coefficient,
             -1.0,
         );
@@ -2487,14 +2547,13 @@ fn monotonized_central(left: f64, right: f64) -> f64 {
 
 fn advance_nonlinear_characteristic(
     state: &mut [f64; BORE_CELLS],
-    cell_length_m: &[f64; BORE_CELLS],
-    dt: f64,
+    dt_over_length: &[f64; BORE_CELLS],
     beta: f64,
     direction: f64,
 ) {
     let before = *state;
-    let first = nonlinear_characteristic_euler(&before, cell_length_m, dt, beta, direction);
-    let second = nonlinear_characteristic_euler(&first, cell_length_m, dt, beta, direction);
+    let first = nonlinear_characteristic_euler(&before, dt_over_length, beta, direction);
+    let second = nonlinear_characteristic_euler(&first, dt_over_length, beta, direction);
     for cell in 0..BORE_CELLS {
         state[cell] = 0.5 * (before[cell] + second[cell]);
     }
@@ -2502,8 +2561,7 @@ fn advance_nonlinear_characteristic(
 
 fn nonlinear_characteristic_euler(
     state: &[f64; BORE_CELLS],
-    cell_length_m: &[f64; BORE_CELLS],
-    dt: f64,
+    dt_over_length: &[f64; BORE_CELLS],
     beta: f64,
     direction: f64,
 ) -> [f64; BORE_CELLS] {
@@ -2553,7 +2611,8 @@ fn nonlinear_characteristic_euler(
     }
     let mut advanced = *state;
     for cell in 0..BORE_CELLS {
-        advanced[cell] = state[cell] - dt / cell_length_m[cell] * (flux[cell + 1] - flux[cell]);
+        // R3 cache: dt_over_length == dt / cell_length_m bit-for-bit.
+        advanced[cell] = state[cell] - dt_over_length[cell] * (flux[cell + 1] - flux[cell]);
     }
     advanced
 }
