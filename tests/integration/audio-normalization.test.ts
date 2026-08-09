@@ -67,9 +67,8 @@ const PLUCKED_PHYSICAL_CHORDS: Readonly<
   "dreadnought-guitar": Object.freeze([40, 45, 50, 55, 59, 64]),
   /* The re-entrant ukulele is physically four-course, never six. */
   ukulele: Object.freeze([60, 64, 67, 69]),
-  /* Physical pizzicato bass (jcpe-sample-elimination-physical-qzgo): four
-   * strings, one playable pitch per course inside the E1-D3 window. */
-  "upright-bass": Object.freeze([28, 33, 38, 43]),
+  /* upright-bass reverted to the sampled per-voice renderer (owner mandate
+   * 2026-08-09, bead jcpe-3q4c) — no physical-chord row while it ships. */
 });
 
 describe("TR-X0-NORMALIZATION audio normalization", () => {
