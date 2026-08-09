@@ -1,0 +1,222 @@
+{
+ "schema": "changes.evidence.phs5-trumpet-shipping-output.v1",
+ "policy": {
+  "schema": "changes.policy.phs5-trumpet-shipping-output.v1",
+  "algorithmId": "changes.dsp.waveguide-trumpet@1",
+  "sampleRateHz": 48000,
+  "renderSeconds": 1.4,
+  "sustainStartSeconds": 0.5,
+  "sustainLengthSeconds": 0.6,
+  "midi": [
+   52,
+   58,
+   64,
+   70
+  ],
+  "velocities": [
+   64,
+   110
+  ],
+  "minimumPeriodicity": 0.985,
+  "maximumAbsolutePitchCents": 20,
+  "minimumCentroidRiseHz": 30,
+  "minimumSustainRms": 0.001,
+  "maximumPeak": 0.98
+ },
+ "algorithmIds": [
+  "changes.dsp.waveguide-trumpet@1"
+ ],
+ "wasmSha256": "7eb4c6da7d8a5c4702b07c5c7daaf2fa4446b67f693f3915f9ae6f6444f21481",
+ "sourceBindings": [
+  {
+   "path": "dsp/concert-grand/src/trumpet.rs",
+   "sha256": "91027e7769e480d26acbadf8f9cbf54a5e4cdecc0a5a4453f86dc557a01b4c11"
+  },
+  {
+   "path": "src/audio/wasm/concert-grand-wasm.ts",
+   "sha256": "e19a8d086393f1c5712ebe4bb8224302fea9e0f1f416f6d6830fcc6c02f1c8ae"
+  }
+ ],
+ "sourceClosureSha256": "126d166bf6af8ff8b8085bea71992f5f58a36d17af2f7c191e60342a17bb4c80",
+ "cells": [
+  {
+   "id": "m52v64",
+   "algorithmId": "changes.dsp.waveguide-trumpet@1",
+   "midi": 52,
+   "velocity": 64,
+   "sampleRateHz": 48000,
+   "pcmSha256": "b1b5678b2c9890db7aa39d16d23fad3b805bbdf6752f18efed2f03fb3055f9e7",
+   "features": {
+    "pitchCents": 1.2165715213670605,
+    "periodicity": 0.9999894364139609,
+    "sustainRms": 0.01491656404975436,
+    "peak": 0.05975253880023956,
+    "centroidHz": 1238.142005584541
+   },
+   "outcome": "pass",
+   "findings": []
+  },
+  {
+   "id": "m52v110",
+   "algorithmId": "changes.dsp.waveguide-trumpet@1",
+   "midi": 52,
+   "velocity": 110,
+   "sampleRateHz": 48000,
+   "pcmSha256": "3b5e55c04b372d073966f7c2f5570509cf0e06166d8857ff28ef3212291fb433",
+   "features": {
+    "pitchCents": 0.5924945336858242,
+    "periodicity": 0.9992959973814848,
+    "sustainRms": 0.036767506868719026,
+    "peak": 0.2516588270664215,
+    "centroidHz": 2190.088049870507
+   },
+   "outcome": "pass",
+   "findings": []
+  },
+  {
+   "id": "m58v64",
+   "algorithmId": "changes.dsp.waveguide-trumpet@1",
+   "midi": 58,
+   "velocity": 64,
+   "sampleRateHz": 48000,
+   "pcmSha256": "27b5ee8e70a6c0c17e559ef3322afb23b660762571ef1f8f0233229b3ea5ce34",
+   "features": {
+    "pitchCents": 0.4545664267003959,
+    "periodicity": 0.9997391282544171,
+    "sustainRms": 0.021555636484403288,
+    "peak": 0.08821606636047363,
+    "centroidHz": 1699.7894357796383
+   },
+   "outcome": "pass",
+   "findings": []
+  },
+  {
+   "id": "m58v110",
+   "algorithmId": "changes.dsp.waveguide-trumpet@1",
+   "midi": 58,
+   "velocity": 110,
+   "sampleRateHz": 48000,
+   "pcmSha256": "dbd6cb720211d5661447c22aa4e23208d3049d2152f00a3311a81b7524aedd9a",
+   "features": {
+    "pitchCents": -0.9465359274808209,
+    "periodicity": 0.9999334822679639,
+    "sustainRms": 0.027833092386660034,
+    "peak": 0.12748762965202332,
+    "centroidHz": 1946.9564783121427
+   },
+   "outcome": "pass",
+   "findings": []
+  },
+  {
+   "id": "m64v64",
+   "algorithmId": "changes.dsp.waveguide-trumpet@1",
+   "midi": 64,
+   "velocity": 64,
+   "sampleRateHz": 48000,
+   "pcmSha256": "598b4aea42febdbcf0d9722a371bbf13ede1633df6c01b52c4d07be8ac31e4a3",
+   "features": {
+    "pitchCents": 0.6052816174076089,
+    "periodicity": 0.9950533654566273,
+    "sustainRms": 0.024567331502829633,
+    "peak": 0.09503073245286942,
+    "centroidHz": 1934.1915040427675
+   },
+   "outcome": "pass",
+   "findings": []
+  },
+  {
+   "id": "m64v110",
+   "algorithmId": "changes.dsp.waveguide-trumpet@1",
+   "midi": 64,
+   "velocity": 110,
+   "sampleRateHz": 48000,
+   "pcmSha256": "5ad9257b334be58ef38176f5400d7c1c22dbd8b3568ae7e780d6327da08ce3a6",
+   "features": {
+    "pitchCents": -0.03847586244414945,
+    "periodicity": 0.994933644103435,
+    "sustainRms": 0.029857319654110266,
+    "peak": 0.1261671632528305,
+    "centroidHz": 2122.0549183675284
+   },
+   "outcome": "pass",
+   "findings": []
+  },
+  {
+   "id": "m70v64",
+   "algorithmId": "changes.dsp.waveguide-trumpet@1",
+   "midi": 70,
+   "velocity": 64,
+   "sampleRateHz": 48000,
+   "pcmSha256": "2a03587772db6c6bdc25fa30cfb7702e49b3e3cc04f793b57d81c5ec77ca31a5",
+   "features": {
+    "pitchCents": 1.8334917000673265,
+    "periodicity": 0.9997163923623433,
+    "sustainRms": 0.02316090218500694,
+    "peak": 0.065638467669487,
+    "centroidHz": 1625.142513775455
+   },
+   "outcome": "pass",
+   "findings": []
+  },
+  {
+   "id": "m70v110",
+   "algorithmId": "changes.dsp.waveguide-trumpet@1",
+   "midi": 70,
+   "velocity": 110,
+   "sampleRateHz": 48000,
+   "pcmSha256": "14889e2261de7d7150379214c32d509e1eeb51cb60db67dd615b3d7b1fc5787e",
+   "features": {
+    "pitchCents": -0.8896020458793006,
+    "periodicity": 0.9999910926731853,
+    "sustainRms": 0.027084112442980507,
+    "peak": 0.08312820643186569,
+    "centroidHz": 1809.6162828283063
+   },
+   "outcome": "pass",
+   "findings": []
+  }
+ ],
+ "dynamicsCells": [
+  {
+   "id": "m52-dynamics",
+   "midi": 52,
+   "centroidRiseHz": 951.9460442859659,
+   "rmsRise": 0.021850942818964665,
+   "outcome": "pass"
+  },
+  {
+   "id": "m58-dynamics",
+   "midi": 58,
+   "centroidRiseHz": 247.1670425325044,
+   "rmsRise": 0.006277455902256746,
+   "outcome": "pass"
+  },
+  {
+   "id": "m64-dynamics",
+   "midi": 64,
+   "centroidRiseHz": 187.86341432476092,
+   "rmsRise": 0.005289988151280633,
+   "outcome": "pass"
+  },
+  {
+   "id": "m70-dynamics",
+   "midi": 70,
+   "centroidRiseHz": 184.47376905285137,
+   "rmsRise": 0.003923210257973566,
+   "outcome": "pass"
+  }
+ ],
+ "controls": {
+  "outOfTableRefused": true,
+  "wrongPitchRejected": true,
+  "unperiodicRejected": true,
+  "clippingRejected": true,
+  "flatDynamicsRejected": true
+ },
+ "summary": {
+  "outcome": "pass",
+  "passedCellCount": 8,
+  "passedDynamicsCellCount": 4
+ },
+ "evidenceSha256": "44b50b62be3642c9e610aa93c3d8ebda7ae1205d7d6ebc520b0e118e17cf2515"
+}
