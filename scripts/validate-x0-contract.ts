@@ -190,7 +190,7 @@ const EXPECTED_SCHEMAS: Readonly<Record<ExpectedFilename, string>> = {
 };
 
 export const X0_REVIEWED_CONTRACT_BYTE_DIGEST =
-  "ae9f2100fed7ce636112ee4d01bec988f50b2a38e7824148039015802445b971";
+  "f875cfa33ee9fde15cf93c56f3ea78068c17c0e0b041926c89e0a6e6b6686c75";
 
 export const X0_REVIEWED_BYTE_DIGESTS: Readonly<
   Record<CompanionFilename, string>
