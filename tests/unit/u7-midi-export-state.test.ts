@@ -33,13 +33,15 @@ function blockedDocument(): ValidatedDocument {
 
 type ScriptedPorts = {
   ports: Parameters<typeof createStudioMidiExport>[0];
-  setBinding: (binding: Readonly<{ documentId: DocumentId; revision: number }> | null) => void;
+  setBinding: (
+    binding: Readonly<{ documentId: DocumentId; revision: number }> | null,
+  ) => void;
   delivered: Readonly<{ binding: unknown; privateBytes: Uint8Array }>[];
   deliveryMode: { mode: "ok" | "throw" | "bad-cleanup" };
 };
 
 function makePorts(document: ValidatedDocument | null): ScriptedPorts {
-  let binding =
+  let binding: Readonly<{ documentId: DocumentId; revision: number }> | null =
     document === null
       ? null
       : Object.freeze({ documentId: document.id, revision: 7 });

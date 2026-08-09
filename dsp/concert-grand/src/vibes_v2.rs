@@ -1262,7 +1262,7 @@ pub extern "C" fn vbs2_render(
      * and restores the recorded partial balance through the contact
      * geometry itself.
      */
-    gesture.strike_position_over_length = 0.47;
+    gesture.strike_position_over_length = 0.41;
     if voice.begin_strike(gesture).is_err() {
         return 0;
     }
