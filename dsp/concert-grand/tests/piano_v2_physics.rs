@@ -11,7 +11,8 @@ use libm::sqrt;
 use piano_v2::{
     bridge_contact_pair_midpoint_step, duplex_length_m_for_midi, hammer_head_radius_m_for_midi,
     hammer_mass_kg_for_midi, hammer_strike_position_over_length, midi_frequency_hz,
-    render_piano_note, soundboard_damping_ratio, soundboard_mode_frequency_hz,
+    render_piano_note, soundboard_bridge_mode_residue_for_midi,
+    soundboard_bridge_position_for_midi, soundboard_damping_ratio, soundboard_mode_frequency_hz,
     stiff_string_mode_frequency_hz, string_geometry, PianoError, PianoParameters, PianoStem,
     PianoStrike, PianoVoice, CONTACT_SOLVE_STEPS, MAXIMUM_BRIDGE_CONTACTS,
     MAXIMUM_BRIDGE_SOLVE_SCALAR_UPDATES, MAXIMUM_STATE_BYTES,
@@ -443,6 +444,29 @@ fn orthotropic_soundboard_obeys_independent_scaling_laws() {
     let mut taller_ribs = base;
     taller_ribs.soundboard_rib_height_m *= 1.10;
     assert!(soundboard_mode_frequency_hz(taller_ribs, 1, 1).unwrap() > base_frequency);
+}
+
+#[test]
+fn reviewed_bridge_points_drive_distinct_modal_ports() {
+    let anchors = [
+        (33, (0.783_324_033, 0.422_623_497)),
+        (62, (0.268_679_391, 0.468_071_366)),
+        (74, (0.134_417_067, 0.367_852_230)),
+    ];
+    for (midi, expected) in anchors {
+        let actual = soundboard_bridge_position_for_midi(midi).unwrap();
+        assert!((actual.0 - expected.0).abs() < 1.0e-12);
+        assert!((actual.1 - expected.1).abs() < 1.0e-12);
+    }
+    let parameters = PianoParameters::canonical();
+    let residues = anchors
+        .map(|(midi, _)| soundboard_bridge_mode_residue_for_midi(parameters, midi, 2, 3).unwrap());
+    assert!((residues[0] - residues[1]).abs() > 0.01);
+    assert!((residues[1] - residues[2]).abs() > 0.01);
+    assert_eq!(
+        soundboard_bridge_position_for_midi(20),
+        Err(PianoError::InvalidMidi)
+    );
 }
 
 #[test]
