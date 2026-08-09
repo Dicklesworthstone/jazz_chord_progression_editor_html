@@ -14,6 +14,7 @@ import {
   WAVEGUIDE_FLUTE_V2_ALGORITHM_ID,
   WAVEGUIDE_GUITAR_CLEAN_ALGORITHM_ID,
   WAVEGUIDE_GUITAR_DRIVE_ALGORITHM_ID,
+  WAVEGUIDE_TRUMPET_ALGORITHM_ID,
   loadWaveguideRenderers,
   type WaveguideRenderer,
 } from "../../src/audio/dsp-renderer";
@@ -142,6 +143,7 @@ const clarinet = renderer(WAVEGUIDE_CLARINET_ALGORITHM_ID);
 const clarinetV2 = renderer(WAVEGUIDE_CLARINET_V2_ALGORITHM_ID);
 const fluteV2 = renderer(WAVEGUIDE_FLUTE_V2_ALGORITHM_ID);
 const uprightBass = renderer(PLUCKED_UPRIGHT_BASS_ALGORITHM_ID);
+const trumpet = renderer(WAVEGUIDE_TRUMPET_ALGORITHM_ID);
 
 describe("waveguide renderer laws", () => {
   test("the map carries exactly the reviewed waveguide algorithms, pinned to the wasm payload", () => {
@@ -160,6 +162,7 @@ describe("waveguide renderer laws", () => {
       WAVEGUIDE_FLUTE_V2_ALGORITHM_ID,
       WAVEGUIDE_GUITAR_CLEAN_ALGORITHM_ID,
       WAVEGUIDE_GUITAR_DRIVE_ALGORITHM_ID,
+      WAVEGUIDE_TRUMPET_ALGORITHM_ID,
     ]);
     for (const entry of renderers.values()) {
       expect(entry.wasmSha256).toBe(CONCERT_GRAND_WASM_SHA256);
@@ -203,6 +206,26 @@ describe("waveguide renderer laws", () => {
       expect(Math.abs(measuredCents(pcm.left, 2_400, midiPitch))).toBeLessThanOrEqual(5);
     }
   });
+
+  test("trumpet host ABI locks the round-11 operating table across its window", () => {
+    /*
+     * Window is the TRUMPET_NOTE_TABLE range (MIDI 52..=70); outside it the
+     * export reports zero frames and the host returns null. Tuning bound is
+     * the sweep's measured worst case (+-5.4 cents) with slack for the
+     * shorter host render.
+     */
+    expect(trumpet.renderNote(51, 100, OUTPUT_RATE_HZ, 0.5)).toBeNull();
+    expect(trumpet.renderNote(71, 100, OUTPUT_RATE_HZ, 0.5)).toBeNull();
+    for (const midiPitch of [52, 58, 63, 70]) {
+      const pcm = trumpet.renderNote(midiPitch, 96, OUTPUT_RATE_HZ, 0.75);
+      expect(pcm).not.toBeNull();
+      if (pcm === null) continue;
+      expect(rms(pcm.left, Math.floor(0.2 * OUTPUT_RATE_HZ), pcm.frameCount)).toBeGreaterThan(1e-4);
+      expect(
+        Math.abs(measuredCents(pcm.left, Math.floor(0.35 * OUTPUT_RATE_HZ), midiPitch)),
+      ).toBeLessThanOrEqual(12);
+    }
+  }, 60_000);
 
   test("guitar lands on 12-TET within two cents through both amps", () => {
     for (const subject of [clean, drive]) {

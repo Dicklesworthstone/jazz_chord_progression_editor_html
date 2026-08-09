@@ -72,6 +72,8 @@ export const PLUCKED_UPRIGHT_BASS_ALGORITHM_ID =
   "changes.dsp.plucked-upright-bass@1";
 export const VIBES_V2_ALGORITHM_ID =
   "changes.dsp.vibes@2";
+export const WAVEGUIDE_TRUMPET_ALGORITHM_ID =
+  "changes.dsp.waveguide-trumpet@1";
 const PLK2_UPRIGHT_BASS_PACK_INDEX = 4;
 
 export type WindAttackArticulation = "legato" | "tongued";
@@ -369,6 +371,15 @@ type ConcertGrandExports = Readonly<{
     sampleRate: number,
     fftSize: number,
     out: number,
+  ) => number;
+  tpt_note_frames: (midi: number, sampleRate: number) => number;
+  tpt_render: (
+    midi: number,
+    velocity: number,
+    sampleRate: number,
+    left: number,
+    right: number,
+    maxFrames: number,
   ) => number;
   gtr_note_frames: (midi: number, sampleRate: number) => number;
   gtr_render: (
@@ -1585,6 +1596,14 @@ async function instantiate(): Promise<DspCore> {
       rawExports,
       "an_chroma",
     ) as ConcertGrandExports["an_chroma"],
+    tpt_note_frames: requireExportedFunction(
+      rawExports,
+      "tpt_note_frames",
+    ) as ConcertGrandExports["tpt_note_frames"],
+    tpt_render: requireExportedFunction(
+      rawExports,
+      "tpt_render",
+    ) as ConcertGrandExports["tpt_render"],
     gtr_note_frames: requireExportedFunction(
       rawExports,
       "gtr_note_frames",
@@ -2410,6 +2429,12 @@ async function instantiate(): Promise<DspCore> {
       makeWaveguideRenderNote(
         exports.vbs2_note_frames,
         (m, v, r, l, rt, mx) => exports.vbs2_render(m, v, r, l, rt, mx),
+      ),
+    ],
+    [
+      WAVEGUIDE_TRUMPET_ALGORITHM_ID,
+      makeWaveguideRenderNote(exports.tpt_note_frames, (m, v, r, l, rt, mx) =>
+        exports.tpt_render(m, v, r, l, rt, mx),
       ),
     ],
     [

@@ -26,18 +26,18 @@
  "algorithmIds": [
   "changes.dsp.waveguide-trumpet@1"
  ],
- "wasmSha256": "7eb4c6da7d8a5c4702b07c5c7daaf2fa4446b67f693f3915f9ae6f6444f21481",
+ "wasmSha256": "540b7a0556c3403bedba6ccec7f8934498d1e4d3298790f4cfe11901b4c1cf49",
  "sourceBindings": [
   {
    "path": "dsp/concert-grand/src/trumpet.rs",
-   "sha256": "91027e7769e480d26acbadf8f9cbf54a5e4cdecc0a5a4453f86dc557a01b4c11"
+   "sha256": "d0233647d98cda7852f25a37437aaae359aae6573806f19010d5afe9bd7bf479"
   },
   {
    "path": "src/audio/wasm/concert-grand-wasm.ts",
-   "sha256": "e19a8d086393f1c5712ebe4bb8224302fea9e0f1f416f6d6830fcc6c02f1c8ae"
+   "sha256": "970186be1a7d17a0a583f4a76dfea602d0ccd6eb40342393ec089b5920f93b8b"
   }
  ],
- "sourceClosureSha256": "126d166bf6af8ff8b8085bea71992f5f58a36d17af2f7c191e60342a17bb4c80",
+ "sourceClosureSha256": "59bc509b784b060a90865088c739f617265d5c2ffecb94f5b27f6d05bf04c26d",
  "cells": [
   {
    "id": "m52v64",
@@ -45,13 +45,13 @@
    "midi": 52,
    "velocity": 64,
    "sampleRateHz": 48000,
-   "pcmSha256": "b1b5678b2c9890db7aa39d16d23fad3b805bbdf6752f18efed2f03fb3055f9e7",
+   "pcmSha256": "bac4ba86d3054c9e91896dc6e582bb84d1470031a735eeb41c2ccbae2d750e92",
    "features": {
-    "pitchCents": 1.2165715213670605,
-    "periodicity": 0.9999894364139609,
-    "sustainRms": 0.01491656404975436,
-    "peak": 0.05975253880023956,
-    "centroidHz": 1238.142005584541
+    "pitchCents": 0.586826911410181,
+    "periodicity": 0.9998048203830036,
+    "sustainRms": 0.015600402517770161,
+    "peak": 0.062147483229637146,
+    "centroidHz": 1319.8132831068951
    },
    "outcome": "pass",
    "findings": []
@@ -62,13 +62,13 @@
    "midi": 52,
    "velocity": 110,
    "sampleRateHz": 48000,
-   "pcmSha256": "3b5e55c04b372d073966f7c2f5570509cf0e06166d8857ff28ef3212291fb433",
+   "pcmSha256": "c95e7122bab864081186e551f11dcde6b5fe20834968ebf8521144d3e74c83a0",
    "features": {
-    "pitchCents": 0.5924945336858242,
-    "periodicity": 0.9992959973814848,
-    "sustainRms": 0.036767506868719026,
-    "peak": 0.2516588270664215,
-    "centroidHz": 2190.088049870507
+    "pitchCents": 0.827192417477347,
+    "periodicity": 0.9995992403958213,
+    "sustainRms": 0.03811104083641584,
+    "peak": 0.27537068724632263,
+    "centroidHz": 2298.1140325953647
    },
    "outcome": "pass",
    "findings": []
@@ -79,13 +79,13 @@
    "midi": 58,
    "velocity": 64,
    "sampleRateHz": 48000,
-   "pcmSha256": "27b5ee8e70a6c0c17e559ef3322afb23b660762571ef1f8f0233229b3ea5ce34",
+   "pcmSha256": "7f7aaab75ebd92ebb2f4a8b7f999a0988af5634cab9096d03659c7f6ba45ce4f",
    "features": {
-    "pitchCents": 0.4545664267003959,
-    "periodicity": 0.9997391282544171,
-    "sustainRms": 0.021555636484403288,
-    "peak": 0.08821606636047363,
-    "centroidHz": 1699.7894357796383
+    "pitchCents": -0.09652536226829089,
+    "periodicity": 0.999939105114632,
+    "sustainRms": 0.02266481745824099,
+    "peak": 0.0969981923699379,
+    "centroidHz": 1836.5153912020346
    },
    "outcome": "pass",
    "findings": []
@@ -96,13 +96,13 @@
    "midi": 58,
    "velocity": 110,
    "sampleRateHz": 48000,
-   "pcmSha256": "dbd6cb720211d5661447c22aa4e23208d3049d2152f00a3311a81b7524aedd9a",
+   "pcmSha256": "639acf4924b4966146bb27f6e7812ee04786792c38992ed4170d05d52121c153",
    "features": {
-    "pitchCents": -0.9465359274808209,
-    "periodicity": 0.9999334822679639,
-    "sustainRms": 0.027833092386660034,
-    "peak": 0.12748762965202332,
-    "centroidHz": 1946.9564783121427
+    "pitchCents": -1.4159819070647495,
+    "periodicity": 0.9996465668734004,
+    "sustainRms": 0.029252802867889397,
+    "peak": 0.1396234780550003,
+    "centroidHz": 2084.9396295495976
    },
    "outcome": "pass",
    "findings": []
@@ -113,13 +113,13 @@
    "midi": 64,
    "velocity": 64,
    "sampleRateHz": 48000,
-   "pcmSha256": "598b4aea42febdbcf0d9722a371bbf13ede1633df6c01b52c4d07be8ac31e4a3",
+   "pcmSha256": "898b35b0328661c97dcad52f6e18514340ee11be67ada095653abfe818a29004",
    "features": {
-    "pitchCents": 0.6052816174076089,
-    "periodicity": 0.9950533654566273,
-    "sustainRms": 0.024567331502829633,
-    "peak": 0.09503073245286942,
-    "centroidHz": 1934.1915040427675
+    "pitchCents": -0.12533862330835377,
+    "periodicity": 0.9956876122639727,
+    "sustainRms": 0.025780197333560392,
+    "peak": 0.10466169565916061,
+    "centroidHz": 2087.862351033938
    },
    "outcome": "pass",
    "findings": []
@@ -130,13 +130,13 @@
    "midi": 64,
    "velocity": 110,
    "sampleRateHz": 48000,
-   "pcmSha256": "5ad9257b334be58ef38176f5400d7c1c22dbd8b3568ae7e780d6327da08ce3a6",
+   "pcmSha256": "bf8517625e25945fcdc4ad990b245414585d93cb0a31bbd43dcc02f3d078fbcb",
    "features": {
-    "pitchCents": -0.03847586244414945,
-    "periodicity": 0.994933644103435,
-    "sustainRms": 0.029857319654110266,
-    "peak": 0.1261671632528305,
-    "centroidHz": 2122.0549183675284
+    "pitchCents": -0.9514446321623814,
+    "periodicity": 0.9961674069412537,
+    "sustainRms": 0.03143453182975559,
+    "peak": 0.13914409279823303,
+    "centroidHz": 2293.941892282581
    },
    "outcome": "pass",
    "findings": []
@@ -147,13 +147,13 @@
    "midi": 70,
    "velocity": 64,
    "sampleRateHz": 48000,
-   "pcmSha256": "2a03587772db6c6bdc25fa30cfb7702e49b3e3cc04f793b57d81c5ec77ca31a5",
+   "pcmSha256": "bdcfbdeac1f61bde486798218b01dd04697d3b1ac193d9861adc761650f959e1",
    "features": {
-    "pitchCents": 1.8334917000673265,
-    "periodicity": 0.9997163923623433,
-    "sustainRms": 0.02316090218500694,
-    "peak": 0.065638467669487,
-    "centroidHz": 1625.142513775455
+    "pitchCents": 0.9209268553323081,
+    "periodicity": 0.9998700162542454,
+    "sustainRms": 0.02428030117958298,
+    "peak": 0.07300747185945511,
+    "centroidHz": 1771.0870676480629
    },
    "outcome": "pass",
    "findings": []
@@ -164,13 +164,13 @@
    "midi": 70,
    "velocity": 110,
    "sampleRateHz": 48000,
-   "pcmSha256": "14889e2261de7d7150379214c32d509e1eeb51cb60db67dd615b3d7b1fc5787e",
+   "pcmSha256": "8c5c69580a55c47325b9f65b8da4a7b8ac0e764145c30c0480e9ec0dfd22a8d7",
    "features": {
-    "pitchCents": -0.8896020458793006,
-    "periodicity": 0.9999910926731853,
-    "sustainRms": 0.027084112442980507,
-    "peak": 0.08312820643186569,
-    "centroidHz": 1809.6162828283063
+    "pitchCents": -1.774051635837134,
+    "periodicity": 0.9998665007399796,
+    "sustainRms": 0.02845348533308412,
+    "peak": 0.09245390444993973,
+    "centroidHz": 1975.2168004359846
    },
    "outcome": "pass",
    "findings": []
@@ -180,29 +180,29 @@
   {
    "id": "m52-dynamics",
    "midi": 52,
-   "centroidRiseHz": 951.9460442859659,
-   "rmsRise": 0.021850942818964665,
+   "centroidRiseHz": 978.3007494884696,
+   "rmsRise": 0.02251063831864568,
    "outcome": "pass"
   },
   {
    "id": "m58-dynamics",
    "midi": 58,
-   "centroidRiseHz": 247.1670425325044,
-   "rmsRise": 0.006277455902256746,
+   "centroidRiseHz": 248.424238347563,
+   "rmsRise": 0.0065879854096484065,
    "outcome": "pass"
   },
   {
    "id": "m64-dynamics",
    "midi": 64,
-   "centroidRiseHz": 187.86341432476092,
-   "rmsRise": 0.005289988151280633,
+   "centroidRiseHz": 206.07954124864318,
+   "rmsRise": 0.0056543344961952,
    "outcome": "pass"
   },
   {
    "id": "m70-dynamics",
    "midi": 70,
-   "centroidRiseHz": 184.47376905285137,
-   "rmsRise": 0.003923210257973566,
+   "centroidRiseHz": 204.12973278792174,
+   "rmsRise": 0.004173184153501139,
    "outcome": "pass"
   }
  ],
@@ -218,5 +218,5 @@
   "passedCellCount": 8,
   "passedDynamicsCellCount": 4
  },
- "evidenceSha256": "44b50b62be3642c9e610aa93c3d8ebda7ae1205d7d6ebc520b0e118e17cf2515"
+ "evidenceSha256": "bb090caf58015d0576d26287631b74d378a2f79d2fb75121f8c0cbbd6ec8af56"
 }

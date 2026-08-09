@@ -1017,7 +1017,6 @@ mod tests {
         }
     }
 }
-
 /*
  * Round-11 trumpet (declared at end-of-file so the dark module shifts no
  * panic-location line numbers above it — any mid-file edit re-hashes the
@@ -1026,10 +1025,11 @@ mod tests {
  * trumpet_note_sweep.rs, trumpet_dynamics_calibration.rs), but the model
  * renders ~4.5x slower than realtime in browser wasm (96-cell bore x 4x
  * oversampling at O2+LTO; a first chart chord = 4+ serial 3 s renders =
- * ~50 s of dead air), so it stays dark until the render-cost round lands.
- * Test builds and the dev feature keep it.
+ * ~50 s of dead air) BEFORE the render-speed campaign
+ * (jcpe-render-speed-campaign-etnw): now 0.83-0.96x across the full
+ * operating map (independently re-measured), so it ships. EOF position
+ * preserved so future gating flips shift no panic-location line numbers.
  */
-#[cfg(any(test, feature = "dark-models"))]
 mod trumpet;
 
 /*
