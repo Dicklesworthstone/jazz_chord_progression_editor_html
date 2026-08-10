@@ -15,9 +15,13 @@ import {
   WAVEGUIDE_GUITAR_CLEAN_ALGORITHM_ID,
   WAVEGUIDE_GUITAR_DRIVE_ALGORITHM_ID,
   loadWaveguideRenderers,
+  loadWaveguideRenderersFromWasmBytes,
   type WaveguideRenderer,
 } from "../../src/audio/dsp-renderer";
-import { CONCERT_GRAND_WASM_SHA256 } from "../../src/audio/wasm/concert-grand-wasm";
+import {
+  CONCERT_GRAND_WASM_BASE64,
+  CONCERT_GRAND_WASM_SHA256,
+} from "../../src/audio/wasm/concert-grand-wasm";
 
 const OUTPUT_RATE_HZ = 48_000;
 
@@ -164,6 +168,19 @@ describe("waveguide renderer laws", () => {
     for (const entry of renderers.values()) {
       expect(entry.wasmSha256).toBe(CONCERT_GRAND_WASM_SHA256);
     }
+  });
+
+  test("candidate replay copies immutable bytes and reports their measured digest", async () => {
+    const mutableBytes = Uint8Array.from(
+      atob(CONCERT_GRAND_WASM_BASE64),
+      (character) => character.charCodeAt(0),
+    );
+    const candidatePromise = loadWaveguideRenderersFromWasmBytes(mutableBytes);
+    mutableBytes.fill(0);
+    const candidate = await candidatePromise;
+    const subject = candidate.get(PLUCKED_UPRIGHT_BASS_ALGORITHM_ID);
+    expect(subject?.wasmSha256).toBe(CONCERT_GRAND_WASM_SHA256);
+    expect(subject?.renderNote(28, 96, OUTPUT_RATE_HZ, 0.1)).not.toBeNull();
   });
 
   test("out-of-contract requests return null, in-contract renders sound", () => {

@@ -2413,9 +2413,21 @@ function optionalPluckedChordExports(
   });
 }
 
-async function instantiate(): Promise<DspCore> {
-  const bytes = decodeWasmBytes();
-  const { instance } = await WebAssembly.instantiate(bytes, {});
+async function instantiate(bytes?: Uint8Array): Promise<DspCore> {
+  const usesEmbeddedPayload = bytes === undefined;
+  const immutableBytes = Uint8Array.from(bytes ?? decodeWasmBytes());
+  const digest = new Uint8Array(await crypto.subtle.digest(
+    "SHA-256",
+    immutableBytes,
+  ));
+  const wasmSha256 = Array.from(
+    digest,
+    (value) => value.toString(16).padStart(2, "0"),
+  ).join("");
+  if (usesEmbeddedPayload && wasmSha256 !== CONCERT_GRAND_WASM_SHA256) {
+    throw new Error("CONCERT_GRAND_WASM_DIGEST_DRIFT");
+  }
+  const { instance } = await WebAssembly.instantiate(immutableBytes, {});
   const rawExports: Readonly<Record<string, unknown>> = instance.exports;
   const memoryCandidate = rawExports["memory"];
   if (!(memoryCandidate instanceof WebAssembly.Memory)) {
@@ -3498,7 +3510,7 @@ async function instantiate(): Promise<DspCore> {
       algorithmId,
       Object.freeze({
         algorithmId,
-        wasmSha256: CONCERT_GRAND_WASM_SHA256,
+        wasmSha256,
         renderNote: renderNoteFor,
       }),
     );
@@ -3541,7 +3553,7 @@ async function instantiate(): Promise<DspCore> {
   return Object.freeze({
     concertGrand: Object.freeze({
       algorithmId: CONCERT_GRAND_RENDERER_ALGORITHM_ID,
-      wasmSha256: CONCERT_GRAND_WASM_SHA256,
+      wasmSha256,
       attackSamplesSha256: PIANO_ATTACK_SAMPLES_SHA256,
       ...(renderPhysicalAttackCooperatively === undefined
         ? {}
@@ -3589,6 +3601,19 @@ export function loadWaveguideRenderers(): Promise<
   ReadonlyMap<string, WaveguideRenderer>
 > {
   return loadDspCore().then((core) => core.waveguide);
+}
+
+/**
+ * Instantiate a fresh, immutable candidate payload for offline release-gate
+ * replay. The production page still uses the cached embedded payload above;
+ * this seam prevents evidence tooling from rewriting that payload merely to
+ * evaluate a candidate build. Bytes are copied before the first await so a
+ * caller cannot mutate the input while WebAssembly is compiling it.
+ */
+export async function loadWaveguideRenderersFromWasmBytes(
+  bytes: Uint8Array,
+): Promise<ReadonlyMap<string, WaveguideRenderer>> {
+  return (await instantiate(bytes)).waveguide;
 }
 
 function loadDspCore(): Promise<DspCore> {

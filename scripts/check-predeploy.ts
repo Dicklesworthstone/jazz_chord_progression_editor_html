@@ -35,6 +35,7 @@ import {
   CONCERT_GRAND_WASM_SHA256,
 } from "../src/audio/wasm/concert-grand-wasm";
 import {
+  sha256Hex,
   verifyGateEvidence,
   type GateEvidenceV1,
 } from "./reference-similarity";
@@ -51,7 +52,11 @@ import {
   verifyTrumpetReleaseEvidence,
 } from "./run-trumpet-release-gate";
 import {
-  verifySampleReplacementEvidence,
+  UPRIGHT_BASS_REPLACEMENT_POLICY,
+  VIBES_REPLACEMENT_POLICY,
+  runSampleReplacementGate,
+  verifySampleReplacementEvidenceAgainstReplay,
+  type SampleReplacementEvidence,
 } from "./run-sample-replacement-gate";
 import {
   verifyPluckedV2ReleaseEvidence,
@@ -78,7 +83,17 @@ export type GateFinding = Readonly<{ code: string; detail: string }>;
 
 export type GateReplayResults = Readonly<{
   fluteV2?: FluteV2ReferenceRunResult;
+  sampleReplacement?: Readonly<{
+    vibes?: SampleReplacementEvidence;
+    uprightBass?: SampleReplacementEvidence;
+  }>;
 }>;
+
+export function embeddedWasmDigestMatchesDeclaration(
+  wasmBytes: Uint8Array,
+): boolean {
+  return sha256Hex(wasmBytes) === CONCERT_GRAND_WASM_SHA256;
+}
 
 export function collectRecipeAlgorithmIds(): readonly string[] {
   const ids = new Set<string>([AUDIO_IMPULSE_ALGORITHM_ID]);
@@ -285,6 +300,27 @@ export function evaluateGate(
             evidencedAlgorithmIds = [matrix.policy.rendererAlgorithmId];
             evidencedWasmSha256 = matrix.wasmSha256;
           }
+        } else if (id === VIBES_REPLACEMENT_POLICY.algorithmId ||
+          id === UPRIGHT_BASS_REPLACEMENT_POLICY.algorithmId) {
+          const replay = id === VIBES_REPLACEMENT_POLICY.algorithmId
+            ? replays.sampleReplacement?.vibes
+            : replays.sampleReplacement?.uprightBass;
+          if (replay === undefined) {
+            findings.push({
+              code: "MODEL_DELEGATED_REPLAY_REQUIRED",
+              detail: `${id} is machine-delegated but no exact shipping-WASM replay was provided`,
+            });
+            continue;
+          }
+          semanticPass = verifySampleReplacementEvidenceAgainstReplay(
+            evidence,
+            replay,
+          );
+          if (semanticPass) {
+            const matrix = evidence as SampleReplacementEvidence;
+            evidencedAlgorithmIds = matrix.algorithmIds;
+            evidencedWasmSha256 = matrix.wasmSha256;
+          }
         } else if (verifyClarinetReferenceRunEvidence(evidence)) {
           const matrix = evidence;
           semanticPass = true;
@@ -296,11 +332,6 @@ export function evaluateGate(
           evidencedAlgorithmIds = matrix.algorithmIds;
           evidencedWasmSha256 = matrix.wasmSha256;
         } else if (verifyTrumpetReleaseEvidence(evidence)) {
-          const matrix = evidence;
-          semanticPass = true;
-          evidencedAlgorithmIds = matrix.algorithmIds;
-          evidencedWasmSha256 = matrix.wasmSha256;
-        } else if (verifySampleReplacementEvidence(evidence)) {
           const matrix = evidence;
           semanticPass = true;
           evidencedAlgorithmIds = matrix.algorithmIds;
@@ -373,6 +404,12 @@ async function main(): Promise<number> {
   const wasmBytes = new Uint8Array(
     Buffer.from(CONCERT_GRAND_WASM_BASE64, "base64"),
   );
+  if (!embeddedWasmDigestMatchesDeclaration(wasmBytes)) {
+    console.error(
+      "FAIL MODEL_WASM_DIGEST_DRIFT embedded Concert Grand bytes do not match their declared SHA-256",
+    );
+    return 1;
+  }
   const wasmExportNames = new Set(
     WebAssembly.Module.exports(new WebAssembly.Module(wasmBytes)).map(
       (entry) => entry.name,
@@ -405,14 +442,40 @@ async function main(): Promise<number> {
     row.algorithmId === FLUTE_V2_REFERENCE_RUNNER_POLICY.rendererAlgorithmId &&
     row.status === "machine-delegated",
   );
-  const replays: GateReplayResults = needsFluteV2Replay
-    ? {
-      fluteV2: await runUiowaFluteV2Reference({
-        root,
-        wasmBytes: new Uint8Array(Buffer.from(CONCERT_GRAND_WASM_BASE64, "base64")),
-      }),
-    }
-    : {};
+  const needsVibesReplay = shippingIds.includes(
+    VIBES_REPLACEMENT_POLICY.algorithmId,
+  ) && ledgerRows.some((row) =>
+    row.algorithmId === VIBES_REPLACEMENT_POLICY.algorithmId &&
+    row.status === "machine-delegated",
+  );
+  const needsUprightBassReplay = shippingIds.includes(
+    UPRIGHT_BASS_REPLACEMENT_POLICY.algorithmId,
+  ) && ledgerRows.some((row) =>
+    row.algorithmId === UPRIGHT_BASS_REPLACEMENT_POLICY.algorithmId &&
+    row.status === "machine-delegated",
+  );
+  const fluteV2 = needsFluteV2Replay
+    ? await runUiowaFluteV2Reference({ root, wasmBytes })
+    : undefined;
+  const vibes = needsVibesReplay
+    ? await runSampleReplacementGate("vibes", { root, wasmBytes })
+    : undefined;
+  const uprightBass = needsUprightBassReplay
+    ? await runSampleReplacementGate("upright-bass", { root, wasmBytes })
+    : undefined;
+  const replays: GateReplayResults = {
+    ...(fluteV2 === undefined ? {} : { fluteV2 }),
+    ...(
+      vibes === undefined && uprightBass === undefined
+        ? {}
+        : {
+          sampleReplacement: {
+            ...(vibes === undefined ? {} : { vibes }),
+            ...(uprightBass === undefined ? {} : { uprightBass }),
+          },
+        }
+    ),
+  };
   const findings = evaluateGate(shippingIds, ledgerRows, (path) => {
     try {
       const value: unknown = JSON.parse(readFileSync(resolve(root, path), "utf8"));
@@ -420,7 +483,7 @@ async function main(): Promise<number> {
     } catch {
       return undefined;
     }
-  }, CONCERT_GRAND_WASM_SHA256, replays);
+  }, sha256Hex(wasmBytes), replays);
   if (findings.length > 0) {
     for (const finding of findings) {
       console.error(`FAIL ${finding.code} ${finding.detail}`);

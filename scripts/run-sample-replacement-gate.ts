@@ -10,9 +10,11 @@
  * corpus than a planted same-pitch impostor from a different instrument
  * family. Following the trumpet release-gate pattern: a frozen policy object,
  * measured feature cells, planted controls earned live on every run, and an
- * evidence JSON hash-bound to the exact wasm payload and payload corpus so
- * `bun run predeploy:check` can re-verify every verdict offline from the
- * stored features without re-rendering.
+ * evidence JSON hash-bound to the exact wasm payload and corpus. The offline
+ * verifier recomputes every verdict from stored features; `predeploy:check`
+ * additionally re-renders the immutable embedded WASM and requires the whole
+ * report to match, so a valid report for older bytes cannot authorize a
+ * different payload.
  *
  * Run:    bun scripts/run-sample-replacement-gate.ts --instrument vibes
  *         bun scripts/run-sample-replacement-gate.ts --instrument upright-bass
@@ -25,6 +27,7 @@ import { resolve } from "node:path";
 
 import {
   loadWaveguideRenderers,
+  loadWaveguideRenderersFromWasmBytes,
   PLUCKED_UPRIGHT_BASS_ALGORITHM_ID,
   VIBES_V2_ALGORITHM_ID,
   type RenderedNotePcm,
@@ -44,7 +47,7 @@ import {
 } from "../src/audio/wasm/vibraphone-samples";
 
 export const SAMPLE_REPLACEMENT_EVIDENCE_SCHEMA =
-  "changes.evidence.sample-replacement-output.v3" as const;
+  "changes.evidence.sample-replacement-output.v5" as const;
 
 type CorpusSlice = Readonly<{
   midiPitch: number;
@@ -54,7 +57,7 @@ type CorpusSlice = Readonly<{
 }>;
 
 export type SampleReplacementPolicy = Readonly<{
-  schema: "changes.policy.sample-replacement-shipping-output.v3";
+  schema: "changes.policy.sample-replacement-shipping-output.v5";
   instrument: "vibes" | "upright-bass";
   algorithmId: string;
   sampleRateHz: number;
@@ -64,6 +67,10 @@ export type SampleReplacementPolicy = Readonly<{
   /* Early analysis window where the fundamental dominates. */
   pitchWindowSeconds: readonly [number, number];
   maximumAbsolutePitchCents: number;
+  /* Autocorrelation must show a real periodic source, not shaped noise. */
+  minimumPeriodicity: number;
+  /* The independently estimated target component must be acoustically real. */
+  minimumTargetToneToPeakRatio: number;
   /* Decay law: late-window RMS must fall below earlyRatio x early RMS. */
   earlyWindowSeconds: readonly [number, number];
   lateWindowSeconds: readonly [number, number];
@@ -73,9 +80,9 @@ export type SampleReplacementPolicy = Readonly<{
    * loudest 20 ms window 40-100 ms after impact; an immediate maximum is the
    * metallic ring the owner rejected. The 30 ms floor leaves one 10 ms hop of
    * tolerance below the earliest reviewed reference, and the upper bound
-   * refuses a delayed plateau after the latest reviewed peak. Upright
-   * pizzicato has no delayed-bloom floor, but still carries its corpus-earned
-   * upper bound.
+   * refuses a delayed plateau after the latest reviewed peak. The upright
+   * corpus also blooms after the initial string contact (70--530 ms), so its
+   * lower bound must reject a string-only, sample-zero maximum.
    */
   temporalPeakWindowSeconds: number;
   temporalPeakHopSeconds: number;
@@ -84,6 +91,8 @@ export type SampleReplacementPolicy = Readonly<{
   maximumTemporalPeakSeconds: number;
   minimumEarlyRms: number;
   maximumPeak: number;
+  /* Velocity 64 -> 110 must produce an audible, not epsilon-sized, rise. */
+  minimumDynamicsRiseDb: number;
   /*
    * Corpus proximity: band-profile distance between the model and the
    * recorded slice at the same pitch must stay below the planted impostor's
@@ -97,7 +106,7 @@ export type SampleReplacementPolicy = Readonly<{
 }>;
 
 export const VIBES_REPLACEMENT_POLICY: SampleReplacementPolicy = Object.freeze({
-  schema: "changes.policy.sample-replacement-shipping-output.v3",
+  schema: "changes.policy.sample-replacement-shipping-output.v5",
   instrument: "vibes",
   algorithmId: VIBES_V2_ALGORITHM_ID,
   sampleRateHz: 48_000,
@@ -106,6 +115,9 @@ export const VIBES_REPLACEMENT_POLICY: SampleReplacementPolicy = Object.freeze({
   velocities: Object.freeze([64, 110] as const),
   pitchWindowSeconds: Object.freeze([0.05, 1.05] as const),
   maximumAbsolutePitchCents: 10,
+  /* Checked-in mallet references measure 0.9979..0.9997. */
+  minimumPeriodicity: 0.95,
+  minimumTargetToneToPeakRatio: 0.02,
   earlyWindowSeconds: Object.freeze([0.2, 1.2] as const),
   lateWindowSeconds: Object.freeze([2.5, 3.5] as const),
   /* Pedal-down bars ring: late energy persists but must clearly decay. */
@@ -118,6 +130,8 @@ export const VIBES_REPLACEMENT_POLICY: SampleReplacementPolicy = Object.freeze({
   maximumTemporalPeakSeconds: 0.11,
   minimumEarlyRms: 1.0e-4,
   maximumPeak: 0.98,
+  /* Linear velocity scaling would rise 4.70 dB; allow bounded compression. */
+  minimumDynamicsRiseDb: 3,
   proximityMidi: Object.freeze([53, 60, 67, 74, 84]),
   impostorAlgorithmId: "changes.dsp.plucked-archtop@2",
   minimumImpostorMarginDb: 1.5,
@@ -125,7 +139,7 @@ export const VIBES_REPLACEMENT_POLICY: SampleReplacementPolicy = Object.freeze({
 
 export const UPRIGHT_BASS_REPLACEMENT_POLICY: SampleReplacementPolicy =
   Object.freeze({
-    schema: "changes.policy.sample-replacement-shipping-output.v3",
+    schema: "changes.policy.sample-replacement-shipping-output.v5",
     instrument: "upright-bass",
     algorithmId: PLUCKED_UPRIGHT_BASS_ALGORITHM_ID,
     sampleRateHz: 48_000,
@@ -134,6 +148,9 @@ export const UPRIGHT_BASS_REPLACEMENT_POLICY: SampleReplacementPolicy =
     velocities: Object.freeze([64, 110] as const),
     pitchWindowSeconds: Object.freeze([0.05, 0.85] as const),
     maximumAbsolutePitchCents: 10,
+    /* The noisy E1 comparator is 0.3299; the other reviewed rows are >=.7628. */
+    minimumPeriodicity: 0.30,
+    minimumTargetToneToPeakRatio: 0.02,
     earlyWindowSeconds: Object.freeze([0.1, 0.6] as const),
     lateWindowSeconds: Object.freeze([1.5, 2.5] as const),
     /* Pizzicato dies fast: the late window must sit well under the pluck. */
@@ -141,22 +158,23 @@ export const UPRIGHT_BASS_REPLACEMENT_POLICY: SampleReplacementPolicy =
     temporalPeakWindowSeconds: 0.02,
     temporalPeakHopSeconds: 0.01,
     temporalPeakSearchSeconds: Object.freeze([0, 1] as const),
-    minimumTemporalPeakSeconds: 0,
+    /* Earliest reviewed upright peak is 70 ms; allow one 10 ms hop below it. */
+    minimumTemporalPeakSeconds: 0.06,
     /* Corpus maxima are 70--530 ms across these reviewed low-register cells. */
     maximumTemporalPeakSeconds: 0.54,
     minimumEarlyRms: 1.0e-4,
     maximumPeak: 0.98,
+    /* Linear velocity scaling would rise 4.70 dB; allow bounded compression. */
+    minimumDynamicsRiseDb: 3,
     /*
-     * Same-pitch impostor cells need an impostor that can render the pitch:
-     * every other plucked model's playable window starts at E2 (midi 40),
-     * so the same-pitch overlap is the corpus rows at/above E2. Rows 40 and
-     * 45 measure >35 cents off their own labels (the recordings are simply
-     * detuned; the sampled recipe shipped that detune) and refuse as
-     * references (49 reads -179 cents: the source corpus labels are simply
-     * unreliable up there); 42 is the one row that measures true. The lower corpus rows are still
-     * covered by the pitch/decay/dynamics cells.
+     * Same-pitch impostor cells need an impostor that can render the pitch.
+     * Dreadnought and the physical bass overlap from E2 (midi 40) through B3;
+     * all seven checked-in corpus rows in that span independently measure
+     * within 17.3 cents after applying their reviewed `tuningCents`. The lower
+     * bass-only rows remain covered by pitch, decay, dynamics, and target-tone
+     * laws, but cannot have a same-pitch guitar impostor.
      */
-    proximityMidi: Object.freeze([42]),
+    proximityMidi: Object.freeze([40, 42, 45, 49, 52, 56, 59]),
     impostorAlgorithmId: "changes.dsp.plucked-dreadnought@1",
     minimumImpostorMarginDb: 1.5,
   });
@@ -164,6 +182,7 @@ export const UPRIGHT_BASS_REPLACEMENT_POLICY: SampleReplacementPolicy =
 export type ReplacementOutputFeatures = Readonly<{
   pitchCents: number;
   periodicity: number;
+  targetToneToPeakRatio: number;
   earlyRms: number;
   lateToEarlyRmsRatio: number;
   temporalPeakSeconds: number;
@@ -217,6 +236,8 @@ export type SampleReplacementEvidence = Readonly<{
   controls: Readonly<{
     outOfRangeRefused: boolean;
     wrongPitchRejected: boolean;
+    aperiodicRejected: boolean;
+    targetToneAbsentRejected: boolean;
     silentRejected: boolean;
     clippingRejected: boolean;
     sustainedRejected: boolean;
@@ -268,8 +289,32 @@ function mono(pcm: RenderedNotePcm): Float32Array {
   return merged;
 }
 
-function floatPcmSha256(samples: Float32Array): string {
-  const bytes = new Uint8Array(samples.buffer, samples.byteOffset, samples.byteLength);
+function assertPcmContract(
+  pcm: RenderedNotePcm,
+  sampleRateHz: number,
+  cellId: string,
+): void {
+  if (pcm.sampleRateHz !== sampleRateHz || !Number.isInteger(pcm.frameCount) ||
+    pcm.frameCount <= 0 || pcm.left.length !== pcm.frameCount ||
+    pcm.right.length !== pcm.frameCount) {
+    throw new Error(`REPLACEMENT_PCM_CONTRACT:${cellId}`);
+  }
+}
+
+export function stereoPcmSha256(pcm: RenderedNotePcm): string {
+  const left = new Uint8Array(
+    pcm.left.buffer,
+    pcm.left.byteOffset,
+    pcm.left.byteLength,
+  );
+  const right = new Uint8Array(
+    pcm.right.buffer,
+    pcm.right.byteOffset,
+    pcm.right.byteLength,
+  );
+  const bytes = new Uint8Array(left.byteLength + right.byteLength);
+  bytes.set(left, 0);
+  bytes.set(right, left.byteLength);
   return sha256Hex(bytes);
 }
 
@@ -334,7 +379,7 @@ export function temporalPeakSeconds(
 
 /** 4th-order one-pole lowpass isolating the fundamental for pitch reads:
  * vibraphone spectra are near-sinusoidal with a strong 4x partial that can
- * capture a raw autocorrelation; verification bandpasses below 1.4x target
+ * capture a raw autocorrelation; verification low-passes below 1.4x target
  * on BOTH the model and the corpus, per the tuning-fixture precedent. */
 function fundamentalBand(
   samples: Float32Array,
@@ -408,10 +453,62 @@ function estimatePitch(
   });
 }
 
+/**
+ * Independently measure the string/bar fundamental near the notated target.
+ *
+ * A broad autocorrelation is useful as a periodicity diagnostic, but is not a
+ * safe tuning oracle for an upright bass: the radiating body can make the
+ * octave or a nearby plate mode stronger than the string fundamental. This
+ * Hann-windowed search mirrors the independent Rust pitch fixture and searches
+ * a fixed +-50 cent admission neighborhood at quarter-cent resolution. The
+ * returned target/peak ratio prevents a pure octave (or silence) from passing
+ * merely because the search always returns some in-neighborhood frequency.
+ */
+function estimateTargetTone(
+  samples: Float32Array,
+  sampleRateHz: number,
+  targetHz: number,
+): Readonly<{ hz: number; targetToneToPeakRatio: number }> {
+  let maximumSample = 0;
+  for (const value of samples) maximumSample = Math.max(maximumSample, Math.abs(value));
+  let bestCents = 0;
+  let bestAmplitude = 0;
+  for (let quarterCent = -200; quarterCent <= 200; quarterCent += 1) {
+    const cents = quarterCent * 0.25;
+    const frequencyHz = targetHz * Math.pow(2, cents / 1_200);
+    const rotation = 2 * Math.PI * frequencyHz / sampleRateHz;
+    let real = 0;
+    let imaginary = 0;
+    let windowSum = 0;
+    for (let index = 0; index < samples.length; index += 1) {
+      const window = samples.length > 1
+        ? 0.5 - 0.5 * Math.cos(2 * Math.PI * index / (samples.length - 1))
+        : 1;
+      const phase = rotation * index;
+      const sample = samples[index] ?? 0;
+      real += sample * window * Math.cos(phase);
+      imaginary -= sample * window * Math.sin(phase);
+      windowSum += window;
+    }
+    const amplitude = 2 * Math.hypot(real, imaginary) /
+      Math.max(windowSum, 1e-30);
+    if (amplitude > bestAmplitude) {
+      bestAmplitude = amplitude;
+      bestCents = cents;
+    }
+  }
+  return Object.freeze({
+    hz: targetHz * Math.pow(2, bestCents / 1_200),
+    targetToneToPeakRatio: bestAmplitude / Math.max(maximumSample, 1e-30),
+  });
+}
+
 /*
- * Octave-band log-energy profile over the first quarter-second: the proximity metric
- * compares timbral balance, not exact waveforms, so recorded room character
- * cannot dominate the verdict. Bands: 0-250, 250-500, 500-1k, 1k-2k, 2k-4k Hz.
+ * Octave-band log-energy profile over the first quarter-second: the proximity
+ * metric compares timbral balance, not exact waveforms, so recorded room
+ * character cannot dominate the verdict. Seven contiguous octave bands cover
+ * 50 Hz through 6.4 kHz; frequencies outside that reviewed comparison range
+ * are deliberately excluded from the normalized profile.
  */
 const PROXIMITY_BANDS_HZ: readonly (readonly [number, number])[] = Object.freeze([
   Object.freeze([50, 100] as const),
@@ -424,10 +521,10 @@ const PROXIMITY_BANDS_HZ: readonly (readonly [number, number])[] = Object.freeze
 ]);
 
 function bandProfileDb(samples: Float32Array, sampleRateHz: number): number[] {
-  /* Equal-TIME analysis on both sides of every comparison: the corpus is
-   * 32 kHz and the candidate 48 kHz, so a fixed sample count would compare
-   * a 0.26 s recording window against a 0.17 s render window and skew every
-   * distance toward the attack. 0.25 s at each rate, DFT over the window. */
+  /* Equal-TIME analysis on both sides of every comparison: the checked-in
+   * corpora are 22.05/32 kHz and the candidate is 48 kHz, so a fixed sample
+   * count would compare different musical windows and skew every distance
+   * toward the attack. Use 0.25 s at each rate, DFT over the window. */
   const size = 16_384;
   const count = Math.min(Math.round(0.25 * sampleRateHz), size, samples.length);
   const windowed = new Float64Array(size);
@@ -474,12 +571,15 @@ function bandDistanceDb(left: readonly number[], right: readonly number[]): numb
 }
 
 export function replacementDynamicsPasses(
+  policy: SampleReplacementPolicy,
   quieterEarlyRms: number,
   louderEarlyRms: number,
 ): boolean {
   return Number.isFinite(quieterEarlyRms) &&
     Number.isFinite(louderEarlyRms) &&
-    louderEarlyRms > quieterEarlyRms;
+    quieterEarlyRms > 0 &&
+    20 * Math.log10(louderEarlyRms / quieterEarlyRms) >=
+      policy.minimumDynamicsRiseDb;
 }
 
 export function replacementProximityPasses(
@@ -494,19 +594,25 @@ export function replacementProximityPasses(
     impostorDistanceDb - candidateDistanceDb >= policy.minimumImpostorMarginDb;
 }
 
-function decodeCorpusSlice(
-  base64: string,
+export function decodeCorpusSlice(
+  bytes: Uint8Array,
   slice: CorpusSlice,
 ): Float32Array {
-  const bytes = Uint8Array.from(atob(base64), (char) => char.charCodeAt(0));
-  const ints = new Int16Array(
+  const byteLength = slice.frameCount * 2;
+  const byteEnd = slice.byteOffset + byteLength;
+  if (!Number.isInteger(slice.byteOffset) || slice.byteOffset < 0 ||
+    !Number.isInteger(slice.frameCount) || slice.frameCount <= 0 ||
+    !Number.isSafeInteger(byteEnd) || byteEnd > bytes.byteLength) {
+    throw new Error(`REPLACEMENT_CORPUS_SLICE_BOUNDS:m${String(slice.midiPitch)}`);
+  }
+  const view = new DataView(
     bytes.buffer,
-    slice.byteOffset,
-    slice.frameCount,
+    bytes.byteOffset + slice.byteOffset,
+    byteLength,
   );
   const floats = new Float32Array(slice.frameCount);
   for (let index = 0; index < slice.frameCount; index += 1) {
-    floats[index] = (ints[index] ?? 0) / 32_768;
+    floats[index] = view.getInt16(index * 2, true) / 32_768;
   }
   return floats;
 }
@@ -523,19 +629,22 @@ export function analyzeReplacementOutput(
     samples.length,
   );
   const target = midiHz(midi);
+  const rawPitchWindow = samples.subarray(pitchStart, pitchEnd);
   const pitchWindow = fundamentalBand(
-    samples.subarray(pitchStart, pitchEnd),
+    rawPitchWindow,
     sampleRateHz,
     target,
   );
-  const pitch = estimatePitch(pitchWindow, sampleRateHz, target);
+  const periodicity = estimatePitch(pitchWindow, sampleRateHz, target);
+  const pitch = estimateTargetTone(rawPitchWindow, sampleRateHz, target);
   let peak = 0;
   for (const value of samples) peak = Math.max(peak, Math.abs(value));
   const earlyRms = windowRms(samples, sampleRateHz, policy.earlyWindowSeconds);
   const lateRms = windowRms(samples, sampleRateHz, policy.lateWindowSeconds);
   return Object.freeze({
     pitchCents: 1_200 * Math.log2(pitch.hz / target),
-    periodicity: pitch.periodicity,
+    periodicity: periodicity.periodicity,
+    targetToneToPeakRatio: pitch.targetToneToPeakRatio,
     earlyRms,
     lateToEarlyRmsRatio: earlyRms > 0 ? lateRms / earlyRms : 1,
     temporalPeakSeconds: temporalPeakSeconds(policy, samples, sampleRateHz),
@@ -559,6 +668,18 @@ export function evaluateReplacementOutput(
     findings.push(Object.freeze({
       code: "REPLACEMENT_PITCH",
       message: `pitch ${features.pitchCents.toFixed(1)} cents exceeds +-${String(policy.maximumAbsolutePitchCents)}`,
+    }));
+  }
+  if (features.periodicity < policy.minimumPeriodicity) {
+    findings.push(Object.freeze({
+      code: "REPLACEMENT_APERIODIC",
+      message: `periodicity ${features.periodicity.toFixed(3)} below ${String(policy.minimumPeriodicity)}`,
+    }));
+  }
+  if (features.targetToneToPeakRatio < policy.minimumTargetToneToPeakRatio) {
+    findings.push(Object.freeze({
+      code: "REPLACEMENT_TARGET_TONE_ABSENT",
+      message: `target-tone/peak ratio ${features.targetToneToPeakRatio.toExponential(2)} below ${String(policy.minimumTargetToneToPeakRatio)}`,
     }));
   }
   if (features.earlyRms < policy.minimumEarlyRms) {
@@ -619,16 +740,50 @@ function summarize(
   });
 }
 
-function replacementSourcePaths(
+export function replacementSourcePaths(
   instrument: SampleReplacementPolicy["instrument"],
 ): readonly string[] {
-  return Object.freeze([
+  const common = [
     "scripts/run-sample-replacement-gate.ts",
-    instrument === "vibes"
-      ? "dsp/concert-grand/src/vibes_v2.rs"
-      : "dsp/concert-grand/src/plucked_v2.rs",
+    "scripts/reference-similarity.ts",
+    "src/audio/dsp-renderer.ts",
     "src/audio/wasm/concert-grand-wasm.ts",
-  ]);
+    "dsp/concert-grand/Cargo.toml",
+    "dsp/concert-grand/Cargo.lock",
+    "dsp/concert-grand/rust-toolchain.toml",
+    "dsp/concert-grand/src/lib.rs",
+  ] as const;
+  const instrumentPaths = instrument === "vibes"
+    ? [
+      "dsp/concert-grand/src/vibes_v2.rs",
+      "dsp/concert-grand/src/vibes_v2_eigenpack.rs",
+      "scripts/generate-vibraphone-v2-eigenpack.ts",
+      "scripts/validate-phs6-contract.ts",
+      "physical/parameter-packs/vibraphone-v2-eigenpack.json",
+      "physical/parameter-packs/vibraphone-v2-modal-authority.json",
+      "tests/fixtures/vibraphone-v2/contract.json",
+      "tests/fixtures/vibraphone-v2/bar-cases.json",
+      "tests/fixtures/vibraphone-v2/physics-cases.json",
+      "tests/fixtures/vibraphone-v2/metric-cases.json",
+      "tests/fixtures/vibraphone-v2/provenance-ledger.json",
+      "tests/fixtures/vibraphone-v2/trace-ledger.json",
+      "tests/fixtures/vibraphone-v2/mutation-controls.json",
+      "src/audio/wasm/vibraphone-samples.ts",
+    ] as const
+    : [
+      "dsp/concert-grand/src/plucked_v2.rs",
+      "dsp/concert-grand/src/upright_bass_body.rs",
+      "scripts/validate-phs4-contract.ts",
+      "tests/fixtures/plucked-string-v2/contract.json",
+      "tests/fixtures/plucked-string-v2/instrument-packs.json",
+      "tests/fixtures/plucked-string-v2/physics-cases.json",
+      "tests/fixtures/plucked-string-v2/metric-cases.json",
+      "tests/fixtures/plucked-string-v2/provenance-ledger.json",
+      "tests/fixtures/plucked-string-v2/trace-ledger.json",
+      "tests/fixtures/plucked-string-v2/mutation-controls.json",
+      "src/audio/wasm/upright-bass-samples.ts",
+    ] as const;
+  return Object.freeze([...common, ...instrumentPaths]);
 }
 
 async function sourceBindings(
@@ -646,6 +801,7 @@ function healthyFeatures(policy: SampleReplacementPolicy): ReplacementOutputFeat
   return Object.freeze({
     pitchCents: 2,
     periodicity: 0.95,
+    targetToneToPeakRatio: 0.2,
     earlyRms: 0.05,
     lateToEarlyRmsRatio: policy.maximumLateToEarlyRmsRatio * 0.5,
     temporalPeakSeconds: Math.max(
@@ -658,8 +814,12 @@ function healthyFeatures(policy: SampleReplacementPolicy): ReplacementOutputFeat
 
 export async function runSampleReplacementGate(
   instrument: "vibes" | "upright-bass",
-  root = process.cwd(),
+  options: Readonly<{
+    root?: string;
+    wasmBytes?: Uint8Array;
+  }> = {},
 ): Promise<SampleReplacementEvidence> {
+  const root = options.root ?? process.cwd();
   const policy = instrument === "vibes"
     ? VIBES_REPLACEMENT_POLICY
     : UPRIGHT_BASS_REPLACEMENT_POLICY;
@@ -676,8 +836,27 @@ export async function runSampleReplacementGate(
       sha256: UPRIGHT_BASS_SAMPLES_SHA256,
       slices: UPRIGHT_BASS_SAMPLES_SLICE_INDEX,
     });
+  const immutableWasmBytes = options.wasmBytes === undefined
+    ? undefined
+    : Uint8Array.from(options.wasmBytes);
+  const corpusBytes = Uint8Array.from(
+    atob(corpus.base64),
+    (character) => character.charCodeAt(0),
+  );
+  const measuredCorpusSha256 = sha256Hex(corpusBytes);
+  if (measuredCorpusSha256 !== corpus.sha256) {
+    throw new Error("REPLACEMENT_CORPUS_DIGEST_DRIFT");
+  }
+  const wasmSha256 = immutableWasmBytes === undefined
+    ? CONCERT_GRAND_WASM_SHA256
+    : sha256Hex(immutableWasmBytes);
   const bindingsBefore = await sourceBindings(root, instrument);
-  const renderers = await loadWaveguideRenderers();
+  const renderers = immutableWasmBytes === undefined
+    ? await loadWaveguideRenderers()
+    : await loadWaveguideRenderersFromWasmBytes(immutableWasmBytes);
+  if ([...renderers.values()].some((entry) => entry.wasmSha256 !== wasmSha256)) {
+    throw new Error("REPLACEMENT_WASM_DIGEST_DRIFT");
+  }
   const renderer = renderers.get(policy.algorithmId);
   if (renderer === undefined) throw new Error(`REPLACEMENT_RENDERER_MISSING:${policy.algorithmId}`);
   const impostor = renderers.get(policy.impostorAlgorithmId);
@@ -694,6 +873,11 @@ export async function runSampleReplacementGate(
         policy.renderSeconds,
       );
       if (pcm === null) throw new Error(`REPLACEMENT_RENDER_REFUSED:m${String(midi)}v${String(velocity)}`);
+      assertPcmContract(
+        pcm,
+        policy.sampleRateHz,
+        `m${String(midi)}v${String(velocity)}`,
+      );
       const samples = mono(pcm);
       const features = analyzeReplacementOutput(policy, samples, pcm.sampleRateHz, midi);
       const findings = evaluateReplacementOutput(policy, features);
@@ -704,7 +888,7 @@ export async function runSampleReplacementGate(
         midi,
         velocity,
         sampleRateHz: pcm.sampleRateHz,
-        pcmSha256: floatPcmSha256(samples),
+        pcmSha256: stereoPcmSha256(pcm),
         features,
         outcome: findings.length === 0 ? "pass" as const : "fail" as const,
         findings,
@@ -722,7 +906,11 @@ export async function runSampleReplacementGate(
       id: `m${String(midi)}-dynamics`,
       midi,
       rmsRise,
-      outcome: replacementDynamicsPasses(piano.earlyRms, forte.earlyRms)
+      outcome: replacementDynamicsPasses(
+        policy,
+        piano.earlyRms,
+        forte.earlyRms,
+      )
         ? "pass" as const
         : "fail" as const,
     }));
@@ -732,13 +920,9 @@ export async function runSampleReplacementGate(
   for (const midi of policy.proximityMidi) {
     const slice = corpus.slices.find((entry) => entry.midiPitch === midi);
     if (slice === undefined) throw new Error(`REPLACEMENT_CORPUS_SLICE_MISSING:m${String(midi)}`);
-    const reference = decodeCorpusSlice(corpus.base64, slice);
-    const referencePitch = estimatePitch(
-      fundamentalBand(
-        reference.subarray(0, Math.min(reference.length, corpus.rateHz)),
-        corpus.rateHz,
-        midiHz(midi),
-      ),
+    const reference = decodeCorpusSlice(corpusBytes, slice);
+    const referencePitch = estimateTargetTone(
+      reference.subarray(0, Math.min(reference.length, corpus.rateHz)),
       corpus.rateHz,
       midiHz(midi),
     );
@@ -760,6 +944,8 @@ export async function runSampleReplacementGate(
     if (candidatePcm === null || impostorPcm === null) {
       throw new Error(`REPLACEMENT_PROXIMITY_RENDER_REFUSED:m${String(midi)}`);
     }
+    assertPcmContract(candidatePcm, policy.sampleRateHz, `m${String(midi)}-candidate`);
+    assertPcmContract(impostorPcm, policy.sampleRateHz, `m${String(midi)}-impostor`);
     const candidateDistanceDb = bandDistanceDb(
       bandProfileDb(mono(candidatePcm), policy.sampleRateHz),
       referenceProfile,
@@ -797,6 +983,14 @@ export async function runSampleReplacementGate(
       policy,
       Object.freeze({ ...healthy, pitchCents: 60 }),
     ).some((item) => item.code === "REPLACEMENT_PITCH"),
+    aperiodicRejected: evaluateReplacementOutput(
+      policy,
+      Object.freeze({ ...healthy, periodicity: 0 }),
+    ).some((item) => item.code === "REPLACEMENT_APERIODIC"),
+    targetToneAbsentRejected: evaluateReplacementOutput(
+      policy,
+      Object.freeze({ ...healthy, targetToneToPeakRatio: 0 }),
+    ).some((item) => item.code === "REPLACEMENT_TARGET_TONE_ABSENT"),
     silentRejected: evaluateReplacementOutput(
       policy,
       Object.freeze({ ...healthy, earlyRms: 1e-7 }),
@@ -823,6 +1017,7 @@ export async function runSampleReplacementGate(
       }),
     ).some((item) => item.code === "REPLACEMENT_TEMPORAL_CHARACTER"),
     flatDynamicsRejected: !replacementDynamicsPasses(
+      policy,
       healthy.earlyRms,
       healthy.earlyRms,
     ),
@@ -837,8 +1032,8 @@ export async function runSampleReplacementGate(
     schema: SAMPLE_REPLACEMENT_EVIDENCE_SCHEMA,
     policy,
     algorithmIds: Object.freeze([policy.algorithmId]),
-    wasmSha256: CONCERT_GRAND_WASM_SHA256,
-    corpusSha256: corpus.sha256,
+    wasmSha256,
+    corpusSha256: measuredCorpusSha256,
     sourceBindings: bindingsBefore,
     sourceClosureSha256: sha256Hex(canonicalJson(bindingsBefore)),
     cells: Object.freeze(cells),
@@ -854,9 +1049,10 @@ export async function runSampleReplacementGate(
 }
 
 /**
- * Offline semantic re-verification for `check-predeploy`: recompute every
- * verdict and the digest from the stored features. A hand-edited outcome,
- * summary, or digest fails closed.
+ * Offline semantic re-verification: recompute every verdict and the digest
+ * from the stored features. A hand-edited outcome, summary, or digest fails
+ * closed. Candidate reports may bind non-embedded WASM; shipping authorization
+ * is the stricter replay equality plus current-WASM comparison in predeploy.
  */
 export function verifySampleReplacementEvidence(
   value: unknown,
@@ -876,7 +1072,8 @@ export function verifySampleReplacementEvidence(
   const expectedCorpusSha256 = instrument === "vibes"
     ? VIBRAPHONE_SAMPLES_SHA256
     : UPRIGHT_BASS_SAMPLES_SHA256;
-  if (value["wasmSha256"] !== CONCERT_GRAND_WASM_SHA256 ||
+  if (typeof value["wasmSha256"] !== "string" ||
+    !/^[0-9a-f]{64}$/.test(value["wasmSha256"]) ||
     value["corpusSha256"] !== expectedCorpusSha256 ||
     canonicalJson(value["algorithmIds"]) !== canonicalJson([policy.algorithmId])) {
     return false;
@@ -929,6 +1126,7 @@ export function verifySampleReplacementEvidence(
     const featureKeys = [
       "pitchCents",
       "periodicity",
+      "targetToneToPeakRatio",
       "earlyRms",
       "lateToEarlyRmsRatio",
       "temporalPeakSeconds",
@@ -952,6 +1150,7 @@ export function verifySampleReplacementEvidence(
     const features: ReplacementOutputFeatures = {
       pitchCents: featuresValue["pitchCents"] as number,
       periodicity: featuresValue["periodicity"] as number,
+      targetToneToPeakRatio: featuresValue["targetToneToPeakRatio"] as number,
       earlyRms: featuresValue["earlyRms"] as number,
       lateToEarlyRmsRatio: featuresValue["lateToEarlyRmsRatio"] as number,
       temporalPeakSeconds: featuresValue["temporalPeakSeconds"] as number,
@@ -998,6 +1197,7 @@ export function verifySampleReplacementEvidence(
     const derivedRmsRise = louder.features.earlyRms - quieter.features.earlyRms;
     if (Math.abs(rmsRise - derivedRmsRise) > 1e-12) return false;
     const outcome = replacementDynamicsPasses(
+      policy,
       quieter.features.earlyRms,
       louder.features.earlyRms,
     ) ? "pass" : "fail";
@@ -1053,6 +1253,8 @@ export function verifySampleReplacementEvidence(
   const controlKeys = [
     "outOfRangeRefused",
     "wrongPitchRejected",
+    "aperiodicRejected",
+    "targetToneAbsentRejected",
     "silentRejected",
     "clippingRejected",
     "sustainedRejected",
@@ -1071,6 +1273,8 @@ export function verifySampleReplacementEvidence(
   const controls: SampleReplacementEvidence["controls"] = {
     outOfRangeRefused: true,
     wrongPitchRejected: true,
+    aperiodicRejected: true,
+    targetToneAbsentRejected: true,
     silentRejected: true,
     clippingRejected: true,
     sustainedRejected: true,
@@ -1096,29 +1300,76 @@ export function verifySampleReplacementEvidence(
   return sha256Hex(canonicalJson(unsigned)) === evidenceSha256;
 }
 
+/**
+ * Shipping acceptance is stronger than offline evidence validity: the stored
+ * report must be byte-for-byte the report reproduced from the immutable WASM
+ * embedded in the artifact being deployed. This prevents a still-valid report
+ * for older renderer bytes from authorizing a newer payload with the same
+ * algorithm id.
+ */
+export function verifySampleReplacementEvidenceAgainstReplay(
+  value: unknown,
+  replay: SampleReplacementEvidence,
+  root = process.cwd(),
+): value is SampleReplacementEvidence {
+  return verifySampleReplacementEvidence(value, root) &&
+    verifySampleReplacementEvidence(replay, root) &&
+    canonicalJson(value) === canonicalJson(replay);
+}
+
 const isMain = process.argv[1]?.endsWith("run-sample-replacement-gate.ts") === true;
 if (isMain) {
   const instrumentFlag = process.argv.indexOf("--instrument");
   const instrument = instrumentFlag >= 0 ? process.argv[instrumentFlag + 1] : undefined;
   if (instrument !== "vibes" && instrument !== "upright-bass") {
-    console.error("usage: bun scripts/run-sample-replacement-gate.ts --instrument vibes|upright-bass [--output <path>]");
+    console.error("usage: bun scripts/run-sample-replacement-gate.ts --instrument vibes|upright-bass [--wasm-path <path>] [--output <path>]");
     process.exit(2);
   }
   const outputFlag = process.argv.indexOf("--output");
   const outputPath = outputFlag >= 0
     ? process.argv[outputFlag + 1]
     : `release-evidence/audio/listening/${instrument}-replacement-evidence.json`;
-  if (outputPath === undefined) {
+  if (outputPath === undefined || outputPath.startsWith("--")) {
     console.error("--output requires a path");
     process.exit(2);
   }
+  const wasmFlag = process.argv.indexOf("--wasm-path");
+  const wasmPath = wasmFlag >= 0 ? process.argv[wasmFlag + 1] : undefined;
+  if (wasmFlag >= 0 && (wasmPath === undefined || wasmPath.startsWith("--"))) {
+    console.error("--wasm-path requires a path");
+    process.exit(2);
+  }
+  for (const flag of ["--instrument", "--output", "--wasm-path"]) {
+    if (process.argv.indexOf(flag) !== process.argv.lastIndexOf(flag)) {
+      console.error(`duplicate flag ${flag}`);
+      process.exit(2);
+    }
+  }
   for (const argument of process.argv.slice(2)) {
-    if (argument.startsWith("--") && argument !== "--instrument" && argument !== "--output") {
+    if (argument.startsWith("--") && argument !== "--instrument" &&
+      argument !== "--output" && argument !== "--wasm-path") {
       console.error(`unrecognized flag ${argument} (fail-closed; the inert-flag epidemic is documented)`);
       process.exit(2);
     }
   }
-  const evidence = await runSampleReplacementGate(instrument);
+  const recognizedArgumentIndexes = new Set<number>();
+  for (const flagIndex of [instrumentFlag, outputFlag, wasmFlag]) {
+    if (flagIndex >= 0) {
+      recognizedArgumentIndexes.add(flagIndex);
+      recognizedArgumentIndexes.add(flagIndex + 1);
+    }
+  }
+  for (let index = 2; index < process.argv.length; index += 1) {
+    if (!recognizedArgumentIndexes.has(index)) {
+      console.error(`unrecognized argument ${process.argv[index] ?? ""}`);
+      process.exit(2);
+    }
+  }
+  const evidence = await runSampleReplacementGate(instrument, {
+    ...(wasmPath === undefined
+      ? {}
+      : { wasmBytes: new Uint8Array(await readFile(resolve(process.cwd(), wasmPath))) }),
+  });
   await writeFile(resolve(process.cwd(), outputPath), `${JSON.stringify(evidence, null, 2)}\n`);
   const verdict = evidence.summary.outcome === "pass" ? "PASS" : "FAIL";
   console.log(`${verdict} cells=${String(evidence.summary.passedCellCount)} dynamics=${String(evidence.summary.passedDynamicsCellCount)} proximity=${String(evidence.summary.passedProximityCellCount)} wasm=${evidence.wasmSha256}`);

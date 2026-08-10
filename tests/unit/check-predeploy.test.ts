@@ -27,6 +27,7 @@ import {
   LEDGER_PATH,
   collectEngineRoutedAlgorithmIds,
   collectRecipeAlgorithmIds,
+  embeddedWasmDigestMatchesDeclaration,
   evaluateGate,
   parseLedger,
   type LedgerRow,
@@ -39,6 +40,7 @@ import {
   type SignalFeatures,
 } from "../../scripts/reference-similarity";
 import { runPluckedV2ReleaseGate } from "../../scripts/run-plucked-v2-release-gate";
+import { VIBES_REPLACEMENT_POLICY } from "../../scripts/run-sample-replacement-gate";
 import {
   FLUTE_V2_REFERENCE_RUNNER_POLICY,
   bindFluteV2ReferenceMatrixCell,
@@ -47,6 +49,7 @@ import {
   verifyFluteV2ReferenceRunEvidenceAgainstReplay,
   type FluteV2ReferenceRunResult,
 } from "../../scripts/run-uiowa-flute-v2-reference";
+import staleVibesEvidence from "../../release-evidence/audio/listening/vibes-replacement-evidence.json";
 
 const root = resolve(import.meta.dir, "../..");
 
@@ -154,6 +157,13 @@ describe("shipping-id collection", () => {
 });
 
 describe("ledger evaluation fails closed", () => {
+  test("the embedded WASM declaration is checked against the actual bytes", () => {
+    const bytes = new Uint8Array(Buffer.from(CONCERT_GRAND_WASM_BASE64, "base64"));
+    expect(embeddedWasmDigestMatchesDeclaration(bytes)).toBe(true);
+    bytes[bytes.length - 1] = (bytes[bytes.length - 1] ?? 0) ^ 1;
+    expect(embeddedWasmDigestMatchesDeclaration(bytes)).toBe(false);
+  });
+
   const ship = ["changes.dsp.model-a@1"];
 
   test("green ledger passes", () => {
@@ -325,6 +335,23 @@ describe("ledger evaluation fails closed", () => {
       CONCERT_GRAND_WASM_SHA256,
       { fluteV2: replay },
     ).map((finding) => finding.code)).toEqual(["MODEL_DELEGATED_INVALID_EVIDENCE"]);
+  });
+
+  test("sample replacements cannot delegate from stored evidence without shipping-WASM replay", () => {
+    const algorithmId = VIBES_REPLACEMENT_POLICY.algorithmId;
+    const row: LedgerRow = {
+      ...approvedRow(algorithmId),
+      status: "machine-delegated",
+      evidence: "release-evidence/audio/listening/vibes-replacement-evidence.json",
+    };
+    expect(evaluateGate(
+      [algorithmId],
+      [row],
+      () => staleVibesEvidence,
+      CONCERT_GRAND_WASM_SHA256,
+    ).map((finding) => finding.code)).toEqual([
+      "MODEL_DELEGATED_REPLAY_REQUIRED",
+    ]);
   });
 });
 
