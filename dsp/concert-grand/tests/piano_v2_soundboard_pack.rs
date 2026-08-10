@@ -24,11 +24,11 @@ fn generated_pack_is_bound_to_the_reviewed_frankensim_input() {
     );
     assert_eq!(
         PIANO_V2_SOUNDBOARD_PACK_GENERATOR_SHA256,
-        "d3e25fef79be190702c0469ffce2bd9432faf6c4010d8249437c6004f5a9b168"
+        "26804e425fc4e35e883565113a8c5401df580a838769e205d6f1e19a59fa0d34"
     );
     assert_eq!(
         PIANO_V2_SOUNDBOARD_PACK_INPUT_SHA256,
-        "1a9bb3ff4fd0bcfa746c67a83bfc12d9614bcf44a4a71b98d33e5d9df6eb3b34"
+        "a887a40163ba4f2abed905405bcc3db6cd617737068b13404a37cc514fd35b71"
     );
     assert_eq!(
         PIANO_V2_SOUNDBOARD_PACK_TOOL_MANIFEST_SHA256,
@@ -44,10 +44,17 @@ fn generated_pack_is_bound_to_the_reviewed_frankensim_input() {
     assert!(JSON_PACK.contains(PIANO_V2_SOUNDBOARD_PACK_TOOL_LOCK_SHA256));
     assert!(JSON_PACK.contains(PIANO_V2_SOUNDBOARD_PACK_FRANKENSIM_COMMIT));
     assert!(RUST_PACK.contains(PIANO_V2_SOUNDBOARD_PACK_INPUT_SHA256));
-    assert_eq!(JSON_PACK.matches("\"frequencyHz\"").count(), 1_239);
-    assert_eq!(JSON_PACK.matches("\"nodeWInverseSqrtKg\"").count(), 1_239);
+    assert_eq!(JSON_PACK.matches("\"frequencyHz\"").count(), 1_226);
+    assert_eq!(JSON_PACK.matches("\"nodeWInverseSqrtKg\"").count(), 1_226);
     assert!(JSON_PACK.contains("\"certifiedSliceCount\": 12"));
-    assert!(JSON_PACK.contains("\"refinedModeCount\": 2"));
+    assert!(JSON_PACK.contains("\"refinedModeCount\": 8"));
+    assert!(JSON_PACK.contains("\"bridgeCount\": 2"));
+    assert!(JSON_PACK.contains("\"bridgeWidthM\": 0.032"));
+    assert!(JSON_PACK.contains("\"bridgeHeightM\": 0.037"));
+    assert!(JSON_PACK.contains("\"bassBridgeMaxMidi\": 43"));
+    assert!(JSON_PACK.contains("\"trebleBridgeMinMidi\": 44"));
+    assert!(JSON_PACK
+        .contains("Corradi-et-al-2017-G3-32x37mm-maple-constant-section-two-beam-reduction"));
     assert!(JSON_PACK.contains("\"maximumRefinedMassOrthogonalityDefect\""));
     assert!(JSON_PACK.contains(
         "Batoz-1980-equation-75-triangle-area-over-3-nodal-load-infinite-baffle-Rayleigh-1m"
@@ -56,17 +63,17 @@ fn generated_pack_is_bound_to_the_reviewed_frankensim_input() {
 
 #[test]
 fn dkt_modes_match_independently_frozen_known_answers_and_residual_bounds() {
-    assert_eq!(PIANO_V2_SOUNDBOARD_MODE_PACK.len(), 1_239);
+    assert_eq!(PIANO_V2_SOUNDBOARD_MODE_PACK.len(), 1_226);
     let known = [
-        (0, 39.083_986_320_762_27),
-        (31, 608.554_756_151_908_5),
-        (95, 1_723.708_851_954_870_9),
-        (191, 2_350.886_327_995_278_4),
-        (287, 2_764.070_934_430_351_4),
-        (511, 5_662.704_089_523_185),
-        (767, 7_379.552_660_048_264),
-        (1_023, 10_796.703_034_698_176),
-        (1_238, 11_999.415_786_947_086),
+        (0, 37.687_342_860_361_39),
+        (31, 613.205_051_375_822_3),
+        (95, 1_718.797_532_503_682_3),
+        (191, 2_357.543_939_814_805),
+        (287, 2_788.551_394_237_302_7),
+        (511, 5_618.088_070_559_347),
+        (767, 7_528.163_908_438_721),
+        (1_023, 10_803.904_937_370_06),
+        (1_225, 11_988.714_908_832_939),
     ];
     for (index, expected_hz) in known {
         let actual = PIANO_V2_SOUNDBOARD_MODE_PACK[index].frequency_hz;
@@ -174,43 +181,43 @@ fn conservative_triangle_ports_match_independently_frozen_known_answers() {
         (
             0,
             [
-                (0, 0.163_782_160_730_469),
-                (39, 0.389_743_146_018_981_13),
-                (87, 0.001_952_805_515_344_590_7),
+                (0, 0.158_550_430_192_815_8),
+                (39, 0.353_238_477_102_758_1),
+                (87, 0.001_898_359_457_519_804_4),
             ],
             [
-                -9.046_571_554_524_171e-12,
-                21.092_798_481_470_18,
-                9.110_783_984_569_902e-12,
-                21.092_799_057_846_02,
+                0.006_701_382_640_627_383,
+                19.233_673_466_139_04,
+                -0.006_791_787_749_627_787,
+                19.233_254_621_263_185,
             ],
         ),
         (
             31,
             [
-                (0, -0.394_136_392_492_952_4),
-                (39, 0.038_176_151_590_702_714),
-                (87, -0.031_242_338_580_432_922),
+                (0, 0.115_097_041_446_248_3),
+                (39, -0.134_750_749_521_709_4),
+                (87, 0.024_939_757_142_157_86),
             ],
             [
-                -44.470_429_162_685,
-                -1.508_144_858_202_496e-12,
-                -44.474_796_373_632_48,
-                9.775_259_583_714_144e-12,
+                -5.191_236_750_395_668,
+                12.232_067_114_470_46,
+                -4.922_413_490_210_015,
+                -0.003_894_016_428_490_115,
             ],
         ),
         (
             95,
             [
-                (0, -0.452_508_302_198_067_76),
-                (39, -0.207_220_936_840_793_26),
-                (87, 0.216_626_709_503_983_72),
+                (0, -0.115_927_099_481_699_91),
+                (39, 0.074_847_600_214_152_5),
+                (87, 0.079_739_956_372_360_63),
             ],
             [
-                8.766_577_067_565_684,
-                -5.698_723_963_572_066_5e-12,
-                7.765_609_900_283_879,
-                -5.966_310_495_712_193e-12,
+                54.561_210_121_663_81,
+                -21.942_359_939_941_163,
+                -25.001_856_012_038_893,
+                -12.596_407_179_593_164,
             ],
         ),
     ];
