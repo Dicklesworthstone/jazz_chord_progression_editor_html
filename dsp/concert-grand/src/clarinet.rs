@@ -1217,12 +1217,31 @@ fn clr_render_inner(
     } else {
         0.0
     };
-    let pressure_overshoot = if !dynamic_reed && attack_articulation == Some(true) {
-        (pressure_target * (0.05 + 0.025 * v_norm)).min(0.915 - pressure_target)
+    let pressure_overshoot = if !dynamic_reed {
+        /*
+         * Soft-attack support (2026-08-10, measured): the speaking-floor
+         * margin at pp is deliberately thin, so Hopf growth from the noise
+         * seed alone took ~470 ms to speak in the top register. A player
+         * attacks a soft note with brief extra air support and relaxes
+         * into the held pressure; the boost rides overshoot_envelope and
+         * decays over the widened window below. Every legacy attack gets
+         * the base articulation bump — a clarinet note never starts from
+         * literally zero articulation — and only soft velocities get the
+         * support term.
+         */
+        let base = pressure_target * (0.05 + 0.025 * v_norm);
+        let soft_support = 0.10 * ((0.45 - v_norm) / 0.45).clamp(0.0, 1.0);
+        (base + soft_support).min(0.915 - pressure_target)
     } else {
         0.0
     };
-    let overshoot_decay = exp(-1.0 / ((0.014 + 0.008 * (1.0 - v_norm)) * sr));
+    let overshoot_decay = exp(
+        -1.0
+            / ((0.014
+                + 0.008 * (1.0 - v_norm)
+                + 0.045 * ((0.45 - v_norm) / 0.45).clamp(0.0, 1.0))
+                * sr),
+    );
     let tongue_hold_frames = if attack_articulation == Some(true) {
         ((0.006 - 0.002 * v_norm) * sr) as usize
     } else {
