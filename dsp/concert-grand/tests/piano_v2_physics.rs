@@ -9,6 +9,7 @@ mod piano_v2;
 
 use libm::sqrt;
 use piano_v2::piano_v2_scale::{reviewed_string_scale_row, REVIEWED_STRING_SCALE};
+use piano_v2::piano_v2_soundboard::PIANO_V2_SOUNDBOARD_MODE_PACK;
 use piano_v2::{
     bridge_contact_pair_midpoint_step, component_string_reduction_snapshot,
     duplex_length_m_for_midi, hammer_head_radius_m_for_midi, hammer_mass_kg_for_midi,
@@ -173,6 +174,137 @@ fn stulov_all_key_felt_law_has_rate_hysteresis_and_refuses_elastic_near_miss() {
         0.0,
         "the elastic near-miss unexpectedly produced a hysteresis loop"
     );
+}
+
+#[test]
+fn mezzo_forte_contact_duration_matches_measured_c2_c4_c7_registers() {
+    // Chaigne and Askenfelt (JASA 1994), part II, Fig. 2 / section I.A:
+    // at a 2.5 m/s initial hammer speed the measured contact durations are
+    // 3.1 ms (C2), 2.0 ms (C4), and 0.6 ms (C7); their simulation was within
+    // six percent.  Keep a wider cross-instrument envelope here because the
+    // live all-key Stulov fit comes from an independently measured Abel set,
+    // but refuse a register-invariant or impulse-like contact.
+    for (midi, measured_seconds, lower_seconds, upper_seconds) in [
+        (36, 3.1e-3, 2.5e-3, 3.8e-3),
+        (60, 2.0e-3, 1.5e-3, 2.6e-3),
+        (96, 0.6e-3, 0.4e-3, 0.9e-3),
+    ] {
+        let geometry = string_geometry(midi).unwrap();
+        let mut strike =
+            PianoStrike::from_velocity(64, midi, geometry.equivalent_diameter_m).unwrap();
+        strike.hammer_velocity_m_per_s = 2.5;
+        strike.impact_energy_j =
+            0.5 * strike.hammer_mass_kg * strike.hammer_velocity_m_per_s.powi(2);
+        let sample_rate = 96_000.0;
+        let mut voice = PianoVoice::new(midi, sample_rate, PianoParameters::canonical()).unwrap();
+        voice.begin_strike(strike).unwrap();
+        let mut frames = 0usize;
+        while voice.contact_active() && frames < (0.020 * sample_rate) as usize {
+            voice.step().unwrap();
+            frames += 1;
+        }
+        let actual_seconds = frames as f64 / sample_rate;
+        assert!(
+            (lower_seconds..=upper_seconds).contains(&actual_seconds),
+            "m{midi} contact={actual_seconds:.9}s, measured={measured_seconds:.9}s"
+        );
+    }
+}
+
+#[test]
+fn fixed_soundboard_reduction_does_not_change_with_note_set_or_output_rate() {
+    // The 1,226-mode offline board pack tops out below 12 kHz, so every source
+    // mode is representable at both rates. The retained 288-mode board is one
+    // instrument property: adding a second key must not silently turn the
+    // first key into a different board, and caller rate must not do so either.
+    assert!(
+        PIANO_V2_SOUNDBOARD_MODE_PACK
+            .windows(2)
+            .all(|pair| pair[0].frequency_hz < pair[1].frequency_hz),
+        "the runtime's cutoff and contiguous strata require a sorted unique pack"
+    );
+    for midi in [36, 60, 96] {
+        let low = PianoVoice::new(midi, 44_100.0, PianoParameters::canonical()).unwrap();
+        let high = PianoVoice::new(midi, 96_000.0, PianoParameters::canonical()).unwrap();
+        let chord = PianoStem::new(
+            &[midi, if midi == 60 { 67 } else { 60 }],
+            &[64, 64],
+            44_100.0,
+            PianoParameters::canonical(),
+        )
+        .unwrap();
+        let low_indices: Vec<_> = (0..288)
+            .map(|index| low.soundboard_mode_pack_index(index).unwrap())
+            .collect();
+        let high_indices: Vec<_> = (0..288)
+            .map(|index| high.soundboard_mode_pack_index(index).unwrap())
+            .collect();
+        let chord_indices: Vec<_> = (0..288)
+            .map(|index| chord.soundboard_mode_pack_index_for_test(index).unwrap())
+            .collect();
+        assert_eq!(low_indices, high_indices, "m{midi} changed physical board");
+        assert_eq!(low_indices, chord_indices, "m{midi} changed inside a chord");
+    }
+}
+
+#[test]
+fn fixed_string_reduction_does_not_change_across_release_output_rates() {
+    for midi in [36, 60, 84, 96, 108] {
+        let baseline = PianoVoice::new(midi, 44_100.0, PianoParameters::canonical()).unwrap();
+        let expected: Vec<_> = (0..24)
+            .filter_map(|index| baseline.string_mode_frequency_hz(0, index))
+            .collect();
+        for sample_rate in [48_000.0, 96_000.0] {
+            let candidate =
+                PianoVoice::new(midi, sample_rate, PianoParameters::canonical()).unwrap();
+            let actual: Vec<_> = (0..24)
+                .filter_map(|index| candidate.string_mode_frequency_hz(0, index))
+                .collect();
+            assert_eq!(
+                actual, expected,
+                "m{midi} changed string reduction at {sample_rate}"
+            );
+        }
+    }
+}
+
+#[test]
+fn fixed_string_reduction_preserves_contact_time_across_release_output_rates() {
+    // A fixed continuous instrument can quantize separation by at most one
+    // frame on either side of the comparison.  This test is deliberately in
+    // seconds rather than samples: retaining the same modal frequency list is
+    // not sufficient if the time-step/contact path still changes the hammer.
+    fn contact_duration_seconds(midi: i32, sample_rate_hz: f64) -> f64 {
+        let geometry = string_geometry(midi).unwrap();
+        let mut strike =
+            PianoStrike::from_velocity(64, midi, geometry.equivalent_diameter_m).unwrap();
+        strike.hammer_velocity_m_per_s = 2.5;
+        strike.impact_energy_j =
+            0.5 * strike.hammer_mass_kg * strike.hammer_velocity_m_per_s.powi(2);
+        let mut voice =
+            PianoVoice::new(midi, sample_rate_hz, PianoParameters::canonical()).unwrap();
+        voice.begin_strike(strike).unwrap();
+        let mut frames = 0usize;
+        while voice.contact_active() && frames < (0.020 * sample_rate_hz) as usize {
+            voice.step().unwrap();
+            frames += 1;
+        }
+        assert!(!voice.contact_active(), "m{midi} contact did not separate");
+        frames as f64 / sample_rate_hz
+    }
+
+    for midi in [36, 60, 96] {
+        let baseline = contact_duration_seconds(midi, 44_100.0);
+        for sample_rate_hz in [48_000.0, 96_000.0] {
+            let candidate = contact_duration_seconds(midi, sample_rate_hz);
+            let quantization_bound = 1.0 / 44_100.0 + 1.0 / sample_rate_hz;
+            assert!(
+                (candidate - baseline).abs() <= quantization_bound + 1.0e-12,
+                "m{midi} contact changed from {baseline:.9}s at 44100 Hz to \
+                 {candidate:.9}s at {sample_rate_hz} Hz"
+            );
+        }
+    }
 }
 
 #[test]

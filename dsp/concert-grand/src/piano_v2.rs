@@ -56,6 +56,12 @@ pub const STRING_MODES: usize = 24;
 const STRING_SPEAKING_COMPONENT_MODES: usize = 20;
 const STRING_DUPLEX_COMPONENT_MODES: usize = STRING_MODES - 1 - STRING_SPEAKING_COMPONENT_MODES;
 const STRING_EIGEN_JACOBI_SWEEPS: usize = 48;
+// The reduced string is one physical model, not a different component basis
+// for every output device.  Keep its audible state bandwidth fixed at the
+// reviewed 44.1 kHz attack-corpus rate; lower output rates still cull further
+// to remain alias safe, while 48/96 kHz callers no longer alter hammer or
+// bridge effective compliance by retaining extra ultrasonic string modes.
+const STRING_REDUCTION_SAMPLE_RATE_HZ: f64 = 44_100.0;
 pub const SOUNDBOARD_MODES: usize = 288;
 pub const CONTACT_SOLVE_STEPS: usize = 16;
 /// Maximum physical string-to-bridge contacts in one rendered chord.  Every
@@ -735,26 +741,6 @@ struct SoundboardMode {
     right_pressure_per_velocity_im: f64,
 }
 
-const MAXIMUM_SOUNDBOARD_SELECTION_TARGETS: usize =
-    MAX_PIANO_CHORD_NOTES * MAX_UNISON_STRINGS * STRING_MODES;
-
-#[derive(Clone, Copy, Debug)]
-struct SoundboardSelectionTarget {
-    midi_index: usize,
-    frequency_hz: f64,
-    drive_weight_squared: f64,
-    required: bool,
-}
-
-impl SoundboardSelectionTarget {
-    const ZERO: Self = Self {
-        midi_index: 0,
-        frequency_hz: 0.0,
-        drive_weight_squared: 0.0,
-        required: false,
-    };
-}
-
 impl SoundboardMode {
     const ZERO: Self = Self {
         mode: Mode::ZERO,
@@ -1050,7 +1036,7 @@ fn build_component_string_modes(
     let mut active_count = 0usize;
     for mode_index in 0..STRING_MODES {
         let frequency_hz = frequencies[mode_index];
-        if frequency_hz >= 0.44 * sample_rate_hz {
+        if frequency_hz >= 0.44 * sample_rate_hz.min(STRING_REDUCTION_SAMPLE_RATE_HZ) {
             continue;
         }
         let vector = eigenvectors[mode_index];
@@ -1418,8 +1404,7 @@ impl PianoVoice {
         let parameters = parameters.validate()?;
         let dt = 1.0 / sample_rate_hz;
         let key = PianoKeyState::new(midi, sample_rate_hz)?;
-        let soundboard =
-            build_soundboard_modes(parameters, sample_rate_hz, core::iter::once(&key))?;
+        let soundboard = build_soundboard_modes(parameters, sample_rate_hz)?;
         let voice = Self {
             sample_rate_hz,
             dt,
@@ -1841,11 +1826,7 @@ impl PianoStem {
             begin_key_strike(&mut key.contact, strike, sample_rate_hz, dt)?;
             keys[index] = Some(key);
         }
-        let soundboard = build_soundboard_modes(
-            parameters,
-            sample_rate_hz,
-            keys[..midis.len()].iter().filter_map(Option::as_ref),
-        )?;
+        let soundboard = build_soundboard_modes(parameters, sample_rate_hz)?;
         let mut soundboard_bridge_residues = [[0.0_f64; SOUNDBOARD_MODES]; MAX_PIANO_CHORD_NOTES];
         for key_index in 0..midis.len() {
             let key = keys[key_index].as_ref().ok_or(PianoError::NonFiniteState)?;
@@ -1881,6 +1862,13 @@ impl PianoStem {
 
     pub fn note_count(&self) -> usize {
         self.note_count
+    }
+
+    #[cfg(test)]
+    pub fn soundboard_mode_pack_index_for_test(&self, mode_index: usize) -> Option<usize> {
+        self.soundboard
+            .get(mode_index)
+            .and_then(|mode| mode.mode.active.then_some(mode.pack_index as usize))
     }
 
     pub fn represented_energy_j(&self) -> f64 {
@@ -3183,80 +3171,36 @@ fn soundboard_bridge_residue_at(body: &SoundboardMode, midi: i32) -> f64 {
         [midi_index]
 }
 
-fn append_soundboard_selection_targets(
-    key: &PianoKeyState,
-    targets: &mut [SoundboardSelectionTarget; MAXIMUM_SOUNDBOARD_SELECTION_TARGETS],
-    target_count: &mut usize,
-) -> Result<(), PianoError> {
-    let midi_index = (key.geometry.midi - MIN_MIDI) as usize;
-    for (string_index, bank) in key.strings.iter().enumerate() {
-        if !bank.active {
-            continue;
-        }
-        for mode in &bank.modes {
-            if !mode.active {
-                continue;
-            }
-            if *target_count >= targets.len() {
-                return Err(PianoError::BudgetExceeded);
-            }
-            let drive_weight =
-                mode.contact_residue_m_neg_half_kg * mode.bridge_residue_m_neg_half_kg;
-            targets[*target_count] = SoundboardSelectionTarget {
-                midi_index,
-                frequency_hz: mode.frequency_hz,
-                drive_weight_squared: drive_weight * drive_weight,
-                // One target per retained string mode and key is enough to
-                // guarantee spectral coverage. The detuned unisons still
-                // contribute to the aggregate score below, but cannot consume
-                // the entire 288-mode budget with near-duplicate requirements.
-                required: string_index == 0 && drive_weight * drive_weight > 1.0e-24,
-            };
-            *target_count += 1;
-        }
-    }
-    Ok(())
-}
-
-fn soundboard_candidate_target_score(
-    candidate_index: usize,
-    target: SoundboardSelectionTarget,
-) -> Result<f64, PianoError> {
+fn soundboard_global_reduction_score(candidate_index: usize) -> Result<f64, PianoError> {
     let candidate = &PIANO_V2_SOUNDBOARD_MODE_PACK[candidate_index];
-    let body_frequency_hz = candidate.frequency_hz;
-    let string_frequency_hz = target.frequency_hz;
-    let damping_ratio = soundboard_damping_ratio(body_frequency_hz)?;
-    let resonance_denominator = 2.0 * damping_ratio * body_frequency_hz * string_frequency_hz;
-    if !resonance_denominator.is_finite() || resonance_denominator <= 0.0 {
-        return Err(PianoError::NonFiniteState);
-    }
-    // This is the normalized magnitude-squared response of a damped board
-    // oscillator driven at the retained string-mode frequency.  The physical
-    // score uses both sides of the power path: hammer/string-to-bridge drive,
-    // signed bridge controllability at this key, and far-field stereo
-    // observability.  It is a deterministic model reduction, not a reference-
-    // audio fit or an EQ curve.
-    let normalized_detuning = (body_frequency_hz * body_frequency_hz
-        - string_frequency_hz * string_frequency_hz)
-        / resonance_denominator;
-    let bridge_residue = candidate.bridge_residue_inverse_sqrt_kg[target.midi_index];
-    let observer_squared: f64 = candidate
+    let damping_ratio = soundboard_damping_ratio(candidate.frequency_hz)?;
+    let bridge_controllability: f64 = candidate
+        .bridge_residue_inverse_sqrt_kg
+        .iter()
+        .map(|residue| residue * residue)
+        .sum();
+    let observer_power: f64 = candidate
         .observer_pa_s_per_m_sqrt_kg
         .iter()
-        .map(|value| value * value)
+        .map(|observer| observer * observer)
         .sum();
-    let score = observer_squared * bridge_residue * bridge_residue * target.drive_weight_squared
-        / (1.0 + normalized_detuning * normalized_detuning);
-    if !score.is_finite() || score < 0.0 {
+    // For a mass-normal damped oscillator driven through all reviewed bridge
+    // points and observed through both complex far-field pressure taps, this
+    // is proportional to its continuous-time H2 contribution.  It ranks the
+    // physical board mode itself; no requested MIDI, velocity, chord, or
+    // reference audio enters the reduction.  The previous per-request target
+    // score changed the instrument's retained soundboard whenever another key
+    // was added to a chord.
+    let score = bridge_controllability * observer_power / (damping_ratio * candidate.frequency_hz);
+    if !score.is_finite() || score <= 0.0 {
         return Err(PianoError::NonFiniteState);
     }
     Ok(score)
 }
 
-fn build_soundboard_modes<'a>(
+fn build_soundboard_modes(
     parameters: PianoParameters,
     sample_rate_hz: f64,
-    keys: impl Iterator<Item = &'a PianoKeyState>,
 ) -> Result<[SoundboardMode; SOUNDBOARD_MODES], PianoError> {
     let canonical = PianoParameters::canonical();
     if parameters.soundboard_length_m != canonical.soundboard_length_m
@@ -3282,15 +3226,6 @@ fn build_soundboard_modes<'a>(
     if PIANO_V2_SOUNDBOARD_MODE_PACK.len() > u16::MAX as usize {
         return Err(PianoError::BudgetExceeded);
     }
-    let mut targets = [SoundboardSelectionTarget::ZERO; MAXIMUM_SOUNDBOARD_SELECTION_TARGETS];
-    let mut target_count = 0usize;
-    for key in keys {
-        append_soundboard_selection_targets(key, &mut targets, &mut target_count)?;
-    }
-    if target_count == 0 {
-        return Err(PianoError::InvalidSampleRate);
-    }
-
     let cutoff_hz = 0.44 * sample_rate_hz;
     let mut selected = [false; PIANO_V2_SOUNDBOARD_MODE_PACK.len()];
     let mut aggregate_scores = [0.0_f64; PIANO_V2_SOUNDBOARD_MODE_PACK.len()];
@@ -3302,28 +3237,26 @@ fn build_soundboard_modes<'a>(
         return Err(PianoError::InvalidSampleRate);
     }
 
-    for candidate_index in 0..eligible_count {
-        let mut aggregate_score = 0.0;
-        for target in &targets[..target_count] {
-            aggregate_score += soundboard_candidate_target_score(candidate_index, *target)?;
-        }
-        if !aggregate_score.is_finite() {
-            return Err(PianoError::NonFiniteState);
-        }
-        aggregate_scores[candidate_index] = aggregate_score;
+    let selection_limit = eligible_count.min(SOUNDBOARD_MODES);
+    for (candidate_index, score) in aggregate_scores[..eligible_count].iter_mut().enumerate() {
+        *score = soundboard_global_reduction_score(candidate_index)?;
     }
 
-    let selection_limit = eligible_count.min(SOUNDBOARD_MODES);
-    let mut selected_count = 0usize;
-    for target in targets[..target_count]
-        .iter()
-        .copied()
-        .filter(|target| target.required)
-    {
-        let mut best_index = 0usize;
+    // Preserve the full physical frequency span instead of allowing a global
+    // H2 ordering to spend the entire state budget on low modes.  The pack is
+    // frequency sorted, so equal-cardinality contiguous strata give a fixed,
+    // deterministic coverage of the solved spectrum.  Within each stratum we
+    // retain the mode with the strongest all-bridge/two-observer H2 score.
+    for stratum in 0..selection_limit {
+        let first = stratum * eligible_count / selection_limit;
+        let after_last = (stratum + 1) * eligible_count / selection_limit;
+        if first >= after_last {
+            return Err(PianoError::NonFiniteState);
+        }
+        let mut best_index = first;
         let mut best_score = -1.0_f64;
-        for candidate_index in 0..eligible_count {
-            let score = soundboard_candidate_target_score(candidate_index, target)?;
+        for candidate_index in first..after_last {
+            let score = aggregate_scores[candidate_index];
             if score > best_score {
                 best_score = score;
                 best_index = candidate_index;
@@ -3332,34 +3265,7 @@ fn build_soundboard_modes<'a>(
         if best_score <= 0.0 {
             return Err(PianoError::InvalidParameters);
         }
-        if !selected[best_index] {
-            if selected_count >= selection_limit {
-                break;
-            }
-            selected[best_index] = true;
-            selected_count += 1;
-        }
-    }
-
-    while selected_count < selection_limit {
-        let mut best_index = None;
-        let mut best_score = -1.0_f64;
-        for candidate_index in 0..eligible_count {
-            if selected[candidate_index] {
-                continue;
-            }
-            let score = aggregate_scores[candidate_index];
-            if score > best_score {
-                best_score = score;
-                best_index = Some(candidate_index);
-            }
-        }
-        let best_index = best_index.ok_or(PianoError::NonFiniteState)?;
-        if best_score <= 0.0 {
-            return Err(PianoError::InvalidParameters);
-        }
         selected[best_index] = true;
-        selected_count += 1;
     }
 
     let mut modes = [SoundboardMode::ZERO; SOUNDBOARD_MODES];
