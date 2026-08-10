@@ -469,8 +469,16 @@ pub extern "C" fn cg_render(
         energy += l * l + r * r;
     }
     let rms = sqrt(energy / (2.0 * early.min(frames).max(1) as f64));
-    if rms <= 0.0 {
+    if !rms.is_finite() || rms <= 0.0 {
         return 0;
+    }
+    /* NaN fails every comparison, so a non-finite render used to sail
+     * through as "success" with a plausible frame count (2026-08-10
+     * review, jcpe-4qxd): refuse loudly instead of shipping silence. */
+    for frame in 0..frames {
+        if !out_left[frame].is_finite() || !out_right[frame].is_finite() {
+            return 0;
+        }
     }
     let mut scale = 0.22 / rms;
     let mut peak = 0.0f64;
@@ -761,8 +769,16 @@ fn finalize_concert_grand_output(
         energy += left * left + right * right;
     }
     let rms = sqrt(energy / (2.0 * early.min(frames).max(1) as f64));
-    if rms <= 0.0 {
+    if !rms.is_finite() || rms <= 0.0 {
         return 0;
+    }
+    /* NaN fails every comparison, so a non-finite render used to sail
+     * through as "success" with a plausible frame count (2026-08-10
+     * review, jcpe-4qxd): refuse loudly instead of shipping silence. */
+    for frame in 0..frames {
+        if !out_left[frame].is_finite() || !out_right[frame].is_finite() {
+            return 0;
+        }
     }
     let mut scale = 0.22 / rms;
     let mut peak = 0.0f64;
@@ -997,8 +1013,16 @@ pub(crate) fn finalize_stereo(out_left: &mut [f32], out_right: &mut [f32], sr: f
         energy += l * l + r * r;
     }
     let rms = sqrt(energy / (2.0 * early as f64));
-    if rms <= 0.0 {
+    if !rms.is_finite() || rms <= 0.0 {
         return 0;
+    }
+    /* NaN fails every comparison, so a non-finite render used to sail
+     * through as "success" with a plausible frame count (2026-08-10
+     * review, jcpe-4qxd): refuse loudly instead of shipping silence. */
+    for frame in 0..frames {
+        if !out_left[frame].is_finite() || !out_right[frame].is_finite() {
+            return 0;
+        }
     }
     let mut scale = 0.22 / rms;
     let mut peak = 0.0f64;

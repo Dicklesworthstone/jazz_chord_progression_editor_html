@@ -91,6 +91,33 @@ fn one_key_stem_is_bit_identical_to_the_existing_physical_voice() {
 
 #[test]
 fn shared_soundboard_chord_is_canonical_audible_passive_and_not_a_note_mixer() {
+    #[inline(never)]
+    fn render_shared_chord(
+        midis: &[i32],
+        velocities: &[i32],
+        check_passivity: bool,
+    ) -> (Vec<f64>, Vec<f64>, f64) {
+        let parameters = PianoParameters::canonical();
+        let mut stem = PianoStem::new(midis, velocities, 48_000.0, parameters).unwrap();
+        let initial_energy = stem.represented_energy_j();
+        assert!(initial_energy > 0.0);
+        let mut maximum_pressure = 0.0_f64;
+        let mut left = Vec::with_capacity(4_096);
+        let mut right = Vec::with_capacity(4_096);
+        for _ in 0..4_096 {
+            let output = stem.step().unwrap();
+            if check_passivity {
+                assert!(stem.represented_energy_j() <= initial_energy + 1.0e-10);
+            }
+            maximum_pressure = maximum_pressure
+                .max(output.left_pressure_pa.abs())
+                .max(output.right_pressure_pa.abs());
+            left.push(output.left_pressure_pa);
+            right.push(output.right_pressure_pa);
+        }
+        (left, right, maximum_pressure)
+    }
+
     let parameters = PianoParameters::canonical();
     assert!(
         core::mem::size_of::<PianoStem>() <= 256 * 1_024,
@@ -98,31 +125,24 @@ fn shared_soundboard_chord_is_canonical_audible_passive_and_not_a_note_mixer() {
     );
     let midis = [48, 55, 60, 64];
     let velocities = [80, 96, 91, 72];
-    let mut ordered = PianoStem::new(&midis, &velocities, 48_000.0, parameters).unwrap();
-    let mut permuted =
-        PianoStem::new(&[64, 48, 60, 55], &[72, 80, 91, 96], 48_000.0, parameters).unwrap();
-    let initial_energy = ordered.represented_energy_j();
-    assert!(initial_energy > 0.0);
-    let mut maximum_pressure = 0.0_f64;
-    let mut shared_left = Vec::with_capacity(4_096);
-    let mut shared_right = Vec::with_capacity(4_096);
-    for _ in 0..4_096 {
-        let first = ordered.step().unwrap();
-        let second = permuted.step().unwrap();
+    /*
+     * Keep only one retained stem in a native test thread at a time. Two
+     * simultaneous 8-key fixed-allocation stems plus constructor return slots
+     * exceeded Rust's ordinary 2 MiB test-thread stack in an unoptimised ABI
+     * run, aborting the whole binary before the hostile-boundary tests ran.
+     * Sequential renders prove the same canonical-order law and match the
+     * shipping runtime, which also owns one chord session at a time.
+     */
+    let (shared_left, shared_right, maximum_pressure) =
+        render_shared_chord(&midis, &velocities, true);
+    let (permuted_left, permuted_right, _) =
+        render_shared_chord(&[64, 48, 60, 55], &[72, 80, 91, 96], false);
+    for frame in 0..4_096 {
+        assert_eq!(shared_left[frame].to_bits(), permuted_left[frame].to_bits());
         assert_eq!(
-            first.left_pressure_pa.to_bits(),
-            second.left_pressure_pa.to_bits()
+            shared_right[frame].to_bits(),
+            permuted_right[frame].to_bits()
         );
-        assert_eq!(
-            first.right_pressure_pa.to_bits(),
-            second.right_pressure_pa.to_bits()
-        );
-        assert!(ordered.represented_energy_j() <= initial_energy + 1.0e-10);
-        maximum_pressure = maximum_pressure
-            .max(first.left_pressure_pa.abs())
-            .max(first.right_pressure_pa.abs());
-        shared_left.push(first.left_pressure_pa);
-        shared_right.push(first.right_pressure_pa);
     }
     assert!(maximum_pressure > 1.0e-7);
     assert!(maximum_pressure < parameters.maximum_abs_pressure_pa * midis.len() as f64);
