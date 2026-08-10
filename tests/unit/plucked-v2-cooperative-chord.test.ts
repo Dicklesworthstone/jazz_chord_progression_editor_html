@@ -1,10 +1,19 @@
 import { describe, expect, test } from "bun:test";
 
-import { createPluckedChordRenderFunctions } from "../../src/audio/dsp-renderer";
+import {
+  PLUCKED_ARCHTOP_V2_ALGORITHM_ID,
+  PLUCKED_DREADNOUGHT_ALGORITHM_ID,
+  PLUCKED_ELECTRIC_V2_ALGORITHM_ID,
+  PLUCKED_UKULELE_ALGORITHM_ID,
+  PLUCKED_UPRIGHT_BASS_ALGORITHM_ID,
+  createPluckedChordRenderFunctions,
+  loadWaveguideRenderers,
+} from "../../src/audio/dsp-renderer";
 
 const MIDI = Object.freeze([48, 55, 60, 64, 67, 72]);
 const VELOCITIES = Object.freeze([92, 81, 74, 69, 63, 58]);
 const FRAME_COUNT = 37;
+const PHYSICAL_SAMPLE_RATES = Object.freeze([16_000, 24_000, 16_000, 14_000]);
 
 type FakeControls = {
   failInitOnce: boolean;
@@ -61,6 +70,7 @@ function makeHarness(packIndex: number): Readonly<{
     cooperativeScratchBase: 65_536,
     abi: {
       noteFrames: () => FRAME_COUNT,
+      physicalSampleRate: (pack) => PHYSICAL_SAMPLE_RATES[pack] ?? 0,
       renderChordInto: (
         pack,
         midiPointer,
@@ -133,8 +143,33 @@ function makeHarness(packIndex: number): Readonly<{
 }
 
 describe("PLK2 cooperative chord host", () => {
-  test("is bit-identical to sync for four packs and browser sample rates", async () => {
-    for (let pack = 0; pack < 4; pack += 1) {
+  test("the exact embedded WASM retains every pack's physical bandwidth floor", async () => {
+    const renderers = await loadWaveguideRenderers();
+    const cells = [
+      [PLUCKED_ARCHTOP_V2_ALGORITHM_ID, 16_000, [48, 55, 60, 64]],
+      [PLUCKED_ELECTRIC_V2_ALGORITHM_ID, 24_000, [48, 55, 60, 64]],
+      [PLUCKED_DREADNOUGHT_ALGORITHM_ID, 16_000, [48, 55, 60, 64]],
+      [PLUCKED_UKULELE_ALGORITHM_ID, 14_000, [60, 64, 67, 69]],
+      [PLUCKED_UPRIGHT_BASS_ALGORITHM_ID, 12_000, [28, 33, 38, 43]],
+    ] as const;
+    for (const [algorithmId, physicalRate, midis] of cells) {
+      const render = renderers.get(algorithmId)?.renderChordCooperatively;
+      expect(render).toBeDefined();
+      if (render === undefined) continue;
+      const pcm = await render(midis, [92, 81, 74, 69], 48_000, 0.1);
+      expect(pcm).not.toBeNull();
+      expect(pcm?.sampleRateHz).toBe(physicalRate);
+      expect(pcm?.frameCount).toBe(Math.round(0.1 * physicalRate));
+      expect(
+        pcm?.left.some((sample) => Number.isFinite(sample) && sample !== 0),
+      ).toBe(true);
+      expect(pcm?.left.every(Number.isFinite)).toBe(true);
+      expect(pcm?.right.every(Number.isFinite)).toBe(true);
+    }
+  });
+
+  test("is bit-identical to sync at every pack's physical bandwidth floor", async () => {
+    for (let pack = 0; pack < PHYSICAL_SAMPLE_RATES.length; pack += 1) {
       for (const sampleRate of [44_100, 48_000, 96_000]) {
         const { controls, renders } = makeHarness(pack);
         const sync = renders.renderChord?.(MIDI, VELOCITIES, sampleRate);
@@ -146,8 +181,8 @@ describe("PLK2 cooperative chord host", () => {
         expect(sync).not.toBeNull();
         expect(cooperative).not.toBeNull();
         expect(cooperative?.frameCount).toBe(sync?.frameCount);
-        expect(sync?.sampleRateHz).toBe(8_000);
-        expect(cooperative?.sampleRateHz).toBe(8_000);
+        expect(sync?.sampleRateHz).toBe(PHYSICAL_SAMPLE_RATES[pack]);
+        expect(cooperative?.sampleRateHz).toBe(PHYSICAL_SAMPLE_RATES[pack]);
         expect(cooperative?.left).toEqual(sync?.left);
         expect(cooperative?.right).toEqual(sync?.right);
         expect(controls.yields).toBe(2);
@@ -160,6 +195,12 @@ describe("PLK2 cooperative chord host", () => {
     const render = renders.renderChordCooperatively;
     expect(render).toBeDefined();
     if (render === undefined) throw new Error("TEST_COOPERATIVE_RENDER_MISSING");
+
+    const invalidPack = makeHarness(99).renders;
+    expect(invalidPack.renderChord?.(MIDI, VELOCITIES, 48_000)).toBeNull();
+    expect(
+      await invalidPack.renderChordCooperatively?.(MIDI, VELOCITIES, 48_000),
+    ).toBeNull();
 
     for (const invalidSeconds of [-1, 0, Number.NaN, Number.POSITIVE_INFINITY]) {
       expect(renders.renderChord?.(MIDI, VELOCITIES, 48_000, invalidSeconds)).toBeNull();
@@ -190,6 +231,7 @@ describe("PLK2 cooperative chord host", () => {
       cooperativeScratchBase: 32_768,
       abi: {
         noteFrames: () => FRAME_COUNT,
+        physicalSampleRate: () => 16_000,
         sessionStateMaxBytes: () => 64,
       },
     });

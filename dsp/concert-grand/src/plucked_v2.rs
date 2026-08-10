@@ -3826,6 +3826,19 @@ fn plk2_minimum_chord_simulation_rate_hz(pack_index: i32) -> Option<f64> {
     }
 }
 
+/// Lowest reviewed physical simulation rate for one shared-instrument chord.
+///
+/// The browser may return a buffer at this rate and let WebAudio resample it
+/// on the audio thread, but it must not run the physical model below this
+/// pack-specific limit.  Keeping the authority in Rust prevents the host from
+/// silently collapsing the electric or acoustic bandwidth to a generic rate.
+#[no_mangle]
+pub extern "C" fn plk2_chord_physical_sample_rate(pack_index: i32) -> i32 {
+    plk2_minimum_chord_simulation_rate_hz(pack_index)
+        .and_then(|rate| i32::try_from(rate as i64).ok())
+        .unwrap_or(0)
+}
+
 impl PluckedChordSession {
     fn new(
         pack_index: i32,

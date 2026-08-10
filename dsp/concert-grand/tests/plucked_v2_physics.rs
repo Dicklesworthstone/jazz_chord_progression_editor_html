@@ -6,17 +6,18 @@ mod plucked_v2;
 
 use plucked_v2::{
     archtop_pack, circular_sound_hole_helmholtz_hz, dreadnought_pack, inharmonicity_coefficient,
-    marshall_electric_pack, midi_frequency_hz, plk2_chord_radiation_taps_match_full_reference,
-    plk2_chord_runtime_init_slices, plk2_chord_runtime_step_slices, plk2_chord_session_init,
-    plk2_chord_session_init_slices, plk2_chord_session_max_steps,
-    plk2_chord_session_state_max_bytes, plk2_chord_session_step, plk2_chord_session_step_slices,
-    plk2_chord_string_frets, plk2_cubic_reconstruct, plk2_note_frames, plk2_render,
-    plk2_render_chord, plk2_render_chord_slices, plk2_render_chord_slices_full_rate_reference,
-    plk2_render_path, plk2_render_slices, plk2_stem_init, plk2_stem_init_slice, plk2_stem_render,
-    plk2_stem_render_max_frames, plk2_stem_render_slices, plk2_stem_state_max_bytes,
-    plk2_stem_state_string_energy_j, plk2_string_fret, plk2_triode_tanh, ukulele_pack,
-    upright_bass_pack, BodyModeKind, PluckGesture, PluckedError, PluckedRenderPath, PluckedStem,
-    PLK2_ARCHTOP_PACK, PLK2_CHORD_STEP_COMPLETE, PLK2_CHORD_STEP_PROGRESS, PLK2_DREADNOUGHT_PACK,
+    marshall_electric_pack, midi_frequency_hz, plk2_chord_physical_sample_rate,
+    plk2_chord_radiation_taps_match_full_reference, plk2_chord_runtime_init_slices,
+    plk2_chord_runtime_step_slices, plk2_chord_session_init, plk2_chord_session_init_slices,
+    plk2_chord_session_max_steps, plk2_chord_session_state_max_bytes, plk2_chord_session_step,
+    plk2_chord_session_step_slices, plk2_chord_string_frets, plk2_cubic_reconstruct,
+    plk2_note_frames, plk2_render, plk2_render_chord, plk2_render_chord_slices,
+    plk2_render_chord_slices_full_rate_reference, plk2_render_path, plk2_render_slices,
+    plk2_stem_init, plk2_stem_init_slice, plk2_stem_render, plk2_stem_render_max_frames,
+    plk2_stem_render_slices, plk2_stem_state_max_bytes, plk2_stem_state_string_energy_j,
+    plk2_string_fret, plk2_triode_tanh, ukulele_pack, upright_bass_pack, BodyModeKind,
+    PluckGesture, PluckedError, PluckedRenderPath, PluckedStem, PLK2_ARCHTOP_PACK,
+    PLK2_CHORD_STEP_COMPLETE, PLK2_CHORD_STEP_PROGRESS, PLK2_DREADNOUGHT_PACK,
     PLK2_MARSHALL_ELECTRIC_PACK, PLK2_STEM_EVENT_PLUCK, PLK2_STEM_EVENT_RESET, PLK2_UKULELE_PACK,
     PLK2_UPRIGHT_BASS_PACK,
 };
@@ -1387,7 +1388,11 @@ fn plk2_radiation_retains_audible_string_partials_and_a_decaying_tail() {
          * keeps its intent -- a real decaying tail, not digital silence or a
          * hidden oscillator (the planted negative below still binds) -- at
          * half the measured value for the filtered family. */
-        let tail_floor = if pack == PLK2_UKULELE_PACK { 2.5e-4 } else { 1.0e-3 };
+        let tail_floor = if pack == PLK2_UKULELE_PACK {
+            2.5e-4
+        } else {
+            1.0e-3
+        };
         if !spectrum_has_a_plucked_string_comb(spectrum)
             || spectrum.early_rms <= 1.0e-9
             || spectrum.late_rms <= spectrum.early_rms * tail_floor
@@ -1817,6 +1822,26 @@ fn shared_chord_rate_conversion_preserves_pitch_and_rejects_first_images() {
             );
         }
     }
+}
+
+#[test]
+fn shared_chord_host_rate_uses_each_pack_physical_bandwidth_floor() {
+    assert_eq!(plk2_chord_physical_sample_rate(PLK2_ARCHTOP_PACK), 16_000);
+    assert_eq!(
+        plk2_chord_physical_sample_rate(PLK2_MARSHALL_ELECTRIC_PACK),
+        24_000
+    );
+    assert_eq!(
+        plk2_chord_physical_sample_rate(PLK2_DREADNOUGHT_PACK),
+        16_000
+    );
+    assert_eq!(plk2_chord_physical_sample_rate(PLK2_UKULELE_PACK), 14_000);
+    assert_eq!(
+        plk2_chord_physical_sample_rate(PLK2_UPRIGHT_BASS_PACK),
+        12_000
+    );
+    assert_eq!(plk2_chord_physical_sample_rate(-1), 0);
+    assert_eq!(plk2_chord_physical_sample_rate(5), 0);
 }
 
 #[test]
@@ -2273,4 +2298,3 @@ fn print_dkt_guitar_mode_tables() {
         }
     }
 }
-

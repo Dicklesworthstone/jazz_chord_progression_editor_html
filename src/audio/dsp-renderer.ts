@@ -501,6 +501,7 @@ type ConcertGrandExports = Readonly<{
     right: number,
     maxFrames: number,
   ) => number;
+  plk2_chord_physical_sample_rate?: (pack: number) => number;
   plk2_chord_session_state_max_bytes?: () => number;
   plk2_chord_session_max_steps?: (outputCapacity: number) => number;
   plk2_chord_session_init?: (
@@ -1746,6 +1747,7 @@ export function createPhysicalPianoChordAttackRenderFunction(
 
 type PluckedChordRenderAbi = Readonly<{
   noteFrames: (pack: number, midi: number, sampleRate: number) => number;
+  physicalSampleRate: (pack: number) => number;
   renderChordInto?: (
     pack: number,
     midis: number,
@@ -1808,21 +1810,21 @@ type PluckedChordRenderFactoryOptions = Readonly<{
   runExclusive?: <T>(task: () => Promise<T>) => Promise<T>;
 }>;
 
-/*
- * PLK2's reviewed physical chord core is band-limited and admitted at 8 kHz.
- * WebAudio buffer sources already resample a buffer whose sample rate differs
- * from the AudioContext, using the browser's native audio thread. Returning
- * that physical-rate buffer avoids reconstructing and copying six redundant
- * 48 kHz frames for every simulated frame on the browser's main thread.
- */
-const PLK2_PHYSICAL_BUFFER_SAMPLE_RATE_HZ = 8_000;
-
 function pluckedChordPhysicalSampleRate(
+  abi: PluckedChordRenderAbi,
+  packIndex: number,
   outputSampleRateHz: number,
 ): number | null {
-  return Number.isFinite(outputSampleRateHz) &&
-      outputSampleRateHz >= 8_000 && outputSampleRateHz <= 96_000
-    ? PLK2_PHYSICAL_BUFFER_SAMPLE_RATE_HZ
+  if (
+    !Number.isFinite(outputSampleRateHz) ||
+    outputSampleRateHz < 8_000 ||
+    outputSampleRateHz > 96_000
+  ) return null;
+  const physicalSampleRateHz = abi.physicalSampleRate(packIndex);
+  return Number.isSafeInteger(physicalSampleRateHz) &&
+      physicalSampleRateHz >= 8_000 &&
+      physicalSampleRateHz <= 96_000
+    ? physicalSampleRateHz
     : null;
 }
 
@@ -1916,7 +1918,11 @@ export function createPluckedChordRenderFunctions(
   let renderChord: WaveguideRenderer["renderChord"];
   if (abi.renderChordInto !== undefined) {
     renderChord = (midiPitches, velocities, sampleRateHz, maxSeconds) => {
-      const physicalSampleRateHz = pluckedChordPhysicalSampleRate(sampleRateHz);
+      const physicalSampleRateHz = pluckedChordPhysicalSampleRate(
+        abi,
+        packIndex,
+        sampleRateHz,
+      );
       if (physicalSampleRateHz === null) return null;
       const request = validatePluckedChordRequest(
         abi,
@@ -1982,7 +1988,11 @@ export function createPluckedChordRenderFunctions(
       maxSeconds,
     ) => {
       const task = async (): Promise<RenderedNotePcm | null> => {
-      const physicalSampleRateHz = pluckedChordPhysicalSampleRate(sampleRateHz);
+      const physicalSampleRateHz = pluckedChordPhysicalSampleRate(
+        abi,
+        packIndex,
+        sampleRateHz,
+      );
       if (physicalSampleRateHz === null) return null;
       const request = validatePluckedChordRequest(
         abi,
@@ -2303,6 +2313,7 @@ function optionalPluckedChordExports(
 ): Pick<
   ConcertGrandExports,
   | "plk2_render_chord"
+  | "plk2_chord_physical_sample_rate"
   | "plk2_chord_session_state_max_bytes"
   | "plk2_chord_session_max_steps"
   | "plk2_chord_session_init"
@@ -2312,6 +2323,13 @@ function optionalPluckedChordExports(
   | "plk2_chord_runtime_step"
   | "plk2_chord_runtime_reset"
 > {
+  const physicalSampleRate =
+    rawExports["plk2_chord_physical_sample_rate"] === undefined
+      ? undefined
+      : requireExportedFunction(
+        rawExports,
+        "plk2_chord_physical_sample_rate",
+      ) as NonNullable<ConcertGrandExports["plk2_chord_physical_sample_rate"]>;
   const renderChord = rawExports["plk2_render_chord"] === undefined
     ? undefined
     : requireExportedFunction(
@@ -2380,8 +2398,16 @@ function optionalPluckedChordExports(
       ) as NonNullable<ConcertGrandExports["plk2_chord_runtime_reset"]>,
     }
     : {};
+  const hasChordSurface =
+    renderChord !== undefined || present.length !== 0 || runtimePresent.length !== 0;
+  if (hasChordSurface && physicalSampleRate === undefined) {
+    throw new Error("DSP_WASM_EXPORT_MISSING:plk2_chord_physical_sample_rate");
+  }
   return Object.freeze({
     ...(renderChord === undefined ? {} : { plk2_render_chord: renderChord }),
+    ...(physicalSampleRate === undefined
+      ? {}
+      : { plk2_chord_physical_sample_rate: physicalSampleRate }),
     ...cooperative,
     ...runtime,
   });
@@ -3140,6 +3166,7 @@ async function instantiate(): Promise<DspCore> {
     cooperativeScratchBase: scratchBase + COOPERATIVE_CHORD_SCRATCH_OFFSET_BYTES,
     abi: Object.freeze({
       noteFrames: exports.plk2_note_frames,
+      physicalSampleRate: exports.plk2_chord_physical_sample_rate ?? (() => 0),
       ...(exports.plk2_render_chord === undefined
         ? {}
         : { renderChordInto: exports.plk2_render_chord }),
