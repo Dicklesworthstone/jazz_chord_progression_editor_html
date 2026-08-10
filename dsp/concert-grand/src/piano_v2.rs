@@ -2308,23 +2308,29 @@ fn interpolate_keyboard_anchor(midi: i32, anchors: &[(i32, f64); 4]) -> Result<f
 
 /// Bridge contact position for one key, normalized by the board length and
 /// width. Miranda Valiente et al. (JASA 2024), Fig. 2, independently labels
-/// A1, D4, and D5 on the two physical bridges; the keyboard endpoints are the
-/// visible bass- and treble-bridge ends in the same plan view. The values are
-/// the inverse-projective coordinates of those five pixels, not fitted audio
-/// gains. Piecewise interpolation follows the bridge between reviewed keys.
+/// A1, D4, and D5 on two separate physical bridges. The old implementation
+/// interpolated from A1 on the short bass bridge directly to D4 on the long
+/// bridge, creating contact points through bare soundboard. The split below
+/// keeps the reviewed 23-key grand-piano bass range and continues each visible
+/// bridge independently. These are geometry coordinates, never audio gains.
 pub fn soundboard_bridge_position_for_midi(midi: i32) -> Result<(f64, f64), PianoError> {
     if !(MIN_MIDI..=MAX_MIDI).contains(&midi) {
         return Err(PianoError::InvalidMidi);
     }
     // (MIDI, x / board length, y / board width).
-    const ANCHORS: [(i32, f64, f64); 5] = [
+    const BASS: [(i32, f64, f64); 3] = [
         (21, 0.888_433_676, 0.586_466_691),
         (33, 0.783_324_033, 0.422_623_497),
+        (43, 0.695_732_663_833_333, 0.286_087_502),
+    ];
+    const TREBLE: [(i32, f64, f64); 4] = [
+        (44, 0.470_072_877, 0.618_400_070),
         (62, 0.268_679_391, 0.468_071_366),
         (74, 0.134_417_067, 0.367_852_230),
         (108, 0.017_733_010, 0.023_078_590),
     ];
-    for pair in ANCHORS.windows(2) {
+    let anchors = if midi <= 43 { &BASS[..] } else { &TREBLE[..] };
+    for pair in anchors.windows(2) {
         let (lower_midi, lower_x, lower_y) = pair[0];
         let (upper_midi, upper_x, upper_y) = pair[1];
         if midi <= upper_midi {
@@ -2335,7 +2341,7 @@ pub fn soundboard_bridge_position_for_midi(midi: i32) -> Result<(f64, f64), Pian
             ));
         }
     }
-    let (_, x, y) = ANCHORS[ANCHORS.len() - 1];
+    let (_, x, y) = anchors[anchors.len() - 1];
     Ok((x, y))
 }
 
