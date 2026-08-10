@@ -161,6 +161,18 @@ const gates: Gate[] = [
     command: [process.execPath, "scripts/check-predeploy.ts"],
   },
   {
+    /*
+     * Mechanical instrument-quality laws (bead jcpe-2g0t): pathology,
+     * pitch/chord accuracy, onset/render timing, and reported
+     * artificiality over every shipping rendered recipe. Wired
+     * fail-closed on 2026-08-10, the first day the roster ran all-green;
+     * green proves absence of mechanical pathology only — owner
+     * listening remains the acceptance authority.
+     */
+    id: "instrument-quality",
+    command: [process.execPath, "scripts/run-instrument-quality-gate.ts"],
+  },
+  {
     id: "x1-transport-contract",
     command: [process.execPath, "scripts/validate-x1-contract.ts"],
   },
