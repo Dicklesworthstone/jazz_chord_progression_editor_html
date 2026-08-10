@@ -308,6 +308,139 @@ fn fixed_string_reduction_preserves_contact_time_across_release_output_rates() {
 }
 
 #[test]
+fn coupled_string_hammer_port_keeps_the_notated_pitch() {
+    fn goertzel_power(samples: &[f64], sample_rate_hz: f64, frequency_hz: f64) -> f64 {
+        let coefficient =
+            2.0 * libm::cos(2.0 * core::f64::consts::PI * frequency_hz / sample_rate_hz);
+        let mut previous = 0.0;
+        let mut before_previous = 0.0;
+        for (index, sample) in samples.iter().copied().enumerate() {
+            let taper = if samples.len() > 1 {
+                0.5 - 0.5
+                    * libm::cos(
+                        2.0 * core::f64::consts::PI * index as f64 / (samples.len() - 1) as f64,
+                    )
+            } else {
+                1.0
+            };
+            let current = sample * taper + coefficient * previous - before_previous;
+            before_previous = previous;
+            previous = current;
+        }
+        (previous * previous + before_previous * before_previous
+            - coefficient * previous * before_previous)
+            .max(1.0e-30)
+    }
+
+    fn measured_cents(midi: i32, retain_culled_mode_flexibility: bool) -> i32 {
+        let sample_rate_hz = 44_100.0;
+        let geometry = string_geometry(midi).unwrap();
+        let strike = PianoStrike::from_velocity(72, midi, geometry.equivalent_diameter_m).unwrap();
+        let mut voice =
+            PianoVoice::new(midi, sample_rate_hz, PianoParameters::canonical()).unwrap();
+        if !retain_culled_mode_flexibility {
+            voice.clear_string_bridge_residual_flexibility_for_test();
+        }
+        voice.begin_strike(strike).unwrap();
+        for _ in 0..(0.025 * sample_rate_hz) as usize {
+            voice.step().unwrap();
+        }
+        let mut samples = vec![0.0_f64; (0.15 * sample_rate_hz) as usize];
+        for sample in &mut samples {
+            voice.step().unwrap();
+            *sample = voice.string_hammer_port_velocity_for_test();
+        }
+        let mut best_cents: i32 = 0;
+        let mut best_score = f64::NEG_INFINITY;
+        for cents_offset in (-100..=100).step_by(2) {
+            let shifted_fundamental =
+                geometry.fundamental_hz * libm::pow(2.0, cents_offset as f64 / 1_200.0);
+            let mut score = 0.0;
+            let mut weight = 0.0;
+            for partial in 1..=8 {
+                let frequency_hz = stiff_string_mode_frequency_hz(
+                    shifted_fundamental,
+                    geometry.inharmonicity_coefficient,
+                    partial,
+                );
+                if frequency_hz >= 0.44 * sample_rate_hz {
+                    break;
+                }
+                let harmonic_weight = 1.0 / partial as f64;
+                score += harmonic_weight
+                    * libm::log(goertzel_power(&samples, sample_rate_hz, frequency_hz));
+                weight += harmonic_weight;
+            }
+            score /= weight;
+            if score > best_score {
+                best_score = score;
+                best_cents = cents_offset;
+            }
+        }
+        best_cents
+    }
+
+    for midi in [36, 48, 60, 72, 84, 96] {
+        let best_cents = measured_cents(midi, true);
+        assert!(
+            best_cents.abs() <= 25,
+            "m{midi} coupled string hammer port shifted by {best_cents} cents"
+        );
+    }
+
+    let retained_c7_cents = measured_cents(96, true);
+    let omitted_c7_cents = measured_cents(96, false);
+    assert!(omitted_c7_cents >= 35);
+    assert!(omitted_c7_cents - retained_c7_cents >= 20);
+}
+
+#[test]
+fn culled_string_modes_retain_their_static_bridge_flexibility() {
+    let snapshot = component_string_reduction_snapshot(96, 0).unwrap();
+    let cutoff_hz = 0.44 * 44_100.0;
+    let independently_reconstructed_m_per_n: f64 = snapshot
+        .frequencies_hz
+        .iter()
+        .copied()
+        .zip(snapshot.eigenvectors.iter())
+        .filter(|(frequency_hz, _)| *frequency_hz >= cutoff_hz)
+        .map(|(frequency_hz, vector)| {
+            vector[0].powi(2) / (2.0 * core::f64::consts::PI * frequency_hz).powi(2)
+        })
+        .sum();
+    let voice = PianoVoice::new(96, 44_100.0, PianoParameters::canonical()).unwrap();
+    let retained_m_per_n = voice
+        .string_bridge_residual_flexibility_for_test(0)
+        .unwrap();
+    assert!(
+        (retained_m_per_n - independently_reconstructed_m_per_n).abs() < 1.0e-18,
+        "runtime residual flexibility diverged from the culled physical modes"
+    );
+    assert!((1.0e-6..2.0e-6).contains(&retained_m_per_n));
+
+    let reviewed_contact_stiffness = 4.8e6;
+    let condensed_stiffness =
+        reviewed_contact_stiffness / (1.0 + reviewed_contact_stiffness * retained_m_per_n);
+    assert!((5.0e5..8.0e5).contains(&condensed_stiffness));
+    // The zero-residual near miss leaves the nominal contact more than six
+    // times too stiff. The coupled pitch test above measures that mutation
+    // directly rather than accepting this stiffness ratio as a proxy.
+    assert!(reviewed_contact_stiffness / condensed_stiffness > 6.0);
+
+    let mut passivity_probe = voice;
+    passivity_probe
+        .set_test_unison_bridge_displacement_m(0, 1.0e-5)
+        .unwrap();
+    let initial_energy_j = passivity_probe.represented_energy_j();
+    let mut maximum_energy_j = initial_energy_j;
+    for _ in 0..512 {
+        passivity_probe.step().unwrap();
+        maximum_energy_j = maximum_energy_j.max(passivity_probe.represented_energy_j());
+    }
+    assert!(maximum_energy_j <= initial_energy_j + 1.0e-12);
+}
+
+#[test]
 fn bounded_stulov_contact_solve_transfers_the_top_key_at_every_rate() {
     assert_eq!(CONTACT_SOLVE_STEPS, 16);
     for sample_rate in [44_100.0, 48_000.0, 96_000.0] {

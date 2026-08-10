@@ -500,6 +500,11 @@ fn solve_bridge_contact_coordinates(
 /// key-level system.  For contact `s` at key `k`, diagonal elimination gives
 ///
 /// `D_ks c_ks + a sum_l B_kl C_l = r_ks`, `C_k = sum_s c_ks`.
+/// `D_ks` includes `k C_res`, the exact static flexibility of string modes
+/// removed above the fixed audible-state cutoff. Without that residual term,
+/// modal truncation makes the string-to-bridge interface spuriously rigid and
+/// shifts the coupled treble resonances even though the retained free modes
+/// themselves are correctly tuned.
 ///
 /// Scaling `C_k = sqrt(A_k) y_k`, where `A_k = sum_s 1/D_ks`, produces the
 /// symmetric positive-definite reduced matrix
@@ -507,6 +512,7 @@ fn solve_bridge_contact_coordinates(
 /// physical string contacts, but avoids a 24 by 24 factorization per sample.
 fn solve_separate_string_bridge_contacts(
     string_compliance: [[f64; MAX_UNISON_STRINGS]; MAX_PIANO_CHORD_NOTES],
+    string_static_diagonal: [[f64; MAX_UNISON_STRINGS]; MAX_PIANO_CHORD_NOTES],
     string_right_hand_side: [[f64; MAX_UNISON_STRINGS]; MAX_PIANO_CHORD_NOTES],
     string_counts: [usize; MAX_PIANO_CHORD_NOTES],
     body_right_hand_side: [f64; MAX_PIANO_CHORD_NOTES],
@@ -536,8 +542,13 @@ fn solve_separate_string_bridge_contacts(
             return Err(PianoError::InvalidParameters);
         }
         for string_index in 0..string_count {
-            let diagonal =
-                1.0 + half_dt_squared_stiffness * string_compliance[key_index][string_index];
+            let residual_diagonal = string_static_diagonal[key_index][string_index];
+            if !residual_diagonal.is_finite() || residual_diagonal < 0.0 {
+                return Err(PianoError::InvalidParameters);
+            }
+            let diagonal = 1.0
+                + residual_diagonal
+                + half_dt_squared_stiffness * string_compliance[key_index][string_index];
             if !diagonal.is_finite() || diagonal <= 0.0 {
                 return Err(PianoError::NonFiniteState);
             }
@@ -625,6 +636,7 @@ pub fn separate_unison_bridge_contact_coordinates(
     all_body_compliance[0][0] = body_compliance;
     let (physical, aggregate) = solve_separate_string_bridge_contacts(
         all_string_compliance,
+        [[0.0_f64; MAX_UNISON_STRINGS]; MAX_PIANO_CHORD_NOTES],
         all_string_right_hand_side,
         string_counts,
         all_body_right_hand_side,
@@ -715,12 +727,14 @@ pub fn bridge_contact_pair_midpoint_step(
 struct StringBank {
     active: bool,
     modes: [Mode; STRING_MODES],
+    residual_bridge_flexibility_m_per_n: f64,
 }
 
 impl StringBank {
     const ZERO: Self = Self {
         active: false,
         modes: [Mode::ZERO; STRING_MODES],
+        residual_bridge_flexibility_m_per_n: 0.0,
     };
 }
 
@@ -729,6 +743,14 @@ fn string_bank_bridge_displacement_m(bank: &StringBank) -> f64 {
         .iter()
         .map(|mode| mode.bridge_residue_m_neg_half_kg * mode.position)
         .sum()
+}
+
+fn string_bank_effective_bridge_stiffness_n_per_m(
+    bank: &StringBank,
+    contact_stiffness_n_per_m: f64,
+) -> f64 {
+    contact_stiffness_n_per_m
+        / (1.0 + contact_stiffness_n_per_m * bank.residual_bridge_flexibility_m_per_n)
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -1029,14 +1051,18 @@ fn build_component_string_modes(
     midi: i32,
     sample_rate_hz: f64,
     dt_seconds: f64,
-) -> Result<([Mode; STRING_MODES], usize), PianoError> {
+) -> Result<([Mode; STRING_MODES], usize, f64), PianoError> {
     let (frequencies, eigenvectors) = component_string_eigensystem(geometry, string_index)?;
     let strike_ratio = hammer_strike_position_over_length(midi)?;
     let mut modes = [Mode::ZERO; STRING_MODES];
     let mut active_count = 0usize;
+    let mut residual_bridge_flexibility_m_per_n = 0.0;
     for mode_index in 0..STRING_MODES {
         let frequency_hz = frequencies[mode_index];
         if frequency_hz >= 0.44 * sample_rate_hz.min(STRING_REDUCTION_SAMPLE_RATE_HZ) {
+            let bridge_residue = eigenvectors[mode_index][0];
+            residual_bridge_flexibility_m_per_n +=
+                bridge_residue * bridge_residue / pow(TAU * frequency_hz, 2.0);
             continue;
         }
         let vector = eigenvectors[mode_index];
@@ -1062,7 +1088,11 @@ fn build_component_string_modes(
         };
         active_count += 1;
     }
-    Ok((modes, active_count))
+    if !residual_bridge_flexibility_m_per_n.is_finite() || residual_bridge_flexibility_m_per_n < 0.0
+    {
+        return Err(PianoError::NonFiniteState);
+    }
+    Ok((modes, active_count, residual_bridge_flexibility_m_per_n))
 }
 
 #[cfg(test)]
@@ -1109,9 +1139,11 @@ impl PianoKeyState {
         let mut active_string_modes = 0usize;
         for string_index in 0..geometry.string_count {
             strings[string_index].active = true;
-            let (modes, count) =
+            let (modes, count, residual_bridge_flexibility_m_per_n) =
                 build_component_string_modes(geometry, string_index, midi, sample_rate_hz, dt)?;
             strings[string_index].modes = modes;
+            strings[string_index].residual_bridge_flexibility_m_per_n =
+                residual_bridge_flexibility_m_per_n;
             active_string_modes += count;
         }
         if active_string_modes == 0 {
@@ -1520,6 +1552,26 @@ impl PianoVoice {
         self.contact.active
     }
 
+    #[cfg(test)]
+    pub fn string_hammer_port_velocity_for_test(&self) -> f64 {
+        hammer_port_velocity(&self.strings)
+    }
+
+    #[cfg(test)]
+    pub fn string_bridge_residual_flexibility_for_test(&self, string_index: usize) -> Option<f64> {
+        self.strings.get(string_index).and_then(|bank| {
+            bank.active
+                .then_some(bank.residual_bridge_flexibility_m_per_n)
+        })
+    }
+
+    #[cfg(test)]
+    pub fn clear_string_bridge_residual_flexibility_for_test(&mut self) {
+        for bank in self.strings.iter_mut().filter(|bank| bank.active) {
+            bank.residual_bridge_flexibility_m_per_n = 0.0;
+        }
+    }
+
     pub fn represented_energy_j(&self) -> f64 {
         self.modal_energy_j() + self.bridge_contact_energy_j() + self.hammer_contact_energy_j()
     }
@@ -1567,16 +1619,18 @@ impl PianoVoice {
 
     pub fn bridge_contact_energy_j(&self) -> f64 {
         let body_displacement_m = self.soundboard_bridge_displacement_m();
-        let relative_squared_sum: f64 = self
-            .strings
+        self.strings
             .iter()
             .filter(|bank| bank.active)
             .map(|bank| {
                 let relative = string_bank_bridge_displacement_m(bank) - body_displacement_m;
-                relative * relative
+                0.5 * string_bank_effective_bridge_stiffness_n_per_m(
+                    bank,
+                    self.parameters.bridge_contact_stiffness_n_per_m,
+                ) * relative
+                    * relative
             })
-            .sum();
-        0.5 * self.parameters.bridge_contact_stiffness_n_per_m * relative_squared_sum
+            .sum()
     }
 
     pub fn work_receipt(&self) -> PianoWorkReceipt {
@@ -1634,11 +1688,15 @@ impl PianoVoice {
         let half_dt_squared_stiffness =
             half_dt * half_dt * self.parameters.bridge_contact_stiffness_n_per_m;
         let mut string_compliance = [[0.0_f64; MAX_UNISON_STRINGS]; MAX_PIANO_CHORD_NOTES];
+        let mut string_static_diagonal = [[0.0_f64; MAX_UNISON_STRINGS]; MAX_PIANO_CHORD_NOTES];
         let mut string_right_hand_side = [[0.0_f64; MAX_UNISON_STRINGS]; MAX_PIANO_CHORD_NOTES];
         for (string_index, bank) in self.strings.iter().enumerate() {
             if !bank.active {
                 continue;
             }
+            string_static_diagonal[0][string_index] =
+                self.parameters.bridge_contact_stiffness_n_per_m
+                    * bank.residual_bridge_flexibility_m_per_n;
             for mode in &bank.modes {
                 let (compliance, right_hand_side) = accumulate_midpoint_contact_terms(
                     *mode,
@@ -1662,6 +1720,7 @@ impl PianoVoice {
         string_counts[0] = self.geometry.string_count;
         let (physical_coordinates, aggregate_coordinates) = solve_separate_string_bridge_contacts(
             string_compliance,
+            string_static_diagonal,
             string_right_hand_side,
             string_counts,
             body_right_hand_side,
@@ -2038,7 +2097,7 @@ impl PianoStem {
     }
 
     pub fn bridge_contact_energy_j(&self) -> f64 {
-        let mut relative_squared_sum = 0.0;
+        let mut energy_j = 0.0;
         for (key_index, key) in self.keys.iter().flatten().enumerate() {
             let body_displacement_m: f64 = self
                 .soundboard
@@ -2050,10 +2109,15 @@ impl PianoStem {
                 .sum();
             for bank in key.strings.iter().filter(|bank| bank.active) {
                 let relative = string_bank_bridge_displacement_m(bank) - body_displacement_m;
-                relative_squared_sum += relative * relative;
+                energy_j +=
+                    0.5 * string_bank_effective_bridge_stiffness_n_per_m(
+                        bank,
+                        self.parameters.bridge_contact_stiffness_n_per_m,
+                    ) * relative
+                        * relative;
             }
         }
-        0.5 * self.parameters.bridge_contact_stiffness_n_per_m * relative_squared_sum
+        energy_j
     }
 
     #[cfg(test)]
@@ -2097,6 +2161,7 @@ impl PianoStem {
         }
 
         let mut string_compliance = [[0.0_f64; MAX_UNISON_STRINGS]; MAX_PIANO_CHORD_NOTES];
+        let mut string_static_diagonal = [[0.0_f64; MAX_UNISON_STRINGS]; MAX_PIANO_CHORD_NOTES];
         let mut string_right_hand_side = [[0.0_f64; MAX_UNISON_STRINGS]; MAX_PIANO_CHORD_NOTES];
         let mut string_counts = [0usize; MAX_PIANO_CHORD_NOTES];
         for key_index in 0..self.note_count {
@@ -2108,6 +2173,9 @@ impl PianoStem {
                 if !bank.active {
                     continue;
                 }
+                string_static_diagonal[key_index][string_index] =
+                    self.parameters.bridge_contact_stiffness_n_per_m
+                        * bank.residual_bridge_flexibility_m_per_n;
                 for mode in &bank.modes {
                     let (compliance, modal_right_hand_side) = accumulate_midpoint_contact_terms(
                         *mode,
@@ -2121,6 +2189,7 @@ impl PianoStem {
         }
         let (physical_coordinates, aggregate_coordinates) = solve_separate_string_bridge_contacts(
             string_compliance,
+            string_static_diagonal,
             string_right_hand_side,
             string_counts,
             body_right_hand_side,

@@ -124,7 +124,7 @@ fn production_uses_the_dkt_pack_and_refuses_to_relabel_it_as_new_geometry() {
         .collect::<Vec<_>>();
     assert!(
         treble_pack_indices.iter().any(|index| *index > 287),
-        "the note-aware reduction collapsed back to the old first-288 truncation"
+        "the fixed global reduction collapsed back to the old first-288 truncation"
     );
     assert!(
         treble_pack_indices
