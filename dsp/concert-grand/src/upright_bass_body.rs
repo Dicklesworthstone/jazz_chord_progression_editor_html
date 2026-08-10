@@ -1,12 +1,14 @@
 //! Dark, deterministic upright-bass body authority.
 //!
-//! This module is deliberately not wired into `lib.rs`, the plucked-string
-//! ABI, a recipe, or the embedded WebAssembly payload.  It turns the reviewed
-//! upright-bass soundboard geometry into a bounded DKT (discrete Kirchhoff
-//! triangle) eigenproblem, then publishes mass-normalized modes with signed
-//! bridge and radiation residues.  The implementation is a fixed-allocation,
-//! `core` + `libm` port of the DKT concepts independently exercised by
-//! FrankenSim's `fs-plate`; no runtime dependency on FrankenSim is introduced.
+//! This module is a private physical authority consumed by `plucked_v2`: the
+//! plucked-string ABI and embedded WebAssembly can therefore render the dark
+//! upright-bass candidate, while the sampled recipe remains the shipping
+//! comparator until the replacement gate passes. It turns the reviewed body
+//! geometry into a bounded DKT (discrete Kirchhoff triangle) eigenproblem and
+//! publishes mass-normalized modes with signed bridge and radiation residues.
+//! The implementation is a fixed-allocation, `core` + `libm` port of the DKT
+//! concepts independently exercised by FrankenSim's `fs-plate`; no runtime
+//! dependency on FrankenSim is introduced.
 //!
 //! Authority boundary: the repository reviews one 1.08 m x 0.66 m x 6 mm
 //! orthotropic plate, homogenized brace rigidities, a 450 L cavity, a 75 Hz
