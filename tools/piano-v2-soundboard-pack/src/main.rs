@@ -49,7 +49,28 @@ const RUST_OUTPUT: &str = "dsp/concert-grand/src/piano_v2_soundboard.rs";
 const PACK_SCHEMA: &str = "changes.piano-v2-soundboard-pack.v2";
 const SOLVER_ID: &str =
     "frankensim-fs-plate-dkt-conservative-nodal-ports-plus-fs-modal-certified-slices-inverse-refinement-v4";
-const FRANKENSIM_EXPECTED_HEAD: &str = "1346e1be67951ba0ba81f3e99f5eeca6efc42945";
+const FRANKENSIM_REVIEWED_COMMIT: &str = "1346e1be67951ba0ba81f3e99f5eeca6efc42945";
+const FRANKENSIM_CRATE_CLOSURE: [&str; 19] = [
+    "crates/fs-ad",
+    "crates/fs-alloc",
+    "crates/fs-blake3",
+    "crates/fs-evidence",
+    "crates/fs-exec",
+    "crates/fs-la",
+    "crates/fs-matdb",
+    "crates/fs-material",
+    "crates/fs-math",
+    "crates/fs-modal",
+    "crates/fs-obs",
+    "crates/fs-plate",
+    "crates/fs-qty",
+    "crates/fs-rand",
+    "crates/fs-simd",
+    "crates/fs-soa",
+    "crates/fs-soa-derive",
+    "crates/fs-sparse",
+    "crates/fs-substrate",
+];
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -465,44 +486,58 @@ fn observer_integral(
     (real, imaginary)
 }
 
-fn frankensim_head() -> String {
+fn reviewed_frankensim_source() -> String {
     let frankensim_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("../../../frankensim")
         .canonicalize()
         .expect("resolve the sibling FrankenSim checkout");
-    let output = Command::new("git")
+    let ancestor = Command::new("git")
         .arg("-C")
         .arg(&frankensim_root)
-        .args(["rev-parse", "HEAD"])
+        .args([
+            "merge-base",
+            "--is-ancestor",
+            FRANKENSIM_REVIEWED_COMMIT,
+            "HEAD",
+        ])
         .output()
-        .expect("read FrankenSim HEAD");
-    assert!(output.status.success(), "cannot read FrankenSim HEAD");
+        .expect("check the reviewed FrankenSim ancestor");
+    assert!(
+        ancestor.status.success(),
+        "reviewed FrankenSim commit is not an ancestor of the current checkout"
+    );
     let status = Command::new("git")
         .arg("-C")
         .arg(&frankensim_root)
-        .args(["status", "--porcelain"])
+        .args(["status", "--porcelain", "--"])
+        .args(FRANKENSIM_CRATE_CLOSURE)
         .output()
-        .expect("read FrankenSim worktree status");
+        .expect("read the reviewed FrankenSim closure status");
     assert!(
         status.status.success(),
-        "cannot inspect FrankenSim worktree"
+        "cannot inspect the reviewed FrankenSim closure"
     );
     assert!(
         status.stdout.is_empty(),
-        "FrankenSim worktree/index is not clean; refusing to stamp only its HEAD"
+        "reviewed FrankenSim crate closure is dirty; refusing to stamp committed source"
     );
-    String::from_utf8(output.stdout)
-        .expect("FrankenSim HEAD is UTF-8")
-        .trim()
-        .to_owned()
+    let reviewed_range = format!("{FRANKENSIM_REVIEWED_COMMIT}..HEAD");
+    let closure_diff = Command::new("git")
+        .arg("-C")
+        .arg(&frankensim_root)
+        .args(["diff", "--quiet", &reviewed_range, "--"])
+        .args(FRANKENSIM_CRATE_CLOSURE)
+        .status()
+        .expect("compare the reviewed FrankenSim closure with HEAD");
+    assert!(
+        closure_diff.success(),
+        "FrankenSim dependency-closure source moved; review it before regenerating the pack"
+    );
+    FRANKENSIM_REVIEWED_COMMIT.to_owned()
 }
 
 fn solve_pack() -> SoundboardPack {
-    let frankensim_commit = frankensim_head();
-    assert_eq!(
-        frankensim_commit, FRANKENSIM_EXPECTED_HEAD,
-        "FrankenSim source moved; review and update the pinned generator input"
-    );
+    let frankensim_commit = reviewed_frankensim_source();
     let mesh = PlateMesh::rectangle(LENGTH_M, WIDTH_M, NX, NY);
     let boundary = PlateMesh::rectangle_boundary(NX, NY);
     let material = OrthotropicElastic::new(
@@ -900,6 +935,7 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::{BTreeMap, BTreeSet};
 
     fn matrix(rows: usize, entries: &[(usize, usize, f64)]) -> Csr {
         let mut coo = Coo::new(rows, rows);
@@ -907,6 +943,80 @@ mod tests {
             coo.push(row, column, value);
         }
         coo.assemble()
+    }
+
+    #[test]
+    fn reviewed_frankensim_closure_matches_the_actual_cargo_graph() {
+        let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("Cargo.toml");
+        let output = Command::new(env::var_os("CARGO").unwrap_or_else(|| "cargo".into()))
+            .args([
+                "metadata",
+                "--format-version",
+                "1",
+                "--locked",
+                "--manifest-path",
+            ])
+            .arg(&manifest)
+            .output()
+            .expect("read the generator dependency graph");
+        assert!(output.status.success(), "cargo metadata failed");
+        let metadata: serde_json::Value =
+            serde_json::from_slice(&output.stdout).expect("parse cargo metadata");
+        let root_id = metadata["resolve"]["root"]
+            .as_str()
+            .expect("metadata root package")
+            .to_owned();
+        let mut dependencies = BTreeMap::<String, Vec<String>>::new();
+        for node in metadata["resolve"]["nodes"]
+            .as_array()
+            .expect("metadata resolve nodes")
+        {
+            dependencies.insert(
+                node["id"].as_str().expect("node id").to_owned(),
+                node["dependencies"]
+                    .as_array()
+                    .expect("node dependencies")
+                    .iter()
+                    .map(|id| id.as_str().expect("dependency id").to_owned())
+                    .collect(),
+            );
+        }
+        let mut reachable = BTreeSet::new();
+        let mut stack = vec![root_id];
+        while let Some(id) = stack.pop() {
+            if !reachable.insert(id.clone()) {
+                continue;
+            }
+            stack.extend(dependencies.get(&id).into_iter().flatten().cloned());
+        }
+        let frankensim_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../frankensim")
+            .canonicalize()
+            .expect("resolve FrankenSim for dependency-closure test");
+        let mut actual = BTreeSet::new();
+        for package in metadata["packages"].as_array().expect("metadata packages") {
+            let id = package["id"].as_str().expect("package id");
+            if !reachable.contains(id) {
+                continue;
+            }
+            let manifest_path = PathBuf::from(
+                package["manifest_path"]
+                    .as_str()
+                    .expect("package manifest path"),
+            );
+            let Some(package_dir) = manifest_path.parent() else {
+                continue;
+            };
+            if let Ok(relative) = package_dir.strip_prefix(&frankensim_root) {
+                actual.insert(relative.to_string_lossy().replace('\\', "/"));
+            }
+        }
+        let expected = FRANKENSIM_CRATE_CLOSURE
+            .into_iter()
+            .map(str::to_owned)
+            .collect::<BTreeSet<_>>();
+        assert_eq!(actual, expected);
+        assert_eq!(reviewed_frankensim_source(), FRANKENSIM_REVIEWED_COMMIT);
     }
 
     #[test]

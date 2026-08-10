@@ -20,15 +20,15 @@ fn generated_pack_is_bound_to_the_reviewed_frankensim_input() {
     );
     assert_eq!(
         PIANO_V2_SOUNDBOARD_PACK_FRANKENSIM_COMMIT,
-        "f630aaf8968f9c3ef52cee23ef4badfccfa54252"
+        "1346e1be67951ba0ba81f3e99f5eeca6efc42945"
     );
     assert_eq!(
         PIANO_V2_SOUNDBOARD_PACK_GENERATOR_SHA256,
-        "ca21179a541c28c2c052ae20109609b8752a81e7bc268c606dc51e09edef7273"
+        "d3e25fef79be190702c0469ffce2bd9432faf6c4010d8249437c6004f5a9b168"
     );
     assert_eq!(
         PIANO_V2_SOUNDBOARD_PACK_INPUT_SHA256,
-        "560f3ef1de0f73e1b71a1ab2ae73c381cca267c9ff01463550f9c46fef2a7a6c"
+        "1a9bb3ff4fd0bcfa746c67a83bfc12d9614bcf44a4a71b98d33e5d9df6eb3b34"
     );
     assert_eq!(
         PIANO_V2_SOUNDBOARD_PACK_TOOL_MANIFEST_SHA256,
@@ -49,6 +49,9 @@ fn generated_pack_is_bound_to_the_reviewed_frankensim_input() {
     assert!(JSON_PACK.contains("\"certifiedSliceCount\": 12"));
     assert!(JSON_PACK.contains("\"refinedModeCount\": 2"));
     assert!(JSON_PACK.contains("\"maximumRefinedMassOrthogonalityDefect\""));
+    assert!(JSON_PACK.contains(
+        "Batoz-1980-equation-75-triangle-area-over-3-nodal-load-infinite-baffle-Rayleigh-1m"
+    ));
 }
 
 #[test]
@@ -163,4 +166,67 @@ fn bridge_and_observer_ports_do_not_collapse_to_one_unsigned_template() {
         "only {signed_bridge_modes} signed modes"
     );
     assert!(stereo_modes > 200, "only {stereo_modes} directional modes");
+}
+
+#[test]
+fn conservative_triangle_ports_match_independently_frozen_known_answers() {
+    let known = [
+        (
+            0,
+            [
+                (0, 0.163_782_160_730_469),
+                (39, 0.389_743_146_018_981_13),
+                (87, 0.001_952_805_515_344_590_7),
+            ],
+            [
+                -9.046_571_554_524_171e-12,
+                21.092_798_481_470_18,
+                9.110_783_984_569_902e-12,
+                21.092_799_057_846_02,
+            ],
+        ),
+        (
+            31,
+            [
+                (0, -0.394_136_392_492_952_4),
+                (39, 0.038_176_151_590_702_714),
+                (87, -0.031_242_338_580_432_922),
+            ],
+            [
+                -44.470_429_162_685,
+                -1.508_144_858_202_496e-12,
+                -44.474_796_373_632_48,
+                9.775_259_583_714_144e-12,
+            ],
+        ),
+        (
+            95,
+            [
+                (0, -0.452_508_302_198_067_76),
+                (39, -0.207_220_936_840_793_26),
+                (87, 0.216_626_709_503_983_72),
+            ],
+            [
+                8.766_577_067_565_684,
+                -5.698_723_963_572_066_5e-12,
+                7.765_609_900_283_879,
+                -5.966_310_495_712_193e-12,
+            ],
+        ),
+    ];
+    for (mode_index, bridge, observer) in known {
+        let mode = &PIANO_V2_SOUNDBOARD_MODE_PACK[mode_index];
+        for (key_index, expected) in bridge {
+            assert!(
+                (mode.bridge_residue_inverse_sqrt_kg[key_index] - expected).abs() < 1.0e-12,
+                "mode {mode_index} bridge key {key_index}"
+            );
+        }
+        for (channel, expected) in observer.into_iter().enumerate() {
+            assert!(
+                (mode.observer_pa_s_per_m_sqrt_kg[channel] - expected).abs() < 1.0e-10,
+                "mode {mode_index} observer channel {channel}"
+            );
+        }
+    }
 }
