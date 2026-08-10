@@ -1117,7 +1117,47 @@ fn clr_render_inner(
         let band_floor = pressure_band_lo + 0.25 * (pressure_band_hi - pressure_band_lo);
         band_floor + (pressure_band_hi - band_floor) * pow(v_norm, 1.3)
     } else {
-        0.68 + 0.20 * pow(v_norm, 1.3)
+        /*
+         * Speaking floor (2026-08-10, measured): the flat 0.68 base sits
+         * BELOW the reed's oscillation threshold across the clarion/top,
+         * so every velocity under ~45-53 rendered loud breath noise with
+         * no tone (quality-gate finding: midi 78-82 v36 read periodicity
+         * 0.106, +155c, 473 ms onset). A player supports soft high notes
+         * with firm air — dynamics below the minimum blowing pressure do
+         * not exist on the instrument. The floor is the embedded-WASM
+         * bisected threshold (periodicity>0.9, |cents|<25 at 44.1 kHz)
+         * plus 0.008 margin, linearly interpolated, endpoints held.
+         * Velocities already above the floor are UNCHANGED, so the
+         * measured tuning-pull fits at mf/ff keep their operating points.
+         */
+        const CLR_V1_SPEAKING_FLOOR_ANCHORS: &[(f64, f64)] = &[
+            (50.0, 0.7134),
+            (54.0, 0.6926),
+            (58.0, 0.6800),
+            (62.0, 0.6889),
+            (66.0, 0.7134),
+            (70.0, 0.7522),
+            (74.0, 0.7522),
+            (78.0, 0.7429),
+            (82.0, 0.7399),
+            (86.0, 0.7384),
+            (89.0, 0.7355),
+        ];
+        let mf = m.clamp(
+            CLR_V1_SPEAKING_FLOOR_ANCHORS[0].0,
+            CLR_V1_SPEAKING_FLOOR_ANCHORS[CLR_V1_SPEAKING_FLOOR_ANCHORS.len() - 1].0,
+        );
+        let mut floor = CLR_V1_SPEAKING_FLOOR_ANCHORS[0].1;
+        for window in CLR_V1_SPEAKING_FLOOR_ANCHORS.windows(2) {
+            let (m0, f0v) = window[0];
+            let (m1, f1v) = window[1];
+            if mf >= m0 && mf <= m1 {
+                let t = if m1 > m0 { (mf - m0) / (m1 - m0) } else { 0.0 };
+                floor = f0v + t * (f1v - f0v);
+                break;
+            }
+        }
+        (0.68 + 0.20 * pow(v_norm, 1.3)).max(floor)
     };
     /* A player establishes mouth pressure behind the tongue before release.
      * Starting pressure at zero made v2 spend 0.11--0.16 s below the measured
