@@ -1164,6 +1164,9 @@ async function main(): Promise<void> {
       chordToneLevelsDb,
       worstRenderRatio,
       artificiality,
+      worstOnsetSeconds,
+      chordRoughnessRatio,
+      phrase,
     });
   }
 
@@ -1196,7 +1199,7 @@ async function main(): Promise<void> {
       0,
     );
     process.stdout.write(
-      `${report.instrumentId.padEnd(20)} render<=${report.worstRenderRatio.toFixed(2)}x worst-pitch ${worstCents.toFixed(1)}c stasis ${report.artificiality.centroidStasis?.toFixed(3) ?? "n/a"} velCorr ${report.artificiality.velocitySpectrumCorrelation?.toFixed(3) ?? "n/a"}\n`,
+      `${report.instrumentId.padEnd(20)} render<=${report.worstRenderRatio.toFixed(2)}x worst-pitch ${worstCents.toFixed(1)}c onset<=${report.worstOnsetSeconds === null ? "n/a" : `${(report.worstOnsetSeconds * 1_000).toFixed(0)}ms`} rough ${report.chordRoughnessRatio?.toFixed(2) ?? "n/a"}x stasis ${report.artificiality.centroidStasis?.toFixed(3) ?? "n/a"} velCorr ${report.artificiality.velocitySpectrumCorrelation?.toFixed(3) ?? "n/a"}\n`,
     );
   }
   for (const finding of findings) {
