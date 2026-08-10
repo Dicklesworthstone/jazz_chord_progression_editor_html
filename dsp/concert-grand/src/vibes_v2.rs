@@ -1423,8 +1423,10 @@ pub extern "C" fn vbs2_note_frames(midi: i32, sample_rate: f32) -> i32 {
 /// (bars free, the sampled recipe's ringing sustain), motor off. Velocity
 /// maps through the Hertzian strike-energy law; level and spectrum follow
 /// the physics with no per-note normalization (the recipe outputLevel owns
-/// mixing). A 100 ms linear fade closes the buffer only when the natural
-/// decay is truncated by the cap.
+/// mixing). A 100 ms linear fade closes the buffer unconditionally on
+/// every render (every current render IS cap-truncated; the fade code
+/// does not test for truncation — jcpe-4qxd R7 corrected this comment,
+/// which previously claimed it was conditional).
 #[no_mangle]
 pub extern "C" fn vbs2_render(
     midi: i32,
