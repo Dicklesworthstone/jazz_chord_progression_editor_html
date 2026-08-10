@@ -138,50 +138,50 @@ fn cooperative_sustain_refuses_hostile_boundaries_and_stale_handles() {
     let recovery = cg_runtime_init(60, 91, 48_000.0, frames as i32);
     assert!(recovery > 0);
     assert_eq!(cg_runtime_reset(recovery), 1);
-}
 
-/// jcpe-4qxd R5: advance() writes only the unrendered span and finalize
-/// normalizes the whole buffer, so the session pins its buffer identity at
-/// the first step. A host that rotates scratch buffers mid-note must be
-/// refused — the alternative is a note silently normalized against another
-/// buffer's zeros.
-#[test]
-fn cooperative_step_refuses_a_rotated_buffer_mid_note() {
-    let frames = 2_048usize;
-    let mut left_a = vec![0.0f32; frames];
-    let mut right_a = vec![0.0f32; frames];
-    let mut left_b = vec![0.0f32; frames];
-    let mut right_b = vec![0.0f32; frames];
-    let handle = concert_grand::cg_runtime_init(60, 96, 48_000.0, frames as i32);
-    assert!(handle > 0);
+    /*
+     * jcpe-4qxd R5: advance() writes only the unrendered span and finalize
+     * normalizes the whole buffer, so the session pins its buffer identity
+     * at the first step. A host that rotates scratch buffers mid-note must
+     * be refused — the alternative is a note silently normalized against
+     * another buffer's zeros. (In-test rather than standalone: the runtime
+     * is one global and parallel tests race it.)
+     */
+    let pin_frames = (CG_RUNTIME_STEP_FRAMES * 4) as usize;
+    let mut pin_left = vec![0.0f32; pin_frames];
+    let mut pin_right = vec![0.0f32; pin_frames];
+    let mut rogue_left = vec![0.0f32; pin_frames];
+    let mut rogue_right = vec![0.0f32; pin_frames];
+    let pinned = cg_runtime_init(60, 96, 48_000.0, pin_frames as i32);
+    assert!(pinned > 0);
     assert_eq!(
-        concert_grand::cg_runtime_step(
-            handle,
-            left_a.as_mut_ptr(),
-            right_a.as_mut_ptr(),
-            frames as i32
+        cg_runtime_step(
+            pinned,
+            pin_left.as_mut_ptr(),
+            pin_right.as_mut_ptr(),
+            pin_frames as i32
         ),
-        concert_grand::CG_RUNTIME_STEP_PROGRESS
+        CG_RUNTIME_STEP_PROGRESS
     );
-    /* Same-frame-count DIFFERENT buffers: must refuse, not normalize. */
+    /* Same frame count, DIFFERENT buffers: refuse, never normalize. */
     assert_eq!(
-        concert_grand::cg_runtime_step(
-            handle,
-            left_b.as_mut_ptr(),
-            right_b.as_mut_ptr(),
-            frames as i32
+        cg_runtime_step(
+            pinned,
+            rogue_left.as_mut_ptr(),
+            rogue_right.as_mut_ptr(),
+            pin_frames as i32
         ),
         0
     );
     /* The pinned pair keeps working after the refused impostor. */
     assert_eq!(
-        concert_grand::cg_runtime_step(
-            handle,
-            left_a.as_mut_ptr(),
-            right_a.as_mut_ptr(),
-            frames as i32
+        cg_runtime_step(
+            pinned,
+            pin_left.as_mut_ptr(),
+            pin_right.as_mut_ptr(),
+            pin_frames as i32
         ),
-        concert_grand::CG_RUNTIME_STEP_PROGRESS
+        CG_RUNTIME_STEP_PROGRESS
     );
-    assert_eq!(concert_grand::cg_runtime_reset(handle), 1);
+    assert_eq!(cg_runtime_reset(pinned), 1);
 }
