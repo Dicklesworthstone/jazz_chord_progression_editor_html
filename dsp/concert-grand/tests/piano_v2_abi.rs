@@ -53,12 +53,7 @@ fn finite_audible_bounded(left: &[f32], right: &[f32]) {
 #[test]
 fn one_key_stem_is_bit_identical_to_the_existing_physical_voice() {
     let parameters = PianoParameters::canonical();
-    let strike = PianoStrike::from_velocity(
-        91,
-        60,
-        piano_v2::string_geometry(60).unwrap().equivalent_diameter_m,
-    )
-    .unwrap();
+    let strike = PianoStrike::from_velocity(91, 60).unwrap();
     let mut voice = PianoVoice::new(60, 48_000.0, parameters).unwrap();
     voice.begin_strike(strike).unwrap();
     let mut stem = PianoStem::new(&[60], &[91], 48_000.0, parameters).unwrap();
@@ -91,6 +86,21 @@ fn one_key_stem_is_bit_identical_to_the_existing_physical_voice() {
 
 #[test]
 fn shared_soundboard_chord_is_canonical_audible_passive_and_not_a_note_mixer() {
+    // Constructing the fixed-allocation shared stem in an unoptimised native
+    // test temporarily keeps several large return slots alive.  The shipping
+    // release ABI retains exactly one session in static WASM memory, so give
+    // this native proof an explicit stack instead of aborting the entire test
+    // binary on Rust's ordinary 2 MiB test-thread stack.
+    std::thread::Builder::new()
+        .name("pno2-shared-soundboard-chord".to_owned())
+        .stack_size(8 * 1_024 * 1_024)
+        .spawn(shared_soundboard_chord_is_canonical_audible_passive_and_not_a_note_mixer_body)
+        .unwrap()
+        .join()
+        .unwrap();
+}
+
+fn shared_soundboard_chord_is_canonical_audible_passive_and_not_a_note_mixer_body() {
     #[inline(never)]
     fn render_shared_chord(
         midis: &[i32],
@@ -153,16 +163,7 @@ fn shared_soundboard_chord_is_canonical_audible_passive_and_not_a_note_mixer() {
         .map(|(midi, velocity)| {
             let mut voice = PianoVoice::new(*midi, 48_000.0, parameters).unwrap();
             voice
-                .begin_strike(
-                    PianoStrike::from_velocity(
-                        velocity,
-                        *midi,
-                        piano_v2::string_geometry(*midi)
-                            .unwrap()
-                            .equivalent_diameter_m,
-                    )
-                    .unwrap(),
-                )
+                .begin_strike(PianoStrike::from_velocity(velocity, *midi).unwrap())
                 .unwrap();
             voice
         })
@@ -204,6 +205,22 @@ fn shared_soundboard_chord_is_canonical_audible_passive_and_not_a_note_mixer() {
 
 #[test]
 fn chord_runtime_is_bit_identical_bounded_hostile_and_recoverable() {
+    // The unoptimised native constructor keeps several fixed-allocation
+    // `PianoStem` return slots live at once. Rust's default 2 MiB test-thread
+    // stack is smaller than that debug-only frame even though the shipping
+    // release ABI owns its one retained session in static WASM memory. Keep
+    // the ordinary debug suite runnable without changing production state or
+    // weakening the exact optimized ABI canary.
+    std::thread::Builder::new()
+        .name("pno2-chord-runtime-abi".to_owned())
+        .stack_size(8 * 1_024 * 1_024)
+        .spawn(chord_runtime_is_bit_identical_bounded_hostile_and_recoverable_body)
+        .unwrap()
+        .join()
+        .unwrap();
+}
+
+fn chord_runtime_is_bit_identical_bounded_hostile_and_recoverable_body() {
     let midis = [48, 55, 60, 64];
     let velocities = [80, 96, 91, 72];
     let frames = 4_096;

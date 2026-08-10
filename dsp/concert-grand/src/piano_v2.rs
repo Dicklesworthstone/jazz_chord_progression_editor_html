@@ -242,7 +242,6 @@ pub struct StringGeometry {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct PianoStrike {
     pub velocity: i32,
-    pub hardness: f64,
     pub hammer_mass_kg: f64,
     pub hammer_velocity_m_per_s: f64,
     pub impact_energy_j: f64,
@@ -256,16 +255,9 @@ pub struct PianoStrike {
 }
 
 impl PianoStrike {
-    pub fn from_velocity(
-        velocity: i32,
-        midi: i32,
-        string_diameter_m: f64,
-    ) -> Result<Self, PianoError> {
+    pub fn from_velocity(velocity: i32, midi: i32) -> Result<Self, PianoError> {
         if !(1..=127).contains(&velocity) {
             return Err(PianoError::InvalidVelocity);
-        }
-        if !string_diameter_m.is_finite() || !(0.000_5..=0.006).contains(&string_diameter_m) {
-            return Err(PianoError::InvalidContact);
         }
         let hammer_mass_kg = hammer_mass_kg_for_midi(midi)?;
         let [felt_static_stiffness, felt_exponent, felt_rate_time_seconds] =
@@ -294,7 +286,6 @@ impl PianoStrike {
         let maximum_force_n = (2.5 * (elastic_peak_force_n + rate_peak_force_n)).min(20_000.0);
         Ok(Self {
             velocity,
-            hardness,
             hammer_mass_kg,
             hammer_velocity_m_per_s,
             impact_energy_j,
@@ -1209,8 +1200,6 @@ fn begin_key_strike(
 ) -> Result<(), PianoError> {
     if contact.active
         || !(1..=127).contains(&strike.velocity)
-        || !strike.hardness.is_finite()
-        || !(0.0..=1.0).contains(&strike.hardness)
         || !strike.hammer_mass_kg.is_finite()
         || !(0.005..=0.020).contains(&strike.hammer_mass_kg)
         || !strike.hammer_velocity_m_per_s.is_finite()
@@ -1387,7 +1376,6 @@ impl ContactState {
         active: false,
         strike: PianoStrike {
             velocity: 1,
-            hardness: 0.0,
             hammer_mass_kg: 0.0089,
             hammer_velocity_m_per_s: 0.0,
             impact_energy_j: 0.0,
@@ -1877,11 +1865,7 @@ impl PianoStem {
             core::array::from_fn(|_| None);
         for index in 0..midis.len() {
             let mut key = PianoKeyState::new(sorted_midis[index], sample_rate_hz)?;
-            let strike = PianoStrike::from_velocity(
-                sorted_velocities[index],
-                sorted_midis[index],
-                key.geometry.equivalent_diameter_m,
-            )?;
+            let strike = PianoStrike::from_velocity(sorted_velocities[index], sorted_midis[index])?;
             begin_key_strike(&mut key.contact, strike, sample_rate_hz, dt)?;
             keys[index] = Some(key);
         }
@@ -2533,10 +2517,12 @@ pub fn soundboard_mode_frequency_hz(
     Ok(sqrt(omega_squared) / TAU)
 }
 
-/// Measured finished-soundboard modal damping from Miranda Valiente et al.
-/// (JASA 2024), table II. Piecewise-linear interpolation is applied only
-/// between the six measured modes; the unmeasured tails hold the nearest
-/// measured damping instead of using a hand-shaped note-brightness curve.
+/// Finished-soundboard damping from Miranda Valiente et al. (JASA 2024),
+/// table II. Only these first six ratios are measurements. The paper says its
+/// higher-frequency FE damping was chosen to represent the mobility trend but
+/// does not publish that extension, so this runtime holds the last measured
+/// value as an explicit provisional extrapolation. It is not evidence that the
+/// dark piano's high-frequency decay matches the reviewed instrument.
 pub fn soundboard_damping_ratio(frequency_hz: f64) -> Result<f64, PianoError> {
     const ANCHORS: [(f64, f64); 6] = [
         (75.0, 0.040),
@@ -2576,11 +2562,7 @@ pub fn render_piano_note(
     }
     let parameters = PianoParameters::canonical();
     let mut voice = PianoVoice::new(midi, sample_rate_hz, parameters)?;
-    voice.begin_strike(PianoStrike::from_velocity(
-        velocity,
-        midi,
-        voice.geometry.equivalent_diameter_m,
-    )?)?;
+    voice.begin_strike(PianoStrike::from_velocity(velocity, midi)?)?;
     for frame in 0..frames {
         let output = voice.step()?;
         left[frame] = (output.left_pressure_pa / DIGITAL_REFERENCE_PRESSURE_PA) as f32;
@@ -2739,10 +2721,7 @@ impl PianoAttackSession {
         let parameters = PianoParameters::canonical();
         let mut voice = PianoVoice::new(midi, sample_rate as f64, parameters).ok()?;
         voice
-            .begin_strike(
-                PianoStrike::from_velocity(velocity, midi, voice.geometry.equivalent_diameter_m)
-                    .ok()?,
-            )
+            .begin_strike(PianoStrike::from_velocity(velocity, midi).ok()?)
             .ok()?;
         Some(Self {
             voice,
@@ -3240,33 +3219,6 @@ fn soundboard_bridge_residue_at(body: &SoundboardMode, midi: i32) -> f64 {
         [midi_index]
 }
 
-fn soundboard_global_reduction_score(candidate_index: usize) -> Result<f64, PianoError> {
-    let candidate = &PIANO_V2_SOUNDBOARD_MODE_PACK[candidate_index];
-    let damping_ratio = soundboard_damping_ratio(candidate.frequency_hz)?;
-    let bridge_controllability: f64 = candidate
-        .bridge_residue_inverse_sqrt_kg
-        .iter()
-        .map(|residue| residue * residue)
-        .sum();
-    let observer_power: f64 = candidate
-        .observer_pa_s_per_m_sqrt_kg
-        .iter()
-        .map(|observer| observer * observer)
-        .sum();
-    // For a mass-normal damped oscillator driven through all reviewed bridge
-    // points and observed through both complex far-field pressure taps, this
-    // is proportional to its continuous-time H2 contribution.  It ranks the
-    // physical board mode itself; no requested MIDI, velocity, chord, or
-    // reference audio enters the reduction.  The previous per-request target
-    // score changed the instrument's retained soundboard whenever another key
-    // was added to a chord.
-    let score = bridge_controllability * observer_power / (damping_ratio * candidate.frequency_hz);
-    if !score.is_finite() || score <= 0.0 {
-        return Err(PianoError::NonFiniteState);
-    }
-    Ok(score)
-}
-
 fn build_soundboard_modes(
     parameters: PianoParameters,
     sample_rate_hz: f64,
@@ -3296,8 +3248,6 @@ fn build_soundboard_modes(
         return Err(PianoError::BudgetExceeded);
     }
     let cutoff_hz = 0.44 * sample_rate_hz;
-    let mut selected = [false; PIANO_V2_SOUNDBOARD_MODE_PACK.len()];
-    let mut aggregate_scores = [0.0_f64; PIANO_V2_SOUNDBOARD_MODE_PACK.len()];
     let eligible_count = PIANO_V2_SOUNDBOARD_MODE_PACK
         .iter()
         .take_while(|candidate| candidate.frequency_hz < cutoff_hz)
@@ -3305,44 +3255,25 @@ fn build_soundboard_modes(
     if eligible_count == 0 {
         return Err(PianoError::InvalidSampleRate);
     }
-
     let selection_limit = eligible_count.min(SOUNDBOARD_MODES);
-    for (candidate_index, score) in aggregate_scores[..eligible_count].iter_mut().enumerate() {
-        *score = soundboard_global_reduction_score(candidate_index)?;
-    }
-
-    // Preserve the full physical frequency span instead of allowing a global
-    // H2 ordering to spend the entire state budget on low modes.  The pack is
-    // frequency sorted, so equal-cardinality contiguous strata give a fixed,
-    // deterministic coverage of the solved spectrum.  Within each stratum we
-    // retain the mode with the strongest all-bridge/two-observer H2 score.
-    for stratum in 0..selection_limit {
-        let first = stratum * eligible_count / selection_limit;
-        let after_last = (stratum + 1) * eligible_count / selection_limit;
-        if first >= after_last {
-            return Err(PianoError::NonFiniteState);
-        }
-        let mut best_index = first;
-        let mut best_score = -1.0_f64;
-        for candidate_index in first..after_last {
-            let score = aggregate_scores[candidate_index];
-            if score > best_score {
-                best_score = score;
-                best_index = candidate_index;
-            }
-        }
-        if best_score <= 0.0 {
-            return Err(PianoError::InvalidParameters);
-        }
-        selected[best_index] = true;
-    }
 
     let mut modes = [SoundboardMode::ZERO; SOUNDBOARD_MODES];
     let mut output_index = 0usize;
-    for (pack_index, packed) in PIANO_V2_SOUNDBOARD_MODE_PACK.iter().enumerate() {
-        if !selected[pack_index] {
-            continue;
-        }
+    // Modal truncation is a low-pass structural reduction: retain the lowest
+    // solved modes in their physical frequency order.  Picking the strongest
+    // mode from each frequency stratum is not a transfer-function reduction;
+    // it discarded low resonances and 30--80% of the bridge's static
+    // flexibility while biasing every stratum toward unusually large
+    // residues.  The resulting driving-point mobility was wrong by as much as
+    // 50 dB even though every retained eigenpair was individually valid.
+    // The independently generated pack is already frequency sorted, and its
+    // first 288 modes preserve more than 99% of full-pack static flexibility
+    // for the reference-gate register.
+    for (pack_index, packed) in PIANO_V2_SOUNDBOARD_MODE_PACK
+        .iter()
+        .take(selection_limit)
+        .enumerate()
+    {
         let frequency_hz = packed.frequency_hz;
         let omega = TAU * frequency_hz;
         let damping_ratio = soundboard_damping_ratio(frequency_hz)?;

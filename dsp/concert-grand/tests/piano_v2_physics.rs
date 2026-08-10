@@ -123,9 +123,7 @@ fn reviewed_hammer_mass_and_strike_position_vary_by_register() {
 
     // The superseded implementation used one 52 g hammer for every key.
     // It is outside the measured grand-piano envelope and must fail closed.
-    let geometry = string_geometry(60).unwrap();
-    let mut planted_constant_mass =
-        PianoStrike::from_velocity(80, 60, geometry.equivalent_diameter_m).unwrap();
+    let mut planted_constant_mass = PianoStrike::from_velocity(80, 60).unwrap();
     planted_constant_mass.hammer_mass_kg = 0.052;
     let mut voice = PianoVoice::new(60, 48_000.0, PianoParameters::canonical()).unwrap();
     assert_eq!(
@@ -189,9 +187,7 @@ fn mezzo_forte_contact_duration_matches_measured_c2_c4_c7_registers() {
         (60, 2.0e-3, 1.5e-3, 2.6e-3),
         (96, 0.6e-3, 0.4e-3, 0.9e-3),
     ] {
-        let geometry = string_geometry(midi).unwrap();
-        let mut strike =
-            PianoStrike::from_velocity(64, midi, geometry.equivalent_diameter_m).unwrap();
+        let mut strike = PianoStrike::from_velocity(64, midi).unwrap();
         strike.hammer_velocity_m_per_s = 2.5;
         strike.impact_energy_j =
             0.5 * strike.hammer_mass_kg * strike.hammer_velocity_m_per_s.powi(2);
@@ -248,6 +244,44 @@ fn fixed_soundboard_reduction_does_not_change_with_note_set_or_output_rate() {
 }
 
 #[test]
+fn low_mode_soundboard_reduction_preserves_full_pack_bridge_flexibility() {
+    use piano_v2::piano_v2_soundboard::PIANO_V2_SOUNDBOARD_MODE_PACK;
+
+    assert!(PIANO_V2_SOUNDBOARD_MODE_PACK.len() > piano_v2::SOUNDBOARD_MODES);
+    let parameters = PianoParameters::canonical();
+    let voice = PianoVoice::new(60, 44_100.0, parameters).unwrap();
+    for mode_index in 0..piano_v2::SOUNDBOARD_MODES {
+        assert_eq!(
+            voice.soundboard_mode_pack_index(mode_index),
+            Some(mode_index)
+        );
+    }
+
+    // This is independently summed from the generated full pack, not from
+    // production's selected-mode compliance.  A strongest-per-stratum
+    // selector retained only 20--70% for these same cells despite green
+    // eigenpair and band-limit tests.
+    for midi in [21, 36, 48, 60, 72, 84, 96] {
+        let midi_index = (midi - piano_v2::MIN_MIDI) as usize;
+        let flexibility = |packed: &piano_v2::piano_v2_soundboard::PianoV2SoundboardModePack| {
+            let residue = packed.bridge_residue_inverse_sqrt_kg[midi_index];
+            residue * residue / (2.0 * core::f64::consts::PI * packed.frequency_hz).powi(2)
+        };
+        let full: f64 = PIANO_V2_SOUNDBOARD_MODE_PACK.iter().map(flexibility).sum();
+        let retained: f64 = PIANO_V2_SOUNDBOARD_MODE_PACK
+            .iter()
+            .take(piano_v2::SOUNDBOARD_MODES)
+            .map(flexibility)
+            .sum();
+        assert!(
+            retained / full >= 0.99,
+            "midi {midi} retained only {} of full static flexibility",
+            retained / full
+        );
+    }
+}
+
+#[test]
 fn fixed_string_reduction_does_not_change_across_release_output_rates() {
     for midi in [36, 60, 84, 96, 108] {
         let baseline = PianoVoice::new(midi, 44_100.0, PianoParameters::canonical()).unwrap();
@@ -275,9 +309,7 @@ fn fixed_string_reduction_preserves_contact_time_across_release_output_rates() {
     // seconds rather than samples: retaining the same modal frequency list is
     // not sufficient if the time-step/contact path still changes the hammer.
     fn contact_duration_seconds(midi: i32, sample_rate_hz: f64) -> f64 {
-        let geometry = string_geometry(midi).unwrap();
-        let mut strike =
-            PianoStrike::from_velocity(64, midi, geometry.equivalent_diameter_m).unwrap();
+        let mut strike = PianoStrike::from_velocity(64, midi).unwrap();
         strike.hammer_velocity_m_per_s = 2.5;
         strike.impact_energy_j =
             0.5 * strike.hammer_mass_kg * strike.hammer_velocity_m_per_s.powi(2);
@@ -335,7 +367,7 @@ fn coupled_string_hammer_port_keeps_the_notated_pitch() {
     fn measured_cents(midi: i32, retain_culled_mode_flexibility: bool) -> i32 {
         let sample_rate_hz = 44_100.0;
         let geometry = string_geometry(midi).unwrap();
-        let strike = PianoStrike::from_velocity(72, midi, geometry.equivalent_diameter_m).unwrap();
+        let strike = PianoStrike::from_velocity(72, midi).unwrap();
         let mut voice =
             PianoVoice::new(midi, sample_rate_hz, PianoParameters::canonical()).unwrap();
         if !retain_culled_mode_flexibility {
@@ -444,8 +476,7 @@ fn culled_string_modes_retain_their_static_bridge_flexibility() {
 fn bounded_stulov_contact_solve_transfers_the_top_key_at_every_rate() {
     assert_eq!(CONTACT_SOLVE_STEPS, 16);
     for sample_rate in [44_100.0, 48_000.0, 96_000.0] {
-        let geometry = string_geometry(108).unwrap();
-        let strike = PianoStrike::from_velocity(100, 108, geometry.equivalent_diameter_m).unwrap();
+        let strike = PianoStrike::from_velocity(100, 108).unwrap();
         let mut voice = PianoVoice::new(108, sample_rate, PianoParameters::canonical()).unwrap();
         voice.begin_strike(strike).unwrap();
         let mut maximum_string_energy_j = 0.0_f64;
@@ -1132,8 +1163,7 @@ fn baffled_modal_observer_matches_independent_plane_integrals() {
 #[test]
 fn finite_hammer_contact_and_bridge_never_create_represented_energy() {
     let parameters = PianoParameters::canonical();
-    let diameter = string_geometry(60).unwrap().equivalent_diameter_m;
-    let strike = PianoStrike::from_velocity(108, 60, diameter).unwrap();
+    let strike = PianoStrike::from_velocity(108, 60).unwrap();
     let mut voice = PianoVoice::new(60, 48_000.0, parameters).unwrap();
     voice.begin_strike(strike).unwrap();
     let initial = voice.represented_energy_j();
@@ -1197,11 +1227,10 @@ fn malformed_or_active_parameters_refuse_and_force_cap_releases_dissipatively() 
     );
 
     let parameters = PianoParameters::canonical();
-    let diameter = string_geometry(60).unwrap().equivalent_diameter_m;
-    let mut inconsistent = PianoStrike::from_velocity(80, 60, diameter).unwrap();
+    let mut inconsistent = PianoStrike::from_velocity(80, 60).unwrap();
     inconsistent.impact_energy_j *= 0.5;
     let mut voice = PianoVoice::new(60, 48_000.0, parameters).unwrap();
-    let valid = PianoStrike::from_velocity(80, 60, diameter).unwrap();
+    let valid = PianoStrike::from_velocity(80, 60).unwrap();
     voice.begin_strike(valid).unwrap();
     for _ in 0..4 {
         voice.step().unwrap();
@@ -1221,7 +1250,7 @@ fn malformed_or_active_parameters_refuse_and_force_cap_releases_dissipatively() 
         Err(PianoError::InvalidContact)
     );
 
-    let mut capped = PianoStrike::from_velocity(80, 60, diameter).unwrap();
+    let mut capped = PianoStrike::from_velocity(80, 60).unwrap();
     capped.maximum_force_n = 1.0e-9;
     voice.begin_strike(capped).unwrap();
     let before = voice.represented_energy_j();
@@ -1230,14 +1259,14 @@ fn malformed_or_active_parameters_refuse_and_force_cap_releases_dissipatively() 
     assert!(voice.represented_energy_j() <= before + 1.0e-12);
     assert!(voice.accounted_energy_j() >= before - 1.0e-9);
 
-    let mut linear_felt = PianoStrike::from_velocity(80, 60, diameter).unwrap();
+    let mut linear_felt = PianoStrike::from_velocity(80, 60).unwrap();
     linear_felt.felt_exponent = 1.0;
     assert_eq!(
         voice.begin_strike(linear_felt),
         Err(PianoError::InvalidContact)
     );
 
-    let mut memoryless_felt = PianoStrike::from_velocity(80, 60, diameter).unwrap();
+    let mut memoryless_felt = PianoStrike::from_velocity(80, 60).unwrap();
     memoryless_felt.felt_rate_time_seconds = 0.0;
     assert_eq!(
         voice.begin_strike(memoryless_felt),
@@ -1250,10 +1279,7 @@ fn state_continuation_is_bit_deterministic() {
     let parameters = PianoParameters::canonical();
     let mut voice = PianoVoice::new(64, 48_000.0, parameters).unwrap();
     voice
-        .begin_strike(
-            PianoStrike::from_velocity(91, 64, string_geometry(64).unwrap().equivalent_diameter_m)
-                .unwrap(),
-        )
+        .begin_strike(PianoStrike::from_velocity(91, 64).unwrap())
         .unwrap();
     for _ in 0..777 {
         voice.step().unwrap();
@@ -1294,14 +1320,13 @@ fn render_is_finite_audible_bounded_and_hard_strikes_are_brighter() {
 
     let frames = 4_096;
     let parameters = PianoParameters::canonical();
-    let diameter = string_geometry(60).unwrap().equivalent_diameter_m;
     let mut soft_voice = PianoVoice::new(60, 48_000.0, parameters).unwrap();
     soft_voice
-        .begin_strike(PianoStrike::from_velocity(24, 60, diameter).unwrap())
+        .begin_strike(PianoStrike::from_velocity(24, 60).unwrap())
         .unwrap();
     let mut hard_voice = PianoVoice::new(60, 48_000.0, parameters).unwrap();
     hard_voice
-        .begin_strike(PianoStrike::from_velocity(120, 60, diameter).unwrap())
+        .begin_strike(PianoStrike::from_velocity(120, 60).unwrap())
         .unwrap();
     let mut soft_contact_frames = 0usize;
     let mut hard_contact_frames = 0usize;
