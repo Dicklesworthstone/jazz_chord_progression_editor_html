@@ -130,6 +130,18 @@ fn bar_tube_coupling_and_free_bar_radiation_exclude_the_old_near_misses() {
     );
     assert!((coupling - -0.031_586_114_583_910_99).abs() > 0.02);
 
+    // The reviewed Soares multi-modal mass matrix is not the former 2-DOF
+    // fundamental-only shortcut.  At C4 its first three closed-open acoustic
+    // modes are exactly the 1:3:5 sequence.  The centre-mounted tube retains
+    // a material coupling to symmetric bar mode 3, while the antisymmetric
+    // mode's centre node remains a genuine geometric zero.
+    let model = voice(60);
+    let fundamental = model.resonator_mode_frequency_hz(0).unwrap();
+    assert!((model.resonator_mode_frequency_hz(1).unwrap() / fundamental - 3.0).abs() < 1.0e-12);
+    assert!((model.resonator_mode_frequency_hz(2).unwrap() / fundamental - 5.0).abs() < 1.0e-12);
+    assert!(model.inertial_coupling(2, 1).unwrap().abs() > 0.003);
+    assert!(model.inertial_coupling(1, 1).unwrap().abs() < 1.0e-12);
+
     // The one-metre C4 free-bar transfer is the front-minus-back dipole at a
     // fixed 30-degree listener angle. A one-sided baffled result is orders
     // stronger and would make the attack peak immediately instead of letting
@@ -163,6 +175,16 @@ fn every_declared_key_constructs_at_every_supported_rate_without_aliasing() {
                 .unwrap_or_else(|error| panic!("midi {midi} rate {sample_rate}: {error:?}"));
             assert!(model.resolved_mode_count() >= 1);
             assert!(model.resolved_mode_count() <= BAR_MODES);
+            let resonator_fundamental = model.resonator_frequency_hz();
+            let expected_resonator_modes = [1.0, 3.0, 5.0]
+                .into_iter()
+                .filter(|harmonic| harmonic * resonator_fundamental < 0.44 * sample_rate)
+                .count();
+            assert_eq!(
+                model.resolved_resonator_mode_count(),
+                expected_resonator_modes,
+                "midi={midi} rate={sample_rate}"
+            );
             let geometry = model.geometry();
             let element_length_m = geometry.length_m / 32.0;
             for index in 0..model.resolved_mode_count() {
