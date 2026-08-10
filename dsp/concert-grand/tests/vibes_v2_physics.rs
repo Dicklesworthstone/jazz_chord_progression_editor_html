@@ -2,9 +2,12 @@
 mod vibes_v2;
 
 use vibes_v2::{
-    geometry_for_midi, midi_frequency_hz, vbs2_render, StrikeGesture, VibesControls, VibesError,
-    VibesParameters, VibraphoneStem, VibraphoneVoice, BAR_MODES, MAX_FAN_RATE_HZ, MAX_MIDI,
-    MIN_MIDI,
+    canonical_bar_resonator_inertial_coupling, free_bar_radiation_transfer_for_test,
+    geometry_for_midi, midi_frequency_hz, rayleigh_radiation_is_resolved, vbs2_render,
+    StrikeGesture, VibesControls, VibesError, VibesParameters, VibraphoneStem, VibraphoneVoice,
+    BAR_MODES, MAX_FAN_RATE_HZ, MAX_MIDI, MIN_MIDI, VIBES_V2_MODAL_AUTHORITY_SHA256,
+    VIBES_V2_MODAL_GENERATOR_SHA256, VIBES_V2_MODAL_PACK_INPUT_SHA256,
+    VIBES_V2_MODAL_PACK_SOLVER_ID,
 };
 
 const SAMPLE_RATE: f64 = 48_000.0;
@@ -31,30 +34,77 @@ fn render_voice(
 }
 
 #[test]
-fn reviewed_anchor_pack_is_consumed_without_global_template_fakery() {
+fn generated_eigenpack_is_consumed_without_global_template_fakery() {
     let cases = [
-        (53, 0.490, 0.057, 0.013, 9.88, 18.1, 7.5),
-        (60, 0.407, 0.052, 0.011, 9.91, 18.2, 6.8),
-        (72, 0.292, 0.045, 0.009, 9.95, 18.3, 5.4),
-        (89, 0.185, 0.036, 0.007, 10.05, 18.6, 3.6),
+        (
+            53,
+            0.375_908_058_204_514_7,
+            0.057,
+            0.545_764_623_560_671_5,
+            3,
+        ),
+        (60, 0.333, 0.057, 0.528_334_488_506_218_3, 3),
+        (
+            72,
+            0.235_468_254_768_921_6,
+            0.048_264_482_804_664_05,
+            0.316_337_032_720_263_1,
+            3,
+        ),
+        (
+            89,
+            0.175_26,
+            0.038_130_935_311_404_19,
+            0.214_086_054_972_732_6,
+            2,
+        ),
     ];
-    for (midi, length, width, thickness, ratio3, ratio4, t60) in cases {
+    for (midi, length, width, mass, tuned_mode_count) in cases {
         let geometry = geometry_for_midi(midi).unwrap();
         assert!((geometry.length_m - length).abs() < 1.0e-12);
         assert!((geometry.width_m - width).abs() < 1.0e-12);
-        assert!((geometry.thickness_m - thickness).abs() < 1.0e-12);
-        assert!((geometry.mode_ratios[2] - ratio3).abs() < 1.0e-12);
-        assert!((geometry.mode_ratios[3] - ratio4).abs() < 1.0e-12);
-        assert!((geometry.t60_seconds[0] - t60).abs() < 1.0e-12);
-        assert!((geometry.fundamental_hz - midi_frequency_hz(midi)).abs() < 1.0e-12);
+        assert!((geometry.thickness_m - 0.013).abs() < 1.0e-12);
+        assert!((geometry.mass_kg - mass).abs() < 1.0e-12);
+        assert_eq!(geometry.tuned_mode_count, tuned_mode_count);
+        let pitch_cents = 1200.0 * (geometry.fundamental_hz / midi_frequency_hz(midi)).log2();
+        assert!(pitch_cents.abs() < 2.0, "midi={midi} cents={pitch_cents}");
     }
+
+    let c4 = geometry_for_midi(60).unwrap();
+    assert!((c4.mode_frequencies_hz[0] - 261.627_947_060_706_7).abs() < 1.0e-9);
+    assert!((c4.mode_frequencies_hz[1] - 1_046.515_467_877_176).abs() < 1.0e-9);
+    assert!((c4.mode_frequencies_hz[2] - 2_616.293_249_129_842).abs() < 1.0e-9);
+    assert!((c4.mode_shapes_m_neg_half_kg[0][0] as f64 + 2.299_636_97).abs() < 1.0e-6);
+    assert!((c4.mode_shapes_m_neg_half_kg[0][16] as f64 - 2.312_151_99).abs() < 1.0e-6);
+    assert!((c4.mode_shapes_m_neg_half_kg[1][8] as f64 + 1.444_392_77).abs() < 1.0e-6);
+    assert!(c4.mode_shapes_m_neg_half_kg[1][16].abs() < 1.0e-8);
+    // The old runtime sine template was -1 at this quarter-span point and
+    // therefore cannot certify the generated mass-normalized eigenvector.
+    assert!((c4.mode_shapes_m_neg_half_kg[1][8] as f64 + 1.0).abs() > 0.4);
 
     let low = geometry_for_midi(53).unwrap();
     let high = geometry_for_midi(89).unwrap();
-    assert!(low.length_m > 2.6 * high.length_m);
-    assert!(low.thickness_m > 1.8 * high.thickness_m);
-    assert!(high.mode_ratios[2] > low.mode_ratios[2]);
-    assert!(low.t60_seconds[0] > 2.0 * high.t60_seconds[0]);
+    assert!(low.length_m > 2.1 * high.length_m);
+    assert!(low.width_m > high.width_m);
+    assert_eq!(low.tuned_mode_count, 3);
+    assert_eq!(high.tuned_mode_count, 2);
+
+    assert_eq!(
+        VIBES_V2_MODAL_PACK_INPUT_SHA256,
+        "475e23aeafeaa60fa6699adcbfb056fe6c1496993648aaec223ee078ced2f710"
+    );
+    assert_eq!(
+        VIBES_V2_MODAL_AUTHORITY_SHA256,
+        "722ea241538ace173c269f32a3c25671420ae76ad4c5f82bba430148b655fb1e"
+    );
+    assert_eq!(
+        VIBES_V2_MODAL_GENERATOR_SHA256,
+        "71d02485f3cd2d51b37483fd93eef7ee1172ca5c14645bd2416a2afbe177a4a3"
+    );
+    assert_eq!(
+        VIBES_V2_MODAL_PACK_SOLVER_ID,
+        "changes.foundry.stepped-free-free-euler-bernoulli-beam.v1"
+    );
 }
 
 #[test]
@@ -67,6 +117,45 @@ fn every_resonator_is_cut_to_its_key_instead_of_interpolating_length() {
 }
 
 #[test]
+fn bar_tube_coupling_and_free_bar_radiation_exclude_the_old_near_misses() {
+    // Independent C4 evaluation of Soares Eq. 22/24/31 at d/a=.4 and
+    // xe/L=.5. The former implementation omitted cos(omega*Lphysical/c),
+    // yielding -0.031586 instead of the physical -0.002693 coupling. The
+    // known answer uses the generated pack's f32-quantized centre mode shape,
+    // exactly as the no_std runtime does.
+    let coupling = canonical_bar_resonator_inertial_coupling(60).unwrap();
+    assert!(
+        (coupling - -0.002_692_595_193_558_805).abs() < 1.0e-12,
+        "coupling={coupling:.18}"
+    );
+    assert!((coupling - -0.031_586_114_583_910_99).abs() > 0.02);
+
+    // The one-metre C4 free-bar transfer is the front-minus-back dipole at a
+    // fixed 30-degree listener angle. A one-sided baffled result is orders
+    // stronger and would make the attack peak immediately instead of letting
+    // the tuned resonator build. A listener placed on the exact bar-centre
+    // symmetry axis is the other near miss: it erases the tuned antisymmetric
+    // 4f partial, so the mode-1 transfer must remain materially nonzero.
+    let (real, imaginary) = free_bar_radiation_transfer_for_test(60, 0).unwrap();
+    assert!(
+        (real - 0.001_739_035_466_701_192).abs() < 1.0e-12,
+        "real={real:.18} imaginary={imaginary:.18}"
+    );
+    assert!(
+        (imaginary - -0.003_100_071_129_020_549).abs() < 1.0e-12,
+        "real={real:.18} imaginary={imaginary:.18}"
+    );
+    let magnitude = (real * real + imaginary * imaginary).sqrt();
+    assert!(magnitude < 0.005);
+    let (fourth_real, fourth_imaginary) = free_bar_radiation_transfer_for_test(60, 1).unwrap();
+    assert!((fourth_real - 0.076_595_200_382_064_15).abs() < 1.0e-12);
+    assert!((fourth_imaginary - -0.233_007_867_204_461_5).abs() < 1.0e-12);
+    assert!(
+        (fourth_real * fourth_real + fourth_imaginary * fourth_imaginary).sqrt() > 50.0 * magnitude
+    );
+}
+
+#[test]
 fn every_declared_key_constructs_at_every_supported_rate_without_aliasing() {
     for sample_rate in [8_000.0, 44_100.0, 48_000.0, 96_000.0] {
         for midi in MIN_MIDI..=MAX_MIDI {
@@ -74,15 +163,31 @@ fn every_declared_key_constructs_at_every_supported_rate_without_aliasing() {
                 .unwrap_or_else(|error| panic!("midi {midi} rate {sample_rate}: {error:?}"));
             assert!(model.resolved_mode_count() >= 1);
             assert!(model.resolved_mode_count() <= BAR_MODES);
+            let geometry = model.geometry();
+            let element_length_m = geometry.length_m / 32.0;
             for index in 0..model.resolved_mode_count() {
                 let frequency = model.mode_frequency_hz(index).unwrap();
                 assert!(frequency < 0.44 * sample_rate, "midi {midi} mode {index}");
+                assert!(
+                    rayleigh_radiation_is_resolved(element_length_m, frequency),
+                    "midi={midi} rate={sample_rate} mode={index} frequency={frequency}"
+                );
             }
             for index in model.resolved_mode_count()..BAR_MODES {
                 assert!(model.mode_frequency_hz(index).is_none());
             }
         }
     }
+}
+
+#[test]
+fn rayleigh_radiation_culls_an_underresolved_mode_instead_of_muting_it() {
+    // A 10 mm source cell has five cells per wavelength at 6864.2 Hz and
+    // seven at 4903 Hz under the fixed 343.21 m/s air law.
+    assert!(!rayleigh_radiation_is_resolved(0.010, 6_864.2));
+    assert!(rayleigh_radiation_is_resolved(0.010, 4_903.0));
+    assert!(!rayleigh_radiation_is_resolved(f64::NAN, 4_903.0));
+    assert!(!rayleigh_radiation_is_resolved(0.010, f64::INFINITY));
 }
 
 #[test]
@@ -223,7 +328,8 @@ fn pedal_up_is_dissipative_and_motor_is_radiation_only() {
         48_000,
     );
     assert!(damped.total_energy_j() < free.total_energy_j() * 0.25);
-    assert!(damped.cumulative_loss_j() > free.cumulative_loss_j());
+    assert_eq!(free.cumulative_damper_loss_j().to_bits(), 0.0_f64.to_bits());
+    assert!(damped.cumulative_damper_loss_j() > 0.0);
 
     let controls_on = VibesControls {
         pedal_position: 1.0,
@@ -283,6 +389,45 @@ fn shared_stem_retains_pedal_fan_frame_and_cross_bar_sympathy() {
 }
 
 #[test]
+fn shared_frame_is_invariant_to_bar_insertion_order() {
+    let mut ascending = VibraphoneStem::new(SAMPLE_RATE, VibesParameters::canonical()).unwrap();
+    ascending.retain_bar(60).unwrap();
+    ascending.retain_bar(67).unwrap();
+    let mut descending = VibraphoneStem::new(SAMPLE_RATE, VibesParameters::canonical()).unwrap();
+    descending.retain_bar(67).unwrap();
+    descending.retain_bar(60).unwrap();
+    let gesture = StrikeGesture::from_velocity(100, 0.5).unwrap();
+    ascending.strike(60, gesture).unwrap();
+    descending.strike(60, gesture).unwrap();
+    let controls = VibesControls {
+        pedal_position: 1.0,
+        motor_hz: 5.5,
+        fan_depth: 0.7,
+    };
+    for frame in 0..4_096 {
+        let left = ascending.step(controls).unwrap();
+        let right = descending.step(controls).unwrap();
+        assert_eq!(
+            left.radiated_pressure_pa.to_bits(),
+            right.radiated_pressure_pa.to_bits(),
+            "frame={frame}"
+        );
+        assert_eq!(
+            left.total_mechanical_energy_j.to_bits(),
+            right.total_mechanical_energy_j.to_bits(),
+            "frame={frame}"
+        );
+    }
+    for midi in [60, 67] {
+        assert_eq!(
+            ascending.bar_energy_j(midi).unwrap().to_bits(),
+            descending.bar_energy_j(midi).unwrap().to_bits(),
+            "midi={midi}"
+        );
+    }
+}
+
+#[test]
 fn pressure_output_is_finite_distinct_and_deterministic() {
     let (_, left) = render_voice(53, 0.6, VibesControls::PEDAL_DOWN_MOTOR_OFF, 18_000);
     let (_, right) = render_voice(53, 0.6, VibesControls::PEDAL_DOWN_MOTOR_OFF, 18_000);
@@ -330,4 +475,51 @@ fn shipping_abi_refuses_misaligned_and_wrapping_output_ranges_before_slice_const
         ),
         0
     );
+}
+
+#[test]
+fn shipping_abi_is_audible_bounded_and_dynamic_without_note_fitted_gain() {
+    for sample_rate in [44_100.0_f64, 48_000.0, 96_000.0] {
+        for midi in [53, 60, 67, 74, 84] {
+            let frames = (0.5 * sample_rate) as usize;
+            let mut rms = [0.0_f64; 2];
+            for (dynamic, velocity) in [64, 110].into_iter().enumerate() {
+                let mut left = vec![0.0_f32; frames];
+                let mut right = vec![0.0_f32; frames];
+                assert_eq!(
+                    vbs2_render(
+                        midi,
+                        velocity,
+                        sample_rate as f32,
+                        left.as_mut_ptr(),
+                        right.as_mut_ptr(),
+                        frames as i32,
+                    ),
+                    frames as i32,
+                    "midi={midi} rate={sample_rate} velocity={velocity}"
+                );
+                let mut squares = 0.0_f64;
+                let mut peak = 0.0_f64;
+                for (left_sample, right_sample) in left.iter().zip(&right) {
+                    assert_eq!(left_sample.to_bits(), right_sample.to_bits());
+                    assert!(left_sample.is_finite());
+                    let sample = *left_sample as f64;
+                    squares += sample * sample;
+                    peak = peak.max(sample.abs());
+                }
+                rms[dynamic] = (squares / frames as f64).sqrt();
+                assert!(rms[dynamic] > 1.0e-4, "midi={midi} rate={sample_rate}");
+                assert!(
+                    peak < 0.98,
+                    "midi={midi} rate={sample_rate} velocity={velocity} peak={peak}"
+                );
+            }
+            assert!(
+                rms[1] > 1.1 * rms[0],
+                "midi={midi} rate={sample_rate} soft={} loud={}",
+                rms[0],
+                rms[1]
+            );
+        }
+    }
 }

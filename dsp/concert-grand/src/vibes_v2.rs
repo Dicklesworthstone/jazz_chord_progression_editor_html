@@ -7,8 +7,8 @@
 //! It retains the
 //! mechanisms that identify a vibraphone rather than a generic sine bell:
 //!
-//! - a reviewed aluminium-bar mode pack whose first three partials are tuned
-//!   near 1:4:9.88 and whose remaining dispersive modes are retained;
+//! - a generated aluminium-bar eigenpack whose reviewed partials are tuned
+//!   near 1:4:10 and whose remaining geometry-derived modes are retained;
 //! - finite compliant mallet contact, with hardness changing contact width and
 //!   duration instead of being replaced by an output EQ;
 //! - a passive bar-to-quarter-wave resonator port;
@@ -27,82 +27,60 @@ const PI: f64 = core::f64::consts::PI;
 const TAU: f64 = 2.0 * PI;
 const LN_1000: f64 = 6.907_755_278_982_137;
 
-pub const BAR_MODES: usize = 7;
+pub const BAR_MODES: usize = 10;
+const BAR_SHAPE_NODES: usize = 33;
 pub const MIN_MIDI: i32 = 53;
 pub const MAX_MIDI: i32 = 89;
 pub const MAX_FAN_RATE_HZ: f64 = 12.0;
 const CONTACT_SOLVE_STEPS: usize = 8;
 const RADIATION_DISTANCE_M: f64 = 1.0;
+// One fixed one-metre listener direction, 30 degrees off the bar-normal
+// axis. A listener exactly over every bar centre is a geometric singularity:
+// it nulls every antisymmetric length mode, including the deliberately tuned
+// 4f partial, and makes a real vibraphone bar sound like a sine oscillator.
+const BAR_OBSERVER_AXIAL_M: f64 = 0.5;
+const BAR_OBSERVER_NORMAL_M: f64 = 0.866_025_403_784_438_6;
 
-const ALUMINIUM_DENSITY_KG_M3: f64 = 2_700.0;
 const SOUND_SPEED_M_S: f64 = 343.21;
 const AIR_DENSITY_KG_M3: f64 = 1.2041;
 
-/// Ratios measured for a professionally tuned, double-undercut vibraphone
-/// family.  Modes two and three are the deliberate 4f and approximately 10f
-/// tuning targets; upper modes remain dispersive rather than harmonic.
-pub const MODE_RATIOS: [f64; BAR_MODES] = [1.0, 4.0, 9.88, 18.07, 29.32, 43.34, 59.84];
-
-/// Authored PHS6 design anchors for the reviewed modal reduction.  Production
-/// interpolates dimensions, modal ratios, and decay per key.  These are not
-/// presented as output from a runtime beam eigensolver or as measured corpus
-/// data; sample comparison remains a separate acceptance gate.
-#[derive(Clone, Copy)]
-struct ReviewedBarAnchor {
+/// One exact row of the offline stepped free-free Euler--Bernoulli reduction.
+/// Frequencies and mass-normalized shapes are solved from the 32-element
+/// undercut geometry by the checked-in generator. The runtime never derives
+/// them from MIDI or from hand-authored modal ratios.
+#[derive(Clone, Copy, Debug)]
+struct ModalPackRecord {
     midi: i32,
+    intended_frequency_hz: f64,
     length_m: f64,
     width_m: f64,
-    thickness_m: f64,
-    mode_3_ratio: f64,
-    mode_4_ratio: f64,
-    t60_seconds: [f64; 4],
+    outer_thickness_m: f64,
+    element_thickness_m: [f64; 32],
+    mass_kg: f64,
+    tuned_mode_count: usize,
+    solved_frequencies_hz: [f64; BAR_MODES],
+    eigen_relative_residuals: [f64; BAR_MODES],
+    mode_shapes_m_neg_half_kg: [[f32; BAR_SHAPE_NODES]; BAR_MODES],
+    t60_seconds: [f64; BAR_MODES],
+    resonator_effective_length_m: f64,
+    resonator_physical_length_m: f64,
+    resonator_radius_m: f64,
 }
 
-const REVIEWED_BAR_ANCHORS: [ReviewedBarAnchor; 4] = [
-    ReviewedBarAnchor {
-        midi: 53,
-        length_m: 0.490,
-        width_m: 0.057,
-        thickness_m: 0.013,
-        mode_3_ratio: 9.88,
-        mode_4_ratio: 18.1,
-        t60_seconds: [7.5, 4.2, 2.3, 1.4],
-    },
-    ReviewedBarAnchor {
-        midi: 60,
-        length_m: 0.407,
-        width_m: 0.052,
-        thickness_m: 0.011,
-        mode_3_ratio: 9.91,
-        mode_4_ratio: 18.2,
-        t60_seconds: [6.8, 3.8, 2.1, 1.2],
-    },
-    ReviewedBarAnchor {
-        midi: 72,
-        length_m: 0.292,
-        width_m: 0.045,
-        thickness_m: 0.009,
-        mode_3_ratio: 9.95,
-        mode_4_ratio: 18.3,
-        t60_seconds: [5.4, 3.0, 1.7, 1.0],
-    },
-    ReviewedBarAnchor {
-        midi: 89,
-        length_m: 0.185,
-        width_m: 0.036,
-        thickness_m: 0.007,
-        mode_3_ratio: 10.05,
-        mode_4_ratio: 18.6,
-        t60_seconds: [3.6, 2.1, 1.2, 0.7],
-    },
-];
+mod vibes_v2_eigenpack {
+    use super::ModalPackRecord;
 
-/// A wide felt damper couples most strongly to the low flexural modes.
-const DAMPER_SHAPE: [f64; BAR_MODES] = [1.0, 0.88, 0.72, 0.56, 0.43, 0.32, 0.24];
+    include!("vibes_v2_eigenpack.rs");
+}
+use vibes_v2_eigenpack::VIBES_V2_MODAL_PACK;
 
-/// Bar radiation grows with mode frequency but rolls off once the wavelength
-/// approaches the finite bar width.
-const BAR_RADIATION_SHAPE: [f64; BAR_MODES] = [0.10, -0.18, 0.23, -0.24, 0.22, -0.18, 0.14];
+pub const VIBES_V2_MODAL_PACK_INPUT_SHA256: &str =
+    vibes_v2_eigenpack::VIBES_V2_MODAL_PACK_INPUT_SHA256;
+pub const VIBES_V2_MODAL_AUTHORITY_SHA256: &str =
+    vibes_v2_eigenpack::VIBES_V2_MODAL_AUTHORITY_SHA256;
+pub const VIBES_V2_MODAL_GENERATOR_SHA256: &str =
+    vibes_v2_eigenpack::VIBES_V2_MODAL_GENERATOR_SHA256;
+pub const VIBES_V2_MODAL_PACK_SOLVER_ID: &str = vibes_v2_eigenpack::VIBES_V2_MODAL_PACK_SOLVER_ID;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum VibesError {
@@ -125,10 +103,15 @@ pub struct BarGeometry {
     pub length_m: f64,
     pub width_m: f64,
     pub thickness_m: f64,
+    pub element_thickness_m: [f64; 32],
     pub mass_kg: f64,
     pub resonator_length_m: f64,
+    pub resonator_effective_length_m: f64,
     pub resonator_radius_m: f64,
+    pub tuned_mode_count: usize,
+    pub mode_frequencies_hz: [f64; BAR_MODES],
     pub mode_ratios: [f64; BAR_MODES],
+    pub mode_shapes_m_neg_half_kg: [[f32; BAR_SHAPE_NODES]; BAR_MODES],
     pub t60_seconds: [f64; BAR_MODES],
 }
 
@@ -221,7 +204,9 @@ impl VibesControls {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct VibesParameters {
     pub damper_conductance_kg_per_s: f64,
-    pub resonator_conductance_kg_per_s: f64,
+    /// Gap from the tube mouth to the bar, normalized by tube radius.
+    pub bar_resonator_distance_over_radius: f64,
+    pub resonator_placement_over_length: f64,
     pub resonator_q: f64,
 }
 
@@ -229,7 +214,8 @@ impl VibesParameters {
     pub const fn canonical() -> Self {
         Self {
             damper_conductance_kg_per_s: 22.0,
-            resonator_conductance_kg_per_s: 1.7,
+            bar_resonator_distance_over_radius: 0.4,
+            resonator_placement_over_length: 0.5,
             resonator_q: 38.0,
         }
     }
@@ -238,8 +224,10 @@ impl VibesParameters {
         if !self.damper_conductance_kg_per_s.is_finite() || self.damper_conductance_kg_per_s < 0.0 {
             return Err(VibesError::NonPassiveDamper);
         }
-        if !self.resonator_conductance_kg_per_s.is_finite()
-            || self.resonator_conductance_kg_per_s <= 0.0
+        if !self.bar_resonator_distance_over_radius.is_finite()
+            || !(0.0..=2.0).contains(&self.bar_resonator_distance_over_radius)
+            || !self.resonator_placement_over_length.is_finite()
+            || !(0.05..=0.95).contains(&self.resonator_placement_over_length)
             || !self.resonator_q.is_finite()
             || self.resonator_q <= 0.0
         {
@@ -270,9 +258,10 @@ struct Mode {
     rotation_cos: f64,
     rotation_sin: f64,
     half_velocity_decay: f64,
-    strike_residue: f64,
     damper_residue: f64,
     radiation_residue: f64,
+    radiation_transfer_re: f64,
+    radiation_transfer_im: f64,
 }
 
 impl Mode {
@@ -285,9 +274,10 @@ impl Mode {
         rotation_cos: 1.0,
         rotation_sin: 0.0,
         half_velocity_decay: 1.0,
-        strike_residue: 0.0,
         damper_residue: 0.0,
         radiation_residue: 0.0,
+        radiation_transfer_re: 0.0,
+        radiation_transfer_im: 0.0,
     };
 
     fn energy_j(self) -> f64 {
@@ -308,10 +298,6 @@ struct ResonatorMode {
     position: f64,
     velocity: f64,
     omega: f64,
-    rotation_cos: f64,
-    rotation_sin: f64,
-    half_velocity_decay: f64,
-    port_residue: f64,
     volume_velocity_residue: f64,
 }
 
@@ -319,13 +305,6 @@ impl ResonatorMode {
     fn energy_j(self) -> f64 {
         0.5 * (self.velocity * self.velocity
             + self.omega * self.omega * self.position * self.position)
-    }
-
-    fn rotate(&mut self) {
-        let x = self.position;
-        let v = self.velocity;
-        self.position = self.rotation_cos * x + self.rotation_sin * v / self.omega;
-        self.velocity = -self.omega * self.rotation_sin * x + self.rotation_cos * v;
     }
 }
 
@@ -374,10 +353,12 @@ pub struct VibraphoneVoice {
     parameters: VibesParameters,
     modes: [Mode; BAR_MODES],
     resonator: ResonatorMode,
+    inertial_coupling: f64,
     contact: ContactState,
     motor_phase: f64,
     cumulative_mallet_work_j: f64,
     cumulative_loss_j: f64,
+    cumulative_damper_loss_j: f64,
     previous_radiated_volume_velocity_m3_per_s: f64,
     resolved_mode_count: usize,
 }
@@ -394,18 +375,21 @@ impl VibraphoneVoice {
         parameters.validate()?;
         let geometry = geometry_for_midi(midi)?;
         let dt = 1.0 / sample_rate_hz;
-        let modal_mass = 0.5 * geometry.mass_kg;
-        let modal_norm = 1.0 / sqrt(modal_mass);
         let mut modes = [Mode::ZERO; BAR_MODES];
         let mut resolved_mode_count = 0usize;
         for index in 0..BAR_MODES {
-            let frequency_hz = geometry.fundamental_hz * geometry.mode_ratios[index];
-            if frequency_hz >= 0.44 * sample_rate_hz {
-                continue;
+            let frequency_hz = geometry.mode_frequencies_hz[index];
+            let element_length_m = geometry.length_m / (BAR_SHAPE_NODES - 1) as f64;
+            if frequency_hz >= 0.44 * sample_rate_hz
+                || !rayleigh_radiation_is_resolved(element_length_m, frequency_hz)
+            {
+                break;
             }
             resolved_mode_count += 1;
             let omega = TAU * frequency_hz;
             let t60 = geometry.t60_seconds[index];
+            let radiation_transfer =
+                packed_free_bar_radiation_transfer(&geometry, index, frequency_hz);
             modes[index] = Mode {
                 active: true,
                 position: 0.0,
@@ -418,9 +402,10 @@ impl VibraphoneVoice {
                 // lossless rotation.  Each half step therefore carries half
                 // of the requested -60 dB amplitude decay over T60.
                 half_velocity_decay: exp(-LN_1000 * dt / t60),
-                strike_residue: modal_norm,
-                damper_residue: modal_norm * DAMPER_SHAPE[index],
-                radiation_residue: modal_norm * BAR_RADIATION_SHAPE[index],
+                damper_residue: packed_mode_shape(&geometry, index, 0.5),
+                radiation_residue: packed_mode_average(&geometry, index),
+                radiation_transfer_re: radiation_transfer.0,
+                radiation_transfer_im: radiation_transfer.1,
             };
         }
         if resolved_mode_count == 0 {
@@ -428,9 +413,9 @@ impl VibraphoneVoice {
         }
 
         let area = PI * geometry.resonator_radius_m * geometry.resonator_radius_m;
-        let effective_resonator_length_m =
-            geometry.resonator_length_m + 0.6133 * geometry.resonator_radius_m;
-        let air_mass = AIR_DENSITY_KG_M3 * area * effective_resonator_length_m;
+        let effective_resonator_length_m = geometry.resonator_effective_length_m;
+        // Eq. (16), Soares et al.: modal mass of the first closed-open mode.
+        let air_mass = 0.5 * AIR_DENSITY_KG_M3 * area * effective_resonator_length_m;
         let resonator_norm = 1.0 / sqrt(air_mass.max(1.0e-9));
         let resonator_frequency_hz = SOUND_SPEED_M_S / (4.0 * effective_resonator_length_m);
         let omega = TAU * resonator_frequency_hz;
@@ -438,14 +423,17 @@ impl VibraphoneVoice {
             position: 0.0,
             velocity: 0.0,
             omega,
-            rotation_cos: cos(omega * dt),
-            rotation_sin: sin(omega * dt),
-            // Applied twice per sample; together the two factors realize the
-            // canonical amplitude decay exp(-omega*dt/(2Q)).
-            half_velocity_decay: exp(-omega * dt / (2.0 * parameters.resonator_q)),
-            port_residue: resonator_norm,
             volume_velocity_residue: area * resonator_norm,
         };
+        let inertial_coupling = bar_resonator_inertial_coupling(
+            &geometry,
+            parameters,
+            resonator_frequency_hz,
+            air_mass,
+        );
+        if !inertial_coupling.is_finite() || inertial_coupling.abs() >= 0.25 {
+            return Err(VibesError::NonPassiveResonator);
+        }
         Ok(Self {
             sample_rate_hz,
             dt,
@@ -453,10 +441,12 @@ impl VibraphoneVoice {
             parameters,
             modes,
             resonator,
+            inertial_coupling,
             contact: ContactState::INACTIVE,
             motor_phase: 0.0,
             cumulative_mallet_work_j: 0.0,
             cumulative_loss_j: 0.0,
+            cumulative_damper_loss_j: 0.0,
             previous_radiated_volume_velocity_m3_per_s: 0.0,
             resolved_mode_count,
         })
@@ -522,20 +512,26 @@ impl VibraphoneVoice {
         };
 
         self.apply_intrinsic_half_loss();
-        self.apply_resonator_coupling(0.5 * self.dt);
         self.apply_damper(controls.pedal_position, 0.5 * self.dt);
-        for mode in &mut self.modes {
+        for mode in self.modes.iter_mut().skip(1) {
             mode.rotate();
         }
-        self.resonator.rotate();
+        self.advance_bar_resonator_coupled();
         self.apply_damper(controls.pedal_position, 0.5 * self.dt);
-        self.apply_resonator_coupling(0.5 * self.dt);
         self.apply_intrinsic_half_loss();
 
         let bar_radiation = self
             .modes
             .iter()
             .map(|mode| mode.radiation_residue * mode.velocity)
+            .sum::<f64>();
+        let bar_pressure_pa = self
+            .modes
+            .iter()
+            .map(|mode| {
+                mode.radiation_transfer_re * mode.velocity
+                    + mode.radiation_transfer_im * mode.omega * mode.position
+            })
             .sum::<f64>();
         let tube_volume_velocity = self.resonator.volume_velocity_residue * self.resonator.velocity;
         let fan_aperture = 1.0 - 0.48 * controls.fan_depth
@@ -544,14 +540,14 @@ impl VibraphoneVoice {
         if self.motor_phase >= TAU {
             self.motor_phase -= TAU;
         }
-        let bar_radiating_area_m2 = 0.18 * self.geometry.length_m * self.geometry.width_m;
-        let bar_volume_velocity = bar_radiating_area_m2 * bar_radiation;
-        let radiated_volume_velocity = bar_volume_velocity + fan_aperture * tube_volume_velocity;
-        let volume_acceleration =
-            (radiated_volume_velocity - self.previous_radiated_volume_velocity_m3_per_s) / self.dt;
-        self.previous_radiated_volume_velocity_m3_per_s = radiated_volume_velocity;
-        let radiated_pressure_pa =
-            AIR_DENSITY_KG_M3 * volume_acceleration / (4.0 * PI * RADIATION_DISTANCE_M);
+        let radiated_tube_volume_velocity = fan_aperture * tube_volume_velocity;
+        let tube_volume_acceleration = (radiated_tube_volume_velocity
+            - self.previous_radiated_volume_velocity_m3_per_s)
+            / self.dt;
+        self.previous_radiated_volume_velocity_m3_per_s = radiated_tube_volume_velocity;
+        let tube_pressure_pa =
+            AIR_DENSITY_KG_M3 * tube_volume_acceleration / (4.0 * PI * RADIATION_DISTANCE_M);
+        let radiated_pressure_pa = bar_pressure_pa + tube_pressure_pa;
         if !radiated_pressure_pa.is_finite() || !self.total_energy_j().is_finite() {
             return Err(VibesError::NonFiniteState);
         }
@@ -587,7 +583,9 @@ impl VibraphoneVoice {
     }
 
     pub fn total_energy_j(&self) -> f64 {
-        self.modes.iter().map(|mode| mode.energy_j()).sum::<f64>() + self.resonator.energy_j()
+        self.modes.iter().map(|mode| mode.energy_j()).sum::<f64>()
+            + self.resonator.energy_j()
+            + self.inertial_coupling * self.modes[0].velocity * self.resonator.velocity
     }
 
     pub fn cumulative_mallet_work_j(&self) -> f64 {
@@ -596,6 +594,10 @@ impl VibraphoneVoice {
 
     pub fn cumulative_loss_j(&self) -> f64 {
         self.cumulative_loss_j
+    }
+
+    pub fn cumulative_damper_loss_j(&self) -> f64 {
+        self.cumulative_damper_loss_j
     }
 
     pub fn contact_active(&self) -> bool {
@@ -663,9 +665,27 @@ impl VibraphoneVoice {
         let mut weighted = 0.0;
         for sample in 0..5 {
             let x = (centre + OFFSETS[sample] * half_patch).clamp(0.0, 1.0);
-            weighted += WEIGHTS[sample] * bar_mode_shape(index, x);
+            weighted += WEIGHTS[sample] * packed_mode_shape(&self.geometry, index, x);
         }
-        self.modes[index].strike_residue * weighted / 12.0
+        weighted / 12.0
+    }
+
+    fn bar_inverse_mass(&self, index: usize) -> f64 {
+        if index == 0 {
+            1.0 / (1.0 - self.inertial_coupling * self.inertial_coupling)
+        } else {
+            1.0
+        }
+    }
+
+    fn apply_bar_impulse(&mut self, index: usize, impulse: f64) {
+        if index == 0 {
+            let inverse = self.bar_inverse_mass(0);
+            self.modes[0].velocity += inverse * impulse;
+            self.resonator.velocity -= self.inertial_coupling * inverse * impulse;
+        } else {
+            self.modes[index].velocity += impulse;
+        }
     }
 
     fn strike_displacement(&self) -> f64 {
@@ -698,7 +718,7 @@ impl VibraphoneVoice {
         let mut inverse_effective_mass = 1.0 / gesture.mallet_mass_kg;
         for (index, residue) in residues.iter_mut().enumerate() {
             *residue = self.contact_residue(index);
-            inverse_effective_mass += *residue * *residue;
+            inverse_effective_mass += *residue * *residue * self.bar_inverse_mass(index);
         }
         let effective_mass = 1.0 / inverse_effective_mass.max(1.0e-30);
         let stiffness = gesture.contact_stiffness_n_per_m_pow_3_over_2;
@@ -768,7 +788,7 @@ impl VibraphoneVoice {
                 * self.contact.mallet_velocity_m_per_s
             + potential_before;
         for index in 0..BAR_MODES {
-            self.modes[index].velocity += residues[index] * total_impulse;
+            self.apply_bar_impulse(index, residues[index] * total_impulse);
         }
         self.contact.mallet_velocity_m_per_s -= total_impulse / gesture.mallet_mass_kg;
         self.contact.compression_m = compression_after;
@@ -789,7 +809,7 @@ impl VibraphoneVoice {
              * release into felt loss.  This is a dissipative projection, not
              * an energy correction hidden in the output. */
             for index in 0..BAR_MODES {
-                self.modes[index].velocity -= residues[index] * total_impulse;
+                self.apply_bar_impulse(index, -residues[index] * total_impulse);
             }
             self.contact.mallet_velocity_m_per_s += total_impulse / gesture.mallet_mass_kg;
             self.contact.dissipated_energy_j += potential_before;
@@ -821,10 +841,43 @@ impl VibraphoneVoice {
 
     fn apply_intrinsic_half_loss(&mut self) {
         let before = self.total_energy_j();
-        for mode in &mut self.modes {
+        // The coupled fundamental and tube damping are integrated in the same
+        // passive midpoint step as their off-diagonal modal mass.
+        for mode in self.modes.iter_mut().skip(1) {
             mode.velocity *= mode.half_velocity_decay;
         }
-        self.resonator.velocity *= self.resonator.half_velocity_decay;
+        let after = self.total_energy_j();
+        self.cumulative_loss_j += (before - after).max(0.0);
+    }
+
+    fn advance_bar_resonator_coupled(&mut self) {
+        let before = self.total_energy_j();
+        let h = self.dt;
+        let coupling = self.inertial_coupling;
+        let bar_omega = self.modes[0].omega;
+        let resonator_omega = self.resonator.omega;
+        let bar_stiffness = bar_omega * bar_omega;
+        let resonator_stiffness = resonator_omega * resonator_omega;
+        let bar_damping = 2.0 * LN_1000 / self.geometry.t60_seconds[0];
+        let resonator_damping = resonator_omega / self.parameters.resonator_q;
+        let bar_diagonal = 1.0 + 0.5 * h * bar_damping + 0.25 * h * h * bar_stiffness;
+        let resonator_diagonal =
+            1.0 + 0.5 * h * resonator_damping + 0.25 * h * h * resonator_stiffness;
+        let bar_rhs = (1.0 - 0.5 * h * bar_damping - 0.25 * h * h * bar_stiffness)
+            * self.modes[0].velocity
+            + coupling * self.resonator.velocity
+            - h * bar_stiffness * self.modes[0].position;
+        let resonator_rhs = coupling * self.modes[0].velocity
+            + (1.0 - 0.5 * h * resonator_damping - 0.25 * h * h * resonator_stiffness)
+                * self.resonator.velocity
+            - h * resonator_stiffness * self.resonator.position;
+        let determinant = bar_diagonal * resonator_diagonal - coupling * coupling;
+        let bar_velocity = (resonator_diagonal * bar_rhs - coupling * resonator_rhs) / determinant;
+        let resonator_velocity = (bar_diagonal * resonator_rhs - coupling * bar_rhs) / determinant;
+        self.modes[0].position += 0.5 * h * (self.modes[0].velocity + bar_velocity);
+        self.resonator.position += 0.5 * h * (self.resonator.velocity + resonator_velocity);
+        self.modes[0].velocity = bar_velocity;
+        self.resonator.velocity = resonator_velocity;
         let after = self.total_energy_j();
         self.cumulative_loss_j += (before - after).max(0.0);
     }
@@ -839,7 +892,10 @@ impl VibraphoneVoice {
         let norm_squared = self
             .modes
             .iter()
-            .map(|mode| mode.damper_residue * mode.damper_residue)
+            .enumerate()
+            .map(|(index, mode)| {
+                mode.damper_residue * mode.damper_residue * self.bar_inverse_mass(index)
+            })
             .sum::<f64>();
         let port_velocity = self
             .modes
@@ -849,26 +905,14 @@ impl VibraphoneVoice {
         let decay = exp(-conductance * norm_squared * duration_seconds);
         let impulse = port_velocity * (1.0 - decay) / norm_squared.max(1.0e-30);
         let before = self.total_energy_j();
-        for mode in &mut self.modes {
-            mode.velocity -= mode.damper_residue * impulse;
+        for index in 0..BAR_MODES {
+            let port_impulse = -self.modes[index].damper_residue * impulse;
+            self.apply_bar_impulse(index, port_impulse);
         }
         let after = self.total_energy_j();
-        self.cumulative_loss_j += (before - after).max(0.0);
-    }
-
-    fn apply_resonator_coupling(&mut self, duration_seconds: f64) {
-        let bar_residue = self.modes[0].radiation_residue;
-        let tube_residue = self.resonator.port_residue;
-        let norm_squared = bar_residue * bar_residue + tube_residue * tube_residue;
-        let delta = bar_residue * self.modes[0].velocity - tube_residue * self.resonator.velocity;
-        let decay =
-            exp(-self.parameters.resonator_conductance_kg_per_s * norm_squared * duration_seconds);
-        let impulse = delta * (1.0 - decay) / norm_squared.max(1.0e-30);
-        let before = self.total_energy_j();
-        self.modes[0].velocity -= bar_residue * impulse;
-        self.resonator.velocity += tube_residue * impulse;
-        let after = self.total_energy_j();
-        self.cumulative_loss_j += (before - after).max(0.0);
+        let loss_j = (before - after).max(0.0);
+        self.cumulative_loss_j += loss_j;
+        self.cumulative_damper_loss_j += loss_j;
     }
 }
 
@@ -975,13 +1019,13 @@ impl VibraphoneStem {
     }
 
     fn ensure_bar(&mut self, midi: i32) -> Result<usize, VibesError> {
-        let existing = self.voices.iter().position(|slot| {
-            slot.as_ref()
-                .is_some_and(|voice| voice.geometry().midi == midi)
-        });
-        let index = existing
-            .or_else(|| self.voices.iter().position(Option::is_none))
-            .ok_or(VibesError::NonFiniteState)?;
+        if !(MIN_MIDI..=MAX_MIDI).contains(&midi) {
+            return Err(VibesError::InvalidMidi);
+        }
+        // A key owns one stable slot. First-free insertion made floating-point
+        // summation and the old sequential frame rotations depend on the order
+        // in which otherwise identical bars were retained.
+        let index = (midi - MIN_MIDI) as usize;
         if self.voices[index].is_none() {
             self.voices[index] = Some(VibraphoneVoice::new(
                 midi,
@@ -1010,18 +1054,30 @@ impl VibraphoneStem {
             pressure += output.radiated_pressure_pa;
         }
 
-        /* Lossless orthogonal velocity rotations couple every retained bar to
-         * the same frame modes.  Energy can move into an unstruck bar on a
-         * later note, but this power port cannot create it. */
-        for voice in self.voices.iter_mut().flatten() {
-            for (frame_index, frame) in self.frame_modes.iter_mut().enumerate() {
-                let angle = self.dt * (7.5 + 1.8 * frame_index as f64);
-                let c = cos(angle);
-                let s = sin(angle);
-                let bar_velocity = voice.modes[0].velocity;
-                let frame_velocity = frame.velocity;
-                voice.modes[0].velocity = c * bar_velocity - s * frame_velocity;
-                frame.velocity = s * bar_velocity + c * frame_velocity;
+        /* Each frame mode couples to the normalized aggregate of all retained
+         * bar fundamentals. Rotating that one collective coordinate with the
+         * frame coordinate is lossless, permutation-invariant, and leaves all
+         * bar-velocity components orthogonal to the aggregate unchanged. */
+        let retained_count = self.voices.iter().flatten().count();
+        let aggregate_weight = 1.0 / sqrt(retained_count.max(1) as f64);
+        for (frame_index, frame) in self.frame_modes.iter_mut().enumerate() {
+            let aggregate_before = self
+                .voices
+                .iter()
+                .flatten()
+                .map(|voice| {
+                    aggregate_weight * voice.modes[0].velocity / sqrt(voice.bar_inverse_mass(0))
+                })
+                .sum::<f64>();
+            let angle = self.dt * (7.5 + 1.8 * frame_index as f64);
+            let c = cos(angle);
+            let s = sin(angle);
+            let aggregate_after = c * aggregate_before - s * frame.velocity;
+            frame.velocity = s * aggregate_before + c * frame.velocity;
+            let normalized_delta = aggregate_weight * (aggregate_after - aggregate_before);
+            for voice in self.voices.iter_mut().flatten() {
+                let impulse = normalized_delta / sqrt(voice.bar_inverse_mass(0));
+                voice.apply_bar_impulse(0, impulse);
             }
         }
         for frame in &mut self.frame_modes {
@@ -1091,75 +1147,221 @@ pub fn geometry_for_midi(midi: i32) -> Result<BarGeometry, VibesError> {
     if !(MIN_MIDI..=MAX_MIDI).contains(&midi) {
         return Err(VibesError::InvalidMidi);
     }
-    let fundamental_hz = midi_frequency_hz(midi);
-    let (lower, upper, blend) = reviewed_anchor_span(midi);
-    let length_m = lerp(lower.length_m, upper.length_m, blend);
-    let width_m = lerp(lower.width_m, upper.width_m, blend);
-    let thickness_m = lerp(lower.thickness_m, upper.thickness_m, blend);
-    let mass_kg = ALUMINIUM_DENSITY_KG_M3 * width_m * thickness_m * length_m * 0.78;
-    let mut mode_ratios = MODE_RATIOS;
-    mode_ratios[2] = lerp(lower.mode_3_ratio, upper.mode_3_ratio, blend);
-    mode_ratios[3] = lerp(lower.mode_4_ratio, upper.mode_4_ratio, blend);
-    let upper_scale = mode_ratios[3] / 18.07;
-    mode_ratios[4] *= upper_scale;
-    mode_ratios[5] *= upper_scale;
-    mode_ratios[6] *= upper_scale;
-    let mut t60_seconds = [0.0; BAR_MODES];
-    for (index, value) in t60_seconds.iter_mut().enumerate().take(4) {
-        *value = lerp(lower.t60_seconds[index], upper.t60_seconds[index], blend);
+    let row = VIBES_V2_MODAL_PACK[(midi - MIN_MIDI) as usize];
+    let expected_hz = midi_frequency_hz(midi);
+    let intended_cents = 1200.0 * libm::log2(row.intended_frequency_hz / expected_hz);
+    let resonator_closure = row.resonator_physical_length_m + 0.6133 * row.resonator_radius_m;
+    let scalar_fields_are_valid = row.midi == midi
+        && row.intended_frequency_hz.is_finite()
+        && intended_cents.abs() <= 2.0
+        && row.length_m.is_finite()
+        && row.length_m > 0.0
+        && row.width_m.is_finite()
+        && row.width_m > 0.0
+        && row.outer_thickness_m.is_finite()
+        && row.outer_thickness_m > 0.0
+        && row.mass_kg.is_finite()
+        && row.mass_kg > 0.0
+        && (2..=3).contains(&row.tuned_mode_count)
+        && row.resonator_effective_length_m.is_finite()
+        && row.resonator_effective_length_m > 0.0
+        && row.resonator_physical_length_m.is_finite()
+        && row.resonator_physical_length_m > 0.0
+        && row.resonator_radius_m.is_finite()
+        && row.resonator_radius_m > 0.0
+        && (resonator_closure - row.resonator_effective_length_m).abs() <= 1.0e-12;
+    let thicknesses_are_valid = row.element_thickness_m.iter().all(|thickness| {
+        thickness.is_finite() && *thickness >= 0.005 && *thickness <= row.outer_thickness_m
+    });
+    let modes_are_valid = (0..BAR_MODES).all(|index| {
+        let frequency = row.solved_frequencies_hz[index];
+        let ordered = index == 0 || frequency > row.solved_frequencies_hz[index - 1];
+        frequency.is_finite()
+            && frequency > 0.0
+            && ordered
+            && row.eigen_relative_residuals[index].is_finite()
+            && row.eigen_relative_residuals[index] <= 1.0e-6
+            && row.t60_seconds[index].is_finite()
+            && row.t60_seconds[index] > 0.0
+            && row.mode_shapes_m_neg_half_kg[index]
+                .iter()
+                .all(|value| value.is_finite())
+    });
+    if !(scalar_fields_are_valid && thicknesses_are_valid && modes_are_valid) {
+        return Err(VibesError::NonFiniteState);
     }
-    t60_seconds[4] = (0.75 * t60_seconds[3]).max(0.45);
-    t60_seconds[5] = (0.58 * t60_seconds[3]).max(0.40);
-    t60_seconds[6] = (0.45 * t60_seconds[3]).max(0.35);
-    // Every tube is cut from its own target frequency.  Interpolating tube
-    // length linearly between sparse anchors detunes intermediate keys by as
-    // much as a whole tone because quarter-wave frequency is reciprocal in
-    // effective length.
-    let effective_resonator_length_m = SOUND_SPEED_M_S / (4.0 * fundamental_hz);
-    let range = (midi - MIN_MIDI) as f64 / (MAX_MIDI - MIN_MIDI) as f64;
-    let resonator_radius_m = 0.031 - 0.010 * range;
-    let end_correction_m = 0.6133 * resonator_radius_m;
-    let resonator_length_m = (effective_resonator_length_m - end_correction_m).max(0.02);
+
+    let fundamental_hz = row.solved_frequencies_hz[0];
+    let mut mode_ratios = [0.0; BAR_MODES];
+    for (index, ratio) in mode_ratios.iter_mut().enumerate() {
+        *ratio = row.solved_frequencies_hz[index] / fundamental_hz;
+    }
     Ok(BarGeometry {
         midi,
         fundamental_hz,
-        length_m,
-        width_m,
-        thickness_m,
-        mass_kg,
-        resonator_length_m,
-        resonator_radius_m,
+        length_m: row.length_m,
+        width_m: row.width_m,
+        thickness_m: row.outer_thickness_m,
+        element_thickness_m: row.element_thickness_m,
+        mass_kg: row.mass_kg,
+        resonator_length_m: row.resonator_physical_length_m,
+        resonator_effective_length_m: row.resonator_effective_length_m,
+        resonator_radius_m: row.resonator_radius_m,
+        tuned_mode_count: row.tuned_mode_count,
+        mode_frequencies_hz: row.solved_frequencies_hz,
         mode_ratios,
-        t60_seconds,
+        mode_shapes_m_neg_half_kg: row.mode_shapes_m_neg_half_kg,
+        t60_seconds: row.t60_seconds,
     })
 }
 
-fn reviewed_anchor_span(midi: i32) -> (ReviewedBarAnchor, ReviewedBarAnchor, f64) {
-    for pair in REVIEWED_BAR_ANCHORS.windows(2) {
-        let lower = pair[0];
-        let upper = pair[1];
-        if midi <= upper.midi {
-            let blend = (midi - lower.midi) as f64 / (upper.midi - lower.midi) as f64;
-            return (lower, upper, blend.clamp(0.0, 1.0));
-        }
+fn packed_mode_shape(geometry: &BarGeometry, index: usize, position_over_length: f64) -> f64 {
+    let scaled = position_over_length.clamp(0.0, 1.0) * (BAR_SHAPE_NODES - 1) as f64;
+    let left = scaled as usize;
+    if left >= BAR_SHAPE_NODES - 1 {
+        return geometry.mode_shapes_m_neg_half_kg[index][BAR_SHAPE_NODES - 1] as f64;
     }
-    let last = REVIEWED_BAR_ANCHORS[REVIEWED_BAR_ANCHORS.len() - 1];
-    (last, last, 0.0)
+    let blend = scaled - left as f64;
+    let left_value = geometry.mode_shapes_m_neg_half_kg[index][left] as f64;
+    let right_value = geometry.mode_shapes_m_neg_half_kg[index][left + 1] as f64;
+    left_value + blend * (right_value - left_value)
 }
 
-fn lerp(left: f64, right: f64, amount: f64) -> f64 {
-    left + amount * (right - left)
+fn packed_mode_average(geometry: &BarGeometry, index: usize) -> f64 {
+    let shape = &geometry.mode_shapes_m_neg_half_kg[index];
+    let mut sum = 0.5 * (shape[0] as f64 + shape[BAR_SHAPE_NODES - 1] as f64);
+    for value in &shape[1..BAR_SHAPE_NODES - 1] {
+        sum += *value as f64;
+    }
+    sum / (BAR_SHAPE_NODES - 1) as f64
 }
 
-fn bar_mode_shape(index: usize, position_over_length: f64) -> f64 {
-    let centered = position_over_length - 0.5;
-    if index % 2 == 0 {
-        let order = (index / 2 + 1) as f64;
-        cos(TAU * order * centered)
-    } else {
-        let order = (index / 2 + 1) as f64;
-        sin(TAU * order * centered)
+fn bar_resonator_separation_transfer(distance_over_radius: f64) -> f64 {
+    // Eq. (22), fifth-order finite-element fit from Soares et al.
+    const DELTA: [f64; 5] = [2.78, -1.03, 3.34, -1.15, 0.13];
+    let mut power = distance_over_radius;
+    let mut denominator = 1.0;
+    for coefficient in DELTA {
+        denominator += coefficient * power;
+        power *= distance_over_radius;
     }
+    1.0 / denominator
+}
+
+fn bar_resonator_inertial_coupling(
+    geometry: &BarGeometry,
+    parameters: VibesParameters,
+    resonator_frequency_hz: f64,
+    resonator_modal_mass_kg: f64,
+) -> f64 {
+    let area = PI * geometry.resonator_radius_m * geometry.resonator_radius_m;
+    let omega = TAU * resonator_frequency_hz;
+    let separation =
+        bar_resonator_separation_transfer(parameters.bar_resonator_distance_over_radius);
+    let bar_shape = packed_mode_shape(geometry, 0, parameters.resonator_placement_over_length);
+    // Soares Eq. (24) and (31): the pressure-mode integral is evaluated at
+    // the PHYSICAL tube mouth. Omitting this cosine/end-correction factor
+    // overcouples the oscillators by roughly an order of magnitude.
+    let pressure_mode_at_mouth =
+        -(SOUND_SPEED_M_S / omega) * cos(omega * geometry.resonator_length_m / SOUND_SPEED_M_S);
+    AIR_DENSITY_KG_M3 * area * separation * pressure_mode_at_mouth * bar_shape
+        / sqrt(resonator_modal_mass_kg)
+}
+
+/// Exact canonical coupling receipt used by the independent physics harness.
+pub fn canonical_bar_resonator_inertial_coupling(midi: i32) -> Result<f64, VibesError> {
+    let geometry = geometry_for_midi(midi)?;
+    let area = PI * geometry.resonator_radius_m * geometry.resonator_radius_m;
+    let modal_mass = 0.5 * AIR_DENSITY_KG_M3 * area * geometry.resonator_effective_length_m;
+    let frequency_hz = SOUND_SPEED_M_S / (4.0 * geometry.resonator_effective_length_m);
+    Ok(bar_resonator_inertial_coupling(
+        &geometry,
+        VibesParameters::canonical(),
+        frequency_hz,
+        modal_mass,
+    ))
+}
+
+/// Narrow-band Rayleigh-I transfer from one mass-normalized FREE bar mode to a
+/// fixed observer one metre away and 30 degrees off the bar-normal axis.
+/// Unlike a rigidly baffled
+/// plate, the bar exposes front and back faces with opposite normal velocity.
+/// Their exact path-length difference is retained element by element, so the
+/// low-ka field has the required dipole cancellation rather than a fabricated
+/// one-sided monopole. This is the no-allocation strip analogue of FrankenSim's
+/// surface-source rule:
+/// `p = Re(H) qdot + Im(H) omega q` under `exp(-i omega t)`.
+fn packed_free_bar_radiation_transfer(
+    geometry: &BarGeometry,
+    index: usize,
+    frequency_hz: f64,
+) -> (f64, f64) {
+    let element_length_m = geometry.length_m / (BAR_SHAPE_NODES - 1) as f64;
+    // Construction culls modes that this 32-cell quadrature cannot resolve;
+    // never turn an active mechanical mode into a plausible-looking silent
+    // radiation mode.
+    debug_assert!(rayleigh_radiation_is_resolved(
+        element_length_m,
+        frequency_hz
+    ));
+    let element_area_m2 = geometry.width_m * element_length_m;
+    let wave_number = TAU * frequency_hz / SOUND_SPEED_M_S;
+    let shape = &geometry.mode_shapes_m_neg_half_kg[index];
+    let mut integral_re = 0.0;
+    let mut integral_im = 0.0;
+    for element in 0..BAR_SHAPE_NODES - 1 {
+        let normalized_x = (element as f64 + 0.5) / (BAR_SHAPE_NODES - 1) as f64;
+        let source_x_m = (normalized_x - 0.5) * geometry.length_m;
+        let half_thickness_m = 0.5 * geometry.element_thickness_m[element];
+        let axial_distance_m = BAR_OBSERVER_AXIAL_M - source_x_m;
+        let top_normal_distance_m = BAR_OBSERVER_NORMAL_M - half_thickness_m;
+        let bottom_normal_distance_m = BAR_OBSERVER_NORMAL_M + half_thickness_m;
+        let top_distance_m = sqrt(
+            top_normal_distance_m * top_normal_distance_m + axial_distance_m * axial_distance_m,
+        );
+        let bottom_distance_m = sqrt(
+            bottom_normal_distance_m * bottom_normal_distance_m
+                + axial_distance_m * axial_distance_m,
+        );
+        let midpoint_shape = 0.5 * (shape[element] as f64 + shape[element + 1] as f64);
+        let weight = 0.5 * element_area_m2 * midpoint_shape;
+        let top_phase = wave_number * top_distance_m;
+        let bottom_phase = wave_number * bottom_distance_m;
+        integral_re +=
+            weight * (cos(top_phase) / top_distance_m - cos(bottom_phase) / bottom_distance_m);
+        integral_im +=
+            weight * (sin(top_phase) / top_distance_m - sin(bottom_phase) / bottom_distance_m);
+    }
+    let coefficient = AIR_DENSITY_KG_M3 * TAU * frequency_hz / (2.0 * PI);
+    (-coefficient * integral_im, coefficient * integral_re)
+}
+
+#[cfg(test)]
+pub fn free_bar_radiation_transfer_for_test(
+    midi: i32,
+    index: usize,
+) -> Result<(f64, f64), VibesError> {
+    let geometry = geometry_for_midi(midi)?;
+    let frequency_hz = *geometry
+        .mode_frequencies_hz
+        .get(index)
+        .ok_or(VibesError::NonFiniteState)?;
+    Ok(packed_free_bar_radiation_transfer(
+        &geometry,
+        index,
+        frequency_hz,
+    ))
+}
+
+/// FrankenSim's Rayleigh-I surface rule requires at least six source cells per
+/// acoustic wavelength. Keep this predicate explicit so an unresolved mode is
+/// refused rather than converted into a plausible-looking silent mode.
+pub fn rayleigh_radiation_is_resolved(element_length_m: f64, frequency_hz: f64) -> bool {
+    element_length_m.is_finite()
+        && element_length_m > 0.0
+        && frequency_hz.is_finite()
+        && frequency_hz > 0.0
+        && SOUND_SPEED_M_S / frequency_hz / element_length_m >= 6.0
 }
 
 fn contact_potential_j(stiffness: f64, compression_m: f64) -> f64 {
@@ -1184,52 +1386,17 @@ fn contact_potential_gradient(stiffness: f64, before_m: f64, after_m: f64) -> f6
 /// buffers at 4 s and the bar+resonator T60 law keeps audible energy inside
 /// that span at every playable pitch.
 const VBS2_CAP_SECONDS: f64 = 4.0;
-/// Per-register mallet calibration for the shipping render, measured
-/// against the recorded CC0 corpus through the sample-replacement gate
-/// (2026-08-09 2D campaign, position x hardness per register; every row's
-/// number comes from a full canonical gate run on the rebuilt embed —
-/// no screening shim, per the oracle-fidelity law).
-///
-/// Physics recorded by the earlier single-point sweeps and preserved here:
-/// the strike POSITION owns the mode balance (a centre strike sits on the
-/// tuned 4x partial's node and over-drives mode 3), while HARDNESS owns
-/// the contact bandwidth (soft contact cannot reach the 4x partial at all
-/// in the top octave). Real players do exactly this: softer mallets and a
-/// nearer-centre strike on the low bars, harder mallets toward the bar
-/// edge as the bars shorten. Velocity moves impact energy, never the
-/// damping law. Rows: (inclusive upper MIDI bound, x/L position, hardness).
-///
-/// 2026-08-09 20-point canonical grid (position 0.32-0.50 x hardness
-/// 0.12-0.42, every point a full gate run; /tmp/vibes-sweep-results.tsv
-/// archived in the bead dossier): m60 group peaks at centre+soft
-/// (margin +3.50 dB), the m67 group at centre+HARD (+3.23 — the earlier
-/// "structurally short" verdict was a hardness ceiling: soft contact
-/// cannot reach that bar group's 4x-partial bandwidth), the m74 group
-/// off-centre+medium (+2.80). End registers keep the round-1 point
-/// (m53 +9.30, m84 +5.98).
-const VBS2_REGISTER_TABLE: [(i32, f64, f64); 5] = [
-    (56, 0.41, 0.20),
-    (63, 0.50, 0.12),
-    (70, 0.50, 0.42),
-    (78, 0.32, 0.30),
-    (89, 0.41, 0.20),
-];
+/// Default gesture for the note-buffer compatibility ABI. It is one fixed
+/// medium-soft mallet struck just off centre across the whole keyboard; it is
+/// deliberately not a per-register table fitted to the sampled comparator.
+/// The stateful physical-instrument ABI will carry these as explicit controls.
+const VBS2_DEFAULT_STRIKE_POSITION_OVER_LENGTH: f64 = 0.50;
+const VBS2_DEFAULT_MALLET_HARDNESS: f64 = 0.20;
 
-fn vbs2_register_calibration(midi: i32) -> (f64, f64) {
-    for (bound, position, hardness) in VBS2_REGISTER_TABLE {
-        if midi <= bound {
-            return (position, hardness);
-        }
-    }
-    let last = VBS2_REGISTER_TABLE[VBS2_REGISTER_TABLE.len() - 1];
-    (last.1, last.2)
-}
-/// Pressure-to-float scale, measured against the model (2026-08-09): the
-/// radiated pressure of a velocity-100 F4 strike peaks at 0.177 Pa at the
-/// 1 m radiation distance, so 1.58 lands the float peak at 0.28 — the same
-/// headroom band as the other physical renders. The recipe outputLevel owns
-/// mixing; this constant only sets the ABI's numeric range.
-const VBS2_PRESSURE_SCALE: f64 = 1.58;
+/// Digital headroom convention: +/-1 corresponds to +/-4 Pa at the declared
+/// one-metre observer (106 dB SPL re 20 uPa). This converts physical pressure
+/// to a unitless sample; it is not an output fit to a recording or a note.
+const VBS2_FULL_SCALE_PRESSURE_PA: f64 = 4.0;
 
 fn vbs2_disjoint(a: usize, a_len: usize, b: usize, b_len: usize) -> bool {
     let Some(a_end) = a.checked_add(a_len) else {
@@ -1293,21 +1460,15 @@ pub extern "C" fn vbs2_render(
         Ok(voice) => voice,
         Err(_) => return 0,
     };
-    let (strike_position, hardness) = vbs2_register_calibration(midi);
-    let mut gesture = match StrikeGesture::from_velocity(velocity, hardness) {
+    let mut gesture = match StrikeGesture::from_velocity(velocity, VBS2_DEFAULT_MALLET_HARDNESS) {
         Ok(gesture) => gesture,
         Err(_) => return 0,
     };
-    /*
-     * Players strike just off the bar centre. `from_velocity` defaults the
-     * gesture to dead centre, where the tuned 4x partial (an odd mode with
-     * a centre node) receives ~zero contact coupling through the model's
-     * patch-integrated mode shapes — the replacement gate measured it 54 dB
-     * under the fundamental at D5 while the recorded corpus holds it at
-     * -15 dB (2026-08-09). The per-register table above carries the
-     * measured position and hardness for each bar group.
-     */
-    gesture.strike_position_over_length = strike_position;
+    /* Normal vibraphone tone is struck at the bar centre. The generated free-
+     * free modes retain the resulting parity selection directly: symmetric
+     * modes are driven while antisymmetric centre-node modes are not smuggled
+     * back through an output-side spectral control. */
+    gesture.strike_position_over_length = VBS2_DEFAULT_STRIKE_POSITION_OVER_LENGTH;
     if voice.begin_strike(gesture).is_err() {
         return 0;
     }
@@ -1323,7 +1484,7 @@ pub extern "C" fn vbs2_render(
             Ok(output) => output,
             Err(_) => return 0,
         };
-        let mut sample = output.radiated_pressure_pa * VBS2_PRESSURE_SCALE;
+        let mut sample = output.radiated_pressure_pa / VBS2_FULL_SCALE_PRESSURE_PA;
         if frame >= fade_start {
             sample *= (frames - frame) as f64 / fade_frames as f64;
         }
