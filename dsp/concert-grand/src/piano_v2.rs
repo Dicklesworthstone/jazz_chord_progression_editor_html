@@ -9,7 +9,7 @@
 //! - one finite-mass felt hammer shared by the unison string group;
 //! - mass-normalized stiff-string modes derived from speaking length,
 //!   tension, linear density, bending stiffness, and hammer/bridge position;
-//! - an energy-consistent unilateral power-port contact;
+//! - an energy-consistent unilateral, rate-dependent felt power-port contact;
 //! - separate conservative string-to-bridge contact springs feeding one
 //!   shared orthotropic soundboard modal reduction; and
 //! - a baffled Rayleigh far-field observer formed from modal velocity.
@@ -57,7 +57,7 @@ const STRING_SPEAKING_COMPONENT_MODES: usize = 20;
 const STRING_DUPLEX_COMPONENT_MODES: usize = STRING_MODES - 1 - STRING_SPEAKING_COMPONENT_MODES;
 const STRING_EIGEN_JACOBI_SWEEPS: usize = 48;
 pub const SOUNDBOARD_MODES: usize = 288;
-pub const CONTACT_SOLVE_STEPS: usize = 8;
+pub const CONTACT_SOLVE_STEPS: usize = 16;
 /// Maximum physical string-to-bridge contacts in one rendered chord.  Every
 /// unison string owns its own local contact spring; contacts at one key share
 /// the same soundboard driving point but must not be collapsed into one summed
@@ -240,8 +240,11 @@ pub struct PianoStrike {
     pub hammer_mass_kg: f64,
     pub hammer_velocity_m_per_s: f64,
     pub impact_energy_j: f64,
-    pub felt_stiffness_n_per_m_pow_exponent: f64,
+    /// Stulov's measured `Q0` coefficient [N/mm^p].
+    pub felt_static_stiffness_n_per_mm_pow_exponent: f64,
     pub felt_exponent: f64,
+    /// Stulov's rate coefficient `a` [s].
+    pub felt_rate_time_seconds: f64,
     pub maximum_force_n: f64,
     pub maximum_contact_seconds: f64,
 }
@@ -259,36 +262,39 @@ impl PianoStrike {
             return Err(PianoError::InvalidContact);
         }
         let hammer_mass_kg = hammer_mass_kg_for_midi(midi)?;
-        let hammer_radius_m = hammer_head_radius_m_for_midi(midi)?;
+        let [felt_static_stiffness, felt_exponent, felt_rate_time_seconds] =
+            stulov_felt_parameters_for_midi(midi)?;
         let amount = velocity as f64 / 127.0;
         let hardness = 0.12 + 0.78 * pow(amount, 0.72);
         let hammer_velocity_m_per_s = 0.28 + 4.15 * pow(amount, 0.82);
         let impact_energy_j =
             0.5 * hammer_mass_kg * hammer_velocity_m_per_s * hammer_velocity_m_per_s;
-        // Stulov 1995, Eqs. (22)-(23), approximates the all-key felt law as
-        // F=F0*7.5*(u/d)^2.3, where F0 is derived from string diameter d,
-        // hammer-head radius R, and one felt Young's modulus. Table 2 gives
-        // 160 MPa for every measured medium hammer. Expanding normalized
-        // compression into SI produces F=K*u^2.3 below.
-        let felt_exponent = 2.3;
-        let felt_modulus_pa = 160.0e6;
-        let geometry_factor = 1.0 / sqrt(1.0 + string_diameter_m / (2.0 * hammer_radius_m));
-        let felt_stiffness = 7.5 * felt_modulus_pa * pow(string_diameter_m, 3.0 - felt_exponent)
-            / hammer_radius_m
-            * geometry_factor;
-        let peak_indent = pow(
-            (felt_exponent + 1.0) * impact_energy_j / felt_stiffness,
+        // Stulov 2008, Eqs. (9)-(11), fits the same measured hammer set with
+        // F=Q0[u_mm^p + a*d(u_mm^p)/dt].  The rate term is the mechanism that
+        // produces the measured felt hysteresis; substituting one elastic
+        // modulus made medium attacks sub-millisecond impulses and materially
+        // over-energized upper string modes.
+        let peak_indent_mm = pow(
+            (felt_exponent + 1.0) * 1_000.0 * impact_energy_j / felt_static_stiffness,
             1.0 / (felt_exponent + 1.0),
         );
-        let maximum_force_n = 2.5 * felt_stiffness * pow(peak_indent, felt_exponent);
+        let elastic_peak_force_n = felt_static_stiffness * pow(peak_indent_mm, felt_exponent);
+        let rate_peak_force_n = felt_static_stiffness
+            * felt_rate_time_seconds
+            * felt_exponent
+            * pow(peak_indent_mm, felt_exponent - 1.0)
+            * 1_000.0
+            * hammer_velocity_m_per_s;
+        let maximum_force_n = (2.5 * (elastic_peak_force_n + rate_peak_force_n)).min(20_000.0);
         Ok(Self {
             velocity,
             hardness,
             hammer_mass_kg,
             hammer_velocity_m_per_s,
             impact_energy_j,
-            felt_stiffness_n_per_m_pow_exponent: felt_stiffness,
+            felt_static_stiffness_n_per_mm_pow_exponent: felt_static_stiffness,
             felt_exponent,
+            felt_rate_time_seconds,
             maximum_force_n,
             maximum_contact_seconds: 0.012 - 0.0075 * hardness,
         })
@@ -1152,7 +1158,9 @@ impl PianoKeyState {
             * self.contact.hammer_velocity_m_per_s
             * self.contact.hammer_velocity_m_per_s
             + felt_potential_j(
-                self.contact.strike.felt_stiffness_n_per_m_pow_exponent,
+                self.contact
+                    .strike
+                    .felt_static_stiffness_n_per_mm_pow_exponent,
                 self.contact.strike.felt_exponent,
                 self.contact.compression_m,
             )
@@ -1191,10 +1199,14 @@ fn begin_key_strike(
         || !(0.0..=8.0).contains(&strike.hammer_velocity_m_per_s)
         || !strike.impact_energy_j.is_finite()
         || !(0.0..=1.0).contains(&strike.impact_energy_j)
-        || !strike.felt_stiffness_n_per_m_pow_exponent.is_finite()
-        || !(1.0e8..=1.0e11).contains(&strike.felt_stiffness_n_per_m_pow_exponent)
+        || !strike
+            .felt_static_stiffness_n_per_mm_pow_exponent
+            .is_finite()
+        || !(100.0..=12_000.0).contains(&strike.felt_static_stiffness_n_per_mm_pow_exponent)
         || !strike.felt_exponent.is_finite()
-        || !(1.5..=4.0).contains(&strike.felt_exponent)
+        || !(3.0..=5.5).contains(&strike.felt_exponent)
+        || !strike.felt_rate_time_seconds.is_finite()
+        || !(200.0e-6..=650.0e-6).contains(&strike.felt_rate_time_seconds)
         || !strike.maximum_force_n.is_finite()
         || !(0.0..=20_000.0).contains(&strike.maximum_force_n)
         || !strike.maximum_contact_seconds.is_finite()
@@ -1242,7 +1254,7 @@ fn apply_hammer_contact_state(
         }
     }
     let potential_before = felt_potential_j(
-        strike.felt_stiffness_n_per_m_pow_exponent,
+        strike.felt_static_stiffness_n_per_mm_pow_exponent,
         strike.felt_exponent,
         compression,
     );
@@ -1252,10 +1264,12 @@ fn apply_hammer_contact_state(
     let upper_compression =
         (compression + dt * (relative_velocity - 0.5 * upper * inverse_effective_mass)).max(0.0);
     let upper_force = felt_force_n(
-        strike.felt_stiffness_n_per_m_pow_exponent,
+        strike.felt_static_stiffness_n_per_mm_pow_exponent,
         strike.felt_exponent,
+        strike.felt_rate_time_seconds,
         compression,
         upper_compression,
+        dt,
     );
     if upper < dt * upper_force {
         *escaped_hammer_energy_j += 0.5
@@ -1273,10 +1287,12 @@ fn apply_hammer_contact_state(
             + dt * (relative_velocity - 0.5 * impulse * inverse_effective_mass))
             .max(0.0);
         let force = felt_force_n(
-            strike.felt_stiffness_n_per_m_pow_exponent,
+            strike.felt_static_stiffness_n_per_mm_pow_exponent,
             strike.felt_exponent,
+            strike.felt_rate_time_seconds,
             compression,
             after,
+            dt,
         );
         if impulse >= dt * force {
             upper = impulse;
@@ -1308,7 +1324,7 @@ fn apply_hammer_contact_state(
             * contact.hammer_velocity_m_per_s
             * contact.hammer_velocity_m_per_s
         + felt_potential_j(
-            strike.felt_stiffness_n_per_m_pow_exponent,
+            strike.felt_static_stiffness_n_per_mm_pow_exponent,
             strike.felt_exponent,
             compression_after,
         );
@@ -1339,7 +1355,7 @@ fn apply_hammer_contact_state(
             * contact.hammer_velocity_m_per_s
             * contact.hammer_velocity_m_per_s;
         contact.dissipated_energy_j += felt_potential_j(
-            strike.felt_stiffness_n_per_m_pow_exponent,
+            strike.felt_static_stiffness_n_per_mm_pow_exponent,
             strike.felt_exponent,
             contact.compression_m,
         );
@@ -1357,8 +1373,9 @@ impl ContactState {
             hammer_mass_kg: 0.0089,
             hammer_velocity_m_per_s: 0.0,
             impact_energy_j: 0.0,
-            felt_stiffness_n_per_m_pow_exponent: 1.0,
-            felt_exponent: 2.5,
+            felt_static_stiffness_n_per_mm_pow_exponent: 100.0,
+            felt_exponent: 3.7,
+            felt_rate_time_seconds: 250.0e-6,
             maximum_force_n: 0.0,
             maximum_contact_seconds: 0.001,
         },
@@ -1555,7 +1572,9 @@ impl PianoVoice {
             * self.contact.hammer_velocity_m_per_s
             * self.contact.hammer_velocity_m_per_s
             + felt_potential_j(
-                self.contact.strike.felt_stiffness_n_per_m_pow_exponent,
+                self.contact
+                    .strike
+                    .felt_static_stiffness_n_per_mm_pow_exponent,
                 self.contact.strike.felt_exponent,
                 self.contact.compression_m,
             )
@@ -2190,15 +2209,36 @@ pub fn midi_frequency_hz(midi: i32) -> f64 {
 
 /// Measured grand-piano hammer mass by key [kg].
 ///
-/// Stulov, *A Simple Grand Piano Hammer Felt Model* (1995), table 1,
-/// reports A0/A3/C4/A6 masses 13.0/10.6/8.9/8.2 g. Piecewise-linear
-/// interpolation is the least-assumptive deterministic completion between
-/// those reviewed keys; the unmeasured end tails hold their nearest anchor.
+/// Stulov 2008, Eq. (11), fits all 88 Abel grand-piano hammers as
+/// `m_g = 11.074 - .074*n + 1e-4*n^2`, where key number `n=1` is A0.
 pub fn hammer_mass_kg_for_midi(midi: i32) -> Result<f64, PianoError> {
-    interpolate_keyboard_anchor(
-        midi,
-        &[(21, 0.0130), (57, 0.0106), (60, 0.0089), (93, 0.0082)],
-    )
+    if !(MIN_MIDI..=MAX_MIDI).contains(&midi) {
+        return Err(PianoError::InvalidMidi);
+    }
+    let key_number = (midi - MIN_MIDI + 1) as f64;
+    Ok((11.074 - 0.074 * key_number + 1.0e-4 * key_number * key_number) * 1.0e-3)
+}
+
+/// Stulov 2008, Eq. (10), all-key parameters for the practical
+/// three-parameter hereditary felt model Eq. (9).
+///
+/// The returned values are `[Q0_N_per_mm_pow_p, p, a_seconds]`. Keeping the
+/// paper's millimetre convention explicit avoids hiding a key-dependent
+/// `1000^p` conversion inside an enormous SI stiffness.
+pub fn stulov_felt_parameters_for_midi(midi: i32) -> Result<[f64; 3], PianoError> {
+    if !(MIN_MIDI..=MAX_MIDI).contains(&midi) {
+        return Err(PianoError::InvalidMidi);
+    }
+    let key_number = (midi - MIN_MIDI + 1) as f64;
+    let static_stiffness = 183.0 * exp(0.045 * key_number);
+    let exponent = 3.7 + 0.015 * key_number;
+    let key_squared = key_number * key_number;
+    let key_cubed = key_squared * key_number;
+    let key_fourth = key_squared * key_squared;
+    let rate_time_seconds = (259.5 - 0.58 * key_number + 0.066 * key_squared - 0.00125 * key_cubed
+        + 0.000_011_72 * key_fourth)
+        * 1.0e-6;
+    Ok([static_stiffness, exponent, rate_time_seconds])
 }
 
 /// Measured hammer-head curvature radius [m] from the same table 1 anchors.
@@ -3405,27 +3445,87 @@ fn cardinal_sine(value: f64) -> f64 {
     }
 }
 
-fn felt_potential_j(stiffness: f64, exponent: f64, compression_m: f64) -> f64 {
-    stiffness * pow(compression_m.max(0.0), exponent + 1.0) / (exponent + 1.0)
+fn felt_potential_j(
+    static_stiffness_n_per_mm_pow_exponent: f64,
+    exponent: f64,
+    compression_m: f64,
+) -> f64 {
+    let compression_mm = 1_000.0 * compression_m.max(0.0);
+    1.0e-3 * static_stiffness_n_per_mm_pow_exponent * pow(compression_mm, exponent + 1.0)
+        / (exponent + 1.0)
 }
 
-fn felt_potential_gradient(stiffness: f64, exponent: f64, before_m: f64, after_m: f64) -> f64 {
+fn felt_potential_gradient(
+    static_stiffness_n_per_mm_pow_exponent: f64,
+    exponent: f64,
+    before_m: f64,
+    after_m: f64,
+) -> f64 {
     let delta = after_m - before_m;
     if delta.abs() <= 1.0e-15 {
-        stiffness * pow(0.5 * (before_m + after_m).max(0.0), exponent)
+        static_stiffness_n_per_mm_pow_exponent
+            * pow(500.0 * (before_m + after_m).max(0.0), exponent)
     } else {
-        (felt_potential_j(stiffness, exponent, after_m)
-            - felt_potential_j(stiffness, exponent, before_m))
+        (felt_potential_j(static_stiffness_n_per_mm_pow_exponent, exponent, after_m)
+            - felt_potential_j(static_stiffness_n_per_mm_pow_exponent, exponent, before_m))
             / delta
     }
 }
 
-fn felt_force_n(stiffness: f64, exponent: f64, before_m: f64, after_m: f64) -> f64 {
+/// Discrete Stulov Eq. (9) force used by the live contact solve.
+///
+/// The elastic discrete gradient preserves the stored felt potential exactly.
+/// The rate term has the sign of `after-before`; its work is therefore always
+/// dissipative. Unilateral clamping releases the hammer instead of allowing
+/// the unloading branch to pull on the string.
+pub fn stulov_felt_force_n(
+    static_stiffness_n_per_mm_pow_exponent: f64,
+    exponent: f64,
+    rate_time_seconds: f64,
+    before_m: f64,
+    after_m: f64,
+    dt_seconds: f64,
+) -> f64 {
     let before = before_m.max(0.0);
     let after = after_m.max(0.0);
-    // The reviewed all-key Stulov approximation is elastic. The discrete
-    // gradient makes contact exactly energy consistent while zero clamping
-    // refuses tensile felt. Do not splice in a relaxation constant measured
-    // from a different hammer: that hybrid reverses hard/soft ordering.
-    felt_potential_gradient(stiffness, exponent, before, after).max(0.0)
+    if !static_stiffness_n_per_mm_pow_exponent.is_finite()
+        || static_stiffness_n_per_mm_pow_exponent <= 0.0
+        || !exponent.is_finite()
+        || exponent <= 1.0
+        || !rate_time_seconds.is_finite()
+        || rate_time_seconds < 0.0
+        || !dt_seconds.is_finite()
+        || dt_seconds <= 0.0
+    {
+        return 0.0;
+    }
+    let elastic = felt_potential_gradient(
+        static_stiffness_n_per_mm_pow_exponent,
+        exponent,
+        before,
+        after,
+    );
+    let rate = static_stiffness_n_per_mm_pow_exponent
+        * rate_time_seconds
+        * (pow(1_000.0 * after, exponent) - pow(1_000.0 * before, exponent))
+        / dt_seconds;
+    (elastic + rate).max(0.0)
+}
+
+fn felt_force_n(
+    static_stiffness_n_per_mm_pow_exponent: f64,
+    exponent: f64,
+    rate_time_seconds: f64,
+    before_m: f64,
+    after_m: f64,
+    dt_seconds: f64,
+) -> f64 {
+    stulov_felt_force_n(
+        static_stiffness_n_per_mm_pow_exponent,
+        exponent,
+        rate_time_seconds,
+        before_m,
+        after_m,
+        dt_seconds,
+    )
 }

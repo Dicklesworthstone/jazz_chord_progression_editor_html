@@ -15,9 +15,10 @@ use piano_v2::{
     hammer_strike_position_over_length, midi_frequency_hz, render_piano_note,
     separate_unison_bridge_contact_coordinates, soundboard_bridge_mode_residue_for_midi,
     soundboard_bridge_position_for_midi, soundboard_damping_ratio, soundboard_mode_frequency_hz,
-    stiff_string_mode_frequency_hz, string_geometry, PianoError, PianoParameters, PianoStem,
-    PianoStrike, PianoVoice, CONTACT_SOLVE_STEPS, MAXIMUM_BRIDGE_CONTACTS,
-    MAXIMUM_BRIDGE_SOLVE_SCALAR_UPDATES, MAXIMUM_STATE_BYTES,
+    stiff_string_mode_frequency_hz, string_geometry, stulov_felt_force_n,
+    stulov_felt_parameters_for_midi, PianoError, PianoParameters, PianoStem, PianoStrike,
+    PianoVoice, CONTACT_SOLVE_STEPS, MAXIMUM_BRIDGE_CONTACTS, MAXIMUM_BRIDGE_SOLVE_SCALAR_UPDATES,
+    MAXIMUM_STATE_BYTES,
 };
 
 #[test]
@@ -100,13 +101,13 @@ fn component_string_reduction_has_the_reviewed_mass_law_and_bounded_eigenpairs()
 
 #[test]
 fn reviewed_hammer_mass_and_strike_position_vary_by_register() {
-    let anchors = [
-        (21, 0.0130, 0.017, 243.0 / 2_016.0),
-        (57, 0.0106, 0.011, 91.0 / 777.0),
-        (60, 0.0089, 0.008, 74.4 / 620.0),
-        (93, 0.0082, 0.005, 8.1 / 115.0),
+    let reviewed = [
+        (21, 0.011_000_1, 0.017, 243.0 / 2_016.0),
+        (57, 0.008_472_9, 0.011, 91.0 / 777.0),
+        (60, 0.008_274, 0.008, 74.4 / 620.0),
+        (93, 0.006_204_9, 0.005, 8.1 / 115.0),
     ];
-    for (midi, expected_mass, expected_radius, expected_position) in anchors {
+    for (midi, expected_mass, expected_radius, expected_position) in reviewed {
         assert!((hammer_mass_kg_for_midi(midi).unwrap() - expected_mass).abs() < 1.0e-15);
         assert!((hammer_head_radius_m_for_midi(midi).unwrap() - expected_radius).abs() < 1.0e-15);
         assert!(
@@ -130,6 +131,76 @@ fn reviewed_hammer_mass_and_strike_position_vary_by_register() {
         voice.begin_strike(planted_constant_mass),
         Err(PianoError::InvalidContact)
     );
+}
+
+#[test]
+fn stulov_all_key_felt_law_has_rate_hysteresis_and_refuses_elastic_near_miss() {
+    // Stulov 2008 Eqs. (9)-(11), key n=49 (MIDI 69). These literals are
+    // independently evaluated from the published polynomial/exponential fits.
+    let parameters = stulov_felt_parameters_for_midi(69).unwrap();
+    assert!((parameters[0] - 1_659.856_036_917_723_3).abs() < 2.0e-12);
+    assert!((parameters[1] - 4.435).abs() < 2.0e-15);
+    assert!((parameters[2] - 310.048_217_72e-6).abs() < 2.0e-16);
+    assert!((hammer_mass_kg_for_midi(69).unwrap() - 0.007_688_1).abs() < 2.0e-15);
+
+    let dt = 1.0 / 48_000.0;
+    let loading = stulov_felt_force_n(
+        parameters[0],
+        parameters[1],
+        parameters[2],
+        0.000_2,
+        0.000_25,
+        dt,
+    );
+    let unloading = stulov_felt_force_n(
+        parameters[0],
+        parameters[1],
+        parameters[2],
+        0.000_25,
+        0.000_2,
+        dt,
+    );
+    let planted_elastic =
+        stulov_felt_force_n(parameters[0], parameters[1], 0.0, 0.000_2, 0.000_25, dt);
+    assert!((loading - 35.464_649_100_189_3).abs() < 2.0e-12);
+    assert_eq!(unloading, 0.0, "unilateral felt pulled on the string");
+    assert!((planted_elastic - 2.293_151_808_350_375).abs() < 2.0e-13);
+    assert!(loading > 15.0 * planted_elastic);
+    let hysteresis_work_j = loading * 0.000_05 + unloading * -0.000_05;
+    assert!(hysteresis_work_j > 0.0);
+    assert_eq!(
+        planted_elastic * 0.000_05 + planted_elastic * -0.000_05,
+        0.0,
+        "the elastic near-miss unexpectedly produced a hysteresis loop"
+    );
+}
+
+#[test]
+fn bounded_stulov_contact_solve_transfers_the_top_key_at_every_rate() {
+    assert_eq!(CONTACT_SOLVE_STEPS, 16);
+    for sample_rate in [44_100.0, 48_000.0, 96_000.0] {
+        let geometry = string_geometry(108).unwrap();
+        let strike = PianoStrike::from_velocity(100, 108, geometry.equivalent_diameter_m).unwrap();
+        let mut voice = PianoVoice::new(108, sample_rate, PianoParameters::canonical()).unwrap();
+        voice.begin_strike(strike).unwrap();
+        let mut maximum_string_energy_j = 0.0_f64;
+        for frame in 0..12 {
+            let output = voice.step().unwrap();
+            maximum_string_energy_j = maximum_string_energy_j.max(output.string_energy_j);
+            assert!(
+                voice.accounted_energy_j() <= strike.impact_energy_j + 2.0e-9,
+                "contact created energy at {sample_rate} Hz frame {frame}"
+            );
+        }
+        assert!(
+            maximum_string_energy_j > 1.0e-6 * strike.impact_energy_j,
+            "contact refused the top key at {sample_rate} Hz"
+        );
+        assert!(
+            voice.work_receipt().total_contact_iterations > 0
+                && voice.work_receipt().total_contact_iterations <= 12 * CONTACT_SOLVE_STEPS as u64
+        );
+    }
 }
 
 #[test]
@@ -878,6 +949,13 @@ fn malformed_or_active_parameters_refuse_and_force_cap_releases_dissipatively() 
         voice.begin_strike(linear_felt),
         Err(PianoError::InvalidContact)
     );
+
+    let mut memoryless_felt = PianoStrike::from_velocity(80, 60, diameter).unwrap();
+    memoryless_felt.felt_rate_time_seconds = 0.0;
+    assert_eq!(
+        voice.begin_strike(memoryless_felt),
+        Err(PianoError::InvalidContact)
+    );
 }
 
 #[test]
@@ -916,9 +994,13 @@ fn render_is_finite_audible_bounded_and_hard_strikes_are_brighter() {
                 .iter()
                 .chain(&right)
                 .fold(0.0_f32, |maximum, sample| maximum.max(sample.abs()));
-            assert!(peak > 1.0e-7, "silent m{midi} @{sample_rate}");
+            let rendered_rms = rms(&left);
+            assert!(
+                peak > 1.0e-7,
+                "silent m{midi} @{sample_rate}: peak={peak}, rms={rendered_rms}"
+            );
             assert!(peak < 0.98, "unbounded m{midi} @{sample_rate}: {peak}");
-            assert!(rms(&left) > 1.0e-8);
+            assert!(rendered_rms > 1.0e-8);
             assert_ne!(left, right, "soundboard observers collapsed to mono");
         }
     }
