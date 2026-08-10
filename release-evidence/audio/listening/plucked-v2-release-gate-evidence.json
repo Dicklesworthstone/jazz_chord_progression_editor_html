@@ -107,23 +107,23 @@
     "changes.dsp.plucked-electric@2",
     "changes.dsp.plucked-ukulele@1"
   ],
-  "wasmSha256": "108cbfae1435f389c014848f50d0e8579699f230fb080fc11c54ff116aaa9dd7",
+  "wasmSha256": "23c98754108a1b0191fc76f4b27d81d09613b7e8e3458d14b4e544cad05a2351",
   "sourceBindings": [
     {
       "path": "dsp/concert-grand/src/plucked_v2.rs",
-      "sha256": "076017f4be4ab110bc14adbcc7be520b28027fcd6942bb92189d93aa9371890b"
+      "sha256": "e3a3ee19df2b511faaddb0a95c0f819085c2d7276a71f18df60601cc03f36361"
     },
     {
       "path": "dsp/concert-grand/src/lib.rs",
-      "sha256": "c7ff67ff3c7a813c13a78bc74c99eab5b00201c755ae5e142f21f9aff0fea7bc"
+      "sha256": "cd998daa666844848af69597e19d172f1c90de7fe1252af317afbd7c8c0dc960"
     },
     {
       "path": "src/audio/dsp-renderer.ts",
-      "sha256": "97b4ec49820c0b3320b4eaad2b6853932040a2662fe613be7d3333dabad9dc8c"
+      "sha256": "50b20c665f65227e43258eb4ad2c904889e477dc83240c171c982b06917341d5"
     },
     {
       "path": "src/audio/instrument-recipes-contract.ts",
-      "sha256": "31c16651e8fe6e7595859a90f4bd8ae1918acd14b604f111c51a1d096d347575"
+      "sha256": "0aab801401339f69fe9b330c8f540f959acbb25f42bcc66a580ca9152d558243"
     },
     {
       "path": "tests/fixtures/plucked-string-v2/instrument-packs.json",
@@ -138,7 +138,7 @@
       "sha256": "ad0401e78e7742ae86d57a8ad5fd75325a999c8489e8239b71ee56ef0d5fe90f"
     }
   ],
-  "sourceClosureSha256": "41128c0b2d495101787fbc21c3e4fa936b55e183b376fb26e35d47cee4f11f44",
+  "sourceClosureSha256": "660cdcec7b5be2c810aa18d67064a600e1ece7af043213678ea84f0e6ccabea4",
   "cells": [
     {
       "id": "archtop-m48",
@@ -601,5 +601,5 @@
     "passedPairwiseCellCount": 6,
     "failedPairwiseCellCount": 0
   },
-  "evidenceSha256": "7eb131088d3f6889183666f0f84a9fd880dd4d3057318ef0a853d732b687502f"
+  "evidenceSha256": "5bfa95999397bcf7e8a380f02db707c11d47107e7038ea65ab023e2ad0c88233"
 }
