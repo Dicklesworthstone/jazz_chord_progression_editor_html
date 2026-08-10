@@ -86,6 +86,46 @@ const CHORD_TONE_FLOOR_DB = 30;
 const RENDER_RATIO_FAIL = 1;
 const RENDER_RATIO_WARN = 0.5;
 
+/*
+ * v2 (2026-08-10, same owner mandate):
+ *
+ * ONSET LATENCY — the "timing/lag" law at the note level: seconds from
+ * render start until the envelope first reaches -20 dB of its eventual
+ * peak. A struck/plucked instrument that takes 40+ ms to speak feels
+ * laggy against the chart grid no matter how accurate the schedule is;
+ * winds legitimately speak slower.
+ */
+const ONSET_DB_BELOW_PEAK = 20;
+const ONSET_WARN_SECONDS_STRUCK = 0.04;
+const ONSET_FAIL_SECONDS_STRUCK = 0.09;
+const ONSET_WARN_SECONDS_WIND = 0.12;
+const ONSET_FAIL_SECONDS_WIND = 0.25;
+const WIND_INSTRUMENT_IDS: ReadonlySet<string> = new Set(["flute", "clarinet"]);
+
+/*
+ * CHORD ROUGHNESS — the "musically pleasing" law: Plomp–Levelt pairwise
+ * roughness of the rendered chord's measured partials, normalized by the
+ * same chord's roughness when synthesized from ideal 12-TET harmonic
+ * tones through the identical analysis. The ratio cancels the chord's
+ * intrinsic dissonance (a maj7 is supposed to rub); what remains is
+ * render-induced roughness — mistuning, inharmonic clutter, noise beds.
+ */
+const ROUGHNESS_WARN_RATIO = 2.5;
+const ROUGHNESS_FAIL_RATIO = 5;
+const ROUGHNESS_PARTIAL_COUNT = 24;
+
+/*
+ * PHRASE TRANSITIONS — clicks/pops and dropouts measured over a summed
+ * six-note phrase (the engine sums per-note buffers exactly like this).
+ * Attack windows around each onset are excluded: attacks legitimately
+ * jump. A dropout is a mid-phrase RMS collapse against the phrase median.
+ */
+const PHRASE_NOTE_SPACING_SECONDS = 0.4;
+const PHRASE_GATE_SECONDS = 0.5;
+const PHRASE_ONSET_EXCLUDE_SECONDS = 0.025;
+const PHRASE_DROPOUT_DB = 26;
+const PHRASE_DROPOUT_MIN_SECONDS = 0.012;
+
 export type QualityFinding = Readonly<{
   tier: "fail" | "warn";
   bucket: "pathology" | "pitch" | "performance";
@@ -121,6 +161,10 @@ type InstrumentReport = Readonly<{
   chordToneLevelsDb: readonly (number | null)[];
   worstRenderRatio: number;
   artificiality: ArtificialityScores;
+  /* v2 */
+  worstOnsetSeconds: number | null;
+  chordRoughnessRatio: number | null;
+  phrase: PhraseScan | null;
 }>;
 
 function midiHz(midiPitch: number): number {
@@ -400,6 +444,267 @@ function resolvePitchCents(
   return bestEnergy >= 0.5 * measuredEnergy ? bestCents : rawCents;
 }
 
+/** In-place radix-2 complex FFT (sufficient for 8192-point analysis). */
+function fftRadix2(real: Float64Array, imaginary: Float64Array): void {
+  const n = real.length;
+  for (let i = 1, j = 0; i < n; i += 1) {
+    let bit = n >> 1;
+    for (; (j & bit) !== 0; bit >>= 1) j &= ~bit;
+    j |= bit;
+    if (i < j) {
+      [real[i], real[j]] = [real[j] ?? 0, real[i] ?? 0];
+      [imaginary[i], imaginary[j]] = [imaginary[j] ?? 0, imaginary[i] ?? 0];
+    }
+  }
+  for (let length = 2; length <= n; length <<= 1) {
+    const angle = (-2 * Math.PI) / length;
+    const wReal = Math.cos(angle);
+    const wImaginary = Math.sin(angle);
+    for (let start = 0; start < n; start += length) {
+      let curReal = 1;
+      let curImaginary = 0;
+      for (let k = 0; k < length / 2; k += 1) {
+        const even = start + k;
+        const odd = start + k + length / 2;
+        const oddReal =
+          (real[odd] ?? 0) * curReal - (imaginary[odd] ?? 0) * curImaginary;
+        const oddImaginary =
+          (real[odd] ?? 0) * curImaginary + (imaginary[odd] ?? 0) * curReal;
+        real[odd] = (real[even] ?? 0) - oddReal;
+        imaginary[odd] = (imaginary[even] ?? 0) - oddImaginary;
+        real[even] = (real[even] ?? 0) + oddReal;
+        imaginary[even] = (imaginary[even] ?? 0) + oddImaginary;
+        const nextReal = curReal * wReal - curImaginary * wImaginary;
+        curImaginary = curReal * wImaginary + curImaginary * wReal;
+        curReal = nextReal;
+      }
+    }
+  }
+}
+
+type SpectralPartial = Readonly<{ frequencyHz: number; amplitude: number }>;
+
+/** Hann-windowed magnitude spectrum peaks over the sustain window. */
+function measuredPartials(
+  samples: Float32Array,
+  sampleRateHz: number,
+  startSample: number,
+  maximumPartials: number,
+): readonly SpectralPartial[] {
+  const size = 8_192;
+  if (samples.length < startSample + size) return [];
+  const real = new Float64Array(size);
+  const imaginary = new Float64Array(size);
+  for (let index = 0; index < size; index += 1) {
+    const window =
+      0.5 * (1 - Math.cos((2 * Math.PI * index) / (size - 1)));
+    real[index] = (samples[startSample + index] ?? 0) * window;
+  }
+  fftRadix2(real, imaginary);
+  const magnitudes = new Float64Array(size / 2);
+  for (let bin = 0; bin < size / 2; bin += 1) {
+    magnitudes[bin] = Math.hypot(real[bin] ?? 0, imaginary[bin] ?? 0);
+  }
+  const peaks: Array<{ frequencyHz: number; amplitude: number }> = [];
+  for (let bin = 2; bin < size / 2 - 2; bin += 1) {
+    const magnitude = magnitudes[bin] ?? 0;
+    if (
+      magnitude > (magnitudes[bin - 1] ?? 0) &&
+      magnitude >= (magnitudes[bin + 1] ?? 0)
+    ) {
+      /* Parabolic interpolation refines the peak frequency. */
+      const left = magnitudes[bin - 1] ?? 0;
+      const right = magnitudes[bin + 1] ?? 0;
+      const denominator = left - 2 * magnitude + right;
+      const offset =
+        denominator === 0 ? 0 : (0.5 * (left - right)) / denominator;
+      peaks.push({
+        frequencyHz: ((bin + offset) * sampleRateHz) / size,
+        amplitude: magnitude,
+      });
+    }
+  }
+  peaks.sort((a, b) => b.amplitude - a.amplitude);
+  const strongest = peaks[0]?.amplitude ?? 0;
+  return Object.freeze(
+    peaks
+      .slice(0, maximumPartials)
+      .filter((peak) => peak.amplitude > strongest * 0.001)
+      .map((peak) => Object.freeze(peak)),
+  );
+}
+
+/** Plomp–Levelt pairwise roughness over a partial set (Sethares form). */
+function plompLeveltRoughness(partials: readonly SpectralPartial[]): number {
+  let total = 0;
+  for (let i = 0; i < partials.length; i += 1) {
+    for (let j = i + 1; j < partials.length; j += 1) {
+      const a = partials[i];
+      const b = partials[j];
+      if (a === undefined || b === undefined) continue;
+      const fMin = Math.min(a.frequencyHz, b.frequencyHz);
+      const df = Math.abs(a.frequencyHz - b.frequencyHz);
+      const s = 0.24 / (0.021 * fMin + 19);
+      total +=
+        a.amplitude *
+        b.amplitude *
+        (Math.exp(-3.5 * s * df) - Math.exp(-5.75 * s * df));
+    }
+  }
+  return total;
+}
+
+/**
+ * The ideal-baseline chord: the same pitches as exact 12-TET harmonic
+ * tones (8 partials, 1/n amplitude), through the identical analysis. The
+ * measured/ideal roughness ratio isolates render-induced roughness.
+ */
+function idealChordRoughness(chordMidis: readonly number[]): number {
+  const partials: SpectralPartial[] = [];
+  for (const midiPitch of chordMidis) {
+    const f0 = midiHz(midiPitch);
+    for (let harmonic = 1; harmonic <= 8; harmonic += 1) {
+      if (f0 * harmonic >= SAMPLE_RATE_HZ / 2) break;
+      partials.push(
+        Object.freeze({ frequencyHz: f0 * harmonic, amplitude: 1 / harmonic }),
+      );
+    }
+  }
+  /* Normalize so amplitude scale matches a unit-strongest measured set. */
+  const strongest = Math.max(...partials.map((partial) => partial.amplitude));
+  return plompLeveltRoughness(
+    partials.map((partial) =>
+      Object.freeze({
+        frequencyHz: partial.frequencyHz,
+        amplitude: partial.amplitude / strongest,
+      }),
+    ),
+  );
+}
+
+/** Seconds from render start to the envelope reaching -20 dB of peak. */
+function onsetLatencySeconds(
+  samples: Float32Array,
+  sampleRateHz: number,
+): number | null {
+  let peak = 0;
+  for (const value of samples) {
+    const magnitude = Math.abs(value);
+    if (Number.isFinite(magnitude) && magnitude > peak) peak = magnitude;
+  }
+  if (peak <= 0) return null;
+  const threshold = peak * 10 ** (-ONSET_DB_BELOW_PEAK / 20);
+  for (let index = 0; index < samples.length; index += 1) {
+    if (Math.abs(samples[index] ?? 0) >= threshold) {
+      return index / sampleRateHz;
+    }
+  }
+  return null;
+}
+
+type PhraseScan = Readonly<{
+  worstTransitionDelta: number;
+  transitionClick: boolean;
+  dropoutSeconds: number;
+}>;
+
+/**
+ * Sum a six-note phrase the way the engine sums per-note buffers, then
+ * scan for inter-note clicks (outside excluded onset windows) and
+ * mid-phrase dropouts.
+ */
+function scanPhrase(
+  renders: readonly (MonoPcm | null)[],
+  onsetsSeconds: readonly number[],
+): PhraseScan | null {
+  const present = renders.filter((pcm): pcm is MonoPcm => pcm !== null);
+  if (present.length !== renders.length || present.length === 0) return null;
+  const endSeconds =
+    Math.max(
+      ...present.map(
+        (pcm, index) =>
+          (onsetsSeconds[index] ?? 0) + pcm.samples.length / pcm.sampleRateHz,
+      ),
+    ) + 0.1;
+  const frameCount = Math.ceil(endSeconds * SAMPLE_RATE_HZ);
+  const mixed = new Float32Array(frameCount);
+  for (const [index, pcm] of present.entries()) {
+    const startFrame = Math.round((onsetsSeconds[index] ?? 0) * SAMPLE_RATE_HZ);
+    for (let at = 0; at < pcm.samples.length; at += 1) {
+      const slot = startFrame + at;
+      if (slot >= frameCount) break;
+      mixed[slot] = (mixed[slot] ?? 0) + (pcm.samples[at] ?? 0);
+    }
+  }
+  const excluded = (frame: number): boolean =>
+    onsetsSeconds.some((onset) =>
+      Math.abs(frame / SAMPLE_RATE_HZ - onset) < PHRASE_ONSET_EXCLUDE_SECONDS,
+    );
+  let worstTransitionDelta = 0;
+  let transitionClick = false;
+  let windowSumSquares = 0;
+  let windowCount = 0;
+  for (let frame = 1; frame < frameCount; frame += 1) {
+    const current = mixed[frame] ?? 0;
+    const delta = Math.abs(current - (mixed[frame - 1] ?? 0));
+    if (!excluded(frame)) {
+      if (delta > worstTransitionDelta) worstTransitionDelta = delta;
+      if (windowCount >= CLICK_LOCAL_WINDOW) {
+        const localRms = Math.sqrt(windowSumSquares / windowCount);
+        if (
+          delta > CLICK_RELATIVE_FLOOR &&
+          delta > CLICK_LOCAL_RMS_RATIO * localRms
+        ) {
+          transitionClick = true;
+        }
+      }
+    }
+    windowSumSquares += current * current;
+    windowCount += 1;
+    if (windowCount > CLICK_LOCAL_WINDOW) {
+      const leaving = mixed[frame - CLICK_LOCAL_WINDOW] ?? 0;
+      windowSumSquares = Math.max(0, windowSumSquares - leaving * leaving);
+      windowCount -= 1;
+    }
+  }
+  /* Dropout scan over 5 ms blocks between first onset and last release. */
+  const block = Math.round(0.005 * SAMPLE_RATE_HZ);
+  const activeStart = Math.round((onsetsSeconds[0] ?? 0) * SAMPLE_RATE_HZ);
+  const activeEnd = Math.round(
+    ((onsetsSeconds.at(-1) ?? 0) + PHRASE_GATE_SECONDS) * SAMPLE_RATE_HZ,
+  );
+  const blockRms: number[] = [];
+  for (let start = activeStart; start + block <= activeEnd; start += block) {
+    let energy = 0;
+    for (let at = start; at < start + block; at += 1) {
+      energy += (mixed[at] ?? 0) ** 2;
+    }
+    blockRms.push(Math.sqrt(energy / block));
+  }
+  const sorted = [...blockRms].sort((a, b) => a - b);
+  const median = sorted[Math.floor(sorted.length / 2)] ?? 0;
+  const floor = median * 10 ** (-PHRASE_DROPOUT_DB / 20);
+  let dropoutBlocks = 0;
+  let runLength = 0;
+  const minimumRun = Math.ceil(
+    PHRASE_DROPOUT_MIN_SECONDS / 0.005,
+  );
+  for (const value of blockRms) {
+    if (value < floor) {
+      runLength += 1;
+    } else {
+      if (runLength >= minimumRun) dropoutBlocks += runLength;
+      runLength = 0;
+    }
+  }
+  if (runLength >= minimumRun) dropoutBlocks += runLength;
+  return Object.freeze({
+    worstTransitionDelta,
+    transitionClick,
+    dropoutSeconds: dropoutBlocks * 0.005,
+  });
+}
+
 function pitchThresholds(midiPitch: number): Readonly<{ warn: number; fail: number }> {
   const extreme =
     midiPitch < PITCH_EXTREME_LOW_MIDI || midiPitch > PITCH_EXTREME_HIGH_MIDI;
@@ -468,6 +773,7 @@ async function main(): Promise<void> {
     const notes: NoteMeasurement[] = [];
     const monosByKey = new Map<string, MonoPcm>();
     let worstRenderRatio = 0;
+    let worstOnsetSeconds: number | null = null;
 
     /* One untimed warmup render so lazy per-instrument setup (module
      * caches, payload decode) never inflates the measured ratio. */
@@ -520,6 +826,13 @@ async function main(): Promise<void> {
                 ),
               };
         const clicks = detectClicks(monoPcm.samples, monoPcm.sampleRateHz);
+        const onset = onsetLatencySeconds(monoPcm.samples, monoPcm.sampleRateHz);
+        if (
+          onset !== null &&
+          (worstOnsetSeconds === null || onset > worstOnsetSeconds)
+        ) {
+          worstOnsetSeconds = onset;
+        }
         const measurement: NoteMeasurement = {
           midiPitch,
           velocity,
@@ -640,6 +953,30 @@ async function main(): Promise<void> {
       }
     }
 
+    /* Onset-latency law (v2): a laggy speak makes the chart feel late. */
+    if (worstOnsetSeconds !== null) {
+      const wind = WIND_INSTRUMENT_IDS.has(recipe.id);
+      const warnAt = wind ? ONSET_WARN_SECONDS_WIND : ONSET_WARN_SECONDS_STRUCK;
+      const failAt = wind ? ONSET_FAIL_SECONDS_WIND : ONSET_FAIL_SECONDS_STRUCK;
+      if (worstOnsetSeconds > failAt) {
+        findings.push({
+          tier: "fail",
+          bucket: "performance",
+          code: "ONSET_LAG",
+          instrumentId: recipe.id,
+          detail: `worst onset ${(worstOnsetSeconds * 1_000).toFixed(0)} ms to -${String(ONSET_DB_BELOW_PEAK)} dB of peak`,
+        });
+      } else if (worstOnsetSeconds > warnAt) {
+        findings.push({
+          tier: "warn",
+          bucket: "performance",
+          code: "ONSET_SLOW",
+          instrumentId: recipe.id,
+          detail: `worst onset ${(worstOnsetSeconds * 1_000).toFixed(0)} ms to -${String(ONSET_DB_BELOW_PEAK)} dB of peak`,
+        });
+      }
+    }
+
     if (worstRenderRatio > RENDER_RATIO_FAIL) {
       findings.push({
         tier: "fail",
@@ -662,6 +999,7 @@ async function main(): Promise<void> {
      * per-voice scheduling sums them, then require every chord tone. */
     const chordMidis = pickChord(recipe.id);
     const chordToneLevelsDb: (number | null)[] = [];
+    let chordRoughnessRatio: number | null = null;
     const chordRenders = chordMidis
       .map((midiPitch) => renderNote(midiPitch, 96))
       .filter((pcm): pcm is RenderedNotePcm => pcm !== null);
@@ -697,6 +1035,51 @@ async function main(): Promise<void> {
           }
           return best;
         });
+        /*
+         * Chord roughness ratio (v2): measured Plomp–Levelt roughness of
+         * the rendered chord's partials over the ideal 12-TET harmonic
+         * baseline of the same pitches. Both sets are normalized to a
+         * unit strongest partial so only spectral SHAPE is compared.
+         */
+        const partials = measuredPartials(
+          mixed,
+          SAMPLE_RATE_HZ,
+          start,
+          ROUGHNESS_PARTIAL_COUNT,
+        );
+        if (partials.length >= 4) {
+          const strongestPartial = Math.max(
+            ...partials.map((partial) => partial.amplitude),
+          );
+          const normalized = partials.map((partial) =>
+            Object.freeze({
+              frequencyHz: partial.frequencyHz,
+              amplitude: partial.amplitude / strongestPartial,
+            }),
+          );
+          const ideal = idealChordRoughness(chordMidis);
+          if (ideal > 0) {
+            chordRoughnessRatio = plompLeveltRoughness(normalized) / ideal;
+            if (chordRoughnessRatio > ROUGHNESS_FAIL_RATIO) {
+              findings.push({
+                tier: "fail",
+                bucket: "pitch",
+                code: "CHORD_ROUGHNESS",
+                instrumentId: recipe.id,
+                detail: `rendered chord roughness ${chordRoughnessRatio.toFixed(2)}x the ideal 12-TET baseline`,
+              });
+            } else if (chordRoughnessRatio > ROUGHNESS_WARN_RATIO) {
+              findings.push({
+                tier: "warn",
+                bucket: "pitch",
+                code: "CHORD_ROUGH",
+                instrumentId: recipe.id,
+                detail: `rendered chord roughness ${chordRoughnessRatio.toFixed(2)}x the ideal 12-TET baseline`,
+              });
+            }
+          }
+        }
+
         const strongest = Math.max(...amplitudes);
         for (const [index, amplitude] of amplitudes.entries()) {
           const level =
@@ -714,6 +1097,43 @@ async function main(): Promise<void> {
             });
           }
         }
+      }
+    }
+
+    /*
+     * Phrase-transition scan (v2): a six-note ascending line at the
+     * engine's own summation, clicks measured outside onset windows,
+     * dropouts against the phrase median.
+     */
+    const phraseBase = pitches[1] ?? pitches[0] ?? 60;
+    const phraseMidis = [0, 2, 4, 5, 7, 9].map((offset) => phraseBase + offset)
+      .map((pitch) => Math.min(pitch, (pitches[2] ?? phraseBase) + 2));
+    const phraseOnsets = phraseMidis.map(
+      (_, index) => 0.1 + index * PHRASE_NOTE_SPACING_SECONDS,
+    );
+    const phraseRenders = phraseMidis.map((pitch) => {
+      const pcm = renderNote(pitch, 88);
+      return pcm === null ? null : mono(pcm);
+    });
+    const phrase = scanPhrase(phraseRenders, phraseOnsets);
+    if (phrase !== null) {
+      if (phrase.transitionClick || phrase.worstTransitionDelta > CLICK_DELTA_LIMIT) {
+        findings.push({
+          tier: "fail",
+          bucket: "pathology",
+          code: "PHRASE_TRANSITION_CLICK",
+          instrumentId: recipe.id,
+          detail: `inter-note jump ${phrase.worstTransitionDelta.toFixed(3)} in the summed phrase${phrase.transitionClick ? " (towers over local RMS)" : ""}`,
+        });
+      }
+      if (phrase.dropoutSeconds > 0) {
+        findings.push({
+          tier: "fail",
+          bucket: "pathology",
+          code: "PHRASE_DROPOUT",
+          instrumentId: recipe.id,
+          detail: `${(phrase.dropoutSeconds * 1_000).toFixed(0)} ms of mid-phrase dropout below -${String(PHRASE_DROPOUT_DB)} dB of the phrase median`,
+        });
       }
     }
 
