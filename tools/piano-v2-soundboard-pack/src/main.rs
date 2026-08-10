@@ -24,6 +24,18 @@ const RIB_COUNT: usize = 14;
 const RIB_WIDTH_M: f64 = 0.020;
 const RIB_HEIGHT_M: f64 = 0.025;
 const RIB_MODULUS_PA: f64 = 11.0e9;
+// Corradi et al. (2017), section 3.3 and table 2: the measured grand-piano
+// bridge at G3 is 32 mm wide by 37 mm thick and is modeled as maple with the
+// following longitudinal/shear modulus and density.  This reduced DKT pack
+// uses that one reviewed section for both physical bridge beams; it does not
+// pretend to own the unreported taper of every key position.
+const BRIDGE_WIDTH_M: f64 = 0.032;
+const BRIDGE_HEIGHT_M: f64 = 0.037;
+const BRIDGE_MODULUS_PA: f64 = 12.6e9;
+const BRIDGE_SHEAR_MODULUS_PA: f64 = 1.40e9;
+const BRIDGE_DENSITY_KG_M3: f64 = 630.0;
+const BASS_BRIDGE_MAX_MIDI: i32 = 43;
+const TREBLE_BRIDGE_MIN_MIDI: i32 = 44;
 // Sixty longitudinal cells put the fourteen equally spaced ribs exactly on
 // every fourth internal node column.  The refined 59x23 interior transverse
 // grid resolves the board's physical displacement branch through the 12 kHz
@@ -87,6 +99,14 @@ struct GeometryRecord {
     rib_width_m: f64,
     rib_height_m: f64,
     rib_modulus_pa: f64,
+    bridge_count: usize,
+    bridge_width_m: f64,
+    bridge_height_m: f64,
+    bridge_modulus_pa: f64,
+    bridge_shear_modulus_pa: f64,
+    bridge_density_kg_m3: f64,
+    bass_bridge_max_midi: i32,
+    treble_bridge_min_midi: i32,
     mesh_cells_x: usize,
     mesh_cells_y: usize,
     support: &'static str,
@@ -135,6 +155,7 @@ struct SoundboardPack {
     geometry: GeometryRecord,
     work: WorkRecord,
     bridge_anchor_source: &'static str,
+    bridge_structure_source: &'static str,
     radiation_law: &'static str,
     modes: Vec<ModeRecord>,
 }
@@ -385,15 +406,30 @@ fn sha256_hex(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
 }
 
-fn bridge_position_for_midi(midi: i32) -> (f64, f64) {
-    const ANCHORS: [(i32, f64, f64); 5] = [
-        (21, 0.888_433_676, 0.586_466_691),
-        (33, 0.783_324_033, 0.422_623_497),
-        (62, 0.268_679_391, 0.468_071_366),
-        (74, 0.134_417_067, 0.367_852_230),
-        (108, 0.017_733_010, 0.023_078_590),
-    ];
-    for pair in ANCHORS.windows(2) {
+const BASS_BRIDGE_ANCHORS: [(i32, f64, f64); 3] = [
+    (21, 0.888_433_676, 0.586_466_691),
+    (33, 0.783_324_033, 0.422_623_497),
+    // The reviewed 23-note grand-piano bass-bridge split ends at G2.  Its
+    // terminal point is the linear continuation of the visible A0-A1 bass
+    // bridge segment, rather than an interpolation toward the other bridge.
+    (43, 0.695_732_663_833_333, 0.286_087_502),
+];
+
+const TREBLE_BRIDGE_ANCHORS: [(i32, f64, f64); 4] = [
+    // The first long-bridge key is Ab2.  Its plan point is the linear
+    // continuation of the independently labelled D4-D5 long-bridge segment.
+    (44, 0.470_072_877, 0.618_400_070),
+    (62, 0.268_679_391, 0.468_071_366),
+    (74, 0.134_417_067, 0.367_852_230),
+    (108, 0.017_733_010, 0.023_078_590),
+];
+
+fn interpolate_bridge_position(
+    midi: i32,
+    anchors: &[(i32, f64, f64)],
+) -> (f64, f64) {
+    debug_assert!(!anchors.is_empty());
+    for pair in anchors.windows(2) {
         let (lower_midi, lower_x, lower_y) = pair[0];
         let (upper_midi, upper_x, upper_y) = pair[1];
         if midi <= upper_midi {
@@ -404,9 +440,63 @@ fn bridge_position_for_midi(midi: i32) -> (f64, f64) {
             );
         }
     }
-    let (_, x, y) = ANCHORS[ANCHORS.len() - 1];
+    let (_, x, y) = anchors[anchors.len() - 1];
     (x, y)
 }
+
+fn bridge_position_for_midi(midi: i32) -> (f64, f64) {
+    assert!((MIDI_MIN..=MIDI_MAX).contains(&midi));
+    if midi <= BASS_BRIDGE_MAX_MIDI {
+        interpolate_bridge_position(midi, &BASS_BRIDGE_ANCHORS)
+    } else {
+        interpolate_bridge_position(midi, &TREBLE_BRIDGE_ANCHORS)
+    }
+}
+
+fn bridge_node_path(mesh: &PlateMesh, first_midi: i32, last_midi: i32) -> Vec<usize> {
+    assert!(first_midi <= last_midi);
+    let mut nodes = Vec::new();
+    for midi in first_midi..=last_midi {
+        let (x, y) = bridge_position_for_midi(midi);
+        let column = (x * NX as f64).round() as usize;
+        let row = (y * NY as f64).round() as usize;
+        assert!(column <= NX && row <= NY);
+        let node = row * (NX + 1) + column;
+        let expected = (
+            column as f64 * LENGTH_M / NX as f64,
+            row as f64 * WIDTH_M / NY as f64,
+        );
+        assert!((mesh.nodes[node].0 - expected.0).abs() < 1.0e-15);
+        assert!((mesh.nodes[node].1 - expected.1).abs() < 1.0e-15);
+        if nodes.last() != Some(&node) {
+            nodes.push(node);
+        }
+    }
+    assert!(nodes.len() >= 2);
+    nodes
+}
+
+fn reviewed_bridge_stiffeners(mesh: &PlateMesh) -> [Stiffener; 2] {
+    let area = BRIDGE_WIDTH_M * BRIDGE_HEIGHT_M;
+    let inertia = BRIDGE_WIDTH_M * BRIDGE_HEIGHT_M.powi(3) / 12.0;
+    let torsion = rectangle_torsion_constant(BRIDGE_WIDTH_M, BRIDGE_HEIGHT_M);
+    let eccentricity = 0.5 * (THICKNESS_M + BRIDGE_HEIGHT_M);
+    let make = |nodes| Stiffener {
+        nodes,
+        e: BRIDGE_MODULUS_PA,
+        g: BRIDGE_SHEAR_MODULUS_PA,
+        area,
+        inertia,
+        torsion,
+        eccentricity,
+        density: BRIDGE_DENSITY_KG_M3,
+    };
+    [
+        make(bridge_node_path(mesh, MIDI_MIN, BASS_BRIDGE_MAX_MIDI)),
+        make(bridge_node_path(mesh, TREBLE_BRIDGE_MIN_MIDI, MIDI_MAX)),
+    ]
+}
+
 
 fn triangle_twice_area(mesh: &PlateMesh, triangle: [usize; 3]) -> f64 {
     let [(x0, y0), (x1, y1), (x2, y2)] = triangle.map(|node| mesh.nodes[node]);
@@ -563,11 +653,11 @@ fn solve_pack() -> SoundboardPack {
         "every rib must land on a mesh column"
     );
     let rib_column_stride = NX / (RIB_COUNT + 1);
-    let mut ribs = Vec::with_capacity(RIB_COUNT);
+    let mut stiffeners = Vec::with_capacity(RIB_COUNT + 2);
     for i in 1..=RIB_COUNT {
         let column = i * rib_column_stride;
         let nodes = (0..=NY).map(|j| j * (NX + 1) + column).collect();
-        ribs.push(Stiffener {
+        stiffeners.push(Stiffener {
             nodes,
             e: RIB_MODULUS_PA,
             g: RIB_MODULUS_PA / (2.0 * (1.0 + 0.35)),
@@ -578,17 +668,18 @@ fn solve_pack() -> SoundboardPack {
             density: DENSITY_KG_M3,
         });
     }
+    stiffeners.extend(reviewed_bridge_stiffeners(&mesh));
     let model = assemble(
         &mesh,
         &section,
         &boundary,
-        &ribs,
+        &stiffeners,
         &AssemblyOptions {
             pretension: 0.0,
             support: EdgeSupport::SimplySupported,
         },
     )
-    .expect("assemble explicit-rib piano soundboard");
+    .expect("assemble explicit-rib-and-bridge piano soundboard");
 
     let mut certified_slice_count = 0usize;
     let mut factorization_count = 0usize;
@@ -748,6 +839,14 @@ fn solve_pack() -> SoundboardPack {
             rib_width_m: RIB_WIDTH_M,
             rib_height_m: RIB_HEIGHT_M,
             rib_modulus_pa: RIB_MODULUS_PA,
+            bridge_count: 2,
+            bridge_width_m: BRIDGE_WIDTH_M,
+            bridge_height_m: BRIDGE_HEIGHT_M,
+            bridge_modulus_pa: BRIDGE_MODULUS_PA,
+            bridge_shear_modulus_pa: BRIDGE_SHEAR_MODULUS_PA,
+            bridge_density_kg_m3: BRIDGE_DENSITY_KG_M3,
+            bass_bridge_max_midi: BASS_BRIDGE_MAX_MIDI,
+            treble_bridge_min_midi: TREBLE_BRIDGE_MIN_MIDI,
             mesh_cells_x: NX,
             mesh_cells_y: NY,
             support: "simply-supported-rim",
@@ -769,7 +868,10 @@ fn solve_pack() -> SoundboardPack {
                 .maximum_mass_orthogonality_defect,
             maximum_factor_peak_bytes,
         },
-        bridge_anchor_source: "Miranda-Valiente-et-al-JASA-2024-Fig-2-five-plan-view-points",
+        bridge_anchor_source:
+            "Miranda-Valiente-et-al-JASA-2024-Fig-2-two-physical-bridges-A1-D4-D5-visible-ends-Hardman-grand-23-key-split",
+        bridge_structure_source:
+            "Corradi-et-al-2017-G3-32x37mm-maple-constant-section-two-beam-reduction",
         radiation_law:
             "Batoz-1980-equation-75-triangle-area-over-3-nodal-load-infinite-baffle-Rayleigh-1m",
         modes: solved
