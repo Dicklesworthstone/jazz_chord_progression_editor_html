@@ -1121,10 +1121,14 @@ async function main(): Promise<void> {
      */
     const phraseBase = pitches[1] ?? pitches[0] ?? 60;
     const phraseCeiling = (pitches[2] ?? phraseBase) + 2;
+    const phraseFloor = pitches[0] ?? phraseBase;
     const phraseMidis: number[] = [];
     for (const offset of [0, 2, 4, 5, 7, 9]) {
       let pitch = Math.min(phraseBase + offset, phraseCeiling);
-      while (phraseMidis.includes(pitch)) pitch -= 1;
+      while (phraseMidis.includes(pitch) && pitch > phraseFloor) pitch -= 1;
+      /* A saturated narrow window falls back upward rather than walking
+       * below the playable floor into a silent render refusal. */
+      while (phraseMidis.includes(pitch)) pitch += 1;
       phraseMidis.push(pitch);
     }
     const phraseOnsets = phraseMidis.map(

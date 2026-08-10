@@ -1621,11 +1621,6 @@ fn clr_render_inner(
             /* Soft attacks grow from the thinnest supercritical margin;
              * the tongue transient rings a little longer there. */
             let legacy_seed_seconds = 0.030 + 0.025 * ((0.55 - v_norm) / 0.55).clamp(0.0, 1.0);
-            /* A legato-marked COLD start is still a breath attack — the
-             * air column must be set in motion — just without the tongue
-             * transient, so it takes a reduced seed and no chiff. Without
-             * it the legato attack window stays noise-dominated and the
-             * tongued/legato chiff-band audibility law inverts. */
             /* Every cold start is breath-articulated — the air column
              * must be set in motion whether or not the tongue is used —
              * so the seed is articulation-independent. What distinguishes
