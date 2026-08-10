@@ -2311,8 +2311,9 @@ fn interpolate_keyboard_anchor(midi: i32, anchors: &[(i32, f64); 4]) -> Result<f
 /// A1, D4, and D5 on two separate physical bridges. The old implementation
 /// interpolated from A1 on the short bass bridge directly to D4 on the long
 /// bridge, creating contact points through bare soundboard. The split below
-/// keeps the reviewed 23-key grand-piano bass range and continues each visible
-/// bridge independently. These are geometry coordinates, never audio gains.
+/// keeps Borland's measured 23-key Hardman-grand bass range and continues each
+/// visible bridge independently. These are geometry coordinates, never audio
+/// gains.
 pub fn soundboard_bridge_position_for_midi(midi: i32) -> Result<(f64, f64), PianoError> {
     if !(MIN_MIDI..=MAX_MIDI).contains(&midi) {
         return Err(PianoError::InvalidMidi);

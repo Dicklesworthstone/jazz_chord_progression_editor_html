@@ -60,7 +60,7 @@ const JSON_OUTPUT: &str = "physical/parameter-packs/piano-v2-soundboard.json";
 const RUST_OUTPUT: &str = "dsp/concert-grand/src/piano_v2_soundboard.rs";
 const PACK_SCHEMA: &str = "changes.piano-v2-soundboard-pack.v2";
 const SOLVER_ID: &str =
-    "frankensim-fs-plate-dkt-conservative-nodal-ports-plus-fs-modal-certified-slices-inverse-refinement-v4";
+    "frankensim-fs-plate-dkt-ribs-two-maple-bridges-conservative-nodal-ports-plus-fs-modal-certified-slices-inverse-refinement-v5";
 const FRANKENSIM_REVIEWED_COMMIT: &str = "1346e1be67951ba0ba81f3e99f5eeca6efc42945";
 const FRANKENSIM_CRATE_CLOSURE: [&str; 19] = [
     "crates/fs-ad",
@@ -424,10 +424,7 @@ const TREBLE_BRIDGE_ANCHORS: [(i32, f64, f64); 4] = [
     (108, 0.017_733_010, 0.023_078_590),
 ];
 
-fn interpolate_bridge_position(
-    midi: i32,
-    anchors: &[(i32, f64, f64)],
-) -> (f64, f64) {
+fn interpolate_bridge_position(midi: i32, anchors: &[(i32, f64, f64)]) -> (f64, f64) {
     debug_assert!(!anchors.is_empty());
     for pair in anchors.windows(2) {
         let (lower_midi, lower_x, lower_y) = pair[0];
@@ -496,7 +493,6 @@ fn reviewed_bridge_stiffeners(mesh: &PlateMesh) -> [Stiffener; 2] {
         make(bridge_node_path(mesh, TREBLE_BRIDGE_MIN_MIDI, MIDI_MAX)),
     ]
 }
-
 
 fn triangle_twice_area(mesh: &PlateMesh, triangle: [usize; 3]) -> f64 {
     let [(x0, y0), (x1, y1), (x2, y2)] = triangle.map(|node| mesh.nodes[node]);
@@ -869,7 +865,7 @@ fn solve_pack() -> SoundboardPack {
             maximum_factor_peak_bytes,
         },
         bridge_anchor_source:
-            "Miranda-Valiente-et-al-JASA-2024-Fig-2-two-physical-bridges-A1-D4-D5-visible-ends-Hardman-grand-23-key-split",
+            "Miranda-Valiente-et-al-JASA-2024-Fig-2-two-physical-bridges-A1-D4-D5-visible-ends-plus-Borland-2009-Hardman-grand-23-key-split",
         bridge_structure_source:
             "Corradi-et-al-2017-G3-32x37mm-maple-constant-section-two-beam-reduction",
         radiation_law:
@@ -1237,8 +1233,7 @@ mod tests {
             0.001,
         )
         .unwrap();
-        let section =
-            PlateSection::orthotropic(&material, THICKNESS_M, DENSITY_KG_M3).unwrap();
+        let section = PlateSection::orthotropic(&material, THICKNESS_M, DENSITY_KG_M3).unwrap();
         let boundary = PlateMesh::rectangle_boundary(NX, NY);
         let options = AssemblyOptions {
             pretension: 0.0,

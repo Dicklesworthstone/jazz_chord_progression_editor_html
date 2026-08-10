@@ -785,8 +785,7 @@ fn reviewed_bridge_points_drive_distinct_modal_ports() {
         0.422_623_497 + old_amount * (0.468_071_366 - 0.422_623_497),
     );
     assert!(
-        (treble_start.0 - old_bare_board_point.0)
-            .hypot(treble_start.1 - old_bare_board_point.1)
+        (treble_start.0 - old_bare_board_point.0).hypot(treble_start.1 - old_bare_board_point.1)
             > 0.20
     );
 
