@@ -1210,6 +1210,59 @@ mod tests {
     }
 
     #[test]
+    fn reviewed_bridge_model_keeps_two_paths_and_adds_only_passive_structure() {
+        let mesh = PlateMesh::rectangle(LENGTH_M, WIDTH_M, NX, NY);
+        let bridges = reviewed_bridge_stiffeners(&mesh);
+        assert_eq!(bridges.len(), 2);
+        assert!(bridges.iter().all(|bridge| bridge.nodes.len() >= 5));
+        assert_ne!(bridges[0].nodes.last(), bridges[1].nodes.first());
+        assert!(bridges.iter().all(|bridge| {
+            bridge.e == BRIDGE_MODULUS_PA
+                && bridge.g == BRIDGE_SHEAR_MODULUS_PA
+                && bridge.area == BRIDGE_WIDTH_M * BRIDGE_HEIGHT_M
+                && bridge.density == BRIDGE_DENSITY_KG_M3
+        }));
+        for bridge in &bridges {
+            assert!(bridge.nodes.windows(2).all(|pair| pair[0] != pair[1]));
+        }
+
+        let material = OrthotropicElastic::new(
+            [
+                LONGITUDINAL_MODULUS_PA,
+                RADIAL_MODULUS_PA,
+                RADIAL_MODULUS_PA,
+            ],
+            [POISSON_LR, 0.02, 0.02],
+            [SHEAR_MODULUS_PA, SHEAR_MODULUS_PA, SHEAR_MODULUS_PA],
+            0.001,
+        )
+        .unwrap();
+        let section =
+            PlateSection::orthotropic(&material, THICKNESS_M, DENSITY_KG_M3).unwrap();
+        let boundary = PlateMesh::rectangle_boundary(NX, NY);
+        let options = AssemblyOptions {
+            pretension: 0.0,
+            support: EdgeSupport::SimplySupported,
+        };
+        let bare = assemble(&mesh, &section, &boundary, &[], &options).unwrap();
+        let bridged = assemble(&mesh, &section, &boundary, &bridges, &options).unwrap();
+        assert_eq!(bare.free, bridged.free);
+
+        let trial = (0..bare.free)
+            .map(|index| ((index + 1) as f64 * 0.017).sin())
+            .collect::<Vec<_>>();
+        let quadratic = |matrix: &Csr| {
+            let mut product = vec![0.0; trial.len()];
+            matrix.spmv(&trial, &mut product);
+            trial.iter().zip(product).map(|(x, y)| x * y).sum::<f64>()
+        };
+        let stiffness_gain = quadratic(&bridged.k) - quadratic(&bare.k);
+        let mass_gain = quadratic(&bridged.m) - quadratic(&bare.m);
+        assert!(stiffness_gain.is_finite() && stiffness_gain > 0.0);
+        assert!(mass_gain.is_finite() && mass_gain > 0.0);
+    }
+
+    #[test]
     fn dkt_nodal_radiation_replays_the_equation_75_uniform_load() {
         let mesh = PlateMesh::rectangle(LENGTH_M, WIDTH_M, 3, 2);
         let constant = vec![1.0; mesh.node_count()];
