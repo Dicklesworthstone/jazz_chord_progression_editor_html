@@ -759,6 +759,8 @@ fn orthotropic_soundboard_obeys_independent_scaling_laws() {
 fn reviewed_bridge_points_drive_distinct_modal_ports() {
     let anchors = [
         (33, (0.783_324_033, 0.422_623_497)),
+        (43, (0.695_732_663_833_333, 0.286_087_502)),
+        (44, (0.470_072_877, 0.618_400_070)),
         (62, (0.268_679_391, 0.468_071_366)),
         (74, (0.134_417_067, 0.367_852_230)),
     ];
@@ -768,10 +770,31 @@ fn reviewed_bridge_points_drive_distinct_modal_ports() {
         assert!((actual.1 - expected.1).abs() < 1.0e-12);
     }
     let parameters = PianoParameters::canonical();
+    let bass_terminal = soundboard_bridge_position_for_midi(43).unwrap();
+    let treble_start = soundboard_bridge_position_for_midi(44).unwrap();
+    assert!(
+        (bass_terminal.0 - treble_start.0).hypot(bass_terminal.1 - treble_start.1) > 0.35,
+        "the two physical bridges collapsed back into one interpolated curve"
+    );
+    // The removed single-curve implementation put MIDI 44 between A1 and D4
+    // at this bare-board point. It must remain far from the reviewed long
+    // bridge's first key.
+    let old_amount = (44 - 33) as f64 / (62 - 33) as f64;
+    let old_bare_board_point = (
+        0.783_324_033 + old_amount * (0.268_679_391 - 0.783_324_033),
+        0.422_623_497 + old_amount * (0.468_071_366 - 0.422_623_497),
+    );
+    assert!(
+        (treble_start.0 - old_bare_board_point.0)
+            .hypot(treble_start.1 - old_bare_board_point.1)
+            > 0.20
+    );
+
     let residues = anchors
         .map(|(midi, _)| soundboard_bridge_mode_residue_for_midi(parameters, midi, 2, 3).unwrap());
-    assert!((residues[0] - residues[1]).abs() > 0.01);
-    assert!((residues[1] - residues[2]).abs() > 0.01);
+    for pair in residues.windows(2) {
+        assert!((pair[0] - pair[1]).abs() > 0.01);
+    }
     assert_eq!(
         soundboard_bridge_position_for_midi(20),
         Err(PianoError::InvalidMidi)
