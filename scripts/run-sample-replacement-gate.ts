@@ -19,6 +19,7 @@
  * Writes: release-evidence/audio/listening/<instrument>-replacement-evidence.json
  */
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
@@ -43,7 +44,7 @@ import {
 } from "../src/audio/wasm/vibraphone-samples";
 
 export const SAMPLE_REPLACEMENT_EVIDENCE_SCHEMA =
-  "changes.evidence.sample-replacement-output.v1" as const;
+  "changes.evidence.sample-replacement-output.v3" as const;
 
 type CorpusSlice = Readonly<{
   midiPitch: number;
@@ -53,7 +54,7 @@ type CorpusSlice = Readonly<{
 }>;
 
 export type SampleReplacementPolicy = Readonly<{
-  schema: "changes.policy.sample-replacement-shipping-output.v1";
+  schema: "changes.policy.sample-replacement-shipping-output.v3";
   instrument: "vibes" | "upright-bass";
   algorithmId: string;
   sampleRateHz: number;
@@ -67,6 +68,20 @@ export type SampleReplacementPolicy = Readonly<{
   earlyWindowSeconds: readonly [number, number];
   lateWindowSeconds: readonly [number, number];
   maximumLateToEarlyRmsRatio: number;
+  /*
+   * Temporal-character law. The checked-in vibraphone corpus reaches its
+   * loudest 20 ms window 40-100 ms after impact; an immediate maximum is the
+   * metallic ring the owner rejected. The 30 ms floor leaves one 10 ms hop of
+   * tolerance below the earliest reviewed reference, and the upper bound
+   * refuses a delayed plateau after the latest reviewed peak. Upright
+   * pizzicato has no delayed-bloom floor, but still carries its corpus-earned
+   * upper bound.
+   */
+  temporalPeakWindowSeconds: number;
+  temporalPeakHopSeconds: number;
+  temporalPeakSearchSeconds: readonly [number, number];
+  minimumTemporalPeakSeconds: number;
+  maximumTemporalPeakSeconds: number;
   minimumEarlyRms: number;
   maximumPeak: number;
   /*
@@ -82,7 +97,7 @@ export type SampleReplacementPolicy = Readonly<{
 }>;
 
 export const VIBES_REPLACEMENT_POLICY: SampleReplacementPolicy = Object.freeze({
-  schema: "changes.policy.sample-replacement-shipping-output.v1",
+  schema: "changes.policy.sample-replacement-shipping-output.v3",
   instrument: "vibes",
   algorithmId: VIBES_V2_ALGORITHM_ID,
   sampleRateHz: 48_000,
@@ -95,6 +110,12 @@ export const VIBES_REPLACEMENT_POLICY: SampleReplacementPolicy = Object.freeze({
   lateWindowSeconds: Object.freeze([2.5, 3.5] as const),
   /* Pedal-down bars ring: late energy persists but must clearly decay. */
   maximumLateToEarlyRmsRatio: 0.7,
+  temporalPeakWindowSeconds: 0.02,
+  temporalPeakHopSeconds: 0.01,
+  temporalPeakSearchSeconds: Object.freeze([0, 1] as const),
+  minimumTemporalPeakSeconds: 0.03,
+  /* Corpus maxima are 40--100 ms; keep one 10 ms hop of headroom. */
+  maximumTemporalPeakSeconds: 0.11,
   minimumEarlyRms: 1.0e-4,
   maximumPeak: 0.98,
   proximityMidi: Object.freeze([53, 60, 67, 74, 84]),
@@ -104,7 +125,7 @@ export const VIBES_REPLACEMENT_POLICY: SampleReplacementPolicy = Object.freeze({
 
 export const UPRIGHT_BASS_REPLACEMENT_POLICY: SampleReplacementPolicy =
   Object.freeze({
-    schema: "changes.policy.sample-replacement-shipping-output.v1",
+    schema: "changes.policy.sample-replacement-shipping-output.v3",
     instrument: "upright-bass",
     algorithmId: PLUCKED_UPRIGHT_BASS_ALGORITHM_ID,
     sampleRateHz: 48_000,
@@ -117,6 +138,12 @@ export const UPRIGHT_BASS_REPLACEMENT_POLICY: SampleReplacementPolicy =
     lateWindowSeconds: Object.freeze([1.5, 2.5] as const),
     /* Pizzicato dies fast: the late window must sit well under the pluck. */
     maximumLateToEarlyRmsRatio: 0.45,
+    temporalPeakWindowSeconds: 0.02,
+    temporalPeakHopSeconds: 0.01,
+    temporalPeakSearchSeconds: Object.freeze([0, 1] as const),
+    minimumTemporalPeakSeconds: 0,
+    /* Corpus maxima are 70--530 ms across these reviewed low-register cells. */
+    maximumTemporalPeakSeconds: 0.54,
     minimumEarlyRms: 1.0e-4,
     maximumPeak: 0.98,
     /*
@@ -139,6 +166,7 @@ export type ReplacementOutputFeatures = Readonly<{
   periodicity: number;
   earlyRms: number;
   lateToEarlyRmsRatio: number;
+  temporalPeakSeconds: number;
   peak: number;
 }>;
 
@@ -192,6 +220,8 @@ export type SampleReplacementEvidence = Readonly<{
     silentRejected: boolean;
     clippingRejected: boolean;
     sustainedRejected: boolean;
+    immediateRingRejected: boolean;
+    lateRingRejected: boolean;
     flatDynamicsRejected: boolean;
     impostorRejected: boolean;
   }>;
@@ -216,6 +246,10 @@ function canonicalize(value: unknown): unknown {
 
 function canonicalJson(value: unknown): string {
   return JSON.stringify(canonicalize(value));
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function sha256Hex(value: string | Uint8Array): string {
@@ -253,6 +287,49 @@ function windowRms(
     squares += value * value;
   }
   return Math.sqrt(squares / (end - start));
+}
+
+export function temporalPeakSeconds(
+  policy: SampleReplacementPolicy,
+  samples: Float32Array,
+  sampleRateHz: number,
+): number {
+  const searchStart = Math.max(
+    0,
+    Math.floor(policy.temporalPeakSearchSeconds[0] * sampleRateHz),
+  );
+  const searchEnd = Math.min(
+    samples.length,
+    Math.floor(policy.temporalPeakSearchSeconds[1] * sampleRateHz),
+  );
+  const windowFrames = Math.max(
+    1,
+    Math.round(policy.temporalPeakWindowSeconds * sampleRateHz),
+  );
+  const hopFrames = Math.max(
+    1,
+    Math.round(policy.temporalPeakHopSeconds * sampleRateHz),
+  );
+  if (searchEnd - searchStart < windowFrames) return Number.NaN;
+
+  let maximumSquares = -1;
+  let maximumFrame = searchStart;
+  for (
+    let frame = searchStart;
+    frame + windowFrames <= searchEnd;
+    frame += hopFrames
+  ) {
+    let squares = 0;
+    for (let index = frame; index < frame + windowFrames; index += 1) {
+      const value = samples[index] ?? 0;
+      squares += value * value;
+    }
+    if (squares > maximumSquares) {
+      maximumSquares = squares;
+      maximumFrame = frame;
+    }
+  }
+  return maximumFrame / sampleRateHz;
 }
 
 /** 4th-order one-pole lowpass isolating the fundamental for pitch reads:
@@ -332,7 +409,7 @@ function estimatePitch(
 }
 
 /*
- * Octave-band log-energy profile over the first second: the proximity metric
+ * Octave-band log-energy profile over the first quarter-second: the proximity metric
  * compares timbral balance, not exact waveforms, so recorded room character
  * cannot dominate the verdict. Bands: 0-250, 250-500, 500-1k, 1k-2k, 2k-4k Hz.
  */
@@ -396,6 +473,27 @@ function bandDistanceDb(left: readonly number[], right: readonly number[]): numb
   return Math.sqrt(squares / Math.max(1, left.length));
 }
 
+export function replacementDynamicsPasses(
+  quieterEarlyRms: number,
+  louderEarlyRms: number,
+): boolean {
+  return Number.isFinite(quieterEarlyRms) &&
+    Number.isFinite(louderEarlyRms) &&
+    louderEarlyRms > quieterEarlyRms;
+}
+
+export function replacementProximityPasses(
+  policy: SampleReplacementPolicy,
+  corpusPitchCents: number,
+  candidateDistanceDb: number,
+  impostorDistanceDb: number,
+): boolean {
+  if (![corpusPitchCents, candidateDistanceDb, impostorDistanceDb]
+    .every(Number.isFinite)) return false;
+  return Math.abs(corpusPitchCents) <= 35 &&
+    impostorDistanceDb - candidateDistanceDb >= policy.minimumImpostorMarginDb;
+}
+
 function decodeCorpusSlice(
   base64: string,
   slice: CorpusSlice,
@@ -440,6 +538,7 @@ export function analyzeReplacementOutput(
     periodicity: pitch.periodicity,
     earlyRms,
     lateToEarlyRmsRatio: earlyRms > 0 ? lateRms / earlyRms : 1,
+    temporalPeakSeconds: temporalPeakSeconds(policy, samples, sampleRateHz),
     peak,
   });
 }
@@ -449,6 +548,13 @@ export function evaluateReplacementOutput(
   features: ReplacementOutputFeatures,
 ): readonly ReplacementGateFinding[] {
   const findings: ReplacementGateFinding[] = [];
+  if (!Object.values(features).every(Number.isFinite)) {
+    findings.push(Object.freeze({
+      code: "REPLACEMENT_FEATURE_NONFINITE",
+      message: "one or more measured output features are non-finite",
+    }));
+    return Object.freeze(findings);
+  }
   if (Math.abs(features.pitchCents) > policy.maximumAbsolutePitchCents) {
     findings.push(Object.freeze({
       code: "REPLACEMENT_PITCH",
@@ -465,6 +571,18 @@ export function evaluateReplacementOutput(
     findings.push(Object.freeze({
       code: "REPLACEMENT_SUSTAIN",
       message: `late/early RMS ${features.lateToEarlyRmsRatio.toFixed(3)} exceeds ${String(policy.maximumLateToEarlyRmsRatio)} — does not decay like the instrument`,
+    }));
+  }
+  if (features.temporalPeakSeconds < policy.minimumTemporalPeakSeconds) {
+    findings.push(Object.freeze({
+      code: "REPLACEMENT_TEMPORAL_CHARACTER",
+      message: `loudest ${String(policy.temporalPeakWindowSeconds)} s window begins at ${features.temporalPeakSeconds.toFixed(3)} s, before the ${policy.minimumTemporalPeakSeconds.toFixed(3)} s corpus-earned floor`,
+    }));
+  }
+  if (features.temporalPeakSeconds > policy.maximumTemporalPeakSeconds) {
+    findings.push(Object.freeze({
+      code: "REPLACEMENT_TEMPORAL_CHARACTER",
+      message: `loudest ${String(policy.temporalPeakWindowSeconds)} s window begins at ${features.temporalPeakSeconds.toFixed(3)} s, after the ${policy.maximumTemporalPeakSeconds.toFixed(3)} s corpus-earned ceiling`,
     }));
   }
   if (features.peak > policy.maximumPeak) {
@@ -501,14 +619,23 @@ function summarize(
   });
 }
 
-const REPLACEMENT_SOURCE_PATHS = Object.freeze([
-  "dsp/concert-grand/src/vibes_v2.rs",
-  "dsp/concert-grand/src/plucked_v2.rs",
-  "src/audio/wasm/concert-grand-wasm.ts",
-] as const);
+function replacementSourcePaths(
+  instrument: SampleReplacementPolicy["instrument"],
+): readonly string[] {
+  return Object.freeze([
+    "scripts/run-sample-replacement-gate.ts",
+    instrument === "vibes"
+      ? "dsp/concert-grand/src/vibes_v2.rs"
+      : "dsp/concert-grand/src/plucked_v2.rs",
+    "src/audio/wasm/concert-grand-wasm.ts",
+  ]);
+}
 
-async function sourceBindings(root: string): Promise<readonly SourceBinding[]> {
-  return Object.freeze(await Promise.all(REPLACEMENT_SOURCE_PATHS.map(async (path) =>
+async function sourceBindings(
+  root: string,
+  instrument: SampleReplacementPolicy["instrument"],
+): Promise<readonly SourceBinding[]> {
+  return Object.freeze(await Promise.all(replacementSourcePaths(instrument).map(async (path) =>
     Object.freeze({
       path,
       sha256: sha256Hex(new Uint8Array(await readFile(resolve(root, path)))),
@@ -521,6 +648,10 @@ function healthyFeatures(policy: SampleReplacementPolicy): ReplacementOutputFeat
     periodicity: 0.95,
     earlyRms: 0.05,
     lateToEarlyRmsRatio: policy.maximumLateToEarlyRmsRatio * 0.5,
+    temporalPeakSeconds: Math.max(
+      policy.minimumTemporalPeakSeconds,
+      policy.temporalPeakHopSeconds,
+    ),
     peak: 0.4,
   });
 }
@@ -537,15 +668,15 @@ export async function runSampleReplacementGate(
       base64: VIBRAPHONE_SAMPLES_BASE64,
       rateHz: VIBRAPHONE_SAMPLES_RATE_HZ,
       sha256: VIBRAPHONE_SAMPLES_SHA256,
-      slices: VIBRAPHONE_SAMPLES_SLICE_INDEX as readonly CorpusSlice[],
+      slices: VIBRAPHONE_SAMPLES_SLICE_INDEX,
     })
     : Object.freeze({
       base64: UPRIGHT_BASS_SAMPLES_BASE64,
       rateHz: UPRIGHT_BASS_SAMPLES_RATE_HZ,
       sha256: UPRIGHT_BASS_SAMPLES_SHA256,
-      slices: UPRIGHT_BASS_SAMPLES_SLICE_INDEX as readonly CorpusSlice[],
+      slices: UPRIGHT_BASS_SAMPLES_SLICE_INDEX,
     });
-  const bindingsBefore = await sourceBindings(root);
+  const bindingsBefore = await sourceBindings(root, instrument);
   const renderers = await loadWaveguideRenderers();
   const renderer = renderers.get(policy.algorithmId);
   if (renderer === undefined) throw new Error(`REPLACEMENT_RENDERER_MISSING:${policy.algorithmId}`);
@@ -591,12 +722,13 @@ export async function runSampleReplacementGate(
       id: `m${String(midi)}-dynamics`,
       midi,
       rmsRise,
-      outcome: rmsRise > 0 ? "pass" as const : "fail" as const,
+      outcome: replacementDynamicsPasses(piano.earlyRms, forte.earlyRms)
+        ? "pass" as const
+        : "fail" as const,
     }));
   }
 
   const proximityCells: ReplacementProximityCell[] = [];
-  let impostorEverCloser = false;
   for (const midi of policy.proximityMidi) {
     const slice = corpus.slices.find((entry) => entry.midiPitch === midi);
     if (slice === undefined) throw new Error(`REPLACEMENT_CORPUS_SLICE_MISSING:m${String(midi)}`);
@@ -637,7 +769,6 @@ export async function runSampleReplacementGate(
       referenceProfile,
     );
     const marginDb = impostorDistanceDb - candidateDistanceDb;
-    if (marginDb <= 0) impostorEverCloser = true;
     proximityCells.push(Object.freeze({
       id: `m${String(midi)}-proximity`,
       midi,
@@ -645,11 +776,12 @@ export async function runSampleReplacementGate(
       candidateDistanceDb,
       impostorDistanceDb,
       marginDb,
-      outcome:
-        Math.abs(corpusPitchCents) <= 35 &&
-        marginDb >= policy.minimumImpostorMarginDb
-          ? "pass" as const
-          : "fail" as const,
+      outcome: replacementProximityPasses(
+        policy,
+        corpusPitchCents,
+        candidateDistanceDb,
+        impostorDistanceDb,
+      ) ? "pass" as const : "fail" as const,
     }));
   }
 
@@ -677,13 +809,26 @@ export async function runSampleReplacementGate(
       policy,
       Object.freeze({ ...healthy, lateToEarlyRmsRatio: 1.4 }),
     ).some((item) => item.code === "REPLACEMENT_SUSTAIN"),
-    flatDynamicsRejected: ((): boolean => {
-      const flat = healthy;
-      return flat.earlyRms - flat.earlyRms <= 0;
-    })(),
-    impostorRejected: !impostorEverCloser,
+    immediateRingRejected: policy.minimumTemporalPeakSeconds === 0 ||
+      evaluateReplacementOutput(
+        policy,
+        Object.freeze({ ...healthy, temporalPeakSeconds: 0 }),
+      ).some((item) => item.code === "REPLACEMENT_TEMPORAL_CHARACTER"),
+    lateRingRejected: evaluateReplacementOutput(
+      policy,
+      Object.freeze({
+        ...healthy,
+        temporalPeakSeconds: policy.maximumTemporalPeakSeconds +
+          policy.temporalPeakHopSeconds,
+      }),
+    ).some((item) => item.code === "REPLACEMENT_TEMPORAL_CHARACTER"),
+    flatDynamicsRejected: !replacementDynamicsPasses(
+      healthy.earlyRms,
+      healthy.earlyRms,
+    ),
+    impostorRejected: !replacementProximityPasses(policy, 0, 4, 3),
   });
-  const bindingsAfter = await sourceBindings(root);
+  const bindingsAfter = await sourceBindings(root, instrument);
   if (canonicalJson(bindingsBefore) !== canonicalJson(bindingsAfter)) {
     throw new Error("REPLACEMENT_INPUT_CLOSURE_DRIFT");
   }
@@ -713,53 +858,242 @@ export async function runSampleReplacementGate(
  * verdict and the digest from the stored features. A hand-edited outcome,
  * summary, or digest fails closed.
  */
-export function verifySampleReplacementEvidence(value: unknown): value is SampleReplacementEvidence {
-  if (typeof value !== "object" || value === null) return false;
-  const record = value as SampleReplacementEvidence;
-  if (record.schema !== SAMPLE_REPLACEMENT_EVIDENCE_SCHEMA) return false;
-  if (typeof record.wasmSha256 !== "string" || record.wasmSha256.length !== 64) return false;
-  const policy = record.policy;
-  if (policy === null || typeof policy !== "object") return false;
-  if (policy.instrument !== "vibes" && policy.instrument !== "upright-bass") return false;
-  const expectedPolicy = policy.instrument === "vibes"
-    ? VIBES_REPLACEMENT_POLICY
-    : UPRIGHT_BASS_REPLACEMENT_POLICY;
-  if (canonicalJson(policy) !== canonicalJson(expectedPolicy)) return false;
-  if (!Array.isArray(record.cells) || !Array.isArray(record.dynamicsCells) ||
-    !Array.isArray(record.proximityCells)) {
+export function verifySampleReplacementEvidence(
+  value: unknown,
+  root = process.cwd(),
+): value is SampleReplacementEvidence {
+  if (!isRecord(value) || value["schema"] !== SAMPLE_REPLACEMENT_EVIDENCE_SCHEMA) {
     return false;
   }
-  for (const cell of record.cells) {
-    const findings = evaluateReplacementOutput(policy, cell.features);
-    const outcome = findings.length === 0 ? "pass" : "fail";
-    if (cell.outcome !== outcome) return false;
+  const policyValue = value["policy"];
+  if (!isRecord(policyValue)) return false;
+  const instrument = policyValue["instrument"];
+  if (instrument !== "vibes" && instrument !== "upright-bass") return false;
+  const policy = instrument === "vibes"
+    ? VIBES_REPLACEMENT_POLICY
+    : UPRIGHT_BASS_REPLACEMENT_POLICY;
+  if (canonicalJson(policyValue) !== canonicalJson(policy)) return false;
+  const expectedCorpusSha256 = instrument === "vibes"
+    ? VIBRAPHONE_SAMPLES_SHA256
+    : UPRIGHT_BASS_SAMPLES_SHA256;
+  if (value["wasmSha256"] !== CONCERT_GRAND_WASM_SHA256 ||
+    value["corpusSha256"] !== expectedCorpusSha256 ||
+    canonicalJson(value["algorithmIds"]) !== canonicalJson([policy.algorithmId])) {
+    return false;
   }
-  for (const cell of record.dynamicsCells) {
-    if (cell.outcome !== (cell.rmsRise > 0 ? "pass" : "fail")) return false;
+  const sourceBindingsValue = value["sourceBindings"];
+  const expectedSourcePaths = replacementSourcePaths(instrument);
+  if (!Array.isArray(sourceBindingsValue) ||
+    sourceBindingsValue.length !== expectedSourcePaths.length) {
+    return false;
   }
-  for (const cell of record.proximityCells) {
-    const outcome =
-      Math.abs(cell.corpusPitchCents) <= 35 &&
-      cell.marginDb >= policy.minimumImpostorMarginDb
-        ? "pass"
-        : "fail";
-    if (cell.outcome !== outcome) return false;
-    if (Math.abs(cell.marginDb -
-      (cell.impostorDistanceDb - cell.candidateDistanceDb)) > 1e-9) {
+  const sourceBindingsArray: readonly unknown[] = sourceBindingsValue;
+  const sourceBindings: SourceBinding[] = [];
+  for (const [index, path] of expectedSourcePaths.entries()) {
+    const binding = sourceBindingsArray[index];
+    if (!isRecord(binding) || binding["path"] !== path ||
+      typeof binding["sha256"] !== "string" ||
+      !/^[0-9a-f]{64}$/.test(binding["sha256"])) {
+      return false;
+    }
+    sourceBindings.push({ path, sha256: binding["sha256"] });
+    try {
+      if (sha256Hex(new Uint8Array(readFileSync(resolve(root, path)))) !==
+        binding["sha256"]) return false;
+    } catch {
       return false;
     }
   }
+  if (value["sourceClosureSha256"] !==
+    sha256Hex(canonicalJson(sourceBindings))) {
+    return false;
+  }
+  const cellsValue = value["cells"];
+  const dynamicsValue = value["dynamicsCells"];
+  const proximityValue = value["proximityCells"];
+  if (!Array.isArray(cellsValue) || !Array.isArray(dynamicsValue) ||
+    !Array.isArray(proximityValue)) {
+    return false;
+  }
+  const expectedCellIds = policy.midi.flatMap((midi) =>
+    policy.velocities.map((velocity) => `m${String(midi)}v${String(velocity)}`));
+  if (cellsValue.length !== expectedCellIds.length) return false;
+  const cells: ReplacementOutputCell[] = [];
+  for (const cellValue of cellsValue) {
+    if (!isRecord(cellValue) || !isRecord(cellValue["features"]) ||
+      !Array.isArray(cellValue["findings"])) return false;
+    const midi = cellValue["midi"];
+    const velocity = cellValue["velocity"];
+    const id = cellValue["id"];
+    const featuresValue = cellValue["features"];
+    const featureKeys = [
+      "pitchCents",
+      "periodicity",
+      "earlyRms",
+      "lateToEarlyRmsRatio",
+      "temporalPeakSeconds",
+      "peak",
+    ] as const;
+    if (typeof midi !== "number" || typeof velocity !== "number" ||
+      typeof id !== "string" ||
+      !featureKeys.every((key) => typeof featuresValue[key] === "number")) {
+      return false;
+    }
+    const expectedId = `m${String(midi)}v${String(velocity)}`;
+    if (!expectedCellIds.includes(id) || id !== expectedId ||
+      cellValue["algorithmId"] !== policy.algorithmId ||
+      cellValue["sampleRateHz"] !== policy.sampleRateHz ||
+      !policy.midi.includes(midi) ||
+      !(policy.velocities as readonly number[]).includes(velocity) ||
+      typeof cellValue["pcmSha256"] !== "string" ||
+      !/^[0-9a-f]{64}$/.test(cellValue["pcmSha256"])) {
+      return false;
+    }
+    const features: ReplacementOutputFeatures = {
+      pitchCents: featuresValue["pitchCents"] as number,
+      periodicity: featuresValue["periodicity"] as number,
+      earlyRms: featuresValue["earlyRms"] as number,
+      lateToEarlyRmsRatio: featuresValue["lateToEarlyRmsRatio"] as number,
+      temporalPeakSeconds: featuresValue["temporalPeakSeconds"] as number,
+      peak: featuresValue["peak"] as number,
+    };
+    const findings = evaluateReplacementOutput(policy, features);
+    const outcome = findings.length === 0 ? "pass" : "fail";
+    if (cellValue["outcome"] !== outcome ||
+      canonicalJson(cellValue["findings"]) !== canonicalJson(findings)) return false;
+    cells.push({
+      id,
+      algorithmId: policy.algorithmId,
+      midi,
+      velocity,
+      sampleRateHz: policy.sampleRateHz,
+      pcmSha256: cellValue["pcmSha256"],
+      features,
+      outcome,
+      findings,
+    });
+  }
+  if (new Set(cells.map((cell) => cell.id)).size !== expectedCellIds.length) {
+    return false;
+  }
+  const expectedDynamicsIds = policy.midi.map((midi) => `m${String(midi)}-dynamics`);
+  if (dynamicsValue.length !== expectedDynamicsIds.length) return false;
+  const dynamicsCells: ReplacementDynamicsCell[] = [];
+  for (const cellValue of dynamicsValue) {
+    if (!isRecord(cellValue)) return false;
+    const id = cellValue["id"];
+    const midi = cellValue["midi"];
+    const rmsRise = cellValue["rmsRise"];
+    if (typeof id !== "string" || typeof midi !== "number" ||
+      typeof rmsRise !== "number" || !Number.isFinite(rmsRise) ||
+      !expectedDynamicsIds.includes(id) ||
+      id !== `m${String(midi)}-dynamics` || !policy.midi.includes(midi)) {
+      return false;
+    }
+    const quieter = cells.find((cell) =>
+      cell.id === `m${String(midi)}v${String(policy.velocities[0])}`);
+    const louder = cells.find((cell) =>
+      cell.id === `m${String(midi)}v${String(policy.velocities[1])}`);
+    if (quieter === undefined || louder === undefined) return false;
+    const derivedRmsRise = louder.features.earlyRms - quieter.features.earlyRms;
+    if (Math.abs(rmsRise - derivedRmsRise) > 1e-12) return false;
+    const outcome = replacementDynamicsPasses(
+      quieter.features.earlyRms,
+      louder.features.earlyRms,
+    ) ? "pass" : "fail";
+    if (cellValue["outcome"] !== outcome) return false;
+    dynamicsCells.push({ id, midi, rmsRise, outcome });
+  }
+  if (new Set(dynamicsCells.map((cell) => cell.id)).size !==
+    expectedDynamicsIds.length) return false;
+  const expectedProximityIds = policy.proximityMidi.map(
+    (midi) => `m${String(midi)}-proximity`,
+  );
+  if (proximityValue.length !== expectedProximityIds.length) return false;
+  const proximityCells: ReplacementProximityCell[] = [];
+  for (const cellValue of proximityValue) {
+    if (!isRecord(cellValue)) return false;
+    const id = cellValue["id"];
+    const midi = cellValue["midi"];
+    const corpusPitchCents = cellValue["corpusPitchCents"];
+    const candidateDistanceDb = cellValue["candidateDistanceDb"];
+    const impostorDistanceDb = cellValue["impostorDistanceDb"];
+    const marginDb = cellValue["marginDb"];
+    if (typeof id !== "string" || typeof midi !== "number" ||
+      ![corpusPitchCents, candidateDistanceDb, impostorDistanceDb, marginDb]
+        .every((entry) => typeof entry === "number" && Number.isFinite(entry)) ||
+      !expectedProximityIds.includes(id) ||
+      id !== `m${String(midi)}-proximity` ||
+      !policy.proximityMidi.includes(midi)) {
+      return false;
+    }
+    const outcome = replacementProximityPasses(
+      policy,
+      corpusPitchCents as number,
+      candidateDistanceDb as number,
+      impostorDistanceDb as number,
+    ) ? "pass" : "fail";
+    if (cellValue["outcome"] !== outcome) return false;
+    if (Math.abs((marginDb as number) -
+      ((impostorDistanceDb as number) - (candidateDistanceDb as number))) > 1e-9) {
+      return false;
+    }
+    proximityCells.push({
+      id,
+      midi,
+      corpusPitchCents: corpusPitchCents as number,
+      candidateDistanceDb: candidateDistanceDb as number,
+      impostorDistanceDb: impostorDistanceDb as number,
+      marginDb: marginDb as number,
+      outcome,
+    });
+  }
+  if (new Set(proximityCells.map((cell) => cell.id)).size !==
+    expectedProximityIds.length) return false;
+  const controlKeys = [
+    "outOfRangeRefused",
+    "wrongPitchRejected",
+    "silentRejected",
+    "clippingRejected",
+    "sustainedRejected",
+    "immediateRingRejected",
+    "lateRingRejected",
+    "flatDynamicsRejected",
+    "impostorRejected",
+  ];
+  const controlsValue = value["controls"];
+  if (!isRecord(controlsValue) ||
+    canonicalJson(Object.keys(controlsValue).sort()) !==
+      canonicalJson([...controlKeys].sort()) ||
+    !Object.values(controlsValue).every((control) => control === true)) {
+    return false;
+  }
+  const controls: SampleReplacementEvidence["controls"] = {
+    outOfRangeRefused: true,
+    wrongPitchRejected: true,
+    silentRejected: true,
+    clippingRejected: true,
+    sustainedRejected: true,
+    immediateRingRejected: true,
+    lateRingRejected: true,
+    flatDynamicsRejected: true,
+    impostorRejected: true,
+  };
   const summary = summarize(
     policy,
-    record.cells,
-    record.dynamicsCells,
-    record.proximityCells,
-    record.controls,
+    cells,
+    dynamicsCells,
+    proximityCells,
+    controls,
   );
-  if (canonicalJson(summary) !== canonicalJson(record.summary)) return false;
-  if (record.summary.outcome !== "pass") return false;
-  const { evidenceSha256: _digest, ...unsigned } = record;
-  return sha256Hex(canonicalJson(unsigned)) === record.evidenceSha256;
+  if (canonicalJson(summary) !== canonicalJson(value["summary"]) ||
+    summary.outcome !== "pass") return false;
+  const evidenceSha256 = value["evidenceSha256"];
+  if (typeof evidenceSha256 !== "string") return false;
+  const unsigned = Object.fromEntries(
+    Object.entries(value).filter(([key]) => key !== "evidenceSha256"),
+  );
+  return sha256Hex(canonicalJson(unsigned)) === evidenceSha256;
 }
 
 const isMain = process.argv[1]?.endsWith("run-sample-replacement-gate.ts") === true;
