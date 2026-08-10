@@ -27,7 +27,8 @@
 //! (see `tonewood_zener_q`).  The archtop keeps the bounded analytic
 //! orthotropic reduction: its carved arch is no better served by a flat DKT
 //! plate, and that missing arch authority stays explicit.  The missing
-//! f-hole and primary loss authorities likewise remain explicit.
+//! f-hole geometry and primary loss authorities likewise remain explicit; the
+//! upright A0 is consumed only as the reviewed output-modal target in PHS4.
 
 #[path = "upright_bass_body.rs"]
 mod upright_bass_body;
@@ -161,7 +162,10 @@ fn plk2_bridge_patch_area_m2(pack_index: i32) -> f64 {
         /* The compact ukulele DKT authority already carries a dense local
          * bridge/radiation field; it does not need the larger guitar patch. */
         PLK2_UKULELE_PACK => 0.0,
-        PLK2_UPRIGHT_BASS_PACK => 3.6e-3,
+        /* The upright authority now carries a geometry-integrated Rayleigh-I
+         * observer transfer for every coupled soundboard/A0 mode. Adding a
+         * second bridge-point piston would double-count that radiating field. */
+        PLK2_UPRIGHT_BASS_PACK => 0.0,
         _ => 0.0,
     }
 }
@@ -171,7 +175,14 @@ fn plk2_direct_string_effective_area_m2(pack_index: i32) -> f64 {
         PLK2_ARCHTOP_PACK => 1.4e-5,
         PLK2_DREADNOUGHT_PACK => 1.8e-5,
         PLK2_UKULELE_PACK => 0.7e-5,
-        PLK2_UPRIGHT_BASS_PACK => 6.0e-5,
+        /* A freely vibrating bass string is a weak transverse dipole, not a
+         * monopole volume source.  The old nonzero "effective area" fed its
+         * velocity into the monopole differentiator and overwhelmed the
+         * geometry-solved soundboard by roughly 6:1 through the attack,
+         * erasing the measured body ring-up.  The audible acoustic path is
+         * the bridge-driven DKT soundboard; a future direct-string term needs
+         * an explicit dipole observer law rather than a fitted piston area. */
+        PLK2_UPRIGHT_BASS_PACK => 0.0,
         _ => 0.0,
     }
 }
@@ -254,8 +265,8 @@ fn plk2_bridge_transmission_shaping_hz(pack_index: i32) -> f64 {
     }
 }
 
-/// Second-order Butterworth low-pass (bilinear transform) on the body
-/// volume velocity. State is serialized in the stem state (and thereby in
+/// Second-order Butterworth low-pass (bilinear transform) on the bridge-patch
+/// and direct-string radiation terms. State is serialized in the stem state (and thereby in
 /// the nested chord state) so cooperative and synchronous renders stay
 /// bit-identical across splits.
 #[derive(Clone, Copy, Debug)]
@@ -358,7 +369,16 @@ fn plk2_listener_trim(pack_index: i32) -> f64 {
         PLK2_MARSHALL_ELECTRIC_PACK => 44.668_359_215_096_3,
         PLK2_DREADNOUGHT_PACK => 225.0, /* CANONICAL re-derivation 2026-08-08 (bead ...-ocw5): the prior 150 rationale was phantom-embed measurement. Canonical release-gate features at 150: m48 peak 0.0767 / earlyRms 0.0184 (both below floors 0.1 / 0.02), m60 0.2225, m72 peak 0.4396 / earlyRms 0.1307. 225 = 150 x 1.5 -> m48 peak ~0.115 / earlyRms ~0.028, m72 earlyRms ~0.196 (inside 0.02..0.3), peaks under 0.99. */
         PLK2_UKULELE_PACK => 340.0, /* linear-regime derivation: measured pre-limit resonant peak 1.04 at 957 (empirical, 24% above the census-scaled estimate); 0.9x targets ~0.93 pre-limit under the contract bound with G4 rms ~0.076 inside the window. */
-        PLK2_UPRIGHT_BASS_PACK => 420.0, /* derived from the unit-trim census: E2 active 1.163e-4/unit -> 0.0489, whole 4.78e-5/unit -> 0.0201, peak 4.74e-4/unit -> 0.199; worst register cell midi67 1.607e-3/unit -> pre-limit 0.675 under the 0.96 bound (calibration bead ...-ocw5). */ // derived: census rms 0.00719@100 -> E2 0.11
+        /* The upright now radiates only through the geometry-integrated
+         * Rayleigh-I soundboard/A0 observer.  The former 420 gain was derived
+         * from a nonphysical direct-string monopole that has been removed;
+         * carrying it forward made the corrected body roughly -64 dBFS.  A
+         * fixed 32_000 line/microphone gain places the velocity-100 E2 peak
+         * near -18 dBFS after the physical 1.2-period finger release while
+         * the all-rate/register sweep remains bounded. This constant never
+         * inspects rendered PCM and therefore
+         * cannot normalize individual notes or hide temporal/spectral errors. */
+        PLK2_UPRIGHT_BASS_PACK => 32_000.0,
         _ => 1.0,
     }
 }
@@ -544,6 +564,7 @@ pub struct OutputTaps {
     pub direct_string_velocity_m_per_s: f64,
     pub bridge_velocity_m_per_s: f64,
     pub acoustic_body_volume_velocity_m3_per_s: f64,
+    pub acoustic_body_pressure_pa_at_1m: f64,
     pub electric_pickup_velocity_m_per_s: f64,
     pub electric_cabinet_pressure_pa_at_1m: f64,
     pub contact_force_n: f64,
@@ -556,6 +577,7 @@ pub struct OutputTaps {
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 struct ChordRadiationTaps {
     acoustic_body_volume_velocity_m3_per_s: f64,
+    acoustic_body_pressure_pa_at_1m: f64,
     bridge_velocity_m_per_s: f64,
     direct_string_velocity_m_per_s: f64,
     electric_cabinet_pressure_pa_at_1m: f64,
@@ -1052,6 +1074,7 @@ pub enum BodyModeKind {
     HelmholtzAir,
     StructuralPlate { longitudinal: u8, radial: u8 },
     GeometrySolvedDkt { ordinal: u8 },
+    GeometrySolvedDktAirCoupled { ordinal: u8 },
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -1064,6 +1087,8 @@ struct BodyMode {
     damped_step: DampedStep,
     bridge_residue: f64,
     radiation_residue_m2_per_sqrt_kg: f64,
+    observer_pressure_per_modal_velocity_re: f64,
+    observer_pressure_per_modal_velocity_im: f64,
     /// Pack-derived quality factor before any coupling correction.
     base_q: f64,
     /// Wolf-suppression scale (1.0 = uncoupled). See apply_wolf_damping.
@@ -1083,6 +1108,8 @@ impl BodyMode {
         damped_step: DampedStep::IDENTITY,
         bridge_residue: 0.0,
         radiation_residue_m2_per_sqrt_kg: 0.0,
+        observer_pressure_per_modal_velocity_re: 0.0,
+        observer_pressure_per_modal_velocity_im: 0.0,
         base_q: 1.0,
         q_scale: 1.0,
     };
@@ -1442,14 +1469,19 @@ impl PluckedStemSession {
 
     #[inline(always)]
     fn acoustic_pressure_pa_at_1m(&mut self, taps: ChordRadiationTaps) -> f64 {
+        let body_flow = if self.pack_index == PLK2_UPRIGHT_BASS_PACK {
+            0.0
+        } else {
+            taps.acoustic_body_volume_velocity_m3_per_s
+        };
         let flow = plk2_shaped_acoustic_flow_m3_per_s(
             self.pack_index,
             &mut self.compliance,
-            taps.acoustic_body_volume_velocity_m3_per_s,
+            body_flow,
             taps.bridge_velocity_m_per_s,
             taps.direct_string_velocity_m_per_s,
         );
-        self.radiator.pressure_pa_at_1m(flow)
+        self.radiator.pressure_pa_at_1m(flow) + taps.acoustic_body_pressure_pa_at_1m
     }
 }
 
@@ -1485,21 +1517,24 @@ impl PluckedStem {
         })
     }
 
-    /// Coupled string-body pole damping ("wolf" suppression). The model's
-    /// bridge is one-way (the reactive back-reaction is deferred with
-    /// measured evidence: the naive velocity-return created energy), so a
-    /// string whose fundamental lands inside a body mode's half-power
-    /// bandwidth rings that mode unbounded by the coupling that, in a real
-    /// instrument, splits and damps the aligned pole pair. Canonical
+    /// Reduced string-body pole damping ("wolf" suppression) retained for
+    /// the legacy guitar/ukulele packs. Their bridge is a passive *resistive*
+    /// two-way Cayley port, but it has no reactive bridge impedance to split
+    /// an aligned string/body pole pair. Canonical
     /// 2026-08-08 measurements (bead ...-ocw5): archtop m76 pre-limit 1.25
     /// and dreadnought m76 pre-limit ~1.7 at vel 127 were release-shaping
     /// inert, i.e. resonant ring-up, exactly this mechanism. The scale is a
     /// documented approximation of the deferred two-way junction; it is
     /// applied at pluck time from the sounding fundamental, is idempotent,
     /// and is serialized per mode (state v4) so synchronous, cooperative,
-    /// and resumed renders stay bit-exact.
+    /// and resumed renders stay bit-exact. The geometry-solved upright-bass
+    /// open body is excluded: halving its already coupled modal Q double-counts
+    /// loss and suppresses the independently measured D2/G2 body bloom.
     fn apply_wolf_damping(&mut self, sounding_hz: f64) {
-        if !(sounding_hz > 0.0) {
+        if self.pack.id == "pizzicato-upright-bass"
+            || !sounding_hz.is_finite()
+            || sounding_hz <= 0.0
+        {
             return;
         }
         let dt = self.dt;
@@ -1634,6 +1669,7 @@ impl PluckedStem {
             ChordRadiationTaps {
                 acoustic_body_volume_velocity_m3_per_s: self
                     .acoustic_body_volume_velocity_m3_per_s(),
+                acoustic_body_pressure_pa_at_1m: self.acoustic_body_pressure_pa_at_1m(),
                 bridge_velocity_m_per_s: self.body_bridge_velocity(),
                 direct_string_velocity_m_per_s,
                 electric_cabinet_pressure_pa_at_1m: 0.0,
@@ -1655,6 +1691,7 @@ impl PluckedStem {
         let taps = self.step_after_contact(contact_force, false);
         ChordRadiationTaps {
             acoustic_body_volume_velocity_m3_per_s: taps.acoustic_body_volume_velocity_m3_per_s,
+            acoustic_body_pressure_pa_at_1m: taps.acoustic_body_pressure_pa_at_1m,
             bridge_velocity_m_per_s: taps.bridge_velocity_m_per_s,
             direct_string_velocity_m_per_s: taps.direct_string_velocity_m_per_s,
             electric_cabinet_pressure_pa_at_1m: taps.electric_cabinet_pressure_pa_at_1m,
@@ -1671,11 +1708,13 @@ impl PluckedStem {
         }
         let bridge_velocity = self.body_bridge_velocity();
         let acoustic = self.acoustic_body_volume_velocity_m3_per_s();
+        let acoustic_pressure = self.acoustic_body_pressure_pa_at_1m();
         let cabinet_pressure = self.process_electric_pickup_sample(pickup);
         OutputTaps {
             direct_string_velocity_m_per_s: direct,
             bridge_velocity_m_per_s: bridge_velocity,
             acoustic_body_volume_velocity_m3_per_s: acoustic,
+            acoustic_body_pressure_pa_at_1m: acoustic_pressure,
             electric_pickup_velocity_m_per_s: pickup,
             electric_cabinet_pressure_pa_at_1m: cabinet_pressure,
             contact_force_n: contact_force,
@@ -1704,6 +1743,16 @@ impl PluckedStem {
             acoustic += mode.radiation_residue_m2_per_sqrt_kg * mode.velocity;
         }
         acoustic
+    }
+
+    #[inline(always)]
+    fn acoustic_body_pressure_pa_at_1m(&self) -> f64 {
+        let mut pressure = 0.0;
+        for mode in self.body_modes.iter().take(self.body_mode_count) {
+            pressure += mode.observer_pressure_per_modal_velocity_re * mode.velocity
+                + mode.observer_pressure_per_modal_velocity_im * mode.omega * mode.position;
+        }
+        pressure
     }
 
     pub fn total_energy_j(&self) -> f64 {
@@ -2788,30 +2837,42 @@ fn derive_body_modes(
             || geometry.bridge_y_over_width != reviewed.bridge_y_over_width
             || geometry.body_volume_m3 != reviewed.cavity_volume_m3
             || geometry.plate_q != reviewed.provisional_plate_q
-            || geometry.helmholtz_hz != 0.0
+            || geometry.helmholtz_hz != upright_bass_body::REVIEWED_UPRIGHT_BASS_A0_HZ
+            || geometry.helmholtz_q != upright_bass_body::REVIEWED_UPRIGHT_BASS_A0_Q
         {
             return Err(PluckedError::InvalidBody);
         }
-        for (ordinal, body_mode) in authority.modes.into_iter().enumerate() {
+        for (ordinal, body_mode) in authority
+            .open_body_modes
+            .into_iter()
+            .take(authority.open_body_mode_count)
+            .enumerate()
+        {
             if body_mode.frequency_hz >= 0.42 * sample_rate_hz {
                 continue;
             }
-            insert_body_mode(
-                &mut modes,
-                &mut count,
-                make_body_mode(
-                    BodyModeKind::GeometrySolvedDkt {
-                        ordinal: ordinal as u8,
-                    },
-                    body_mode.frequency_hz,
-                    body_mode.q,
-                    body_mode.bridge_residue_per_sqrt_kg,
-                    body_mode.radiation_residue_m2_per_sqrt_kg,
-                    sample_rate_hz,
-                ),
+            let kind = if body_mode.air_port_kinetic_fraction > 0.5 {
+                BodyModeKind::HelmholtzAir
+            } else {
+                BodyModeKind::GeometrySolvedDktAirCoupled {
+                    ordinal: ordinal as u8,
+                }
+            };
+            let mut mode = make_body_mode(
+                kind,
+                body_mode.frequency_hz,
+                body_mode.q,
+                body_mode.bridge_residue_per_sqrt_kg,
+                body_mode.radiation_residue_m2_per_sqrt_kg,
+                sample_rate_hz,
             );
+            mode.observer_pressure_per_modal_velocity_re =
+                body_mode.observer_pressure_per_modal_velocity_re;
+            mode.observer_pressure_per_modal_velocity_im =
+                body_mode.observer_pressure_per_modal_velocity_im;
+            insert_body_mode(&mut modes, &mut count, mode);
         }
-        return (count == upright_bass_body::BODY_MODE_COUNT)
+        return (count == upright_bass_body::OPEN_BODY_MODE_COUNT)
             .then_some((modes, count))
             .ok_or(PluckedError::InvalidBody);
     }
@@ -2908,6 +2969,8 @@ fn make_body_mode(
         damped_step: DampedStep::new(omega, omega / (2.0 * q), 1.0 / sample_rate_hz),
         bridge_residue,
         radiation_residue_m2_per_sqrt_kg: radiation_residue,
+        observer_pressure_per_modal_velocity_re: 0.0,
+        observer_pressure_per_modal_velocity_im: 0.0,
         base_q: q,
         q_scale: 1.0,
     }
@@ -3178,12 +3241,11 @@ pub fn upright_bass_pack() -> InstrumentPack {
             bridge_x_over_length: 0.58,
             bridge_y_over_width: 0.50,
             body_volume_m3: 0.45,
-            // The repository has no reviewed aggregate f-hole area or
-            // effective neck length.  A fabricated 75 Hz Helmholtz oscillator
-            // would contradict the DKT body's explicit sealed-cavity boundary.
-            helmholtz_hz: 0.0,
+            // PHS4 reviews the coupled instrument's 75 Hz A0 output mode.  It
+            // is a modal target, not fabricated f-hole area or neck geometry.
+            helmholtz_hz: upright_bass_body::REVIEWED_UPRIGHT_BASS_A0_HZ,
             plate_q: 42.0,
-            helmholtz_q: 20.0,
+            helmholtz_q: upright_bass_body::REVIEWED_UPRIGHT_BASS_A0_Q,
             admittance_scale: 1.35,
         },
         bridge_conductance_kg_per_s: 0.012,
@@ -3543,9 +3605,12 @@ fn plk2_gesture(pack_index: i32, string_index: usize, fret: u8, velocity: i32) -
     gesture
 }
 
-/// Measured on the E2 calibration cell: 0.35 periods (~4.2 ms at 82.4 Hz)
-/// tames the string-side launch crest while keeping the pizzicato bloom.
-const UPRIGHT_RELEASE_PERIODS_FLOOR: f64 = 0.35;
+/// One broad fingertip roll-off gesture for every upright course. The
+/// 1.2-period floor (about 29 ms on E1 and 12 ms on G2) is a player-contact
+/// prior, not a per-note envelope: it acts inside the Hertz/Hunt-Crossley
+/// release. The independent four-open-string comparator gate admits its
+/// thump-to-body-bloom ratios without copying any recorded PCM at runtime.
+const UPRIGHT_RELEASE_PERIODS_FLOOR: f64 = 1.20;
 /// Measured on the archtop MIDI-76 register cell: about one sounding period
 /// of release restores the smooth launch the compliance corner cannot.
 const PICKED_HIGH_REGISTER_RELEASE_PERIODS_FLOOR: f64 = 1.0;
@@ -3655,14 +3720,19 @@ pub fn plk2_render_slices(
         let taps = stem.step_radiation();
         let pressure_pa = match path {
             PluckedRenderPath::AcousticBodyRadiation => {
+                let body_flow = if pack_index == PLK2_UPRIGHT_BASS_PACK {
+                    0.0
+                } else {
+                    taps.acoustic_body_volume_velocity_m3_per_s
+                };
                 let flow = plk2_shaped_acoustic_flow_m3_per_s(
                     pack_index,
                     &mut compliance,
-                    taps.acoustic_body_volume_velocity_m3_per_s,
+                    body_flow,
                     taps.bridge_velocity_m_per_s,
                     taps.direct_string_velocity_m_per_s,
                 );
-                radiator.pressure_pa_at_1m(flow)
+                radiator.pressure_pa_at_1m(flow) + taps.acoustic_body_pressure_pa_at_1m
             }
             PluckedRenderPath::ElectricCabinetRadiation => taps.electric_cabinet_pressure_pa_at_1m,
         };

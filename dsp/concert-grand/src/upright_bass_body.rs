@@ -9,13 +9,12 @@
 //! FrankenSim's `fs-plate`; no runtime dependency on FrankenSim is introduced.
 //!
 //! Authority boundary: the repository reviews one 1.08 m x 0.66 m x 6 mm
-//! orthotropic plate, homogenized brace rigidities, a 450 L cavity, and a
-//! provisional plate Q.  It does not review an outline, arch rise, separate
-//! back geometry, f-hole area/effective neck, or primary-literature damping
-//! curve.  Consequently this module models a simply-supported soundboard and
-//! the passive *sealed-cavity compliance* limit.  It does not invent a carved
-//! shell or a 75 Hz Helmholtz mode, and it labels the missing authorities in
-//! every result.
+//! orthotropic plate, homogenized brace rigidities, a 450 L cavity, a 75 Hz
+//! measured/reviewed A0 target, and a provisional plate Q.  It does not review
+//! an outline, arch rise, separate back geometry, or f-hole area/effective
+//! neck.  Consequently the mesh models a simply-supported soundboard and the
+//! passive sealed-cavity compliance limit, while the caller may consume the
+//! reviewed A0 as a *modal reduction*.  No fake port dimensions are inferred.
 
 use libm::{atan2, cos, sin, sqrt};
 
@@ -33,7 +32,16 @@ pub const TRIANGLE_COUNT: usize = 2 * GRID_CELLS_X * GRID_CELLS_Y;
 pub const FULL_DOF_COUNT: usize = 3 * NODE_COUNT;
 pub const FREE_DOF_COUNT: usize = 72;
 pub const BODY_MODE_COUNT: usize = 10;
+pub const OPEN_BODY_MODE_COUNT: usize = BODY_MODE_COUNT + 1;
 pub const MAX_JACOBI_SWEEPS: usize = 96;
+pub const MAX_OPEN_BODY_JACOBI_SWEEPS: usize = 48;
+pub const MAX_A0_INERTANCE_BISECTIONS: usize = 40;
+
+/// Reviewed PHS4 upright-body A0 target.  This is an output modal authority,
+/// not a claim that aggregate f-hole area or effective neck were measured.
+pub const REVIEWED_UPRIGHT_BASS_A0_HZ: f64 = 75.0;
+/// Provisional reviewed pack damping for the A0 modal reduction.
+pub const REVIEWED_UPRIGHT_BASS_A0_Q: f64 = 20.0;
 
 const MATRIX_CAPACITY: usize = FREE_DOF_COUNT * FREE_DOF_COUNT;
 const ELEMENT_DOF_COUNT: usize = 9;
@@ -92,10 +100,13 @@ pub enum BodyTopologyAuthority {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PortModeAuthority {
-    /// Volume alone determines acoustic compliance, not port inertance.  The
-    /// missing aggregate f-hole area and effective neck forbid a Helmholtz
-    /// frequency claim.
+    /// Volume alone determines acoustic compliance, not port inertance.
     UnavailableMissingOpeningAreaAndEffectiveNeck,
+    /// The checked-in PHS4 pack reviews the coupled instrument's A0 frequency,
+    /// but not the f-hole geometry that would independently derive it.  The
+    /// runtime may therefore consume the frequency as a bounded passive modal
+    /// reduction, but must not synthesize opening area or neck length.
+    ReviewedA0ModalReductionWithoutPortGeometry,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -120,6 +131,8 @@ pub struct UprightBassBodyMode {
     pub bridge_residue_per_sqrt_kg: f64,
     /// Integral of transverse modal displacement over the soundboard area.
     pub radiation_residue_m2_per_sqrt_kg: f64,
+    /// Mass-normalized transverse displacement at every DKT mesh node.
+    pub nodal_transverse_shape_m_per_sqrt_kg: [f64; NODE_COUNT],
 }
 
 impl UprightBassBodyMode {
@@ -129,7 +142,58 @@ impl UprightBassBodyMode {
         t60_seconds: 0.0,
         bridge_residue_per_sqrt_kg: 0.0,
         radiation_residue_m2_per_sqrt_kg: 0.0,
+        nodal_transverse_shape_m_per_sqrt_kg: [0.0; NODE_COUNT],
     };
+}
+
+/// Mass-normalized mode of the reviewed soundboard/cavity/A0 reduction.
+/// `air_port_kinetic_fraction` is an independently testable participation
+/// measure; it identifies A0 without relabeling an arbitrary frequency bin.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct UprightBassOpenBodyMode {
+    pub frequency_hz: f64,
+    pub q: f64,
+    pub t60_seconds: f64,
+    pub bridge_residue_per_sqrt_kg: f64,
+    pub radiation_residue_m2_per_sqrt_kg: f64,
+    /// Rayleigh-I pressure per generalized modal velocity at a fixed observer
+    /// one metre normal to the soundboard centre, under exp(-i omega t).
+    pub observer_pressure_per_modal_velocity_re: f64,
+    pub observer_pressure_per_modal_velocity_im: f64,
+    pub air_port_kinetic_fraction: f64,
+}
+
+impl UprightBassOpenBodyMode {
+    const ZERO: Self = Self {
+        frequency_hz: 0.0,
+        q: 0.0,
+        t60_seconds: 0.0,
+        bridge_residue_per_sqrt_kg: 0.0,
+        radiation_residue_m2_per_sqrt_kg: 0.0,
+        observer_pressure_per_modal_velocity_re: 0.0,
+        observer_pressure_per_modal_velocity_im: 0.0,
+        air_port_kinetic_fraction: 0.0,
+    };
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ReviewedA0ModalAuthority {
+    /// Coupled-system target reviewed by PHS4.
+    pub coupled_frequency_hz: f64,
+    pub q: f64,
+    /// Port inertance inferred from the reviewed coupled modal target and the
+    /// independently solved plate/cavity residues.  No fake area/neck pair is
+    /// claimed because infinitely many geometries share this inertance.
+    pub effective_inertance_kg_per_m4: f64,
+    pub uncoupled_port_frequency_hz: f64,
+    pub inertance_bisections: usize,
+    /// Exact bounded-work receipt for the two bracket probes, every
+    /// bisection probe, and the final modal solve.
+    pub eigen_solves: usize,
+    pub aggregate_jacobi_sweeps: usize,
+    pub aggregate_jacobi_pair_visits: usize,
+    pub aggregate_jacobi_rotations: usize,
+    pub maximum_jacobi_pair_visits: usize,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -165,6 +229,10 @@ pub struct UprightBassBodyAuthority {
     pub damping_authority: DampingAuthority,
     pub cavity: SealedCavityAuthority,
     pub modes: [UprightBassBodyMode; BODY_MODE_COUNT],
+    pub reviewed_a0: Option<ReviewedA0ModalAuthority>,
+    pub open_body_modes: [UprightBassOpenBodyMode; OPEN_BODY_MODE_COUNT],
+    pub open_body_mode_count: usize,
+    pub open_body_jacobi_sweeps: usize,
     pub receipt: UprightBassBodyWorkReceipt,
 }
 
@@ -176,6 +244,10 @@ pub enum UprightBassBodyError {
     BridgeOutsideMesh,
     MatrixNotPositiveDefinite,
     EigenSolveDidNotConverge { sweeps: usize },
+    OpenBodyEigenSolveDidNotConverge { sweeps: usize },
+    A0TargetDidNotConverge,
+    NonPositiveOpenBodyMode,
+    RadiationUnderresolved,
     InsufficientPositiveModes,
     NonFiniteMode,
     WorkLimitExceeded,
@@ -762,12 +834,353 @@ fn jacobi_eigen(
     ))
 }
 
-/// Derive the dark upright-bass soundboard/cavity authority.  No measurement
-/// or threshold is read from a rendered waveform, and no frequency is tuned.
+const OPEN_BODY_MATRIX_CAPACITY: usize = OPEN_BODY_MODE_COUNT * OPEN_BODY_MODE_COUNT;
+
+#[inline(always)]
+const fn open_body_matrix_index(row: usize, column: usize) -> usize {
+    row * OPEN_BODY_MODE_COUNT + column
+}
+
+fn open_body_jacobi_eigen(
+    mut matrix: [f64; OPEN_BODY_MATRIX_CAPACITY],
+) -> Result<
+    (
+        [f64; OPEN_BODY_MODE_COUNT],
+        [f64; OPEN_BODY_MATRIX_CAPACITY],
+        usize,
+        usize,
+    ),
+    UprightBassBodyError,
+> {
+    let mut vectors = [0.0; OPEN_BODY_MATRIX_CAPACITY];
+    for index in 0..OPEN_BODY_MODE_COUNT {
+        vectors[open_body_matrix_index(index, index)] = 1.0;
+    }
+    let mut completed_sweeps = 0;
+    let mut rotations = 0usize;
+    let mut converged = false;
+    for sweep in 0..MAX_OPEN_BODY_JACOBI_SWEEPS {
+        let mut maximum_off_diagonal = 0.0_f64;
+        let mut maximum_diagonal = 0.0_f64;
+        for diagonal in 0..OPEN_BODY_MODE_COUNT {
+            maximum_diagonal =
+                maximum_diagonal.max(matrix[open_body_matrix_index(diagonal, diagonal)].abs());
+        }
+        for p in 0..OPEN_BODY_MODE_COUNT {
+            for q in p + 1..OPEN_BODY_MODE_COUNT {
+                let pq = matrix[open_body_matrix_index(p, q)];
+                maximum_off_diagonal = maximum_off_diagonal.max(pq.abs());
+                if pq.abs() <= 1.0e-14 * maximum_diagonal.max(1.0) {
+                    continue;
+                }
+                let pp = matrix[open_body_matrix_index(p, p)];
+                let qq = matrix[open_body_matrix_index(q, q)];
+                let angle = 0.5 * atan2(2.0 * pq, qq - pp);
+                let cosine = cos(angle);
+                let sine = sin(angle);
+                rotations += 1;
+                for k in 0..OPEN_BODY_MODE_COUNT {
+                    if k == p || k == q {
+                        continue;
+                    }
+                    let kp = matrix[open_body_matrix_index(k, p)];
+                    let kq = matrix[open_body_matrix_index(k, q)];
+                    let rotated_p = cosine * kp - sine * kq;
+                    let rotated_q = sine * kp + cosine * kq;
+                    matrix[open_body_matrix_index(k, p)] = rotated_p;
+                    matrix[open_body_matrix_index(p, k)] = rotated_p;
+                    matrix[open_body_matrix_index(k, q)] = rotated_q;
+                    matrix[open_body_matrix_index(q, k)] = rotated_q;
+                }
+                matrix[open_body_matrix_index(p, p)] =
+                    cosine * cosine * pp - 2.0 * sine * cosine * pq + sine * sine * qq;
+                matrix[open_body_matrix_index(q, q)] =
+                    sine * sine * pp + 2.0 * sine * cosine * pq + cosine * cosine * qq;
+                matrix[open_body_matrix_index(p, q)] = 0.0;
+                matrix[open_body_matrix_index(q, p)] = 0.0;
+                for row in 0..OPEN_BODY_MODE_COUNT {
+                    let old_p = vectors[open_body_matrix_index(row, p)];
+                    let old_q = vectors[open_body_matrix_index(row, q)];
+                    vectors[open_body_matrix_index(row, p)] = cosine * old_p - sine * old_q;
+                    vectors[open_body_matrix_index(row, q)] = sine * old_p + cosine * old_q;
+                }
+            }
+        }
+        completed_sweeps = sweep + 1;
+        if maximum_off_diagonal <= 1.0e-12 * maximum_diagonal.max(1.0) {
+            converged = true;
+            break;
+        }
+    }
+    if !converged {
+        return Err(UprightBassBodyError::OpenBodyEigenSolveDidNotConverge {
+            sweeps: completed_sweeps,
+        });
+    }
+    let mut eigenvalues = [0.0; OPEN_BODY_MODE_COUNT];
+    for index in 0..OPEN_BODY_MODE_COUNT {
+        eigenvalues[index] = matrix[open_body_matrix_index(index, index)];
+    }
+    for left in 0..OPEN_BODY_MODE_COUNT {
+        let mut least = left;
+        for candidate in left + 1..OPEN_BODY_MODE_COUNT {
+            if eigenvalues[candidate]
+                .total_cmp(&eigenvalues[least])
+                .is_lt()
+            {
+                least = candidate;
+            }
+        }
+        if least != left {
+            eigenvalues.swap(left, least);
+            for row in 0..OPEN_BODY_MODE_COUNT {
+                vectors.swap(
+                    open_body_matrix_index(row, left),
+                    open_body_matrix_index(row, least),
+                );
+            }
+        }
+    }
+    for column in 0..OPEN_BODY_MODE_COUNT {
+        let mut orientation_row = 0usize;
+        for row in 1..OPEN_BODY_MODE_COUNT {
+            if vectors[open_body_matrix_index(row, column)].abs()
+                > vectors[open_body_matrix_index(orientation_row, column)].abs()
+            {
+                orientation_row = row;
+            }
+        }
+        if vectors[open_body_matrix_index(orientation_row, column)] < 0.0 {
+            for row in 0..OPEN_BODY_MODE_COUNT {
+                vectors[open_body_matrix_index(row, column)] =
+                    -vectors[open_body_matrix_index(row, column)];
+            }
+        }
+    }
+    Ok((eigenvalues, vectors, completed_sweeps, rotations))
+}
+
+fn open_body_matrix(
+    authority: &UprightBassBodyAuthority,
+    uncoupled_port_frequency_hz: f64,
+) -> ([f64; OPEN_BODY_MATRIX_CAPACITY], f64) {
+    let cavity_stiffness = authority.cavity.volume_stiffness_pa_per_m3;
+    let port_omega = 2.0 * PI * uncoupled_port_frequency_hz;
+    let port_inertance = cavity_stiffness / (port_omega * port_omega);
+    let sqrt_port_inertance = sqrt(port_inertance);
+    let mut matrix = [0.0; OPEN_BODY_MATRIX_CAPACITY];
+    for (index, mode) in authority.modes.iter().enumerate() {
+        let omega = 2.0 * PI * mode.frequency_hz;
+        matrix[open_body_matrix_index(index, index)] = omega * omega;
+        /* The sealed DKT modes already contain C r r^T.  Adding the port
+         * coordinate with -C r U completes 0.5*C*(r*q-U)^2 without counting
+         * cavity compliance twice. */
+        let coupling =
+            -cavity_stiffness * mode.radiation_residue_m2_per_sqrt_kg / sqrt_port_inertance;
+        matrix[open_body_matrix_index(index, BODY_MODE_COUNT)] = coupling;
+        matrix[open_body_matrix_index(BODY_MODE_COUNT, index)] = coupling;
+    }
+    matrix[open_body_matrix_index(BODY_MODE_COUNT, BODY_MODE_COUNT)] = port_omega * port_omega;
+    (matrix, port_inertance)
+}
+
+fn port_dominant_frequency_hz(
+    authority: &UprightBassBodyAuthority,
+    uncoupled_port_frequency_hz: f64,
+) -> Result<(f64, usize, usize), UprightBassBodyError> {
+    let (matrix, _) = open_body_matrix(authority, uncoupled_port_frequency_hz);
+    let (eigenvalues, vectors, sweeps, rotations) = open_body_jacobi_eigen(matrix)?;
+    let mut port_mode = 0usize;
+    for mode in 1..OPEN_BODY_MODE_COUNT {
+        if vectors[open_body_matrix_index(BODY_MODE_COUNT, mode)].abs()
+            > vectors[open_body_matrix_index(BODY_MODE_COUNT, port_mode)].abs()
+        {
+            port_mode = mode;
+        }
+    }
+    let eigenvalue = eigenvalues[port_mode];
+    if !(eigenvalue.is_finite() && eigenvalue > 0.0) {
+        return Err(UprightBassBodyError::NonPositiveOpenBodyMode);
+    }
+    Ok((sqrt(eigenvalue) / (2.0 * PI), sweeps, rotations))
+}
+
+/// Baffled Rayleigh-I narrow-band transfer at an observer one metre normal to
+/// the plate centre. This is the fixed-allocation counterpart of FrankenSim's
+/// `baffled_observer_radiation`: each DKT triangle is one signed velocity
+/// patch and the result is complex pressure per generalized modal velocity.
+pub(crate) fn baffled_plate_observer_transfer(
+    input: UprightBassBodyInput,
+    nodal_shape: &[f64; NODE_COUNT],
+    frequency_hz: f64,
+) -> Result<(f64, f64), UprightBassBodyError> {
+    let (nodes, triangles) = build_mesh(input);
+    let cell_x = input.length_m / GRID_CELLS_X as f64;
+    let cell_y = input.width_m / GRID_CELLS_Y as f64;
+    let cell_diagonal = sqrt(cell_x * cell_x + cell_y * cell_y);
+    if SPEED_OF_SOUND_M_PER_S / frequency_hz / cell_diagonal < 6.0 {
+        return Err(UprightBassBodyError::RadiationUnderresolved);
+    }
+    let wave_number = 2.0 * PI * frequency_hz / SPEED_OF_SOUND_M_PER_S;
+    let mut integral_re = 0.0;
+    let mut integral_im = 0.0;
+    for triangle in triangles {
+        let [a_index, b_index, c_index] = triangle.0;
+        let a = nodes[a_index];
+        let b = nodes[b_index];
+        let c = nodes[c_index];
+        let twice_area = (b.x - a.x) * (c.y - a.y) - (c.x - a.x) * (b.y - a.y);
+        let area_m2 = 0.5 * twice_area.abs();
+        let centroid_x = (a.x + b.x + c.x) / 3.0 - 0.5 * input.length_m;
+        let centroid_y = (a.y + b.y + c.y) / 3.0 - 0.5 * input.width_m;
+        let distance_m = sqrt(1.0 + centroid_x * centroid_x + centroid_y * centroid_y);
+        let shape = (nodal_shape[a_index] + nodal_shape[b_index] + nodal_shape[c_index]) / 3.0;
+        let weight = area_m2 * shape / distance_m;
+        let phase = wave_number * distance_m;
+        integral_re += cos(phase) * weight;
+        integral_im += sin(phase) * weight;
+    }
+    // Rayleigh I: p = i*rho*omega/(2*pi) * integral(v exp(i k R)/R)dS.
+    let coefficient = AIR_DENSITY_KG_PER_M3 * frequency_hz;
+    Ok((-coefficient * integral_im, coefficient * integral_re))
+}
+
+fn attach_reviewed_a0(
+    authority: &mut UprightBassBodyAuthority,
+) -> Result<(), UprightBassBodyError> {
+    const EIGEN_SOLVE_COUNT: usize = MAX_A0_INERTANCE_BISECTIONS + 3;
+    let mut lower_hz = 30.0;
+    let mut upper_hz = REVIEWED_UPRIGHT_BASS_A0_HZ;
+    let mut aggregate_sweeps = 0usize;
+    let mut aggregate_rotations = 0usize;
+    let (lower_output_hz, lower_sweeps, lower_rotations) =
+        port_dominant_frequency_hz(authority, lower_hz)?;
+    aggregate_sweeps += lower_sweeps;
+    aggregate_rotations += lower_rotations;
+    let (upper_output_hz, upper_sweeps, upper_rotations) =
+        port_dominant_frequency_hz(authority, upper_hz)?;
+    aggregate_sweeps += upper_sweeps;
+    aggregate_rotations += upper_rotations;
+    if !(lower_output_hz < REVIEWED_UPRIGHT_BASS_A0_HZ
+        && upper_output_hz > REVIEWED_UPRIGHT_BASS_A0_HZ)
+    {
+        return Err(UprightBassBodyError::A0TargetDidNotConverge);
+    }
+    for _ in 0..MAX_A0_INERTANCE_BISECTIONS {
+        let middle_hz = 0.5 * (lower_hz + upper_hz);
+        let (output_hz, sweeps, rotations) = port_dominant_frequency_hz(authority, middle_hz)?;
+        aggregate_sweeps += sweeps;
+        aggregate_rotations += rotations;
+        if output_hz < REVIEWED_UPRIGHT_BASS_A0_HZ {
+            lower_hz = middle_hz;
+        } else {
+            upper_hz = middle_hz;
+        }
+    }
+    let uncoupled_port_frequency_hz = 0.5 * (lower_hz + upper_hz);
+    let (matrix, port_inertance) = open_body_matrix(authority, uncoupled_port_frequency_hz);
+    let (eigenvalues, vectors, sweeps, rotations) = open_body_jacobi_eigen(matrix)?;
+    aggregate_sweeps += sweeps;
+    aggregate_rotations += rotations;
+    let pair_visits_per_sweep = OPEN_BODY_MODE_COUNT * (OPEN_BODY_MODE_COUNT - 1) / 2;
+    let aggregate_pair_visits = aggregate_sweeps * pair_visits_per_sweep;
+    let maximum_pair_visits =
+        EIGEN_SOLVE_COUNT * MAX_OPEN_BODY_JACOBI_SWEEPS * pair_visits_per_sweep;
+    if aggregate_pair_visits > maximum_pair_visits || aggregate_rotations > aggregate_pair_visits {
+        return Err(UprightBassBodyError::WorkLimitExceeded);
+    }
+    let sqrt_port_inertance = sqrt(port_inertance);
+    let mut open_modes = [UprightBassOpenBodyMode::ZERO; OPEN_BODY_MODE_COUNT];
+    for mode_index in 0..OPEN_BODY_MODE_COUNT {
+        let eigenvalue = eigenvalues[mode_index];
+        if !(eigenvalue.is_finite() && eigenvalue > 0.0) {
+            return Err(UprightBassBodyError::NonPositiveOpenBodyMode);
+        }
+        let mut bridge_residue = 0.0;
+        let mut radiation_residue =
+            vectors[open_body_matrix_index(BODY_MODE_COUNT, mode_index)] / sqrt_port_inertance;
+        let frequency_hz = sqrt(eigenvalue) / (2.0 * PI);
+        let port_volume_residue = radiation_residue;
+        let port_phase = 2.0 * PI * frequency_hz / SPEED_OF_SOUND_M_PER_S;
+        let port_pressure_coefficient = AIR_DENSITY_KG_PER_M3 * frequency_hz / 2.0;
+        let mut observer_transfer_re =
+            -port_pressure_coefficient * sin(port_phase) * port_volume_residue;
+        let mut observer_transfer_im =
+            port_pressure_coefficient * cos(port_phase) * port_volume_residue;
+        let mut inverse_q = vectors[open_body_matrix_index(BODY_MODE_COUNT, mode_index)]
+            * vectors[open_body_matrix_index(BODY_MODE_COUNT, mode_index)]
+            / REVIEWED_UPRIGHT_BASS_A0_Q;
+        for plate_mode in 0..BODY_MODE_COUNT {
+            let participation = vectors[open_body_matrix_index(plate_mode, mode_index)];
+            let plate_transfer = baffled_plate_observer_transfer(
+                authority.input,
+                &authority.modes[plate_mode].nodal_transverse_shape_m_per_sqrt_kg,
+                frequency_hz,
+            )?;
+            observer_transfer_re += participation * plate_transfer.0;
+            observer_transfer_im += participation * plate_transfer.1;
+            bridge_residue +=
+                participation * authority.modes[plate_mode].bridge_residue_per_sqrt_kg;
+            radiation_residue +=
+                participation * authority.modes[plate_mode].radiation_residue_m2_per_sqrt_kg;
+            inverse_q += participation * participation / authority.modes[plate_mode].q;
+        }
+        let q = 1.0 / inverse_q;
+        open_modes[mode_index] = UprightBassOpenBodyMode {
+            frequency_hz,
+            q,
+            t60_seconds: LN_1000 * q / (PI * frequency_hz),
+            bridge_residue_per_sqrt_kg: bridge_residue,
+            radiation_residue_m2_per_sqrt_kg: radiation_residue,
+            observer_pressure_per_modal_velocity_re: observer_transfer_re,
+            observer_pressure_per_modal_velocity_im: observer_transfer_im,
+            air_port_kinetic_fraction: {
+                let participation = vectors[open_body_matrix_index(BODY_MODE_COUNT, mode_index)];
+                participation * participation
+            },
+        };
+    }
+    let mut port_mode = 0usize;
+    for mode in 1..OPEN_BODY_MODE_COUNT {
+        if open_modes[mode].air_port_kinetic_fraction
+            > open_modes[port_mode].air_port_kinetic_fraction
+        {
+            port_mode = mode;
+        }
+    }
+    if (open_modes[port_mode].frequency_hz - REVIEWED_UPRIGHT_BASS_A0_HZ).abs() > 1.0e-8 {
+        return Err(UprightBassBodyError::A0TargetDidNotConverge);
+    }
+    authority.topology =
+        BodyTopologyAuthority::SimplySupportedDktSoundboardWithSealedCavityCompliance;
+    authority.port_mode_authority = PortModeAuthority::ReviewedA0ModalReductionWithoutPortGeometry;
+    authority.reviewed_a0 = Some(ReviewedA0ModalAuthority {
+        coupled_frequency_hz: REVIEWED_UPRIGHT_BASS_A0_HZ,
+        q: REVIEWED_UPRIGHT_BASS_A0_Q,
+        effective_inertance_kg_per_m4: port_inertance,
+        uncoupled_port_frequency_hz,
+        inertance_bisections: MAX_A0_INERTANCE_BISECTIONS,
+        eigen_solves: EIGEN_SOLVE_COUNT,
+        aggregate_jacobi_sweeps: aggregate_sweeps,
+        aggregate_jacobi_pair_visits: aggregate_pair_visits,
+        aggregate_jacobi_rotations: aggregate_rotations,
+        maximum_jacobi_pair_visits: maximum_pair_visits,
+    });
+    authority.open_body_modes = open_modes;
+    authority.open_body_mode_count = OPEN_BODY_MODE_COUNT;
+    authority.open_body_jacobi_sweeps = sweeps;
+    Ok(())
+}
+
+/// Derive the dark upright-bass soundboard/cavity authority.  No rendered
+/// waveform is read; the sole modal calibration is the independently reviewed
+/// PHS4 A0 target, which determines port inertance by bounded bisection.
 pub fn derive_upright_bass_body(
     input: UprightBassBodyInput,
 ) -> Result<UprightBassBodyAuthority, UprightBassBodyError> {
-    derive_soundboard_body(input, UPRIGHT_BASS_IDENTITY)
+    let mut authority = derive_soundboard_body(input, UPRIGHT_BASS_IDENTITY)?;
+    attach_reviewed_a0(&mut authority)?;
+    Ok(authority)
 }
 
 /// Derive a simply-supported orthotropic soundboard authority for any
@@ -779,6 +1192,7 @@ pub fn derive_soundboard_body(
 ) -> Result<UprightBassBodyAuthority, UprightBassBodyError> {
     validate(input, bounds)?;
     let (stiffness, mass, bridge_load, radiation_load, assembly_work) = assemble(input)?;
+    let reduced_dof_map = free_dof_map();
     let matrix = generalized_symmetric_matrix(&stiffness, &mass);
     let (eigenvalues, mut eigenvectors, sweeps, pair_visits, rotations) = jacobi_eigen(matrix)?;
     let mut modes = [UprightBassBodyMode::ZERO; BODY_MODE_COUNT];
@@ -814,6 +1228,14 @@ pub fn derive_soundboard_body(
             radiation_residue += radiation_load[row] * physical;
         }
         let frequency_hz = sqrt(eigenvalue) / (2.0 * PI);
+        let mut nodal_transverse_shape = [0.0; NODE_COUNT];
+        for (node, value) in nodal_transverse_shape.iter_mut().enumerate() {
+            let reduced = reduced_dof_map[3 * node];
+            if reduced >= 0 {
+                let row = reduced as usize;
+                *value = eigenvectors[matrix_index(row, eigen_index)] / sqrt(mass[row]);
+            }
+        }
         let t60_seconds = LN_1000 * input.provisional_plate_q / (PI * frequency_hz);
         let mode = UprightBassBodyMode {
             frequency_hz,
@@ -821,11 +1243,16 @@ pub fn derive_soundboard_body(
             t60_seconds,
             bridge_residue_per_sqrt_kg: bridge_residue,
             radiation_residue_m2_per_sqrt_kg: radiation_residue,
+            nodal_transverse_shape_m_per_sqrt_kg: nodal_transverse_shape,
         };
         if !mode.frequency_hz.is_finite()
             || !mode.t60_seconds.is_finite()
             || !mode.bridge_residue_per_sqrt_kg.is_finite()
             || !mode.radiation_residue_m2_per_sqrt_kg.is_finite()
+            || mode
+                .nodal_transverse_shape_m_per_sqrt_kg
+                .iter()
+                .any(|value| !value.is_finite())
         {
             return Err(UprightBassBodyError::NonFiniteMode);
         }
@@ -862,6 +1289,10 @@ pub fn derive_soundboard_body(
             volume_stiffness_pa_per_m3: bulk_modulus / input.cavity_volume_m3,
         },
         modes,
+        reviewed_a0: None,
+        open_body_modes: [UprightBassOpenBodyMode::ZERO; OPEN_BODY_MODE_COUNT],
+        open_body_mode_count: 0,
+        open_body_jacobi_sweeps: 0,
         receipt: UprightBassBodyWorkReceipt {
             nodes: NODE_COUNT,
             triangles: TRIANGLE_COUNT,

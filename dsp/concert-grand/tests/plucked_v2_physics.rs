@@ -657,8 +657,8 @@ fn geometry_and_material_packs_create_distinct_body_and_string_families() {
     );
     assert!(upright_pack.body.body_volume_m3 > 4.0 * dread_pack.body.body_volume_m3);
     assert_eq!(
-        upright_pack.body.helmholtz_hz, 0.0,
-        "an f-hole resonance needs reviewed opening area and effective neck geometry"
+        upright_pack.body.helmholtz_hz, 75.0,
+        "the PHS4 pack reviews A0 as a modal target without inventing f-hole geometry"
     );
     assert!(upright_pack.pickup.is_none() && upright_pack.amplifier.is_none());
 
@@ -693,30 +693,22 @@ fn geometry_and_material_packs_create_distinct_body_and_string_families() {
     );
     assert!(uke_plate - uke_air > 20.0, "air and plate modes collapsed");
     assert!(!body_contains_mode(&uke, 610.0));
-    let expected_upright_dkt_hz = [
-        37.836, 47.833, 48.565, 68.599, 96.753, 97.851, 103.153, 109.948, 127.943, 149.331,
-    ];
-    assert_eq!(upright.body_mode_count(), expected_upright_dkt_hz.len());
-    for (ordinal, expected_hz) in expected_upright_dkt_hz.into_iter().enumerate() {
-        assert_eq!(
-            upright.body_mode_kind(ordinal),
-            Some(BodyModeKind::GeometrySolvedDkt {
-                ordinal: ordinal as u8,
-            })
-        );
-        let actual = upright
-            .body_mode_frequency_hz(ordinal)
-            .expect("geometry-solved upright mode");
-        assert!(
-            (actual - expected_hz).abs() < 0.001,
-            "upright DKT mode {ordinal}: {actual} vs {expected_hz}"
-        );
+    assert_eq!(upright.body_mode_count(), 11);
+    let mut coupled_count = 0;
+    for mode_index in 0..upright.body_mode_count() {
+        match upright.body_mode_kind(mode_index) {
+            Some(BodyModeKind::HelmholtzAir) => {}
+            Some(BodyModeKind::GeometrySolvedDktAirCoupled { .. }) => coupled_count += 1,
+            other => panic!("upright open-body mode {mode_index} has stale kind {other:?}"),
+        }
     }
-    assert_eq!(
-        body_mode_frequency(&upright, BodyModeKind::HelmholtzAir),
-        None
+    assert_eq!(coupled_count, 10);
+    assert!(
+        (body_mode_frequency(&upright, BodyModeKind::HelmholtzAir).expect("upright A0") - 75.0)
+            .abs()
+            < 1.0e-8
     );
-    assert!(!body_contains_mode(&upright, 75.0));
+    assert!(body_contains_mode(&upright, 75.0));
     assert!(
         upright
             .string_inharmonicity_b(0)
@@ -1186,6 +1178,45 @@ fn plk2_fixed_listener_calibration_is_usable_and_velocity_monotonic() {
                 );
             }
         }
+    }
+}
+
+#[test]
+fn upright_open_strings_retain_the_recorded_thump_then_body_bloom() {
+    // Independently measured from the checked-in CC0 comparator at the same
+    // pitches and windows. The physical renderer need not copy each take,
+    // but it must remain in the same temporal family. The broad corridor is
+    // scale-invariant and rejects the old direct-string-monopole/short-release
+    // path (A1 was 0.47x; G2 was 1.66x the comparator).
+    for (midi, recorded_bloom_ratio) in [(28, 1.2455), (33, 1.5224), (38, 2.3508), (43, 1.4165)] {
+        let frames = SAMPLE_RATE as usize;
+        let mut left = vec![0.0; frames];
+        let mut right = vec![0.0; frames];
+        assert_eq!(
+            plk2_render_slices(
+                PLK2_UPRIGHT_BASS_PACK,
+                midi,
+                110,
+                SAMPLE_RATE as f32,
+                &mut left,
+                &mut right,
+                frames as i32
+            ),
+            frames as i32
+        );
+        let window = |start: f64, end: f64| {
+            let a = (start * SAMPLE_RATE) as usize;
+            let b = (end * SAMPLE_RATE) as usize;
+            stereo_rms(&left[a..b], &right[a..b])
+        };
+        let attack = window(0.010, 0.050);
+        let bloom = window(0.050, 0.200);
+        let ratio = bloom / attack.max(1.0e-30);
+        let relative_to_recorded = ratio / recorded_bloom_ratio;
+        assert!(
+            (0.65..=1.45).contains(&relative_to_recorded),
+            "upright MIDI {midi} escaped the recorded temporal family: physical={ratio}, recorded={recorded_bloom_ratio}"
+        );
     }
 }
 
@@ -1794,8 +1825,17 @@ fn shared_chord_rate_conversion_preserves_pitch_and_rejects_first_images() {
         let frames = (0.5 * sample_rate) as usize;
         let start = (0.05 * sample_rate) as usize;
         for pack_index in [PLK2_DREADNOUGHT_PACK, PLK2_MARSHALL_ELECTRIC_PACK] {
-            let divisor = (sample_rate / 8_000.0_f64).floor().max(1.0);
-            let first_image_hz = sample_rate / divisor - target_hz;
+            /* Independent reviewed bandwidth floors.  Do not derive this
+             * expectation from `plk2_chord_physical_sample_rate`: this test
+             * must still catch a production mapping that silently drifts.
+             * The previous generic 8 kHz literal checked an unrelated image
+             * after the host began honoring the pack-specific floors. */
+            let reviewed_minimum_rate_hz: f64 = match pack_index {
+                PLK2_DREADNOUGHT_PACK => 16_000.0,
+                PLK2_MARSHALL_ELECTRIC_PACK => 24_000.0,
+                _ => unreachable!("the test matrix names exactly two packs"),
+            };
+            let divisor = (sample_rate / reviewed_minimum_rate_hz).floor().max(1.0);
             let mut left = vec![0.0f32; frames];
             let mut right = vec![0.0f32; frames];
             assert_eq!(
@@ -1811,15 +1851,18 @@ fn shared_chord_rate_conversion_preserves_pitch_and_rejects_first_images() {
                 frames as i32
             );
             let target = windowed_tone_amplitude(&left[start..], sample_rate, target_hz);
-            let image = windowed_tone_amplitude(&left[start..], sample_rate, first_image_hz);
             assert!(
                 target > 1.0e-5,
                 "pack {pack_index} rate {sample_rate} lost the played pitch: {target}"
             );
-            assert!(
-                image < 0.25 * target,
-                "pack {pack_index} rate {sample_rate} first image {image} exceeds -12 dB of target {target}"
-            );
+            if divisor > 1.0 {
+                let first_image_hz = sample_rate / divisor - target_hz;
+                let image = windowed_tone_amplitude(&left[start..], sample_rate, first_image_hz);
+                assert!(
+                    image < 0.25 * target,
+                    "pack {pack_index} rate {sample_rate} first image {image} exceeds -12 dB of target {target}"
+                );
+            }
         }
     }
 }

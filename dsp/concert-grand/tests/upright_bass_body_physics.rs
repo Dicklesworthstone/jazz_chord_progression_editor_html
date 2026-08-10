@@ -7,11 +7,13 @@
 mod upright_bass_body;
 
 use upright_bass_body::{
-    derive_reviewed_upright_bass_body, derive_upright_bass_body, dkt_triangle_stiffness,
-    reviewed_bending_rigidity, reviewed_upright_bass_body_input, BodyTopologyAuthority,
-    CarvedShellAuthority, DampingAuthority, PortModeAuthority, UprightBassBodyAuthority,
-    UprightBassBodyError, UprightBassBodyInput, BODY_MODE_COUNT, FREE_DOF_COUNT, GRID_CELLS_X,
-    GRID_CELLS_Y, MAX_JACOBI_SWEEPS, NODE_COUNT, TRIANGLE_COUNT,
+    baffled_plate_observer_transfer, derive_reviewed_upright_bass_body, derive_upright_bass_body,
+    dkt_triangle_stiffness, reviewed_bending_rigidity, reviewed_upright_bass_body_input,
+    BodyTopologyAuthority, CarvedShellAuthority, DampingAuthority, PortModeAuthority,
+    UprightBassBodyAuthority, UprightBassBodyError, UprightBassBodyInput, BODY_MODE_COUNT,
+    FREE_DOF_COUNT, GRID_CELLS_X, GRID_CELLS_Y, MAX_A0_INERTANCE_BISECTIONS, MAX_JACOBI_SWEEPS,
+    MAX_OPEN_BODY_JACOBI_SWEEPS, NODE_COUNT, OPEN_BODY_MODE_COUNT, REVIEWED_UPRIGHT_BASS_A0_HZ,
+    TRIANGLE_COUNT,
 };
 
 const PI: f64 = core::f64::consts::PI;
@@ -150,7 +152,7 @@ fn dkt_element_matches_rigid_motion_and_constant_curvature_known_answers() {
 }
 
 #[test]
-fn reviewed_authority_is_deterministic_bounded_and_candid_about_missing_geometry() {
+fn reviewed_authority_is_deterministic_bounded_and_candid_about_modal_port_authority() {
     let first = derive_reviewed_upright_bass_body().expect("reviewed body");
     let second = derive_reviewed_upright_bass_body().expect("deterministic repeat");
     assert_eq!(first, second);
@@ -181,7 +183,7 @@ fn reviewed_authority_is_deterministic_bounded_and_candid_about_missing_geometry
     );
     assert_eq!(
         first.port_mode_authority,
-        PortModeAuthority::UnavailableMissingOpeningAreaAndEffectiveNeck
+        PortModeAuthority::ReviewedA0ModalReductionWithoutPortGeometry
     );
     assert_eq!(
         first.carved_shell_authority,
@@ -233,6 +235,55 @@ fn reviewed_authority_is_deterministic_bounded_and_candid_about_missing_geometry
     assert_eq!(GRID_CELLS_X, 5);
     assert_eq!(GRID_CELLS_Y, 4);
 
+    let reviewed_a0 = first.reviewed_a0.expect("reviewed A0 modal reduction");
+    assert_eq!(
+        reviewed_a0.coupled_frequency_hz,
+        REVIEWED_UPRIGHT_BASS_A0_HZ
+    );
+    assert_eq!(
+        reviewed_a0.inertance_bisections,
+        MAX_A0_INERTANCE_BISECTIONS
+    );
+    assert_eq!(reviewed_a0.eigen_solves, MAX_A0_INERTANCE_BISECTIONS + 3);
+    assert!(reviewed_a0.aggregate_jacobi_sweeps > 0);
+    assert_eq!(
+        reviewed_a0.aggregate_jacobi_pair_visits,
+        reviewed_a0.aggregate_jacobi_sweeps * OPEN_BODY_MODE_COUNT * (OPEN_BODY_MODE_COUNT - 1) / 2
+    );
+    assert!(reviewed_a0.aggregate_jacobi_pair_visits <= reviewed_a0.maximum_jacobi_pair_visits);
+    assert!(reviewed_a0.aggregate_jacobi_rotations <= reviewed_a0.aggregate_jacobi_pair_visits);
+    assert!(reviewed_a0.effective_inertance_kg_per_m4 > 0.0);
+    assert!(reviewed_a0.uncoupled_port_frequency_hz < reviewed_a0.coupled_frequency_hz);
+    assert_eq!(first.open_body_mode_count, OPEN_BODY_MODE_COUNT);
+    assert!(
+        first.open_body_jacobi_sweeps > 0
+            && first.open_body_jacobi_sweeps <= MAX_OPEN_BODY_JACOBI_SWEEPS
+    );
+    let port_mode = first
+        .open_body_modes
+        .iter()
+        .max_by(|left, right| {
+            left.air_port_kinetic_fraction
+                .total_cmp(&right.air_port_kinetic_fraction)
+        })
+        .expect("fixed open-body modes");
+    assert!((port_mode.frequency_hz - REVIEWED_UPRIGHT_BASS_A0_HZ).abs() < 1.0e-8);
+    assert!(port_mode.air_port_kinetic_fraction > 0.5);
+    let mut previous_open_hz = 0.0;
+    for mode in first.open_body_modes {
+        assert!(mode.frequency_hz > previous_open_hz);
+        assert!(mode.q > 0.0 && mode.t60_seconds > 0.0);
+        assert!((0.0..=1.0).contains(&mode.air_port_kinetic_fraction));
+        assert!(mode.observer_pressure_per_modal_velocity_re.is_finite());
+        assert!(mode.observer_pressure_per_modal_velocity_im.is_finite());
+        previous_open_hz = mode.frequency_hz;
+    }
+    assert!(first.open_body_modes.iter().any(|mode| {
+        mode.observer_pressure_per_modal_velocity_re.abs()
+            + mode.observer_pressure_per_modal_velocity_im.abs()
+            > 1.0e-8
+    }));
+
     for mode in first.modes {
         let independently_derived_t60 = LN_1000 * mode.q / (PI * mode.frequency_hz);
         assert!(
@@ -264,6 +315,26 @@ fn reviewed_authority_is_deterministic_bounded_and_candid_about_missing_geometry
             .modes
             .map(|mode| mode.radiation_residue_m2_per_sqrt_kg),
         first.receipt,
+    );
+}
+
+#[test]
+fn rayleigh_observer_matches_a_uniform_piston_known_answer_and_refuses_underresolution() {
+    let input = reviewed_upright_bass_body_input();
+    let uniform_shape = [1.0; NODE_COUNT];
+    let (real, imaginary) =
+        baffled_plate_observer_transfer(input, &uniform_shape, 75.0).expect("resolved 75 Hz field");
+    let magnitude = (real * real + imaginary * imaginary).sqrt();
+    // Far-field Rayleigh-I magnitude for a uniform baffled piston is
+    // rho*f*A/r. The finite 1.08 x .66 m panel is not infinitesimal at a 1 m
+    // observer, so the independent analytic value admits 12% quadrature and
+    // finite-distance error but still rejects a missing 2*pi, area, or 1/r.
+    let analytic = 1.204 * 75.0 * input.length_m * input.width_m;
+    assert!((magnitude / analytic - 1.0).abs() < 0.12);
+    assert!(real < 0.0 && imaginary > 0.0);
+    assert_eq!(
+        baffled_plate_observer_transfer(input, &uniform_shape, 300.0),
+        Err(UprightBassBodyError::RadiationUnderresolved)
     );
 }
 
