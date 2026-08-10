@@ -1125,38 +1125,43 @@ fn clr_render_inner(
          * 0.106, +155c, 473 ms onset). A player supports soft high notes
          * with firm air — dynamics below the minimum blowing pressure do
          * not exist on the instrument. The floor is the embedded-WASM
-         * bisected threshold (periodicity>0.9, |cents|<25 at 44.1 kHz)
-         * plus 0.008 margin, linearly interpolated, endpoints held.
+         * RAW bisected threshold (periodicity>0.9, |cents|<25 at
+         * 44.1 kHz), linearly interpolated, endpoints held; the floor
+         * then sits 15% of the remaining headroom above it (the same
+         * inside-the-band placement as the v2 speaking band) because a
+         * bare threshold+epsilon left Hopf growth so slow the pp top
+         * register took ~470 ms to speak.
          * Velocities already above the floor are UNCHANGED, so the
          * measured tuning-pull fits at mf/ff keep their operating points.
          */
         const CLR_V1_SPEAKING_FLOOR_ANCHORS: &[(f64, f64)] = &[
-            (50.0, 0.7134),
-            (54.0, 0.6926),
+            (50.0, 0.7054),
+            (54.0, 0.6846),
             (58.0, 0.6800),
-            (62.0, 0.6889),
-            (66.0, 0.7134),
-            (70.0, 0.7522),
-            (74.0, 0.7522),
-            (78.0, 0.7429),
-            (82.0, 0.7399),
-            (86.0, 0.7384),
-            (89.0, 0.7355),
+            (62.0, 0.6809),
+            (66.0, 0.7054),
+            (70.0, 0.7442),
+            (74.0, 0.7442),
+            (78.0, 0.7349),
+            (82.0, 0.7319),
+            (86.0, 0.7304),
+            (89.0, 0.7275),
         ];
         let mf = m.clamp(
             CLR_V1_SPEAKING_FLOOR_ANCHORS[0].0,
             CLR_V1_SPEAKING_FLOOR_ANCHORS[CLR_V1_SPEAKING_FLOOR_ANCHORS.len() - 1].0,
         );
-        let mut floor = CLR_V1_SPEAKING_FLOOR_ANCHORS[0].1;
+        let mut threshold = CLR_V1_SPEAKING_FLOOR_ANCHORS[0].1;
         for window in CLR_V1_SPEAKING_FLOOR_ANCHORS.windows(2) {
             let (m0, f0v) = window[0];
             let (m1, f1v) = window[1];
             if mf >= m0 && mf <= m1 {
                 let t = if m1 > m0 { (mf - m0) / (m1 - m0) } else { 0.0 };
-                floor = f0v + t * (f1v - f0v);
+                threshold = f0v + t * (f1v - f0v);
                 break;
             }
         }
+        let floor = threshold + 0.15 * (0.88 - threshold);
         (0.68 + 0.20 * pow(v_norm, 1.3)).max(floor)
     };
     /* A player establishes mouth pressure behind the tongue before release.
@@ -1211,7 +1216,17 @@ fn clr_render_inner(
     let chiff_seconds = 0.026 - 0.012 * v_norm;
     let chiff_decay = exp(-1.0 / (chiff_seconds * sr));
     let chiff_level = if attack_articulation == Some(true) {
-        0.000_6 + 0.007_4 * v_norm * v_norm
+        /* 2026-08-10: the tongue-release seed raised legacy attack energy
+         * by ~three orders in the first 20 ms; the old chiff level was
+         * calibrated against the slow-growth regime and became inaudible
+         * next to it (band probe: chiff contribution ~1e-8 of a 1.4e-5
+         * window). The legacy burst scales x8 so tonguing stays a heard
+         * transient; v2 keeps its own calibration. */
+        if dynamic_reed {
+            0.000_6 + 0.007_4 * v_norm * v_norm
+        } else {
+            0.004_8 + 0.059 * v_norm * v_norm
+        }
     } else if attack_articulation == Some(false) {
         0.000_1
     } else {
@@ -1230,7 +1245,7 @@ fn clr_render_inner(
          * support term.
          */
         let base = pressure_target * (0.05 + 0.025 * v_norm);
-        let soft_support = 0.10 * ((0.45 - v_norm) / 0.45).clamp(0.0, 1.0);
+        let soft_support = 0.15 * ((0.45 - v_norm) / 0.45).clamp(0.0, 1.0);
         (base + soft_support).min(0.915 - pressure_target)
     } else {
         0.0
@@ -1239,7 +1254,7 @@ fn clr_render_inner(
         -1.0
             / ((0.014
                 + 0.008 * (1.0 - v_norm)
-                + 0.045 * ((0.45 - v_norm) / 0.45).clamp(0.0, 1.0))
+                + 0.065 * ((0.45 - v_norm) / 0.45).clamp(0.0, 1.0))
                 * sr),
     );
     let tongue_hold_frames = if attack_articulation == Some(true) {
@@ -1581,7 +1596,51 @@ fn clr_render_inner(
                 };
             articulation_gain * ((1.0 - flow_mix) * gated_legacy_bore_in + flow_mix * flow_drive)
         } else {
-            legacy_bore_in
+            /*
+             * Legacy tongue-release seed (2026-08-10, measured): v2 cured
+             * its own "sometimes 0.4 s" startups with this exact
+             * flow-gain impulse, but the legacy arm fed the bore bare and
+             * grew every note from the breath-noise floor — 150-470 ms to
+             * speak across the clarion at all dynamics. Same continuous
+             * depth curve, same 30 ms decay; a plain render is an
+             * articulated start (a clarinet note never begins from
+             * literally nothing), so only an explicit legato start
+             * (Some(false)) skips the seed.
+             */
+            let legacy_articulation_depth = if m <= 56.0 {
+                0.75
+            } else if m <= 68.0 {
+                0.75 - 0.40 * ((m - 56.0) / 12.0)
+            } else {
+                /* Unlike v2's flow topology the legacy loop tolerates a
+                 * firm seed up high (measured: pitch lock stays green);
+                 * the clarion is exactly where growth is slowest, so the
+                 * taper stays shallow. */
+                0.35 - 0.05 * ((m - 68.0) / 21.0).clamp(0.0, 1.0)
+            };
+            /* Soft attacks grow from the thinnest supercritical margin;
+             * the tongue transient rings a little longer there. */
+            let legacy_seed_seconds = 0.030 + 0.025 * ((0.55 - v_norm) / 0.55).clamp(0.0, 1.0);
+            /* A legato-marked COLD start is still a breath attack — the
+             * air column must be set in motion — just without the tongue
+             * transient, so it takes a reduced seed and no chiff. Without
+             * it the legato attack window stays noise-dominated and the
+             * tongued/legato chiff-band audibility law inverts. */
+            /* Every cold start is breath-articulated — the air column
+             * must be set in motion whether or not the tongue is used —
+             * so the seed is articulation-independent. What distinguishes
+             * tonguing is the in-band chiff transient plus the hold gap;
+             * measured at midi 72 the seed's energy lands at the (out-of-
+             * band) fundamental, so scaling seeds per articulation only
+             * distorted the chiff-band audibility ratio in both
+             * directions. */
+            let legacy_attack_gain = if phrase_frame >= tongue_hold_frames {
+                1.0 + legacy_articulation_depth
+                    * exp(-((phrase_frame - tongue_hold_frames) as f64) / (legacy_seed_seconds * sr))
+            } else {
+                1.0
+            };
+            legacy_bore_in * legacy_attack_gain
         };
 
         let tuned = tuning_a * bore_in + tuning_x1 - tuning_a * tuning_y1;

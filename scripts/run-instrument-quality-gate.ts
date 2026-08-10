@@ -616,6 +616,7 @@ type PhraseScan = Readonly<{
 function scanPhrase(
   renders: readonly (MonoPcm | null)[],
   onsetsSeconds: readonly number[],
+  firstOnsetExcludeSeconds: number,
 ): PhraseScan | null {
   const present = renders.filter((pcm): pcm is MonoPcm => pcm !== null);
   if (present.length !== renders.length || present.length === 0) return null;
@@ -667,9 +668,16 @@ function scanPhrase(
       windowCount -= 1;
     }
   }
-  /* Dropout scan over 5 ms blocks between first onset and last release. */
+  /*
+   * Dropout scan over 5 ms blocks between first onset and last release.
+   * The FIRST onset's establishment (up to the instrument class's onset
+   * budget) is excluded: attack latency is the onset law's jurisdiction,
+   * and every later onset is masked by the still-ringing phrase.
+   */
   const block = Math.round(0.005 * SAMPLE_RATE_HZ);
-  const activeStart = Math.round((onsetsSeconds[0] ?? 0) * SAMPLE_RATE_HZ);
+  const activeStart = Math.round(
+    ((onsetsSeconds[0] ?? 0) + firstOnsetExcludeSeconds) * SAMPLE_RATE_HZ,
+  );
   const activeEnd = Math.round(
     ((onsetsSeconds.at(-1) ?? 0) + PHRASE_GATE_SECONDS) * SAMPLE_RATE_HZ,
   );
@@ -1126,7 +1134,13 @@ async function main(): Promise<void> {
       const pcm = renderNote(pitch, 88);
       return pcm === null ? null : mono(pcm);
     });
-    const phrase = scanPhrase(phraseRenders, phraseOnsets);
+    const phrase = scanPhrase(
+      phraseRenders,
+      phraseOnsets,
+      WIND_INSTRUMENT_IDS.has(recipe.id)
+        ? ONSET_WARN_SECONDS_WIND
+        : ONSET_WARN_SECONDS_STRUCK,
+    );
     if (phrase !== null) {
       if (phrase.transitionClick || phrase.worstTransitionDelta > CLICK_DELTA_LIMIT) {
         findings.push({
