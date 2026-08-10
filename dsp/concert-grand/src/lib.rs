@@ -525,6 +525,16 @@ pub extern "C" fn cg_render(
 struct ConcertGrandSession {
     frames: usize,
     rendered_frames: usize,
+    /*
+     * Buffer identity across cooperative steps (jcpe-4qxd R5): advance()
+     * writes only [rendered_frames..end) and finalize normalizes the
+     * WHOLE buffer, so correctness silently depended on the host passing
+     * the same content-preserving buffer every step. The first step pins
+     * both base addresses; a later mismatch refuses instead of
+     * normalizing a note against another buffer's zeros. Zero = unpinned.
+     */
+    pinned_left: usize,
+    pinned_right: usize,
     written_frames: usize,
     sample_rate_hz: f64,
     states: [OscillatorState; MAX_OSCILLATORS],
@@ -652,6 +662,8 @@ impl ConcertGrandSession {
         Some(Self {
             frames,
             rendered_frames: 0,
+            pinned_left: 0,
+            pinned_right: 0,
             written_frames: 0,
             sample_rate_hz: sr,
             states,
@@ -677,10 +689,12 @@ impl ConcertGrandSession {
     }
 
     fn advance(&mut self, out_left: &mut [f32], out_right: &mut [f32]) -> i32 {
-        if out_left.len() < self.frames
-            || out_right.len() < self.frames
-            || self.rendered_frames >= self.frames
-        {
+        /* A completed session is not an error: an over-stepping host
+         * must hear "done", not the refusal code (jcpe-4qxd). */
+        if self.rendered_frames >= self.frames {
+            return CG_RUNTIME_STEP_COMPLETE;
+        }
+        if out_left.len() < self.frames || out_right.len() < self.frames {
             return 0;
         }
         let end = self
@@ -905,8 +919,11 @@ pub extern "C" fn cg_runtime_init(
         if handle == 0 || handle > i32::MAX as u32 {
             return 0;
         }
+        /* Wrap to 1, never 0: zero is the rejected sentinel above, and a
+         * wrap to it bricked the ABI permanently after i32::MAX inits
+         * (2026-08-09 review, jcpe-4qxd). */
         runtime.next_handle = if handle == i32::MAX as u32 {
-            0
+            1
         } else {
             handle + 1
         };
@@ -948,6 +965,17 @@ pub extern "C" fn cg_runtime_step(
         // SAFETY: the matching active handle proves initialization.
         let session = unsafe { session_slot.assume_init_mut() };
         if session.frames != frames {
+            return 0;
+        }
+        if session.pinned_left == 0 && session.pinned_right == 0 {
+            session.pinned_left = left as usize;
+            session.pinned_right = right as usize;
+        } else if session.pinned_left != left as usize
+            || session.pinned_right != right as usize
+        {
+            /* A rotated scratch buffer would be normalized against the
+             * other buffer's zeros — audible, non-crashing, and nearly
+             * unattributable. Refuse loudly instead (jcpe-4qxd R5). */
             return 0;
         }
         // SAFETY: pointer presence, alignment, checked span arithmetic,
