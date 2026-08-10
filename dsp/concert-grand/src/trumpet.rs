@@ -1734,8 +1734,43 @@ impl TrumpetModel {
             // derived from the developed oscillation amplitude (2a/pi
             // rectified mean), fading in with oscillation so startup is
             // never clamped. Frozen per-sample like the knee term.
+            /*
+             * Dynamic-dependent grazing (2026-08-10, measured): a constant
+             * ratio forces the SAME closure depth at every dynamic, which
+             * equalizes the closure pulse — measured centroid-vs-velocity
+             * at midi 60 was flat/non-monotonic (2176/1933/2114 Hz for
+             * pp/mf/ff), the anti-brass. Players close deeper as they play
+             * louder; the ratio slides from a barely-grazing 1.16 at the
+             * phonation floor (dark pp) to 1.02 at the 10.5 kPa band edge
+             * (firm ff closure, sharper pulse, brighter spectrum).
+             */
+            let pressure_fraction = ((self.previous_mouth_pressure_pa - 3_200.0)
+                / (10_500.0 - 3_200.0))
+                .clamp(0.0, 1.0);
+            /*
+             * Above the render band the bore's own nonlinear steepening
+             * owns brightness (the fixed-regime law measures 2.9 kHz at
+             * 12 kPa with the round-9 constant alone), and holding firm
+             * closure there only costs periodicity (0.992 measured against
+             * the 0.995 law). The slide relaxes back toward the constant
+             * as pressure leaves the band.
+             */
+            let over_band = ((self.previous_mouth_pressure_pa - 9_000.0) / 3_000.0)
+                .clamp(0.0, 1.0);
+            /*
+             * The whole slide scales with register: the low register's
+             * regime is intrinsically narrow at BOTH ends (midi 54
+             * measured +56c at a firm 0.96 ff AND -48c at a loose 1.22
+             * pp), so the bottom of the window holds the round-9 constant
+             * and the slide reaches full width only at the top, where it
+             * is both tolerated and needed.
+             */
+            let register_fraction =
+                ((controls.lip_resonance_hz - 165.0) / (470.0 - 165.0)).clamp(0.0, 1.0);
+            let grazing_ratio = LIP_CLOSURE_GRAZING_RATIO
+                + register_fraction * (0.12 - 0.24 * pressure_fraction * (1.0 - 0.5 * over_band));
             let grazing_target_m =
-                LIP_CLOSURE_GRAZING_RATIO * (PI / 2.0) * self.lip_oscillation_mean_m;
+                grazing_ratio * (PI / 2.0) * self.lip_oscillation_mean_m;
             let engagement = (self.lip_oscillation_mean_m / LIP_GRAZING_ENGAGE_M).min(1.0);
             let grazing_excess_m = (self.lip_displacement_mean_m - grazing_target_m).max(0.0);
             let grazing_force_n = mechanics.normal_stiffness_n_m
@@ -2902,7 +2937,20 @@ pub extern "C" fn tpt_render(
         .find(|entry| entry.0 == midi)
         .map(|entry| entry.1)
         .unwrap_or(3_200.0);
-    let pressure_pa = pressure_floor_pa + (10_500.0 - pressure_floor_pa) * (velocity / 127.0);
+    /*
+     * Perceptual pressure curve (2026-08-10): the linear map parked pp at
+     * 28% of the pressure span — only 4 dB of rendered dynamic range and a
+     * pp as bright as ff. The exponent moves pp toward the phonation floor
+     * (darker, quieter) while ff still reaches the calibrated band edge at
+     * v127 — but it scales with register: the low register's phonation
+     * sagged 43 cents when its pp lost that pressure margin, so the bottom
+     * keeps the linear map and the curve reaches 1.6 only at the top.
+     */
+    let register_fraction = ((midi as f64 - 52.0) / 18.0).clamp(0.0, 1.0);
+    let pressure_exponent = 1.0 + 0.6 * register_fraction;
+    let pressure_pa = pressure_floor_pa
+        + (10_500.0 - pressure_floor_pa)
+            * libm::pow(velocity / 127.0, pressure_exponent);
     let target_hz = 440.0 * libm::pow(2.0, (midi as f64 - 69.0) / 12.0);
     /*
      * Round-11 embouchure dynamics: the sounding pitch of a fixed lip
