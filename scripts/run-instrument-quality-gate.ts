@@ -1105,9 +1105,20 @@ async function main(): Promise<void> {
      * engine's own summation, clicks measured outside onset windows,
      * dropouts against the phrase median.
      */
+    /*
+     * Distinct pitches only: duplicate midis 0.4 s apart are near-copies
+     * of the same waveform and can partially phase-cancel in the sum — a
+     * detector artifact that reads as a dropout (measured on flute when
+     * the ceiling clamp produced 72,72).
+     */
     const phraseBase = pitches[1] ?? pitches[0] ?? 60;
-    const phraseMidis = [0, 2, 4, 5, 7, 9].map((offset) => phraseBase + offset)
-      .map((pitch) => Math.min(pitch, (pitches[2] ?? phraseBase) + 2));
+    const phraseCeiling = (pitches[2] ?? phraseBase) + 2;
+    const phraseMidis: number[] = [];
+    for (const offset of [0, 2, 4, 5, 7, 9]) {
+      let pitch = Math.min(phraseBase + offset, phraseCeiling);
+      while (phraseMidis.includes(pitch)) pitch -= 1;
+      phraseMidis.push(pitch);
+    }
     const phraseOnsets = phraseMidis.map(
       (_, index) => 0.1 + index * PHRASE_NOTE_SPACING_SECONDS,
     );
