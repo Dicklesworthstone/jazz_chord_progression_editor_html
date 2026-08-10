@@ -70,9 +70,13 @@ fn cooperative_sustain_is_bounded_and_bit_identical_to_shipping_sync() {
         assert_eq!(cg_runtime_written_frames(handle), expected_written as i32);
         assert_eq!(left, expected_left);
         assert_eq!(right, expected_right);
+        /* jcpe-4qxd R4: over-stepping a COMPLETED session reports
+         * completion, not the refusal code — "done" and "your buffer is
+         * wrong" were indistinguishable before. GATE-DIFF NOTE: this pin
+         * changed deliberately with the contract fix. */
         assert_eq!(
             cg_runtime_step(handle, left.as_mut_ptr(), right.as_mut_ptr(), frames as i32),
-            0
+            CG_RUNTIME_STEP_COMPLETE
         );
         assert_eq!(cg_runtime_reset(handle), 1);
         assert_eq!(cg_runtime_reset(handle), 0);
@@ -134,4 +138,50 @@ fn cooperative_sustain_refuses_hostile_boundaries_and_stale_handles() {
     let recovery = cg_runtime_init(60, 91, 48_000.0, frames as i32);
     assert!(recovery > 0);
     assert_eq!(cg_runtime_reset(recovery), 1);
+}
+
+/// jcpe-4qxd R5: advance() writes only the unrendered span and finalize
+/// normalizes the whole buffer, so the session pins its buffer identity at
+/// the first step. A host that rotates scratch buffers mid-note must be
+/// refused — the alternative is a note silently normalized against another
+/// buffer's zeros.
+#[test]
+fn cooperative_step_refuses_a_rotated_buffer_mid_note() {
+    let frames = 2_048usize;
+    let mut left_a = vec![0.0f32; frames];
+    let mut right_a = vec![0.0f32; frames];
+    let mut left_b = vec![0.0f32; frames];
+    let mut right_b = vec![0.0f32; frames];
+    let handle = concert_grand::cg_runtime_init(60, 96, 48_000.0, frames as i32);
+    assert!(handle > 0);
+    assert_eq!(
+        concert_grand::cg_runtime_step(
+            handle,
+            left_a.as_mut_ptr(),
+            right_a.as_mut_ptr(),
+            frames as i32
+        ),
+        concert_grand::CG_RUNTIME_STEP_PROGRESS
+    );
+    /* Same-frame-count DIFFERENT buffers: must refuse, not normalize. */
+    assert_eq!(
+        concert_grand::cg_runtime_step(
+            handle,
+            left_b.as_mut_ptr(),
+            right_b.as_mut_ptr(),
+            frames as i32
+        ),
+        0
+    );
+    /* The pinned pair keeps working after the refused impostor. */
+    assert_eq!(
+        concert_grand::cg_runtime_step(
+            handle,
+            left_a.as_mut_ptr(),
+            right_a.as_mut_ptr(),
+            frames as i32
+        ),
+        concert_grand::CG_RUNTIME_STEP_PROGRESS
+    );
+    assert_eq!(concert_grand::cg_runtime_reset(handle), 1);
 }
