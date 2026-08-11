@@ -93,15 +93,15 @@ fn generated_eigenpack_is_consumed_without_global_template_fakery() {
 
     assert_eq!(
         VIBES_V2_MODAL_PACK_INPUT_SHA256,
-        "475e23aeafeaa60fa6699adcbfb056fe6c1496993648aaec223ee078ced2f710"
+        "c2a5fe4697f62a5fc8ec4c70cc1d78bb9c76aa93b4ad261f9b207a5205ed4224"
     );
     assert_eq!(
         VIBES_V2_MODAL_AUTHORITY_SHA256,
-        "722ea241538ace173c269f32a3c25671420ae76ad4c5f82bba430148b655fb1e"
+        "d59b3d3ca51436ec070e2e4d29f9b1149b23c13d4ca25611dff68277462c1805"
     );
     assert_eq!(
         VIBES_V2_MODAL_GENERATOR_SHA256,
-        "71d02485f3cd2d51b37483fd93eef7ee1172ca5c14645bd2416a2afbe177a4a3"
+        "6970db1938b530d91abfba842ec98ba0c2dd7bbb1683c85731cc809fd04574ff"
     );
     assert_eq!(
         VIBES_V2_MODAL_PACK_SOLVER_ID,
