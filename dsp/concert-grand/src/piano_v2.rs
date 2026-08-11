@@ -1204,8 +1204,10 @@ fn begin_key_strike(
         || !(0.005..=0.020).contains(&strike.hammer_mass_kg)
         || !strike.hammer_velocity_m_per_s.is_finite()
         || !(0.0..=8.0).contains(&strike.hammer_velocity_m_per_s)
+        || strike.hammer_velocity_m_per_s == 0.0
         || !strike.impact_energy_j.is_finite()
         || !(0.0..=1.0).contains(&strike.impact_energy_j)
+        || strike.impact_energy_j == 0.0
         || !strike
             .felt_static_stiffness_n_per_mm_pow_exponent
             .is_finite()
@@ -1216,6 +1218,7 @@ fn begin_key_strike(
         || !(200.0e-6..=650.0e-6).contains(&strike.felt_rate_time_seconds)
         || !strike.maximum_force_n.is_finite()
         || !(0.0..=20_000.0).contains(&strike.maximum_force_n)
+        || strike.maximum_force_n == 0.0
         || !strike.maximum_contact_seconds.is_finite()
         || !(dt..=0.020).contains(&strike.maximum_contact_seconds)
     {

@@ -1250,6 +1250,18 @@ fn malformed_or_active_parameters_refuse_and_force_cap_releases_dissipatively() 
         Err(PianoError::InvalidContact)
     );
 
+    // A zero-speed gesture has no impact event. It used to satisfy the
+    // kinetic-energy cross-field check exactly and leave an inert contact
+    // active until the arbitrary duration bound.
+    let mut stationary = PianoStrike::from_velocity(1, 60).unwrap();
+    stationary.hammer_velocity_m_per_s = 0.0;
+    stationary.impact_energy_j = 0.0;
+    stationary.maximum_force_n = 0.0;
+    assert_eq!(
+        voice.begin_strike(stationary),
+        Err(PianoError::InvalidContact)
+    );
+
     let mut capped = PianoStrike::from_velocity(80, 60).unwrap();
     capped.maximum_force_n = 1.0e-9;
     voice.begin_strike(capped).unwrap();

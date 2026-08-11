@@ -110,6 +110,10 @@ fn production_uses_the_dkt_pack_and_refuses_to_relabel_it_as_new_geometry() {
     for mode_index in 0..288 {
         let pack_index = voice.soundboard_mode_pack_index(mode_index).unwrap();
         assert_eq!(
+            pack_index, mode_index,
+            "the fixed low-pass reduction skipped pack mode {mode_index}"
+        );
+        assert_eq!(
             voice.soundboard_mode_frequency_hz(mode_index),
             Some(PIANO_V2_SOUNDBOARD_MODE_PACK[pack_index].frequency_hz)
         );
@@ -122,15 +126,10 @@ fn production_uses_the_dkt_pack_and_refuses_to_relabel_it_as_new_geometry() {
     let treble_pack_indices = (0..288)
         .map(|mode_index| treble.soundboard_mode_pack_index(mode_index).unwrap())
         .collect::<Vec<_>>();
-    assert!(
-        treble_pack_indices.iter().any(|index| *index > 287),
-        "the fixed global reduction collapsed back to the old first-288 truncation"
-    );
-    assert!(
-        treble_pack_indices
-            .iter()
-            .any(|index| PIANO_V2_SOUNDBOARD_MODE_PACK[*index].frequency_hz > 8_000.0),
-        "the treble note lost the certified high-frequency board response"
+    assert_eq!(
+        treble_pack_indices,
+        (0..288).collect::<Vec<_>>(),
+        "requested pitch changed the fixed physical soundboard reduction"
     );
 
     // The old smeared simply-supported sine-grid answer is deliberately not
