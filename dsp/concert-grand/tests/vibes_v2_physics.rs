@@ -150,18 +150,21 @@ fn bar_tube_coupling_and_free_bar_radiation_exclude_the_old_near_misses() {
     // 4f partial, so the mode-1 transfer must remain materially nonzero.
     let (real, imaginary) = free_bar_radiation_transfer_for_test(60, 0).unwrap();
     assert!(
-        (real - 0.001_739_035_466_701_192).abs() < 1.0e-12,
+        (real - 0.003_478_070_933_402_384).abs() < 1.0e-12,
         "real={real:.18} imaginary={imaginary:.18}"
     );
     assert!(
-        (imaginary - -0.003_100_071_129_020_549).abs() < 1.0e-12,
+        (imaginary - -0.006_200_142_258_041_098).abs() < 1.0e-12,
         "real={real:.18} imaginary={imaginary:.18}"
     );
+    // Plant the old half-face quadrature explicitly. Each face contributes
+    // its full strip area; the sign change is already the normal orientation.
+    assert!((real - 0.001_739_035_466_701_192).abs() > 1.0e-3);
     let magnitude = (real * real + imaginary * imaginary).sqrt();
-    assert!(magnitude < 0.005);
+    assert!(magnitude < 0.01);
     let (fourth_real, fourth_imaginary) = free_bar_radiation_transfer_for_test(60, 1).unwrap();
-    assert!((fourth_real - 0.076_595_200_382_064_15).abs() < 1.0e-12);
-    assert!((fourth_imaginary - -0.233_007_867_204_461_5).abs() < 1.0e-12);
+    assert!((fourth_real - 0.153_190_400_764_128_3).abs() < 1.0e-12);
+    assert!((fourth_imaginary - -0.466_015_734_408_923).abs() < 1.0e-12);
     assert!(
         (fourth_real * fourth_real + fourth_imaginary * fourth_imaginary).sqrt() > 50.0 * magnitude
     );

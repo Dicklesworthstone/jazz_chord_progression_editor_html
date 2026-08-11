@@ -1458,7 +1458,12 @@ fn packed_free_bar_radiation_transfer(
                 + axial_distance_m * axial_distance_m,
         );
         let midpoint_shape = 0.5 * (shape[element] as f64 + shape[element + 1] as f64);
-        let weight = 0.5 * element_area_m2 * midpoint_shape;
+        /* Both the top and bottom are complete physical faces. The previous
+         * 0.5 multiplier treated `element_area_m2` as their combined area,
+         * although it is the area of one face, and halved the direct bar
+         * pressure relative to the resonator tubes. Opposite normals are
+         * already represented by the subtraction below. */
+        let weight = element_area_m2 * midpoint_shape;
         let top_phase = wave_number * top_distance_m;
         let bottom_phase = wave_number * bottom_distance_m;
         integral_re +=
