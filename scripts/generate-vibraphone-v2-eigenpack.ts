@@ -137,6 +137,7 @@ type ModalAuthority = Readonly<{
     radiation: Readonly<{
       kind: string;
       modeIntegralQuadrature: string;
+      angularQuadrature: string;
       dipoleSeparationH: string;
       law: string;
       status: string;
@@ -563,7 +564,7 @@ function validateAuthority(value: unknown): ModalAuthority {
     "lossModel",
   );
   if (
-    loss.schema !== "changes.physical-authority.vibraphone-v2-composite-loss.v1" ||
+    loss.schema !== "changes.physical-authority.vibraphone-v2-composite-loss.v2" ||
     authorityNumber(loss.evaluationTemperatureK, "lossModel.evaluationTemperatureK") !== 293
   ) {
     authorityFailure("lossModel.identity");
@@ -831,16 +832,25 @@ function validateAuthority(value: unknown): ModalAuthority {
   authorityString(support.status, "lossModel.support.status");
   const radiation = authorityExactKeys(
     loss.radiation,
-    ["kind", "modeIntegralQuadrature", "dipoleSeparationH", "law", "status"],
+    [
+      "kind",
+      "modeIntegralQuadrature",
+      "angularQuadrature",
+      "dipoleSeparationH",
+      "law",
+      "status",
+    ],
     [],
     "lossModel.radiation",
   );
-  if (radiation.kind !== "finite-separation-normal-dipole-radiation") {
+  if (radiation.kind !== "far-field-rayleigh-sphere-radiation") {
     authorityFailure("lossModel.radiation.kind");
   }
   if (
     radiation.modeIntegralQuadrature !==
       "four-point Gauss-Legendre per stepped beam element over the cubic-Hermite M-normalized displacement field" ||
+    radiation.angularQuadrature !==
+      "12-point Gauss-Legendre in normal-direction cosine times 24-point periodic azimuth rule" ||
     radiation.dipoleSeparationH !==
       "outerThicknessM, the top-to-bottom separation of the uncut bar envelope"
   ) {
@@ -2092,6 +2102,115 @@ function evaluateHermiteModeShape(
   );
 }
 
+const RADIATION_DIRECTION_COSINES = [
+  -0.9815606342467191,
+  -0.9041172563704749,
+  -0.7699026741943047,
+  -0.5873179542866175,
+  -0.3678314989981802,
+  -0.1252334085114689,
+  0.1252334085114689,
+  0.3678314989981802,
+  0.5873179542866175,
+  0.7699026741943047,
+  0.9041172563704749,
+  0.9815606342467191,
+] as const;
+
+const RADIATION_DIRECTION_WEIGHTS = [
+  0.04717533638651183,
+  0.1069393259953184,
+  0.1600783285433462,
+  0.2031674267230659,
+  0.2334925365383548,
+  0.2491470458134029,
+  0.2491470458134029,
+  0.2334925365383548,
+  0.2031674267230659,
+  0.1600783285433462,
+  0.1069393259953184,
+  0.04717533638651183,
+] as const;
+
+const RADIATION_AZIMUTH_COUNT = 24;
+const RADIATION_ELEMENT_GAUSS_POSITIONS = [
+  -0.8611363115940526,
+  -0.3399810435848563,
+  0.3399810435848563,
+  0.8611363115940526,
+] as const;
+const RADIATION_ELEMENT_GAUSS_WEIGHTS = [
+  0.3478548451374538,
+  0.6521451548625461,
+  0.6521451548625461,
+  0.3478548451374538,
+] as const;
+
+/**
+ * Rayleigh-I far-field power integrated over the complete sphere for one
+ * mass-normalized free-bar mode.  The former compact whole-bar integral made
+ * every antisymmetric mode exactly lossless even though the runtime's
+ * finite-angle observer hears its nonzero longitudinal multipole.  This uses
+ * the same top-minus-bottom face convention and retains the phase of every
+ * stepped-beam element before squaring and integrating acoustic power.
+ */
+function farFieldRadiationModalDampingPerSecond(
+  design: BeamDesign,
+  mode: Mode,
+): number {
+  const omega = TAU * mode.frequencyHz;
+  const waveNumberPerM = omega / ACOUSTICS.soundSpeedMPerS;
+  const elementLengthM = design.lengthM / ELEMENT_COUNT;
+  const azimuthStep = TAU / RADIATION_AZIMUTH_COUNT;
+  let sphereIntegralM4PerKg = 0;
+
+  for (let normalIndex = 0; normalIndex < RADIATION_DIRECTION_COSINES.length; normalIndex += 1) {
+    const directionNormal = RADIATION_DIRECTION_COSINES[normalIndex] ?? 0;
+    const normalWeight = RADIATION_DIRECTION_WEIGHTS[normalIndex] ?? 0;
+    const transverseMagnitude = Math.sqrt(Math.max(0, 1 - directionNormal ** 2));
+    const faceSeparationMagnitudeSquared =
+      4 * Math.sin(0.5 * waveNumberPerM * directionNormal * design.outerThicknessM) ** 2;
+
+    for (let azimuthIndex = 0; azimuthIndex < RADIATION_AZIMUTH_COUNT; azimuthIndex += 1) {
+      const azimuth = (azimuthIndex + 0.5) * azimuthStep;
+      const directionAlongBar = transverseMagnitude * Math.cos(azimuth);
+      let stripIntegralRealM2KgNegHalf = 0;
+      let stripIntegralImaginaryM2KgNegHalf = 0;
+      for (let element = 0; element < ELEMENT_COUNT; element += 1) {
+        for (let point = 0; point < RADIATION_ELEMENT_GAUSS_POSITIONS.length; point += 1) {
+          const localPosition =
+            0.5 * (1 + (RADIATION_ELEMENT_GAUSS_POSITIONS[point] ?? 0));
+          const normalizedPosition = (element + localPosition) / ELEMENT_COUNT;
+          const centeredPositionM = (normalizedPosition - 0.5) * design.lengthM;
+          const spatialWeightM2 =
+            design.widthM *
+            0.5 *
+            elementLengthM *
+            (RADIATION_ELEMENT_GAUSS_WEIGHTS[point] ?? 0);
+          const weightedShape =
+            spatialWeightM2 * evaluateHermiteModeShape(mode, design, normalizedPosition);
+          const phase = waveNumberPerM * directionAlongBar * centeredPositionM;
+          stripIntegralRealM2KgNegHalf += weightedShape * Math.cos(phase);
+          stripIntegralImaginaryM2KgNegHalf -= weightedShape * Math.sin(phase);
+        }
+      }
+      const stripMagnitudeSquared =
+        stripIntegralRealM2KgNegHalf ** 2 + stripIntegralImaginaryM2KgNegHalf ** 2;
+      sphereIntegralM4PerKg +=
+        normalWeight *
+        azimuthStep *
+        faceSeparationMagnitudeSquared *
+        stripMagnitudeSquared;
+    }
+  }
+
+  return (
+    (ACOUSTICS.airDensityKgPerM3 * omega ** 2) /
+    (16 * Math.PI ** 2 * ACOUSTICS.soundSpeedMPerS) *
+    sphereIntegralM4PerKg
+  );
+}
+
 function modalLoss(design: BeamDesign, mode: Mode): ModalLoss {
   const omega = TAU * mode.frequencyHz;
   const delta = thermoelasticDelta(
@@ -2122,32 +2241,7 @@ function modalLoss(design: BeamDesign, mode: Mode): ModalLoss {
       return sum + shape * shape;
     }, 0);
   const supportLossFactor = supportModalDampingPerSecond / omega;
-  const elementLengthM = design.lengthM / ELEMENT_COUNT;
-  const gaussPositions = [-0.8611363115940526, -0.3399810435848563, 0.3399810435848563, 0.8611363115940526];
-  const gaussWeights = [0.3478548451374538, 0.6521451548625461, 0.6521451548625461, 0.3478548451374538];
-  let integratedShapeM2KgNegHalf = 0;
-  for (let element = 0; element < ELEMENT_COUNT; element += 1) {
-    for (let point = 0; point < gaussPositions.length; point += 1) {
-      const normalizedPosition =
-        (element + 0.5 * (1 + (gaussPositions[point] ?? 0))) / ELEMENT_COUNT;
-      integratedShapeM2KgNegHalf +=
-        design.widthM *
-        0.5 *
-        elementLengthM *
-        (gaussWeights[point] ?? 0) *
-        evaluateHermiteModeShape(mode, design, normalizedPosition);
-    }
-  }
-  const waveNumberPerM = omega / ACOUSTICS.soundSpeedMPerS;
-  const compactAcousticResistance =
-    (ACOUSTICS.airDensityKgPerM3 * omega ** 2) /
-    (4 * Math.PI * ACOUSTICS.soundSpeedMPerS);
-  const dipoleSeparationFactor =
-    4 * Math.sin(0.5 * waveNumberPerM * design.outerThicknessM) ** 2;
-  const radiationModalDampingPerSecond =
-    compactAcousticResistance *
-    dipoleSeparationFactor *
-    integratedShapeM2KgNegHalf ** 2;
+  const radiationModalDampingPerSecond = farFieldRadiationModalDampingPerSecond(design, mode);
   const radiationLossFactor = radiationModalDampingPerSecond / omega;
   const totalFreeLossFactor =
     thermoelasticLossFactor + supportLossFactor + radiationLossFactor;

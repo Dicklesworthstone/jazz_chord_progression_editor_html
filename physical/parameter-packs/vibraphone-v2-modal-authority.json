@@ -93,7 +93,7 @@
     "mode4AndHigher": "causal-solver-predictions-not-reviewed-targets"
   },
   "lossModel": {
-    "schema": "changes.physical-authority.vibraphone-v2-composite-loss.v1",
+    "schema": "changes.physical-authority.vibraphone-v2-composite-loss.v2",
     "evaluationTemperatureK": 293,
     "thermoelasticBeam": {
       "sourceId": "nist-6061-t6-thermophysical-fits",
@@ -151,11 +151,12 @@
       "status": "explicit-reviewed-design-parameter-not-a-measured-vibraphone-identification"
     },
     "radiation": {
-      "kind": "finite-separation-normal-dipole-radiation",
+      "kind": "far-field-rayleigh-sphere-radiation",
       "modeIntegralQuadrature": "four-point Gauss-Legendre per stepped beam element over the cubic-Hermite M-normalized displacement field",
+      "angularQuadrature": "12-point Gauss-Legendre in normal-direction cosine times 24-point periodic azimuth rule",
       "dipoleSeparationH": "outerThicknessM, the top-to-bottom separation of the uncut bar envelope",
-      "law": "R_ac=rho_air*omega^2/(4*pi*c); c_mode=R_ac*4*sin(k*h/2)^2*(width*integral(phi dx))^2; eta_radiation=c_mode/omega. The finite-separation factor is bounded and tends to (k*h)^2 at low k*h.",
-      "status": "causal-finite-separation-approximation-not-a-baffled-3d-boundary-element-solve"
+      "law": "For each far-field direction n, I(n)=width*integral(phi(x)*exp(-i*k*n_x*x) dx)*(exp(-i*k*n_z*h/2)-exp(+i*k*n_z*h/2)); c_mode=rho_air*omega^2/(16*pi^2*c)*integral_sphere(|I(n)|^2 dOmega); eta_radiation=c_mode/omega. This integrates radiated power over the sphere, so an antisymmetric mode with zero whole-bar displacement integral still has nonzero multipole radiation loss.",
+      "status": "causal-far-field-strip-approximation-not-a-baffled-3d-boundary-element-solve"
     },
     "damper": {
       "kind": "runtime-contact-viscous-coupling",
@@ -170,7 +171,7 @@
     "The one-dimensional solver does not identify lateral or torsional three-dimensional modes.",
     "The fourth and higher flexural frequencies are predictions, not reviewed tuning targets.",
     "Geometry causality and eigen residuals do not establish corpus similarity or listening acceptance.",
-    "The composite free-decay model is not a measured per-key T60 identification; its support coefficient and compact radiation approximation require independent acoustic validation.",
+    "The composite free-decay model is not a measured per-key T60 identification; its support coefficient and far-field strip radiation approximation require independent acoustic validation.",
     "The runtime damper coefficient is a declared contact-model design parameter and is excluded from the generated free-decay T60 values.",
     "The exact Lifshitz-Roukes thermoelastic component is still orders too weak to identify seconds-scale vibraphone decay by itself; no total-T60 claim is inferred from it."
   ]
