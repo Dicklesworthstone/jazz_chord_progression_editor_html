@@ -70,6 +70,7 @@ import {
 } from "./physical-renderer-contract";
 import { physicalParameterPackSha256 } from "./physical-parameter-packs";
 import {
+  CONCERT_GRAND_PHYSICAL_V2_ALGORITHM_ID,
   CONCERT_GRAND_RENDERER_ALGORITHM_ID,
   WAVEGUIDE_CLARINET_V2_ALGORITHM_ID,
   loadConcertGrandRenderer,
@@ -754,6 +755,8 @@ export type AudioEngineRenderCacheLimitsForTest = Readonly<{
 
 export type AudioEngineRendererOverridesForTest = Readonly<{
   waveguide: ReadonlyMap<string, WaveguideRenderer>;
+  concertGrand?: ConcertGrandRenderer;
+  algorithmByInstrument?: ReadonlyMap<InstrumentId, string>;
 }>;
 
 function createAudioEngineInternal(
@@ -799,6 +802,30 @@ function createAudioEngineInternal(
    * refuse with `audio.renderer_unavailable` in the meantime.
    */
   let waveguideRenderers: ReadonlyMap<string, WaveguideRenderer> | null = null;
+  function recipeForEngine(instrumentId: InstrumentId): AudioInstrumentRecipe {
+    const recipe = recipeForInstrument(instrumentId);
+    const algorithmId = rendererOverridesForTest?.algorithmByInstrument?.get(
+      instrumentId,
+    );
+    if (algorithmId === undefined || recipe.synthesis !== "rendered") {
+      return recipe;
+    }
+    return Object.freeze({
+      ...recipe,
+      renderer: Object.freeze({ ...recipe.renderer, algorithmId }),
+    });
+  }
+
+  function physicalPianoRendererForAlgorithm(
+    algorithmId: string,
+  ): ConcertGrandRenderer | null {
+    return algorithmId === CONCERT_GRAND_PHYSICAL_V2_ALGORITHM_ID &&
+        renderer?.physicalAttackAlgorithmId ===
+          CONCERT_GRAND_PHYSICAL_V2_ALGORITHM_ID
+      ? renderer
+      : null;
+  }
+
   function rendererForAlgorithm(
     algorithmId: string,
   ): Readonly<{
@@ -1421,6 +1448,152 @@ function createAudioEngineInternal(
     );
     if (pcm === null) return null;
     return storeRenderedPcm(recipe, context, key, pcm);
+  }
+
+  function physicalPianoNoteBufferKey(
+    recipe: AudioRenderedInstrumentRecipe,
+    pianoRenderer: ConcertGrandRenderer,
+    voice: RenderedChordVoice,
+    seconds: number,
+  ): string {
+    return [
+      recipe.id,
+      "physical-piano-note-v2",
+      `algorithm=${CONCERT_GRAND_PHYSICAL_V2_ALGORITHM_ID}`,
+      `wasm=${pianoRenderer.wasmSha256}`,
+      `pitch=${String(voice.midiPitch)}`,
+      `velocity=${String(quantizeRenderVelocity(voice.velocity))}`,
+      `seconds=${String(seconds)}`,
+    ].join(":");
+  }
+
+  function physicalPianoChordBufferKey(
+    recipe: AudioRenderedInstrumentRecipe,
+    pianoRenderer: ConcertGrandRenderer,
+    voices: readonly RenderedChordVoice[],
+    seconds: number,
+  ): string {
+    const pairs = canonicalRenderedChordPairs(
+      voices,
+      CONCERT_GRAND_PHYSICAL_V2_ALGORITHM_ID,
+    );
+    return [
+      recipe.id,
+      "physical-piano-chord-v2",
+      `algorithm=${CONCERT_GRAND_PHYSICAL_V2_ALGORITHM_ID}`,
+      `wasm=${pianoRenderer.wasmSha256}`,
+      `pitch-velocities=${pairs.map((pair) =>
+        `${String(pair.midiPitch)}@${String(pair.velocity)}`
+      ).join(",")}`,
+      `seconds=${String(seconds)}`,
+    ].join(":");
+  }
+
+  async function renderedPhysicalPianoNoteBufferForCooperatively(
+    recipe: AudioRenderedInstrumentRecipe,
+    context: AudioContextPort,
+    voice: RenderedChordVoice,
+    requestedSeconds: number,
+  ): Promise<AudioBufferPort | null> {
+    const pianoRenderer = physicalPianoRendererForAlgorithm(
+      recipe.renderer.algorithmId,
+    );
+    if (pianoRenderer?.renderPhysicalNoteCooperatively === undefined) return null;
+    const seconds = bucketRenderSecondsForRecipe(requestedSeconds, recipe);
+    const key = physicalPianoNoteBufferKey(
+      recipe,
+      pianoRenderer,
+      voice,
+      seconds,
+    );
+    const cache = recipeBufferCache(recipe.id);
+    const cached = touchRenderedBufferEntry(cache, key);
+    if (cached !== undefined) return cached.buffer;
+    const pcm = await pianoRenderer.renderPhysicalNoteCooperatively(
+      voice.midiPitch,
+      quantizeRenderVelocity(voice.velocity),
+      context.sampleRate,
+      seconds,
+    );
+    if (pcm === null) return null;
+    return storeRenderedPcm(recipe, context, key, pcm);
+  }
+
+  async function renderedPhysicalPianoChordBufferForCooperatively(
+    recipe: AudioRenderedInstrumentRecipe,
+    context: AudioContextPort,
+    voices: readonly RenderedChordVoice[],
+    requestedSeconds: number,
+  ): Promise<AudioBufferPort | null> {
+    const pianoRenderer = physicalPianoRendererForAlgorithm(
+      recipe.renderer.algorithmId,
+    );
+    if (
+      pianoRenderer?.renderPhysicalChordCooperatively === undefined ||
+      voices.length < 2 || voices.length > 8
+    ) return null;
+    const seconds = bucketRenderSecondsForRecipe(requestedSeconds, recipe);
+    const key = physicalPianoChordBufferKey(
+      recipe,
+      pianoRenderer,
+      voices,
+      seconds,
+    );
+    const cache = recipeBufferCache(recipe.id);
+    const cached = touchRenderedBufferEntry(cache, key);
+    if (cached !== undefined) return cached.buffer;
+    const pairs = canonicalRenderedChordPairs(
+      voices,
+      CONCERT_GRAND_PHYSICAL_V2_ALGORITHM_ID,
+    );
+    const pcm = await pianoRenderer.renderPhysicalChordCooperatively(
+      pairs.map((pair) => pair.midiPitch),
+      pairs.map((pair) => pair.velocity),
+      context.sampleRate,
+      seconds,
+    );
+    if (pcm === null) return null;
+    return storeRenderedPcm(recipe, context, key, pcm);
+  }
+
+  function cachedPhysicalPianoNoteBufferFor(
+    recipe: AudioRenderedInstrumentRecipe,
+    voice: RenderedChordVoice,
+    requestedSeconds: number,
+  ): AudioBufferPort | null {
+    const pianoRenderer = physicalPianoRendererForAlgorithm(
+      recipe.renderer.algorithmId,
+    );
+    if (pianoRenderer === null) return null;
+    const seconds = bucketRenderSecondsForRecipe(requestedSeconds, recipe);
+    const key = physicalPianoNoteBufferKey(
+      recipe,
+      pianoRenderer,
+      voice,
+      seconds,
+    );
+    return touchRenderedBufferEntry(recipeBufferCache(recipe.id), key)?.buffer ??
+      null;
+  }
+
+  function cachedPhysicalPianoChordBufferFor(
+    recipe: AudioRenderedInstrumentRecipe,
+    voices: readonly RenderedChordVoice[],
+    requestedSeconds: number,
+  ): AudioBufferPort | null {
+    const pianoRenderer = physicalPianoRendererForAlgorithm(
+      recipe.renderer.algorithmId,
+    );
+    if (pianoRenderer === null || voices.length < 2) return null;
+    const seconds = bucketRenderSecondsForRecipe(requestedSeconds, recipe);
+    const key = physicalPianoChordBufferKey(
+      recipe,
+      pianoRenderer,
+      voices,
+      seconds,
+    );
+    return touchRenderedBufferEntry(recipeBufferCache(recipe.id), key)?.buffer ??
+      null;
   }
 
   /** Attack-time lookup is deliberately cache-only. A cold physical render
@@ -2276,7 +2449,8 @@ function createAudioEngineInternal(
      */
     if (renderer === null) {
       try {
-        renderer = await loadConcertGrandRenderer();
+        renderer = rendererOverridesForTest?.concertGrand ??
+          await loadConcertGrandRenderer();
         waveguideRenderers = rendererOverridesForTest?.waveguide ??
           await loadWaveguideRenderers();
       } catch {
@@ -2919,7 +3093,7 @@ function createAudioEngineInternal(
         (count) => { incrementWork("voiceSpecsValidated", count); },
       );
       if (!validated.ok) return refuse(validated.failure);
-      const recipe = recipeForInstrument(validated.value.instrumentId);
+      const recipe = recipeForEngine(validated.value.instrumentId);
       /*
        * Instrument-range octave fold (jcpe-instrument-range-fold-policy-s1uz):
        * fold every voice pitch into the recipe's playable window BEFORE the
@@ -2938,13 +3112,56 @@ function createAudioEngineInternal(
        */
       let renderedBuffers: readonly AudioBufferPort[] | null = null;
       let renderedChordBuffer: AudioBufferPort | null = null;
+      let renderedPcmOwnsVelocity = false;
       if (recipe.synthesis === "rendered") {
         const requestedSeconds = gatedRenderWindowSeconds(
           attack.releaseTimeSeconds - attack.startTimeSeconds,
           recipe,
         );
         const requiresPreparedPlucked = isSharedPluckedChordRecipe(recipe);
-        if (requiresPreparedPlucked && attack.voices.length > 1) {
+        const requiresPreparedPhysicalPiano =
+          recipe.renderer.algorithmId ===
+            CONCERT_GRAND_PHYSICAL_V2_ALGORITHM_ID;
+        if (requiresPreparedPhysicalPiano && attack.voices.length > 1) {
+          if (
+            physicalPianoRendererForAlgorithm(recipe.renderer.algorithmId)
+              ?.renderPhysicalChordCooperatively === undefined
+          ) {
+            return refuse({
+              code: "audio.renderer_unavailable",
+              path: ["instrumentId"],
+            });
+          }
+          renderedChordBuffer = cachedPhysicalPianoChordBufferFor(
+            recipe,
+            attack.voices,
+            requestedSeconds,
+          );
+          if (renderedChordBuffer === null) {
+            return refuse({
+              code: "audio.renderer_unavailable",
+              path: ["instrumentId"],
+            });
+          }
+          renderedPcmOwnsVelocity = true;
+        } else if (requiresPreparedPhysicalPiano) {
+          const voice = attack.voices[0];
+          const buffer = voice === undefined
+            ? null
+            : cachedPhysicalPianoNoteBufferFor(
+              recipe,
+              voice,
+              requestedSeconds,
+            );
+          if (buffer === null) {
+            return refuse({
+              code: "audio.renderer_unavailable",
+              path: ["instrumentId"],
+            });
+          }
+          renderedBuffers = Object.freeze([buffer]);
+          renderedPcmOwnsVelocity = true;
+        } else if (requiresPreparedPlucked && attack.voices.length > 1) {
           if (
             rendererForAlgorithm(recipe.renderer.algorithmId)?.renderChord ===
             undefined
@@ -3018,7 +3235,9 @@ function createAudioEngineInternal(
        * the whole buffer would double-scale and make request order audible. */
       const velocityGains = renderedChordBuffer === null
         ? attack.voices.map((voiceSpec) =>
-            velocityGainForVelocity(voiceSpec.velocity),
+            renderedPcmOwnsVelocity
+              ? 1
+              : velocityGainForVelocity(voiceSpec.velocity),
           )
         : attack.voices.map(() => 1);
       const instanceTokens = attack.voices.map(() =>
@@ -3419,7 +3638,7 @@ function createAudioEngineInternal(
     if (context === null || (state !== "ready" && state !== "suspended")) {
       return refuse({ code: "audio.engine_not_ready", path: ["state"] });
     }
-    const recipe = recipeForInstrument(instrumentId.value);
+    const recipe = recipeForEngine(instrumentId.value);
     if (recipe.synthesis !== "rendered") {
       return success(
         Object.freeze({
@@ -3437,10 +3656,13 @@ function createAudioEngineInternal(
     if (
       renderer === null &&
       (recipe.renderer.algorithmId === CONCERT_GRAND_RENDERER_ALGORITHM_ID ||
+        recipe.renderer.algorithmId ===
+          CONCERT_GRAND_PHYSICAL_V2_ALGORITHM_ID ||
         recipe.renderer.algorithmId.startsWith("changes.dsp.waveguide-"))
     ) {
       try {
-        renderer = await loadConcertGrandRenderer();
+        renderer = rendererOverridesForTest?.concertGrand ??
+          await loadConcertGrandRenderer();
         waveguideRenderers = rendererOverridesForTest?.waveguide ??
           await loadWaveguideRenderers();
       } catch {
@@ -3460,7 +3682,10 @@ function createAudioEngineInternal(
         );
       }
     }
-    if (rendererForAlgorithm(recipe.renderer.algorithmId) === null) {
+    if (
+      physicalPianoRendererForAlgorithm(recipe.renderer.algorithmId) === null &&
+      rendererForAlgorithm(recipe.renderer.algorithmId) === null
+    ) {
       return refuse({
         code: "audio.renderer_unavailable",
         path: ["instrumentId"],
@@ -3469,6 +3694,175 @@ function createAudioEngineInternal(
     const notesValue = requestValue["notes"];
     if (!Array.isArray(notesValue)) {
       return refuse({ code: "audio.midi_pitch_invalid", path: ["notes"] });
+    }
+
+    const physicalPianoRenderer = physicalPianoRendererForAlgorithm(
+      recipe.renderer.algorithmId,
+    );
+    if (
+      recipe.renderer.algorithmId ===
+        CONCERT_GRAND_PHYSICAL_V2_ALGORITHM_ID
+    ) {
+      if (
+        physicalPianoRenderer?.renderPhysicalNoteCooperatively === undefined ||
+        physicalPianoRenderer.renderPhysicalChordCooperatively === undefined
+      ) {
+        return refuse({
+          code: "audio.renderer_unavailable",
+          path: ["instrumentId"],
+        });
+      }
+      type PreparedPhysicalPianoNote = RenderedChordVoice &
+        Readonly<{ seconds: number; bucket: number; eventId: string | null }>;
+      const pianoNotes: PreparedPhysicalPianoNote[] = [];
+      for (let index = 0; index < notesValue.length; index += 1) {
+        const noteValue: unknown = notesValue[index];
+        if (!isRecord(noteValue)) {
+          return refuse({
+            code: "audio.midi_pitch_invalid",
+            path: ["notes", index],
+          });
+        }
+        const midiPitch = makeMidiPitch(
+          typeof noteValue["midiPitch"] === "number"
+            ? noteValue["midiPitch"]
+            : -1,
+        );
+        if (!midiPitch.ok) {
+          return refuse({
+            code: "audio.midi_pitch_invalid",
+            path: ["notes", index, "midiPitch"],
+          });
+        }
+        const velocity = noteValue["velocity"];
+        if (
+          typeof velocity !== "number" || !Number.isInteger(velocity) ||
+          velocity < 1 || velocity > 127
+        ) {
+          return refuse({
+            code: "audio.velocity_invalid",
+            path: ["notes", index, "velocity"],
+          });
+        }
+        if (
+          noteValue["physicalGesture"] !== undefined ||
+          noteValue["physicalFrameCount"] !== undefined ||
+          noteValue["physicalCacheFingerprint"] !== undefined ||
+          noteValue["physicalStateReset"] !== undefined
+        ) {
+          return refuse({
+            code: "audio.voice_id_invalid",
+            path: ["notes", index, "physicalGesture"],
+          });
+        }
+        const gateSeconds = noteValue["gateSeconds"];
+        if (
+          gateSeconds !== undefined &&
+          (typeof gateSeconds !== "number" || !Number.isFinite(gateSeconds) ||
+            gateSeconds <= 0 || gateSeconds > MAX_AUDIO_GATE_SECONDS)
+        ) {
+          return refuse({
+            code: "audio.start_time_invalid",
+            path: ["notes", index, "gateSeconds"],
+          });
+        }
+        const seconds = gateSeconds === undefined
+          ? PREPARE_RENDER_SECONDS
+          : gatedRenderWindowSeconds(gateSeconds, recipe);
+        const eventIdValue = noteValue["eventId"];
+        if (eventIdValue !== undefined && !isAudioId(eventIdValue)) {
+          return refuse({
+            code: "audio.voice_id_invalid",
+            path: ["notes", index, "eventId"],
+          });
+        }
+        pianoNotes.push(Object.freeze({
+          midiPitch: foldPitchForRecipe(recipe.id, midiPitch.value),
+          velocity,
+          physicalGesture: null,
+          seconds,
+          bucket: bucketRenderSecondsForRecipe(seconds, recipe),
+          eventId: eventIdValue ?? null,
+        }));
+      }
+      const groups = new Map<string, PreparedPhysicalPianoNote[]>();
+      for (const note of pianoNotes) {
+        // Preserve the distinction between an omitted preview identity and a
+        // real event whose legal ID happens to be "request".  A sentinel
+        // string key merged those two cases and could turn two unrelated
+        // notes into one physical chord.
+        const groupKey = JSON.stringify([note.eventId, note.bucket]);
+        const group = groups.get(groupKey) ?? [];
+        group.push(note);
+        groups.set(groupKey, group);
+      }
+      if ([...groups.values()].some((group) => group.length > 8)) {
+        return refuse({
+          code: "audio.renderer_unavailable",
+          path: ["instrumentId"],
+        });
+      }
+      let renderedCount = 0;
+      let cachedCount = 0;
+      for (const group of groups.values()) {
+        const first = group[0];
+        if (first === undefined) continue;
+        const key = group.length === 1
+          ? physicalPianoNoteBufferKey(
+            recipe,
+            physicalPianoRenderer,
+            first,
+            first.bucket,
+          )
+          : physicalPianoChordBufferKey(
+            recipe,
+            physicalPianoRenderer,
+            group,
+            first.bucket,
+          );
+        if (
+          touchRenderedBufferEntry(recipeBufferCache(recipe.id), key) !==
+            undefined
+        ) {
+          cachedCount += 1;
+          continue;
+        }
+        const buffer = group.length === 1
+          ? await renderedPhysicalPianoNoteBufferForCooperatively(
+            recipe,
+            context,
+            first,
+            first.seconds,
+          )
+          : await renderedPhysicalPianoChordBufferForCooperatively(
+            recipe,
+            context,
+            group,
+            first.seconds,
+          );
+        if (buffer === null) {
+          return refuse({
+            code: "audio.renderer_unavailable",
+            path: ["instrumentId"],
+          });
+        }
+        renderedCount += 1;
+        await new Promise<void>((resolve) => setTimeout(resolve, 0));
+        if (preparationGeneration !== renderedPreparationGeneration) {
+          return success(Object.freeze({
+            instrumentId: instrumentId.value,
+            renderedCount,
+            cachedCount,
+            completed: false,
+          }));
+        }
+      }
+      return success(Object.freeze({
+        instrumentId: instrumentId.value,
+        renderedCount,
+        cachedCount,
+        completed: true,
+      }));
     }
 
     const pluckedRenderer = rendererForAlgorithm(recipe.renderer.algorithmId);
@@ -3567,9 +3961,14 @@ function createAudioEngineInternal(
           gateSecondsValue === undefined
             ? PREPARE_RENDER_SECONDS
             : gatedRenderWindowSeconds(gateSecondsValue, recipe);
-        const explicitEventId = typeof noteValue["eventId"] === "string"
-          ? noteValue["eventId"]
-          : undefined;
+        const eventIdValue = noteValue["eventId"];
+        if (eventIdValue !== undefined && !isAudioId(eventIdValue)) {
+          return refuse({
+            code: "audio.voice_id_invalid",
+            path: ["notes", index, "eventId"],
+          });
+        }
+        const explicitEventId = eventIdValue;
         pluckedNotes.push(
           Object.freeze({
             midiPitch: foldPitchForRecipe(recipe.id, midiPitchRaw.value),
@@ -4007,6 +4406,31 @@ export function createAudioEngineWithWaveguideRenderersForTest(
     ZERO_AUDIO_ENGINE_SEQUENCE_SEED,
     {},
     Object.freeze({ waveguide }),
+  );
+}
+
+/**
+ * Deep-module-only seam for the dark physical-piano route. The production
+ * recipe remains @1 until acceptance, while this constructor proves that an
+ * eventual @2 recipe uses only cooperative sample-free PCM and a cache-only
+ * attack. It is intentionally absent from the public audio barrel.
+ */
+export function createAudioEngineWithPhysicalPianoRendererForTest(
+  platform: AudioPlatform,
+  concertGrand: ConcertGrandRenderer,
+): AudioEngine {
+  return createAudioEngineInternal(
+    platform,
+    ZERO_AUDIO_ENGINE_SEQUENCE_SEED,
+    {},
+    Object.freeze({
+      concertGrand,
+      waveguide: new Map<string, WaveguideRenderer>(),
+      algorithmByInstrument: new Map<InstrumentId, string>([[
+        "concert-grand",
+        CONCERT_GRAND_PHYSICAL_V2_ALGORITHM_ID,
+      ]]),
+    }),
   );
 }
 

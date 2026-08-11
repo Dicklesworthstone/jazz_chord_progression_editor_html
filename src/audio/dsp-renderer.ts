@@ -337,6 +337,17 @@ export type ConcertGrandRenderer = Readonly<{
     sampleRateHz: number,
     maxSeconds?: number,
   ) => Promise<RenderedNotePcm | null>;
+  /**
+   * Dark complete chord: one shared PNO2 soundboard onset followed by the
+   * sample-free modal sustain. It is deliberately absent unless both retained
+   * runtimes are available; callers must never substitute recorded attacks.
+   */
+  renderPhysicalChordCooperatively?: (
+    midiPitches: readonly number[],
+    velocities: readonly number[],
+    sampleRateHz: number,
+    maxSeconds?: number,
+  ) => Promise<RenderedNotePcm | null>;
   /** Dark complete note using PNO2 for the onset and no recorded PCM. */
   renderPhysicalNoteCooperatively?: (
     midiPitch: number,
@@ -1328,6 +1339,97 @@ export function applyPhysicalPianoAttackLayer(
       added * (physical.right[frame] ?? 0);
   }
   return true;
+}
+
+type PhysicalPianoChordCompleteRenderOptions = Readonly<{
+  renderPhysicalChordAttack: NonNullable<
+    ConcertGrandRenderer["renderPhysicalChordAttackCooperatively"]
+  >;
+  renderSynthesizedNote: NonNullable<
+    ConcertGrandRenderer["renderSynthesizedNoteCooperatively"]
+  >;
+}>;
+
+/**
+ * Compose the two sample-free retained runtimes into one complete piano chord.
+ * The onset is rendered once by the shared PNO2 soundboard. The legacy modal
+ * sustain is still one note per key, but is summed in canonical key order
+ * before the single physical onset is applied, so caller order cannot change
+ * floating-point accumulation or the cache bytes.
+ */
+export function createPhysicalPianoChordCompleteRenderFunction(
+  options: PhysicalPianoChordCompleteRenderOptions,
+): NonNullable<ConcertGrandRenderer["renderPhysicalChordCooperatively"]> {
+  return async (midiPitches, velocities, sampleRateHz, maxSeconds) => {
+    if (
+      midiPitches.length < 2 || midiPitches.length > 8 ||
+      midiPitches.length !== velocities.length ||
+      !Number.isFinite(sampleRateHz) ||
+      (maxSeconds !== undefined &&
+        (!Number.isFinite(maxSeconds) || maxSeconds <= 0))
+    ) return null;
+    const pairs = midiPitches.map((midiPitch, index) => ({
+      midiPitch,
+      velocity: velocities[index] ?? 0,
+    })).sort((left, right) =>
+      left.midiPitch - right.midiPitch || left.velocity - right.velocity
+    );
+    for (let index = 0; index < pairs.length; index += 1) {
+      const pair = pairs[index];
+      if (
+        pair === undefined || !Number.isSafeInteger(pair.midiPitch) ||
+        pair.midiPitch < 21 || pair.midiPitch > 108 ||
+        !Number.isSafeInteger(pair.velocity) ||
+        pair.velocity < 1 || pair.velocity > 127 ||
+        (index > 0 && pair.midiPitch === pairs[index - 1]?.midiPitch)
+      ) return null;
+    }
+    const physical = await options.renderPhysicalChordAttack(
+      pairs.map((pair) => pair.midiPitch),
+      pairs.map((pair) => pair.velocity),
+      sampleRateHz,
+      maxSeconds,
+    );
+    if (physical === null) return null;
+    const sustains: RenderedNotePcm[] = [];
+    for (const pair of pairs) {
+      const sustain = await options.renderSynthesizedNote(
+        pair.midiPitch,
+        pair.velocity,
+        sampleRateHz,
+        maxSeconds,
+      );
+      if (sustain === null || sustain.sampleRateHz !== sampleRateHz) return null;
+      sustains.push(sustain);
+    }
+    const frameCount = sustains.reduce(
+      (maximum, sustain) => Math.max(maximum, sustain.frameCount),
+      0,
+    );
+    if (frameCount <= 0 || physical.frameCount > frameCount) return null;
+    const left = new Float32Array(frameCount);
+    const right = new Float32Array(frameCount);
+    for (const sustain of sustains) {
+      for (let frame = 0; frame < sustain.frameCount; frame += 1) {
+        left[frame] = Math.fround(
+          (left[frame] ?? 0) + (sustain.left[frame] ?? 0),
+        );
+        right[frame] = Math.fround(
+          (right[frame] ?? 0) + (sustain.right[frame] ?? 0),
+        );
+      }
+    }
+    if (
+      !applyPhysicalPianoAttackLayer(
+        left,
+        right,
+        frameCount,
+        physical,
+        sampleRateHz,
+      )
+    ) return null;
+    return Object.freeze({ sampleRateHz, frameCount, left, right });
+  };
 }
 
 const PAGE_BYTES = 65_536;
@@ -2800,6 +2902,15 @@ async function instantiate(bytes?: Uint8Array): Promise<DspCore> {
           return synthesized;
         };
 
+  const renderPhysicalChordCooperatively =
+    renderPhysicalChordAttackCooperatively === undefined ||
+      renderSynthesizedNoteCooperatively === undefined
+      ? undefined
+      : createPhysicalPianoChordCompleteRenderFunction({
+          renderPhysicalChordAttack: renderPhysicalChordAttackCooperatively,
+          renderSynthesizedNote: renderSynthesizedNoteCooperatively,
+        });
+
   const MAX_DETECTED_NOTES = 12;
 
   const validatePhysicalAbiV2 = (
@@ -3582,6 +3693,9 @@ async function instantiate(bytes?: Uint8Array): Promise<DspCore> {
             ...(renderPhysicalChordAttackCooperatively === undefined
               ? {}
               : { renderPhysicalChordAttackCooperatively }),
+            ...(renderPhysicalChordCooperatively === undefined
+              ? {}
+              : { renderPhysicalChordCooperatively }),
           }),
       renderNote,
       renderSynthesizedNote,
@@ -3606,6 +3720,17 @@ async function instantiate(bytes?: Uint8Array): Promise<DspCore> {
  */
 export function loadConcertGrandRenderer(): Promise<ConcertGrandRenderer> {
   return loadDspCore().then((core) => core.concertGrand);
+}
+
+/**
+ * Fresh immutable candidate seam for dark piano host/release proof. The input
+ * is copied by `instantiate` before its first await and never replaces the
+ * production embedded payload or its cached renderer.
+ */
+export async function loadConcertGrandRendererFromWasmBytes(
+  bytes: Uint8Array,
+): Promise<ConcertGrandRenderer> {
+  return (await instantiate(bytes)).concertGrand;
 }
 
 /**

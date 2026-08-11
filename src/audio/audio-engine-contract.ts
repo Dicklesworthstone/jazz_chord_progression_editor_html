@@ -584,6 +584,12 @@ export type PrepareRenderedVoicesRequest = Readonly<{
      * lookahead deadline. Omitted: the historical fixed preparation bucket.
      */
     gateSeconds?: number;
+    /**
+     * Immutable playback-event identity. Shared physical instruments group
+     * exactly the notes of one event into one retained chord render; omitting
+     * it means the bounded request itself is the event (preview semantics).
+     */
+    eventId?: string;
     physicalGesture?: import("./physical-renderer-contract").ExpressiveVoiceGesture;
     /** Exact immutable phrase-event render length; clarinet-v2 only. */
     physicalFrameCount?: number;
