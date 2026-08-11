@@ -15,26 +15,46 @@ use piano_v2::{
 #[test]
 fn split_modal_loss_reaches_minus_sixty_db_at_the_declared_t60() {
     let sample_rate_hz = 8_000.0;
-    let t60_seconds = 0.25;
+    let frequency_hz = 100.0;
+    // Use an integer 100-cycle interval so this assertion measures the decay
+    // envelope rather than a phase offset of the lightly damped oscillator.
+    let t60_seconds = 1.0;
     let frames = (sample_rate_hz * t60_seconds) as usize;
-    let half = split_t60_half_velocity_decay(t60_seconds, 1.0 / sample_rate_hz);
-    let mut amplitude = 1.0_f64;
-    for _ in 0..frames {
-        amplitude *= half;
-        amplitude *= half;
-    }
-    assert!((amplitude - 0.001).abs() < 1.0e-14, "amplitude={amplitude}");
+    let dt = 1.0 / sample_rate_hz;
+    let half_dt = 0.5 * dt;
+    let midpoint_omega = 2.0 / dt * libm::tan(core::f64::consts::PI * frequency_hz * dt);
+    let run = |half_velocity_decay: f64| {
+        let mut position = 1.0_f64;
+        let mut velocity = 0.0_f64;
+        for _ in 0..frames {
+            velocity *= half_velocity_decay;
+            let frequency_term = half_dt * midpoint_omega;
+            let next_position = ((1.0 - frequency_term * frequency_term) * position
+                + 2.0 * half_dt * velocity)
+                / (1.0 + frequency_term * frequency_term);
+            let next_velocity = (next_position - position) / half_dt - velocity;
+            position = next_position;
+            velocity = next_velocity * half_velocity_decay;
+        }
+        20.0 * libm::log10(position.abs())
+    };
 
-    // Planted near-miss: using the full-step coefficient on both split loss
-    // stages reaches -120 dB and halves every declared decay time.
-    let wrong_half = libm::exp(-6.907_755_278_982_137 / (sample_rate_hz * t60_seconds));
-    let mut wrong_amplitude = 1.0_f64;
-    for _ in 0..frames {
-        wrong_amplitude *= wrong_half;
-        wrong_amplitude *= wrong_half;
-    }
-    assert!(wrong_amplitude < 1.1e-6);
-    assert!((wrong_amplitude - 0.001).abs() > 9.9e-4);
+    let actual_db = run(split_t60_half_velocity_decay(t60_seconds, dt));
+    assert!(
+        (actual_db + 60.0).abs() < 0.05,
+        "declared T60 produced {actual_db} dB"
+    );
+
+    // Planted near-miss: halving the viscous exponent merely because the
+    // update has two split stages reaches -30 dB, not the declared amplitude
+    // T60. The full friction rate belongs in each half-duration stage.
+    let old_half = libm::exp(-0.5 * 6.907_755_278_982_137 * dt / t60_seconds);
+    let old_db = run(old_half);
+    assert!(
+        (old_db + 30.0).abs() < 0.05,
+        "old split law produced {old_db} dB"
+    );
+    assert!((old_db - actual_db).abs() > 29.9);
 }
 
 fn finite_audible_bounded(left: &[f32], right: &[f32]) {

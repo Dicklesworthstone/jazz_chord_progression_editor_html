@@ -23,6 +23,38 @@ use piano_v2::{
 };
 
 #[test]
+fn split_modal_loss_reaches_the_declared_amplitude_t60() {
+    let sample_rate_hz = 48_000.0;
+    let frequency_hz = 100.0;
+    let t60_seconds = 1.0;
+    let dt = 1.0 / sample_rate_hz;
+    let half_dt = 0.5 * dt;
+    let midpoint_omega = 2.0 / dt * (core::f64::consts::PI * frequency_hz * dt).tan();
+    let half_velocity_decay = piano_v2::split_t60_half_velocity_decay(t60_seconds, dt);
+    let mut position = 1.0_f64;
+    let mut velocity = 0.0_f64;
+
+    // Independent Strang-split oscillator recurrence. At exactly 100 cycles,
+    // the displacement envelope must be -60 dB, not the -30 dB produced by
+    // halving the exponent in each velocity-loss half step.
+    for _ in 0..sample_rate_hz as usize {
+        velocity *= half_velocity_decay;
+        let frequency_term = half_dt * midpoint_omega;
+        let next_position = ((1.0 - frequency_term * frequency_term) * position
+            + 2.0 * half_dt * velocity)
+            / (1.0 + frequency_term * frequency_term);
+        let next_velocity = (next_position - position) / half_dt - velocity;
+        position = next_position;
+        velocity = next_velocity * half_velocity_decay;
+    }
+    let amplitude_db = 20.0 * position.abs().log10();
+    assert!(
+        (amplitude_db + 60.0).abs() < 0.05,
+        "declared T60 produced {amplitude_db} dB"
+    );
+}
+
+#[test]
 fn component_string_reduction_has_the_reviewed_mass_law_and_bounded_eigenpairs() {
     const MODES: usize = 24;
     const SPEAKING_MODES: usize = 20;
@@ -209,8 +241,8 @@ fn mezzo_forte_contact_duration_matches_measured_c2_c4_c7_registers() {
 
 #[test]
 fn fixed_soundboard_reduction_does_not_change_with_note_set_or_output_rate() {
-    // The 1,226-mode offline board pack tops out below 12 kHz, so every source
-    // mode is representable at both rates. The retained 288-mode board is one
+    // The offline board pack tops out below 12 kHz, so every source
+    // mode is representable at both rates. The complete retained board is one
     // instrument property: adding a second key must not silently turn the
     // first key into a different board, and caller rate must not do so either.
     assert!(
@@ -229,13 +261,13 @@ fn fixed_soundboard_reduction_does_not_change_with_note_set_or_output_rate() {
             PianoParameters::canonical(),
         )
         .unwrap();
-        let low_indices: Vec<_> = (0..288)
+        let low_indices: Vec<_> = (0..piano_v2::SOUNDBOARD_MODES)
             .map(|index| low.soundboard_mode_pack_index(index).unwrap())
             .collect();
-        let high_indices: Vec<_> = (0..288)
+        let high_indices: Vec<_> = (0..piano_v2::SOUNDBOARD_MODES)
             .map(|index| high.soundboard_mode_pack_index(index).unwrap())
             .collect();
-        let chord_indices: Vec<_> = (0..288)
+        let chord_indices: Vec<_> = (0..piano_v2::SOUNDBOARD_MODES)
             .map(|index| chord.soundboard_mode_pack_index_for_test(index).unwrap())
             .collect();
         assert_eq!(low_indices, high_indices, "m{midi} changed physical board");
@@ -244,10 +276,13 @@ fn fixed_soundboard_reduction_does_not_change_with_note_set_or_output_rate() {
 }
 
 #[test]
-fn low_mode_soundboard_reduction_preserves_full_pack_bridge_flexibility() {
+fn complete_soundboard_pack_preserves_treble_transfer_and_bridge_flexibility() {
     use piano_v2::piano_v2_soundboard::PIANO_V2_SOUNDBOARD_MODE_PACK;
 
-    assert!(PIANO_V2_SOUNDBOARD_MODE_PACK.len() > piano_v2::SOUNDBOARD_MODES);
+    assert_eq!(
+        PIANO_V2_SOUNDBOARD_MODE_PACK.len(),
+        piano_v2::SOUNDBOARD_MODES
+    );
     let parameters = PianoParameters::canonical();
     let voice = PianoVoice::new(60, 44_100.0, parameters).unwrap();
     for mode_index in 0..piano_v2::SOUNDBOARD_MODES {
@@ -258,9 +293,7 @@ fn low_mode_soundboard_reduction_preserves_full_pack_bridge_flexibility() {
     }
 
     // This is independently summed from the generated full pack, not from
-    // production's selected-mode compliance.  A strongest-per-stratum
-    // selector retained only 20--70% for these same cells despite green
-    // eigenpair and band-limit tests.
+    // production's selected-mode compliance.
     for midi in [21, 36, 48, 60, 72, 84, 96] {
         let midi_index = (midi - piano_v2::MIN_MIDI) as usize;
         let flexibility = |packed: &piano_v2::piano_v2_soundboard::PianoV2SoundboardModePack| {
@@ -268,17 +301,58 @@ fn low_mode_soundboard_reduction_preserves_full_pack_bridge_flexibility() {
             residue * residue / (2.0 * core::f64::consts::PI * packed.frequency_hz).powi(2)
         };
         let full: f64 = PIANO_V2_SOUNDBOARD_MODE_PACK.iter().map(flexibility).sum();
-        let retained: f64 = PIANO_V2_SOUNDBOARD_MODE_PACK
-            .iter()
-            .take(piano_v2::SOUNDBOARD_MODES)
-            .map(flexibility)
+        let runtime: f64 = (0..piano_v2::SOUNDBOARD_MODES)
+            .map(|mode_index| flexibility(&PIANO_V2_SOUNDBOARD_MODE_PACK[mode_index]))
             .sum();
-        assert!(
-            retained / full >= 0.99,
-            "midi {midi} retained only {} of full static flexibility",
-            retained / full
-        );
+        assert_eq!(runtime, full, "midi {midi} lost static flexibility");
     }
+
+    // Plant the former 288-low-mode truncation at the second partial of C7.
+    // Static flexibility was a misleading criterion here: it was >99% while
+    // the radiated high-register transfer was almost 20 dB low. The complex
+    // sum below is the independent mass-normal force-to-pressure response of
+    // the frozen pack, using the reviewed high-frequency damping ratio 0.018.
+    let midi_index = (96 - piano_v2::MIN_MIDI) as usize;
+    let frequency_hz = 2.0 * 2_093.004_522_404_789;
+    let omega = 2.0 * core::f64::consts::PI * frequency_hz;
+    let response = |count: usize| {
+        let mut stereo = [[0.0_f64; 2]; 2];
+        for packed in PIANO_V2_SOUNDBOARD_MODE_PACK.iter().take(count) {
+            let mode_omega = 2.0 * core::f64::consts::PI * packed.frequency_hz;
+            let denominator_re = mode_omega * mode_omega - omega * omega;
+            let denominator_im = 2.0 * 0.018 * mode_omega * omega;
+            let denominator_norm =
+                denominator_re * denominator_re + denominator_im * denominator_im;
+            let bridge = packed.bridge_residue_inverse_sqrt_kg[midi_index];
+            for (channel, transfer) in packed
+                .observer_pa_s_per_m_sqrt_kg
+                .chunks_exact(2)
+                .enumerate()
+            {
+                let numerator_re = -omega * transfer[1] * bridge;
+                let numerator_im = omega * transfer[0] * bridge;
+                stereo[channel][0] += (numerator_re * denominator_re
+                    + numerator_im * denominator_im)
+                    / denominator_norm;
+                stereo[channel][1] += (numerator_im * denominator_re
+                    - numerator_re * denominator_im)
+                    / denominator_norm;
+            }
+        }
+        stereo
+            .iter()
+            .flatten()
+            .map(|value| value * value)
+            .sum::<f64>()
+            .sqrt()
+    };
+    let planted_first_288 = response(288);
+    let full = response(PIANO_V2_SOUNDBOARD_MODE_PACK.len());
+    let planted_error_db = 20.0 * (planted_first_288 / full).log10();
+    assert!(
+        planted_error_db < -12.0,
+        "first-288 near miss lost only {planted_error_db:.3} dB"
+    );
 }
 
 #[test]
@@ -934,17 +1008,21 @@ fn string_pack_is_geometry_derived_and_keeps_the_measured_fundamental() {
 #[test]
 fn soundboard_active_modes_are_sorted_and_bandlimited_at_the_minimum_rate() {
     let voice = PianoVoice::new(60, 8_000.0, PianoParameters::canonical()).unwrap();
+    let active_modes = voice.work_receipt().active_soundboard_modes;
+    let independently_admitted = PIANO_V2_SOUNDBOARD_MODE_PACK
+        .iter()
+        .take_while(|mode| mode.frequency_hz < 0.44 * 8_000.0)
+        .count();
+    assert_eq!(active_modes, independently_admitted);
+    assert!(active_modes < piano_v2::SOUNDBOARD_MODES);
     let mut previous_frequency_hz = 0.0;
-    for index in 0..piano_v2::SOUNDBOARD_MODES {
+    for index in 0..active_modes {
         let frequency_hz = voice.soundboard_mode_frequency_hz(index).unwrap();
         assert!(frequency_hz > previous_frequency_hz);
         assert!(frequency_hz < 0.44 * 8_000.0);
         previous_frequency_hz = frequency_hz;
     }
-    assert_eq!(
-        voice.soundboard_mode_frequency_hz(piano_v2::SOUNDBOARD_MODES),
-        None
-    );
+    assert_eq!(voice.soundboard_mode_frequency_hz(active_modes), None);
 }
 
 #[test]
@@ -1153,6 +1231,24 @@ fn baffled_modal_observer_matches_independent_plane_integrals() {
     let pressure = piano_v2::modal_observer_pressure_pa(2.0, 3.0, 5.0, 7.0);
     assert_eq!(pressure, -11.0);
     assert_ne!(pressure, 2.0 * 5.0 + 3.0 * 7.0);
+
+    // A prewarped midpoint oscillator stores its conjugate velocity with
+    // amplitude Omega*q, where Omega = 2/dt*tan(omega*dt/2).  Radiation is a
+    // physical pressure-per-velocity transfer and must instead receive
+    // omega*q.  The old direct use of the retained state was already 35%
+    // high at 12 kHz/44.1 kHz while pitch and the mechanical ledger stayed
+    // green.
+    let sample_rate_hz = 44_100.0;
+    let frequency_hz = 12_000.0;
+    let physical_omega = core::f64::consts::TAU * frequency_hz;
+    let dt = 1.0 / sample_rate_hz;
+    let midpoint_omega = 2.0 / dt * libm::tan(0.5 * physical_omega * dt);
+    let retained_velocity = midpoint_omega;
+    let physical_velocity =
+        piano_v2::physical_modal_velocity(retained_velocity, physical_omega, midpoint_omega);
+    assert!((physical_velocity - physical_omega).abs() < 1.0e-10);
+    assert!(retained_velocity / physical_velocity > 1.34);
+    assert_ne!(retained_velocity.to_bits(), physical_velocity.to_bits());
 
     assert_eq!(
         piano_v2::modal_plane_integral_m2(1, 1, length, width, 1.0, 1.0, 1.0),

@@ -1,6 +1,6 @@
 use fs_material::elastic::OrthotropicElastic;
-use fs_modal::{slice_window, ModePair, SliceOptions};
-use fs_plate::{assemble, AssemblyOptions, EdgeSupport, PlateMesh, PlateSection, Stiffener};
+use fs_modal::{ModePair, SliceOptions, slice_window};
+use fs_plate::{AssemblyOptions, EdgeSupport, PlateMesh, PlateSection, Stiffener, assemble};
 use fs_sparse::direct::{DirectOrdering, LdltFactor, LdltOptions, SymbolicLdlt};
 use fs_sparse::{Coo, Csr};
 use serde::Serialize;
@@ -14,6 +14,10 @@ use std::process::Command;
 
 const LENGTH_M: f64 = 1.66;
 const WIDTH_M: f64 = 1.39;
+// Miranda-Valiente et al. (2024), table I, reports a 7--9 mm soundboard.
+// The paper does not publish the per-element thickness field needed to replay
+// that variation, so this fixed pack uses the reviewed 8 mm midpoint.  Do not
+// relabel this as a measured uniform board or invent a taper from the bounds.
 const THICKNESS_M: f64 = 0.008;
 const DENSITY_KG_M3: f64 = 600.0;
 const LONGITUDINAL_MODULUS_PA: f64 = 17.1e9;
@@ -54,14 +58,46 @@ const MAXIMUM_REFINED_MASS_ORTHOGONALITY_DEFECT: f64 = 1.0e-6;
 const AIR_DENSITY_KG_M3: f64 = 1.2041;
 const AIR_SOUND_SPEED_M_PER_S: f64 = 343.21;
 const RADIATION_DISTANCE_M: f64 = 1.0;
+// Product Gauss-Legendre quadrature after a Duffy transform of each triangle.
+// Eight points per reference coordinate resolve the largest admitted acoustic
+// phase excursion to roundoff against the uniform-piston known answer while
+// retaining the signed P1 surface field of every DKT mode.
+const RADIATION_QUADRATURE_ORDER: usize = 8;
+const RADIATION_QUADRATURE_POINTS_PER_TRIANGLE: usize =
+    RADIATION_QUADRATURE_ORDER * RADIATION_QUADRATURE_ORDER;
+const GAUSS_LEGENDRE_8_ABSCISSAE_UNIT: [f64; RADIATION_QUADRATURE_ORDER] = [
+    0.019_855_071_751_231_856,
+    0.101_666_761_293_186_64,
+    0.237_233_795_041_835_5,
+    0.408_282_678_752_175_1,
+    0.591_717_321_247_824_8,
+    0.762_766_204_958_164_5,
+    0.898_333_238_706_813_4,
+    0.980_144_928_248_768_2,
+];
+const GAUSS_LEGENDRE_8_WEIGHTS_UNIT: [f64; RADIATION_QUADRATURE_ORDER] = [
+    0.050_614_268_145_188_15,
+    0.111_190_517_226_687_25,
+    0.156_853_322_938_943_66,
+    0.181_341_891_689_181,
+    0.181_341_891_689_181,
+    0.156_853_322_938_943_66,
+    0.111_190_517_226_687_25,
+    0.050_614_268_145_188_15,
+];
 const MIDI_MIN: i32 = 21;
 const MIDI_MAX: i32 = 108;
 const JSON_OUTPUT: &str = "physical/parameter-packs/piano-v2-soundboard.json";
 const RUST_OUTPUT: &str = "dsp/concert-grand/src/piano_v2_soundboard.rs";
-const PACK_SCHEMA: &str = "changes.piano-v2-soundboard-pack.v2";
-const SOLVER_ID: &str =
-    "frankensim-fs-plate-dkt-ribs-two-maple-bridges-conservative-nodal-ports-plus-fs-modal-certified-slices-inverse-refinement-v5";
-const FRANKENSIM_REVIEWED_COMMIT: &str = "1346e1be67951ba0ba81f3e99f5eeca6efc42945";
+const PACK_SCHEMA: &str = "changes.piano-v2-soundboard-pack.v4";
+const SOLVER_ID: &str = "frankensim-fs-plate-dkt-clamped-rim-ribs-two-maple-bridges-conservative-load-ports-plus-p1-baffled-rayleigh-gauss8-observers-plus-fs-modal-certified-slices-inverse-refinement-v7";
+const REVIEWED_EDGE_SUPPORT: EdgeSupport = EdgeSupport::Clamped;
+const REVIEWED_EDGE_SUPPORT_LABEL: &str = "clamped-rim";
+// Reviewed through FrankenSim HEAD 2026-08-11.  Relative to the prior pin,
+// this dependency closure changes only the unused GeneralizedMaxwell step and
+// Sobol caller-selected scramble paths; fs-plate, fs-modal, the orthotropic
+// elastic law, and every soundboard solve input remain byte-identical.
+const FRANKENSIM_REVIEWED_COMMIT: &str = "416cb468d095bdac4453f0cbccbcc8c9cbfb2a3b";
 const FRANKENSIM_CRATE_CLOSURE: [&str; 19] = [
     "crates/fs-ad",
     "crates/fs-alloc",
@@ -129,6 +165,10 @@ struct WorkRecord {
     refinement_solve_count: usize,
     maximum_refined_mass_orthogonality_defect: f64,
     maximum_factor_peak_bytes: usize,
+    radiation_quadrature_order: usize,
+    radiation_quadrature_points_per_triangle: usize,
+    radiation_quadrature_evaluation_count: usize,
+    maximum_uniform_piston_quadrature_error_m2: f64,
 }
 
 #[derive(Serialize)]
@@ -154,6 +194,7 @@ struct SoundboardPack {
     input_sha256: String,
     geometry: GeometryRecord,
     work: WorkRecord,
+    soundboard_geometry_source: &'static str,
     bridge_anchor_source: &'static str,
     bridge_structure_source: &'static str,
     radiation_law: &'static str,
@@ -406,6 +447,26 @@ fn sha256_hex(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
 }
 
+fn bytes_match_embedded_source(actual: &[u8], embedded: &[u8]) -> bool {
+    sha256_hex(actual) == sha256_hex(embedded)
+}
+
+fn assert_tool_source_closure_unchanged() {
+    let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    for (relative, embedded) in [
+        ("src/main.rs", include_bytes!("main.rs").as_slice()),
+        ("Cargo.toml", include_bytes!("../Cargo.toml").as_slice()),
+        ("Cargo.lock", include_bytes!("../Cargo.lock").as_slice()),
+    ] {
+        let actual = fs::read(manifest_dir.join(relative))
+            .unwrap_or_else(|error| panic!("read generator closure {relative}: {error}"));
+        assert!(
+            bytes_match_embedded_source(&actual, embedded),
+            "generator closure {relative} changed after this binary was compiled"
+        );
+    }
+}
+
 const BASS_BRIDGE_ANCHORS: [(i32, f64, f64); 3] = [
     (21, 0.888_433_676, 0.586_466_691),
     (33, 0.783_324_033, 0.422_623_497),
@@ -540,14 +601,16 @@ fn point_load_modal_residue(
     panic!("reviewed bridge point is outside the DKT mesh: ({x}, {y})");
 }
 
-/// Plane-wave generalized observation using the DKT nodal-load measure.
+/// Plane-wave generalized observation of the signed P1 acoustic surface.
 ///
-/// Batoz et al. equation 75 assigns a uniform transverse load `q*A/3` to
-/// each triangle vertex.  Sampling the far-field plane-wave phase at those
-/// same vertices extends that power-conjugate nodal port without pretending
-/// that an interior w polynomial exists.  At zero wave number this reduces
-/// exactly to the reviewed uniform-load vector and integrates a constant
-/// modal shape to the physical plate area.
+/// Structural forcing remains the conservative Batoz equation-75 nodal load
+/// port. Radiation is a different observable: treating those weighted nodes
+/// as point radiators aliases the phase once an acoustic wavelength approaches
+/// the structural cell size. Reconstruct the unique affine surface through the
+/// three retained transverse nodal values and integrate Rayleigh I over every
+/// triangle with a bounded Duffy/Gauss rule. At zero wave number this still
+/// reduces exactly to the conservative uniform-load measure, while finite-wave
+/// cancellation is resolved instead of becoming a synthetic treble comb.
 fn observer_integral(
     mesh: &PlateMesh,
     node_w: &[f64],
@@ -558,18 +621,63 @@ fn observer_integral(
     let mut real = 0.0;
     let mut imaginary = 0.0;
     for &triangle in &mesh.tris {
-        let nodal_area = triangle_twice_area(mesh, triangle) / 6.0;
-        assert!(nodal_area > 0.0 && nodal_area.is_finite());
-        for node in triangle {
-            let (x, y) = mesh.nodes[node];
-            let phase =
-                -wave_number * (direction_x * (x - 0.5 * LENGTH_M) + 0.12 * (y - 0.5 * WIDTH_M));
-            let weighted_shape = node_w[node] * nodal_area;
-            real += weighted_shape * phase.cos();
-            imaginary += weighted_shape * phase.sin();
+        let [node_a, node_b, node_c] = triangle;
+        let (ax, ay) = mesh.nodes[node_a];
+        let (bx, by) = mesh.nodes[node_b];
+        let (cx, cy) = mesh.nodes[node_c];
+        let twice_area = triangle_twice_area(mesh, triangle);
+        assert!(twice_area > 0.0 && twice_area.is_finite());
+        for (&u, &u_weight) in GAUSS_LEGENDRE_8_ABSCISSAE_UNIT
+            .iter()
+            .zip(&GAUSS_LEGENDRE_8_WEIGHTS_UNIT)
+        {
+            let remaining = 1.0 - u;
+            for (&t, &t_weight) in GAUSS_LEGENDRE_8_ABSCISSAE_UNIT
+                .iter()
+                .zip(&GAUSS_LEGENDRE_8_WEIGHTS_UNIT)
+            {
+                let v = remaining * t;
+                let barycentric = [1.0 - u - v, u, v];
+                let x = barycentric[0].mul_add(ax, barycentric[1].mul_add(bx, barycentric[2] * cx));
+                let y = barycentric[0].mul_add(ay, barycentric[1].mul_add(by, barycentric[2] * cy));
+                let shape = barycentric[0].mul_add(
+                    node_w[node_a],
+                    barycentric[1].mul_add(node_w[node_b], barycentric[2] * node_w[node_c]),
+                );
+                let phase = -wave_number
+                    * (direction_x * (x - 0.5 * LENGTH_M) + 0.12 * (y - 0.5 * WIDTH_M));
+                let weight = twice_area * remaining * u_weight * t_weight;
+                let (phase_sine, phase_cosine) = phase.sin_cos();
+                real += weight * shape * phase_cosine;
+                imaginary += weight * shape * phase_sine;
+            }
         }
     }
     (real, imaginary)
+}
+
+fn sinc(value: f64) -> f64 {
+    if value.abs() < 1.0e-8 {
+        1.0 - value * value / 6.0
+    } else {
+        value.sin() / value
+    }
+}
+
+fn uniform_piston_quadrature_error_m2(mesh: &PlateMesh, frequency_hz: f64) -> f64 {
+    let shape = vec![1.0; mesh.node_count()];
+    let wave_number = 2.0 * PI * frequency_hz / AIR_SOUND_SPEED_M_PER_S;
+    [-0.35, 0.35]
+        .into_iter()
+        .map(|direction_x| {
+            let (real, imaginary) = observer_integral(mesh, &shape, wave_number, direction_x);
+            let exact = LENGTH_M
+                * WIDTH_M
+                * sinc(0.5 * wave_number * direction_x * LENGTH_M)
+                * sinc(0.5 * wave_number * 0.12 * WIDTH_M);
+            (real - exact).hypot(imaginary)
+        })
+        .fold(0.0, f64::max)
 }
 
 fn reviewed_frankensim_source() -> String {
@@ -672,7 +780,7 @@ fn solve_pack() -> SoundboardPack {
         &stiffeners,
         &AssemblyOptions {
             pretension: 0.0,
-            support: EdgeSupport::SimplySupported,
+            support: REVIEWED_EDGE_SUPPORT,
         },
     )
     .expect("assemble explicit-rib-and-bridge piano soundboard");
@@ -746,6 +854,12 @@ fn solve_pack() -> SoundboardPack {
     assert!(
         !certified_modes.is_empty(),
         "certified soundboard window must contain modes"
+    );
+    let maximum_uniform_piston_quadrature_error_m2 =
+        uniform_piston_quadrature_error_m2(&mesh, MAXIMUM_MODE_FREQUENCY_HZ);
+    assert!(
+        maximum_uniform_piston_quadrature_error_m2 <= 1.0e-12,
+        "baffled-plate quadrature misses its uniform-piston known answer: {maximum_uniform_piston_quadrature_error_m2:.17e} m2"
     );
     let mut maximum_residual = 0.0_f64;
     let mut solved = Vec::with_capacity(certified_modes.len());
@@ -845,7 +959,7 @@ fn solve_pack() -> SoundboardPack {
             treble_bridge_min_midi: TREBLE_BRIDGE_MIN_MIDI,
             mesh_cells_x: NX,
             mesh_cells_y: NY,
-            support: "simply-supported-rim",
+            support: REVIEWED_EDGE_SUPPORT_LABEL,
         },
         work: WorkRecord {
             full_dofs: 3 * mesh.node_count(),
@@ -863,13 +977,18 @@ fn solve_pack() -> SoundboardPack {
             maximum_refined_mass_orthogonality_defect: refinement_work
                 .maximum_mass_orthogonality_defect,
             maximum_factor_peak_bytes,
+            radiation_quadrature_order: RADIATION_QUADRATURE_ORDER,
+            radiation_quadrature_points_per_triangle: RADIATION_QUADRATURE_POINTS_PER_TRIANGLE,
+            radiation_quadrature_evaluation_count: solved.len()
+                * 2
+                * mesh.tris.len()
+                * RADIATION_QUADRATURE_POINTS_PER_TRIANGLE,
+            maximum_uniform_piston_quadrature_error_m2,
         },
-        bridge_anchor_source:
-            "Miranda-Valiente-et-al-JASA-2024-Fig-2-two-physical-bridges-A1-D4-D5-visible-ends-plus-Borland-2009-Hardman-grand-23-key-split",
-        bridge_structure_source:
-            "Corradi-et-al-2017-G3-32x37mm-maple-constant-section-two-beam-reduction",
-        radiation_law:
-            "Batoz-1980-equation-75-triangle-area-over-3-nodal-load-infinite-baffle-Rayleigh-1m",
+        soundboard_geometry_source: "Miranda-Valiente-et-al-JASA-2024-Table-I-1.66x1.39m-7-to-9mm-midpoint-reduction-and-section-II-clamped-rim",
+        bridge_anchor_source: "Miranda-Valiente-et-al-JASA-2024-Fig-2-two-physical-bridges-A1-D4-D5-visible-ends-plus-Borland-2009-Hardman-grand-23-key-split",
+        bridge_structure_source: "Corradi-et-al-2017-G3-32x37mm-maple-constant-section-two-beam-reduction",
+        radiation_law: "signed-P1-surface-Duffy-Gauss8-infinite-rigid-baffle-Rayleigh-I-one-metre-far-field",
         modes: solved
             .into_iter()
             .enumerate()
@@ -1001,7 +1120,13 @@ fn main() {
         Some("--check") => true,
         Some(argument) => panic!("unknown argument {argument:?}; expected --check"),
     };
+    assert_tool_source_closure_unchanged();
     let pack = solve_pack();
+    // A full-band solve is long enough for either checkout to move under the
+    // running binary. Refuse to stamp the old executable's digests onto new
+    // on-disk sources, and refuse a FrankenSim closure that changed mid-run.
+    assert_tool_source_closure_unchanged();
+    assert_eq!(reviewed_frankensim_source(), pack.frankensim_commit);
     let json = render_json(&pack);
     let rust = render_rust(&pack);
     check_or_write(JSON_OUTPUT, &json, check);
@@ -1115,6 +1240,16 @@ mod tests {
             .collect::<BTreeSet<_>>();
         assert_eq!(actual, expected);
         assert_eq!(reviewed_frankensim_source(), FRANKENSIM_REVIEWED_COMMIT);
+    }
+
+    #[test]
+    fn embedded_tool_source_closure_detects_a_post_compile_edit() {
+        let embedded = include_bytes!("main.rs");
+        assert!(bytes_match_embedded_source(embedded, embedded));
+        let mut changed = embedded.to_vec();
+        changed[0] ^= 1;
+        assert!(!bytes_match_embedded_source(&changed, embedded));
+        assert_tool_source_closure_unchanged();
     }
 
     #[test]
@@ -1237,7 +1372,7 @@ mod tests {
         let boundary = PlateMesh::rectangle_boundary(NX, NY);
         let options = AssemblyOptions {
             pretension: 0.0,
-            support: EdgeSupport::SimplySupported,
+            support: REVIEWED_EDGE_SUPPORT,
         };
         let bare = assemble(&mesh, &section, &boundary, &[], &options).unwrap();
         let bridged = assemble(&mesh, &section, &boundary, &bridges, &options).unwrap();
@@ -1258,7 +1393,52 @@ mod tests {
     }
 
     #[test]
-    fn dkt_nodal_radiation_replays_the_equation_75_uniform_load() {
+    fn reviewed_soundboard_boundary_is_clamped_not_simply_supported() {
+        let mesh = PlateMesh::rectangle(LENGTH_M, WIDTH_M, 3, 2);
+        let boundary = PlateMesh::rectangle_boundary(3, 2);
+        let material = OrthotropicElastic::new(
+            [
+                LONGITUDINAL_MODULUS_PA,
+                RADIAL_MODULUS_PA,
+                RADIAL_MODULUS_PA,
+            ],
+            [POISSON_LR, 0.02, 0.02],
+            [SHEAR_MODULUS_PA, SHEAR_MODULUS_PA, SHEAR_MODULUS_PA],
+            0.001,
+        )
+        .unwrap();
+        let section = PlateSection::orthotropic(&material, THICKNESS_M, DENSITY_KG_M3).unwrap();
+        let clamped = assemble(
+            &mesh,
+            &section,
+            &boundary,
+            &[],
+            &AssemblyOptions {
+                pretension: 0.0,
+                support: REVIEWED_EDGE_SUPPORT,
+            },
+        )
+        .unwrap();
+        let simply_supported = assemble(
+            &mesh,
+            &section,
+            &boundary,
+            &[],
+            &AssemblyOptions {
+                pretension: 0.0,
+                support: EdgeSupport::SimplySupported,
+            },
+        )
+        .unwrap();
+
+        assert_eq!(REVIEWED_EDGE_SUPPORT_LABEL, "clamped-rim");
+        assert_eq!(clamped.free, 6, "only the two interior nodes stay free");
+        assert_eq!(simply_supported.free, 26);
+        assert!(clamped.free < simply_supported.free);
+    }
+
+    #[test]
+    fn p1_baffled_radiation_replays_uniform_and_affine_known_answers() {
         let mesh = PlateMesh::rectangle(LENGTH_M, WIDTH_M, 3, 2);
         let constant = vec![1.0; mesh.node_count()];
         let (real, imaginary) = observer_integral(&mesh, &constant, 0.0, -0.35);
@@ -1270,5 +1450,36 @@ mod tests {
         let (real, imaginary) = observer_integral(&mesh, &linear_x, 0.0, 0.35);
         assert!((real - 0.5 * LENGTH_M * LENGTH_M * WIDTH_M).abs() < 1.0e-14);
         assert_eq!(imaginary, 0.0);
+
+        // At the top of the admitted acoustic band the old A/3 point-radiator
+        // extension aliases a uniform piston by roughly 80 percent. The
+        // bounded P1 surface quadrature must instead reproduce the analytic
+        // rectangular-piston transform to roundoff.
+        let refined = PlateMesh::rectangle(LENGTH_M, WIDTH_M, NX, NY);
+        let constant = vec![1.0; refined.node_count()];
+        let wave_number = 2.0 * PI * 12_000.0 / AIR_SOUND_SPEED_M_PER_S;
+        let (real, imaginary) = observer_integral(&refined, &constant, wave_number, 0.35);
+        let exact = LENGTH_M
+            * WIDTH_M
+            * sinc(0.5 * wave_number * 0.35 * LENGTH_M)
+            * sinc(0.5 * wave_number * 0.12 * WIDTH_M);
+        assert!((real - exact).hypot(imaginary) < 1.0e-12);
+
+        let mut old_real = 0.0;
+        let mut old_imaginary = 0.0;
+        for &triangle in &refined.tris {
+            let nodal_area = triangle_twice_area(&refined, triangle) / 6.0;
+            for node in triangle {
+                let (x, y) = refined.nodes[node];
+                let phase =
+                    -wave_number * (0.35 * (x - 0.5 * LENGTH_M) + 0.12 * (y - 0.5 * WIDTH_M));
+                old_real += nodal_area * phase.cos();
+                old_imaginary += nodal_area * phase.sin();
+            }
+        }
+        assert!(
+            (old_real - exact).hypot(old_imaginary) > 5.0e-4,
+            "the planted point-radiator near-miss unexpectedly resolved the 12 kHz piston"
+        );
     }
 }

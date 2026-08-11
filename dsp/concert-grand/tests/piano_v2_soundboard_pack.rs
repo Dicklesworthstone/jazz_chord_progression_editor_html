@@ -16,19 +16,19 @@ const RUST_PACK: &str = include_str!("../src/piano_v2_soundboard.rs");
 fn generated_pack_is_bound_to_the_reviewed_frankensim_input() {
     assert_eq!(
         PIANO_V2_SOUNDBOARD_PACK_SCHEMA,
-        "changes.piano-v2-soundboard-pack.v2"
+        "changes.piano-v2-soundboard-pack.v4"
     );
     assert_eq!(
         PIANO_V2_SOUNDBOARD_PACK_FRANKENSIM_COMMIT,
-        "1346e1be67951ba0ba81f3e99f5eeca6efc42945"
+        "416cb468d095bdac4453f0cbccbcc8c9cbfb2a3b"
     );
     assert_eq!(
         PIANO_V2_SOUNDBOARD_PACK_GENERATOR_SHA256,
-        "26804e425fc4e35e883565113a8c5401df580a838769e205d6f1e19a59fa0d34"
+        "7fb93188d16d82661e5346ab4e7e8d41bb73b2fec62a3582a3f8c8482ff2b4af"
     );
     assert_eq!(
         PIANO_V2_SOUNDBOARD_PACK_INPUT_SHA256,
-        "a887a40163ba4f2abed905405bcc3db6cd617737068b13404a37cc514fd35b71"
+        "8c0f500ad852930ccfc0ba40c33425a595151f56486c18e094f766b180bfc791"
     );
     assert_eq!(
         PIANO_V2_SOUNDBOARD_PACK_TOOL_MANIFEST_SHA256,
@@ -44,11 +44,15 @@ fn generated_pack_is_bound_to_the_reviewed_frankensim_input() {
     assert!(JSON_PACK.contains(PIANO_V2_SOUNDBOARD_PACK_TOOL_LOCK_SHA256));
     assert!(JSON_PACK.contains(PIANO_V2_SOUNDBOARD_PACK_FRANKENSIM_COMMIT));
     assert!(RUST_PACK.contains(PIANO_V2_SOUNDBOARD_PACK_INPUT_SHA256));
-    assert_eq!(JSON_PACK.matches("\"frequencyHz\"").count(), 1_226);
-    assert_eq!(JSON_PACK.matches("\"nodeWInverseSqrtKg\"").count(), 1_226);
+    assert_eq!(JSON_PACK.matches("\"frequencyHz\"").count(), 1_195);
+    assert_eq!(JSON_PACK.matches("\"nodeWInverseSqrtKg\"").count(), 1_195);
     assert!(JSON_PACK.contains("\"certifiedSliceCount\": 12"));
-    assert!(JSON_PACK.contains("\"refinedModeCount\": 8"));
+    assert!(JSON_PACK.contains("\"refinedModeCount\": 1"));
     assert!(JSON_PACK.contains("\"bridgeCount\": 2"));
+    assert!(JSON_PACK.contains("\"support\": \"clamped-rim\""));
+    assert!(JSON_PACK.contains(
+        "Miranda-Valiente-et-al-JASA-2024-Table-I-1.66x1.39m-7-to-9mm-midpoint-reduction-and-section-II-clamped-rim"
+    ));
     assert!(JSON_PACK.contains("\"bridgeWidthM\": 0.032"));
     assert!(JSON_PACK.contains("\"bridgeHeightM\": 0.037"));
     assert!(JSON_PACK.contains("\"bassBridgeMaxMidi\": 43"));
@@ -56,24 +60,28 @@ fn generated_pack_is_bound_to_the_reviewed_frankensim_input() {
     assert!(JSON_PACK
         .contains("Corradi-et-al-2017-G3-32x37mm-maple-constant-section-two-beam-reduction"));
     assert!(JSON_PACK.contains("\"maximumRefinedMassOrthogonalityDefect\""));
+    assert!(JSON_PACK.contains("\"radiationQuadratureOrder\": 8"));
+    assert!(JSON_PACK.contains("\"radiationQuadraturePointsPerTriangle\": 64"));
+    assert!(JSON_PACK.contains("\"radiationQuadratureEvaluationCount\": 440524800"));
+    assert!(JSON_PACK.contains("\"maximumUniformPistonQuadratureErrorM2\""));
     assert!(JSON_PACK.contains(
-        "Batoz-1980-equation-75-triangle-area-over-3-nodal-load-infinite-baffle-Rayleigh-1m"
+        "signed-P1-surface-Duffy-Gauss8-infinite-rigid-baffle-Rayleigh-I-one-metre-far-field"
     ));
 }
 
 #[test]
 fn dkt_modes_match_independently_frozen_known_answers_and_residual_bounds() {
-    assert_eq!(PIANO_V2_SOUNDBOARD_MODE_PACK.len(), 1_226);
+    assert_eq!(PIANO_V2_SOUNDBOARD_MODE_PACK.len(), 1_195);
     let known = [
-        (0, 37.687_342_860_361_39),
-        (31, 613.205_051_375_822_3),
-        (95, 1_718.797_532_503_682_3),
-        (191, 2_357.543_939_814_805),
-        (287, 2_788.551_394_237_302_7),
-        (511, 5_618.088_070_559_347),
-        (767, 7_528.163_908_438_721),
-        (1_023, 10_803.904_937_370_06),
-        (1_225, 11_988.714_908_832_939),
+        (0, 82.691_609_770_810_81),
+        (31, 751.833_401_743_560_9),
+        (95, 1_901.831_811_871_261_6),
+        (191, 2_579.247_418_254_941),
+        (287, 2_902.706_210_469_061),
+        (511, 5_984.658_288_284_779),
+        (767, 7_750.717_353_557_707),
+        (1_023, 10_986.859_664_917_847),
+        (1_194, 11_980.013_937_027_55),
     ];
     for (index, expected_hz) in known {
         let actual = PIANO_V2_SOUNDBOARD_MODE_PACK[index].frequency_hz;
@@ -107,7 +115,7 @@ fn production_uses_the_dkt_pack_and_refuses_to_relabel_it_as_new_geometry() {
     let canonical = PianoParameters::canonical();
     let voice = PianoVoice::new(60, 96_000.0, canonical).unwrap();
     let mut previous_pack_index = None;
-    for mode_index in 0..288 {
+    for mode_index in 0..PIANO_V2_SOUNDBOARD_MODE_PACK.len() {
         let pack_index = voice.soundboard_mode_pack_index(mode_index).unwrap();
         assert_eq!(
             pack_index, mode_index,
@@ -120,15 +128,18 @@ fn production_uses_the_dkt_pack_and_refuses_to_relabel_it_as_new_geometry() {
         assert!(previous_pack_index.is_none_or(|previous| pack_index > previous));
         previous_pack_index = Some(pack_index);
     }
-    assert_eq!(voice.soundboard_mode_frequency_hz(288), None);
+    assert_eq!(
+        voice.soundboard_mode_frequency_hz(PIANO_V2_SOUNDBOARD_MODE_PACK.len()),
+        None
+    );
 
     let treble = PianoVoice::new(108, 96_000.0, canonical).unwrap();
-    let treble_pack_indices = (0..288)
+    let treble_pack_indices = (0..PIANO_V2_SOUNDBOARD_MODE_PACK.len())
         .map(|mode_index| treble.soundboard_mode_pack_index(mode_index).unwrap())
         .collect::<Vec<_>>();
     assert_eq!(
         treble_pack_indices,
-        (0..288).collect::<Vec<_>>(),
+        (0..PIANO_V2_SOUNDBOARD_MODE_PACK.len()).collect::<Vec<_>>(),
         "requested pitch changed the fixed physical soundboard reduction"
     );
 
@@ -175,48 +186,48 @@ fn bridge_and_observer_ports_do_not_collapse_to_one_unsigned_template() {
 }
 
 #[test]
-fn conservative_triangle_ports_match_independently_frozen_known_answers() {
+fn conservative_triangle_ports_match_frozen_release_answers() {
     let known = [
         (
             0,
             [
-                (0, 0.158_550_430_192_815_8),
-                (39, 0.353_238_477_102_758_1),
-                (87, 0.001_898_359_457_519_804_4),
+                (0, 0.080_269_500_573_073_96),
+                (39, 0.453_398_273_007_509_46),
+                (87, -0.000_072_322_830_218_833_86),
             ],
             [
-                0.006_701_382_640_627_383,
-                19.233_673_466_139_04,
-                -0.006_791_787_749_627_787,
-                19.233_254_621_263_185,
+                0.966_543_672_910_164_4,
+                35.686_494_426_531_105,
+                -0.975_702_311_302_986_2,
+                35.680_637_762_873_644,
             ],
         ),
         (
             31,
             [
-                (0, 0.115_097_041_446_248_3),
-                (39, -0.134_750_749_521_709_4),
-                (87, 0.024_939_757_142_157_86),
+                (0, 0.229_898_309_394_310_55),
+                (39, -0.076_242_366_784_265_02),
+                (87, 0.005_660_000_862_159_144_5),
             ],
             [
-                -5.191_236_750_395_668,
-                12.232_067_114_470_46,
-                -4.922_413_490_210_015,
-                -0.003_894_016_428_490_115,
+                85.703_660_362_790_13,
+                7.487_696_221_849_167,
+                70.992_928_538_474_5,
+                6.436_868_681_212_744,
             ],
         ),
         (
             95,
             [
-                (0, -0.115_927_099_481_699_91),
-                (39, 0.074_847_600_214_152_5),
-                (87, 0.079_739_956_372_360_63),
+                (0, 0.171_015_614_793_772_75),
+                (39, -0.146_727_650_324_827_76),
+                (87, -0.008_398_408_980_810_667),
             ],
             [
-                54.561_210_121_663_81,
-                -21.942_359_939_941_163,
-                -25.001_856_012_038_893,
-                -12.596_407_179_593_164,
+                86.891_004_625_950_22,
+                22.522_167_431_670_844,
+                -80.596_398_631_523_75,
+                21.466_805_675_641_663,
             ],
         ),
     ];

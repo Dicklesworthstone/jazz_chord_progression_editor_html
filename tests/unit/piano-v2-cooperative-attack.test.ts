@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test";
 import {
   applyPhysicalPianoAttackLayer,
   createConcertGrandCooperativeRenderFunction,
+  createPhysicalPianoChordCompleteRenderFunction,
   createPhysicalPianoChordAttackRenderFunction,
   createPhysicalPianoAttackRenderFunction,
   PHYSICAL_PIANO_ATTACK_LAYER_POLICY,
@@ -579,6 +580,68 @@ describe("PNO2 cooperative shared-soundboard chord host", () => {
 });
 
 describe("PNO2 sample-free handoff", () => {
+  test("a complete chord uses one shared physical onset and canonical sample-free sustains", async () => {
+    const sampleRate = 8_000;
+    const frameCount = 4_000;
+    const physicalFrames = Math.round(
+      PHYSICAL_PIANO_ATTACK_LAYER_POLICY.crossfadeEndSeconds * sampleRate,
+    );
+    const chordCalls: number[][] = [];
+    const sustainCalls: number[] = [];
+    const render = createPhysicalPianoChordCompleteRenderFunction({
+      renderPhysicalChordAttack: (midis, _velocities, requestedRate) => {
+        chordCalls.push([...midis]);
+        const left = new Float32Array(physicalFrames);
+        const right = new Float32Array(physicalFrames);
+        for (let frame = 0; frame < physicalFrames; frame += 1) {
+          const decay = Math.exp(-frame / 3_000);
+          left[frame] = Math.fround(0.18 * decay * Math.sin(frame * 0.17));
+          right[frame] = Math.fround(0.16 * decay * Math.sin(frame * 0.17 + 0.2));
+        }
+        return Promise.resolve(Object.freeze({
+          sampleRateHz: requestedRate,
+          frameCount: physicalFrames,
+          left,
+          right,
+        }));
+      },
+      renderSynthesizedNote: (midi, _velocity, requestedRate) => {
+        sustainCalls.push(midi);
+        const left = new Float32Array(frameCount);
+        const right = new Float32Array(frameCount);
+        const amplitude = midi / 2_000;
+        for (let frame = 0; frame < frameCount; frame += 1) {
+          left[frame] = Math.fround(amplitude * Math.sin(frame * 0.17 + 0.1));
+          right[frame] = Math.fround(amplitude * Math.sin(frame * 0.17 + 0.3));
+        }
+        return Promise.resolve(Object.freeze({
+          sampleRateHz: requestedRate,
+          frameCount,
+          left,
+          right,
+        }));
+      },
+    });
+
+    const pcm = await render([67, 60, 64], [77, 91, 83], sampleRate);
+    expect(pcm).not.toBeNull();
+    expect(chordCalls).toEqual([[60, 64, 67]]);
+    expect(sustainCalls).toEqual([60, 64, 67]);
+    expect(pcm?.frameCount).toBe(frameCount);
+    const tail = physicalFrames + 10;
+    let expectedLeft = 0;
+    for (const midi of [60, 64, 67]) {
+      expectedLeft = Math.fround(
+        expectedLeft + Math.fround((midi / 2_000) * Math.sin(tail * 0.17 + 0.1)),
+      );
+    }
+    expect(pcm?.left[tail]).toBe(expectedLeft);
+    expect(pcm?.left[0]).not.toBe(expectedLeft);
+
+    expect(await render([60, 60], [80, 90], sampleRate)).toBeNull();
+    expect(chordCalls).toHaveLength(1);
+  });
+
   test("owns the onset, preserves the sustain, and stays bounded at the seam", () => {
     const sampleRate = 8_000;
     const frameCount = 4_000;

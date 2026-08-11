@@ -62,7 +62,14 @@ const STRING_EIGEN_JACOBI_SWEEPS: usize = 48;
 // to remain alias safe, while 48/96 kHz callers no longer alter hammer or
 // bridge effective compliance by retaining extra ultrasonic string modes.
 const STRING_REDUCTION_SAMPLE_RATE_HZ: f64 = 44_100.0;
-pub const SOUNDBOARD_MODES: usize = 288;
+// The checked-in FrankenSim pack is already the bounded physical reduction of
+// the clamped DKT plate. Keep every certified mode: static-flexibility scoring
+// cannot certify a dynamic transfer reduction. High-order modes remain safe
+// only because the offline pack separately resolves their signed baffled-plate
+// radiation integral; the old area-weighted nodal point radiators aliased the
+// treble surface cancellation. SoundboardMode stores only integration state,
+// so the complete fixed pack still fits the single-note 64 KiB state contract.
+pub const SOUNDBOARD_MODES: usize = PIANO_V2_SOUNDBOARD_MODE_PACK.len();
 pub const CONTACT_SOLVE_STEPS: usize = 16;
 /// Maximum physical string-to-bridge contacts in one rendered chord.  Every
 /// unison string owns its own local contact spring; contacts at one key share
@@ -111,11 +118,16 @@ pub const PNO2_RUNTIME_STEP_PROGRESS: i32 = 1;
 pub const PNO2_RUNTIME_STEP_COMPLETE: i32 = 2;
 const PNO2_MAX_ATTACK_FRAMES: usize = 30_720;
 
-/// Per-half-step velocity multiplier for an amplitude T60. The modal update
-/// applies this multiplier on both sides of its lossless rotation/coupling
-/// step, so each factor carries exactly half of the full-sample attenuation.
+/// Per-half-step velocity multiplier for an amplitude T60.
+///
+/// The viscous oscillator law is `q'' + 2*zeta*omega*q' + omega^2*q = 0`,
+/// whose displacement envelope decays at `zeta*omega`.  Strang splitting
+/// applies the full velocity-friction rate `2*zeta*omega` for half a sample
+/// on each side of the lossless step, so each velocity factor is the complete
+/// *amplitude* attenuation for one sample.  An extra factor of one half here
+/// yields only -30 dB at the declared T60.
 pub(crate) fn split_t60_half_velocity_decay(t60_seconds: f64, dt_seconds: f64) -> f64 {
-    exp(-0.5 * LN_1000 * dt_seconds / t60_seconds)
+    exp(-LN_1000 * dt_seconds / t60_seconds)
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -328,7 +340,6 @@ struct Mode {
     position: f64,
     velocity: f64,
     frequency_hz: f64,
-    omega: f64,
     /// Bilinear-prewarped frequency used by the coupled midpoint solve.  Its
     /// Cayley phase is exactly `omega * dt`, so the passive contact update does
     /// not detune high string modes merely because it is unconditionally
@@ -345,7 +356,6 @@ impl Mode {
         position: 0.0,
         velocity: 0.0,
         frequency_hz: 0.0,
-        omega: 0.0,
         midpoint_omega: 0.0,
         half_velocity_decay: 1.0,
         contact_residue_m_neg_half_kg: 0.0,
@@ -664,7 +674,6 @@ pub fn bridge_contact_pair_midpoint_step(
         position: initial_state[0],
         velocity: initial_state[1],
         frequency_hz: string_frequency_hz,
-        omega: TAU * string_frequency_hz,
         midpoint_omega: prewarped_midpoint_omega(string_frequency_hz, dt_seconds),
         half_velocity_decay: 1.0,
         contact_residue_m_neg_half_kg: 0.0,
@@ -675,7 +684,6 @@ pub fn bridge_contact_pair_midpoint_step(
         position: initial_state[2],
         velocity: initial_state[3],
         frequency_hz: body_frequency_hz,
-        omega: TAU * body_frequency_hz,
         midpoint_omega: prewarped_midpoint_omega(body_frequency_hz, dt_seconds),
         half_velocity_decay: 1.0,
         contact_residue_m_neg_half_kg: 0.0,
@@ -746,23 +754,75 @@ fn string_bank_effective_bridge_stiffness_n_per_m(
 
 #[derive(Clone, Copy, Debug)]
 struct SoundboardMode {
-    mode: Mode,
-    pack_index: u16,
-    left_pressure_per_velocity_re: f64,
-    left_pressure_per_velocity_im: f64,
-    right_pressure_per_velocity_re: f64,
-    right_pressure_per_velocity_im: f64,
+    position: f64,
+    velocity: f64,
+    midpoint_omega: f64,
+    half_velocity_decay: f64,
 }
 
 impl SoundboardMode {
     const ZERO: Self = Self {
-        mode: Mode::ZERO,
-        pack_index: 0,
-        left_pressure_per_velocity_re: 0.0,
-        left_pressure_per_velocity_im: 0.0,
-        right_pressure_per_velocity_re: 0.0,
-        right_pressure_per_velocity_im: 0.0,
+        position: 0.0,
+        velocity: 0.0,
+        midpoint_omega: 0.0,
+        half_velocity_decay: 1.0,
     };
+
+    fn apply_half_loss(&mut self) -> f64 {
+        let velocity_before = self.velocity;
+        self.velocity *= self.half_velocity_decay;
+        0.5 * (velocity_before * velocity_before - self.velocity * self.velocity).max(0.0)
+    }
+
+    fn energy_j(self) -> f64 {
+        0.5 * (self.velocity * self.velocity
+            + self.midpoint_omega * self.midpoint_omega * self.position * self.position)
+    }
+
+    fn midpoint_free_position(self, half_dt: f64) -> f64 {
+        let frequency_term = half_dt * self.midpoint_omega;
+        ((1.0 - frequency_term * frequency_term) * self.position + 2.0 * half_dt * self.velocity)
+            / (1.0 + frequency_term * frequency_term)
+    }
+
+    fn midpoint_inverse_diagonal(self, half_dt: f64) -> f64 {
+        1.0 / (1.0 + half_dt * half_dt * self.midpoint_omega * self.midpoint_omega)
+    }
+
+    fn accumulate_midpoint_contact_terms(
+        self,
+        residue_m_neg_half_kg: f64,
+        half_dt: f64,
+    ) -> (f64, f64) {
+        if residue_m_neg_half_kg == 0.0 {
+            return (0.0, 0.0);
+        }
+        let inverse_diagonal = self.midpoint_inverse_diagonal(half_dt);
+        let free_position = self.midpoint_free_position(half_dt);
+        (
+            residue_m_neg_half_kg * residue_m_neg_half_kg * inverse_diagonal,
+            residue_m_neg_half_kg * (self.position + free_position),
+        )
+    }
+
+    fn finish_midpoint_generalized_contact(
+        &mut self,
+        signed_generalized_contact_coordinate_m_sqrt_kg: f64,
+        half_dt: f64,
+        contact_stiffness_n_per_m: f64,
+    ) {
+        let old_position = self.position;
+        let old_velocity = self.velocity;
+        let free_position = self.midpoint_free_position(half_dt);
+        let correction = half_dt
+            * half_dt
+            * contact_stiffness_n_per_m
+            * signed_generalized_contact_coordinate_m_sqrt_kg
+            * self.midpoint_inverse_diagonal(half_dt);
+        let next_position = free_position - correction;
+        self.position = next_position;
+        self.velocity = (next_position - old_position) / half_dt - old_velocity;
+    }
 }
 
 /// Reconstruct a real pressure sample from a complex modal-velocity transfer.
@@ -780,6 +840,24 @@ pub fn modal_observer_pressure_pa(
     omega_times_position: f64,
 ) -> f64 {
     transfer_re * modal_velocity - transfer_im * omega_times_position
+}
+
+/// Convert the implicit-midpoint state velocity to the physical modal
+/// velocity consumed by an acoustic transfer function.
+///
+/// Frequency prewarping makes the Cayley update advance at the reviewed
+/// continuous frequency, but its retained conjugate velocity has amplitude
+/// `midpoint_omega * q` rather than `physical_omega * q`.  Feeding that state
+/// velocity directly to a pressure-per-velocity observer therefore boosts
+/// high modes while leaving their pitch and mechanical ledger apparently
+/// correct.  The bridge solve continues to use the conjugate state; only the
+/// external physical observation is rescaled.
+pub fn physical_modal_velocity(
+    midpoint_state_velocity: f64,
+    physical_omega: f64,
+    midpoint_omega: f64,
+) -> f64 {
+    midpoint_state_velocity * physical_omega / midpoint_omega
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -1064,6 +1142,10 @@ fn build_component_string_modes(
         }
         let effective_order =
             (frequency_hz / geometry.unison_frequencies_hz[string_index]).max(1.0);
+        // This smooth string-loss curve is a provisional deterministic model,
+        // not reviewed piano-string decay authority. It keeps the dark core
+        // bounded while independently sourced, note-resolved loss data is
+        // still absent.
         let fundamental_t60 = 14.0 * exp(-0.020 * (midi - MIN_MIDI) as f64) + 1.4;
         let t60 = fundamental_t60 / (1.0 + 0.020 * effective_order * effective_order);
         modes[mode_index] = Mode {
@@ -1071,7 +1153,6 @@ fn build_component_string_modes(
             position: 0.0,
             velocity: 0.0,
             frequency_hz,
-            omega: TAU * frequency_hz,
             midpoint_omega: prewarped_midpoint_omega(frequency_hz, dt_seconds),
             half_velocity_decay: split_t60_half_velocity_decay(t60, dt_seconds),
             contact_residue_m_neg_half_kg: hammer_residue / geometry.string_count as f64,
@@ -1404,6 +1485,7 @@ pub struct PianoVoice {
     geometry: StringGeometry,
     strings: [StringBank; MAX_UNISON_STRINGS],
     soundboard: [SoundboardMode; SOUNDBOARD_MODES],
+    active_soundboard_modes: usize,
     contact: ContactState,
     active_string_modes: usize,
     cumulative_loss_j: f64,
@@ -1427,7 +1509,8 @@ impl PianoVoice {
         let parameters = parameters.validate()?;
         let dt = 1.0 / sample_rate_hz;
         let key = PianoKeyState::new(midi, sample_rate_hz)?;
-        let soundboard = build_soundboard_modes(parameters, sample_rate_hz)?;
+        let (soundboard, active_soundboard_modes) =
+            build_soundboard_modes(parameters, sample_rate_hz)?;
         let voice = Self {
             sample_rate_hz,
             dt,
@@ -1435,6 +1518,7 @@ impl PianoVoice {
             geometry: key.geometry,
             strings: key.strings,
             soundboard,
+            active_soundboard_modes,
             contact: key.contact,
             active_string_modes: key.active_string_modes,
             cumulative_loss_j: 0.0,
@@ -1466,10 +1550,9 @@ impl PianoVoice {
             self.apply_hammer_contact();
         }
 
-        let mut damping_loss_j = 0.0;
-        self.for_each_mode_mut(|mode| damping_loss_j += mode.apply_half_loss());
+        let mut damping_loss_j = self.apply_modal_half_loss();
         self.advance_bridge_contact_midpoint()?;
-        self.for_each_mode_mut(|mode| damping_loss_j += mode.apply_half_loss());
+        damping_loss_j += self.apply_modal_half_loss();
         self.cumulative_loss_j += damping_loss_j;
         let string_energy_j = self.string_energy_j();
         let soundboard_energy_j = self.soundboard_energy_j();
@@ -1521,22 +1604,18 @@ impl PianoVoice {
     }
 
     pub fn soundboard_mode_frequency_hz(&self, mode_index: usize) -> Option<f64> {
-        self.soundboard
-            .get(mode_index)
-            .and_then(|mode| mode.mode.active.then_some(mode.mode.frequency_hz))
+        (mode_index < self.active_soundboard_modes)
+            .then_some(PIANO_V2_SOUNDBOARD_MODE_PACK.get(mode_index)?.frequency_hz)
     }
 
     #[cfg(test)]
     pub fn soundboard_mode_pack_index(&self, mode_index: usize) -> Option<usize> {
-        self.soundboard
-            .get(mode_index)
-            .and_then(|mode| mode.mode.active.then_some(mode.pack_index as usize))
+        (mode_index < self.active_soundboard_modes).then_some(mode_index)
     }
 
     pub fn soundboard_mode_energy_j(&self, mode_index: usize) -> Option<f64> {
-        self.soundboard
-            .get(mode_index)
-            .and_then(|mode| mode.mode.active.then_some(mode.mode.energy_j()))
+        (mode_index < self.active_soundboard_modes)
+            .then_some(self.soundboard.get(mode_index)?.energy_j())
     }
 
     pub fn contact_active(&self) -> bool {
@@ -1588,7 +1667,8 @@ impl PianoVoice {
     pub fn soundboard_energy_j(&self) -> f64 {
         self.soundboard
             .iter()
-            .map(|mode| mode.mode.energy_j())
+            .take(self.active_soundboard_modes)
+            .map(|mode| mode.energy_j())
             .sum()
     }
 
@@ -1627,11 +1707,7 @@ impl PianoVoice {
     pub fn work_receipt(&self) -> PianoWorkReceipt {
         PianoWorkReceipt {
             active_string_modes: self.active_string_modes,
-            active_soundboard_modes: self
-                .soundboard
-                .iter()
-                .filter(|mode| mode.mode.active)
-                .count(),
+            active_soundboard_modes: self.active_soundboard_modes,
             maximum_contact_iterations: CONTACT_SOLVE_STEPS,
             last_contact_iterations: self.last_contact_iterations,
             total_contact_iterations: self.total_contact_iterations,
@@ -1641,15 +1717,21 @@ impl PianoVoice {
         }
     }
 
-    fn for_each_mode_mut(&mut self, mut action: impl FnMut(&mut Mode)) {
+    fn apply_modal_half_loss(&mut self) -> f64 {
+        let mut loss_j = 0.0;
         for bank in &mut self.strings {
             for mode in &mut bank.modes {
-                action(mode);
+                loss_j += mode.apply_half_loss();
             }
         }
-        for body in &mut self.soundboard {
-            action(&mut body.mode);
+        for body in self
+            .soundboard
+            .iter_mut()
+            .take(self.active_soundboard_modes)
+        {
+            loss_j += body.apply_half_loss();
         }
+        loss_j
     }
 
     fn modal_energy_j(&self) -> f64 {
@@ -1670,7 +1752,11 @@ impl PianoVoice {
     fn soundboard_bridge_displacement_m(&self) -> f64 {
         self.soundboard
             .iter()
-            .map(|body| soundboard_bridge_residue_at(body, self.geometry.midi) * body.mode.position)
+            .take(self.active_soundboard_modes)
+            .enumerate()
+            .map(|(mode_index, body)| {
+                soundboard_bridge_residue_at(mode_index, self.geometry.midi) * body.position
+            })
             .sum()
     }
 
@@ -1700,10 +1786,15 @@ impl PianoVoice {
         }
         let mut body_right_hand_side = [0.0_f64; MAX_PIANO_CHORD_NOTES];
         let mut body_compliance = [[0.0_f64; MAX_PIANO_CHORD_NOTES]; MAX_PIANO_CHORD_NOTES];
-        for body in &self.soundboard {
-            let residue = soundboard_bridge_residue_at(body, self.geometry.midi);
+        for (mode_index, body) in self
+            .soundboard
+            .iter()
+            .take(self.active_soundboard_modes)
+            .enumerate()
+        {
+            let residue = soundboard_bridge_residue_at(mode_index, self.geometry.midi);
             let (compliance, right_hand_side) =
-                accumulate_midpoint_contact_terms(body.mode, residue, half_dt);
+                body.accumulate_midpoint_contact_terms(residue, half_dt);
             body_compliance[0][0] += compliance;
             body_right_hand_side[0] += right_hand_side;
         }
@@ -1733,12 +1824,15 @@ impl PianoVoice {
                 );
             }
         }
-        for body in &mut self.soundboard {
-            let residue = soundboard_bridge_residue_at(body, self.geometry.midi);
-            finish_midpoint_contact_mode(
-                &mut body.mode,
-                -residue,
-                aggregate_coordinates[0],
+        for (mode_index, body) in self
+            .soundboard
+            .iter_mut()
+            .take(self.active_soundboard_modes)
+            .enumerate()
+        {
+            let residue = soundboard_bridge_residue_at(mode_index, self.geometry.midi);
+            body.finish_midpoint_generalized_contact(
+                -residue * aggregate_coordinates[0],
                 half_dt,
                 self.parameters.bridge_contact_stiffness_n_per_m,
             );
@@ -1769,18 +1863,27 @@ impl PianoVoice {
     fn observe_pressure_pa(&self) -> (f64, f64) {
         let mut left_pressure_pa = 0.0;
         let mut right_pressure_pa = 0.0;
-        for body in &self.soundboard {
-            let omega_times_position = body.mode.omega * body.mode.position;
+        for (mode_index, body) in self
+            .soundboard
+            .iter()
+            .take(self.active_soundboard_modes)
+            .enumerate()
+        {
+            let packed = &PIANO_V2_SOUNDBOARD_MODE_PACK[mode_index];
+            let physical_omega = TAU * packed.frequency_hz;
+            let omega_times_position = physical_omega * body.position;
+            let physical_velocity =
+                physical_modal_velocity(body.velocity, physical_omega, body.midpoint_omega);
             left_pressure_pa += modal_observer_pressure_pa(
-                body.left_pressure_per_velocity_re,
-                body.left_pressure_per_velocity_im,
-                body.mode.velocity,
+                packed.observer_pa_s_per_m_sqrt_kg[0],
+                packed.observer_pa_s_per_m_sqrt_kg[1],
+                physical_velocity,
                 omega_times_position,
             );
             right_pressure_pa += modal_observer_pressure_pa(
-                body.right_pressure_per_velocity_re,
-                body.right_pressure_per_velocity_im,
-                body.mode.velocity,
+                packed.observer_pa_s_per_m_sqrt_kg[2],
+                packed.observer_pa_s_per_m_sqrt_kg[3],
+                physical_velocity,
                 omega_times_position,
             );
         }
@@ -1803,6 +1906,7 @@ pub struct PianoStem {
     note_count: usize,
     keys: [Option<PianoKeyState>; MAX_PIANO_CHORD_NOTES],
     soundboard: [SoundboardMode; SOUNDBOARD_MODES],
+    active_soundboard_modes: usize,
     soundboard_bridge_residues: [[f64; SOUNDBOARD_MODES]; MAX_PIANO_CHORD_NOTES],
     soundboard_compliance: [[f64; MAX_PIANO_CHORD_NOTES]; MAX_PIANO_CHORD_NOTES],
     cumulative_loss_j: f64,
@@ -1872,13 +1976,14 @@ impl PianoStem {
             begin_key_strike(&mut key.contact, strike, sample_rate_hz, dt)?;
             keys[index] = Some(key);
         }
-        let soundboard = build_soundboard_modes(parameters, sample_rate_hz)?;
+        let (soundboard, active_soundboard_modes) =
+            build_soundboard_modes(parameters, sample_rate_hz)?;
         let mut soundboard_bridge_residues = [[0.0_f64; SOUNDBOARD_MODES]; MAX_PIANO_CHORD_NOTES];
         for key_index in 0..midis.len() {
             let key = keys[key_index].as_ref().ok_or(PianoError::NonFiniteState)?;
-            for (mode_index, body) in soundboard.iter().enumerate() {
+            for mode_index in 0..active_soundboard_modes {
                 soundboard_bridge_residues[key_index][mode_index] =
-                    soundboard_bridge_residue_at(body, key.geometry.midi);
+                    soundboard_bridge_residue_at(mode_index, key.geometry.midi);
             }
         }
         let half_dt = 0.5 * dt;
@@ -1886,10 +1991,12 @@ impl PianoStem {
         for row in 0..midis.len() {
             for column in 0..midis.len() {
                 let mut compliance = 0.0;
-                for (mode_index, body) in soundboard.iter().enumerate() {
+                for (mode_index, body) in
+                    soundboard.iter().take(active_soundboard_modes).enumerate()
+                {
                     compliance += soundboard_bridge_residues[row][mode_index]
                         * soundboard_bridge_residues[column][mode_index]
-                        * midpoint_inverse_diagonal(body.mode, half_dt);
+                        * body.midpoint_inverse_diagonal(half_dt);
                 }
                 soundboard_compliance[row][column] = compliance;
             }
@@ -1900,6 +2007,7 @@ impl PianoStem {
             note_count: midis.len(),
             keys,
             soundboard,
+            active_soundboard_modes,
             soundboard_bridge_residues,
             soundboard_compliance,
             cumulative_loss_j: 0.0,
@@ -1912,9 +2020,7 @@ impl PianoStem {
 
     #[cfg(test)]
     pub fn soundboard_mode_pack_index_for_test(&self, mode_index: usize) -> Option<usize> {
-        self.soundboard
-            .get(mode_index)
-            .and_then(|mode| mode.mode.active.then_some(mode.pack_index as usize))
+        (mode_index < self.active_soundboard_modes).then_some(mode_index)
     }
 
     pub fn represented_energy_j(&self) -> f64 {
@@ -1942,10 +2048,9 @@ impl PianoStem {
             }
         }
 
-        let mut damping_loss_j = 0.0;
-        self.for_each_mode_mut(|mode| damping_loss_j += mode.apply_half_loss());
+        let mut damping_loss_j = self.apply_modal_half_loss();
         self.advance_bridge_contacts_midpoint()?;
-        self.for_each_mode_mut(|mode| damping_loss_j += mode.apply_half_loss());
+        damping_loss_j += self.apply_modal_half_loss();
         self.cumulative_loss_j += damping_loss_j;
         let string_energy_j = self.string_energy_j();
         let soundboard_energy_j = self.soundboard_energy_j();
@@ -2017,10 +2122,9 @@ impl PianoStem {
             }
         }
 
-        let mut damping_loss_j = 0.0;
-        self.for_each_mode_mut(|mode| damping_loss_j += mode.apply_half_loss());
+        let mut damping_loss_j = self.apply_modal_half_loss();
         self.advance_bridge_contacts_midpoint()?;
-        self.for_each_mode_mut(|mode| damping_loss_j += mode.apply_half_loss());
+        damping_loss_j += self.apply_modal_half_loss();
         self.cumulative_loss_j += damping_loss_j;
         let (left_pressure_pa, right_pressure_pa) = self.observe_pressure_pa();
         if !left_pressure_pa.is_finite() || !right_pressure_pa.is_finite() {
@@ -2055,17 +2159,23 @@ impl PianoStem {
                 .sum::<f64>()
     }
 
-    fn for_each_mode_mut(&mut self, mut action: impl FnMut(&mut Mode)) {
+    fn apply_modal_half_loss(&mut self) -> f64 {
+        let mut loss_j = 0.0;
         for key in self.keys.iter_mut().flatten() {
             for bank in &mut key.strings {
                 for mode in &mut bank.modes {
-                    action(mode);
+                    loss_j += mode.apply_half_loss();
                 }
             }
         }
-        for body in &mut self.soundboard {
-            action(&mut body.mode);
+        for body in self
+            .soundboard
+            .iter_mut()
+            .take(self.active_soundboard_modes)
+        {
+            loss_j += body.apply_half_loss();
         }
+        loss_j
     }
 
     fn string_energy_j(&self) -> f64 {
@@ -2079,7 +2189,8 @@ impl PianoStem {
     fn soundboard_energy_j(&self) -> f64 {
         self.soundboard
             .iter()
-            .map(|mode| mode.mode.energy_j())
+            .take(self.active_soundboard_modes)
+            .map(|mode| mode.energy_j())
             .sum()
     }
 
@@ -2089,9 +2200,10 @@ impl PianoStem {
             let body_displacement_m: f64 = self
                 .soundboard
                 .iter()
+                .take(self.active_soundboard_modes)
                 .enumerate()
                 .map(|(mode_index, body)| {
-                    self.soundboard_bridge_residues[key_index][mode_index] * body.mode.position
+                    self.soundboard_bridge_residues[key_index][mode_index] * body.position
                 })
                 .sum();
             for bank in key.strings.iter().filter(|bank| bank.active) {
@@ -2135,12 +2247,14 @@ impl PianoStem {
         let half_dt_squared_stiffness =
             half_dt * half_dt * self.parameters.bridge_contact_stiffness_n_per_m;
         let mut body_right_hand_side = [0.0_f64; MAX_PIANO_CHORD_NOTES];
-        for (mode_index, body) in self.soundboard.iter().enumerate() {
-            if !body.mode.active {
-                continue;
-            }
-            let free_position = midpoint_free_position(body.mode, half_dt);
-            let position_sum = body.mode.position + free_position;
+        for (mode_index, body) in self
+            .soundboard
+            .iter()
+            .take(self.active_soundboard_modes)
+            .enumerate()
+        {
+            let free_position = body.midpoint_free_position(half_dt);
+            let position_sum = body.position + free_position;
             for key_index in 0..self.note_count {
                 body_right_hand_side[key_index] +=
                     self.soundboard_bridge_residues[key_index][mode_index] * position_sum;
@@ -2205,7 +2319,12 @@ impl PianoStem {
                 }
             }
         }
-        for (mode_index, body) in self.soundboard.iter_mut().enumerate() {
+        for (mode_index, body) in self
+            .soundboard
+            .iter_mut()
+            .take(self.active_soundboard_modes)
+            .enumerate()
+        {
             let mut coordinate_sum = 0.0;
             for key_index in 0..self.note_count {
                 coordinate_sum += self.soundboard_bridge_residues[key_index][mode_index]
@@ -2215,8 +2334,7 @@ impl PianoStem {
             // the board and the board mode in the opposite generalized-force
             // direction. Pass that generalized coordinate explicitly instead of
             // disguising the sign as a dimensionally false modal residue.
-            finish_midpoint_generalized_contact_mode(
-                &mut body.mode,
+            body.finish_midpoint_generalized_contact(
                 -coordinate_sum,
                 half_dt,
                 self.parameters.bridge_contact_stiffness_n_per_m,
@@ -2228,18 +2346,27 @@ impl PianoStem {
     fn observe_pressure_pa(&self) -> (f64, f64) {
         let mut left_pressure_pa = 0.0;
         let mut right_pressure_pa = 0.0;
-        for body in &self.soundboard {
-            let omega_times_position = body.mode.omega * body.mode.position;
+        for (mode_index, body) in self
+            .soundboard
+            .iter()
+            .take(self.active_soundboard_modes)
+            .enumerate()
+        {
+            let packed = &PIANO_V2_SOUNDBOARD_MODE_PACK[mode_index];
+            let physical_omega = TAU * packed.frequency_hz;
+            let omega_times_position = physical_omega * body.position;
+            let physical_velocity =
+                physical_modal_velocity(body.velocity, physical_omega, body.midpoint_omega);
             left_pressure_pa += modal_observer_pressure_pa(
-                body.left_pressure_per_velocity_re,
-                body.left_pressure_per_velocity_im,
-                body.mode.velocity,
+                packed.observer_pa_s_per_m_sqrt_kg[0],
+                packed.observer_pa_s_per_m_sqrt_kg[1],
+                physical_velocity,
                 omega_times_position,
             );
             right_pressure_pa += modal_observer_pressure_pa(
-                body.right_pressure_per_velocity_re,
-                body.right_pressure_per_velocity_im,
-                body.mode.velocity,
+                packed.observer_pa_s_per_m_sqrt_kg[2],
+                packed.observer_pa_s_per_m_sqrt_kg[3],
+                physical_velocity,
                 omega_times_position,
             );
         }
@@ -3213,19 +3340,15 @@ pub fn soundboard_bridge_mode_residue_for_midi(
         * soundboard_modal_norm(parameters))
 }
 
-fn soundboard_bridge_residue_at(body: &SoundboardMode, midi: i32) -> f64 {
-    if !body.mode.active {
-        return 0.0;
-    }
+fn soundboard_bridge_residue_at(mode_index: usize, midi: i32) -> f64 {
     let midi_index = (midi - MIN_MIDI) as usize;
-    PIANO_V2_SOUNDBOARD_MODE_PACK[body.pack_index as usize].bridge_residue_inverse_sqrt_kg
-        [midi_index]
+    PIANO_V2_SOUNDBOARD_MODE_PACK[mode_index].bridge_residue_inverse_sqrt_kg[midi_index]
 }
 
 fn build_soundboard_modes(
     parameters: PianoParameters,
     sample_rate_hz: f64,
-) -> Result<[SoundboardMode; SOUNDBOARD_MODES], PianoError> {
+) -> Result<([SoundboardMode; SOUNDBOARD_MODES], usize), PianoError> {
     let canonical = PianoParameters::canonical();
     if parameters.soundboard_length_m != canonical.soundboard_length_m
         || parameters.soundboard_width_m != canonical.soundboard_width_m
@@ -3258,53 +3381,28 @@ fn build_soundboard_modes(
     if eligible_count == 0 {
         return Err(PianoError::InvalidSampleRate);
     }
-    let selection_limit = eligible_count.min(SOUNDBOARD_MODES);
-
     let mut modes = [SoundboardMode::ZERO; SOUNDBOARD_MODES];
-    let mut output_index = 0usize;
-    // Modal truncation is a low-pass structural reduction: retain the lowest
-    // solved modes in their physical frequency order.  Picking the strongest
-    // mode from each frequency stratum is not a transfer-function reduction;
-    // it discarded low resonances and 30--80% of the bridge's static
-    // flexibility while biasing every stratum toward unusually large
-    // residues.  The resulting driving-point mobility was wrong by as much as
-    // 50 dB even though every retained eigenpair was individually valid.
-    // The independently generated pack is already frequency sorted, and its
-    // first 288 modes preserve more than 99% of full-pack static flexibility
-    // for the reference-gate register.
+    // The offline pack is already the reviewed finite reduction. Preserve its
+    // exact frequency order and one-to-one index map. At 44.1/48/96 kHz every
+    // certified mode is below the anti-alias cutoff; the lower 8 kHz diagnostic
+    // rate keeps only its physical low-frequency prefix.
     for (pack_index, packed) in PIANO_V2_SOUNDBOARD_MODE_PACK
         .iter()
-        .take(selection_limit)
+        .take(eligible_count)
         .enumerate()
     {
         let frequency_hz = packed.frequency_hz;
         let omega = TAU * frequency_hz;
         let damping_ratio = soundboard_damping_ratio(frequency_hz)?;
         let t60 = LN_1000 / (omega * damping_ratio);
-        modes[output_index] = SoundboardMode {
-            mode: Mode {
-                active: true,
-                position: 0.0,
-                velocity: 0.0,
-                frequency_hz,
-                omega,
-                midpoint_omega: prewarped_midpoint_omega(frequency_hz, 1.0 / sample_rate_hz),
-                half_velocity_decay: split_t60_half_velocity_decay(t60, 1.0 / sample_rate_hz),
-                contact_residue_m_neg_half_kg: 0.0,
-                bridge_residue_m_neg_half_kg: 0.0,
-            },
-            pack_index: pack_index as u16,
-            left_pressure_per_velocity_re: packed.observer_pa_s_per_m_sqrt_kg[0],
-            left_pressure_per_velocity_im: packed.observer_pa_s_per_m_sqrt_kg[1],
-            right_pressure_per_velocity_re: packed.observer_pa_s_per_m_sqrt_kg[2],
-            right_pressure_per_velocity_im: packed.observer_pa_s_per_m_sqrt_kg[3],
+        modes[pack_index] = SoundboardMode {
+            position: 0.0,
+            velocity: 0.0,
+            midpoint_omega: prewarped_midpoint_omega(frequency_hz, 1.0 / sample_rate_hz),
+            half_velocity_decay: split_t60_half_velocity_decay(t60, 1.0 / sample_rate_hz),
         };
-        output_index += 1;
     }
-    if output_index != selection_limit {
-        return Err(PianoError::NonFiniteState);
-    }
-    Ok(modes)
+    Ok((modes, eligible_count))
 }
 
 /// Exact integral of a simply-supported rectangular sine mode against a
