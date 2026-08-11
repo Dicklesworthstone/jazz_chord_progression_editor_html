@@ -852,7 +852,7 @@ function validateAuthority(value: unknown): ModalAuthority {
     radiation.angularQuadrature !==
       "12-point Gauss-Legendre in normal-direction cosine times 24-point periodic azimuth rule" ||
     radiation.dipoleSeparationH !==
-      "outerThicknessM, the top-to-bottom separation of the uncut bar envelope"
+      "elementThicknessM[e] at each stepped-element quadrature point, matching the local top-to-bottom face separation consumed by runtime radiation"
   ) {
     authorityFailure("lossModel.radiation.integration-semantics");
   }
@@ -2168,15 +2168,16 @@ function farFieldRadiationModalDampingPerSecond(
     const directionNormal = RADIATION_DIRECTION_COSINES[normalIndex] ?? 0;
     const normalWeight = RADIATION_DIRECTION_WEIGHTS[normalIndex] ?? 0;
     const transverseMagnitude = Math.sqrt(Math.max(0, 1 - directionNormal ** 2));
-    const faceSeparationMagnitudeSquared =
-      4 * Math.sin(0.5 * waveNumberPerM * directionNormal * design.outerThicknessM) ** 2;
-
     for (let azimuthIndex = 0; azimuthIndex < RADIATION_AZIMUTH_COUNT; azimuthIndex += 1) {
       const azimuth = (azimuthIndex + 0.5) * azimuthStep;
       const directionAlongBar = transverseMagnitude * Math.cos(azimuth);
-      let stripIntegralRealM2KgNegHalf = 0;
-      let stripIntegralImaginaryM2KgNegHalf = 0;
+      let faceIntegralRealM2KgNegHalf = 0;
+      let faceIntegralImaginaryM2KgNegHalf = 0;
       for (let element = 0; element < ELEMENT_COUNT; element += 1) {
+        const localThicknessM = design.elementThicknessM[element];
+        if (localThicknessM === undefined) throw new Error("PHS6_GENERATOR_THICKNESS");
+        const halfFacePhase = 0.5 * waveNumberPerM * directionNormal * localThicknessM;
+        const faceDifferenceScale = 2 * Math.sin(halfFacePhase);
         for (let point = 0; point < RADIATION_ELEMENT_GAUSS_POSITIONS.length; point += 1) {
           const localPosition =
             0.5 * (1 + (RADIATION_ELEMENT_GAUSS_POSITIONS[point] ?? 0));
@@ -2190,17 +2191,18 @@ function farFieldRadiationModalDampingPerSecond(
           const weightedShape =
             spatialWeightM2 * evaluateHermiteModeShape(mode, design, normalizedPosition);
           const phase = waveNumberPerM * directionAlongBar * centeredPositionM;
-          stripIntegralRealM2KgNegHalf += weightedShape * Math.cos(phase);
-          stripIntegralImaginaryM2KgNegHalf -= weightedShape * Math.sin(phase);
+          faceIntegralRealM2KgNegHalf +=
+            faceDifferenceScale * weightedShape * Math.cos(phase);
+          faceIntegralImaginaryM2KgNegHalf -=
+            faceDifferenceScale * weightedShape * Math.sin(phase);
         }
       }
-      const stripMagnitudeSquared =
-        stripIntegralRealM2KgNegHalf ** 2 + stripIntegralImaginaryM2KgNegHalf ** 2;
+      const faceMagnitudeSquared =
+        faceIntegralRealM2KgNegHalf ** 2 + faceIntegralImaginaryM2KgNegHalf ** 2;
       sphereIntegralM4PerKg +=
         normalWeight *
         azimuthStep *
-        faceSeparationMagnitudeSquared *
-        stripMagnitudeSquared;
+        faceMagnitudeSquared;
     }
   }
 

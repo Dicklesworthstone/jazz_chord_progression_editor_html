@@ -1606,8 +1606,14 @@ fn packed_free_bar_radiation_transfer(
          * are represented by the subtraction below; the free-space kernel's
          * 1/(4 pi r) normalization is applied once after the surface sum. */
         let weight = element_area_m2 * midpoint_shape;
-        let top_phase = wave_number * top_distance_m;
-        let bottom_phase = wave_number * bottom_distance_m;
+        /* The tube pressure below is referenced to the same one-metre
+         * observation sphere. Remove that common propagation distance here
+         * and retain only the element-to-observer path differences. Keeping
+         * the absolute one-metre phase on the bar while leaving the tube at
+         * the reference plane rotates only one side of the coherent sum and
+         * creates note-dependent constructive/destructive transients. */
+        let top_phase = wave_number * (top_distance_m - RADIATION_DISTANCE_M);
+        let bottom_phase = wave_number * (bottom_distance_m - RADIATION_DISTANCE_M);
         integral_re +=
             weight * (cos(top_phase) / top_distance_m - cos(bottom_phase) / bottom_distance_m);
         integral_im +=

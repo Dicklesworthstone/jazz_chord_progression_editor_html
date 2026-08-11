@@ -7,6 +7,7 @@ type ModalRecord = Readonly<{
   lengthM: number;
   widthM: number;
   outerThicknessM: number;
+  elementThicknessM: readonly number[];
   solvedFrequenciesHz: readonly number[];
   massNormalizedDisplacementShapes: readonly (readonly number[])[];
   loss: Readonly<{ radiationLossFactors: readonly number[] }>;
@@ -68,7 +69,6 @@ function independentRadiationLossFactor(record: ModalRecord, modeIndex: number):
     const directionWeight = DIRECTION_WEIGHTS[directionIndex];
     if (normal === undefined || directionWeight === undefined) throw new Error("quadrature");
     const transverse = Math.sqrt(1 - normal * normal);
-    const faceDifference = 4 * Math.sin(0.5 * waveNumber * normal * record.outerThicknessM) ** 2;
     for (let azimuthIndex = 0; azimuthIndex < AZIMUTH_COUNT; azimuthIndex += 1) {
       const alongBar = transverse * Math.cos((azimuthIndex + 0.5) * azimuthStep);
       let real = 0;
@@ -76,17 +76,20 @@ function independentRadiationLossFactor(record: ModalRecord, modeIndex: number):
       for (let element = 0; element < 32; element += 1) {
         const left = shape[element];
         const right = shape[element + 1];
-        if (left === undefined || right === undefined) throw new Error("mode shape");
+        const localThickness = record.elementThicknessM[element];
+        if (left === undefined || right === undefined || localThickness === undefined) {
+          throw new Error("mode shape");
+        }
         // Independently use a piecewise-linear midpoint rule rather than the
         // generator's cubic-Hermite/four-point element integration.
-        const weightedShape = record.widthM * elementLength * 0.5 * (left + right);
+        const weightedShape = record.widthM * elementLength * 0.5 * (left + right) *
+          2 * Math.sin(0.5 * waveNumber * normal * localThickness);
         const centeredPosition = ((element + 0.5) / 32 - 0.5) * record.lengthM;
         const phase = waveNumber * alongBar * centeredPosition;
         real += weightedShape * Math.cos(phase);
         imaginary -= weightedShape * Math.sin(phase);
       }
-      sphereIntegral += directionWeight * azimuthStep * faceDifference *
-        (real * real + imaginary * imaginary);
+      sphereIntegral += directionWeight * azimuthStep * (real * real + imaginary * imaginary);
     }
   }
   return AIR_DENSITY_KG_M3 * omega /

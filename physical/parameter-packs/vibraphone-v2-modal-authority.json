@@ -154,8 +154,8 @@
       "kind": "far-field-rayleigh-sphere-radiation",
       "modeIntegralQuadrature": "four-point Gauss-Legendre per stepped beam element over the cubic-Hermite M-normalized displacement field",
       "angularQuadrature": "12-point Gauss-Legendre in normal-direction cosine times 24-point periodic azimuth rule",
-      "dipoleSeparationH": "outerThicknessM, the top-to-bottom separation of the uncut bar envelope",
-      "law": "For each far-field direction n, I(n)=width*integral(phi(x)*exp(-i*k*n_x*x) dx)*(exp(-i*k*n_z*h/2)-exp(+i*k*n_z*h/2)); c_mode=rho_air*omega^2/(16*pi^2*c)*integral_sphere(|I(n)|^2 dOmega); eta_radiation=c_mode/omega. This integrates radiated power over the sphere, so an antisymmetric mode with zero whole-bar displacement integral still has nonzero multipole radiation loss.",
+      "dipoleSeparationH": "elementThicknessM[e] at each stepped-element quadrature point, matching the local top-to-bottom face separation consumed by runtime radiation",
+      "law": "For each far-field direction n, I(n)=width*integral(phi(x)*exp(-i*k*n_x*x)*(exp(-i*k*n_z*h(x)/2)-exp(+i*k*n_z*h(x)/2)) dx); c_mode=rho_air*omega^2/(16*pi^2*c)*integral_sphere(|I(n)|^2 dOmega); eta_radiation=c_mode/omega. This integrates radiated power over the sphere, so an antisymmetric mode with zero whole-bar displacement integral still has nonzero multipole radiation loss and the undercut uses its actual local face separation.",
       "status": "causal-far-field-strip-approximation-not-a-baffled-3d-boundary-element-solve"
     },
     "damper": {

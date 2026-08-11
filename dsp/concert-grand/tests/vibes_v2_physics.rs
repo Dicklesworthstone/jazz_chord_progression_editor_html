@@ -93,15 +93,15 @@ fn generated_eigenpack_is_consumed_without_global_template_fakery() {
 
     assert_eq!(
         VIBES_V2_MODAL_PACK_INPUT_SHA256,
-        "c2a5fe4697f62a5fc8ec4c70cc1d78bb9c76aa93b4ad261f9b207a5205ed4224"
+        "fc70b505955be57b45e9381f2f7005cb6c1011e69caa14e63d8f3af0e4bb8ecf"
     );
     assert_eq!(
         VIBES_V2_MODAL_AUTHORITY_SHA256,
-        "d59b3d3ca51436ec070e2e4d29f9b1149b23c13d4ca25611dff68277462c1805"
+        "50ed5d7a6f2b8ec75d82e91e04bce6e2433b50fc40502b5ccca6d7ee3ea82245"
     );
     assert_eq!(
         VIBES_V2_MODAL_GENERATOR_SHA256,
-        "6970db1938b530d91abfba842ec98ba0c2dd7bbb1683c85731cc809fd04574ff"
+        "7a0fd6a029d0a6e5e9b0e17385156a30dcdab2ee46f8ba1883602ed634144d8e"
     );
     assert_eq!(
         VIBES_V2_MODAL_PACK_SOLVER_ID,
@@ -145,28 +145,35 @@ fn bar_tube_coupling_and_free_bar_radiation_exclude_the_old_near_misses() {
     assert!(model.inertial_coupling(1, 1).unwrap().abs() < 1.0e-12);
 
     // The one-metre C4 free-bar transfer is the front-minus-back dipole at a
-    // fixed 30-degree listener angle. A one-sided baffled result is orders
+    // fixed 30-degree listener angle, expressed at the common one-metre
+    // reference plane shared with the tube radiation. A one-sided baffled result is orders
     // stronger and would make the attack peak immediately instead of letting
     // the tuned resonator build. A listener placed on the exact bar-centre
     // symmetry axis is the other near miss: it erases the tuned antisymmetric
     // 4f partial, so the mode-1 transfer must remain materially nonzero.
     let (real, imaginary) = free_bar_radiation_transfer_for_test(60, 0).unwrap();
     assert!(
-        (real - 0.001_739_035_466_701_192).abs() < 1.0e-12,
+        (real - 0.003_225_053_953_753_304).abs() < 1.0e-12,
         "real={real:.18} imaginary={imaginary:.18}"
     );
     assert!(
-        (imaginary - -0.003_100_071_129_020_549).abs() < 1.0e-12,
+        (imaginary - 0.001_494_560_923_753_988).abs() < 1.0e-12,
         "real={real:.18} imaginary={imaginary:.18}"
     );
     // Plant the baffled-piston 2G normalization explicitly. Applying that
     // half-space kernel to an unbaffled two-face bar doubles its direct field.
-    assert!((real - 0.003_478_070_933_402_384).abs() > 1.0e-3);
+    assert!((real - 0.006_450_107_907_506_608).abs() > 3.0e-3);
     let magnitude = (real * real + imaginary * imaginary).sqrt();
     assert!(magnitude < 0.01);
     let (fourth_real, fourth_imaginary) = free_bar_radiation_transfer_for_test(60, 1).unwrap();
-    assert!((fourth_real - 0.076_595_200_382_064_15).abs() < 1.0e-12);
-    assert!((fourth_imaginary - -0.233_007_867_204_461_5).abs() < 1.0e-12);
+    assert!(
+        (fourth_real - 0.002_077_917_679_686_736).abs() < 1.0e-12,
+        "fourth_real={fourth_real:.18} fourth_imaginary={fourth_imaginary:.18}"
+    );
+    assert!(
+        (fourth_imaginary - -0.245_265_515_633_271_98).abs() < 1.0e-12,
+        "fourth_real={fourth_real:.18} fourth_imaginary={fourth_imaginary:.18}"
+    );
     assert!(
         (fourth_real * fourth_real + fourth_imaginary * fourth_imaginary).sqrt() > 50.0 * magnitude
     );
