@@ -6,7 +6,8 @@ mod plucked_v2;
 
 use plucked_v2::{
     archtop_pack, circular_sound_hole_helmholtz_hz, dreadnought_pack, inharmonicity_coefficient,
-    marshall_electric_pack, midi_frequency_hz, plk2_chord_physical_sample_rate,
+    marshall_electric_pack, midi_frequency_hz, plk2_assigned_chord_contact_duration_seconds,
+    plk2_chord_contact_duration_seconds, plk2_chord_physical_sample_rate,
     plk2_chord_radiation_taps_match_full_reference, plk2_chord_runtime_init_slices,
     plk2_chord_runtime_step_slices, plk2_chord_session_init, plk2_chord_session_init_slices,
     plk2_chord_session_max_steps, plk2_chord_session_state_max_bytes, plk2_chord_session_step,
@@ -74,6 +75,52 @@ fn chord_reconstruction_keeps_source_lookahead_immutable() {
     assert_ne!(invalid_in_place, reconstructed);
     assert_ne!(invalid_in_place[1], reconstructed[1]);
     assert_eq!(source, [0.0, 1.0, -0.5, 0.25, 0.75]);
+}
+
+#[test]
+fn chord_gestures_follow_the_assigned_physical_courses() {
+    /* Dreadnought MIDI 76/80/83 resolve to physical courses 3/4/5 at fret
+     * 21/21/19.  The old chord path instead asked courses 0/1/2 to author the
+     * gesture.  That made the period-scaled release law see MIDI 61/66/69,
+     * so the three high notes received mutually wrong launch timing. */
+    let assignments = plk2_chord_string_frets(PLK2_DREADNOUGHT_PACK, &[76, 80, 83])
+        .expect("playable high-register chord");
+    assert_eq!(&assignments[..3], &[(3, 21), (4, 21), (5, 19)]);
+
+    let pack = dreadnought_pack();
+    for (note_index, (course, fret)) in assignments[..3].iter().copied().enumerate() {
+        let actual_midi = pack.strings[course].open_midi + i32::from(fret);
+        let old_wrong_midi = pack.strings[note_index].open_midi + i32::from(fret);
+        assert_eq!(actual_midi, [76, 80, 83][note_index]);
+        assert_ne!(old_wrong_midi, actual_midi);
+        let expected_physical_duration = plk2_assigned_chord_contact_duration_seconds(
+            PLK2_DREADNOUGHT_PACK,
+            course,
+            note_index,
+            fret,
+            100,
+        );
+        let planted_old_duration = plk2_assigned_chord_contact_duration_seconds(
+            PLK2_DREADNOUGHT_PACK,
+            note_index,
+            note_index,
+            fret,
+            100,
+        );
+        let physical_duration = plk2_chord_contact_duration_seconds(
+            PLK2_DREADNOUGHT_PACK,
+            &[76, 80, 83],
+            &[100, 100, 100],
+            48_000.0,
+            note_index,
+        )
+        .expect("production chord session contact");
+        assert_eq!(physical_duration, expected_physical_duration);
+        assert!(
+            physical_duration > planted_old_duration,
+            "physical course {course} duration {physical_duration} did not exceed planted note-index course {note_index} duration {planted_old_duration}"
+        );
+    }
 }
 
 fn relative_error(actual: f64, expected: f64) -> f64 {

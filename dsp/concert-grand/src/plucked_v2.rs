@@ -3605,6 +3605,30 @@ fn plk2_gesture(pack_index: i32, string_index: usize, fret: u8, velocity: i32) -
     gesture
 }
 
+fn plk2_assigned_chord_gesture(
+    pack_index: i32,
+    physical_course: usize,
+    reduced_course: usize,
+    fret: u8,
+    velocity: i32,
+) -> PluckGesture {
+    let mut gesture = plk2_gesture(pack_index, physical_course, fret, velocity);
+    gesture.string_index = reduced_course;
+    gesture
+}
+
+#[cfg(test)]
+pub fn plk2_assigned_chord_contact_duration_seconds(
+    pack_index: i32,
+    physical_course: usize,
+    reduced_course: usize,
+    fret: u8,
+    velocity: i32,
+) -> f64 {
+    plk2_assigned_chord_gesture(pack_index, physical_course, reduced_course, fret, velocity)
+        .contact_duration_seconds
+}
+
 /// One broad fingertip roll-off gesture for every upright course. The
 /// 1.2-period floor (about 29 ms on E1 and 12 ms on G2) is a player-contact
 /// prior, not a per-note envelope: it acts inside the Hertz/Hunt-Crossley
@@ -4013,8 +4037,21 @@ impl PluckedChordSession {
         };
         let mut contacts = [ContactState::INACTIVE; MAX_STRINGS];
         for note_index in 0..note_count {
+            let physical_course = assignments[note_index].0;
             let fret = assignments[note_index].1;
-            let gesture = plk2_gesture(pack_index, note_index, fret, velocities[note_index]);
+            /* Resolve every gesture against the course chosen by the physical
+             * assignment.  The reduced stem stores that course at note_index,
+             * so remap only after active length, sounding frequency, and the
+             * period-scaled release law have consumed the original course.
+             * Using note_index for both roles made high-register chords derive
+             * their attack from unrelated low courses. */
+            let gesture = plk2_assigned_chord_gesture(
+                pack_index,
+                physical_course,
+                note_index,
+                fret,
+                velocities[note_index],
+            );
             contacts[note_index] = stem_session
                 .stem
                 .prepare_pluck_contact(gesture, false)
@@ -4117,6 +4154,23 @@ impl PluckedChordSession {
             PluckedChordAdvance::Progress
         }
     }
+}
+
+#[cfg(test)]
+pub fn plk2_chord_contact_duration_seconds(
+    pack_index: i32,
+    midis: &[i32],
+    velocities: &[i32],
+    sample_rate: f32,
+    note_index: usize,
+) -> Option<f64> {
+    let session =
+        PluckedChordSession::new(pack_index, midis, velocities, sample_rate, 1_024, None)?;
+    session
+        .contacts
+        .get(note_index)
+        .filter(|contact| contact.active)
+        .map(|contact| contact.gesture.contact_duration_seconds)
 }
 
 fn encode_chord_session(session: &PluckedChordSession, bytes: &mut [u8]) -> Option<usize> {

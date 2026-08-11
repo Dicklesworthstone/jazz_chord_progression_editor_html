@@ -238,4 +238,36 @@ describe("PLK2 cooperative chord host", () => {
     expect(renders.renderChord).toBeUndefined();
     expect(renders.renderChordCooperatively).toBeUndefined();
   });
+
+  test("a completed CLI cooperative render releases its MessageChannel", async () => {
+    const child = Bun.spawn({
+      cmd: [
+        process.execPath,
+        "-e",
+        `import {loadWaveguideRenderers} from "./src/audio/dsp-renderer";
+const render=(await loadWaveguideRenderers()).get("changes.dsp.plucked-dreadnought@1")?.renderChordCooperatively;
+if(render===undefined) throw new Error("TEST_COOPERATIVE_RENDER_MISSING");
+const pcm=await render([48,55,60,64],[92,81,74,69],48_000,0.1);
+if(pcm===null) throw new Error("TEST_COOPERATIVE_RENDER_REFUSED");`,
+      ],
+      cwd: process.cwd(),
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    const outcome = await Promise.race([
+      child.exited.then((exitCode) => ({ kind: "exit" as const, exitCode })),
+      new Promise<Readonly<{ kind: "timeout" }>>((resolve) => {
+        timeoutId = setTimeout(() => {
+          resolve({ kind: "timeout" });
+        }, 3_000);
+      }),
+    ]);
+    if (timeoutId !== undefined) clearTimeout(timeoutId);
+    if (outcome.kind === "timeout") {
+      child.kill();
+      await child.exited;
+    }
+    expect(outcome).toEqual({ kind: "exit", exitCode: 0 });
+  });
 });
