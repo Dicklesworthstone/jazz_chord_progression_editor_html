@@ -6,6 +6,7 @@ mod plucked_v2;
 
 use plucked_v2::{
     archtop_pack, circular_sound_hole_helmholtz_hz, dreadnought_pack, inharmonicity_coefficient,
+    kirchhoff_carrier_extension_energy_j, kirchhoff_carrier_modal_force_n_per_sqrt_kg,
     marshall_electric_pack, midi_frequency_hz, plk2_assigned_chord_contact_duration_seconds,
     plk2_chord_contact_duration_seconds, plk2_chord_physical_sample_rate,
     plk2_chord_radiation_taps_match_full_reference, plk2_chord_runtime_init_slices,
@@ -24,6 +25,42 @@ use plucked_v2::{
 };
 
 const SAMPLE_RATE: f64 = 48_000.0;
+
+#[test]
+fn kirchhoff_carrier_force_is_the_exact_gradient_of_retained_extension_energy() {
+    const AXIAL_STIFFNESS_N: f64 = 47_752.0;
+    const LENGTH_M: f64 = 1.05;
+    const OTHER_MODE_EXTENSION_M: f64 = 2.0e-7;
+    const MODAL_WEIGHT: f64 = 12.0;
+    const MODAL_POSITION: f64 = 2.0e-4;
+    const DIFFERENCE_STEP: f64 = 1.0e-9;
+
+    let energy_at = |position: f64| {
+        let extension = OTHER_MODE_EXTENSION_M + MODAL_WEIGHT * position * position;
+        kirchhoff_carrier_extension_energy_j(AXIAL_STIFFNESS_N, LENGTH_M, extension)
+    };
+    let extension = OTHER_MODE_EXTENSION_M + MODAL_WEIGHT * MODAL_POSITION * MODAL_POSITION;
+    let analytic_force = kirchhoff_carrier_modal_force_n_per_sqrt_kg(
+        AXIAL_STIFFNESS_N,
+        LENGTH_M,
+        extension,
+        MODAL_WEIGHT,
+        MODAL_POSITION,
+    );
+    let finite_difference_force = -(energy_at(MODAL_POSITION + DIFFERENCE_STEP)
+        - energy_at(MODAL_POSITION - DIFFERENCE_STEP))
+        / (2.0 * DIFFERENCE_STEP);
+    assert!(
+        relative_error(analytic_force, finite_difference_force) < 1.0e-8,
+        "analytic {analytic_force} finite-difference {finite_difference_force}"
+    );
+
+    /* Planted near-miss: treating the historical half-kick expression as a
+     * complete force omits d(q^2)/dq = 2q. Production now names the full
+     * gradient and the integrator applies an explicit half step on each side. */
+    let planted_half_gradient = 0.5 * analytic_force;
+    assert!(relative_error(planted_half_gradient, finite_difference_force) > 0.49);
+}
 
 #[test]
 fn bounded_triode_reduction_tracks_the_analytic_transfer() {

@@ -722,6 +722,34 @@ fn sine_product_integral(first_wavenumber: f64, second_wavenumber: f64, length_m
     difference_term - sin(sum * length_m) / (2.0 * sum)
 }
 
+/// Kirchhoff-Carrier stretching storage for one retained string.  The modal
+/// extension is `Delta L = sum(weight_k * q_k^2)`, so differentiating this
+/// energy contributes the factor two in [`kirchhoff_carrier_modal_force_n_per_sqrt_kg`].
+#[inline(always)]
+pub(crate) fn kirchhoff_carrier_extension_energy_j(
+    axial_stiffness_n: f64,
+    vibrating_length_m: f64,
+    extension_m: f64,
+) -> f64 {
+    0.5 * axial_stiffness_n / vibrating_length_m * extension_m * extension_m
+}
+
+/// Analytic negative gradient of the Kirchhoff-Carrier stretching storage
+/// with respect to one mass-normalized modal coordinate.
+#[inline(always)]
+pub(crate) fn kirchhoff_carrier_modal_force_n_per_sqrt_kg(
+    axial_stiffness_n: f64,
+    vibrating_length_m: f64,
+    extension_m: f64,
+    extension_weight_per_modal_position_squared: f64,
+    modal_position_sqrt_kg_m: f64,
+) -> f64 {
+    -2.0 * axial_stiffness_n / vibrating_length_m
+        * extension_m
+        * extension_weight_per_modal_position_squared
+        * modal_position_sqrt_kg_m
+}
+
 impl StringState {
     const EMPTY: Self = Self {
         spec: StringSpec::EMPTY,
@@ -916,19 +944,24 @@ impl StringState {
         if self.mode_count == 0 {
             return;
         }
-        let axial_over_length = self.axial_stiffness_n / self.vibrating_length_m;
         let old_extension = self.bounded_nonlinear_extension(self.nonlinear_extension_m);
-        let first_kick_scale = dt * axial_over_length * old_extension;
-        let nonlinear = first_kick_scale > 1.0e-18;
+        let nonlinear = old_extension > 1.0e-18;
         let mut new_extension = 0.0;
         for mode in self.modes.iter_mut().take(self.mode_count) {
             if mode.position == 0.0 && mode.velocity == 0.0 {
                 continue;
             }
             if nonlinear {
-                mode.velocity -= first_kick_scale
-                    * mode.extension_weight_per_modal_position_squared
-                    * mode.position;
+                // First half of the symmetric nonlinear kick.
+                mode.velocity += 0.5
+                    * dt
+                    * kirchhoff_carrier_modal_force_n_per_sqrt_kg(
+                        self.axial_stiffness_n,
+                        self.vibrating_length_m,
+                        old_extension,
+                        mode.extension_weight_per_modal_position_squared,
+                        mode.position,
+                    );
             }
             mode.damped_step
                 .advance(&mut mode.position, &mut mode.velocity);
@@ -937,12 +970,18 @@ impl StringState {
         }
         self.nonlinear_extension_m = new_extension.max(0.0);
         let new_extension = self.bounded_nonlinear_extension(self.nonlinear_extension_m);
-        let second_kick_scale = dt * axial_over_length * new_extension;
-        if second_kick_scale > 1.0e-18 {
+        if new_extension > 1.0e-18 {
             for mode in self.modes.iter_mut().take(self.mode_count) {
-                mode.velocity -= second_kick_scale
-                    * mode.extension_weight_per_modal_position_squared
-                    * mode.position;
+                // Second half of the symmetric nonlinear kick.
+                mode.velocity += 0.5
+                    * dt
+                    * kirchhoff_carrier_modal_force_n_per_sqrt_kg(
+                        self.axial_stiffness_n,
+                        self.vibrating_length_m,
+                        new_extension,
+                        mode.extension_weight_per_modal_position_squared,
+                        mode.position,
+                    );
             }
         }
     }
@@ -953,9 +992,11 @@ impl StringState {
             total += mode.energy_j();
         }
         if self.vibrating_length_m > 0.0 {
-            total += 0.5 * self.axial_stiffness_n / self.vibrating_length_m
-                * self.nonlinear_extension_m
-                * self.nonlinear_extension_m;
+            total += kirchhoff_carrier_extension_energy_j(
+                self.axial_stiffness_n,
+                self.vibrating_length_m,
+                self.nonlinear_extension_m,
+            );
         }
         total
     }
