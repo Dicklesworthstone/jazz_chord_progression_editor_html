@@ -16,9 +16,10 @@
  *      spectral centroid over the sustain, pure-gain velocity response,
  *      machine-perfect periodicity (no jitter/shimmer).
  *
- * Tiers: pathology and pitch findings FAIL the gate (exit 1). Performance
- * fails only when a render cannot beat realtime at all. Artificiality is a
- * reported score, never a failure, because taste stays with the owner.
+ * Tiers: fail-severity pathology and pitch thresholds fail the gate (exit 1);
+ * their warning thresholds remain diagnostic. Performance fails only when a
+ * render cannot beat realtime at all. Artificiality is a reported score,
+ * never a failure, because taste stays with the owner.
  *
  * No-claim: a green run proves the ABSENCE OF MECHANICAL PATHOLOGY ONLY.
  * It does not prove an instrument sounds good; the owner's ear remains the
@@ -41,7 +42,7 @@ import { CONCERT_GRAND_WASM_SHA256 } from "../src/audio/wasm/concert-grand-wasm"
 import { estimatePitch, sha256Hex, type MonoPcm } from "./reference-similarity";
 
 export const INSTRUMENT_QUALITY_SCHEMA =
-  "changes.evidence.instrument-quality.v1" as const;
+  "changes.evidence.instrument-quality.v2" as const;
 
 const SAMPLE_RATE_HZ = 44_100;
 const TEST_VELOCITIES = [36, 72, 108] as const;
@@ -159,6 +160,10 @@ type InstrumentReport = Readonly<{
   notes: readonly NoteMeasurement[];
   chordMidis: readonly number[];
   chordToneLevelsDb: readonly (number | null)[];
+  chordRenderPath:
+    | "shared-cooperative"
+    | "shared-cooperative-unavailable"
+    | "summed-independent-notes";
   worstRenderRatio: number;
   artificiality: ArtificialityScores;
   /* v2 */
@@ -752,7 +757,8 @@ async function main(): Promise<void> {
     (recipe) => recipe.synthesis === "rendered",
   );
   for (const recipe of renderedRecipes) {
-    const algorithmId = recipe.renderer?.algorithmId ?? "";
+    const algorithmId = recipe.renderer.algorithmId;
+    const waveguide = waveguides.get(algorithmId);
     const renderNote = ((): ((
       midiPitch: number,
       velocity: number,
@@ -763,13 +769,9 @@ async function main(): Promise<void> {
       }
       if (algorithmId.startsWith("changes.dsp.sampled-")) {
         const sampled = loadSampledInstrumentRenderer(algorithmId);
-        if (sampled === null) {
-          throw new Error(`SAMPLED_RENDERER_MISSING: ${algorithmId}`);
-        }
         return (midiPitch, velocity) =>
           sampled.renderNote(midiPitch, velocity, SAMPLE_RATE_HZ, GATE_SECONDS + 1);
       }
-      const waveguide = waveguides.get(algorithmId);
       if (waveguide === undefined) {
         throw new Error(`WAVEGUIDE_RENDERER_MISSING: ${algorithmId}`);
       }
@@ -1003,27 +1005,86 @@ async function main(): Promise<void> {
       });
     }
 
-    /* Chord accuracy: mix the per-note renders exactly as the engine's
-     * per-voice scheduling sums them, then require every chord tone. */
+    /* Chord accuracy: physical plucked recipes must use the shipping shared
+     * body/amp cooperative render.  Falling back to independent note renders
+     * would hide the exact course-assignment, shared-body, and simultaneous
+     * launch defects this gate is meant to catch.  Other renderer families
+     * still use the engine's ordinary per-voice sum. */
     const chordMidis = pickChord(recipe.id);
     const chordToneLevelsDb: (number | null)[] = [];
     let chordRoughnessRatio: number | null = null;
-    const chordRenders = chordMidis
-      .map((midiPitch) => renderNote(midiPitch, 96))
-      .filter((pcm): pcm is RenderedNotePcm => pcm !== null);
-    if (chordRenders.length === chordMidis.length && chordRenders.length > 0) {
-      const frameCount = Math.min(
-        ...chordRenders.map((pcm) => pcm.frameCount),
-      );
-      const mixed = new Float32Array(frameCount);
-      for (const pcm of chordRenders) {
-        const monoPcm = mono(pcm);
-        for (let index = 0; index < frameCount; index += 1) {
-          mixed[index] =
-            (mixed[index] ?? 0) +
-            (monoPcm.samples[index] ?? 0) / chordRenders.length;
-        }
+    const requiresSharedChord = algorithmId.startsWith("changes.dsp.plucked-");
+    const chordRenderPath = requiresSharedChord
+      ? waveguide?.renderChordCooperatively === undefined
+        ? ("shared-cooperative-unavailable" as const)
+        : ("shared-cooperative" as const)
+      : ("summed-independent-notes" as const);
+    let chordPcm: MonoPcm | null = null;
+    if (requiresSharedChord && waveguide?.renderChordCooperatively === undefined) {
+      findings.push({
+        tier: "fail",
+        bucket: "pathology",
+        code: "SHARED_CHORD_RENDERER_ABSENT",
+        instrumentId: recipe.id,
+        detail: "shipping plucked renderer lacks the cooperative shared-body chord ABI",
+      });
+    } else if (requiresSharedChord) {
+      /* The absent-method branch above narrows this for current TypeScript,
+       * but keep the runtime refusal explicit: a future renderer shape must
+       * not silently route a non-plucked family through this path or turn an
+       * absent cooperative ABI into an exception. */
+      const renderChordCooperatively = waveguide?.renderChordCooperatively;
+      if (renderChordCooperatively === undefined) {
+        throw new Error(`SHARED_CHORD_RENDERER_ABSENT: ${algorithmId}`);
       }
+      const rendered = await renderChordCooperatively(
+        chordMidis,
+        chordMidis.map(() => 96),
+        SAMPLE_RATE_HZ,
+        GATE_SECONDS + 1,
+      );
+      if (rendered === null) {
+        findings.push({
+          tier: "fail",
+          bucket: "pathology",
+          code: "SHARED_CHORD_RENDER_REFUSED",
+          instrumentId: recipe.id,
+          detail: `shipping cooperative chord refused [${chordMidis.map(String).join(",")}]`,
+        });
+      } else {
+        chordPcm = mono(rendered);
+      }
+    } else {
+      const chordRenders = chordMidis
+        .map((midiPitch) => renderNote(midiPitch, 96))
+        .filter((pcm): pcm is RenderedNotePcm => pcm !== null);
+      if (chordRenders.length === chordMidis.length && chordRenders.length > 0) {
+        const frameCount = Math.min(
+          ...chordRenders.map((pcm) => pcm.frameCount),
+        );
+        const mixed = new Float32Array(frameCount);
+        for (const pcm of chordRenders) {
+          const monoPcm = mono(pcm);
+          for (let index = 0; index < frameCount; index += 1) {
+            mixed[index] =
+              (mixed[index] ?? 0) +
+              (monoPcm.samples[index] ?? 0) / chordRenders.length;
+          }
+        }
+        chordPcm = { samples: mixed, sampleRateHz: SAMPLE_RATE_HZ };
+      } else {
+        findings.push({
+          tier: "fail",
+          bucket: "pathology",
+          code: "CHORD_RENDER_REFUSED",
+          instrumentId: recipe.id,
+          detail: `${String(chordMidis.length - chordRenders.length)} of ${String(chordMidis.length)} ordinary chord voices refused`,
+        });
+      }
+    }
+    if (chordPcm !== null) {
+      const { samples: mixed } = chordPcm;
+      const frameCount = mixed.length;
       const start = Math.floor(0.1 * SAMPLE_RATE_HZ);
       const length = Math.min(16_384, frameCount - start);
       if (length > 4_096) {
@@ -1191,6 +1252,7 @@ async function main(): Promise<void> {
       notes,
       chordMidis,
       chordToneLevelsDb,
+      chordRenderPath,
       worstRenderRatio,
       artificiality,
       worstOnsetSeconds,
@@ -1213,7 +1275,7 @@ async function main(): Promise<void> {
   };
   const serialized = JSON.stringify(evidence, null, 2);
   const outputPath = resolve(
-    "test-results/instrument-quality/instrument-quality-v1.json",
+    "test-results/instrument-quality/instrument-quality-v2.json",
   );
   await mkdir(dirname(outputPath), { recursive: true });
   await writeFile(outputPath, serialized, "utf8");

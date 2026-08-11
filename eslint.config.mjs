@@ -130,6 +130,21 @@ export default tseslint.config(
   eslint.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
   {
+    /* Archived one-shot calibration drivers preserve the exact historical
+       experiments beside their result logs, but are not part of a TypeScript
+       project. Keep syntax and ordinary lint coverage without asking typed
+       rules for parser services that cannot exist for these files. */
+    files: ["dsp/concert-grand/calibration/**/*.ts"],
+    ...tseslint.configs.disableTypeChecked,
+    rules: {
+      ...tseslint.configs.disableTypeChecked.rules,
+      "@typescript-eslint/no-non-null-assertion": "off",
+      "no-empty": "off",
+      "no-useless-assignment": "off",
+      "prefer-const": "off",
+    },
+  },
+  {
     files: ["src/**/*.{ts,tsx}"],
     languageOptions: project("./tsconfig.app.json"),
     rules: typedSourceRules,

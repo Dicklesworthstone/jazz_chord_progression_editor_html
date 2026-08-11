@@ -1889,6 +1889,11 @@ let chordYieldChannel: MessageChannel | null = null;
 const chordYieldQueue: Array<() => void> = [];
 let chordYieldCount = 0;
 
+function unrefHostMessagePort(port: MessagePort): void {
+  const hostPort = port as MessagePort & Readonly<{ unref?: () => void }>;
+  hostPort.unref?.();
+}
+
 function browserMacrotask(): Promise<void> {
   if (typeof MessageChannel === "undefined") {
     return new Promise((resolve) => setTimeout(resolve, 0));
@@ -1900,10 +1905,20 @@ function browserMacrotask(): Promise<void> {
   if (chordYieldCount % 4 === 0) {
     return new Promise((resolve) => setTimeout(resolve, 0));
   }
-  chordYieldChannel ??= new MessageChannel();
+  if (chordYieldChannel === null) {
+    chordYieldChannel = new MessageChannel();
+    /* Bun/Node MessagePorts keep a CLI process alive even after every render
+     * promise has settled. Browsers do not expose `unref`; hosts that do can
+     * release this scheduling channel from their event-loop liveness count
+     * without closing it or changing any cooperative yield ordering. */
+  }
   chordYieldChannel.port1.onmessage ??= () => {
     chordYieldQueue.shift()?.();
   };
+  /* Installing an `onmessage` handler re-references Node/Bun MessagePorts, so
+   * unref only after the handler exists (and repeat harmlessly on reuse). */
+  unrefHostMessagePort(chordYieldChannel.port1);
+  unrefHostMessagePort(chordYieldChannel.port2);
   return new Promise((resolve) => {
     chordYieldQueue.push(resolve);
     chordYieldChannel?.port2.postMessage(0);

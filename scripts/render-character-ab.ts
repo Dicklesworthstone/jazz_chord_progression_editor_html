@@ -24,6 +24,7 @@ import { resolve } from "node:path";
 import {
   AUDIO_INSTRUMENT_RECIPES,
   AUDIO_PLAYABLE_MIDI_WINDOWS,
+  pluckedChordAssignmentFeasible,
 } from "../src/audio/instrument-recipes-contract";
 import {
   loadConcertGrandRenderer,
@@ -56,7 +57,86 @@ type PhraseNote = Readonly<{
  * arpeggio line over the same changes. Velocities vary deliberately so a
  * pure-gain velocity response is audible as such.
  */
-function buildPhrase(low: number, high: number): readonly PhraseNote[] {
+function assignableChord(
+  chord: readonly number[],
+  low: number,
+  high: number,
+  algorithmId: string,
+): readonly number[] {
+  const fold = (pitch: number): number => {
+    let folded = pitch;
+    while (folded < low) folded += 12;
+    while (folded > high) folded -= 12;
+    return folded;
+  };
+  const folded = chord.map(fold);
+  if (pluckedChordAssignmentFeasible(algorithmId, folded)) return folded;
+  const options = chord.map((pitch, index) => {
+    const candidates: number[] = [];
+    for (let transposition = -8; transposition <= 8; transposition += 1) {
+      const candidate = pitch + 12 * transposition;
+      if (candidate >= low && candidate <= high) candidates.push(candidate);
+    }
+    const anchor = folded[index] ?? pitch;
+    return candidates.sort(
+      (left, right) =>
+        Math.abs(left - anchor) - Math.abs(right - anchor) || left - right,
+    );
+  });
+  const outcome: { best: number[] | null; bestScore: number } = {
+    best: null,
+    bestScore: Number.POSITIVE_INFINITY,
+  };
+  const current = new Array<number>(chord.length);
+  const lexicographicallyBefore = (
+    candidate: readonly number[],
+    incumbent: readonly number[],
+  ): boolean => {
+    for (let index = 0; index < candidate.length; index += 1) {
+      const left = candidate[index];
+      const right = incumbent[index];
+      if (left === undefined || right === undefined) return false;
+      if (left !== right) return left < right;
+    }
+    return false;
+  };
+  const visit = (index: number, score: number): void => {
+    if (score > outcome.bestScore) return;
+    if (index === options.length) {
+      if (!pluckedChordAssignmentFeasible(algorithmId, current)) return;
+      if (
+        score < outcome.bestScore ||
+        (score === outcome.bestScore &&
+          (outcome.best === null ||
+            lexicographicallyBefore(current, outcome.best)))
+      ) {
+        outcome.best = [...current];
+        outcome.bestScore = score;
+      }
+      return;
+    }
+    const anchor = folded[index];
+    if (anchor === undefined) return;
+    for (const candidate of options[index] ?? []) {
+      current[index] = candidate;
+      const displacement = candidate - anchor;
+      visit(index + 1, score + displacement * displacement);
+    }
+  };
+  visit(0, 0);
+  if (outcome.best === null) {
+    throw new Error(
+      `CHARACTER_AB_CHORD_UNASSIGNABLE: ${algorithmId} [${chord.map(String).join(",")}]`,
+    );
+  }
+  return outcome.best;
+}
+
+function buildPhrase(
+  low: number,
+  high: number,
+  algorithmId: string,
+): readonly PhraseNote[] {
   const fold = (pitch: number): number => {
     let folded = pitch;
     while (folded < low) folded += 12;
@@ -70,9 +150,10 @@ function buildPhrase(low: number, high: number): readonly PhraseNote[] {
   ];
   const notes: PhraseNote[] = [];
   for (const [barIndex, chord] of chords.entries()) {
-    for (const [voiceIndex, pitch] of chord.entries()) {
+    const realized = assignableChord(chord, low, high, algorithmId);
+    for (const [voiceIndex, pitch] of realized.entries()) {
       notes.push({
-        midiPitch: fold(pitch),
+        midiPitch: pitch,
         velocity: 78 + voiceIndex * 4,
         startSeconds: barIndex * 2,
         gateSeconds: 1.85,
@@ -151,10 +232,17 @@ type NoteRenderFunction = (
   gateSeconds: number,
 ) => RenderedNotePcm | null;
 
-function renderPhrase(
+type ChordRenderFunction = (
+  midiPitches: readonly number[],
+  velocities: readonly number[],
+  gateSeconds: number,
+) => Promise<RenderedNotePcm | null>;
+
+async function renderPhrase(
   phrase: readonly PhraseNote[],
   renderNote: NoteRenderFunction,
-): Readonly<{ interleaved: Float64Array; refusals: number }> {
+  renderChord?: ChordRenderFunction,
+): Promise<Readonly<{ interleaved: Float64Array; refusals: number }>> {
   const endSeconds =
     Math.max(
       ...phrase.map((note) => note.startSeconds + note.gateSeconds),
@@ -162,15 +250,39 @@ function renderPhrase(
   const frameCount = Math.ceil(endSeconds * SAMPLE_RATE_HZ);
   const interleaved = new Float64Array(frameCount * 2);
   let refusals = 0;
+  const groups = new Map<string, PhraseNote[]>();
   for (const note of phrase) {
-    const pcm = renderNote(note.midiPitch, note.velocity, note.gateSeconds);
-    if (pcm === null) {
-      refusals += 1;
+    const key = `${note.startSeconds.toString()}:${note.gateSeconds.toString()}`;
+    const group = groups.get(key);
+    if (group === undefined) groups.set(key, [note]);
+    else group.push(note);
+  }
+  for (const group of groups.values()) {
+    if (group.length > 1 && renderChord !== undefined) {
+      const pcm = await renderChord(
+        group.map((note) => note.midiPitch),
+        group.map((note) => note.velocity),
+        group[0]?.gateSeconds ?? 0,
+      );
+      if (pcm === null) {
+        refusals += group.length;
+        continue;
+      }
+      const startFrame = Math.round((group[0]?.startSeconds ?? 0) * SAMPLE_RATE_HZ);
+      mixInto(interleaved, 0, pcm.left, startFrame, 1);
+      mixInto(interleaved, 1, pcm.right, startFrame, 1);
       continue;
     }
-    const startFrame = Math.round(note.startSeconds * SAMPLE_RATE_HZ);
-    mixInto(interleaved, 0, pcm.left, startFrame, 1);
-    mixInto(interleaved, 1, pcm.right, startFrame, 1);
+    for (const note of group) {
+      const pcm = renderNote(note.midiPitch, note.velocity, note.gateSeconds);
+      if (pcm === null) {
+        refusals += 1;
+        continue;
+      }
+      const startFrame = Math.round(note.startSeconds * SAMPLE_RATE_HZ);
+      mixInto(interleaved, 0, pcm.left, startFrame, 1);
+      mixInto(interleaved, 1, pcm.right, startFrame, 1);
+    }
   }
   return { interleaved, refusals };
 }
@@ -233,7 +345,8 @@ async function main(): Promise<void> {
 
   for (const recipe of AUDIO_INSTRUMENT_RECIPES) {
     if (recipe.synthesis !== "rendered") continue;
-    const algorithmId = recipe.renderer?.algorithmId ?? "";
+    const algorithmId = recipe.renderer.algorithmId;
+    const waveguide = waveguides.get(algorithmId);
     /* Constructed once per instrument: building a sampled renderer decodes
      * its full PCM payload, which must never happen per note. */
     const sampled = algorithmId.startsWith("changes.dsp.sampled-")
@@ -241,7 +354,7 @@ async function main(): Promise<void> {
       : null;
     const renderNote: NoteRenderFunction = (midiPitch, velocity, gateSeconds) => {
       const maxSeconds = Math.min(
-        recipe.renderer?.maximumRenderSeconds ?? 4,
+        recipe.renderer.maximumRenderSeconds,
         gateSeconds + 2,
       );
       if (algorithmId === "changes.dsp.concert-grand@1") {
@@ -250,19 +363,32 @@ async function main(): Promise<void> {
       if (sampled !== null) {
         return sampled.renderNote(midiPitch, velocity, SAMPLE_RATE_HZ, maxSeconds);
       }
-      return (
-        waveguides
-          .get(algorithmId)
-          ?.renderNote(midiPitch, velocity, SAMPLE_RATE_HZ, maxSeconds) ?? null
-      );
+      return waveguide?.renderNote(midiPitch, velocity, SAMPLE_RATE_HZ, maxSeconds) ?? null;
     };
+    const renderChord: ChordRenderFunction | undefined = algorithmId.startsWith(
+      "changes.dsp.plucked-",
+    )
+      ? async (midiPitches, velocities, gateSeconds) => {
+          if (waveguide?.renderChordCooperatively === undefined) return null;
+          return waveguide.renderChordCooperatively(
+            midiPitches,
+            velocities,
+            SAMPLE_RATE_HZ,
+            Math.min(recipe.renderer.maximumRenderSeconds, gateSeconds + 2),
+          );
+        }
+      : undefined;
 
     const window =
       AUDIO_PLAYABLE_MIDI_WINDOWS[
         recipe.id as keyof typeof AUDIO_PLAYABLE_MIDI_WINDOWS
       ];
-    const phrase = buildPhrase(window.low, window.high);
-    const { interleaved, refusals } = renderPhrase(phrase, renderNote);
+    const phrase = buildPhrase(window.low, window.high, algorithmId);
+    const { interleaved, refusals } = await renderPhrase(
+      phrase,
+      renderNote,
+      renderChord,
+    );
     await writePack(`${recipe.id}.current.wav`, "phrase-current", interleaved, refusals);
 
     const scalewalk = UIOWA_SCALEWALKS.find(
@@ -270,7 +396,7 @@ async function main(): Promise<void> {
     );
     if (scalewalk !== undefined) {
       const walkPhrase = buildScalewalkPhrase(scalewalk.walkMidis);
-      const currentWalk = renderPhrase(walkPhrase, renderNote);
+      const currentWalk = await renderPhrase(walkPhrase, renderNote);
       await writePack(
         `${recipe.id}.scalewalk.current.wav`,
         "scalewalk-current",
@@ -300,9 +426,9 @@ async function main(): Promise<void> {
           frameCount,
           left: samples,
           right: samples,
-        } as RenderedNotePcm;
+        };
       };
-      const referenceWalk = renderPhrase(walkPhrase, referenceRender);
+      const referenceWalk = await renderPhrase(walkPhrase, referenceRender);
       await writePack(
         `${recipe.id}.scalewalk.reference-uiowa.wav`,
         "scalewalk-reference",
@@ -312,13 +438,18 @@ async function main(): Promise<void> {
     }
   }
 
+  const totalRefusals = manifestFiles.reduce(
+    (sum, entry) => sum + entry.refusals,
+    0,
+  );
   const manifest = {
-    schema: "changes.evidence.character-ab.v1",
+    schema: "changes.evidence.character-ab.v2",
     generatedBy: "scripts/render-character-ab.ts",
     wasmSha256: CONCERT_GRAND_WASM_SHA256,
     sampleRateHz: SAMPLE_RATE_HZ,
     peakNormalizedTo: "-3 dBFS per file (level differences are not character evidence)",
     files: manifestFiles,
+    totalRefusals,
     noClaim:
       "Listening packs for the owner's ears. Nothing here is scored, gated, or claims quality.",
   };
@@ -330,6 +461,11 @@ async function main(): Promise<void> {
   process.stdout.write(
     `character-ab pack: ${String(manifestFiles.length)} files under ${OUTPUT_DIRECTORY}/\n`,
   );
+  if (totalRefusals > 0) {
+    throw new Error(
+      `CHARACTER_AB_RENDER_REFUSED: ${String(totalRefusals)} scheduled voice(s) were absent`,
+    );
+  }
 }
 
 await main();

@@ -135,7 +135,7 @@ const midiHz = (m: number) => 440 * 2 ** ((m - 69) / 12);
 for (const midi of [54, 60, 66, 70]) {
   for (const velocity of [36, 72, 108]) {
     const m = renderNote(midi, velocity, 2);
-    if (m === null) { console.log(`midi ${midi} v${velocity}: REFUSED`); continue; }
+    if (m === null) { console.log(`midi ${String(midi)} v${String(velocity)}: REFUSED`); continue; }
     const st = stats(m);
     const p = estimatePitch({ samples: m, sampleRateHz: RATE }, midiHz(midi));
     const on = onset(m);
@@ -144,7 +144,7 @@ for (const midi of [54, 60, 66, 70]) {
     const sd = Math.sqrt(track.reduce((a, b) => a + (b - mean) ** 2, 0) / Math.max(1, track.length));
     const ratio = (renderNote as unknown as { lastRatio: number }).lastRatio;
     console.log(
-      `midi ${midi} v${velocity}: rms ${(20 * Math.log10(st.rms)).toFixed(1)}dB finite=${st.finite} ` +
+      `midi ${String(midi)} v${String(velocity)}: rms ${(20 * Math.log10(st.rms)).toFixed(1)}dB finite=${String(st.finite)} ` +
       `pitch ${p === null ? "NOLOCK" : `${p.centsFromExpected.toFixed(1)}c/${p.periodicity.toFixed(3)}p`} ` +
       `onset ${on === null ? "n/a" : `${(on * 1_000).toFixed(0)}ms`} ` +
       `centroid ${mean.toFixed(0)}Hz stasis ${(sd / mean).toFixed(3)} render ${ratio.toFixed(2)}x`,
@@ -152,7 +152,7 @@ for (const midi of [54, 60, 66, 70]) {
   }
   const mf = renderNote(midi, 88, 2);
   if (mf !== null) {
-    writeWav(`trumpet-midi${midi}-v88.${VARIANT}.wav`, mf);
+    writeWav(`trumpet-midi${String(midi)}-v88.${VARIANT}.wav`, mf);
     console.log(`  harmonics(dB re h1) v88: ${harmonicProfileDb(mf, midiHz(midi), 10).map((d) => d.toFixed(0)).join(",")}`);
   }
 }
@@ -164,9 +164,9 @@ for (const midi of [60]) {
     if (m === null) continue;
     const track = centroidTrack(m);
     const mean = track.reduce((a, b) => a + b, 0) / Math.max(1, track.length);
-    rows.push(`v${velocity}:${mean.toFixed(0)}Hz`);
+    rows.push(`v${String(velocity)}:${mean.toFixed(0)}Hz`);
   }
-  console.log(`brightness-vs-velocity midi ${midi}: ${rows.join(" ")}`);
+  console.log(`brightness-vs-velocity midi ${String(midi)}: ${rows.join(" ")}`);
 }
 
 /* Short line for the ear: pp-mf-ff crescendo + a five-note phrase. */
