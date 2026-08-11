@@ -3,7 +3,9 @@ mod vibes_v2;
 
 use vibes_v2::{
     canonical_bar_resonator_inertial_coupling, free_bar_radiation_transfer_for_test,
-    geometry_for_midi, midi_frequency_hz, rayleigh_radiation_is_resolved, vbs2_render,
+    geometry_for_midi, hertz_collision_duration_seconds_for_test,
+    hertz_patch_half_width_over_length_for_test, midi_frequency_hz,
+    projected_hertz_patch_moments_for_test, rayleigh_radiation_is_resolved, vbs2_render,
     StrikeGesture, VibesControls, VibesError, VibesParameters, VibraphoneStem, VibraphoneVoice,
     BAR_MODES, MAX_FAN_RATE_HZ, MAX_MIDI, MIN_MIDI, VIBES_V2_MODAL_AUTHORITY_SHA256,
     VIBES_V2_MODAL_GENERATOR_SHA256, VIBES_V2_MODAL_PACK_INPUT_SHA256,
@@ -150,21 +152,21 @@ fn bar_tube_coupling_and_free_bar_radiation_exclude_the_old_near_misses() {
     // 4f partial, so the mode-1 transfer must remain materially nonzero.
     let (real, imaginary) = free_bar_radiation_transfer_for_test(60, 0).unwrap();
     assert!(
-        (real - 0.003_478_070_933_402_384).abs() < 1.0e-12,
+        (real - 0.001_739_035_466_701_192).abs() < 1.0e-12,
         "real={real:.18} imaginary={imaginary:.18}"
     );
     assert!(
-        (imaginary - -0.006_200_142_258_041_098).abs() < 1.0e-12,
+        (imaginary - -0.003_100_071_129_020_549).abs() < 1.0e-12,
         "real={real:.18} imaginary={imaginary:.18}"
     );
-    // Plant the old half-face quadrature explicitly. Each face contributes
-    // its full strip area; the sign change is already the normal orientation.
-    assert!((real - 0.001_739_035_466_701_192).abs() > 1.0e-3);
+    // Plant the baffled-piston 2G normalization explicitly. Applying that
+    // half-space kernel to an unbaffled two-face bar doubles its direct field.
+    assert!((real - 0.003_478_070_933_402_384).abs() > 1.0e-3);
     let magnitude = (real * real + imaginary * imaginary).sqrt();
     assert!(magnitude < 0.01);
     let (fourth_real, fourth_imaginary) = free_bar_radiation_transfer_for_test(60, 1).unwrap();
-    assert!((fourth_real - 0.153_190_400_764_128_3).abs() < 1.0e-12);
-    assert!((fourth_imaginary - -0.466_015_734_408_923).abs() < 1.0e-12);
+    assert!((fourth_real - 0.076_595_200_382_064_15).abs() < 1.0e-12);
+    assert!((fourth_imaginary - -0.233_007_867_204_461_5).abs() < 1.0e-12);
     assert!(
         (fourth_real * fourth_real + fourth_imaginary * fourth_imaginary).sqrt() > 50.0 * magnitude
     );
@@ -297,10 +299,50 @@ fn adversarial_contact_parameters_refuse_instead_of_injecting_energy() {
         voice(65).begin_strike(inconsistent),
         Err(VibesError::InvalidContact)
     );
+
+    let mut inconsistent_duration = StrikeGesture::from_velocity(96, 0.5).unwrap();
+    inconsistent_duration.contact_duration_seconds *= 2.0;
+    assert_eq!(
+        voice(65).begin_strike(inconsistent_duration),
+        Err(VibesError::InvalidContact)
+    );
+
+    let mut inconsistent_force = StrikeGesture::from_velocity(96, 0.5).unwrap();
+    inconsistent_force.peak_force_n *= 0.5;
+    assert_eq!(
+        voice(65).begin_strike(inconsistent_force),
+        Err(VibesError::InvalidContact)
+    );
+
+    // A zero-speed gesture has zero kinetic energy and makes the duration
+    // expression 0/0. Derived NaNs must not make the cross-field comparisons
+    // fail open.
+    let mut stationary = StrikeGesture::from_velocity(1, 0.5).unwrap();
+    stationary.strike_velocity_m_per_s = 0.0;
+    stationary.impact_energy_j = 0.0;
+    stationary.peak_force_n = 0.0;
+    assert_eq!(
+        voice(65).begin_strike(stationary),
+        Err(VibesError::InvalidContact)
+    );
 }
 
 #[test]
 fn strike_position_and_finite_patch_control_modes_at_the_contact_port() {
+    let (zeroth, first, second) = projected_hertz_patch_moments_for_test();
+    assert!((zeroth - 1.0).abs() < 1.0e-15);
+    assert!(first.abs() < 1.0e-15);
+    assert!((second - 0.2).abs() < 1.0e-15);
+    // A uniform line patch has normalized second moment 1/3. It is not the
+    // projected circular Hertz pressure law used by the contact port.
+    assert!((second - 1.0 / 3.0).abs() > 0.1);
+    let patch_half_width = hertz_patch_half_width_over_length_for_test(0.018, 0.001, 0.30);
+    let expected_half_width = (0.018_f64 * 0.001).sqrt() / 0.30;
+    assert!((patch_half_width - expected_half_width).abs() < 1.0e-15);
+    // The mallet head radius is curvature geometry, not the pressure-patch
+    // half-width. Treating all 18 mm as loaded was the former near miss.
+    assert!((patch_half_width - 0.018 / 0.30).abs() > 0.04);
+
     let mut center = StrikeGesture::from_velocity(96, 0.8).unwrap();
     center.strike_position_over_length = 0.5;
     let mut quarter = center;
@@ -331,6 +373,56 @@ fn strike_position_and_finite_patch_control_modes_at_the_contact_port() {
     let hard_brightness =
         hard.mode_energy_j(2).unwrap() / hard.mode_energy_j(0).unwrap().max(1.0e-30);
     assert!(hard_brightness > soft_brightness);
+
+    // A new strike on a ringing bar must initialize the retained mallet at
+    // the NEW gesture's power port. The old implementation evaluated
+    // `strike_displacement()` before replacing ContactState, so it silently
+    // reused the previous quarter-position gesture here.
+    let mut new_center = StrikeGesture::from_velocity(72, 0.4).unwrap();
+    new_center.strike_position_over_length = 0.5;
+    let expected_position = quarter_voice.strike_displacement_for_test(new_center, 0.0);
+    let planted_stale_position = quarter_voice.strike_displacement_for_test(quarter, 0.0);
+    assert!(
+        (expected_position - planted_stale_position).abs() > 1.0e-12,
+        "ringing state did not distinguish new={expected_position} stale={planted_stale_position}"
+    );
+    quarter_voice.begin_strike(new_center).unwrap();
+    assert!(
+        (quarter_voice.retained_mallet_position_m_for_test() - expected_position).abs() < 1.0e-15
+    );
+}
+
+#[test]
+fn default_contact_duration_is_the_hertz_collision_known_answer() {
+    for velocity in [1, 64, 110, 127] {
+        for hardness in [0.0, 0.2, 0.5, 1.0] {
+            let gesture = StrikeGesture::from_velocity(velocity, hardness).unwrap();
+            let derived = hertz_collision_duration_seconds_for_test(
+                gesture.mallet_mass_kg,
+                gesture.strike_velocity_m_per_s,
+                gesture.contact_stiffness_n_per_m_pow_3_over_2,
+            );
+            assert!(
+                (gesture.contact_duration_seconds - derived).abs() < 1.0e-15,
+                "velocity={velocity} hardness={hardness} stated={} derived={derived}",
+                gesture.contact_duration_seconds,
+            );
+            let planted_unrelated_duration = 0.0065 - 0.0038 * hardness;
+            assert!(
+                (gesture.contact_duration_seconds - planted_unrelated_duration).abs() > 1.0e-4,
+                "velocity={velocity} hardness={hardness} derived={} planted={planted_unrelated_duration}",
+                gesture.contact_duration_seconds,
+            );
+
+            let mut struck = voice(65);
+            struck.begin_strike(gesture).unwrap();
+            let expected_frames = (gesture.contact_duration_seconds * 48_000.0).ceil() as u32;
+            assert_eq!(struck.contact_maximum_frames_for_test(), expected_frames);
+            let planted_doubled_bound =
+                (2.0 * gesture.contact_duration_seconds * 48_000.0).ceil() as u32;
+            assert_ne!(expected_frames, planted_doubled_bound);
+        }
+    }
 }
 
 #[test]
@@ -461,6 +553,35 @@ fn pressure_output_is_finite_distinct_and_deterministic() {
     assert_ne!(left, high);
     assert!(left.iter().all(|sample| sample.is_finite()));
     assert!(left.iter().any(|sample| sample.abs() > 1.0e-8));
+}
+
+#[test]
+fn radiated_pressure_is_the_exact_sum_of_free_bar_and_tube_components() {
+    for midi in [53, 60, 67, 74, 84] {
+        for velocity in [64, 110] {
+            let mut model = voice(midi);
+            model
+                .begin_strike(StrikeGesture::from_velocity(velocity, 0.2).unwrap())
+                .unwrap();
+            let mut heard_bar = false;
+            let mut heard_tube = false;
+            for frame in 0..4_096 {
+                let output = model.step(VibesControls::PEDAL_DOWN_MOTOR_OFF).unwrap();
+                assert_eq!(
+                    output.radiated_pressure_pa.to_bits(),
+                    (output.bar_pressure_pa + output.tube_pressure_pa).to_bits(),
+                    "midi={midi} velocity={velocity} frame={frame}"
+                );
+                heard_bar |= output.bar_pressure_pa.abs() > 1.0e-12;
+                heard_tube |= output.tube_pressure_pa.abs() > 1.0e-12;
+            }
+            assert!(heard_bar, "midi={midi} velocity={velocity}: silent bar tap");
+            assert!(
+                heard_tube,
+                "midi={midi} velocity={velocity}: silent tube tap"
+            );
+        }
+    }
 }
 
 #[test]

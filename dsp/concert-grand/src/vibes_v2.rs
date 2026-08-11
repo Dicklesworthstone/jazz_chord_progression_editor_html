@@ -34,6 +34,95 @@ pub const MIN_MIDI: i32 = 53;
 pub const MAX_MIDI: i32 = 89;
 pub const MAX_FAN_RATE_HZ: f64 = 12.0;
 const CONTACT_SOLVE_STEPS: usize = 8;
+// Integral from zero to maximum compression for a conservative Hertz
+// collision: integral_0^1 (1-u^(5/2))^(-1/2) du.  Keeping the evaluated
+// constant here avoids introducing gamma/beta functions into the no_std hot
+// path while binding duration to the same energy and stiffness as the force.
+const HERTZ_HALF_COLLISION_INTEGRAL: f64 = 1.471_637_592_162_352_3;
+// Five-point Gauss--Legendre evaluation of FrankenSim's exact projected
+// Hertz pressure marginal, w(u)=3/4*(1-u^2), |u|<=1.  The combined weights
+// integrate constants and the first four even moments without replacing the
+// circular pressure patch by a uniform line load.
+const HERTZ_PATCH_OFFSETS: [f64; 5] = [
+    -0.906_179_845_938_664,
+    -0.538_469_310_105_683_1,
+    0.0,
+    0.538_469_310_105_683_1,
+    0.906_179_845_938_664,
+];
+const HERTZ_PATCH_WEIGHTS: [f64; 5] = [
+    0.031_778_663_128_789_94,
+    0.254_888_003_537_876_8,
+    0.426_666_666_666_666_64,
+    0.254_888_003_537_876_8,
+    0.031_778_663_128_789_94,
+];
+
+#[cfg(test)]
+pub fn projected_hertz_patch_moments_for_test() -> (f64, f64, f64) {
+    let mut zeroth = 0.0;
+    let mut first = 0.0;
+    let mut second = 0.0;
+    for index in 0..HERTZ_PATCH_OFFSETS.len() {
+        let offset = HERTZ_PATCH_OFFSETS[index];
+        let weight = HERTZ_PATCH_WEIGHTS[index];
+        zeroth += weight;
+        first += weight * offset;
+        second += weight * offset * offset;
+    }
+    (zeroth, first, second)
+}
+
+fn hertz_patch_half_width_over_length(
+    head_radius_m: f64,
+    indentation_m: f64,
+    bar_length_m: f64,
+) -> f64 {
+    (sqrt(head_radius_m * indentation_m.max(0.0)) / bar_length_m).min(0.12)
+}
+
+fn hertz_collision_duration_seconds(
+    mallet_mass_kg: f64,
+    strike_velocity_m_per_s: f64,
+    stiffness_n_per_m_pow_3_over_2: f64,
+) -> f64 {
+    let impact_energy_j = 0.5 * mallet_mass_kg * strike_velocity_m_per_s * strike_velocity_m_per_s;
+    let maximum_indentation_m =
+        hertz_maximum_indentation_m(impact_energy_j, stiffness_n_per_m_pow_3_over_2);
+    2.0 * HERTZ_HALF_COLLISION_INTEGRAL * maximum_indentation_m / strike_velocity_m_per_s
+}
+
+fn hertz_maximum_indentation_m(impact_energy_j: f64, stiffness_n_per_m_pow_3_over_2: f64) -> f64 {
+    pow(2.5 * impact_energy_j / stiffness_n_per_m_pow_3_over_2, 0.4)
+}
+
+fn hertz_peak_force_n(impact_energy_j: f64, stiffness_n_per_m_pow_3_over_2: f64) -> f64 {
+    let maximum_indentation_m =
+        hertz_maximum_indentation_m(impact_energy_j, stiffness_n_per_m_pow_3_over_2);
+    stiffness_n_per_m_pow_3_over_2 * pow(maximum_indentation_m, 1.5)
+}
+
+#[cfg(test)]
+pub fn hertz_patch_half_width_over_length_for_test(
+    head_radius_m: f64,
+    indentation_m: f64,
+    bar_length_m: f64,
+) -> f64 {
+    hertz_patch_half_width_over_length(head_radius_m, indentation_m, bar_length_m)
+}
+
+#[cfg(test)]
+pub fn hertz_collision_duration_seconds_for_test(
+    mallet_mass_kg: f64,
+    strike_velocity_m_per_s: f64,
+    stiffness_n_per_m_pow_3_over_2: f64,
+) -> f64 {
+    hertz_collision_duration_seconds(
+        mallet_mass_kg,
+        strike_velocity_m_per_s,
+        stiffness_n_per_m_pow_3_over_2,
+    )
+}
 const RADIATION_DISTANCE_M: f64 = 1.0;
 // One fixed one-metre listener direction, 30 degrees off the bar-normal
 // axis. A listener exactly over every bar centre is a geometric singularity:
@@ -121,6 +210,9 @@ pub struct StrikeGesture {
     pub velocity: i32,
     /// 0 is a very soft yarn mallet; 1 is a hard cord mallet.
     pub hardness: f64,
+    /// Full compression-and-release duration of the conservative Hertz
+    /// collision against a rigid target. The mobile bar and contact damping
+    /// can separate sooner, but may not extend contact beyond this bound.
     pub contact_duration_seconds: f64,
     /// Kinetic energy available from the mallet head immediately before
     /// contact.  The Hertz indentation is derived from this energy and the
@@ -145,15 +237,17 @@ impl StrikeGesture {
             return Err(VibesError::InvalidHardness);
         }
         let v = velocity as f64 / 127.0;
-        // Harder mallets compress for less time and have higher Hertzian
-        // stiffness.  Velocity changes force, not the bar's damping law.
-        let contact_duration_seconds = 0.0065 - 0.0038 * hardness;
+        // Harder mallets have higher Hertzian stiffness. Contact duration is
+        // derived from that same conservative collision rather than carried
+        // as an unrelated envelope parameter. Velocity changes force, not the
+        // bar's damping law.
         let stiffness = 2.2e6 * (1.0 + 5.0 * hardness);
         let mallet_speed_m_s = 0.45 + 3.0 * v;
         let mallet_mass_kg = 0.028;
         let impact_energy_j = 0.5 * mallet_mass_kg * mallet_speed_m_s * mallet_speed_m_s;
-        let indentation_m = pow(2.5 * impact_energy_j / stiffness, 0.4);
-        let peak_force_n = stiffness * pow(indentation_m, 1.5);
+        let contact_duration_seconds =
+            hertz_collision_duration_seconds(mallet_mass_kg, mallet_speed_m_s, stiffness);
+        let peak_force_n = hertz_peak_force_n(impact_energy_j, stiffness);
         Ok(Self {
             velocity,
             hardness,
@@ -242,7 +336,8 @@ impl VibesParameters {
 pub struct VibesOutput {
     pub bar_radiation_velocity_m_per_s: f64,
     pub resonator_volume_velocity_m3_per_s: f64,
-    pub mixed_radiation: f64,
+    pub bar_pressure_pa: f64,
+    pub tube_pressure_pa: f64,
     pub radiated_pressure_pa: f64,
     pub fan_aperture: f64,
     pub contact_force_n: f64,
@@ -478,16 +573,19 @@ impl VibraphoneVoice {
             || gesture.contact_duration_seconds > 0.02
             || !gesture.impact_energy_j.is_finite()
             || !(0.0..=0.5).contains(&gesture.impact_energy_j)
+            || gesture.impact_energy_j == 0.0
             || !gesture.mallet_mass_kg.is_finite()
             || !(0.005..=0.08).contains(&gesture.mallet_mass_kg)
             || !gesture.strike_velocity_m_per_s.is_finite()
             || !(0.0..=8.0).contains(&gesture.strike_velocity_m_per_s)
+            || gesture.strike_velocity_m_per_s == 0.0
             || !gesture.strike_position_over_length.is_finite()
             || !(0.05..=0.95).contains(&gesture.strike_position_over_length)
             || !gesture.head_radius_m.is_finite()
             || !(0.003..=0.03).contains(&gesture.head_radius_m)
             || !gesture.peak_force_n.is_finite()
             || !(0.0..=500.0).contains(&gesture.peak_force_n)
+            || gesture.peak_force_n == 0.0
             || !gesture.contact_stiffness_n_per_m_pow_3_over_2.is_finite()
             || gesture.contact_stiffness_n_per_m_pow_3_over_2 <= 0.0
             || !gesture.contact_damping_seconds_per_m.is_finite()
@@ -502,14 +600,31 @@ impl VibraphoneVoice {
         if (gesture.impact_energy_j - stated_energy).abs() > energy_tolerance {
             return Err(VibesError::InvalidContact);
         }
+        let derived_duration = hertz_collision_duration_seconds(
+            gesture.mallet_mass_kg,
+            gesture.strike_velocity_m_per_s,
+            gesture.contact_stiffness_n_per_m_pow_3_over_2,
+        );
+        let derived_peak_force = hertz_peak_force_n(
+            gesture.impact_energy_j,
+            gesture.contact_stiffness_n_per_m_pow_3_over_2,
+        );
+        if !derived_duration.is_finite()
+            || !derived_peak_force.is_finite()
+            || (gesture.contact_duration_seconds - derived_duration).abs() > 0.01 * derived_duration
+            || (gesture.peak_force_n - derived_peak_force).abs() > 0.01 * derived_peak_force
+        {
+            return Err(VibesError::InvalidContact);
+        }
         let maximum_frames =
-            libm::ceil(2.0 * gesture.contact_duration_seconds * self.sample_rate_hz) as u32;
+            libm::ceil(gesture.contact_duration_seconds * self.sample_rate_hz) as u32;
+        let mallet_position_m = self.strike_displacement_for(gesture, 0.0);
         self.contact = ContactState {
             active: true,
             gesture,
             elapsed_frames: 0,
             maximum_frames: maximum_frames.max(1),
-            mallet_position_m: self.strike_displacement(),
+            mallet_position_m,
             mallet_velocity_m_per_s: gesture.strike_velocity_m_per_s,
             compression_m: 0.0,
             dissipated_energy_j: 0.0,
@@ -568,7 +683,8 @@ impl VibraphoneVoice {
         Ok(VibesOutput {
             bar_radiation_velocity_m_per_s: bar_radiation,
             resonator_volume_velocity_m3_per_s: tube_volume_velocity,
-            mixed_radiation: radiated_pressure_pa,
+            bar_pressure_pa,
+            tube_pressure_pa,
             radiated_pressure_pa,
             fan_aperture,
             contact_force_n: contact_force,
@@ -703,23 +819,55 @@ impl VibraphoneVoice {
         Some(probe.modes[index].energy_j() / initial)
     }
 
-    fn contact_residue(&self, index: usize) -> f64 {
+    fn contact_residue_for(&self, gesture: StrikeGesture, compression_m: f64, index: usize) -> f64 {
         if !self.modes[index].active {
             return 0.0;
         }
-        let centre = self.contact.gesture.strike_position_over_length;
-        let half_patch = (self.contact.gesture.head_radius_m / self.geometry.length_m).min(0.12);
-        /* Integrate the evaluated mode shape over the finite circular mallet
-         * patch.  A soft, wide head therefore rejects short-wavelength modes
-         * through contact geometry rather than an output-side brightness EQ. */
-        const OFFSETS: [f64; 5] = [-1.0, -0.5, 0.0, 0.5, 1.0];
-        const WEIGHTS: [f64; 5] = [1.0, 4.0, 2.0, 4.0, 1.0];
+        let centre = gesture.strike_position_over_length;
+        let half_patch = hertz_patch_half_width_over_length(
+            gesture.head_radius_m,
+            compression_m,
+            self.geometry.length_m,
+        );
+        /* Integrate the mode shape against the exact one-dimensional marginal
+         * of a circular Hertz pressure footprint. A soft, wide head therefore
+         * rejects short-wavelength modes through the named contact geometry,
+         * rather than the former uniform line average or an output EQ. */
         let mut weighted = 0.0;
         for sample in 0..5 {
-            let x = (centre + OFFSETS[sample] * half_patch).clamp(0.0, 1.0);
-            weighted += WEIGHTS[sample] * packed_mode_shape(&self.geometry, index, x);
+            let x = (centre + HERTZ_PATCH_OFFSETS[sample] * half_patch).clamp(0.0, 1.0);
+            weighted += HERTZ_PATCH_WEIGHTS[sample] * packed_mode_shape(&self.geometry, index, x);
         }
-        weighted / 12.0
+        weighted
+    }
+
+    fn contact_residue(&self, index: usize) -> f64 {
+        self.contact_residue_for(self.contact.gesture, self.contact.compression_m, index)
+    }
+
+    fn strike_displacement_for(&self, gesture: StrikeGesture, compression_m: f64) -> f64 {
+        self.modes
+            .iter()
+            .enumerate()
+            .map(|(index, mode)| {
+                self.contact_residue_for(gesture, compression_m, index) * mode.position
+            })
+            .sum()
+    }
+
+    #[cfg(test)]
+    pub fn strike_displacement_for_test(&self, gesture: StrikeGesture, compression_m: f64) -> f64 {
+        self.strike_displacement_for(gesture, compression_m)
+    }
+
+    #[cfg(test)]
+    pub fn retained_mallet_position_m_for_test(&self) -> f64 {
+        self.contact.mallet_position_m
+    }
+
+    #[cfg(test)]
+    pub fn contact_maximum_frames_for_test(&self) -> u32 {
+        self.contact.maximum_frames
     }
 
     fn coupled_mass_impulse_response(
@@ -779,11 +927,7 @@ impl VibraphoneVoice {
     }
 
     fn strike_displacement(&self) -> f64 {
-        self.modes
-            .iter()
-            .enumerate()
-            .map(|(index, mode)| self.contact_residue(index) * mode.position)
-            .sum()
+        self.strike_displacement_for(self.contact.gesture, self.contact.compression_m)
     }
 
     fn strike_velocity(&self) -> f64 {
@@ -1458,11 +1602,9 @@ fn packed_free_bar_radiation_transfer(
                 + axial_distance_m * axial_distance_m,
         );
         let midpoint_shape = 0.5 * (shape[element] as f64 + shape[element + 1] as f64);
-        /* Both the top and bottom are complete physical faces. The previous
-         * 0.5 multiplier treated `element_area_m2` as their combined area,
-         * although it is the area of one face, and halved the direct bar
-         * pressure relative to the resonator tubes. Opposite normals are
-         * already represented by the subtraction below. */
+        /* Both top and bottom are complete physical faces. Opposite normals
+         * are represented by the subtraction below; the free-space kernel's
+         * 1/(4 pi r) normalization is applied once after the surface sum. */
         let weight = element_area_m2 * midpoint_shape;
         let top_phase = wave_number * top_distance_m;
         let bottom_phase = wave_number * bottom_distance_m;
@@ -1471,7 +1613,7 @@ fn packed_free_bar_radiation_transfer(
         integral_im +=
             weight * (sin(top_phase) / top_distance_m - sin(bottom_phase) / bottom_distance_m);
     }
-    let coefficient = AIR_DENSITY_KG_M3 * TAU * frequency_hz / (2.0 * PI);
+    let coefficient = AIR_DENSITY_KG_M3 * TAU * frequency_hz / (4.0 * PI);
     (-coefficient * integral_im, coefficient * integral_re)
 }
 
@@ -1591,10 +1733,13 @@ fn solve_spd_3(
 /// that span at every playable pitch.
 const VBS2_CAP_SECONDS: f64 = 4.0;
 /// Default gesture for the note-buffer compatibility ABI. It is one fixed
-/// medium-soft mallet struck at the bar centre across the whole keyboard; it is
-/// deliberately not a per-register table fitted to the sampled comparator.
+/// medium-soft mallet struck three-eighths of the way across the playable inner
+/// zone across the whole keyboard; it is deliberately not a per-register
+/// table fitted to the sampled comparator. This avoids the exact centre nodes
+/// of physically important antisymmetric bar modes without becoming a
+/// note-specific spectral control.
 /// The stateful physical-instrument ABI will carry these as explicit controls.
-const VBS2_DEFAULT_STRIKE_POSITION_OVER_LENGTH: f64 = 0.50;
+const VBS2_DEFAULT_STRIKE_POSITION_OVER_LENGTH: f64 = 0.375;
 const VBS2_DEFAULT_MALLET_HARDNESS: f64 = 0.20;
 
 /// Digital headroom convention: +/-1 corresponds to +/-8 Pa at the declared
@@ -1670,10 +1815,10 @@ pub extern "C" fn vbs2_render(
         Ok(gesture) => gesture,
         Err(_) => return 0,
     };
-    /* Normal vibraphone tone is struck at the bar centre. The generated free-
-     * free modes retain the resulting parity selection directly: symmetric
-     * modes are driven while antisymmetric centre-node modes are not smuggled
-     * back through an output-side spectral control. */
+    /* One fixed inner playing-zone strike uses the generated eigenvectors at
+     * the contact port.  Around 2/5 length the tuned 4f family is audible while
+     * the 10f family lies close to a physical node; this is mallet placement,
+     * not a spectral operation on the rendered output. */
     gesture.strike_position_over_length = VBS2_DEFAULT_STRIKE_POSITION_OVER_LENGTH;
     if voice.begin_strike(gesture).is_err() {
         return 0;
