@@ -1016,6 +1016,15 @@ pub(crate) fn baffled_plate_observer_transfer(
     nodal_shape: &[f64; NODE_COUNT],
     frequency_hz: f64,
 ) -> Result<(f64, f64), UprightBassBodyError> {
+    validate(input, UPRIGHT_BASS_IDENTITY)?;
+    if !finite_positive(frequency_hz) {
+        return Err(UprightBassBodyError::InvalidInput {
+            field: "radiation_frequency_hz",
+        });
+    }
+    if nodal_shape.iter().any(|value| !value.is_finite()) {
+        return Err(UprightBassBodyError::NonFiniteMode);
+    }
     let (nodes, triangles) = build_mesh(input);
     let cell_x = input.length_m / GRID_CELLS_X as f64;
     let cell_y = input.width_m / GRID_CELLS_Y as f64;

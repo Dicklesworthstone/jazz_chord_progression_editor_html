@@ -336,6 +336,29 @@ fn rayleigh_observer_matches_a_uniform_piston_known_answer_and_refuses_underreso
         baffled_plate_observer_transfer(input, &uniform_shape, 300.0),
         Err(UprightBassBodyError::RadiationUnderresolved)
     );
+    assert_eq!(
+        baffled_plate_observer_transfer(input, &uniform_shape, 0.0),
+        Err(UprightBassBodyError::InvalidInput {
+            field: "radiation_frequency_hz"
+        })
+    );
+    let mut non_finite_shape = uniform_shape;
+    non_finite_shape[7] = f64::NAN;
+    assert_eq!(
+        baffled_plate_observer_transfer(input, &non_finite_shape, 75.0),
+        Err(UprightBassBodyError::NonFiniteMode)
+    );
+    assert_eq!(
+        baffled_plate_observer_transfer(
+            UprightBassBodyInput {
+                length_m: f64::NAN,
+                ..input
+            },
+            &uniform_shape,
+            75.0,
+        ),
+        Err(UprightBassBodyError::InvalidInput { field: "length_m" })
+    );
 }
 
 #[test]
