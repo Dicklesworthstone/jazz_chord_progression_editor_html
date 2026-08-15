@@ -5,6 +5,13 @@
 *.db-wal
 # fsqlite namespace sidecars written beside the db by beads_rust
 *.db-fsqlite-*
+# Vacuum copies use `.vacuum-fsqlite-ns-{gate,use}`, which `*.db-fsqlite-*` misses
+*-fsqlite-ns-gate
+*-fsqlite-ns-use
+
+# WAL certification sidecars (`*.db-wal` does not match these)
+*.db-wal-cert
+*.db-wal-cert-head
 
 # Lock files
 *.lock

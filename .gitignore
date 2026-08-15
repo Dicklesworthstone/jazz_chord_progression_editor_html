@@ -34,3 +34,7 @@ Thumbs.db
 .ntm/
 # RCH virtual FS workload workspaces
 .rch-vfs-*/
+
+# === multi-repo ephemeral patterns 2026-08-15 ===
+# Qwen Code local project settings (machine-specific)
+.qwen/
