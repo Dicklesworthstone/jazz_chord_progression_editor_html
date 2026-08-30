@@ -2,12 +2,12 @@
 
 An offline, deterministic jazz chord-progression studio designed to turn lead-sheet changes into an explainable, playable, portable chart—without accounts, telemetry, cloud services, or runtime AI.
 
-> **Development status:** the visible application is now the first interactive
-> **U0 studio checkpoint**, not yet the complete chord editor. It opens a real
-> F2-decoded, F3-published document through A0 application state and supports
-> title commit/refusal, undo/redo, responsive rails, and accessible mobile
-> sheets. Chord authoring, contextual analysis, playback planning, persistence,
-> import/export, presets, and the planned discovery tools are not connected yet.
+> **Development status:** the live source tree has advanced substantially beyond
+> the original U0 checkpoint described by older release notes. It now contains
+> real chart authoring, deterministic theory and voicing paths, playback/audio,
+> recovery, a reviewed progression library, and file export. Evidence for any
+> particular surface still belongs to its named tests and release gate; planned
+> discovery work is not silently counted as shipped.
 
 ## Why Changes
 
@@ -20,7 +20,21 @@ Jazz harmony tools often force a poor choice: move slowly through generic forms,
 - keep every search bounded, deterministic, explainable, and reproducible;
 - keep the complete runtime in one file that works with the network blocked.
 
-That is the release direction, not a description of the current visible shell. See [Roadmap](#roadmap) for the unshipped work.
+That bounded, explainable design remains the product contract. See [Roadmap](#roadmap) for work that is still intentionally unshipped.
+
+## FrankenJazz for iPhone, iPad, and Mac
+
+The repository now also contains `ios/`, a native SwiftUI sibling named
+**FrankenJazz**. It is not a WebView wrapper. The Apple app includes native
+lead-sheet entry, a bundled progression library, literal/contextual chord
+inspection, five voicing families, transposition, an adaptive iPhone/iPad/Mac
+workspace, asynchronous generated playback, local recovery, and real
+FrankenJazz JSON, chart-text, and Standard MIDI files.
+
+The Apple app has no account, telemetry, third-party AI service, sample
+download, or runtime dependency on the website. See
+[`docs/APPLE_APP_PLAN.md`](docs/APPLE_APP_PLAN.md) for its capability map and
+acceptance gates, and [`ios/README.md`](ios/README.md) for build instructions.
 
 ## What works today
 

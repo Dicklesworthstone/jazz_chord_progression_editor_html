@@ -1,0 +1,566 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		05E899167A45DC5380C0DE5B /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C6412C416995714EE985730D /* PrivacyInfo.xcprivacy */; };
+		093D59EF084DB7BC1A201B85 /* MIDIFileWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36D63379B10C57704EA5F87B /* MIDIFileWriter.swift */; };
+		103FE59C04BFA84D6F6B4490 /* FrankenJazzCoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B36857E86A6B6E8A006752C /* FrankenJazzCoreTests.swift */; };
+		13854C6977598220624C38EA /* JazzTheory.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE0A774DB5F4891A19872C42 /* JazzTheory.swift */; };
+		13E7725387EF66F685604568 /* JazzModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51A3FB0B84F37CCE3F7A64F2 /* JazzModels.swift */; };
+		157699AAF574AD86B5FCE47A /* FrankenJazzApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82C195442D5307014EC8CA82 /* FrankenJazzApp.swift */; };
+		1F19C3C0FCD06EB4AD5D08A4 /* JazzStudioStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86BD915B36B808B4C318B4C3 /* JazzStudioStore.swift */; };
+		322702B5C1D1850D26FD3255 /* JazzLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98BBBEC7A8F2B138F43DC722 /* JazzLibrary.swift */; };
+		542726B64130A8542A15DCD1 /* JazzAudioRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D12733B30A45D0C4948E1C9 /* JazzAudioRenderer.swift */; };
+		9EE58EDFAC86B08170A29FA5 /* FrankenJazzStudioView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FA325F7DCBDACFF4927C2CD /* FrankenJazzStudioView.swift */; };
+		B081518AC1AF93724F01D61A /* FrankenJazzTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EEEB0929ABCA3C303443F4B /* FrankenJazzTheme.swift */; };
+		BD2C0B696CE48E2464C26B05 /* JazzAudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5107E1D753E6FDBF3E25BB15 /* JazzAudioEngine.swift */; };
+		BDA6B3D0463084169E782FD9 /* FrankenJazzUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B0098B8D5669EE9A7C05387 /* FrankenJazzUITests.swift */; };
+		D3AD915DA1121BCD09F72B66 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 825B81230B067CABEC6549E2 /* Assets.xcassets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		3C40EFD657F8AD9E83956DC7 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = EDE29EFA73406516B7E69114 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = EA31DA6430C0C50B14C1FC06;
+			remoteInfo = FrankenJazz;
+		};
+		B485DA7C6BC7D3C1BCE88BE2 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = EDE29EFA73406516B7E69114 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = EA31DA6430C0C50B14C1FC06;
+			remoteInfo = FrankenJazz;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		0575E2391C8906F38AFCD111 /* FrankenJazz.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = FrankenJazz.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0B0098B8D5669EE9A7C05387 /* FrankenJazzUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrankenJazzUITests.swift; sourceTree = "<group>"; };
+		2FA325F7DCBDACFF4927C2CD /* FrankenJazzStudioView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrankenJazzStudioView.swift; sourceTree = "<group>"; };
+		36D63379B10C57704EA5F87B /* MIDIFileWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MIDIFileWriter.swift; sourceTree = "<group>"; };
+		5107E1D753E6FDBF3E25BB15 /* JazzAudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JazzAudioEngine.swift; sourceTree = "<group>"; };
+		51A3FB0B84F37CCE3F7A64F2 /* JazzModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JazzModels.swift; sourceTree = "<group>"; };
+		5B36857E86A6B6E8A006752C /* FrankenJazzCoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrankenJazzCoreTests.swift; sourceTree = "<group>"; };
+		5D4CBE25FB8B8E4FCFDAF547 /* FrankenJazzTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = FrankenJazzTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		5EEEB0929ABCA3C303443F4B /* FrankenJazzTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrankenJazzTheme.swift; sourceTree = "<group>"; };
+		825B81230B067CABEC6549E2 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		82C195442D5307014EC8CA82 /* FrankenJazzApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrankenJazzApp.swift; sourceTree = "<group>"; };
+		86BD915B36B808B4C318B4C3 /* JazzStudioStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JazzStudioStore.swift; sourceTree = "<group>"; };
+		8D12733B30A45D0C4948E1C9 /* JazzAudioRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JazzAudioRenderer.swift; sourceTree = "<group>"; };
+		90ECA58A8489643B260B4ACA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		98BBBEC7A8F2B138F43DC722 /* JazzLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JazzLibrary.swift; sourceTree = "<group>"; };
+		C6412C416995714EE985730D /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		C881B54BCE97FEF707E4713F /* FrankenJazzUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = FrankenJazzUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		EE0A774DB5F4891A19872C42 /* JazzTheory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JazzTheory.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		14AEC3E99EA27F279D2C4312 /* UITests */ = {
+			isa = PBXGroup;
+			children = (
+				0B0098B8D5669EE9A7C05387 /* FrankenJazzUITests.swift */,
+			);
+			path = UITests;
+			sourceTree = "<group>";
+		};
+		442FAD6BC5D8F62B73463F2B /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				0575E2391C8906F38AFCD111 /* FrankenJazz.app */,
+				5D4CBE25FB8B8E4FCFDAF547 /* FrankenJazzTests.xctest */,
+				C881B54BCE97FEF707E4713F /* FrankenJazzUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		715B54B5E283C3F9D54A5354 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				82C195442D5307014EC8CA82 /* FrankenJazzApp.swift */,
+				2FA325F7DCBDACFF4927C2CD /* FrankenJazzStudioView.swift */,
+				5EEEB0929ABCA3C303443F4B /* FrankenJazzTheme.swift */,
+				90ECA58A8489643B260B4ACA /* Info.plist */,
+				5107E1D753E6FDBF3E25BB15 /* JazzAudioEngine.swift */,
+				8D12733B30A45D0C4948E1C9 /* JazzAudioRenderer.swift */,
+				98BBBEC7A8F2B138F43DC722 /* JazzLibrary.swift */,
+				51A3FB0B84F37CCE3F7A64F2 /* JazzModels.swift */,
+				86BD915B36B808B4C318B4C3 /* JazzStudioStore.swift */,
+				EE0A774DB5F4891A19872C42 /* JazzTheory.swift */,
+				36D63379B10C57704EA5F87B /* MIDIFileWriter.swift */,
+				C6412C416995714EE985730D /* PrivacyInfo.xcprivacy */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		952B8708B0C21A24FFBA848C = {
+			isa = PBXGroup;
+			children = (
+				825B81230B067CABEC6549E2 /* Assets.xcassets */,
+				715B54B5E283C3F9D54A5354 /* Sources */,
+				C3932FC894968E04C42FB817 /* Tests */,
+				14AEC3E99EA27F279D2C4312 /* UITests */,
+				442FAD6BC5D8F62B73463F2B /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		C3932FC894968E04C42FB817 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				5B36857E86A6B6E8A006752C /* FrankenJazzCoreTests.swift */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		2EDE521DAFD375A0C4AC0BD2 /* FrankenJazzUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = EE914B0704EAB6807C275B0E /* Build configuration list for PBXNativeTarget "FrankenJazzUITests" */;
+			buildPhases = (
+				A0BD71A62C0913FA5C342EF7 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				7C8CB3CF036E4CBD846089F2 /* PBXTargetDependency */,
+			);
+			name = FrankenJazzUITests;
+			packageProductDependencies = (
+			);
+			productName = FrankenJazzUITests;
+			productReference = C881B54BCE97FEF707E4713F /* FrankenJazzUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+		60B5F12324E9D95422564A24 /* FrankenJazzTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 99056F8FDD82C29C7CFC5009 /* Build configuration list for PBXNativeTarget "FrankenJazzTests" */;
+			buildPhases = (
+				151C3356750153289514DEEF /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				047D80A0B4089E3806E68082 /* PBXTargetDependency */,
+			);
+			name = FrankenJazzTests;
+			packageProductDependencies = (
+			);
+			productName = FrankenJazzTests;
+			productReference = 5D4CBE25FB8B8E4FCFDAF547 /* FrankenJazzTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		EA31DA6430C0C50B14C1FC06 /* FrankenJazz */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 47AB89E0C45C2C7E44D9C4AF /* Build configuration list for PBXNativeTarget "FrankenJazz" */;
+			buildPhases = (
+				87613BDDA2307DC0448CD7D5 /* Sources */,
+				BB3A09569BB8316D07BC27FB /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = FrankenJazz;
+			packageProductDependencies = (
+			);
+			productName = FrankenJazz;
+			productReference = 0575E2391C8906F38AFCD111 /* FrankenJazz.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		EDE29EFA73406516B7E69114 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					2EDE521DAFD375A0C4AC0BD2 = {
+						DevelopmentTeam = AU8V2Z6NKY;
+						ProvisioningStyle = Automatic;
+						TestTargetID = EA31DA6430C0C50B14C1FC06;
+					};
+					60B5F12324E9D95422564A24 = {
+						DevelopmentTeam = AU8V2Z6NKY;
+						ProvisioningStyle = Automatic;
+					};
+					EA31DA6430C0C50B14C1FC06 = {
+						DevelopmentTeam = AU8V2Z6NKY;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 29381F13621F5EE4560F55E2 /* Build configuration list for PBXProject "FrankenJazz" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 952B8708B0C21A24FFBA848C;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 442FAD6BC5D8F62B73463F2B /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				EA31DA6430C0C50B14C1FC06 /* FrankenJazz */,
+				60B5F12324E9D95422564A24 /* FrankenJazzTests */,
+				2EDE521DAFD375A0C4AC0BD2 /* FrankenJazzUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		BB3A09569BB8316D07BC27FB /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D3AD915DA1121BCD09F72B66 /* Assets.xcassets in Resources */,
+				05E899167A45DC5380C0DE5B /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		151C3356750153289514DEEF /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				103FE59C04BFA84D6F6B4490 /* FrankenJazzCoreTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		87613BDDA2307DC0448CD7D5 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				157699AAF574AD86B5FCE47A /* FrankenJazzApp.swift in Sources */,
+				9EE58EDFAC86B08170A29FA5 /* FrankenJazzStudioView.swift in Sources */,
+				B081518AC1AF93724F01D61A /* FrankenJazzTheme.swift in Sources */,
+				BD2C0B696CE48E2464C26B05 /* JazzAudioEngine.swift in Sources */,
+				542726B64130A8542A15DCD1 /* JazzAudioRenderer.swift in Sources */,
+				322702B5C1D1850D26FD3255 /* JazzLibrary.swift in Sources */,
+				13E7725387EF66F685604568 /* JazzModels.swift in Sources */,
+				1F19C3C0FCD06EB4AD5D08A4 /* JazzStudioStore.swift in Sources */,
+				13854C6977598220624C38EA /* JazzTheory.swift in Sources */,
+				093D59EF084DB7BC1A201B85 /* MIDIFileWriter.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A0BD71A62C0913FA5C342EF7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BDA6B3D0463084169E782FD9 /* FrankenJazzUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		047D80A0B4089E3806E68082 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = EA31DA6430C0C50B14C1FC06 /* FrankenJazz */;
+			targetProxy = B485DA7C6BC7D3C1BCE88BE2 /* PBXContainerItemProxy */;
+		};
+		7C8CB3CF036E4CBD846089F2 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = EA31DA6430C0C50B14C1FC06 /* FrankenJazz */;
+			targetProxy = 3C40EFD657F8AD9E83956DC7 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		0F3405878B0CAEE237DC71B9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.frankenjazz.FrankenJazzUITests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = FrankenJazz;
+			};
+			name = Release;
+		};
+		1E287CC2CC486E21F298A71F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = NO;
+				INFOPLIST_FILE = Sources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MACCATALYST_USE_NATIVE_DESIGN = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.frankenjazz.FrankenJazz;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = YES;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		90C1BEAA6AF2E70739F9D77C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = AU8V2Z6NKY;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.10;
+			};
+			name = Release;
+		};
+		960C5AACB3F8B35EB3CF4A47 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.frankenjazz.FrankenJazzUITests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = FrankenJazz;
+			};
+			name = Debug;
+		};
+		A1EC6D550469C1550353993C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = AU8V2Z6NKY;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.10;
+			};
+			name = Debug;
+		};
+		B442105F74EA48E05B527F4A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.frankenjazz.FrankenJazzTests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FrankenJazz.app/FrankenJazz";
+			};
+			name = Debug;
+		};
+		CA088A4FD87F0E61CF36B0A6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.frankenjazz.FrankenJazzTests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FrankenJazz.app/FrankenJazz";
+			};
+			name = Release;
+		};
+		DEFF55EBF154122B848E8120 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = NO;
+				INFOPLIST_FILE = Sources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MACCATALYST_USE_NATIVE_DESIGN = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.frankenjazz.FrankenJazz;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = YES;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		29381F13621F5EE4560F55E2 /* Build configuration list for PBXProject "FrankenJazz" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1EC6D550469C1550353993C /* Debug */,
+				90C1BEAA6AF2E70739F9D77C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		47AB89E0C45C2C7E44D9C4AF /* Build configuration list for PBXNativeTarget "FrankenJazz" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DEFF55EBF154122B848E8120 /* Debug */,
+				1E287CC2CC486E21F298A71F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		99056F8FDD82C29C7CFC5009 /* Build configuration list for PBXNativeTarget "FrankenJazzTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B442105F74EA48E05B527F4A /* Debug */,
+				CA088A4FD87F0E61CF36B0A6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		EE914B0704EAB6807C275B0E /* Build configuration list for PBXNativeTarget "FrankenJazzUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				960C5AACB3F8B35EB3CF4A47 /* Debug */,
+				0F3405878B0CAEE237DC71B9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = EDE29EFA73406516B7E69114 /* Project object */;
+}
