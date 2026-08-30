@@ -2,6 +2,20 @@ import XCTest
 @testable import FrankenJazz
 
 final class FrankenJazzCoreTests: XCTestCase {
+    func testImportFenceRejectsOlderCompletionAndInterveningEdit() {
+        var fence = JazzImportFence()
+        let older = fence.claim(revision: 4)
+        let newer = fence.claim(revision: 4)
+
+        XCTAssertFalse(fence.owns(older, currentRevision: 4))
+        XCTAssertTrue(fence.owns(newer, currentRevision: 4))
+        XCTAssertFalse(fence.owns(newer, currentRevision: 5))
+
+        let draftRace = fence.claim(revision: 5)
+        fence.invalidatePendingRequest()
+        XCTAssertFalse(fence.owns(draftRace, currentRevision: 5))
+    }
+
     func testQuickEntryAssignsExactBarBeats() throws {
         let parsed = try JazzTheory.parseChart("| Dm7 G7 | Cmaj7 |")
         XCTAssertEqual(parsed.measures.count, 2)

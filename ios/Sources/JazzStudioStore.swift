@@ -3,6 +3,31 @@ import Combine
 import SwiftUI
 import UniformTypeIdentifiers
 
+/// Monotonic ownership for asynchronous document reads. File-provider reads
+/// can finish in any order; only the newest request may publish, and an edit
+/// made while a read is in flight invalidates that request as well.
+struct JazzImportFence {
+    struct Token: Equatable {
+        let request: Int
+        let revision: Int
+    }
+
+    private var nextRequest = 0
+
+    mutating func claim(revision: Int) -> Token {
+        nextRequest &+= 1
+        return Token(request: nextRequest, revision: revision)
+    }
+
+    mutating func invalidatePendingRequest() {
+        nextRequest &+= 1
+    }
+
+    func owns(_ token: Token, currentRevision: Int) -> Bool {
+        token.request == nextRequest && token.revision == currentRevision
+    }
+}
+
 @MainActor
 final class JazzStudioStore: ObservableObject {
     enum DraftState: Equatable {
@@ -33,6 +58,7 @@ final class JazzStudioStore: ObservableObject {
     private var coalescingDeadline = Date.distantPast
     private var draftTask: Task<Void, Never>?
     private var primeTask: Task<Void, Never>?
+    private var importFence = JazzImportFence()
     private var audioChanges: AnyCancellable?
     private let recovery = JazzRecoveryStore()
     private let encoder = JSONEncoder()
@@ -89,6 +115,10 @@ final class JazzStudioStore: ObservableObject {
     }
 
     func setDraft(_ text: String) {
+        // Typing is visible user work before the debounced chart commit bumps
+        // `revision`. Invalidate an in-flight file-provider read immediately so
+        // it cannot erase the draft during that debounce window.
+        importFence.invalidatePendingRequest()
         draftText = String(text.prefix(JazzTheory.maximumChartCharacters + 1))
         draftTask?.cancel()
         do {
@@ -230,6 +260,7 @@ final class JazzStudioStore: ObservableObject {
     }
 
     func importFile(_ url: URL) async {
+        let importToken = importFence.claim(revision: revision)
         let accessed = url.startAccessingSecurityScopedResource()
         defer { if accessed { url.stopAccessingSecurityScopedResource() } }
         do {
@@ -240,6 +271,8 @@ final class JazzStudioStore: ObservableObject {
                 guard data.count <= 2_000_000 else { throw ImportError.tooLarge }
                 return data
             }.value
+            try Task.checkCancellation()
+            guard importFence.owns(importToken, currentRevision: revision) else { return }
             let imported: JazzChart
             if url.pathExtension.lowercased() == "txt" || url.pathExtension.lowercased() == "md" {
                 guard let text = String(data: data, encoding: .utf8) else { throw ImportError.notUTF8 }
@@ -250,11 +283,15 @@ final class JazzStudioStore: ObservableObject {
                 imported = try decoder.decode(JazzChart.self, from: data)
             }
             try JazzDocumentValidator.validate(imported)
+            guard importFence.owns(importToken, currentRevision: revision) else { return }
             commit(imported, notice: "Imported “\(imported.title)”.")
             draftText = imported.chartText
             selectedChordID = imported.measures.first?.chords.first?.id
             isDocumentPresented = false
+        } catch is CancellationError {
+            return
         } catch {
+            guard importFence.owns(importToken, currentRevision: revision) else { return }
             notice = "Import refused: \(error.localizedDescription)"
         }
     }
