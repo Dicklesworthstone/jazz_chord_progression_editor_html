@@ -24,7 +24,27 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertEqual(parsed.normalizedText, "| Dm7 G7 | Cmaj7 |")
     }
 
+    func testQuickEntryPreservesExplicitBeatDurations() throws {
+        let parsed = try JazzTheory.parseChart("| Dm9:1 G13:3 | Cmaj9:2 A7alt:2 |")
+        XCTAssertEqual(parsed.measures[0].chords.map(\.beats), [1, 3])
+        XCTAssertEqual(parsed.measures[1].chords.map(\.beats), [2, 2])
+        XCTAssertEqual(parsed.normalizedText, "| Dm9:1 G13:3 | Cmaj9 A7alt |")
+
+        let chart = JazzChart(title: "Exact rhythm", measures: parsed.measures)
+        XCTAssertEqual(chart.chartText, parsed.normalizedText)
+        XCTAssertEqual(try JazzTheory.parseChart(chart.chartText).measures.map { $0.chords.map(\.beats) }, [[1, 3], [2, 2]])
+    }
+
+    func testQuickEntryDistributesUnspecifiedRemainderAndRefusesOverfill() throws {
+        let parsed = try JazzTheory.parseChart("| Cmaj7:2 Dm7 G7 |")
+        XCTAssertEqual(parsed.measures[0].chords.map(\.beats), [2, 1, 1])
+        XCTAssertThrowsError(try JazzTheory.parseChart("| Cmaj7:3 Dm7:2 |")) { error in
+            XCTAssertEqual(error as? ChartParseIssue, .invalidMeasureDuration(measure: 1))
+        }
+    }
+
     func testEveryBundledLibraryChartParsesAndCompilesToSound() throws {
+        XCTAssertEqual(JazzLibrary.entries.count, 25)
         for entry in JazzLibrary.entries + [JazzLibrary.starter] {
             let parsed = try JazzTheory.parseChart(entry.chartText)
             let chart = JazzChart(title: entry.title, key: entry.key, tempoBPM: entry.tempo, groove: entry.groove, measures: parsed.measures)

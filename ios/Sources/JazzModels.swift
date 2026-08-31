@@ -139,11 +139,7 @@ struct JazzChart: Identifiable, Codable, Equatable, Sendable {
     var barCount: Int { measures.count }
     var durationBeats: Double { measures.reduce(0) { total, measure in total + measure.chords.reduce(0) { $0 + $1.beats } } }
 
-    var chartText: String {
-        measures.map { measure in
-            "| " + measure.chords.map(\.symbol).joined(separator: " ") + " "
-        }.joined() + "|"
-    }
+    var chartText: String { JazzTheory.formatChartText(measures) }
 }
 
 struct ParsedChart: Equatable, Sendable {
@@ -158,6 +154,8 @@ enum ChartParseIssue: LocalizedError, Equatable {
     case emptyMeasure(index: Int)
     case tooManyChords(measure: Int, limit: Int)
     case invalidSymbol(symbol: String, measure: Int)
+    case invalidDuration(token: String, measure: Int)
+    case invalidMeasureDuration(measure: Int)
 
     var errorDescription: String? {
         switch self {
@@ -167,6 +165,8 @@ enum ChartParseIssue: LocalizedError, Equatable {
         case let .emptyMeasure(index): "Measure \(index) is empty. Remove it or add a chord."
         case let .tooManyChords(measure, limit): "Measure \(measure) has more than \(limit) chord events."
         case let .invalidSymbol(symbol, measure): "‘\(symbol)’ in measure \(measure) is not a supported chord symbol."
+        case let .invalidDuration(token, measure): "‘\(token)’ in measure \(measure) has an invalid beat duration. Use a positive value such as :2."
+        case let .invalidMeasureDuration(measure): "The explicit durations in measure \(measure) must total exactly four beats."
         }
     }
 }

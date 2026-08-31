@@ -55,22 +55,70 @@ enum JazzTheory {
         var measures: [JazzMeasure] = []
         for (offset, rawMeasure) in rawMeasures.enumerated() {
             let tokens = rawMeasure.split(whereSeparator: { $0.isWhitespace }).map(String.init)
+            let measureIndex = offset + 1
             guard !tokens.isEmpty else { throw ChartParseIssue.emptyMeasure(index: offset + 1) }
             guard tokens.count <= maximumChordsPerMeasure else {
-                throw ChartParseIssue.tooManyChords(measure: offset + 1, limit: maximumChordsPerMeasure)
+                throw ChartParseIssue.tooManyChords(measure: measureIndex, limit: maximumChordsPerMeasure)
             }
-            let beats = 4.0 / Double(tokens.count)
-            var chords: [JazzChordEvent] = []
+
+            var parsedTokens: [(symbol: String, beats: Double?)] = []
             for token in tokens {
-                guard parseChord(token, in: .c) != nil else {
-                    throw ChartParseIssue.invalidSymbol(symbol: token, measure: offset + 1)
+                let components = token.split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
+                let symbol = String(components[0])
+                let explicitBeats: Double?
+                if components.count == 2 {
+                    guard let value = Double(components[1]), value.isFinite, value > 0, value <= 4 else {
+                        throw ChartParseIssue.invalidDuration(token: token, measure: measureIndex)
+                    }
+                    explicitBeats = value
+                } else {
+                    explicitBeats = nil
                 }
-                chords.append(JazzChordEvent(symbol: token, beats: beats))
+                guard parseChord(symbol, in: .c) != nil else {
+                    throw ChartParseIssue.invalidSymbol(symbol: symbol, measure: measureIndex)
+                }
+                parsedTokens.append((symbol, explicitBeats))
+            }
+
+            let explicitTotal = parsedTokens.compactMap(\.beats).reduce(0, +)
+            let implicitCount = parsedTokens.count - parsedTokens.compactMap(\.beats).count
+            let implicitBeats: Double
+            if implicitCount == 0 {
+                guard abs(explicitTotal - 4) < 0.000_001 else {
+                    throw ChartParseIssue.invalidMeasureDuration(measure: measureIndex)
+                }
+                implicitBeats = 0
+            } else {
+                let remaining = 4 - explicitTotal
+                guard remaining > 0.000_001 else {
+                    throw ChartParseIssue.invalidMeasureDuration(measure: measureIndex)
+                }
+                implicitBeats = remaining / Double(implicitCount)
+            }
+
+            let chords = parsedTokens.map { token in
+                JazzChordEvent(symbol: token.symbol, beats: token.beats ?? implicitBeats)
             }
             measures.append(JazzMeasure(chords: chords))
         }
-        let normalized = measures.map { "| " + $0.chords.map(\.symbol).joined(separator: " ") + " " }.joined() + "|"
+        let normalized = formatChartText(measures)
         return ParsedChart(measures: measures, normalizedText: normalized)
+    }
+
+    static func formatChartText(_ measures: [JazzMeasure]) -> String {
+        measures.map { measure in
+            let equalDuration = 4 / Double(measure.chords.count)
+            let canUseImplicitDurations = measure.chords.allSatisfy { abs($0.beats - equalDuration) < 0.000_001 }
+            let tokens = measure.chords.map { chord in
+                canUseImplicitDurations ? chord.symbol : "\(chord.symbol):\(formatBeatDuration(chord.beats))"
+            }
+            return "| " + tokens.joined(separator: " ") + " "
+        }.joined() + "|"
+    }
+
+    private static func formatBeatDuration(_ beats: Double) -> String {
+        if abs(beats.rounded() - beats) < 0.000_001 { return String(Int(beats.rounded())) }
+        return beats.formatted(.number.precision(.fractionLength(0...3)).locale(Locale(identifier: "en_US_POSIX")))
     }
 
     // The grammar is deliberately ordered from specific spellings to broad
