@@ -4180,6 +4180,183 @@
   gap: var(--space-2);
 }
 
+/* ------------------------------------------------------------- MIDI export */
+
+.studio-midi-export {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  color: var(--ink);
+  font-family: var(--font-ui);
+}
+
+.studio-midi-export__status {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--ink-3);
+}
+
+.studio-midi-export__refusal {
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--state-error);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  color: var(--state-error);
+  font-size: var(--text-sm);
+  line-height: var(--line-normal);
+}
+
+.studio-midi-export__stale {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--rule-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  font-size: var(--text-sm);
+}
+
+.studio-midi-export__delivered {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--rule-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface-panel);
+  font-size: var(--text-sm);
+}
+
+.studio-midi-export__busy {
+  margin: var(--space-2) 0;
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+  font-style: italic;
+}
+
+.studio-midi-export__blocked {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.studio-midi-export__blocked h3 {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: 700;
+  color: var(--state-warning);
+}
+
+.studio-midi-export__blockers {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.studio-midi-export__blockers li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--rule-1);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  font-size: var(--text-sm);
+}
+
+.studio-midi-export__blockers li p {
+  margin: 0;
+  flex: 1 1 auto;
+}
+
+.studio-midi-export__preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.studio-midi-export__preview h3 {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: 700;
+}
+
+.studio-midi-export__preview h4 {
+  margin: var(--space-2) 0 var(--space-1);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
+}
+
+.studio-midi-export__facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--rule-1);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  font-size: var(--text-sm);
+}
+
+.studio-midi-export__facts dt {
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.studio-midi-export__facts dd {
+  margin: 0;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.studio-midi-export__facts code {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  word-break: break-all;
+}
+
+.studio-midi-export__losses,
+.studio-midi-export__notices {
+  list-style: disc;
+  margin: 0;
+  padding-inline-start: var(--space-4);
+  font-size: var(--text-xs);
+  color: var(--ink-2);
+  line-height: var(--line-normal);
+}
+
+.studio-midi-export__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-block-start: var(--space-2);
+}
+
+@media (max-width: 39.999rem) {
+  .studio-midi-export__actions {
+    flex-direction: column-reverse;
+  }
+
+  .studio-midi-export__actions .ui-button {
+    inline-size: 100%;
+  }
+
+  .studio-midi-export__facts {
+    grid-template-columns: 1fr;
+    gap: var(--space-1);
+  }
+}
+
 
 /* --------------------------------------------------- V2R-2 paper head */
 
