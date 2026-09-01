@@ -36,6 +36,8 @@
 .ui-timeline-lane {
   max-inline-size: 100%;
   overflow: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   scrollbar-color: var(--border-strong) var(--surface-sunken);
 }
 
@@ -95,6 +97,8 @@
   gap: var(--space-1);
   max-block-size: 24rem;
   overflow: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   padding: var(--space-2);
   border: var(--border-width) solid var(--border-strong);
   border-radius: var(--radius-md);
