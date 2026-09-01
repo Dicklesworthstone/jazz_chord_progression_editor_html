@@ -457,6 +457,7 @@
   max-inline-size: 100%;
   border-radius: var(--radius-sm);
   overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   scrollbar-gutter: stable;
 }
 

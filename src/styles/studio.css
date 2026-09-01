@@ -80,6 +80,7 @@
   transition: transform var(--motion-fast) var(--ease-standard);
 }
 
+.studio-skip-link:focus,
 .studio-skip-link:focus-visible {
   transform: translateY(0);
   outline: var(--focus-width) solid var(--focus-ring);
@@ -3193,8 +3194,19 @@
 
 .studio-completion-dialog__actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: var(--space-2);
+}
+
+@media (max-width: 39.999rem) {
+  .studio-completion-dialog__actions {
+    flex-direction: column-reverse;
+  }
+
+  .studio-completion-dialog__actions .ui-button {
+    inline-size: 100%;
+  }
 }
 
 /* ------------------------------------------------------------- shell notice */
@@ -5595,6 +5607,7 @@ button.studio-paper-head__key:focus-visible {
 }
 
 .studio-tour__dot {
+  position: relative;
   inline-size: 0.5rem;
   block-size: 0.5rem;
   padding: 0;
@@ -5602,6 +5615,21 @@ button.studio-paper-head__key:focus-visible {
   border-radius: 50%;
   background: var(--rule-2);
   cursor: pointer;
+}
+
+@media (pointer: coarse) {
+  .studio-tour__dot::before {
+    content: "";
+    position: absolute;
+    inset: -0.75rem;
+  }
+
+  .studio-tour__skip,
+  .studio-tour__back,
+  .studio-tour__next {
+    min-inline-size: var(--touch-target);
+    min-block-size: var(--touch-target);
+  }
 }
 
 .studio-tour__dot[data-active="true"] {

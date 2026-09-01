@@ -39,10 +39,10 @@
   inset: 0;
   display: grid;
   place-items: center;
-  padding: max(var(--space-4), env(safe-area-inset-top))
-    max(var(--space-4), env(safe-area-inset-right))
-    max(var(--space-4), env(safe-area-inset-bottom))
-    max(var(--space-4), env(safe-area-inset-left));
+  padding: max(var(--space-4), env(safe-area-inset-top, 0px))
+    max(var(--space-4), env(safe-area-inset-right, 0px))
+    max(var(--space-4), env(safe-area-inset-bottom, 0px))
+    max(var(--space-4), env(safe-area-inset-left, 0px));
 }
 
 .ui-dialog-backdrop {
@@ -92,8 +92,8 @@
 .ui-toast-region {
   position: fixed;
   z-index: 75;
-  inset-inline-end: max(var(--space-4), env(safe-area-inset-right));
-  inset-block-end: calc(var(--transport-min-block) + var(--space-4) + env(safe-area-inset-bottom));
+  inset-inline-end: max(var(--space-4), env(safe-area-inset-right, 0px));
+  inset-block-end: calc(var(--transport-min-block) + var(--space-4) + env(safe-area-inset-bottom, 0px));
   display: grid;
   gap: var(--space-2);
   inline-size: min(24rem, calc(100vw - var(--space-8)));

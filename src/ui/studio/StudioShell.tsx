@@ -505,7 +505,7 @@ export function StudioShell({
     >
       <div id="studio-shell-background" class="studio-shell__background">
         <div class="studio-shell__frame">
-          <a class="studio-skip-link" href="#workspace" id="skip-link">
+          <a class="studio-skip-link" href="#workspace" id="skip-link" tabIndex={0}>
             Skip to studio workspace
           </a>
 

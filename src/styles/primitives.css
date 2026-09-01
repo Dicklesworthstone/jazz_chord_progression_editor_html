@@ -419,6 +419,7 @@
     max(var(--space-4), env(safe-area-inset-left, 0px));
   overflow: auto;
   overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .ui-sheet[data-density="dense"] .ui-sheet__header,
