@@ -5,6 +5,9 @@ struct FrankenJazzStudioView: View {
     @ObservedObject var store: JazzStudioStore
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.scenePhase) private var scenePhase
+#if DEBUG
+    @State private var didApplyDebugLaunch = false
+#endif
 
     var body: some View {
         GeometryReader { proxy in
@@ -24,7 +27,30 @@ struct FrankenJazzStudioView: View {
         .sheet(isPresented: $store.isDocumentPresented) { NavigationStack { DocumentCenterView(store: store) } }
         .overlay(alignment: .top) { noticeBanner }
         .onChange(of: scenePhase) { _, phase in if phase != .active { store.audio.pause() } }
+#if DEBUG
+        .task { applyDebugLaunchIfNeeded() }
+#endif
     }
+
+#if DEBUG
+    /// Deterministic simulator entry points for visual QA and storefront
+    /// capture. These switches do not exist in release builds and still drive
+    /// the same sheets and real audio renderer as user interaction.
+    private func applyDebugLaunchIfNeeded() {
+        guard !didApplyDebugLaunch else { return }
+        didApplyDebugLaunch = true
+        let environment = ProcessInfo.processInfo.environment
+        switch environment["FJAZZ_INITIAL_DESTINATION"]?.lowercased() {
+        case "library": store.isLibraryPresented = true
+        case "inspector": store.isInspectorPresented = true
+        case "documents": store.isDocumentPresented = true
+        default: break
+        }
+        if environment["FJAZZ_AUTOPLAY"] == "1" {
+            store.audio.play(chart: store.chart)
+        }
+    }
+#endif
 
     private var compactWorkspace: some View {
         NavigationStack {

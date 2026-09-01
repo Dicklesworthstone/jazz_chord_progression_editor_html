@@ -72,6 +72,8 @@
   max-inline-size: 100%;
   resize: block;
   overflow: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .ui-number-field {
@@ -109,6 +111,8 @@
   color: var(--text-primary);
   background: var(--surface-elevated);
   overflow: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .ui-combobox__listbox {
