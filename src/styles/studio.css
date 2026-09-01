@@ -6403,3 +6403,11 @@ li[data-resize-preview]::after {
 .studio-tie:hover .studio-tie__mark {
   border-color: var(--blue);
 }
+
+@media (pointer: coarse) {
+  .studio-tie {
+    inline-size: var(--touch-target);
+    block-size: var(--touch-target);
+    inset-inline-end: calc(-0.5 * var(--touch-target));
+  }
+}
