@@ -56,7 +56,7 @@
     "outputsMustBeByteIdentical": true,
     "generatedBanner": "<!-- @generated; edit src/, then run bun run build -->",
     "compatMode": "CSS1Compat",
-    "maxUncompressedBytes": 8388608,
+    "maxUncompressedBytes": 8912896,
     "foundationShellMaxBytes": 8388608,
     "reservedAtlasBytes": 524288,
     "requiredReports": [
