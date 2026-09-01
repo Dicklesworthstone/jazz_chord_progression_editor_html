@@ -355,6 +355,8 @@
   max-block-size: 60vh;
   padding: var(--space-1);
   overflow: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   scrollbar-gutter: stable;
 }
 

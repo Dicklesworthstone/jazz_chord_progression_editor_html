@@ -59,6 +59,8 @@
   max-block-size: 100%;
   padding: var(--space-4);
   overflow: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   border: var(--border-width) solid var(--border-strong);
   border-radius: var(--radius-lg);
   color: var(--text-primary);
