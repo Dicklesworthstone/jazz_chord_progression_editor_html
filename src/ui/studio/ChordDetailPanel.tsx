@@ -107,7 +107,10 @@ function SpectrumCanvas({
     const height = canvas.clientHeight;
     if (width === 0 || height === 0) return;
     const ratio = window.devicePixelRatio || 1;
-    if (canvas.width !== Math.round(width * ratio)) {
+    if (
+      canvas.width !== Math.round(width * ratio) ||
+      canvas.height !== Math.round(height * ratio)
+    ) {
       canvas.width = Math.round(width * ratio);
       canvas.height = Math.round(height * ratio);
     }

@@ -278,7 +278,10 @@ function MeterStrip({
       const height = canvas.clientHeight;
       if (width === 0 || height === 0) return;
       const dpr = window.devicePixelRatio || 1;
-      if (canvas.width !== Math.round(width * dpr)) {
+      if (
+        canvas.width !== Math.round(width * dpr) ||
+        canvas.height !== Math.round(height * dpr)
+      ) {
         canvas.width = Math.round(width * dpr);
         canvas.height = Math.round(height * dpr);
       }
