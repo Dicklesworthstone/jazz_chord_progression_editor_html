@@ -4243,7 +4243,7 @@
 
 .studio-midi-export__blocked h3 {
   margin: 0;
-  font-size: var(--text-base);
+  font-size: var(--text-md);
   font-weight: 700;
   color: var(--state-warning);
 }
@@ -4264,7 +4264,7 @@
   justify-content: space-between;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--rule-1);
+  border: var(--border-width) solid var(--rule-2);
   border-radius: var(--radius-sm);
   background: var(--surface-sunken);
   font-size: var(--text-sm);
@@ -4283,7 +4283,7 @@
 
 .studio-midi-export__preview h3 {
   margin: 0;
-  font-size: var(--text-base);
+  font-size: var(--text-md);
   font-weight: 700;
 }
 
@@ -4301,7 +4301,7 @@
   gap: var(--space-2) var(--space-4);
   margin: 0;
   padding: var(--space-3);
-  border: 1px solid var(--rule-1);
+  border: var(--border-width) solid var(--rule-2);
   border-radius: var(--radius-sm);
   background: var(--surface-sunken);
   font-size: var(--text-sm);
