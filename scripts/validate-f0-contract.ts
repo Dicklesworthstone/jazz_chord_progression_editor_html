@@ -427,7 +427,7 @@ async function main(): Promise<void> {
     !Number.isSafeInteger(atlas) ||
     Number(max) !== 8_388_608 ||
     Number(shell) <= 0 ||
-    Number(atlas) <= 0 ||
+    Number(atlas) < 0 ||
     Number(shell) + Number(atlas) > Number(max)
   ) {
     add(
