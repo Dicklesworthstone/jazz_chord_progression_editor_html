@@ -14,7 +14,8 @@
     outline-color: Highlight;
   }
 
-  .skip-link {
+  .skip-link,
+  .studio-skip-link {
     border-color: CanvasText;
     color: CanvasText;
     background: Canvas;
@@ -27,7 +28,8 @@
     background: Canvas;
   }
 
-  .skip-link {
+  .skip-link,
+  .studio-skip-link {
     display: none;
   }
 }

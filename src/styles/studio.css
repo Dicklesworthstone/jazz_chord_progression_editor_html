@@ -3617,7 +3617,7 @@
   display: none;
 }
 
-@media (max-width: 1279px) {
+@media (max-width: 79.999rem) {
   .studio-analyzer {
     display: none;
   }
