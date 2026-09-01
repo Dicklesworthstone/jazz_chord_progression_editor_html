@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+
 type FoundationContract = {
   toolchain: {
     packageManager: string;
@@ -51,20 +53,36 @@ function pathCandidates(): string[] {
 
   const home = process.env["HOME"];
   if (home) {
-    const nvm = new Bun.Glob("*/bin/node");
-    for (const match of nvm.scanSync({ cwd: `${home}/.nvm/versions/node`, absolute: true })) {
-      candidates.push(match);
+    const nvmDir = `${home}/.nvm/versions/node`;
+    if (existsSync(nvmDir)) {
+      const nvm = new Bun.Glob("*/bin/node");
+      for (const match of nvm.scanSync({ cwd: nvmDir, absolute: true })) {
+        candidates.push(match);
+      }
     }
-    const fnm = new Bun.Glob("v*/installation/bin/node");
-    for (const match of fnm.scanSync({
-      cwd: `${home}/.local/share/fnm/node-versions`,
-      absolute: true,
-    })) {
-      candidates.push(match);
+    const fnmDir = `${home}/.local/share/fnm/node-versions`;
+    if (existsSync(fnmDir)) {
+      const fnm = new Bun.Glob("v*/installation/bin/node");
+      for (const match of fnm.scanSync({
+        cwd: fnmDir,
+        absolute: true,
+      })) {
+        candidates.push(match);
+      }
     }
   }
 
-  candidates.push("/usr/local/bin/node", "/usr/bin/node", "/bin/node");
+  candidates.push(
+    "/opt/homebrew/opt/node@24/bin/node",
+    "/opt/homebrew/opt/node@22/bin/node",
+    "/opt/homebrew/opt/node@26/bin/node",
+    "/usr/local/opt/node@24/bin/node",
+    "/usr/local/opt/node@22/bin/node",
+    "/usr/local/opt/node@26/bin/node",
+    "/usr/local/bin/node",
+    "/usr/bin/node",
+    "/bin/node",
+  );
   return [...new Set(candidates)];
 }
 
