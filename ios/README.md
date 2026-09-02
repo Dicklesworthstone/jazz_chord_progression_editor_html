@@ -11,7 +11,7 @@ Support directory.
 - a substantial bundled library of public-domain progressions, shared harmonic
   devices, and original studies with provenance and musical notes;
 - selectable native measure cards, chord-tone piano, Roman/context reading,
-  guide-tone evidence, and five realized voicing families;
+  guide-tone evidence, and six realized voicing families;
 - bounded per-chord rehearsal notes with lead-sheet indicators, undo, recovery,
   and canonical FrankenJazz document persistence;
 - transposition, key, tempo, groove, and generated instrument controls;

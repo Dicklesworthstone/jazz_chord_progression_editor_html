@@ -1,0 +1,75 @@
+{
+  "schema": "frankenjazz.ios-test-evidence.v1",
+  "recordedAt": "2026-09-02T04:14:36Z",
+  "sourceCommit": "be16246d51a0e14dae446305f8423ee78fd88fca",
+  "sourceCommitWasPublishedBeforeRun": true,
+  "environment": {
+    "host": "Apple silicon Mac mini",
+    "hostOS": "macOS 26.2 (25C56)",
+    "xcode": "26.1.1 (17B100)",
+    "xcodegen": "2.46.0",
+    "networkRequiredByApp": false
+  },
+  "runs": [
+    {
+      "id": "catalyst-unit",
+      "command": "xcodebuild -project FrankenJazz.xcodeproj -scheme FrankenJazz -destination 'platform=macOS,variant=Mac Catalyst' -derivedDataPath /tmp/FrankenJazzRecordedDerived -resultBundlePath /tmp/FrankenJazzRecorded-be16246.xcresult CODE_SIGNING_ALLOWED=NO test -only-testing:FrankenJazzTests",
+      "resultBundle": "/tmp/FrankenJazzRecorded-be16246.xcresult",
+      "summaryReader": "xcrun xcresulttool get test-results summary --path /tmp/FrankenJazzRecorded-be16246.xcresult --format json",
+      "result": "Passed",
+      "passed": 42,
+      "failed": 0,
+      "skipped": 0,
+      "expectedFailures": 0,
+      "device": "Mac Catalyst on Mac mini arm64 / macOS 26.2"
+    },
+    {
+      "id": "iphone-ui",
+      "command": "xcodebuild -project FrankenJazz.xcodeproj -scheme FrankenJazz -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.1' -derivedDataPath /tmp/FrankenJazzRecordedUIDerived -resultBundlePath /tmp/FrankenJazzRecordedUI-be16246.xcresult CODE_SIGNING_ALLOWED=NO test -only-testing:FrankenJazzUITests",
+      "resultBundle": "/tmp/FrankenJazzRecordedUI-be16246.xcresult",
+      "summaryReader": "xcrun xcresulttool get test-results summary --path /tmp/FrankenJazzRecordedUI-be16246.xcresult --format json",
+      "result": "Passed",
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "expectedFailures": 0,
+      "device": "iPhone 17 Pro arm64 simulator / iOS 26.1 (23B86)"
+    },
+    {
+      "id": "generic-ios-build",
+      "command": "xcodebuild -project FrankenJazz.xcodeproj -scheme FrankenJazz -destination 'generic/platform=iOS Simulator' -derivedDataPath /tmp/FrankenJazzRecordedIOSDerived CODE_SIGNING_ALLOWED=NO build",
+      "result": "Passed"
+    },
+    {
+      "id": "generated-project-drift",
+      "command": "xcodegen generate --spec project.yml && git diff --exit-code -- FrankenJazz.xcodeproj Sources/Info.plist",
+      "result": "Passed"
+    }
+  ],
+  "newCoverage": {
+    "recovery": [
+      "valid current-copy round trip",
+      "corrupt current-copy fallback to previous validated chart",
+      "real JazzStudioStore startup from injected isolated recovery storage"
+    ],
+    "voicing": [
+      "all six advertised families",
+      "deterministic replay",
+      "distinct family realizations",
+      "sorted unique bounded MIDI pitches",
+      "explicit slash bass remains the lowest voice"
+    ]
+  },
+  "sourceHashes": {
+    "ios/Sources/JazzStudioStore.swift": "3cb57260f70328c65cbe04bc215e127cf088ed109ddfb6524d5a3c0804ce76ee",
+    "ios/Tests/FrankenJazzCoreTests.swift": "e07725b3e7342bbca44a40e3852380dd4425f37464ce4ebd970942346a01b50e",
+    "ios/UITests/FrankenJazzUITests.swift": "4cb26487d293a910911df67afee257a1b1b68b4d246cfdbe893a5639220507b1",
+    "ios/project.yml": "7a5d23d3b2b11c1ef82c893847fce5489927a0024a7cd433739c9832221e8ae5",
+    ".github/workflows/apple.yml": "7a3c4328cf99e5f56f0bb6f25af8f1ebd7be45cfde72e5792499cd1602d7fd2c"
+  },
+  "honestBoundaries": {
+    "hostedCI": "Apple workflow run 33589827499 was queued when this record was written; no hosted pass is claimed.",
+    "manualAcceptance": "This record does not claim physical-device listening, signed distribution, human fresh-eyes approval, or a complete screenshot/manual interaction matrix for every iPhone, iPad, and Catalyst acceptance row.",
+    "staticAnalysis": "UBS reported no criticals and three warnings on the changed source/test pair. The warnings are the existing bounded Data(contentsOf:) file reads in import and recovery paths; they were reviewed and are not represented as a zero-finding scan."
+  }
+}
