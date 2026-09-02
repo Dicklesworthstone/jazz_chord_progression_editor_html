@@ -1283,7 +1283,8 @@
 }
 
 /* Icon-quiet tools: the full sentence stays as the accessible name. */
-.studio-measure__tools .ui-button {
+.studio-measure__tools .ui-button,
+.studio-measure__tools .ui-icon-button {
   display: grid;
   place-items: center;
   inline-size: 1.5rem;
@@ -1292,25 +1293,17 @@
   min-block-size: 1.5rem;
   padding: 0;
   border-radius: var(--radius-sm);
-  font-size: 0;
   white-space: nowrap;
 }
 
-.studio-measure__tools .ui-button::after {
-  font-size: var(--text-xs);
-  line-height: 1;
-}
-
-.studio-measure__tools .ui-button[id^="studio-target-measure-"]::after {
-  content: "\25C9"; /* ◉ aim quick entry */
-}
-
-.studio-measure__tools .ui-button[id^="studio-split-section-"]::after {
-  content: "\2702"; /* ✂ split the section here */
+.studio-measure__tools .ui-icon-button .ui-icon {
+  inline-size: 0.875rem;
+  block-size: 0.875rem;
 }
 
 /* The aimed measure says so with a brass marker, not a banner. */
-.studio-measure__tools .ui-button:disabled {
+.studio-measure__tools .ui-button:disabled,
+.studio-measure__tools .ui-icon-button:disabled {
   border-color: color-mix(in srgb, var(--accent) 55%, transparent);
   color: var(--accent);
   background: color-mix(in srgb, var(--accent) 12%, transparent);
@@ -2100,7 +2093,8 @@
   padding: var(--space-1) var(--space-2) 0;
 }
 
-.studio-insertion-target .ui-button {
+.studio-insertion-target .ui-button,
+.studio-insertion-target .ui-icon-button {
   display: grid;
   place-items: center;
   inline-size: 100%;
@@ -2112,23 +2106,22 @@
   border-radius: var(--radius-md);
   background: transparent;
   color: var(--text-subtle);
-  font-size: 0;
 }
 
-.studio-insertion-target .ui-button::after {
-  content: "+";
-  font-size: var(--text-sm);
-  font-weight: 700;
-  line-height: 1;
+.studio-insertion-target .ui-icon-button .ui-icon {
+  inline-size: 0.875rem;
+  block-size: 0.875rem;
 }
 
-.studio-insertion-target .ui-button:hover {
+.studio-insertion-target .ui-button:hover,
+.studio-insertion-target .ui-icon-button:hover {
   border-color: var(--accent);
   color: var(--accent);
   background: color-mix(in srgb, var(--accent) 8%, transparent);
 }
 
-.studio-insertion-target .ui-button:focus-visible {
+.studio-insertion-target .ui-button:focus-visible,
+.studio-insertion-target .ui-icon-button:focus-visible {
   border-color: var(--accent);
   color: var(--accent);
   outline: var(--focus-width) solid var(--focus-ring);
@@ -2241,7 +2234,8 @@
     min-block-size: var(--touch-target);
   }
 
-  .studio-shell .studio-insertion-target .ui-button {
+  .studio-shell .studio-insertion-target .ui-button,
+  .studio-shell .studio-insertion-target .ui-icon-button {
     inline-size: 100%;
     min-inline-size: 0;
     block-size: var(--touch-target);
@@ -2252,15 +2246,12 @@
     min-block-size: var(--touch-target);
   }
 
-  .studio-measure__tools .ui-button {
+  .studio-measure__tools .ui-button,
+  .studio-measure__tools .ui-icon-button {
     inline-size: var(--touch-target);
     min-inline-size: var(--touch-target);
     block-size: var(--touch-target);
     min-block-size: var(--touch-target);
-  }
-
-  .studio-measure__tools .ui-button::after {
-    font-size: var(--text-md);
   }
 
   /* 44 px root chips need four-wide rows in the rail's measure. */

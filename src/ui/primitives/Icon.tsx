@@ -34,6 +34,16 @@ export function requireOwnedIconId(
 
 function iconPaths(iconId: UiOwnedIconId): JSX.Element {
   switch (iconId) {
+    case "aim":
+      return (
+        <>
+          <circle cx="12" cy="12" r="6" />
+          <path d="M12 2v4" />
+          <path d="M12 18v4" />
+          <path d="M2 12h4" />
+          <path d="M18 12h4" />
+        </>
+      );
     case "audio-off":
       return (
         <>
@@ -72,6 +82,13 @@ function iconPaths(iconId: UiOwnedIconId): JSX.Element {
           <circle cx="12" cy="12" r="9" />
           <path d="M12 11v6" />
           <path d="M12 7h.01" />
+        </>
+      );
+    case "insert":
+      return (
+        <>
+          <path d="M12 5v14" />
+          <path d="M5 12h14" />
         </>
       );
     case "library":
@@ -127,6 +144,14 @@ function iconPaths(iconId: UiOwnedIconId): JSX.Element {
         <>
           <path d="m17 4 4 4-4 4" />
           <path d="M3 19v-3a8 8 0 0 1 8-8h10" />
+        </>
+      );
+    case "split":
+      return (
+        <>
+          <path d="M12 3v18" />
+          <path d="m8 8-4 4 4 4" />
+          <path d="m16 8 4 4-4 4" />
         </>
       );
     case "warning":

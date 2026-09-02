@@ -5,6 +5,7 @@ import {
   Button,
   EmptyState,
   Field,
+  IconButton,
   Input,
   KeyValueList,
   Label,
@@ -2586,14 +2587,15 @@ export function ChartWorkspace({
                       return (
                         <li key={measure.id}>
                           <div class="studio-insertion-target">
-                            <Button
+                            <IconButton
+                              accessibleName={measure.insertBeforeLabel}
                               busy={false}
                               density="comfortable"
                               describedBy={[]}
                               disabled={false}
+                              iconId="insert"
                               id={`studio-insert-before-${measure.id}`}
                               invalid={false}
-                              label={measure.insertBeforeLabel}
                               onAction={() => {
                                 onInsertMeasure(section.id, measure.id);
                               }}
@@ -2659,18 +2661,19 @@ export function ChartWorkspace({
                                 )}
                               </div>
                               <div class="studio-measure__tools">
-                              <Button
-                                busy={false}
-                                density="comfortable"
-                                describedBy={[]}
-                                disabled={measure.isInsertionTarget}
-                                id={`studio-target-measure-${measure.id}`}
-                                invalid={false}
-                                label={
+                              <IconButton
+                                accessibleName={
                                   measure.isInsertionTarget
                                     ? "Quick entry aims here"
                                     : measure.targetLabel
                                 }
+                                busy={false}
+                                density="comfortable"
+                                describedBy={[]}
+                                disabled={measure.isInsertionTarget}
+                                iconId="aim"
+                                id={`studio-target-measure-${measure.id}`}
+                                invalid={false}
                                 onAction={() => {
                                   onSetInsertionPoint(measure.id);
                                 }}
@@ -2678,14 +2681,15 @@ export function ChartWorkspace({
                                 variant="ghost"
                               />
                               {measure.canSplitSectionHere ? (
-                                <Button
+                                <IconButton
+                                  accessibleName={`Split section before measure ${String(measure.number)}`}
                                   busy={false}
                                   density="comfortable"
                                   describedBy={[]}
                                   disabled={false}
+                                  iconId="split"
                                   id={`studio-split-section-${measure.id}`}
                                   invalid={false}
-                                  label={`Split section before measure ${String(measure.number)}`}
                                   onAction={() => {
                                     onSplitSection(section.id, measure.id);
                                   }}

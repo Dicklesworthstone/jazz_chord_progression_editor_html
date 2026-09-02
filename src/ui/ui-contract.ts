@@ -714,6 +714,7 @@ export type UiOption<Value extends string = string> = Readonly<{
 export type UiLocalDownloadHref = `blob:${string}`;
 
 export const UI_OWNED_ICON_IDS = Object.freeze([
+  "aim",
   "audio-off",
   "check",
   "chevron-left",
@@ -723,6 +724,7 @@ export const UI_OWNED_ICON_IDS = Object.freeze([
   "error",
   "harmony",
   "info",
+  "insert",
   "library",
   "loop",
   "menu",
@@ -731,6 +733,7 @@ export const UI_OWNED_ICON_IDS = Object.freeze([
   "play",
   "previous",
   "redo",
+  "split",
   "status",
   "stop",
   "undo",
