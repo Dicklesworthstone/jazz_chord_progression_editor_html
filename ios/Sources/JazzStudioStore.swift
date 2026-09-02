@@ -299,7 +299,7 @@ final class JazzStudioStore: ObservableObject {
         var pitches = selectedMIDIPitches
         let original = pitches[index]
         let moved = original + semitones
-        guard (21...108).contains(moved) else {
+        guard JazzDocumentValidator.storedVoicingPitchRange.contains(moved) else {
             notice = "That move would leave the supported A0–C8 MIDI range."
             return
         }
@@ -317,8 +317,8 @@ final class JazzStudioStore: ObservableObject {
               let description = selectedDescription,
               selectedVoicingMode != .automatic else { return }
         var pitches = selectedMIDIPitches
-        guard pitches.count < 16 else {
-            notice = "A manual voicing can contain at most 16 voices."
+        guard pitches.count < JazzDocumentValidator.maximumStoredVoices else {
+            notice = "A manual voicing can contain at most \(JazzDocumentValidator.maximumStoredVoices) voices."
             return
         }
         let pitchClasses = Set(description.pitchClasses)

@@ -263,6 +263,9 @@ enum JazzDocumentValidationIssue: LocalizedError, Equatable {
 }
 
 enum JazzDocumentValidator {
+    static let storedVoicingPitchRange = 21...108
+    static let maximumStoredVoices = 16
+
     static func validate(_ chart: JazzChart) throws {
         guard chart.schema == JazzChart.schema else { throw JazzDocumentValidationIssue.schema }
         guard !chart.title.isEmpty, chart.title.count <= 120 else { throw JazzDocumentValidationIssue.title }
@@ -286,15 +289,15 @@ enum JazzDocumentValidator {
                 guard chordIDs.insert(chord.id).inserted else { throw JazzDocumentValidationIssue.duplicateChordID }
                 let frozenPitchesAreValid = chord.frozenMIDIPitches.map { pitches in
                     !pitches.isEmpty &&
-                        pitches.count <= 16 &&
+                        pitches.count <= maximumStoredVoices &&
                         pitches == pitches.sorted() &&
                         Set(pitches).count == pitches.count &&
-                        pitches.allSatisfy { (21...108).contains($0) }
+                        pitches.allSatisfy { storedVoicingPitchRange.contains($0) }
                 } ?? true
                 let manualPitchesAreValid = chord.manualMIDIPitches.map { pitches in
                     !pitches.isEmpty &&
-                        pitches.count <= 16 &&
-                        pitches.allSatisfy { (21...108).contains($0) }
+                        pitches.count <= maximumStoredVoices &&
+                        pitches.allSatisfy { storedVoicingPitchRange.contains($0) }
                 } ?? true
                 guard chord.beats.isFinite,
                       chord.beats > 0,

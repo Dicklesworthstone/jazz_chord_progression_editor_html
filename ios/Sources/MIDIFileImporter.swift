@@ -2,11 +2,12 @@ import Foundation
 
 /// Deterministic, bounded Standard MIDI File import for the native app.
 ///
-/// The importer intentionally produces symbolic chord events rather than
-/// pretending MIDI can preserve spelling, annotations, or exact FrankenJazz
-/// document state. It accepts ordinary SMF format 0/1 files, pairs note events,
-/// groups near-simultaneous onsets, and resolves literal pitch-class sets
-/// through the same chord vocabulary the native editor can parse.
+/// The importer preserves each accepted MIDI chord stack as a Manual exact
+/// voicing while remaining honest that MIDI cannot preserve note spelling,
+/// annotations, or complete FrankenJazz document state. It accepts ordinary
+/// SMF format 0/1 files, pairs note events, groups near-simultaneous onsets, and
+/// resolves literal pitch-class sets through the same chord vocabulary the
+/// native editor can parse.
 enum MIDIFileImporter {
     static let maximumFileBytes = 2_000_000
 
@@ -32,7 +33,7 @@ enum MIDIFileImporter {
         var salvage: Salvage
 
         var notice: String {
-            var details = ["Imported \(importedChordCount) editable chord\(importedChordCount == 1 ? "" : "s") from MIDI at \(Int(chart.tempoBPM.rounded())) BPM."]
+            var details = ["Imported \(importedChordCount) editable chord\(importedChordCount == 1 ? "" : "s") from MIDI with exact Manual voicings at \(Int(chart.tempoBPM.rounded())) BPM."]
             if skippedSonorityCount > 0 {
                 details.append("Skipped \(skippedSonorityCount) note stack\(skippedSonorityCount == 1 ? "" : "s") that had no supported chord name.")
             }
@@ -76,6 +77,8 @@ enum MIDIImportIssue: LocalizedError, Equatable {
     case noHarmonicNotes
     case noNamedChords
     case tooManyMeasures(limit: Int)
+    case exactVoicingVoiceLimit(count: Int, limit: Int)
+    case exactVoicingPitchRange(pitch: Int, low: Int, high: Int)
 
     var errorDescription: String? {
         switch self {
@@ -96,6 +99,8 @@ enum MIDIImportIssue: LocalizedError, Equatable {
         case .noHarmonicNotes: "The MIDI file contains no completed non-drum notes to analyze."
         case .noNamedChords: "The MIDI note stacks do not match any chord name supported by the native editor."
         case let .tooManyMeasures(limit): "The MIDI file would create more than \(limit) editable measures."
+        case let .exactVoicingVoiceLimit(count, limit): "A named MIDI chord stack contains \(count) voices; Manual voicings support at most \(limit)."
+        case let .exactVoicingPitchRange(pitch, low, high): "A named MIDI chord stack contains MIDI note \(pitch); Manual voicings support MIDI \(low) through \(high)."
         }
     }
 }
@@ -120,8 +125,8 @@ private extension MIDIFileImporter {
     struct Cell {
         var anchorTick: Int
         var pitches = Set<Int>()
+        var exactVoices = Set<VoiceIdentity>()
         var bassMIDI = 127
-        var memberCount = 0
     }
 
     struct ResolvedCell {
@@ -129,6 +134,13 @@ private extension MIDIFileImporter {
         var beat: Int
         var anchorTick: Int
         var symbol: String
+        var manualMIDIPitches: [Int]
+    }
+
+    struct VoiceIdentity: Hashable {
+        var track: Int
+        var channel: Int
+        var key: Int
     }
 
     struct LaneResult {
@@ -186,13 +198,21 @@ private extension MIDIFileImporter {
         }.compactMap { lanes[$0] })
 
         var best: LaneResult?
+        var exactVoicingIssue: MIDIImportIssue?
         for notes in candidateLanes {
-            guard let candidate = deriveLane(notes: notes, decoded: decoded) else { continue }
-            if best == nil || candidate.score > best?.score ?? Int.min {
-                best = candidate
+            do {
+                guard let candidate = try deriveLane(notes: notes, decoded: decoded) else { continue }
+                if best == nil || candidate.score > best?.score ?? Int.min {
+                    best = candidate
+                }
+            } catch let issue as MIDIImportIssue {
+                if exactVoicingIssue == nil { exactVoicingIssue = issue }
             }
         }
-        guard let best, best.chordCount > 0 else { throw MIDIImportIssue.noNamedChords }
+        guard let best, best.chordCount > 0 else {
+            if let exactVoicingIssue { throw exactVoicingIssue }
+            throw MIDIImportIssue.noNamedChords
+        }
         guard best.measures.count <= JazzTheory.maximumMeasures else {
             throw MIDIImportIssue.tooManyMeasures(limit: JazzTheory.maximumMeasures)
         }
@@ -222,7 +242,7 @@ private extension MIDIFileImporter {
         var channel: Int
     }
 
-    static func deriveLane(notes: [SMFDecoder.Note], decoded: SMFDecoder.File) -> LaneResult? {
+    static func deriveLane(notes: [SMFDecoder.Note], decoded: SMFDecoder.File) throws -> LaneResult? {
         let sonorities = group(notes: notes, ppq: decoded.ppq, tempos: decoded.tempos)
         guard !sonorities.isEmpty else { return nil }
 
@@ -234,8 +254,8 @@ private extension MIDIFileImporter {
             cell.anchorTick = min(cell.anchorTick, sonority.anchorTick)
             for note in sonority.notes {
                 cell.pitches.insert(note.key % 12)
+                cell.exactVoices.insert(VoiceIdentity(track: note.trackIndex, channel: note.channel, key: note.key))
                 cell.bassMIDI = min(cell.bassMIDI, note.key)
-                cell.memberCount += 1
             }
             cells[key] = cell
         }
@@ -249,7 +269,32 @@ private extension MIDIFileImporter {
                 skipped += 1
                 continue
             }
-            resolved.append(ResolvedCell(sourceMeasure: key.measure, beat: key.beat, anchorTick: cell.anchorTick, symbol: symbol))
+            let manualMIDIPitches = cell.exactVoices.sorted {
+                ($0.key, $0.track, $0.channel) < ($1.key, $1.track, $1.channel)
+            }.map(\.key)
+            guard manualMIDIPitches.count <= JazzDocumentValidator.maximumStoredVoices else {
+                throw MIDIImportIssue.exactVoicingVoiceLimit(
+                    count: manualMIDIPitches.count,
+                    limit: JazzDocumentValidator.maximumStoredVoices
+                )
+            }
+            guard let unsupportedPitch = manualMIDIPitches.first(where: {
+                !JazzDocumentValidator.storedVoicingPitchRange.contains($0)
+            }) else {
+                resolved.append(ResolvedCell(
+                    sourceMeasure: key.measure,
+                    beat: key.beat,
+                    anchorTick: cell.anchorTick,
+                    symbol: symbol,
+                    manualMIDIPitches: manualMIDIPitches
+                ))
+                continue
+            }
+            throw MIDIImportIssue.exactVoicingPitchRange(
+                pitch: unsupportedPitch,
+                low: JazzDocumentValidator.storedVoicingPitchRange.lowerBound,
+                high: JazzDocumentValidator.storedVoicingPitchRange.upperBound
+            )
         }
         guard let first = resolved.first else { return nil }
 
@@ -269,14 +314,18 @@ private extension MIDIFileImporter {
                 let endBeat = index + 1 < sourceChords.endIndex ? sourceChords[index + 1].beat : 4
                 let beats = Double(endBeat - startBeat)
                 guard beats > 0 else { continue }
-                chords.append(JazzChordEvent(symbol: sourceChords[index].symbol, beats: beats))
+                chords.append(JazzChordEvent(
+                    symbol: sourceChords[index].symbol,
+                    beats: beats,
+                    manualMIDIPitches: sourceChords[index].manualMIDIPitches
+                ))
             }
             if !chords.isEmpty { measures.append(JazzMeasure(chords: chords)) }
             previousSourceMeasure = sourceMeasure
         }
         guard !measures.isEmpty else { return nil }
 
-        let memberCount = cells.values.reduce(0) { $0 + $1.memberCount }
+        let memberCount = cells.values.reduce(0) { $0 + $1.exactVoices.count }
         let score = resolved.count * 1_000 + sourceMeasures.count * 100 + memberCount - skipped * 25 - omitted * 10
         return LaneResult(
             measures: measures,

@@ -398,6 +398,8 @@ final class FrankenJazzCoreTests: XCTestCase {
         let parsed = try JazzTheory.parseChart("| Dm7 G7 | Cmaj7 |")
         let source = JazzChart(title: "Round-trip source", tempoBPM: 105, groove: .straightEighths, measures: parsed.measures)
         let result = try MIDIFileImporter.importChart(data: MIDIFileWriter.makeFile(chart: source), title: "Imported changes")
+        let sourcePitches = JazzTheory.compilePlayback(source).map(\.midiPitches)
+        let importedPitches = result.chart.measures.flatMap(\.chords).compactMap(\.manualMIDIPitches)
 
         XCTAssertEqual(result.chart.title, "Imported changes")
         XCTAssertEqual(result.chart.chartText, "| Dm7 G7 | Cmaj7 |")
@@ -405,6 +407,13 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertEqual(result.chart.groove, .straightEighths)
         XCTAssertEqual(result.importedChordCount, 3)
         XCTAssertEqual(result.skippedSonorityCount, 0)
+        XCTAssertEqual(importedPitches, sourcePitches)
+        XCTAssertEqual(JazzTheory.compilePlayback(result.chart).map(\.midiPitches), sourcePitches)
+        XCTAssertEqual(
+            noteOnPitches(in: MIDIFileWriter.makeFile(chart: result.chart)),
+            sourcePitches.flatMap { $0 }
+        )
+        XCTAssertTrue(result.notice.contains("exact Manual voicings"))
         XCTAssertNoThrow(try JazzDocumentValidator.validate(result.chart))
     }
 
@@ -415,6 +424,43 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertEqual(result.chart.chartText, "| Cmaj7 |")
         XCTAssertEqual(result.chart.tempoBPM, 120)
         XCTAssertEqual(result.tempoChangeCount, 1)
+        XCTAssertEqual(result.chart.measures[0].chords[0].manualMIDIPitches, [60, 64, 67, 71])
+    }
+
+    func testMIDIImportPreservesExactOctavesAndDoublingsAsManual() throws {
+        let exact = [48, 60, 64, 67, 71]
+        let result = try MIDIFileImporter.importChart(data: singleChordMIDI(pitches: exact), title: "Exact stack")
+        let chord = try XCTUnwrap(result.chart.measures.first?.chords.first)
+
+        XCTAssertEqual(chord.symbol, "Cmaj7")
+        XCTAssertEqual(chord.manualMIDIPitches, exact)
+        XCTAssertNil(chord.frozenMIDIPitches)
+        XCTAssertEqual(JazzTheory.compilePlayback(result.chart).first?.midiPitches, exact)
+        XCTAssertEqual(noteOnPitches(in: MIDIFileWriter.makeFile(chart: result.chart)), exact)
+    }
+
+    func testMIDIImportRefusesNamedExactStacksOutsideManualBounds() {
+        let outOfRange = [12, 28, 31, 35]
+        XCTAssertThrowsError(try MIDIFileImporter.importChart(
+            data: singleChordMIDI(pitches: outOfRange),
+            title: "Out of range"
+        )) { error in
+            XCTAssertEqual(
+                error as? MIDIImportIssue,
+                .exactVoicingPitchRange(pitch: 12, low: 21, high: 108)
+            )
+        }
+
+        let tooMany = [24, 28, 31, 35, 36, 40, 43, 47, 48, 52, 55, 59, 60, 64, 67, 71, 72]
+        XCTAssertThrowsError(try MIDIFileImporter.importChart(
+            data: singleChordMIDI(pitches: tooMany),
+            title: "Too many voices"
+        )) { error in
+            XCTAssertEqual(
+                error as? MIDIImportIssue,
+                .exactVoicingVoiceLimit(count: 17, limit: 16)
+            )
+        }
     }
 
     func testMIDIImportRefusesHostileTimingAndStructure() throws {
@@ -452,6 +498,7 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertEqual(result.salvage.ignoredNoteOffs, 1)
         XCTAssertEqual(result.salvage.notesClosedAtTrackEnd, 1)
         XCTAssertEqual(result.salvage.synthesizedEndOfTracks, 1)
+        XCTAssertEqual(result.chart.measures[0].chords[0].manualMIDIPitches, [60, 64, 67, 71])
         XCTAssertTrue(result.notice.contains("MIDI repair ledger"))
         XCTAssertTrue(result.notice.contains("1 unmatched note-off ignored"))
     }
@@ -499,6 +546,10 @@ final class FrankenJazzCoreTests: XCTestCase {
 
         XCTAssertEqual(first.chart.chartText, second.chart.chartText)
         XCTAssertEqual(first.chart.tempoBPM, second.chart.tempoBPM)
+        XCTAssertEqual(
+            first.chart.measures.flatMap(\.chords).map(\.manualMIDIPitches),
+            second.chart.measures.flatMap(\.chords).map(\.manualMIDIPitches)
+        )
         XCTAssertEqual(first.importedChordCount, second.importedChordCount)
         XCTAssertEqual(first.skippedSonorityCount, second.skippedSonorityCount)
         XCTAssertEqual(first.omittedSourceMeasureCount, second.omittedSourceMeasureCount)
@@ -534,6 +585,8 @@ final class FrankenJazzCoreTests: XCTestCase {
         await store.importFile(url)
         XCTAssertEqual(store.chart.chartText, "| Fmaj7 Gm7 | C7 |")
         XCTAssertTrue(store.notice?.contains("editable chords from MIDI") == true)
+        XCTAssertTrue(store.chart.measures.flatMap(\.chords).allSatisfy { $0.manualMIDIPitches != nil })
+        XCTAssertEqual(store.selectedVoicingMode, .manual)
         store.undo()
         XCTAssertEqual(store.chart, beforeImport)
     }
@@ -986,6 +1039,29 @@ final class FrankenJazzCoreTests: XCTestCase {
             0x83, 0x60, 0x80, 0x3C, 0x00,
             0x00, 0xFF, 0x2F, 0x00
         ])
+    }
+
+    /// Hand-assembled format-0 fixture so exact import bounds do not certify
+    /// themselves through the production MIDI writer.
+    private func singleChordMIDI(pitches: [Int]) -> Data {
+        precondition(!pitches.isEmpty && pitches.allSatisfy { (0...127).contains($0) })
+        var track: [UInt8] = []
+        for pitch in pitches {
+            track += [0x00, 0x90, UInt8(pitch), 0x60]
+        }
+        for (index, pitch) in pitches.enumerated() {
+            track += index == 0
+                ? [0x83, 0x60, 0x80, UInt8(pitch), 0x00]
+                : [0x00, 0x80, UInt8(pitch), 0x00]
+        }
+        track += [0x00, 0xFF, 0x2F, 0x00]
+        return Data([
+            0x4D, 0x54, 0x68, 0x64, 0x00, 0x00, 0x00, 0x06,
+            0x00, 0x00, 0x00, 0x01, 0x01, 0xE0,
+            0x4D, 0x54, 0x72, 0x6B,
+            UInt8((track.count >> 24) & 0xFF), UInt8((track.count >> 16) & 0xFF),
+            UInt8((track.count >> 8) & 0xFF), UInt8(track.count & 0xFF)
+        ] + track)
     }
 
     private func noteOnPitches(in data: Data) -> [Int] {

@@ -65,6 +65,9 @@ final class FrankenJazzUITests: XCTestCase {
             NSPredicate(format: "label CONTAINS 'Common DAW retriggers'")
         ).firstMatch
         XCTAssertTrue(boundary.exists)
+        XCTAssertTrue(app.staticTexts.matching(
+            NSPredicate(format: "label CONTAINS 'exact Manual pitches'")
+        ).firstMatch.exists)
     }
 
     func testChordInspectorExposesPersistedChordNoteEditor() throws {
