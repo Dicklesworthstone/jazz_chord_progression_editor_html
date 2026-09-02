@@ -1,8 +1,8 @@
 {
   "images" : [
-    { "filename" : "FrankenJazz-Monster-1024.png", "idiom" : "universal", "scale" : "1x" },
-    { "idiom" : "universal", "scale" : "2x" },
-    { "idiom" : "universal", "scale" : "3x" }
+    { "filename" : "FrankenJazz-Monster-64.png", "idiom" : "universal", "scale" : "1x" },
+    { "filename" : "FrankenJazz-Monster-128.png", "idiom" : "universal", "scale" : "2x" },
+    { "filename" : "FrankenJazz-Monster-192.png", "idiom" : "universal", "scale" : "3x" }
   ],
   "info" : { "author" : "xcode", "version" : 1 }
 }

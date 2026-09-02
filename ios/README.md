@@ -51,5 +51,19 @@ xcodebuild -project FrankenJazz.xcodeproj \
 ```
 
 The project file is generated from `project.yml`; edit that specification, not
-the generated `project.pbxproj`. App data is never uploaded. The only way a
-chart leaves the device is an explicit system share/export action.
+the generated `project.pbxproj`. Before committing a project-setting change,
+prove the checked-in project is current:
+
+```bash
+xcodegen generate --spec project.yml
+git diff --exit-code -- FrankenJazz.xcodeproj Sources/Info.plist
+```
+
+`MARKETING_VERSION` is the user-facing release version and changes only when a
+release is deliberately cut. `CURRENT_PROJECT_VERSION` is the monotonically
+increasing build number and must advance for every new App Store Connect upload.
+Both authorities live in `project.yml`; regenerating the project publishes them
+to the target. Signing-team changes remain owner-controlled.
+
+App data is never uploaded. The only way a chart leaves the device is an
+explicit system share/export action.
