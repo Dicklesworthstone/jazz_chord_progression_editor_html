@@ -1,18 +1,68 @@
 import SwiftUI
 import UIKit
 
+enum JazzAppearance: String {
+    static let storageKey = "frankenjazz.appearance"
+
+    case dark
+    case light
+
+    var colorScheme: ColorScheme { self == .dark ? .dark : .light }
+}
+
 enum JazzTheme {
-    static let background = Color(red: 0.010, green: 0.022, blue: 0.030)
-    static let panel = Color(red: 0.024, green: 0.046, blue: 0.055)
-    static let raised = Color(red: 0.040, green: 0.070, blue: 0.080)
-    static let paper = Color(red: 0.94, green: 0.92, blue: 0.84)
-    static let text = Color(red: 0.94, green: 0.97, blue: 0.98)
-    static let secondary = Color(red: 0.62, green: 0.70, blue: 0.75)
-    static let brass = Color(red: 0.96, green: 0.72, blue: 0.28)
-    static let emerald = Color(red: 0.23, green: 0.89, blue: 0.64)
-    static let cyan = Color(red: 0.21, green: 0.79, blue: 0.95)
-    static let violet = Color(red: 0.61, green: 0.47, blue: 0.97)
-    static let coral = Color(red: 0.97, green: 0.42, blue: 0.48)
+    static let background = adaptive(
+        dark: UIColor(red: 0.010, green: 0.022, blue: 0.030, alpha: 1),
+        light: UIColor(red: 0.965, green: 0.945, blue: 0.885, alpha: 1)
+    )
+    static let panel = adaptive(
+        dark: UIColor(red: 0.024, green: 0.046, blue: 0.055, alpha: 1),
+        light: UIColor(red: 1.0, green: 0.992, blue: 0.955, alpha: 1)
+    )
+    static let raised = adaptive(
+        dark: UIColor(red: 0.040, green: 0.070, blue: 0.080, alpha: 1),
+        light: UIColor(red: 0.915, green: 0.895, blue: 0.825, alpha: 1)
+    )
+    static let paper = adaptive(
+        dark: UIColor(red: 0.94, green: 0.92, blue: 0.84, alpha: 1),
+        light: UIColor(red: 0.985, green: 0.965, blue: 0.895, alpha: 1)
+    )
+    static let text = adaptive(
+        dark: UIColor(red: 0.94, green: 0.97, blue: 0.98, alpha: 1),
+        light: UIColor(red: 0.115, green: 0.095, blue: 0.075, alpha: 1)
+    )
+    static let secondary = adaptive(
+        dark: UIColor(red: 0.62, green: 0.70, blue: 0.75, alpha: 1),
+        light: UIColor(red: 0.385, green: 0.345, blue: 0.290, alpha: 1)
+    )
+    static let brass = adaptive(
+        dark: UIColor(red: 0.96, green: 0.72, blue: 0.28, alpha: 1),
+        light: UIColor(red: 0.635, green: 0.345, blue: 0.025, alpha: 1)
+    )
+    static let emerald = adaptive(
+        dark: UIColor(red: 0.23, green: 0.89, blue: 0.64, alpha: 1),
+        light: UIColor(red: 0.025, green: 0.435, blue: 0.255, alpha: 1)
+    )
+    static let cyan = adaptive(
+        dark: UIColor(red: 0.21, green: 0.79, blue: 0.95, alpha: 1),
+        light: UIColor(red: 0.025, green: 0.390, blue: 0.535, alpha: 1)
+    )
+    static let violet = adaptive(
+        dark: UIColor(red: 0.61, green: 0.47, blue: 0.97, alpha: 1),
+        light: UIColor(red: 0.385, green: 0.225, blue: 0.675, alpha: 1)
+    )
+    static let coral = adaptive(
+        dark: UIColor(red: 0.97, green: 0.42, blue: 0.48, alpha: 1),
+        light: UIColor(red: 0.675, green: 0.145, blue: 0.205, alpha: 1)
+    )
+    static let stroke = adaptive(
+        dark: UIColor(white: 1, alpha: 0.08),
+        light: UIColor(red: 0.30, green: 0.20, blue: 0.08, alpha: 0.16)
+    )
+
+    private static func adaptive(dark: UIColor, light: UIColor) -> Color {
+        Color(uiColor: UIColor { traits in traits.userInterfaceStyle == .dark ? dark : light })
+    }
 
     static func size(_ base: CGFloat) -> CGFloat {
 #if targetEnvironment(macCatalyst)
@@ -20,6 +70,25 @@ enum JazzTheme {
 #else
         UIFontMetrics(forTextStyle: .body).scaledValue(for: base)
 #endif
+    }
+}
+
+struct JazzAppearanceButton: View {
+    @Binding var selection: String
+
+    private var appearance: JazzAppearance { JazzAppearance(rawValue: selection) ?? .dark }
+
+    var body: some View {
+        Button {
+            selection = appearance == .dark ? JazzAppearance.light.rawValue : JazzAppearance.dark.rawValue
+        } label: {
+            Image(systemName: appearance == .dark ? "sun.max.fill" : "moon.stars.fill")
+                .frame(width: 44, height: 44)
+        }
+        .accessibilityIdentifier("appearance-toggle")
+        .accessibilityLabel(appearance == .dark ? "Switch to light mode" : "Switch to dark mode")
+        .accessibilityValue(appearance == .dark ? "Dark mode" : "Light mode")
+        .accessibilityHint("Remembers this choice for future launches")
     }
 }
 
@@ -78,7 +147,7 @@ struct JazzPanel<Content: View>: View {
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
                     .stroke(
                         LinearGradient(
-                            colors: [accent.opacity(0.42), .white.opacity(0.06), JazzTheme.emerald.opacity(0.14)],
+                            colors: [accent.opacity(0.42), JazzTheme.stroke, JazzTheme.emerald.opacity(0.14)],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ),

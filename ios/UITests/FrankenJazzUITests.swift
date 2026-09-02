@@ -26,6 +26,26 @@ final class FrankenJazzUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Tonic family"].exists)
     }
 
+    func testAppearanceTogglePersistsLightModeAcrossLaunches() throws {
+        let toggle = app.buttons["appearance-toggle"]
+        XCTAssertTrue(toggle.waitForExistence(timeout: 3))
+
+        if toggle.label == "Switch to dark mode" {
+            toggle.tap()
+            XCTAssertEqual(toggle.label, "Switch to light mode")
+        }
+
+        toggle.tap()
+        XCTAssertEqual(toggle.label, "Switch to dark mode")
+
+        app.terminate()
+        app.launch()
+
+        let relaunchedToggle = app.buttons["appearance-toggle"]
+        XCTAssertTrue(relaunchedToggle.waitForExistence(timeout: 3))
+        XCTAssertEqual(relaunchedToggle.label, "Switch to dark mode")
+    }
+
     func testLibraryLoadsThroughTheRealDocumentPath() throws {
         app.buttons["Progression library"].tap()
         let entry = app.buttons.matching(NSPredicate(format: "label CONTAINS 'ii–V–I in C'" )).firstMatch

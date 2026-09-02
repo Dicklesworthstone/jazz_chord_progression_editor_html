@@ -3,6 +3,7 @@ import UniformTypeIdentifiers
 
 struct FrankenJazzStudioView: View {
     @ObservedObject var store: JazzStudioStore
+    @AppStorage(JazzAppearance.storageKey) private var appearance = JazzAppearance.dark.rawValue
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -21,7 +22,7 @@ struct FrankenJazzStudioView: View {
                 }
             }
         }
-        .preferredColorScheme(.dark)
+        .preferredColorScheme((JazzAppearance(rawValue: appearance) ?? .dark).colorScheme)
         .tint(JazzTheme.brass)
         .sheet(isPresented: $store.isInspectorPresented) { NavigationStack { ChordInspectorView(store: store, sheetMode: true) } }
         .sheet(isPresented: $store.isLibraryPresented) { NavigationStack { LibraryView(store: store, sheetMode: true) } }
@@ -66,6 +67,7 @@ struct FrankenJazzStudioView: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItemGroup(placement: .primaryAction) {
+                        JazzAppearanceButton(selection: $appearance)
                         Button { store.isLibraryPresented = true } label: { Image(systemName: "books.vertical") }
                             .accessibilityLabel("Progression library")
                         Button { store.isDocumentPresented = true } label: { Image(systemName: "ellipsis.circle") }
@@ -94,6 +96,9 @@ struct FrankenJazzStudioView: View {
             .padding(.top, 12)
             .safeAreaInset(edge: .bottom, spacing: 0) { TransportBar(store: store, compact: false) }
             .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    JazzAppearanceButton(selection: $appearance)
+                }
                 if width < 1_080 {
                     ToolbarItem(placement: .primaryAction) {
                         Button { store.isInspectorPresented = true } label: { Label("Harmony", systemImage: "waveform.path.ecg") }
@@ -439,7 +444,7 @@ private struct MeasureCard: View {
                                     design: .serif
                                 ))
                                 .foregroundStyle(
-                                    chord.id == store.selectedChordID ? JazzTheme.background : JazzTheme.paper
+                                    chord.id == store.selectedChordID ? JazzTheme.background : JazzTheme.text
                                 )
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.68)
@@ -501,8 +506,8 @@ private struct MeasureCard: View {
             Rectangle().fill(active ? JazzTheme.brass : JazzTheme.emerald.opacity(0.28)).frame(height: active ? 2 : 1)
         }
         .padding(10)
-        .background(active ? JazzTheme.brass.opacity(0.08) : Color.black.opacity(0.22), in: RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(active ? JazzTheme.brass.opacity(0.55) : .white.opacity(0.055)))
+        .background(active ? JazzTheme.brass.opacity(0.08) : JazzTheme.raised.opacity(0.72), in: RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(active ? JazzTheme.brass.opacity(0.55) : JazzTheme.stroke))
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.16), value: active)
     }
 
@@ -1012,7 +1017,7 @@ private struct TransportBar: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(activeSymbol)
                 .font(.system(size: JazzTheme.size(14), weight: .bold, design: .serif))
-                .foregroundStyle(JazzTheme.paper)
+                .foregroundStyle(JazzTheme.text)
                 .lineLimit(1)
             Text("\(time(store.audio.playheadBeat)) / \(time(store.audio.totalBeats == 0 ? store.chart.durationBeats : store.audio.totalBeats))")
                 .font(.system(size: JazzTheme.size(9.5), design: .monospaced))
