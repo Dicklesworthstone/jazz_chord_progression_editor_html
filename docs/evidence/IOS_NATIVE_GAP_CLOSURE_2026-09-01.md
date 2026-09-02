@@ -51,7 +51,7 @@ requests that touch the Apple app.
 0a77fbde41cae61513c9e1bcb91c8f529b8fe7604ce537f9dca46723a5eee23e  ios/Tests/FrankenJazzCoreTests.swift
 7a5d23d3b2b11c1ef82c893847fce5489927a0024a7cd433739c9832221e8ae5  ios/project.yml
 f2e96d699140991e813f28f42f418789a730336e0a4c569806e3c0ffafca91fd  ios/Sources/FrankenJazz.entitlements
-1f7675b0ae9aa3e93b7f8bcdfca0e45ec909812d98f19d7c603833728748d8d2  .github/workflows/apple.yml
+7a3c4328cf99e5f56f0bb6f25af8f1ebd7be45cfde72e5792499cd1602d7fd2c  .github/workflows/apple.yml
 ```
 
 The historical commit `e371cd9` says it closes `jazz-4w9s`, but that Bead is
