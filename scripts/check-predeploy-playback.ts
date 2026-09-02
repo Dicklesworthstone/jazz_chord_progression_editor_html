@@ -318,6 +318,10 @@ async function playInstrument(
   let statusHeldPlaying: boolean;
   let captures: BufferCapture[];
   let masterPeak: number;
+  let pageDiagnostics: { audioState: string | null; noticeText: string | null } = {
+    audioState: null,
+    noticeText: null,
+  };
   try {
     await page.selectOption("#studio-transport-instrument", instrumentId);
     await page.waitForTimeout(400);
@@ -349,6 +353,28 @@ async function playInstrument(
         /* recorded below via status text */
       });
     await page.waitForTimeout(PLAY_LISTEN_MS);
+    pageDiagnostics = await page
+      .evaluate(() => {
+        const runtime = globalThis as unknown as Readonly<{
+          document: Readonly<{
+            querySelector(selector: string): Readonly<{
+              getAttribute(name: string): string | null;
+              textContent: string | null;
+            }> | null;
+          }>;
+        }>;
+        const doc = runtime.document;
+        const transport = doc.querySelector("#transport-bar");
+        const notice = doc.querySelector(
+          "#studio-action-notice, .ui-toast-notice, [role='alert']",
+        );
+        return {
+          audioState: transport?.getAttribute("data-audio-state") ?? null,
+          noticeText: notice?.textContent?.trim() ?? null,
+        };
+      })
+      .catch(() => ({ audioState: null, noticeText: null }));
+
     status =
       (await page.locator("#studio-transport-status-detail").textContent().catch(() => null))?.trim() ??
       "(no status element)";
@@ -389,7 +415,12 @@ async function playInstrument(
   const rendersBuffers = captures.length > 1;
   if (consoleErrors.length > 0) failures.push(`console errors: ${String(consoleErrors.length)}`);
   if (pageErrors.length > 0) failures.push(`page errors: ${String(pageErrors.length)}`);
-  if (!statusHeldPlaying) failures.push(`status after listen window: "${status}"`);
+  if (!statusHeldPlaying) {
+    let detail = `status after listen window: "${status}"`;
+    if (pageDiagnostics.audioState) detail += ` [audio-state: ${pageDiagnostics.audioState}]`;
+    if (pageDiagnostics.noticeText) detail += ` [notice: "${pageDiagnostics.noticeText}"]`;
+    failures.push(detail);
+  }
   if (rendersBuffers) {
     if (audible.length < MIN_AUDIBLE_BUFFERS)
       failures.push(`audible buffers ${String(audible.length)} < ${String(MIN_AUDIBLE_BUFFERS)}`);
