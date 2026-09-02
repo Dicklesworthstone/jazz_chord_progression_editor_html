@@ -62,11 +62,12 @@ final class JazzStudioStore: ObservableObject {
     private var primeTask: Task<Void, Never>?
     private var importFence = JazzImportFence()
     private var audioChanges: AnyCancellable?
-    private let recovery = JazzRecoveryStore()
+    private let recovery: JazzRecoveryStore
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
 
-    init() {
+    init(recovery: JazzRecoveryStore = JazzRecoveryStore()) {
+        self.recovery = recovery
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         encoder.dateEncodingStrategy = .iso8601
         decoder.dateDecodingStrategy = .iso8601
@@ -620,16 +621,18 @@ enum ImportError: LocalizedError {
     }
 }
 
-private final class JazzRecoveryStore {
+final class JazzRecoveryStore {
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
     private let fileURL: URL
     private let previousURL: URL
 
-    init() {
+    init(directory requestedDirectory: URL? = nil) {
         encoder.dateEncodingStrategy = .iso8601
         decoder.dateDecodingStrategy = .iso8601
-        let directory = (try? FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)) ?? FileManager.default.temporaryDirectory
+        let directory = requestedDirectory
+            ?? (try? FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true))
+            ?? FileManager.default.temporaryDirectory
         fileURL = directory.appendingPathComponent("FrankenJazz-Recovery.json")
         previousURL = directory.appendingPathComponent("FrankenJazz-Recovery.previous.json")
     }

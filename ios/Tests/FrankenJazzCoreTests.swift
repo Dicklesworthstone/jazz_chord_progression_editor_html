@@ -598,6 +598,70 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertEqual(decoded, chart)
     }
 
+    @MainActor
+    func testRecoveryRoundTripStartupAndPreviousValidFallback() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FrankenJazzRecoveryTests-" + UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let recovery = JazzRecoveryStore(directory: directory)
+        var first = JazzChart(
+            title: "First recovery",
+            key: .bb,
+            tempoBPM: 87,
+            groove: .ballad,
+            instrument: .vibraphone,
+            voicingFamily: .rootlessA,
+            measures: try JazzTheory.parseChart("| Bbmaj9 | Eb13 |").measures
+        )
+        first.updatedAt = Date(timeIntervalSince1970: 1_788_130_000)
+        recovery.save(first)
+        XCTAssertEqual(recovery.load(), first)
+
+        var second = first
+        second.title = "Second recovery"
+        second.tempoBPM = 144
+        second.updatedAt = Date(timeIntervalSince1970: 1_788_130_100)
+        recovery.save(second)
+        try Data("truncated".utf8).write(
+            to: directory.appendingPathComponent("FrankenJazz-Recovery.json"),
+            options: .atomic
+        )
+        XCTAssertEqual(recovery.load(), first, "A corrupt current copy must fall back to the previous validated chart")
+
+        recovery.save(second)
+        let restoredStore = JazzStudioStore(recovery: recovery)
+        XCTAssertEqual(restoredStore.chart, second)
+        XCTAssertEqual(restoredStore.notice, "Recovered your last local chart.")
+    }
+
+    func testEveryVoicingFamilyIsDeterministicDistinctOrderedAndBounded() throws {
+        let chord = try XCTUnwrap(JazzTheory.parseChord("Cmaj13/G", in: .c))
+        let expectedCounts: [VoicingFamily: Int] = [
+            .balanced: 7,
+            .shell: 4,
+            .rootlessA: 5,
+            .rootlessB: 4,
+            .open: 5,
+            .spread: 5
+        ]
+        var realized = Set<[Int]>()
+
+        for family in VoicingFamily.allCases {
+            let notes = JazzTheory.voicing(for: chord, family: family)
+            XCTAssertEqual(notes, JazzTheory.voicing(for: chord, family: family), family.rawValue)
+            XCTAssertEqual(notes, notes.sorted(), family.rawValue)
+            XCTAssertEqual(Set(notes).count, notes.count, family.rawValue)
+            XCTAssertEqual(notes.count, expectedCounts[family], family.rawValue)
+            XCTAssertTrue(notes.allSatisfy { (28...92).contains($0) }, family.rawValue)
+            XCTAssertEqual(try XCTUnwrap(notes.first) % 12, 7, "Slash bass must remain the lowest voice in \(family.rawValue)")
+            realized.insert(notes)
+        }
+
+        XCTAssertEqual(realized.count, VoicingFamily.allCases.count, "Every advertised family must produce a distinct realization")
+    }
+
     /// Hand-assembled independently from the production writer: format 1,
     /// conductor tempo/meter, and a voicing track whose later note-on and all
     /// velocity-zero note-offs use running status.
