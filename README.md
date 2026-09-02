@@ -105,13 +105,12 @@ One build produces:
 - `dist/licenses.json`, the production dependency and embedded-asset inventory.
 
 The two HTML outputs must be byte-identical. The enforced artifact ceiling is
-8 MiB (`tests/fixtures/foundation/foundation-contract.json`,
-`maxUncompressedBytes: 8388608`), raised from the original 1.5 MiB when the
-embedded instrument sample payloads and fonts landed; the current artifact
-measures about 7.94 MB. The former 512 KiB Harmonic Atlas byte reservation
-is currently zero — restoring, respending, or retiring it is an open owner
-decision (bead `jcpe-size-contract-atlas-4nsy.1`), and the matching
-ARCHITECTURE.md amendment is tracked by `jcpe-size-contract-atlas-4nsy.2`.
+9 MiB (`maxUncompressedBytes: 9437184`, the same figure the reviewed PHS7
+physical-system contract pins), with a hard 512 KiB reservation for the
+future Harmonic Atlas and an 8,912,896-byte shell allocation; the current
+artifact measures 7,934,464 bytes. The full amendment history and the
+reclamation path (physical models replacing the ~2.8 MB sampled payloads)
+are recorded in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Source and generated-file ownership
 

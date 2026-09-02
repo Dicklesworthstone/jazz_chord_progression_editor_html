@@ -348,44 +348,61 @@ domain candidate.
 
 ## Standalone release contract
 
-The release is one UTF-8 HTML file with all production JavaScript, CSS, icons,
-images, and compiled content inlined. Its initial uncompressed limit is
-1,572,864 bytes (1.5 MiB), including the final Harmonic Atlas.
+The release is one UTF-8 HTML file with all production JavaScript, CSS,
+icons, images, fonts, instrument payloads, and compiled content inlined.
 
-The retired F0 bootstrap shell had a temporary 262,144-byte ceiling, and the
-first U0 studio checkpoint was measured against a 786,432-byte ceiling, then
-851,968 bytes after the A0-E0 owner-ports bridge and X1 serialized-transport
-scheduling entered the live path. After the accepted A0/U1 `apply-edit-plan`
-cutover bound the atomic runner and the real T0 parser into the live
-application graph, that ceiling became 983,040 bytes (960 KiB). The U1 chart
-editor then bound the chord-level view-model projection, the U1 command surface,
-and the first quick-entry and chord-card components into the live graph, and the
-measured artifact rose to 975,349 bytes — 7,691 bytes below the previous
-ceiling. Because the remaining U1 surfaces (card menus, inline symbol and
-duration editors, pointer drag, touch range mode, and the teaching view) cannot
-fit in that margin, the checkpoint ceiling is raised once to 1,048,576 bytes
-(1 MiB) rather than nudged repeatedly.
+The pinned uncompressed limits, amended 2026-09-02
+(bead `jcpe-size-contract-atlas-4nsy`, deputy decision on the recorded
+owner remit):
 
-Measured 2026-07-28: with the embedded Concert Grand WebAssembly DSP payload
-(20,714 wasm bytes carried as a ~27.6 KB base64 constant; see the amendment
-below) and its renderer bound into the live graph, the artifact is exactly
-1,003,161 bytes — 45,415 bytes below the 1,048,576-byte checkpoint ceiling.
+| Allocation | Bytes |
+|---|---:|
+| total artifact ceiling | 9,437,184 (9 MiB) |
+| shell allocation (`foundationShellMaxBytes`) | 8,912,896 |
+| reserved Harmonic Atlas/content (`reservedAtlasBytes`) | 524,288 |
 
-The 1,572,864-byte final limit and its 524,288-byte Atlas/content reservation
-remain unchanged. The new checkpoint ceiling is exactly the non-Atlas
-allocation, so the 65,536 bytes formerly held outside both allocations are now
-inside the shell allocation and the slack outside both is zero. That reserve was
-spendable only by an explicit contract change, and this is it. Later packages
-still cannot spend the reserved content allowance silently, and a further shell
-increase requires the same measured justification recorded here.
+History, in full, because this contract's own law requires the measured
+justification recorded here:
+
+- The retired F0 bootstrap shell had a 262,144-byte ceiling; the U0/U1
+  studio checkpoints stepped through 786,432 -> 851,968 -> 983,040 ->
+  1,048,576 bytes, and the original completed-artifact pin was 1,572,864
+  bytes with a 524,288-byte Atlas reservation.
+- Shipping real instruments consumed that world: the Salamander piano
+  attack layer, the CC0 Upright Bass and Concert Vibes sample payloads
+  (~2.8 MB combined), the embedded Archivo/Literata faces, and the
+  180 KB physical-model WASM raised the measured artifact to ~7.9 MB, and
+  the enforced ceiling was raised to 8,388,608 bytes
+  (commit f818c6a, "ceiling raised for samples") without this document
+  being amended — a recorded violation of the Evolution clause.
+- On 2026-09-01 the budget was balanced by zeroing the Atlas reservation
+  (commits 5d73396 then e9570e6), spending a promised future capability to
+  keep the number — the exact "update the expectation to make a failure
+  disappear" shortcut the Forbidden Shortcuts section bans.
+- On 2026-09-02 this amendment resolved it deliberately: the total rises
+  once to 9,437,184 bytes — the figure the reviewed PHS7 physical-system
+  contract already pins as `standaloneArtifactMaximumBytes`, so the two
+  authorities now agree — and the 524,288-byte Atlas reservation is
+  RESTORED as a hard allocation (`validate:f0-contract` rejects a zero or
+  negative reservation again). The measured artifact is 7,934,464 bytes:
+  978,432 bytes of shell headroom under the shell allocation.
+
+The recorded reclamation path: the physical-model campaign exists to
+replace the sampled payloads, and when `vibes@2` and the physical upright
+bass finally beat the recordings in the owner's ears
+(`release-evidence/audio/listening/model-acceptance-ledger.json`), dropping
+the two CC0 payloads returns roughly five times the Atlas reservation.
+Any further ceiling change requires the same measured justification
+recorded here, and later packages still cannot spend the reserved content
+allowance silently.
 
 ### Identifier minification, and why the earlier policy was reversed
 
 The identifier-preserving inspectable bundle policy recorded above has been
 **withdrawn**. It held while the shell had room; once the completed U1 chart
 editor measured 1,041,445 bytes it did not, and the only remaining ways to
-continue were to spend the Atlas reservation or to raise the pinned 1.5 MiB
-total. Both trade a real future capability for bundle readability.
+continue were to spend the Atlas reservation or to raise the then-pinned
+1.5 MiB total (both since superseded by the recorded amendments above). Both trade a real future capability for bundle readability.
 
 `scripts/build.ts` therefore now passes `--minify-identifiers` alongside
 `--minify-whitespace` and `--minify-syntax`. The measured effect on the U1
@@ -595,7 +612,7 @@ pair are negative fixtures.
 | F0-NETWORK-01 | `file://` and HTTP with network denied | request/console/page-error JSON logs |
 | F0-NETWORK-02 | each forbidden attribute/import/call | mutation fixtures rejected with code/range |
 | F0-REPRO-01 | two clean builds | identical hashes and bytes |
-| F0-SIZE-01 | 1.5 MiB boundary | exact byte pass and +1 byte rejection fixture |
+| F0-SIZE-01 | 9 MiB boundary | exact byte pass and +1 byte rejection fixture |
 | F0-LICENSE-01 | bundled asset/dependency provenance | stable license inventory |
 | F0-CSP-01 | restrictive hash-based embedded CSP | directive/hash and no-CSP negative-control tests |
 | F0-NODE-01 | Playwright uses real Node 22/24/26 | toolchain-doctor report |
