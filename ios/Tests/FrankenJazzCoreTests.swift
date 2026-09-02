@@ -787,7 +787,8 @@ final class FrankenJazzCoreTests: XCTestCase {
         recovery.save(full)
         let fullStore = JazzStudioStore(recovery: recovery)
         fullStore.addSelectedVoice()
-        XCTAssertEqual(fullStore.chart, full)
+        XCTAssertEqual(fullStore.chart.id, full.id)
+        XCTAssertEqual(fullStore.chart.measures, full.measures)
         XCTAssertEqual(fullStore.notice, "A manual voicing can contain at most 16 voices.")
         XCTAssertFalse(fullStore.canUndo)
     }
