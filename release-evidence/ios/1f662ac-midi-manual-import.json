@@ -1,0 +1,92 @@
+{
+  "schema": "frankenjazz.ios-test-evidence.v1",
+  "recordedAt": "2026-09-02T05:38:39Z",
+  "sourceCommit": "1f662ac5d8f8a4d1515aa2d6310c2dd1a79a045e",
+  "sourceCommitWasPublishedBeforeRun": true,
+  "environment": {
+    "host": "Apple silicon Mac mini",
+    "hostOS": "macOS 26.2 (25C56)",
+    "xcode": "26.1.1 (17B100)",
+    "xcodegen": "2.46.0",
+    "networkRequiredByApp": false
+  },
+  "runs": [
+    {
+      "id": "catalyst-unit",
+      "command": "xcodebuild -quiet -project ios/FrankenJazz.xcodeproj -scheme FrankenJazz -destination 'platform=macOS,variant=Mac Catalyst' -derivedDataPath /tmp/FrankenJazzMIDIManualRecordedDerived -resultBundlePath /tmp/FrankenJazzMIDIManualRecorded-1f662ac.xcresult CODE_SIGNING_ALLOWED=NO test -only-testing:FrankenJazzTests",
+      "resultBundle": "/tmp/FrankenJazzMIDIManualRecorded-1f662ac.xcresult",
+      "summaryReader": "xcrun xcresulttool get test-results summary --path /tmp/FrankenJazzMIDIManualRecorded-1f662ac.xcresult",
+      "result": "Passed",
+      "passed": 50,
+      "failed": 0,
+      "skipped": 0,
+      "expectedFailures": 0,
+      "device": "Mac Catalyst on Mac mini arm64 / macOS 26.2"
+    },
+    {
+      "id": "iphone-ui",
+      "command": "xcodebuild -quiet -project ios/FrankenJazz.xcodeproj -scheme FrankenJazz -destination 'platform=iOS Simulator,id=12EC3EAF-28DE-4880-B763-1BD4F118D935' -derivedDataPath /tmp/FrankenJazzMIDIManualUIDerived -resultBundlePath /tmp/FrankenJazzMIDIManualUI-1f662ac.xcresult CODE_SIGNING_ALLOWED=NO test -only-testing:FrankenJazzUITests",
+      "resultBundle": "/tmp/FrankenJazzMIDIManualUI-1f662ac.xcresult",
+      "summaryReader": "xcrun xcresulttool get test-results summary --path /tmp/FrankenJazzMIDIManualUI-1f662ac.xcresult",
+      "result": "Passed",
+      "passed": 8,
+      "failed": 0,
+      "skipped": 0,
+      "expectedFailures": 0,
+      "device": "iPhone 17 Pro arm64 simulator / iOS 26.1 (23B86)"
+    },
+    {
+      "id": "generic-ios-build",
+      "command": "xcodebuild -quiet -project ios/FrankenJazz.xcodeproj -scheme FrankenJazz -destination 'generic/platform=iOS Simulator' -derivedDataPath /tmp/FrankenJazzMIDIManualGenericDerived CODE_SIGNING_ALLOWED=NO build",
+      "result": "Passed"
+    },
+    {
+      "id": "generated-project-drift",
+      "command": "cd ios && xcodegen generate --spec project.yml && git diff --exit-code -- FrankenJazz.xcodeproj Sources/Info.plist",
+      "result": "Passed"
+    }
+  ],
+  "newCoverage": {
+    "importAuthority": [
+      "accepted named MIDI cells retain deterministic track/channel/key voice identities",
+      "same-voice retriggers are deduplicated while octave doublings and cross-voice unisons survive",
+      "imported chord events carry the accepted exact keys as Manual rather than recomputing an automatic family",
+      "the existing symbolic chord remains available for literal and contextual analysis"
+    ],
+    "musicalRoundTrip": [
+      "automatic native MIDI export imports back with the same realized pitches",
+      "imported Manual pitches drive playback and subsequent Standard MIDI export",
+      "a hand-authored Cmaj7 stack retains both C3 and C4 plus its exact upper voices",
+      "DAW same-key retrigger salvage does not invent a duplicate unison voice"
+    ],
+    "boundsAndLifecycle": [
+      "named stacks below MIDI 21 or above MIDI 108 refuse with a typed range diagnostic",
+      "named stacks above 16 retained voices refuse with a typed count diagnostic",
+      "stored-voicing bounds have one validator authority shared by import and editing",
+      "store import selects a Manual chord and remains one undoable document replacement",
+      "replayed imports produce identical Manual pitch arrays"
+    ],
+    "interface": [
+      "the document center states that accepted MIDI stacks become exact Manual pitches",
+      "the complete real iPhone UI suite exercises the updated boundary copy and existing Manual editor"
+    ]
+  },
+  "sourceHashes": {
+    "ios/Sources/FrankenJazzStudioView.swift": "b76f47bd47fea350d08cc0d2a089d3c6f774f03171ab820c07d569c23a73ab9b",
+    "ios/Sources/JazzModels.swift": "b6cddbd7e2d3a04f0656d7683740010e2d8e5121810a8a447036126350579df1",
+    "ios/Sources/JazzStudioStore.swift": "466f34f18c59900808dd9d6b5ce46d78542fe383604ead084a65a8f2b5dc31ea",
+    "ios/Sources/MIDIFileImporter.swift": "449334e399aec2cec5d07f35130420f4fac1aafe34c771b56b82081990bf4b27",
+    "ios/Tests/FrankenJazzCoreTests.swift": "eaf3db646ef66a4140fb79341f4a12f9a0990ec7852832ecdc545fad1f83386b",
+    "ios/UITests/FrankenJazzUITests.swift": "e9f16623e3b32f047712b326623deae1688dd2b47e394ff4aeb1183124bc62ec",
+    "ios/project.yml": "7a5d23d3b2b11c1ef82c893847fce5489927a0024a7cd433739c9832221e8ae5",
+    ".github/workflows/apple.yml": "7a3c4328cf99e5f56f0bb6f25af8f1ebd7be45cfde72e5792499cd1602d7fd2c"
+  },
+  "honestBoundaries": {
+    "midiSemantics": "MIDI carries key numbers, not enharmonic spelling or an authored visual voice order. The importer preserves the selected accepted lane's sounding keys in ascending deterministic order and does not claim to recover spelling, annotations, or complete FrankenJazz document state.",
+    "quantization": "The native importer still resolves near-simultaneous note groups into bounded four-beat chart cells and skips unnameable sonorities as reported. This slice preserves exact pitches after that existing symbolic cell selection; it does not claim lossless arbitrary-performance transcription.",
+    "laneSelection": "Format-1 import retains the existing deterministic aggregate/track/channel candidate scoring. Exact Manual pitches belong to the selected accepted lane; the app does not claim to merge every source track into one voicing.",
+    "hostedCI": "Apple workflow run 33595231137 for sourceCommit was queued with no runner steps when this record was written. Earlier Apple runs were cancelled by workflow concurrency before runner execution. No hosted pass is claimed.",
+    "manualAcceptance": "This record does not claim physical-device listening, signed distribution, human fresh-eyes approval, or a complete screenshot/manual interaction matrix for every iPhone, iPad, and Catalyst acceptance row.",
+    "staticAnalysis": "UBS 5.2.42 reported 41 criticals, three warnings, and 49 info items across the six changed Swift files. Review found the criticals are false positives where SwiftUI systemImage labels were classified as shell system calls; the warnings are the existing bounded Data(contentsOf:) import/recovery reads. This is not represented as a zero-finding scan."
+  }
+}

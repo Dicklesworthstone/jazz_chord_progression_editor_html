@@ -45,7 +45,7 @@ parsed as data and never interpreted as HTML or a URL.
 | chord resolution / chart analysis | Literal tones, Roman reading, guide tones, and transition motion |
 | playback-plan contracts | Immutable compiled events before audio or MIDI delivery |
 | persistent Web Audio graph | One persistent `AVAudioEngine`, generated PCM, owned playback generation |
-| M0/M1 MIDI import doctrine | Bounded SMF 0/1 decoding; conventional DAW note-state quirks are repaired into a reported salvage ledger while structural corruption still refuses |
+| M0/M1 MIDI import doctrine | Bounded SMF 0/1 decoding; accepted named cells retain their exact MIDI stack as editable Manual voicings, conventional DAW note-state quirks are repaired into a reported salvage ledger, and structural corruption still refuses |
 | JSON/text/MIDI exporters | Real files delivered through the system share/export sheet |
 | recovery lifecycle | Atomic Application Support JSON with current and previous valid envelopes |
 
