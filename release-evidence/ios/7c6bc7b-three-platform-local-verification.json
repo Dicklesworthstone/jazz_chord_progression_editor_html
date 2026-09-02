@@ -1,0 +1,101 @@
+{
+  "schema": "frankenjazz.ios-test-evidence.v1",
+  "recordedAt": "2026-09-02T20:57:41Z",
+  "sourceCommit": "7c6bc7b1d3787feb2aaed9ce45d344b1c67d31ca",
+  "sourceCommitWasPublishedBeforeRun": false,
+  "environment": {
+    "host": "Apple silicon Mac mini",
+    "hostOS": "macOS 26.2 (25C56)",
+    "xcode": "26.1.1 (17B100)",
+    "xcodegen": "2.46.0",
+    "networkRequiredByApp": false,
+    "simulatorAudioSafety": "Exact .muted Core Audio tap covered every current CoreSimulator audio process; BlackHole 2ch was also verified before every Simulator interaction. No audible playback was used as a safety test."
+  },
+  "runs": [
+    {
+      "id": "iphone-full-suite",
+      "resultBundle": "/Volumes/USB_NVME/CodexDerivedData/FrankenJazz-iPhone/Logs/Test/Test-FrankenJazz-2026.09.02_11-54-06--0400.xcresult",
+      "summaryReader": "xcrun xcresulttool get test-results summary --path /Volumes/USB_NVME/CodexDerivedData/FrankenJazz-iPhone/Logs/Test/Test-FrankenJazz-2026.09.02_11-54-06--0400.xcresult --format json",
+      "result": "Passed",
+      "passed": 62,
+      "corePassed": 53,
+      "uiPassed": 9,
+      "failed": 0,
+      "skipped": 0,
+      "expectedFailures": 0,
+      "device": "iPhone 17 Pro arm64 simulator / iOS 26.1 (23B86)"
+    },
+    {
+      "id": "catalyst-unit",
+      "resultBundle": "/Volumes/USB_NVME/CodexDerivedData/FrankenJazz-Catalyst/Logs/Test/Test-FrankenJazz-2026.09.02_11-54-06--0400.xcresult",
+      "summaryReader": "xcrun xcresulttool get test-results summary --path /Volumes/USB_NVME/CodexDerivedData/FrankenJazz-Catalyst/Logs/Test/Test-FrankenJazz-2026.09.02_11-54-06--0400.xcresult --format json",
+      "result": "Passed",
+      "passed": 53,
+      "failed": 0,
+      "skipped": 0,
+      "expectedFailures": 0,
+      "device": "Mac Catalyst on Mac mini arm64 / macOS 26.2"
+    },
+    {
+      "id": "generated-project-drift",
+      "command": "cd ios && xcodegen generate --spec project.yml && git diff --exit-code -- FrankenJazz.xcodeproj Sources/Info.plist",
+      "result": "Passed"
+    },
+    {
+      "id": "signed-device-build",
+      "path": "/Volumes/USB_NVME/CodexDerivedData/FrankenJazz-Device/Build/Products/Debug-iphoneos/FrankenJazz.app",
+      "result": "Passed",
+      "bundleVersion": "1",
+      "shortVersion": "0.1.0"
+    }
+  ],
+  "installation": {
+    "iphone": {
+      "device": "Jeff's iPhone / iPhone 17 Pro Max (iPhone18,2)",
+      "coreDeviceID": "CB35B320-2151-5AFC-9865-91E8EA1613EF",
+      "bundleID": "com.frankenjazz.FrankenJazz",
+      "result": "Installed",
+      "launchResult": "Not exercised: device was locked when CoreDevice requested launch"
+    },
+    "ipad": {
+      "device": "iPad / iPad Air (5th generation) (iPad13,16)",
+      "coreDeviceID": "190F5472-A427-59DF-9D08-6C858880132C",
+      "bundleID": "com.frankenjazz.FrankenJazz",
+      "result": "Installed",
+      "launchResult": "Not exercised: device was locked when CoreDevice requested launch"
+    },
+    "mac": {
+      "path": "/Applications/FrankenJazz.app",
+      "result": "Installed and codesign-verified",
+      "previousVersionPreservedAt": "/Applications/FrankenJazz.app.previous-20260902-1256"
+    }
+  },
+  "visualMatrix": {
+    "iphonePortrait": "Passed fresh-eyes inspection: identity, chart controls, lead sheet, source editor, and persistent transport fit without visible clipping or wrapped primary controls.",
+    "ipadPortrait": "Passed fresh-eyes inspection: library sidebar and complete eight-bar editing workspace use the available height without forcing the primary workspace to scroll.",
+    "ipadLandscape": "Passed fresh-eyes inspection: expanded inspector column appears alongside the library and chart workspace with coherent hierarchy and no horizontal overflow.",
+    "macCatalyst": "Passed fresh-eyes inspection at the normal zoomed window size: persistent library sidebar, chart/source workspace, harmony inspector, and transport are simultaneously visible; no phone shell or forced full-screen behavior. Window zoom was exercised and the adaptive workspace restored correctly.",
+    "audioWasPlayed": false
+  },
+  "sourceHashes": {
+    "ios/Sources/FrankenJazzStudioView.swift": "02df5db74c8d8dff7af50fef2ba03aa47d72125f239dcaa35a12d59aa53f85ba",
+    "ios/Sources/JazzStudioStore.swift": "8e46c47433f594e71e5059b7d238c9c256f03cfb5d623c2290ba04d60ff5c688",
+    "ios/Sources/JazzAudioEngine.swift": "1d172f87d7a966b603ad70d8e12cd4c09cbedcedbf88572c4afbd03d21cd7aab",
+    "ios/Sources/JazzAudioRenderer.swift": "a40b909dbc1edc1de79c81a65846e62341961f28f421e6e4f2fc6eb9c44dac22",
+    "ios/Sources/JazzModels.swift": "b6cddbd7e2d3a04f0656d7683740010e2d8e5121810a8a447036126350579df1",
+    "ios/Sources/JazzTheory.swift": "881bcec33fa72382ea9106ceb6117912d30732522d84259ec9e635d8cae2c8f2",
+    "ios/Sources/JazzLibrary.swift": "0907f5471888ab2852479c571f6527a6c602db8e81b0273a0168f349e4ef6ac3",
+    "ios/Sources/MIDIFileImporter.swift": "449334e399aec2cec5d07f35130420f4fac1aafe34c771b56b82081990bf4b27",
+    "ios/Sources/MIDIFileWriter.swift": "7bb0b86ef8d05e9db5d714fa9260b6c444401e8c6ce4513ce10fbd044a4a25cd",
+    "ios/Tests/FrankenJazzCoreTests.swift": "2f07089b1bf26ecfc1741eae91ea40554ec28b9c84d9c54180dd58aaf144affb",
+    "ios/UITests/FrankenJazzUITests.swift": "2443a23abc1c18dcbf225b1478a047d75f303118f85dc660ecec1dad3a6c1710",
+    "ios/project.yml": "7a5d23d3b2b11c1ef82c893847fce5489927a0024a7cd433739c9832221e8ae5"
+  },
+  "honestBoundaries": {
+    "physicalDeviceAcceptance": "The exact signed build is installed on the paired iPhone and iPad, but both devices were locked when launch was requested. This record does not claim physical-device interaction or listening.",
+    "macAudio": "The installed Mac app was visually inspected without pressing Play. This record does not claim human listening acceptance.",
+    "hostedCI": "No hosted Apple runner result is claimed by this record.",
+    "publication": "The source commit was two commits ahead of origin/main when the run was recorded; publication-before-run is deliberately false.",
+    "manualAcceptance": "Automated tests and fresh-eyes visual inspection are recorded. Final user acceptance on the two physical devices remains open."
+  }
+}
