@@ -1001,7 +1001,7 @@ private struct DocumentCenterView: View {
                                     .frame(maxWidth: .infinity)
                             }
                             .buttonStyle(JazzPrimaryButtonStyle(tint: JazzTheme.cyan))
-                            Text("MIDI chord stacks become editable 4/4 symbols. Files in another meter or with no nameable harmony are refused instead of guessed.")
+                            Text("MIDI chord stacks become editable 4/4 symbols. Common DAW retriggers, stray note-offs, open notes, and missing end markers are repaired and reported; structural corruption, another meter, or no nameable harmony is refused instead of guessed.")
                                 .font(.system(size: JazzTheme.size(10.5), design: .rounded))
                                 .foregroundStyle(JazzTheme.secondary)
                             Button { store.newChart(); dismiss() } label: {

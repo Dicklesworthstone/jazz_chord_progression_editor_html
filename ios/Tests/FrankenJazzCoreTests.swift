@@ -416,7 +416,7 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertEqual(result.tempoChangeCount, 1)
     }
 
-    func testMIDIImportRefusesHostileTimingAndNoteState() throws {
+    func testMIDIImportRefusesHostileTimingAndStructure() throws {
         var smpte = [UInt8](independentFormatOneMIDI())
         smpte[12] = 0xE7
         XCTAssertThrowsError(try MIDIFileImporter.importChart(data: Data(smpte), title: "SMPTE")) { error in
@@ -441,9 +441,36 @@ final class FrankenJazzCoreTests: XCTestCase {
             XCTAssertEqual(error as? MIDIImportIssue, .unsupportedMeter(numerator: 3, denominator: 4))
         }
 
-        XCTAssertThrowsError(try MIDIFileImporter.importChart(data: unmatchedNoteOffMIDI(), title: "Broken notes")) { error in
-            XCTAssertEqual(error as? MIDIImportIssue, .unmatchedNoteOff(track: 0, channel: 0, note: 60))
-        }
+    }
+
+    func testMIDIImportSalvagesConventionalDAWNoteStateQuirksWithLedger() throws {
+        let result = try MIDIFileImporter.importChart(data: dawQuirkMIDI(), title: "DAW salvage")
+
+        XCTAssertEqual(result.chart.chartText, "| Cmaj7 |")
+        XCTAssertEqual(result.salvage.retriggeredNotes, 1)
+        XCTAssertEqual(result.salvage.ignoredNoteOffs, 1)
+        XCTAssertEqual(result.salvage.notesClosedAtTrackEnd, 1)
+        XCTAssertEqual(result.salvage.synthesizedEndOfTracks, 1)
+        XCTAssertTrue(result.notice.contains("MIDI repair ledger"))
+        XCTAssertTrue(result.notice.contains("1 unmatched note-off ignored"))
+    }
+
+    @MainActor
+    func testStoreSurfacesMIDISalvageLedgerAfterUndoableImport() async throws {
+        let store = JazzStudioStore()
+        store.newChart()
+        let before = store.chart
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("frankenjazz-daw-salvage-\(UUID().uuidString)")
+            .appendingPathExtension("mid")
+        try dawQuirkMIDI().write(to: url, options: .atomic)
+
+        await store.importFile(url)
+
+        XCTAssertEqual(store.chart.chartText, "| Cmaj7 |")
+        XCTAssertTrue(store.notice?.contains("MIDI repair ledger") == true)
+        store.undo()
+        XCTAssertEqual(store.chart, before)
     }
 
     func testMIDIImportRefusesTruncationLimitsAndUnnameableOnlyMaterial() throws {
@@ -595,14 +622,26 @@ final class FrankenJazzCoreTests: XCTestCase {
         ])
     }
 
-    private func unmatchedNoteOffMIDI() -> Data {
-        Data([
+    private func dawQuirkMIDI() -> Data {
+        let track: [UInt8] = [
+            0x00, 0x90, 0x3C, 0x60,
+            0x00, 0x90, 0x40, 0x60,
+            0x00, 0x90, 0x43, 0x60,
+            0x00, 0x90, 0x47, 0x60,
+            0x00, 0x90, 0x3C, 0x55,
+            0x00, 0x80, 0x3E, 0x00,
+            0x00, 0xB0, 0x40, 0x7F,
+            0x83, 0x60, 0x80, 0x3C, 0x00,
+            0x00, 0x80, 0x40, 0x00,
+            0x00, 0x80, 0x43, 0x00
+        ]
+        return Data([
             0x4D, 0x54, 0x68, 0x64, 0x00, 0x00, 0x00, 0x06,
             0x00, 0x00, 0x00, 0x01, 0x01, 0xE0,
-            0x4D, 0x54, 0x72, 0x6B, 0x00, 0x00, 0x00, 0x08,
-            0x00, 0x80, 0x3C, 0x00,
-            0x00, 0xFF, 0x2F, 0x00
-        ])
+            0x4D, 0x54, 0x72, 0x6B,
+            UInt8((track.count >> 24) & 0xFF), UInt8((track.count >> 16) & 0xFF),
+            UInt8((track.count >> 8) & 0xFF), UInt8(track.count & 0xFF)
+        ] + track)
     }
 
     private func singleNoteMIDI() -> Data {

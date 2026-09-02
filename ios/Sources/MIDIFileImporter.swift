@@ -10,6 +10,18 @@ import Foundation
 enum MIDIFileImporter {
     static let maximumFileBytes = 2_000_000
 
+    struct Salvage: Equatable, Sendable {
+        var retriggeredNotes = 0
+        var ignoredNoteOffs = 0
+        var notesClosedAtTrackEnd = 0
+        var synthesizedEndOfTracks = 0
+
+        var isEmpty: Bool {
+            retriggeredNotes == 0 && ignoredNoteOffs == 0 &&
+                notesClosedAtTrackEnd == 0 && synthesizedEndOfTracks == 0
+        }
+    }
+
     struct Result: Sendable {
         var chart: JazzChart
         var sourceTrackCount: Int
@@ -17,6 +29,7 @@ enum MIDIFileImporter {
         var skippedSonorityCount: Int
         var omittedSourceMeasureCount: Int
         var tempoChangeCount: Int
+        var salvage: Salvage
 
         var notice: String {
             var details = ["Imported \(importedChordCount) editable chord\(importedChordCount == 1 ? "" : "s") from MIDI at \(Int(chart.tempoBPM.rounded())) BPM."]
@@ -28,6 +41,9 @@ enum MIDIFileImporter {
             }
             if tempoChangeCount > 1 {
                 details.append("The native chart uses the tempo active at its first imported chord; \(tempoChangeCount - 1) later tempo change\(tempoChangeCount == 2 ? "" : "s") remain MIDI-only.")
+            }
+            if !salvage.isEmpty {
+                details.append("MIDI repair ledger: \(salvage.retriggeredNotes) retrigger\(salvage.retriggeredNotes == 1 ? "" : "s") closed, \(salvage.ignoredNoteOffs) unmatched note-off\(salvage.ignoredNoteOffs == 1 ? "" : "s") ignored, \(salvage.notesClosedAtTrackEnd) open note\(salvage.notesClosedAtTrackEnd == 1 ? "" : "s") closed at track end, and \(salvage.synthesizedEndOfTracks) missing end marker\(salvage.synthesizedEndOfTracks == 1 ? "" : "s") synthesized.")
             }
             return details.joined(separator: " ")
         }
@@ -56,9 +72,6 @@ enum MIDIImportIssue: LocalizedError, Equatable {
     case zeroTempo(offset: Int)
     case unsupportedTempo(Double)
     case unsupportedMeter(numerator: Int, denominator: Int)
-    case noteOverlap(track: Int, channel: Int, note: Int)
-    case unmatchedNoteOff(track: Int, channel: Int, note: Int)
-    case unterminatedNote(track: Int, channel: Int, note: Int)
     case limitExceeded(String)
     case noHarmonicNotes
     case noNamedChords
@@ -79,9 +92,6 @@ enum MIDIImportIssue: LocalizedError, Equatable {
         case let .zeroTempo(offset): "The MIDI file declares a zero tempo near byte \(offset)."
         case let .unsupportedTempo(bpm): "The tempo active at the first imported chord is \(bpm.formatted(.number.precision(.fractionLength(0...2)))) BPM; the native editor supports 30–320 BPM."
         case let .unsupportedMeter(numerator, denominator): "This native chart is fixed to 4/4, so a \(numerator)/\(denominator) MIDI meter cannot be imported honestly yet."
-        case let .noteOverlap(track, channel, note): "Track \(track + 1), channel \(channel + 1) starts MIDI note \(note) twice before releasing it."
-        case let .unmatchedNoteOff(track, channel, note): "Track \(track + 1), channel \(channel + 1) releases MIDI note \(note) without a matching note-on."
-        case let .unterminatedNote(track, channel, note): "Track \(track + 1), channel \(channel + 1) never releases MIDI note \(note)."
         case let .limitExceeded(message): message
         case .noHarmonicNotes: "The MIDI file contains no completed non-drum notes to analyze."
         case .noNamedChords: "The MIDI note stacks do not match any chord name supported by the native editor."
@@ -202,7 +212,8 @@ private extension MIDIFileImporter {
             importedChordCount: best.chordCount,
             skippedSonorityCount: best.skippedSonorities,
             omittedSourceMeasureCount: best.omittedMeasures,
-            tempoChangeCount: decoded.tempos.count
+            tempoChangeCount: decoded.tempos.count,
+            salvage: decoded.salvage
         )
     }
 
@@ -383,6 +394,7 @@ private enum SMFDecoder {
         var notes: [Note]
         var tempos: [Tempo]
         var meters: [Meter]
+        var salvage: MIDIFileImporter.Salvage
     }
 
     struct Note: Sendable {
@@ -442,6 +454,7 @@ private enum SMFDecoder {
         var tempos: [Tempo] = []
         var meters: [Meter] = []
         var counters = Counters()
+        var salvage = MIDIFileImporter.Salvage()
         var trackIndex = 0
         while trackIndex < declaredTracks {
             let chunkOffset = reader.index
@@ -460,7 +473,8 @@ private enum SMFDecoder {
                     notes: &allNotes,
                     tempos: &tempos,
                     meters: &meters,
-                    counters: &counters
+                    counters: &counters,
+                    salvage: &salvage
                 )
                 trackIndex += 1
             } else if tag == headerChunkTag || !isPrintableChunkTag(tag) {
@@ -484,7 +498,14 @@ private enum SMFDecoder {
 
         tempos.sort { $0.tick == $1.tick ? $0.trackIndex < $1.trackIndex : $0.tick < $1.tick }
         meters.sort { $0.tick == $1.tick ? $0.trackIndex < $1.trackIndex : $0.tick < $1.tick }
-        return File(ppq: division, trackCount: declaredTracks, notes: allNotes, tempos: tempos, meters: meters)
+        return File(
+            ppq: division,
+            trackCount: declaredTracks,
+            notes: allNotes,
+            tempos: tempos,
+            meters: meters,
+            salvage: salvage
+        )
     }
 
     private static func isPrintableChunkTag(_ tag: UInt32) -> Bool {
@@ -502,7 +523,8 @@ private enum SMFDecoder {
         notes: inout [Note],
         tempos: inout [Tempo],
         meters: inout [Meter],
-        counters: inout Counters
+        counters: inout Counters,
+        salvage: inout MIDIFileImporter.Salvage
     ) throws {
         var reader = ByteReader(bytes: bytes, index: start, limit: end)
         var tick = 0
@@ -603,13 +625,26 @@ private enum SMFDecoder {
                 let velocity = Int(try reader.readDataByte())
                 let key = OpenKey(channel: channel, note: note)
                 if kind == 0x90, velocity > 0 {
-                    guard openNotes[key] == nil else {
-                        throw MIDIImportIssue.noteOverlap(track: trackIndex, channel: channel, note: note)
+                    if let opened = openNotes[key] {
+                        notes.append(Note(
+                            trackIndex: trackIndex,
+                            channel: channel,
+                            key: note,
+                            onTick: opened.tick,
+                            offTick: tick,
+                            velocity: opened.velocity
+                        ))
+                        counters.notes += 1
+                        guard counters.notes <= maximumNotes else {
+                            throw MIDIImportIssue.limitExceeded("The MIDI file contains more than \(maximumNotes.formatted()) paired notes.")
+                        }
+                        salvage.retriggeredNotes += 1
                     }
                     openNotes[key] = OpenNote(tick: tick, velocity: velocity)
                 } else {
                     guard let opened = openNotes.removeValue(forKey: key) else {
-                        throw MIDIImportIssue.unmatchedNoteOff(track: trackIndex, channel: channel, note: note)
+                        salvage.ignoredNoteOffs += 1
+                        continue
                     }
                     notes.append(Note(
                         trackIndex: trackIndex,
@@ -634,11 +669,23 @@ private enum SMFDecoder {
             }
         }
 
-        guard reachedEnd else { throw MIDIImportIssue.invalidMeta(type: 0x2F, offset: end) }
-        if let unfinished = openNotes.sorted(by: {
+        if !reachedEnd { salvage.synthesizedEndOfTracks += 1 }
+        for (key, opened) in openNotes.sorted(by: {
             $0.key.channel == $1.key.channel ? $0.key.note < $1.key.note : $0.key.channel < $1.key.channel
-        }).first {
-            throw MIDIImportIssue.unterminatedNote(track: trackIndex, channel: unfinished.key.channel, note: unfinished.key.note)
+        }) {
+            notes.append(Note(
+                trackIndex: trackIndex,
+                channel: key.channel,
+                key: key.note,
+                onTick: opened.tick,
+                offTick: tick,
+                velocity: opened.velocity
+            ))
+            counters.notes += 1
+            guard counters.notes <= maximumNotes else {
+                throw MIDIImportIssue.limitExceeded("The MIDI file contains more than \(maximumNotes.formatted()) paired notes.")
+            }
+            salvage.notesClosedAtTrackEnd += 1
         }
     }
 
