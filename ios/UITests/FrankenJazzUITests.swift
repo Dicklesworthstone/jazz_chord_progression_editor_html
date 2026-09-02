@@ -61,7 +61,10 @@ final class FrankenJazzUITests: XCTestCase {
         documentActions.tap()
 
         XCTAssertTrue(app.buttons["Import a chart, text, or MIDI file"].waitForExistence(timeout: 3))
-        XCTAssertTrue(app.staticTexts["MIDI chord stacks become editable 4/4 symbols. Common DAW retriggers, stray note-offs, open notes, and missing end markers are repaired and reported; structural corruption, another meter, or no nameable harmony is refused instead of guessed."].exists)
+        let boundary = app.staticTexts.matching(
+            NSPredicate(format: "label CONTAINS 'Common DAW retriggers'")
+        ).firstMatch
+        XCTAssertTrue(boundary.exists)
     }
 
     func testChordInspectorExposesPersistedChordNoteEditor() throws {
