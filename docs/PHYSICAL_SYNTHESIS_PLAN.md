@@ -806,6 +806,13 @@ amendment for the one master-path graph change.
 The Beads graph must mirror this order. A package epic closes only after its
 specification/fixtures, production build, and independent proof children close.
 
+> **Maintenance law (added 2026-09-01, bead `jcpe-docs-truth-pass-rcvm.4`):**
+> the Beads tracker is authoritative for live status; this checkbox ledger is
+> reconciled only when a package leg closes. It had drifted badly (clarinet
+> v2 and flute v2 were shipping while D001/D004 sat unchecked); rows below
+> now carry the closing bead or evidence that justifies each check, and an
+> unchecked row names its open bead.
+
 ### Phase A — program foundation
 
 - [x] A001 Read complete repository AGENTS.md and README.md.
@@ -834,12 +841,13 @@ specification/fixtures, production build, and independent proof children close.
   normalization.
 - [x] B007 Specify deterministic PRNG/numerics and cross-host evidence.
 - [x] B008 Specify parameter-pack/provenance format and foundry workflow.
-- [ ] B009 Build independent metric extractors and their known-answer fixtures.
+- [x] B009 Build independent metric extractors and their known-answer fixtures.
+  (PHS1 foundry analytic metrics + `verify:physical-foundry` aggregate gate; docs/evidence/PHS1_OFFLINE_FOUNDRY.md, bead jcpe-mnsc.3.2.)
 - [x] B010 Specify clarinet v2 and independent corpus.
-- [ ] B011 Specify flute v2 and independent corpus.
-- [ ] B012 Specify guitar family and independent corpus.
-- [ ] B013 Specify trumpet and independent corpus.
-- [ ] B014 Specify vibraphone and independent corpus.
+- [x] B011 Specify flute v2 and independent corpus. (PHS3 spec leg closed; `validate:phs3-contract` in the verify sequence.)
+- [x] B012 Specify guitar family and independent corpus. (PHS4 spec leg closed; `validate:phs4-contract`.)
+- [x] B013 Specify trumpet and independent corpus. (PHS5 spec leg closed; `validate:phs5-contract`.)
+- [x] B014 Specify vibraphone and independent corpus. (PHS6 spec leg closed; `validate:phs6-contract`.)
 - [ ] B015 Review all specification packets for self-certification and feature
   loss before production implementation.
 
@@ -854,32 +862,35 @@ specification/fixtures, production build, and independent proof children close.
 - [x] C007 Implement shared oscillator/contact/nonlinear-solve components.
 - [x] C008 Implement energy audit hooks and structured diagnostics.
 - [x] C009 Separate physical energy, safety limiting, and output-level mixing.
-- [ ] C010 Implement parameter-pack validation and generated-table checks.
+- [x] C010 Implement parameter-pack validation and generated-table checks.
+  (`src/audio/physical-parameter-packs.ts` sha256 pins; eigenpack digest tests re-pinned in d8c6da9.)
 - [x] C011 Integrate bounded future preparation with persistent transport.
 - [x] C012 Independently prove the shared foundation before instrument migration.
 
 ### Phase D — instruments
 
-- [ ] D001 Implement clarinet v2.
-- [ ] D002 Independently prove clarinet v2.
-- [ ] D003 Complete clarinet owner listening.
-- [ ] D004 Implement flute v2.
-- [ ] D005 Independently prove flute v2.
-- [ ] D006 Complete flute owner listening.
-- [ ] D007 Resolve guitar peer ownership and target naming.
-- [ ] D008 Implement coupled guitar family.
-- [ ] D009 Independently prove guitar family.
+- [x] D001 Implement clarinet v2. (Shipping via engine route `changes.physical.clarinet.v2`; machine-delegated ledger row.)
+- [ ] D002 Independently prove clarinet v2. (Machine evidence clarinet-v2-uiowa-evidence.json PASS 12/12 on file; PHS2 verify leg jcpe-mnsc.4.3 in progress.)
+- [ ] D003 Complete clarinet owner listening. (Owner delegated to the machine gate 2026-08-07; timbre re-judgment open in jcpe-winds-quality-triangulation-drga.)
+- [x] D004 Implement flute v2. (Shipping recipe `changes.dsp.waveguide-flute@2`; machine-delegated ledger row.)
+- [ ] D005 Independently prove flute v2. (Machine evidence flute-v2.json PASS with 4 declared reference-unavailable cells; PHS3 verify leg jcpe-mnsc.5.3 open.)
+- [ ] D006 Complete flute owner listening. (Delegated 2026-08-07; re-judgment open in jcpe-winds-reference-quality-qb68.)
+- [x] D007 Resolve guitar peer ownership and target naming. (jcpe-guitar-family-owner-direction-wdt9 closed.)
+- [x] D008 Implement coupled guitar family. (plucked-archtop@2, plucked-electric@2, plucked-dreadnought@1 shipping; machine-delegated rows.)
+- [ ] D009 Independently prove guitar family. (Machine evidence plucked-v2-release-gate-evidence.json PASS; PHS4 verify leg jcpe-mnsc.6.3 open; live pitch-lock failures tracked in jcpe-playback-gate-ship-failures-u90y.)
 - [ ] D010 Complete guitar owner listening.
-- [ ] D011 Implement trumpet registry, model, and UI integration.
+- [ ] D011 Implement trumpet registry, model, and UI integration. (Dark: model renders ~4.5x slower than realtime; jcpe-mnsc.7.2; staged rewrite in dsp/staging/.)
 - [ ] D012 Independently prove trumpet.
 - [ ] D013 Complete trumpet owner listening.
-- [ ] D014 Implement physical/hybrid vibraphone.
+- [ ] D014 Implement physical/hybrid vibraphone. (vibes@2 compiled but owner-rejected — red ledger row, jcpe-bass-vibes-temporal-character-9g4t; sampled-vibraphone@1 ships.)
 - [ ] D015 Independently prove vibraphone.
 - [ ] D016 Complete vibraphone owner listening.
-- [ ] D017 Implement ukulele (plucked-string family pack; 2026-08-06 amendment).
+- [x] D017 Implement ukulele (plucked-string family pack; 2026-08-06 amendment). (plucked-ukulele@1 shipping; machine-delegated row.)
 - [ ] D018 Independently prove ukulele.
 - [ ] D019 Complete ukulele owner listening.
-- [ ] D020 Implement physical upright bass (plucked-string family pack;
+- [ ] D020 Implement physical upright bass — compiled but owner-rejected, red
+  ledger row (jcpe-bass-vibes-temporal-character-9g4t); sampled-upright-bass@1
+  ships instead (plucked-string family pack;
   sampled bass retained as comparator).
 - [ ] D021 Independently prove upright bass.
 - [ ] D022 Complete upright-bass owner listening.

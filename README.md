@@ -2,12 +2,13 @@
 
 An offline, deterministic jazz chord-progression studio designed to turn lead-sheet changes into an explainable, playable, portable chart—without accounts, telemetry, cloud services, or runtime AI.
 
-> **Development status:** the live source tree has advanced substantially beyond
-> the original U0 checkpoint described by older release notes. It now contains
-> real chart authoring, deterministic theory and voicing paths, playback/audio,
-> recovery, a reviewed progression library, and file export. Evidence for any
-> particular surface still belongs to its named tests and release gate; planned
-> discovery work is not silently counted as shipped.
+> **Development status (2026-09-01):** the deployed studio is a working
+> product: chart authoring, deterministic theory/voicing/playback, a reviewed
+> progression library, MIDI import and export, and share links are live at
+> <https://jazzchords.org>. Evidence for any particular surface still belongs
+> to its named tests and release gate; planned discovery work is not silently
+> counted as shipped, and the outstanding gaps are listed honestly under
+> [Current limitations](#current-limitations).
 
 ## Why Changes
 
@@ -40,25 +41,27 @@ acceptance gates, and [`ios/README.md`](ios/README.md) for build instructions.
 
 | Capability | Current state |
 |---|---|
-| Standalone page | `jazz_chord_progression_editor.html` opens directly from disk |
-| Offline runtime | JavaScript and CSS are embedded; the shell has no remote runtime resource |
-| Interactive studio checkpoint | A validated empty chart, undoable title editing, responsive Library/Harmony surfaces, and an honestly disabled transport |
-| UI foundation | Strict TypeScript, Preact, source-owned primitives and CSS tokens, skip link, focus-managed sheets, reduced-motion and forced-colors handling |
+| Standalone page | `jazz_chord_progression_editor.html` opens directly from disk; the same bytes serve <https://jazzchords.org> and its byte-identical Vercel mirror |
+| Offline runtime | Every script, style, font, sample, and WASM payload is embedded; the hash-based CSP denies all network destinations |
+| Chart authoring | Engraved sheet view and grid edit view over the demo chart; quick entry (`⌘K` / Type changes) for whole charts; per-chord inline editing, exact beat durations, measure/section structure edits, drag moves, range selection, and single-step undo/redo (U1 acceptance E2E) |
+| Analysis | Literal-first Harmony Lens: chord tones with degrees, chord scale, guide tones, guide-tone motion into the next chord, and plural next-chord options with one-line reasons ("Options, not answers"); roman numerals and phrase brackets on the sheet. Deliberately narrower than the planned H0 evidence-tier engine and says so in source |
+| Playback | One persistent Web Audio graph, serialized transport with loop/seek/pause/live mix, 7 grooves, and 15 instruments spanning physical models (clarinet, flute, four plucked strings), the hybrid concert grand, and CC0-sampled bass/vibes — every shipping model gated by the model-acceptance ledger |
+| Progression library | 28 reviewed entries with a machine-checked provenance law |
+| MIDI import | One-gesture `.mid` import with a Rust SMF parser in WASM, salvage ledger, per-track preview/overrides, and automated groove matching (M0 shipped; M1 owner-listening gate open) |
+| MIDI export | Deterministic Standard MIDI files with preview, blocker cards, and real downloads (E1 + U7) |
+| Share links | Copy link encodes the chart into a local `#zdoc=` fragment; opening one crosses the same refusing decoders as typed text |
 | Reproducible build contract | Source-driven build, generated-file banner, byte-equality checks, size budget, CSP hashes, license inventory |
-| Verification scaffold | Static policy tests, type checking, linting, reproducibility checks, and Chromium/Firefox/WebKit E2E harnesses |
-| F1 domain runtime | Headless spelling-first identities, pitch projection, exact rational time, chord/voicing construction, immutable bounded copy/remap, and a 317-case reviewed authority corpus; decoder, semantic publication, and UI integration remain downstream |
-| F2 decoder contract | Exact public types plus a production-independent 65-case structural/adversarial corpus, 12 requirement traces, 8 deterministic seeds, and 244 named mutation controls; the production decoder remains the next package |
-| P0 exact playback-plan specification | Exact public request/result types plus a production-independent 83-case timeline, realization, loop, law, and limit corpus, 20 requirement traces, 11 authorities, and 42 mutation controls; the production compiler and transport wiring remain downstream |
+| Verification | 64-gate aggregate `verify` (contract validators, evidence gates with hash-bound ledgers, typecheck, lint, unit/property/mutation suites, build, reproducibility, licenses, Chromium/Firefox/WebKit E2E), plus real-browser predeploy playback and model-acceptance gates |
 
-The visible page intentionally reports **Foundation ready** and names the next gate. There is no hidden legacy editor behind it.
+There is no hidden legacy editor behind the page; the studio is the ground-up rebuild.
 
 ## Open the current artifact offline
 
 1. Obtain this repository or the standalone `jazz_chord_progression_editor.html` file.
 2. Open `jazz_chord_progression_editor.html` in a modern browser by double-clicking it or using the browser's **Open File** command.
-3. Confirm that the page shows **Changes**, **Jazz Progression Studio**, and **Foundation ready**.
+3. Confirm that the page opens the JazzChords studio with a demo chart loaded — press **Play** to hear it, or **Clear** to start your own.
 
-No local server, account, API key, or network connection is required. At this stage, the page is a readiness shell only; silence and the absence of editing controls are expected.
+No local server, account, API key, or network connection is required.
 
 ## Build from source
 
@@ -100,9 +103,14 @@ One build produces:
 - `dist/standalone-manifest.json`, the deterministic hash, size, CSP, asset, and license record;
 - `dist/licenses.json`, the production dependency and embedded-asset inventory.
 
-The two HTML outputs must be byte-identical. The measured studio checkpoint has
-a 1 MiB ceiling; the completed artifact retains its 1.5 MiB ceiling and a
-separate 512 KiB reservation for the future reviewed Harmonic Atlas/content.
+The two HTML outputs must be byte-identical. The enforced artifact ceiling is
+8 MiB (`tests/fixtures/foundation/foundation-contract.json`,
+`maxUncompressedBytes: 8388608`), raised from the original 1.5 MiB when the
+embedded instrument sample payloads and fonts landed; the current artifact
+measures about 7.94 MB. The former 512 KiB Harmonic Atlas byte reservation
+is currently zero — restoring, respending, or retiring it is an open owner
+decision (bead `jcpe-size-contract-atlas-4nsy.1`), and the matching
+ARCHITECTURE.md amendment is tracked by `jcpe-size-contract-atlas-4nsy.2`.
 
 ## Source and generated-file ownership
 
@@ -164,6 +172,12 @@ If source and artifact disagree, regenerate the artifact; do not copy changes ba
 | `bun run verify:e1-evidence` | Re-run the exact E1 MIDI-export suite and validator from a drift-checked input closure, sweep seeded plans through a freshly written independent SMF reader with replay, marker-permutation, tempo-isolation, and loss-recomputation relations, and emit a hash-bound ledger under `test-results/` |
 | `bun run verify` | Run the aggregate release-facing gate in dependency order |
 
+The table above is representative, not exhaustive — `package.json` carries the
+complete set, including the M0/M1 MIDI-import validators, the PHS0–PHS7
+physical-synthesis contract validators, `bun run quality:instruments`, and the
+two deploy gates (`bun run predeploy:check`, `bun run predeploy:playback`)
+documented in [`docs/DEPLOY_GATE.md`](docs/DEPLOY_GATE.md).
+
 The aggregate gate does not silently skip, retry, quarantine, or relax a failed check.
 The F1 evidence gate snapshots its complete source/fixture/test input closure
 before and after the run, rejects drift, and records deterministic work counters;
@@ -205,20 +219,18 @@ For the normative contracts, read [Architecture](docs/ARCHITECTURE.md) and the [
 
 ## Roadmap
 
-The F0 shell and headless F1 domain package are current source capabilities;
-the visible editor and every later row remain planned work. A capability is not
-considered shipped until its production implementation and independent proof
-are both complete.
+A capability is not considered shipped until its production implementation and
+independent proof are both complete; a row below is "Current" only when both
+hold for its named packages, and mixed rows say what remains.
 
-| Gate | Status | Intended outcome |
+| Gate | Status | State |
 |---|---|---|
-| F0 standalone shell | Current | Pinned toolchain, strict source boundaries, self-contained generated page, offline/reproducibility verification |
-| F1 headless domain | Current | Spelling-first IDs and pitches, exact rational time, chord/voicing values, immutable bounded copy/remap, and independently reviewed fixtures |
-| Foundation continuation | Planned | Total document decoder and semantic publication, chord parser/resolver, and independent theory corpus |
-| Reliable studio | Planned | Chart editing, commands/history, recovery, exact manual/frozen voicings, deterministic transport/audio, JSON and text workflows |
-| Musical intelligence | Planned | Evidence-bearing analysis, transposition, tonal journeys, reviewed Atlas, fingerprints, and plural contextual continuation options |
-| Advanced craft | Planned | Bounded route and constraint search, proof-carrying reharmonization, guide-tone/color/rhythm/tension/sequence tools, MIDI, and practice workflows |
-| Release proof | Planned | Current browser/device, audio, accessibility, migration, security, performance, listening, and reproducible-artifact evidence |
+| Foundation (F0–F3, T0–T1) | Complete | Pinned toolchain, standalone artifact, total decoder, chord parser/resolver, semantic publication, independent theory corpus — all package epics closed with evidence gates in `verify` |
+| Reliable studio | Largely current | Chart editing, commands/history, deterministic transport/audio, voicing engines, and MIDI import/export ship today. Still open: recovery wiring (A1 verify), JSON/text import-export UI (E0 build), manual/frozen voicing editing (U2), X1 verify leg, and lifecycle dialogs (U5) |
+| Musical intelligence | Reduced subset shipped | The live Harmony Lens/roman numerals/next options are an honest narrower substitute; the H0/H1 evidence-tier engines, transposition, tonal journeys, Atlas, fingerprints, and the Continuation Engine remain planned |
+| Advanced craft | Early pieces shipped | V2 progression optimizer, E1 MIDI export, and the U7 export workflow landed ahead of schedule; route/constraint search, reharmonization, guide-tone/color/rhythm/tension/sequence tools, and practice workflows remain planned |
+| Physical instruments | In progress | Clarinet v2, flute v2, and four plucked models ship behind the model-acceptance ledger; trumpet and physical vibes/bass remain dark pending performance and owner listening |
+| Release proof | Planned | Browser/device, audio-listening, accessibility, migration, security, performance, and reproducible-artifact evidence — every human gate is still outstanding |
 
 The planned Harmonic Discovery set contains fifteen deterministic systems:
 
@@ -265,25 +277,45 @@ The runtime boundary is intentionally small:
 - static capability inspection plus real-browser request interception, including a malicious negative-control fixture;
 - deterministic license and embedded-asset inventory.
 
-The current shell does not accept or store chart data. Planned recovery will remain local and best-effort; planned exports will occur only after an explicit user gesture. Imported text and JSON will cross bounded decoders and will never be evaluated, inserted as HTML, or turned into a URL. The one deliberate exception is the explicit **Copy link** action: on a user gesture the studio encodes the current chart, title, tempo, and groove into a local `#zdoc=` URL fragment. No request is made in either direction — the fragment never leaves the page except by the user sharing the link — and an opened fragment crosses the same bounded, refusing decoders as typed text; any diagnostic falls back to the starter chart with the refusal stated.
+The studio holds the chart in memory only: nothing is persisted to the browser today (local best-effort recovery is built and remains dark behind its verify gate), and every export — the share link and the MIDI file — happens only on an explicit user gesture. Imported text and JSON will cross bounded decoders and will never be evaluated, inserted as HTML, or turned into a URL. The one deliberate exception is the explicit **Copy link** action: on a user gesture the studio encodes the current chart, title, tempo, and groove into a local `#zdoc=` URL fragment. No request is made in either direction — the fragment never leaves the page except by the user sharing the link — and an opened fragment crosses the same bounded, refusing decoders as typed text; any diagnostic falls back to the starter chart with the refusal stated.
 
 A single local file is portable, but it is not cloud backup. When authoring and export arrive, users will remain responsible for keeping copies of important charts.
 
 ## Current limitations
 
-- This is an engineering foundation, not a usable progression editor yet.
-- There is no chord input, chart model, theory parser, analysis, suggestion engine, audio engine, transport, persistence, import, export, MIDI, preset browser, lesson, or practice mode in the current UI.
-- Legacy application behavior was deliberately removed rather than copied forward; no legacy compatibility path is available yet.
-- The final browser and real-device support matrix is not certified.
-- The current UI is a dark foundation shell. The broad owned component library and complete studio workspace are planned.
-- The page requires JavaScript. With JavaScript disabled it displays only an explanatory fallback message.
-- There is no backend, collaboration, account, cloud sync, MusicXML, score engraving, MIDI input, microphone input, audio recording, plugin system, or runtime AI in the release scope.
+- You cannot transpose a chart yet; key selection changes the analysis
+  context only (spelled transposition is the planned H1 package).
+- You cannot choose, edit, or freeze a voicing; the V0/V1/V2 engines pick
+  voicings automatically (the exact manual/frozen editor is the open U2
+  package).
+- There is no JSON or chart-text import/export UI yet (E0's production
+  package is open); the share link and MIDI export are the current ways a
+  chart leaves the page.
+- Crash/reload recovery is not wired into the page yet (the A1 service
+  exists behind its verify gate); an unshared, unexported chart is lost on
+  reload.
+- Legacy application behavior was deliberately removed rather than copied
+  forward; the bounded legacy importer (C0) has an engine but no UI yet.
+- The Harmonic Discovery systems (continuation engine, Atlas, route
+  planner, reharmonization, practice tools) are planned, not shipped; the
+  live analysis panel is a deliberately narrower substitute.
+- The final browser and real-device support matrix is not certified, and
+  the human listening/accessibility evidence sessions are outstanding.
+- The page requires JavaScript. With JavaScript disabled it displays only an
+  explanatory fallback message.
+- There is no backend, collaboration, account, cloud sync, MusicXML, score
+  engraving, MIDI input, microphone input, audio recording, plugin system,
+  or runtime AI in the release scope.
 
 ## Troubleshooting
 
 ### The page opens, but there are no editor or playback controls
 
-That is the expected F0 state. The current page should show **Foundation ready**. Editing and playback are roadmap items, not dormant controls.
+That is not expected: the page should open the full studio with a demo
+chart, a chart workspace, and a transport bar. A blank or minimal page
+usually means the file is truncated or JavaScript is disabled — confirm the
+first line is the generated-file banner and re-download or rebuild
+(`bun run build`).
 
 ### Playwright reports `PLAYWRIGHT_RUNTIME_UNSUPPORTED`
 
@@ -359,7 +391,7 @@ The release must remain one small offline file with Preact as its only productio
 
 ### Where will charts be saved?
 
-They are not saved by the current shell. The planned studio distinguishes best-effort local recovery from explicit versioned JSON export; it will not label browser recovery as a durable “Save.”
+They are not saved anywhere automatically today: a reload loses an unshared chart, so use **Share** (a `#zdoc=` link holds the whole chart) or **Export MIDI** to keep work. The planned studio adds best-effort local recovery and explicit versioned JSON export, and will not label browser recovery as a durable “Save.”
 
 ### Can I import a chart from the legacy app?
 
