@@ -35,6 +35,11 @@ import {
   CONCERT_GRAND_WASM_SHA256,
 } from "../src/audio/wasm/concert-grand-wasm";
 import {
+  compareDspSourceClosure,
+  computeDspSourceClosure,
+  type DspSourceComparison,
+} from "./build-dsp";
+import {
   sha256Hex,
   verifyGateEvidence,
   type GateEvidenceV1,
@@ -386,6 +391,32 @@ export function evaluateGate(
   return findings;
 }
 
+
+/**
+ * Map a DSP source-closure comparison onto the gate's vocabulary
+ * (bead jcpe-deploy-pipeline-restoration-kbvj.2, wiring decision 2026-09-02):
+ * source drift against the recorded ledger BLOCKS a deploy — the crate no
+ * longer describes the shipping payload, and resolving that is a re-pin
+ * (with refreshed delegated evidence), never a silent ship. A pre-ledger
+ * pin ("ledger-absent") passes with an explicit printed notice: the window
+ * closes automatically at the next re-pin, which records the ledger.
+ */
+export function dspSourceDriftFinding(
+  comparison: DspSourceComparison,
+): GateFinding | null {
+  if (comparison.outcome !== "drift") return null;
+  const detail =
+    "dsp/concert-grand sources no longer match the closure ledger recorded " +
+    "in the shipping payload (recorded " + comparison.recordedClosureSha256 +
+    " != live " + comparison.liveClosureSha256 +
+    "; changed: " + (comparison.changed.join(", ") || "-") +
+    "; added: " + (comparison.added.join(", ") || "-") +
+    "; removed: " + (comparison.removed.join(", ") || "-") + "). " +
+    "Re-pin with the pinned toolchain and refresh the delegated evidence " +
+    "replays, or revert the source change; see docs/DEPLOY_GATE.md.";
+  return { code: "MODEL_WASM_SOURCE_DRIFT", detail };
+}
+
 async function main(): Promise<number> {
   const root = resolve(import.meta.dir, "..");
   const ledgerRaw = readFileSync(resolve(root, LEDGER_PATH), "utf8");
@@ -396,6 +427,22 @@ async function main(): Promise<number> {
     console.error(`FAIL LEDGER_JSON ${String(error)}`);
     return 1;
   }
+  const moduleText = readFileSync(
+    resolve(root, "src/audio/wasm/concert-grand-wasm.ts"),
+    "utf8",
+  );
+  const sourceComparison = compareDspSourceClosure(
+    moduleText,
+    await computeDspSourceClosure(),
+  );
+  if (sourceComparison.outcome === "ledger-absent") {
+    console.error(
+      "NOTICE dsp source-closure ledger absent: the checked-in payload " +
+        "predates the ledger; the next re-pin records it and makes source " +
+        "drift deploy-blocking (docs/DEPLOY_GATE.md).",
+    );
+  }
+  const sourceDrift = dspSourceDriftFinding(sourceComparison);
   const rows = parseLedger(ledgerValue);
   if (!Array.isArray(rows)) {
     const finding = rows as GateFinding;
@@ -486,7 +533,7 @@ async function main(): Promise<number> {
         }
     ),
   };
-  const findings = evaluateGate(shippingIds, ledgerRows, (path) => {
+  const gateFindings = evaluateGate(shippingIds, ledgerRows, (path) => {
     try {
       const value: unknown = JSON.parse(readFileSync(resolve(root, path), "utf8"));
       return value;
@@ -494,6 +541,9 @@ async function main(): Promise<number> {
       return undefined;
     }
   }, sha256Hex(wasmBytes), replays);
+  const findings = sourceDrift === null
+    ? gateFindings
+    : [...gateFindings, sourceDrift];
   if (findings.length > 0) {
     for (const finding of findings) {
       console.error(`FAIL ${finding.code} ${finding.detail}`);

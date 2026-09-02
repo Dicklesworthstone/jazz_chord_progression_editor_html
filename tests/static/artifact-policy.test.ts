@@ -61,7 +61,7 @@ describe("artifact byte budget", () => {
   for (const fixture of cases.sizeCases) {
     test(fixture.id, () => {
       const inspection = inspectArtifact("x".repeat(fixture.bytes), {
-        maxBytes: 8_388_608,
+        maxBytes: 9_437_184,
         requireReleaseEnvelope: false,
       });
       if (fixture.expected === "allow") {

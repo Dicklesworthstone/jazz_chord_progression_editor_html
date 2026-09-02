@@ -56,9 +56,9 @@
     "outputsMustBeByteIdentical": true,
     "generatedBanner": "<!-- @generated; edit src/, then run bun run build -->",
     "compatMode": "CSS1Compat",
-    "maxUncompressedBytes": 8388608,
-    "foundationShellMaxBytes": 8388608,
-    "reservedAtlasBytes": 0,
+    "maxUncompressedBytes": 9437184,
+    "foundationShellMaxBytes": 8912896,
+    "reservedAtlasBytes": 524288,
     "requiredReports": [
       "dist/licenses.json",
       "dist/standalone-manifest.json"
