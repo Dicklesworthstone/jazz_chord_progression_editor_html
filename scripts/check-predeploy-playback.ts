@@ -318,10 +318,8 @@ async function playInstrument(
   let statusHeldPlaying: boolean;
   let captures: BufferCapture[];
   let masterPeak: number;
-  let pageDiagnostics: { audioState: string | null; noticeText: string | null } = {
-    audioState: null,
-    noticeText: null,
-  };
+  let audioStateDiagnostic: string | null;
+  let noticeTextDiagnostic: string | null;
   try {
     await page.selectOption("#studio-transport-instrument", instrumentId);
     await page.waitForTimeout(400);
@@ -353,7 +351,7 @@ async function playInstrument(
         /* recorded below via status text */
       });
     await page.waitForTimeout(PLAY_LISTEN_MS);
-    pageDiagnostics = await page
+    const pageDiag = await page
       .evaluate(() => {
         const runtime = globalThis as unknown as Readonly<{
           document: Readonly<{
@@ -374,6 +372,8 @@ async function playInstrument(
         };
       })
       .catch(() => ({ audioState: null, noticeText: null }));
+    audioStateDiagnostic = pageDiag.audioState;
+    noticeTextDiagnostic = pageDiag.noticeText;
 
     status =
       (await page.locator("#studio-transport-status-detail").textContent().catch(() => null))?.trim() ??
@@ -417,8 +417,8 @@ async function playInstrument(
   if (pageErrors.length > 0) failures.push(`page errors: ${String(pageErrors.length)}`);
   if (!statusHeldPlaying) {
     let detail = `status after listen window: "${status}"`;
-    if (pageDiagnostics.audioState) detail += ` [audio-state: ${pageDiagnostics.audioState}]`;
-    if (pageDiagnostics.noticeText) detail += ` [notice: "${pageDiagnostics.noticeText}"]`;
+    if (audioStateDiagnostic) detail += ` [audio-state: ${audioStateDiagnostic}]`;
+    if (noticeTextDiagnostic) detail += ` [notice: "${noticeTextDiagnostic}"]`;
     failures.push(detail);
   }
   if (rendersBuffers) {
