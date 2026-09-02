@@ -762,6 +762,13 @@ export type StudioShellCallbacks = Readonly<{
   /** Declare the completion a measure's own exact fill already implies. */
   onDeclareMeasureCompletion: (measureId: string) => void;
   onRenameSection: (sectionId: string, name: string) => void;
+  /**
+   * V2R-18 (jcpe-v2r-section-loop-jjsw): arm/disarm one section's loop from
+   * its header button; exclusive with the whole-chart transport toggle.
+   */
+  onSectionLoopToggle: (sectionId: string) => void;
+  /** The armed section-loop id for header pressed-state honesty. */
+  readSectionLoopId: () => string | null;
   onAnnotateSection: (sectionId: string, annotation: string) => void;
   onSetSectionBoundary: (
     sectionId: string,
@@ -835,8 +842,22 @@ export type StudioTransportCallbacks = Readonly<{
   onSeekFraction: (fraction: number) => void;
   /** Toggle whole-chart looping; armed intent applies at the next Play. */
   onLoopToggle: () => void;
+  /**
+   * Arm/disarm one section's loop (V2R-18, jcpe-v2r-section-loop-jjsw);
+   * exclusive with the whole-chart toggle, live re-bind included.
+   */
+  onSectionLoopToggle: (sectionId: string) => void;
   /** Display-only loop state: armed intent vs the transport's own truth. */
-  readLoopState: () => Readonly<{ enabled: boolean; engaged: boolean }>;
+  readLoopState: () => Readonly<{
+    enabled: boolean;
+    engaged: boolean;
+    sectionId: string | null;
+  }>;
+  /** Engaged loop span as run fractions for the scrub region; null if none. */
+  readLoopRegion: () => Readonly<{
+    startFraction: number;
+    endFraction: number;
+  }> | null;
   /**
    * Live fader ride (jcpe-v2r-live-mix-btb4): audible during the drag, no
    * document write — the one undoable commit still lands on release.

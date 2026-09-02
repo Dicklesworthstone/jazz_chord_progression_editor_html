@@ -144,6 +144,27 @@ test.describe("interactive studio checkpoint", () => {
     await expect(
       page.getByRole("button", { name: "Loop the whole chart" }),
     ).toHaveAttribute("aria-pressed", "false");
+    /*
+     * V2R-18 (jcpe-v2r-section-loop-jjsw): the per-section Loop button arms
+     * exclusively against the whole-chart toggle, presses honestly, and a
+     * second press disarms. Pure armed-intent DOM truth — engagement is the
+     * transport's own and is covered by the unit suite's live re-bind law.
+     */
+    const sectionLoop = page.getByRole("button", { name: /^Loop section / });
+    await expect(sectionLoop).toHaveAttribute("aria-pressed", "false");
+    await sectionLoop.click();
+    await expect(sectionLoop).toHaveAttribute("aria-pressed", "true");
+    const wholeChartLoop = page.getByRole("button", {
+      name: "Loop the whole chart",
+    });
+    await wholeChartLoop.click();
+    await expect(wholeChartLoop).toHaveAttribute("aria-pressed", "true");
+    await expect(sectionLoop).toHaveAttribute("aria-pressed", "false");
+    await wholeChartLoop.click();
+    await sectionLoop.click();
+    await expect(sectionLoop).toHaveAttribute("aria-pressed", "true");
+    await sectionLoop.click();
+    await expect(sectionLoop).toHaveAttribute("aria-pressed", "false");
     await expect(page.locator(".studio-chord-card")).toHaveCount(10);
     /*
      * The pristine empty-measure statement remains reachable and honest:

@@ -726,12 +726,33 @@ export interface StudioController {
    */
   readonly toggleLoop: () => StudioControllerActionResult;
   /**
+   * Arm/disarm a section loop (V2R-18). Pressing the armed section's own
+   * button disarms; another section's button moves the intent; arming any
+   * section clears the whole-chart flag. Live runs re-bind through the same
+   * serialized set-loop law as the whole-chart toggle.
+   */
+  readonly armSectionLoop: (
+    sectionId: string,
+  ) => StudioControllerActionResult;
+  /**
    * Display-only loop state: `enabled` is the session intent the toggle
    * flips; `engaged` is the transport's own truth (a loop actually installed
    * on the active run). The pair lets the UI show armed-but-not-yet-playing
    * honestly instead of pretending the transport is looping.
    */
-  readonly readLoopView: () => Readonly<{ enabled: boolean; engaged: boolean }>;
+  readonly readLoopView: () => Readonly<{
+    enabled: boolean;
+    engaged: boolean;
+    sectionId: string | null;
+  }>;
+  /**
+   * The engaged loop's span as fractions of the active run for the scrub
+   * line's region marker; null while no loop is engaged.
+   */
+  readonly readLoopRegionView: () => Readonly<{
+    startFraction: number;
+    endFraction: number;
+  }> | null;
   /**
    * Sound one chord immediately (jcpe-gnyy). The first preview on a fresh
    * page performs the gesture-gated audio initialization exactly like Play;
@@ -4530,6 +4551,10 @@ function makeStudioComposition(
    * mismatch law refuses the stale re-bind.
    */
   let loopEnabled = false;
+  /* V2R-18 (jcpe-v2r-section-loop-jjsw): armed section-loop intent. Mutually
+   * exclusive with the whole-chart flag — arming either clears the other, so
+   * exactly one loop intent can compile into a plan. */
+  let loopSectionId: string | null = null;
   let activeRun: Readonly<{
     documentId: AppState["document"]["id"];
     planRevision: number;
@@ -4565,6 +4590,69 @@ function makeStudioComposition(
     if (!zero.ok) return null;
     const range = makeBeatRange(zero.value, plan.totalBeats);
     return range.ok ? range.value : null;
+  };
+
+  /**
+   * Exact beat range a section occupies in plan space (V2R-18,
+   * jcpe-v2r-section-loop-jjsw). The plan compiler's timeline is the single
+   * authority — its events carry the exact cumulative startBeat — so the
+   * range is read from a loop-free compile of the current document: the
+   * section starts at its first event's startBeat and ends where a later
+   * section's first event starts (or at totalBeats when nothing follows).
+   * A section with no events occupies no span and yields null.
+   */
+  const sectionLoopRange = (
+    plan: Readonly<{
+      events: ReadonlyArray<
+        Readonly<{ sectionId: string; startBeat: BeatPosition }>
+      >;
+      totalBeats: BeatPosition;
+    }>,
+    sectionId: string,
+  ): BeatRange | null => {
+    let start: BeatPosition | null = null;
+    let end: BeatPosition | null = null;
+    for (const event of plan.events) {
+      if (event.sectionId === sectionId) {
+        start ??= event.startBeat;
+      } else if (start !== null) {
+        end = event.startBeat;
+        break;
+      }
+    }
+    if (start === null) return null;
+    const range = makeBeatRange(start, end ?? plan.totalBeats);
+    return range.ok ? range.value : null;
+  };
+
+  /** The armed loop intent resolved against a loop-free compiled plan. */
+  const armedLoopRange = (
+    plan: Readonly<{
+      events: ReadonlyArray<
+        Readonly<{ sectionId: string; startBeat: BeatPosition }>
+      >;
+      totalBeats: BeatPosition;
+    }>,
+  ): BeatRange | null => {
+    if (loopSectionId !== null) return sectionLoopRange(plan, loopSectionId);
+    return loopEnabled ? wholeChartLoop(plan) : null;
+  };
+
+  /**
+   * Compile the current document with whatever loop intent is armed. The
+   * section range needs event start beats, so the compile runs loop-free
+   * first and recompiles with the resolved range; an unresolvable range
+   * (empty section) honestly yields the loop-free plan.
+   */
+  const compileWithArmedLoop = (): ReturnType<
+    typeof compileStudioPlaybackPlan
+  > => {
+    const base = compileStudioPlaybackPlan(state.document);
+    if (!base.ok) return base;
+    const range = armedLoopRange(base.plan);
+    if (range === null) return base;
+    const looped = compileStudioPlaybackPlan(state.document, range);
+    return looped.ok ? looped : base;
   };
 
   const seekToFraction = (
@@ -4639,7 +4727,15 @@ function makeStudioComposition(
         "This build has no audio output wired.",
       );
     }
-    loopEnabled = !loopEnabled;
+    if (loopSectionId !== null) {
+      /* A whole-chart press while a section loop is armed means "loop the
+       * whole chart", not "off": the narrower intent yields to the wider
+       * one, and a second press then disarms as always. */
+      loopSectionId = null;
+      loopEnabled = true;
+    } else {
+      loopEnabled = !loopEnabled;
+    }
     const run = activeRun;
     const status = state.transport.status;
     const port = audioPort;
@@ -4652,14 +4748,11 @@ function makeStudioComposition(
       /*
        * Re-bind the active run through the serialized command. The loop
        * lives inside the compiled plan, so clearing compiles without one
-       * and installing compiles with the whole chart; a refusal (stale
+       * and installing compiles with the armed range; a refusal (stale
        * revision, engine trouble) leaves the run exactly as it was and the
        * display read keeps telling the transport's truth.
        */
-      const compiled = compileStudioPlaybackPlan(
-        state.document,
-        loopEnabled ? wholeChartLoop({ totalBeats: run.totalBeats }) : null,
-      );
+      const compiled = compileWithArmedLoop();
       if (compiled.ok) {
         const performed = performStudioPlaybackPlan(
           compiled.plan,
@@ -4689,13 +4782,125 @@ function makeStudioComposition(
     );
   };
 
-  const readLoopView = (): Readonly<{ enabled: boolean; engaged: boolean }> =>
+  /**
+   * Arm, disarm, or switch the section loop (V2R-18,
+   * jcpe-v2r-section-loop-jjsw). Pressing the armed section's own button
+   * disarms it; pressing another section's button moves the intent there;
+   * arming any section clears the whole-chart flag. During an active run
+   * the change re-binds live through the same serialized set-loop law the
+   * whole-chart toggle uses.
+   */
+  const armSectionLoop = (
+    sectionId: string,
+  ): StudioControllerActionResult => {
+    if (audioPort === null) {
+      return editRefusal(
+        "toggle-loop",
+        "u1.playback_unavailable",
+        "This build has no audio output wired.",
+      );
+    }
+    const section = state.document.sections.find(
+      (candidate) => candidate.id === sectionId,
+    );
+    if (section === undefined) {
+      return editRefusal(
+        "toggle-loop",
+        "u1.playback_refused",
+        "That section no longer exists.",
+      );
+    }
+    if (loopSectionId === sectionId) {
+      loopSectionId = null;
+    } else {
+      /* Arming needs a real span: a section with no chords has nothing to
+       * loop, and a silently inert armed button would be a lie. */
+      const base = compileStudioPlaybackPlan(state.document);
+      if (!base.ok || sectionLoopRange(base.plan, sectionId) === null) {
+        return editRefusal(
+          "toggle-loop",
+          "u1.playback_refused",
+          "This section has no chords to loop yet.",
+        );
+      }
+      loopSectionId = sectionId;
+      loopEnabled = false;
+    }
+    const run = activeRun;
+    const status = state.transport.status;
+    const port = audioPort;
+    if (
+      run !== null &&
+      (status === "playing" || status === "paused") &&
+      run.documentId === state.document.id &&
+      run.planRevision === state.revision
+    ) {
+      const compiled = compileWithArmedLoop();
+      if (compiled.ok) {
+        const performed = performStudioPlaybackPlan(
+          compiled.plan,
+          activePerformanceStyleId(),
+        );
+        void port.setLoop(
+          nextTransportRequestId(),
+          Object.freeze({
+            plan: performed,
+            documentId: run.documentId,
+            planRevision: run.planRevision,
+          }),
+          compiled.plan.loop,
+        );
+      }
+    }
+    return apply("toggle-loop", (current) =>
+      Object.freeze({
+        ok: true as const,
+        state: current,
+        outcome: "ephemeral-updated" as const,
+        effects: Object.freeze([]),
+        counters: createWorkCounters(),
+      }),
+    );
+  };
+
+  const readLoopView = (): Readonly<{
+    enabled: boolean;
+    engaged: boolean;
+    sectionId: string | null;
+  }> =>
     Object.freeze({
       enabled: loopEnabled,
       engaged:
         audioPort !== null &&
         audioPort.inspect().transport.loop !== null,
+      sectionId: loopSectionId,
     });
+
+  /**
+   * The engaged loop's span as fractions of the active run, for the scrub
+   * line's region marker. Null whenever the transport has no engaged loop —
+   * armed-but-not-playing renders nothing here, exactly like the toggle's
+   * armed-vs-engaged split.
+   */
+  const readLoopRegionView = (): Readonly<{
+    startFraction: number;
+    endFraction: number;
+  }> | null => {
+    const port = audioPort;
+    const run = activeRun;
+    if (port === null || run === null) return null;
+    const loop = port.inspect().transport.loop;
+    if (loop === null) return null;
+    const total = run.totalBeats.numerator / run.totalBeats.denominator;
+    if (!(total > 0)) return null;
+    const clamp = (value: number): number => Math.min(1, Math.max(0, value));
+    return Object.freeze({
+      startFraction: clamp(
+        loop.start.numerator / loop.start.denominator / total,
+      ),
+      endFraction: clamp(loop.end.numerator / loop.end.denominator / total),
+    });
+  };
 
   /*
    * Live mix (jcpe-v2r-live-mix-btb4). The document stays the mix authority
@@ -4745,10 +4950,7 @@ function makeStudioComposition(
     ) {
       return;
     }
-    const compiled = compileStudioPlaybackPlan(
-      state.document,
-      loopEnabled ? wholeChartLoop({ totalBeats: run.totalBeats }) : null,
-    );
+    const compiled = compileWithArmedLoop();
     if (!compiled.ok) return;
     const performed = performStudioPlaybackPlan(compiled.plan, styleId);
     void port.setPerformance(
@@ -4782,10 +4984,7 @@ function makeStudioComposition(
     ) {
       return;
     }
-    const compiled = compileStudioPlaybackPlan(
-      state.document,
-      loopEnabled ? wholeChartLoop({ totalBeats: run.totalBeats }) : null,
-    );
+    const compiled = compileWithArmedLoop();
     type PreparationNote = Parameters<
       StudioAudioPort["prepareInstrument"]
     >[1][number];
@@ -4977,8 +5176,8 @@ function makeStudioComposition(
         compiled.refusal.message,
       );
     }
-    if (loopEnabled) {
-      const loopRange = wholeChartLoop(compiled.plan);
+    {
+      const loopRange = armedLoopRange(compiled.plan);
       if (loopRange !== null) {
         const looped = compileStudioPlaybackPlan(state.document, loopRange);
         if (looped.ok) compiled = looped;
@@ -6355,7 +6554,9 @@ function makeStudioComposition(
     stopProgression,
     seekToFraction,
     toggleLoop,
+    armSectionLoop,
     readLoopView,
+    readLoopRegionView,
     previewMasterVolume,
     toggleMute,
     readMixView,

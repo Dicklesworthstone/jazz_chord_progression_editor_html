@@ -583,6 +583,8 @@ export function StudioShell({
               onAnnotateSection={callbacks.onAnnotateSection}
               onDeclareMeasureCompletion={callbacks.onDeclareMeasureCompletion}
               onRenameSection={callbacks.onRenameSection}
+              onSectionLoopToggle={callbacks.onSectionLoopToggle}
+              sectionLoopId={callbacks.readSectionLoopId()}
               onSetSectionBoundary={callbacks.onSetSectionBoundary}
               onDeleteSelection={shellCallbacks.onDeleteSelection}
               onDropChordOnMeasure={shellCallbacks.onDropChordOnMeasure}

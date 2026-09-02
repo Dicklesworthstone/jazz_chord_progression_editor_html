@@ -248,6 +248,7 @@ export type TransportBarProps = Readonly<{
     | "onSeekFraction"
     | "onLoopToggle"
     | "readLoopState"
+    | "readLoopRegion"
     | "onVolumePreview"
     | "onMuteToggle"
     | "readMixState"
@@ -406,6 +407,26 @@ export function TransportBar({
         }
         type="button"
       >
+        {(() => {
+          /*
+           * V2R-18: the engaged loop's span, drawn under the sweep so the
+           * scrub line shows WHAT will repeat. Only the transport's own
+           * engaged loop draws — an armed-but-idle intent renders nothing,
+           * the same honesty split the toggle keeps.
+           */
+          const region = callbacks.readLoopRegion();
+          if (region === null || region.endFraction <= region.startFraction) {
+            return null;
+          }
+          return (
+            <span
+              aria-hidden="true"
+              class="studio-transport__loop-region"
+              data-testid="transport-loop-region"
+              style={`inset-inline-start: ${String(region.startFraction * 100)}%; inline-size: ${String((region.endFraction - region.startFraction) * 100)}%`}
+            />
+          );
+        })()}
         <span
           class="studio-transport__sweep-fill"
           style={
