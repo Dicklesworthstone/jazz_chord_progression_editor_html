@@ -650,6 +650,146 @@ final class FrankenJazzCoreTests: XCTestCase {
                 XCTAssertEqual(error as? JazzDocumentValidationIssue, .invalidChord(1))
             }
         }
+
+        let malformedManual = [[], [20], [109], Array(40...56)]
+        for pitches in malformedManual {
+            let chart = JazzChart(
+                title: "Invalid manual voicing",
+                measures: [JazzMeasure(chords: [
+                    JazzChordEvent(symbol: "Cmaj7", manualMIDIPitches: pitches)
+                ])]
+            )
+            XCTAssertThrowsError(try JazzDocumentValidator.validate(chart), "Accepted manual \(pitches)")
+        }
+
+        let dualMode = JazzChart(
+            title: "Two stored modes",
+            measures: [JazzMeasure(chords: [
+                JazzChordEvent(
+                    symbol: "Cmaj7",
+                    frozenMIDIPitches: [48, 52, 55, 59],
+                    manualMIDIPitches: [48, 52, 55, 59]
+                )
+            ])]
+        )
+        XCTAssertThrowsError(try JazzDocumentValidator.validate(dualMode))
+    }
+
+    func testManualVoicingPreservesOrderDoublingsAndDrivesExactAuthorities() throws {
+        let manual = [72, 60, 60, 67]
+        let chart = JazzChart(
+            title: "Manual authority",
+            measures: [JazzMeasure(chords: [
+                JazzChordEvent(symbol: "Cmaj7", manualMIDIPitches: manual)
+            ])]
+        )
+        XCTAssertNoThrow(try JazzDocumentValidator.validate(chart))
+        XCTAssertEqual(JazzTheory.compilePlayback(chart).first?.midiPitches, manual)
+        XCTAssertEqual(noteOnPitches(in: MIDIFileWriter.makeFile(chart: chart)).sorted(), manual.sorted())
+
+        let decoded = try JSONDecoder().decode(JazzChart.self, from: JSONEncoder().encode(chart))
+        XCTAssertEqual(decoded.measures[0].chords[0].manualMIDIPitches, manual)
+        XCTAssertNil(decoded.measures[0].chords[0].frozenMIDIPitches)
+        XCTAssertEqual(decoded, chart)
+    }
+
+    @MainActor
+    func testManualVoiceEditingIsBoundedUndoableAndSurvivesChartOperations() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FrankenJazzManualVoicingTests-" + UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let recovery = JazzRecoveryStore(directory: directory)
+        let store = JazzStudioStore(recovery: recovery)
+        store.newChart()
+        let automatic = store.selectedMIDIPitches
+
+        store.beginManualSelectedVoicing()
+        XCTAssertEqual(store.selectedVoicingMode, .manual)
+        XCTAssertEqual(store.selectedChord?.manualMIDIPitches, automatic)
+        store.moveSelectedVoice(at: 0, semitones: 1)
+        let moved = [automatic[0] + 1] + Array(automatic.dropFirst())
+        XCTAssertEqual(store.selectedMIDIPitches, moved)
+        XCTAssertTrue(store.notice?.contains("voicing is Manual") == true)
+        store.undo()
+        XCTAssertEqual(store.selectedMIDIPitches, automatic)
+        store.redo()
+        XCTAssertEqual(store.selectedMIDIPitches, moved)
+
+        store.addSelectedVoice()
+        XCTAssertEqual(store.selectedMIDIPitches.count, moved.count + 1)
+        store.removeSelectedVoice(at: store.selectedMIDIPitches.count - 1)
+        XCTAssertEqual(store.selectedMIDIPitches, moved)
+        XCTAssertEqual(JazzTheory.compilePlayback(store.chart).first?.midiPitches, moved)
+        XCTAssertEqual(noteOnPitches(in: MIDIFileWriter.makeFile(chart: store.chart)).sorted(), moved.sorted())
+
+        store.updateVoicing(.spread)
+        store.transpose(2)
+        XCTAssertEqual(store.selectedChord?.symbol, "Dmaj7")
+        XCTAssertEqual(store.selectedMIDIPitches, moved)
+        XCTAssertEqual(store.notice, "Transposed up 2 semitones. 1 stored voicing stayed at its exact pitches.")
+        store.setDraft(store.chart.chartText)
+        store.applyDraftNow()
+        XCTAssertEqual(store.selectedChord?.manualMIDIPitches, moved)
+
+        store.duplicateSelectedChord()
+        XCTAssertTrue(store.chart.measures[0].chords.allSatisfy { $0.manualMIDIPitches == moved })
+        let recovered = try XCTUnwrap(recovery.load())
+        XCTAssertEqual(recovered.measures, store.chart.measures)
+
+        store.clearSelectedStoredVoicing()
+        XCTAssertEqual(store.selectedVoicingMode, .automatic)
+        store.undo()
+        XCTAssertEqual(store.selectedVoicingMode, .manual)
+    }
+
+    @MainActor
+    func testEditingFrozenVoiceConvertsToManualAndBoundsRefuseWithoutHistory() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FrankenJazzManualBoundaryTests-" + UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let recovery = JazzRecoveryStore(directory: directory)
+
+        let store = JazzStudioStore(recovery: recovery)
+        store.newChart()
+        store.freezeSelectedVoicing()
+        let frozen = store.selectedMIDIPitches
+        store.moveSelectedVoice(at: 0, semitones: 1)
+        XCTAssertEqual(store.selectedVoicingMode, .manual)
+        XCTAssertNil(store.selectedChord?.frozenMIDIPitches)
+        XCTAssertEqual(store.selectedChord?.manualMIDIPitches?.first, frozen[0] + 1)
+
+        let lowerBound = JazzChart(
+            title: "Lower bound",
+            measures: [JazzMeasure(chords: [
+                JazzChordEvent(symbol: "Cmaj7", manualMIDIPitches: [21])
+            ])]
+        )
+        recovery.save(lowerBound)
+        let bounded = JazzStudioStore(recovery: recovery)
+        let before = bounded.chart
+        XCTAssertFalse(bounded.canUndo)
+        bounded.moveSelectedVoice(at: 0, semitones: -1)
+        XCTAssertEqual(bounded.chart, before)
+        XCTAssertEqual(bounded.notice, "That move would leave the supported A0–C8 MIDI range.")
+        bounded.removeSelectedVoice(at: 0)
+        XCTAssertEqual(bounded.chart, before)
+        XCTAssertFalse(bounded.canUndo)
+
+        let full = JazzChart(
+            title: "Full manual voicing",
+            measures: [JazzMeasure(chords: [
+                JazzChordEvent(symbol: "Cmaj7", manualMIDIPitches: Array(40...55))
+            ])]
+        )
+        recovery.save(full)
+        let fullStore = JazzStudioStore(recovery: recovery)
+        fullStore.addSelectedVoice()
+        XCTAssertEqual(fullStore.chart, full)
+        XCTAssertEqual(fullStore.notice, "A manual voicing can contain at most 16 voices.")
+        XCTAssertFalse(fullStore.canUndo)
     }
 
     @MainActor
@@ -680,7 +820,7 @@ final class FrankenJazzCoreTests: XCTestCase {
         store.transpose(2)
         XCTAssertEqual(store.selectedChord?.symbol, "Dmaj7")
         XCTAssertEqual(store.selectedChord?.frozenMIDIPitches, automatic)
-        XCTAssertEqual(store.notice, "Transposed up 2 semitones. 1 frozen voicing stayed at its exact pitches.")
+        XCTAssertEqual(store.notice, "Transposed up 2 semitones. 1 stored voicing stayed at its exact pitches.")
 
         store.setDraft(store.chart.chartText)
         store.applyDraftNow()
@@ -712,7 +852,7 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertEqual(restored.id, store.chart.id)
         XCTAssertEqual(restored.measures, store.chart.measures)
 
-        store.clearSelectedFrozenVoicing()
+        store.clearSelectedStoredVoicing()
         XCTAssertNil(store.selectedChord?.frozenMIDIPitches)
         XCTAssertNotEqual(store.selectedMIDIPitches, automatic)
         store.undo()
