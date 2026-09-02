@@ -1,0 +1,64 @@
+{
+ "schema": "changes.evidence.e1-external-consumer-matrix.v1",
+ "date": "2026-09-02",
+ "bead": "jcpe-zq92",
+ "operator": "agent-driven CLI sessions (Claude Fable 5, session 01WQMSWKe357FRUm5fCokJAn); no human GUI DAW session — see scopeDisclosure",
+ "scopeDisclosure": "The contract asks for external consumers beyond our own parsers. Two real, independently implemented consumers (TiMidity++ and FluidSynth) were driven over the six golden files via their CLIs and their parse/render output recorded. What a GUI DAW session would still add: visual confirmation of marker text placement and piano-roll note layout in e.g. Reaper/Logic. Nothing here is a human listening attestation.",
+ "inputs": {
+  "source": "production writer exportMidi over tests/fixtures/midi-export/golden-cases.json requests",
+  "byteIdentity": "each exported file verified hex-identical to the reviewed fixture bytesHex before any consumer ran",
+  "files": {
+   "E1-GLD-001": { "bytes": 98, "sha256Prefix": "fd6b82b4beaa" },
+   "E1-GLD-002": { "bytes": 124, "sha256Prefix": "9eb4f7251416" },
+   "E1-GLD-003": { "bytes": 100, "sha256Prefix": "e90a4792fa3c" },
+   "E1-GLD-004": { "bytes": 77, "sha256Prefix": "deab4b81a2a1" },
+   "E1-GLD-005": { "bytes": 85, "sha256Prefix": "05d8e83ec289" },
+   "E1-GLD-006": { "bytes": 79, "sha256Prefix": "9e6e4af3ea6a" }
+  }
+ },
+ "consumers": [
+  { "product": "TiMidity++", "version": "2.14.0", "invocation": "timidity -idvv <file> -Ow", "evidence": "verbose parse trace + rendered WAV" },
+  { "product": "FluidSynth", "version": "2.4.8", "invocation": "fluidsynth -ni -F <out> FluidR3_GM.sf2 <file>", "evidence": "exit status + rendered WAV" }
+ ],
+ "observations": [
+  {
+   "caseId": "E1-GLD-001",
+   "timidity": { "header": "Format 1, Tracks 2, Divisions 960", "sequenceName": "T", "timeSignature": "4/4", "trackName": "V", "instrumentName": "I", "supportedEvents": 12, "renderedSamples": 21498, "notesCut": 0, "notesLost": 0, "exit": 0 },
+   "fluidsynth": { "exit": 0, "wavBytes": 580908 }
+  },
+  {
+   "caseId": "E1-GLD-002",
+   "timidity": { "header": "Format 1, Tracks 2, Divisions 960", "sequenceName": "G2", "timeSignature": "6/8", "trackName": "Vc", "instrumentName": "Pi", "supportedEvents": 17, "renderedSamples": 28665, "notesCut": 0, "notesLost": 0, "exit": 0 },
+   "fluidsynth": { "exit": 0, "wavBytes": 609324 }
+  },
+  {
+   "caseId": "E1-GLD-003",
+   "timidity": { "header": "Format 1, Tracks 2, Divisions 960", "sequenceName": "G3", "timeSignature": "4/4", "trackName": "V", "instrumentName": "I", "supportedEvents": 13, "renderedSamples": 21498, "notesCut": 0, "notesLost": 0, "exit": 0 },
+   "fluidsynth": { "exit": 0, "wavBytes": 580908 }
+  },
+  {
+   "caseId": "E1-GLD-004",
+   "timidity": { "header": "Format 1, Tracks 2, Divisions 960", "sequenceName": "G4", "timeSignature": "4/4", "trackName": "V", "instrumentName": "I", "supportedEvents": 7, "renderedSamples": 22, "notesCut": 0, "notesLost": 0, "exit": 0 },
+   "fluidsynth": { "exit": 0, "wavBytes": 496428 }
+  },
+  {
+   "caseId": "E1-GLD-005",
+   "timidity": { "header": "Format 1, Tracks 2, Divisions 960", "sequenceName": "G5", "timeSignature": "4/4", "trackName": "V", "instrumentName": "I", "supportedEvents": 8, "renderedSamples": 6449, "notesCut": 0, "notesLost": 0, "exit": 0 },
+   "fluidsynth": { "exit": 0, "wavBytes": 520748 }
+  },
+  {
+   "caseId": "E1-GLD-006",
+   "timidity": { "header": "Format 1, Tracks 2, Divisions 960", "sequenceName": "G6", "timeSignature": "4/4", "trackName": "V", "instrumentName": "I", "supportedEvents": 7, "renderedSamples": 128992, "notesCut": 0, "notesLost": 0, "exit": 0 },
+   "fluidsynth": { "exit": 0, "wavBytes": 999212 }
+  }
+ ],
+ "crossChecks": {
+  "division": "960 in every file matches the contract's exact midiPpq pin",
+  "formatAndTracks": "format 1 with 2 tracks everywhere matches MIDI_EXPORT_FORMAT / MIDI_EXPORT_TRACK_COUNT",
+  "names": "sequence/track/instrument names read back exactly as the reviewed request values (defaults V / I where the request supplied none)",
+  "meter": "the one non-4/4 case (E1-GLD-002, 6/8) reads back 6/8",
+  "tempoLaw": "tempo is proven through the consumer's own clock: the 400 bpm one-note case renders 6449 samples (~0.146 s, one beat at 400 bpm is 0.15 s) while the 20 bpm case renders 128992 samples; both consistent with the encoded microseconds-per-quarter law",
+  "noteIntegrity": "TiMidity++ reports 0 notes cut and 0 notes lost for every file"
+ },
+ "discrepancies": []
+}
