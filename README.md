@@ -306,6 +306,17 @@ bun scripts/run-playwright.ts install chromium firefox webkit
 
 Then rerun `bun run test:e2e`.
 
+### Wind reference tests report `REFERENCE_CORPUS_ABSENT` or the predeploy gate reports `MODEL_DELEGATED_INVALID_EVIDENCE`
+
+The machine-delegated wind acceptance rows are replayed against the
+University of Iowa anechoic reference recordings, which are third-party
+audio and not part of the repository. A clean checkout must install them
+once into `test-results/winds-reference-source/uiowa/` — the exact files,
+URLs, and SHA-256 pins live in
+`tests/fixtures/uiowa-wind-identity-corpus.v1.json`, and the procedure is in
+[`docs/DEPLOY_GATE.md`](docs/DEPLOY_GATE.md) under **Reference corpus
+prerequisite**.
+
 ### The generated artifact differs from source
 
 Edit files under `src/`, then regenerate and verify:

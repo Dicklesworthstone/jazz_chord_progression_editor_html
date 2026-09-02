@@ -291,6 +291,27 @@ describe("ledger evaluation fails closed", () => {
       CONCERT_GRAND_WASM_SHA256,
     ).map((finding) => finding.code)).toEqual(["MODEL_DELEGATED_REPLAY_REQUIRED"]);
 
+    /* A replay whose corpus is not installed fails closed with an
+     * actionable pointer at the documented acquisition procedure. */
+    const unavailableReplay: FluteV2ReferenceRunResult = {
+      ...replay,
+      summary: { ...replay.summary, outcome: "unavailable", exitCode: 2 },
+    };
+    const unavailableFindings = evaluateGate(
+      [algorithmId],
+      [row],
+      () => replay,
+      CONCERT_GRAND_WASM_SHA256,
+      { fluteV2: unavailableReplay },
+    );
+    expect(unavailableFindings.map((finding) => finding.code)).toEqual([
+      "MODEL_DELEGATED_INVALID_EVIDENCE",
+    ]);
+    expect(unavailableFindings[0]?.detail).toContain("Reference corpus prerequisite");
+    expect(unavailableFindings[0]?.detail).toContain(
+      "test-results/winds-reference-source/uiowa",
+    );
+
     const staleSourceSha256 = sha256Hex("stale-flute-renderer-source");
     const staleCells = replay.cells.map((cell) => {
       return bindFluteV2ReferenceMatrixCell({

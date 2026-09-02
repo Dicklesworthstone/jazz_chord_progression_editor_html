@@ -20,7 +20,9 @@ bun run predeploy:check
 
 A nonzero exit blocks the deploy and lists each offending model with a named
 finding (`MODEL_OPEN`, `MODEL_RED`, `MODEL_UNLISTED`,
-`MODEL_DELEGATED_NO_EVIDENCE`).
+`MODEL_DELEGATED_NO_EVIDENCE`, `MODEL_DELEGATED_INVALID_EVIDENCE`,
+`MODEL_DELEGATED_WASM_MISMATCH`, `MODEL_WASM_DIGEST_DRIFT`, and kin — the
+delegated-evidence replay additionally requires the reference corpus below).
 
 ## Reachability is wider than the recipe registry
 
@@ -55,6 +57,41 @@ Rows are edited by hand, with evidence, when a verdict lands — an owner
 listening note, or a machine reference-gate report path. Moving a recipe or
 engine routing to a new model version is a **ship decision**: the new id
 needs its row before the tree can deploy.
+
+## Reference corpus prerequisite
+
+Machine-delegated wind rows are validated by **replaying** their evidence
+against the embedded shipping WASM and the University of Iowa anechoic
+reference recordings. Those recordings are third-party audio and are NOT in
+the repository; without them the replay reports `unavailable`, the gate
+fails closed with `MODEL_DELEGATED_INVALID_EVIDENCE`, and the two
+`uiowa-*` unit suites in `bun test` go red. This is deliberate — but it
+means a clean checkout must install the corpus once:
+
+1. The manifest `tests/fixtures/uiowa-wind-identity-corpus.v1.json` pins
+   the exact six files: URL, byte count, and SHA-256 each (three flute
+   dynamics, three Bb-clarinet dynamics, all from
+   <https://theremin.music.uiowa.edu/MIS.html>; the publisher states the
+   recordings may be downloaded and used for any project without
+   restriction).
+2. Download each `url` into
+   `test-results/winds-reference-source/uiowa/<fileName>` (the directory is
+   gitignored).
+3. Verify every file's SHA-256 against the manifest before trusting a run;
+   the loaders re-verify on every gate execution and refuse a mismatched or
+   truncated file (`REFERENCE_CORPUS_DIGEST_MISMATCH`).
+
+One shell loop that does all three:
+
+```bash
+mkdir -p test-results/winds-reference-source/uiowa
+jq -r '.files[] | .url + " " + .fileName' \
+  tests/fixtures/uiowa-wind-identity-corpus.v1.json |
+while read -r url name; do
+  curl -sL -o "test-results/winds-reference-source/uiowa/$name" "$url"
+done
+# then compare `sha256sum` output against the manifest's pinned digests
+```
 
 ## Second gate: real-browser per-instrument playback
 
