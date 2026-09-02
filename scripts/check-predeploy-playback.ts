@@ -318,9 +318,9 @@ async function playInstrument(
   let statusHeldPlaying: boolean;
   let captures: BufferCapture[];
   let masterPeak: number;
-  let pageDiagnostics: { audioState: string | null; noticeText: string | null } = {
-    audioState: null,
-    noticeText: null,
+  let pageDiagnostics: {
+    audioState: string | null;
+    noticeText: string | null;
   };
   try {
     await page.selectOption("#studio-transport-instrument", instrumentId);
