@@ -850,10 +850,13 @@ private struct DocumentCenterView: View {
                         VStack(alignment: .leading, spacing: 14) {
                             JazzSectionLabel(number: "08", title: "Open", tint: JazzTheme.cyan)
                             Button { importing = true } label: {
-                                Label("Import a chart or text file", systemImage: "folder.badge.plus")
+                                Label("Import a chart, text, or MIDI file", systemImage: "folder.badge.plus")
                                     .frame(maxWidth: .infinity)
                             }
                             .buttonStyle(JazzPrimaryButtonStyle(tint: JazzTheme.cyan))
+                            Text("MIDI chord stacks become editable 4/4 symbols. Files in another meter or with no nameable harmony are refused instead of guessed.")
+                                .font(.system(size: JazzTheme.size(10.5), design: .rounded))
+                                .foregroundStyle(JazzTheme.secondary)
                             Button { store.newChart(); dismiss() } label: {
                                 Label("Start a blank chart", systemImage: "doc.badge.plus")
                                     .frame(maxWidth: .infinity)
@@ -907,7 +910,7 @@ private struct DocumentCenterView: View {
             }
         }
         .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
-        .fileImporter(isPresented: $importing, allowedContentTypes: [.frankenJazz, .json, .plainText], allowsMultipleSelection: false) { result in
+        .fileImporter(isPresented: $importing, allowedContentTypes: [.frankenJazz, .json, .plainText, .midi], allowsMultipleSelection: false) { result in
             guard case let .success(urls) = result, let url = urls.first else { return }
             Task { await store.importFile(url) }
         }

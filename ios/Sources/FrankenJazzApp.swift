@@ -22,7 +22,7 @@ struct FrankenJazzApp: App {
                 Button("New Chart") { store.newChart() }
                     .keyboardShortcut("n", modifiers: .command)
                 Button("Open or Export…") { store.isDocumentPresented = true }
-                    .keyboardShortcut("o", modifiers: .command)
+                    .keyboardShortcut("o", modifiers: [.command, .shift])
             }
             CommandGroup(replacing: .undoRedo) {
                 Button("Undo") { store.undo() }

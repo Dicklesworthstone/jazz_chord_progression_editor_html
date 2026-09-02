@@ -59,12 +59,13 @@ targets:
             LSHandlerRank: Owner
             LSItemContentTypes:
               - com.frankenjazz.chart
-          - CFBundleTypeName: Lead-sheet text or JSON
+          - CFBundleTypeName: Lead-sheet text, JSON, or MIDI
             CFBundleTypeRole: Editor
             LSHandlerRank: Alternate
             LSItemContentTypes:
               - public.plain-text
               - public.json
+              - public.midi-audio
         UTExportedTypeDeclarations:
           - UTTypeConformsTo:
               - public.json

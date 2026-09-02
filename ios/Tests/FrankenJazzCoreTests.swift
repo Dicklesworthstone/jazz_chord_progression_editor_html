@@ -110,6 +110,98 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertEqual(declaredLength, data.count - 22)
     }
 
+    func testNativeMIDIExportImportsBackIntoEditableChordEvents() throws {
+        let parsed = try JazzTheory.parseChart("| Dm7 G7 | Cmaj7 |")
+        let source = JazzChart(title: "Round-trip source", tempoBPM: 105, groove: .straightEighths, measures: parsed.measures)
+        let result = try MIDIFileImporter.importChart(data: MIDIFileWriter.makeFile(chart: source), title: "Imported changes")
+
+        XCTAssertEqual(result.chart.title, "Imported changes")
+        XCTAssertEqual(result.chart.chartText, "| Dm7 G7 | Cmaj7 |")
+        XCTAssertEqual(result.chart.tempoBPM, 105)
+        XCTAssertEqual(result.chart.groove, .straightEighths)
+        XCTAssertEqual(result.importedChordCount, 3)
+        XCTAssertEqual(result.skippedSonorityCount, 0)
+        XCTAssertNoThrow(try JazzDocumentValidator.validate(result.chart))
+    }
+
+    func testFormatOneRunningStatusVelocityZeroAndConductorMetadataImport() throws {
+        let result = try MIDIFileImporter.importChart(data: independentFormatOneMIDI(), title: "Independent fixture")
+
+        XCTAssertEqual(result.sourceTrackCount, 2)
+        XCTAssertEqual(result.chart.chartText, "| Cmaj7 |")
+        XCTAssertEqual(result.chart.tempoBPM, 120)
+        XCTAssertEqual(result.tempoChangeCount, 1)
+    }
+
+    func testMIDIImportRefusesHostileTimingAndNoteState() throws {
+        var smpte = [UInt8](independentFormatOneMIDI())
+        smpte[12] = 0xE7
+        XCTAssertThrowsError(try MIDIFileImporter.importChart(data: Data(smpte), title: "SMPTE")) { error in
+            XCTAssertEqual(error as? MIDIImportIssue, .smpteDivisionUnsupported)
+        }
+
+        XCTAssertThrowsError(try MIDIFileImporter.importChart(data: independentFormatOneMIDI(meterNumerator: 3), title: "Three four")) { error in
+            XCTAssertEqual(error as? MIDIImportIssue, .unsupportedMeter(numerator: 3, denominator: 4))
+        }
+
+        XCTAssertThrowsError(try MIDIFileImporter.importChart(data: unmatchedNoteOffMIDI(), title: "Broken notes")) { error in
+            XCTAssertEqual(error as? MIDIImportIssue, .unmatchedNoteOff(track: 0, channel: 0, note: 60))
+        }
+    }
+
+    func testMIDIImportRefusesTruncationLimitsAndUnnameableOnlyMaterial() throws {
+        XCTAssertThrowsError(try MIDIFileImporter.importChart(data: Data([0x4D]), title: "Truncated"))
+        XCTAssertThrowsError(
+            try MIDIFileImporter.importChart(
+                data: Data(repeating: 0, count: MIDIFileImporter.maximumFileBytes + 1),
+                title: "Oversized"
+            )
+        ) { error in
+            guard case let MIDIImportIssue.limitExceeded(message) = error else {
+                return XCTFail("Expected a resource refusal, got \(error)")
+            }
+            XCTAssertTrue(message.contains("2 MB"))
+        }
+        XCTAssertThrowsError(try MIDIFileImporter.importChart(data: singleNoteMIDI(), title: "No chord")) { error in
+            XCTAssertEqual(error as? MIDIImportIssue, .noNamedChords)
+        }
+    }
+
+    func testMIDIImportMusicalResultIsDeterministicAcrossReplays() throws {
+        let bytes = independentFormatOneMIDI()
+        let first = try MIDIFileImporter.importChart(data: bytes, title: "Replay")
+        let second = try MIDIFileImporter.importChart(data: bytes, title: "Replay")
+
+        XCTAssertEqual(first.chart.chartText, second.chart.chartText)
+        XCTAssertEqual(first.chart.tempoBPM, second.chart.tempoBPM)
+        XCTAssertEqual(first.importedChordCount, second.importedChordCount)
+        XCTAssertEqual(first.skippedSonorityCount, second.skippedSonorityCount)
+        XCTAssertEqual(first.omittedSourceMeasureCount, second.omittedSourceMeasureCount)
+    }
+
+    @MainActor
+    func testStoreMIDIImportIsOneUndoableDocumentReplacement() async throws {
+        let store = JazzStudioStore()
+        store.newChart()
+        let beforeImport = store.chart
+        let source = JazzChart(
+            title: "Store source",
+            tempoBPM: 120,
+            groove: .straightEighths,
+            measures: try JazzTheory.parseChart("| Fmaj7 Gm7 | C7 | ").measures
+        )
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("frankenjazz-midi-import-\(UUID().uuidString)")
+            .appendingPathExtension("mid")
+        try MIDIFileWriter.makeFile(chart: source).write(to: url, options: .atomic)
+
+        await store.importFile(url)
+        XCTAssertEqual(store.chart.chartText, "| Fmaj7 Gm7 | C7 |")
+        XCTAssertTrue(store.notice?.contains("editable chords from MIDI") == true)
+        store.undo()
+        XCTAssertEqual(store.chart, beforeImport)
+    }
+
     func testNativeDocumentRoundTripsEverySetting() throws {
         let parsed = try JazzTheory.parseChart("| Bbmaj9 | Eb13 |")
         var chart = JazzChart(title: "Round trip", key: .bb, tempoBPM: 87, groove: .ballad, instrument: .vibraphone, voicingFamily: .open, measures: parsed.measures)
@@ -120,5 +212,50 @@ final class FrankenJazzCoreTests: XCTestCase {
         decoder.dateDecodingStrategy = .iso8601
         let decoded = try decoder.decode(JazzChart.self, from: encoder.encode(chart))
         XCTAssertEqual(decoded, chart)
+    }
+
+    /// Hand-assembled independently from the production writer: format 1,
+    /// conductor tempo/meter, and a voicing track whose later note-on and all
+    /// velocity-zero note-offs use running status.
+    private func independentFormatOneMIDI(meterNumerator: UInt8 = 4) -> Data {
+        Data([
+            0x4D, 0x54, 0x68, 0x64, 0x00, 0x00, 0x00, 0x06,
+            0x00, 0x01, 0x00, 0x02, 0x01, 0xE0,
+            0x4D, 0x54, 0x72, 0x6B, 0x00, 0x00, 0x00, 0x13,
+            0x00, 0xFF, 0x51, 0x03, 0x07, 0xA1, 0x20,
+            0x00, 0xFF, 0x58, 0x04, meterNumerator, 0x02, 0x18, 0x08,
+            0x00, 0xFF, 0x2F, 0x00,
+            0x4D, 0x54, 0x72, 0x6B, 0x00, 0x00, 0x00, 0x1E,
+            0x00, 0x90, 0x3C, 0x60,
+            0x00, 0x40, 0x60,
+            0x00, 0x43, 0x60,
+            0x00, 0x47, 0x60,
+            0x87, 0x40, 0x3C, 0x00,
+            0x00, 0x40, 0x00,
+            0x00, 0x43, 0x00,
+            0x00, 0x47, 0x00,
+            0x00, 0xFF, 0x2F, 0x00
+        ])
+    }
+
+    private func unmatchedNoteOffMIDI() -> Data {
+        Data([
+            0x4D, 0x54, 0x68, 0x64, 0x00, 0x00, 0x00, 0x06,
+            0x00, 0x00, 0x00, 0x01, 0x01, 0xE0,
+            0x4D, 0x54, 0x72, 0x6B, 0x00, 0x00, 0x00, 0x08,
+            0x00, 0x80, 0x3C, 0x00,
+            0x00, 0xFF, 0x2F, 0x00
+        ])
+    }
+
+    private func singleNoteMIDI() -> Data {
+        Data([
+            0x4D, 0x54, 0x68, 0x64, 0x00, 0x00, 0x00, 0x06,
+            0x00, 0x00, 0x00, 0x01, 0x01, 0xE0,
+            0x4D, 0x54, 0x72, 0x6B, 0x00, 0x00, 0x00, 0x0D,
+            0x00, 0x90, 0x3C, 0x60,
+            0x83, 0x60, 0x80, 0x3C, 0x00,
+            0x00, 0xFF, 0x2F, 0x00
+        ])
     }
 }

@@ -36,4 +36,13 @@ final class FrankenJazzUITests: XCTestCase {
         XCTAssertEqual(chartTitle.value as? String, "ii–V–I in C")
         XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS 'Dm7'" )).firstMatch.exists)
     }
+
+    func testDocumentCenterExposesHonestMIDIImportBoundary() throws {
+        let documentActions = app.buttons["Document actions"].firstMatch
+        XCTAssertTrue(documentActions.waitForExistence(timeout: 3))
+        documentActions.tap()
+
+        XCTAssertTrue(app.buttons["Import a chart, text, or MIDI file"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["MIDI chord stacks become editable 4/4 symbols. Files in another meter or with no nameable harmony are refused instead of guessed."].exists)
+    }
 }

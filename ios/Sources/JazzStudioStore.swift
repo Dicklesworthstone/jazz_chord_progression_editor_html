@@ -274,17 +274,28 @@ final class JazzStudioStore: ObservableObject {
             try Task.checkCancellation()
             guard importFence.owns(importToken, currentRevision: revision) else { return }
             let imported: JazzChart
-            if url.pathExtension.lowercased() == "txt" || url.pathExtension.lowercased() == "md" {
+            let importNotice: String
+            let pathExtension = url.pathExtension.lowercased()
+            if pathExtension == "txt" || pathExtension == "md" {
                 guard let text = String(data: data, encoding: .utf8) else { throw ImportError.notUTF8 }
                 let content = text.split(separator: "\n").filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("#") }.joined(separator: "\n")
                 let parsed = try JazzTheory.parseChart(content)
                 imported = JazzChart(title: url.deletingPathExtension().lastPathComponent, measures: parsed.measures)
+                importNotice = "Imported “\(imported.title)”."
+            } else if pathExtension == "mid" || pathExtension == "midi" {
+                let title = url.deletingPathExtension().lastPathComponent
+                let result = try await Task.detached(priority: .userInitiated) {
+                    try MIDIFileImporter.importChart(data: data, title: title)
+                }.value
+                imported = result.chart
+                importNotice = result.notice
             } else {
                 imported = try decoder.decode(JazzChart.self, from: data)
+                importNotice = "Imported “\(imported.title)”."
             }
             try JazzDocumentValidator.validate(imported)
             guard importFence.owns(importToken, currentRevision: revision) else { return }
-            commit(imported, notice: "Imported “\(imported.title)”.")
+            commit(imported, notice: importNotice)
             draftText = imported.chartText
             selectedChordID = imported.measures.first?.chords.first?.id
             isDocumentPresented = false
