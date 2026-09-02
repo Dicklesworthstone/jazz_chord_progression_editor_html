@@ -589,6 +589,7 @@ final class FrankenJazzCoreTests: XCTestCase {
     func testNativeDocumentRoundTripsEverySetting() throws {
         let parsed = try JazzTheory.parseChart("| Bbmaj9 | Eb13 |")
         var chart = JazzChart(title: "Round trip", key: .bb, tempoBPM: 87, groove: .ballad, instrument: .vibraphone, voicingFamily: .open, measures: parsed.measures)
+        chart.measures[0].chords[0].frozenMIDIPitches = [46, 53, 57, 60, 64]
         chart.updatedAt = Date(timeIntervalSince1970: 1_788_130_000)
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
@@ -596,6 +597,119 @@ final class FrankenJazzCoreTests: XCTestCase {
         decoder.dateDecodingStrategy = .iso8601
         let decoded = try decoder.decode(JazzChart.self, from: encoder.encode(chart))
         XCTAssertEqual(decoded, chart)
+    }
+
+    func testLegacyDocumentWithoutFrozenVoicingStillDecodesAsAutomatic() throws {
+        let legacy = """
+        {
+          "schema": "frankenjazz.chart.v1",
+          "id": "00000000-0000-0000-0000-000000000001",
+          "title": "Legacy automatic",
+          "key": "C",
+          "tempoBPM": 120,
+          "groove": "Medium swing",
+          "instrument": "Electric piano",
+          "voicingFamily": "Balanced",
+          "measures": [{
+            "id": "00000000-0000-0000-0000-000000000002",
+            "chords": [{
+              "id": "00000000-0000-0000-0000-000000000003",
+              "symbol": "Cmaj7",
+              "beats": 4,
+              "annotation": ""
+            }]
+          }],
+          "updatedAt": "2026-09-02T12:00:00Z"
+        }
+        """
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let chart = try decoder.decode(JazzChart.self, from: Data(legacy.utf8))
+        XCTAssertNil(chart.measures[0].chords[0].frozenMIDIPitches)
+        XCTAssertNoThrow(try JazzDocumentValidator.validate(chart))
+    }
+
+    func testDocumentValidatorRefusesMalformedFrozenVoicings() {
+        let invalidRealizations = [
+            [],
+            [60, 59],
+            [60, 60],
+            [20, 60],
+            [60, 109],
+            Array(40...56)
+        ]
+
+        for pitches in invalidRealizations {
+            let chart = JazzChart(
+                title: "Invalid frozen voicing",
+                measures: [JazzMeasure(chords: [
+                    JazzChordEvent(symbol: "Cmaj7", frozenMIDIPitches: pitches)
+                ])]
+            )
+            XCTAssertThrowsError(try JazzDocumentValidator.validate(chart), "Accepted \(pitches)") { error in
+                XCTAssertEqual(error as? JazzDocumentValidationIssue, .invalidChord(1))
+            }
+        }
+    }
+
+    @MainActor
+    func testFrozenVoicingDrivesPlaybackMIDIPersistenceEditingAndHistory() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FrankenJazzFrozenVoicingTests-" + UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let recovery = JazzRecoveryStore(directory: directory)
+        let store = JazzStudioStore(recovery: recovery)
+        store.newChart()
+        let automatic = store.selectedMIDIPitches
+        let automaticSignature = JazzAudioRenderer.signature(for: store.chart)
+
+        store.freezeSelectedVoicing()
+        XCTAssertEqual(store.selectedChord?.frozenMIDIPitches, automatic)
+        XCTAssertEqual(store.selectedMIDIPitches, automatic)
+        XCTAssertTrue(store.canUndo)
+        XCTAssertNotEqual(JazzAudioRenderer.signature(for: store.chart), automaticSignature)
+        XCTAssertEqual(JazzTheory.compilePlayback(store.chart).first?.midiPitches, automatic)
+        XCTAssertEqual(Set(noteOnPitches(in: MIDIFileWriter.makeFile(chart: store.chart))), Set(automatic))
+
+        store.updateVoicing(.spread)
+        XCTAssertEqual(store.selectedMIDIPitches, automatic, "A chart-family change must not rewrite a frozen event")
+        XCTAssertEqual(JazzTheory.compilePlayback(store.chart).first?.midiPitches, automatic)
+
+        store.transpose(2)
+        XCTAssertEqual(store.selectedChord?.symbol, "Dmaj7")
+        XCTAssertEqual(store.selectedChord?.frozenMIDIPitches, automatic)
+        XCTAssertEqual(store.notice, "Transposed up 2 semitones. 1 frozen voicing stayed at its exact pitches.")
+
+        store.setDraft(store.chart.chartText)
+        store.applyDraftNow()
+        XCTAssertEqual(store.selectedChord?.frozenMIDIPitches, automatic, "Unchanged quick entry must preserve event-only data")
+
+        store.duplicateSelectedChord()
+        XCTAssertEqual(store.chart.measures[0].chords.count, 2)
+        XCTAssertTrue(store.chart.measures[0].chords.allSatisfy { $0.frozenMIDIPitches == automatic })
+        store.undo()
+        XCTAssertEqual(store.chart.measures[0].chords.count, 1)
+        XCTAssertEqual(store.selectedChord?.frozenMIDIPitches, automatic)
+        store.redo()
+        XCTAssertEqual(store.chart.measures[0].chords.count, 2)
+        XCTAssertEqual(store.selectedChord?.frozenMIDIPitches, automatic)
+
+        let encoded = try JSONEncoder().encode(store.chart)
+        let decoded = try JSONDecoder().decode(JazzChart.self, from: encoded)
+        XCTAssertEqual(decoded.measures.flatMap(\.chords).map(\.frozenMIDIPitches), [automatic, automatic])
+        XCTAssertEqual(recovery.load(), store.chart)
+        XCTAssertEqual(JazzStudioStore(recovery: recovery).chart, store.chart)
+
+        store.clearSelectedFrozenVoicing()
+        XCTAssertNil(store.selectedChord?.frozenMIDIPitches)
+        XCTAssertNotEqual(store.selectedMIDIPitches, automatic)
+        store.undo()
+        XCTAssertEqual(store.selectedChord?.frozenMIDIPitches, automatic)
+        store.redo()
+        XCTAssertNil(store.selectedChord?.frozenMIDIPitches)
+        XCTAssertNoThrow(try JazzDocumentValidator.validate(store.chart))
     }
 
     @MainActor

@@ -135,6 +135,29 @@ what the release artifact is, and how those claims are proved.
   (`jcpe-milestone-advanced-craft-ulj.11.3`). Production workflow behavior
   may be compared with the fixtures but may never generate their
   expectations.
+- `docs/PHS3_FLUTE_V2_CONTRACT.md`,
+  `tests/fixtures/flute-v2/contract.json`, and their companions are the
+  independently authored PHS3 transverse flute physical-model authority:
+  jet convection delay, embouchure hole coverage, and tone-hole lattice laws.
+- `docs/PHS4_PLUCKED_STRING_V2_CONTRACT.md`,
+  `tests/fixtures/plucked-string-v2/contract.json`, and their companions are
+  the independently authored PHS4 plucked-string family physical-model
+  authority: bidirectional stiff strings, multiport bridge, DKT body modes,
+  pickups, and amplifier stages.
+- `docs/PHS5_TRUMPET_V2_CONTRACT.md`,
+  `tests/fixtures/trumpet-v1/contract.json`, and their companions are the
+  independently authored PHS5 trumpet physical-model authority: nonlinear
+  lip reed dynamics, valve tubing loops, and expanding bell horn radiation.
+- `docs/PHS6_VIBRAPHONE_V2_CONTRACT.md`,
+  `tests/fixtures/vibraphone-v2/contract.json`, and their companions are the
+  independently authored PHS6 vibraphone physical-model authority: tuned
+  undercut free-free bar dynamics, Hertzian mallet contact, and rotating
+  fan tremolo radiation.
+- `docs/PHS7_WHOLE_SYSTEM_ACCEPTANCE_CONTRACT.md`,
+  `tests/fixtures/physical-system-v1/contract.json`, and their companions are
+  the independently authored PHS7 whole-system physical synthesis acceptance
+  authority: multi-rate 81-cell measurement matrix, listening rubrics, and
+  stop-to-silence guarantees.
 - The legacy HTML remains evidence until the replacement has passed the release
   gate. New production code must not import or evaluate it.
 

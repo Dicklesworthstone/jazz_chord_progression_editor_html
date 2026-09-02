@@ -250,7 +250,7 @@ enum JazzDocumentValidationIssue: LocalizedError, Equatable {
         case .duplicateMeasureID: "Two measures reuse the same stable identity."
         case .duplicateChordID: "Two chord events reuse the same stable identity."
         case let .invalidMeasure(index): "Measure \(index) must contain 1–\(JazzTheory.maximumChordsPerMeasure) events totaling exactly four beats."
-        case let .invalidChord(index): "A chord in measure \(index) contains an invalid symbol, duration, or annotation."
+        case let .invalidChord(index): "A chord in measure \(index) contains an invalid symbol, duration, annotation, or frozen voicing."
         }
     }
 }

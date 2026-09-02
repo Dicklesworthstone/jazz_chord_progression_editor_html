@@ -96,4 +96,24 @@ final class FrankenJazzUITests: XCTestCase {
         duplicate.tap()
         XCTAssertTrue(app.staticTexts["Duplicated Cmaj9 and split its beat slot."].waitForExistence(timeout: 3))
     }
+
+    func testInspectorFreezesExactVoicingAndReturnsToAutomatic() throws {
+        let firstChord = app.buttons.matching(
+            NSPredicate(format: "label BEGINSWITH 'Measure 1, Cmaj9'")
+        ).firstMatch
+        XCTAssertTrue(firstChord.waitForExistence(timeout: 3))
+        firstChord.tap()
+
+        let freeze = app.buttons["Freeze exact voicing"]
+        for _ in 0..<4 where !freeze.isHittable { app.swipeUp() }
+        XCTAssertTrue(freeze.waitForExistence(timeout: 3))
+        freeze.tap()
+
+        XCTAssertTrue(app.staticTexts["Frozen exact voicing"].waitForExistence(timeout: 3))
+        let automatic = app.buttons["Use automatic Balanced"]
+        XCTAssertTrue(automatic.waitForExistence(timeout: 3))
+        automatic.tap()
+        XCTAssertTrue(app.buttons["Freeze exact voicing"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["Automatic · Balanced"].exists)
+    }
 }

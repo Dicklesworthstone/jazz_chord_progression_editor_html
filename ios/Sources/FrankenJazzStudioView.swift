@@ -605,7 +605,7 @@ private struct ChordInspectorView: View {
                         inspectorHeader(chord, description)
                         annotationCard(chord)
                         pianoCard(description)
-                        voicingCard(description)
+                        voicingCard()
                         evidenceCard(description)
                     } else {
                         ContentUnavailableView("Select a chord", systemImage: "music.quarternote.3", description: Text("Tap any change in the lead sheet to inspect its sound and motion."))
@@ -724,10 +724,10 @@ private struct ChordInspectorView: View {
         }
     }
 
-    private func voicingCard(_ description: ChordDescription) -> some View {
+    private func voicingCard() -> some View {
         let frozen = store.selectedChord?.frozenMIDIPitches != nil
         let midi = store.selectedMIDIPitches
-        JazzPanel(accent: JazzTheme.emerald) {
+        return JazzPanel(accent: JazzTheme.emerald) {
             VStack(alignment: .leading, spacing: 11) {
                 JazzSectionLabel(number: "07", title: "Voicing bench", tint: JazzTheme.emerald)
                 Menu {
