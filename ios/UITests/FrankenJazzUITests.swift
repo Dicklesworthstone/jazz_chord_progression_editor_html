@@ -116,4 +116,33 @@ final class FrankenJazzUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Freeze exact voicing"].waitForExistence(timeout: 3))
         XCTAssertTrue(app.staticTexts["Automatic · Balanced"].exists)
     }
+
+    func testInspectorCreatesAndEditsManualExactVoicing() throws {
+        let firstChord = app.buttons.matching(
+            NSPredicate(format: "label BEGINSWITH 'Measure 1, Cmaj9'")
+        ).firstMatch
+        XCTAssertTrue(firstChord.waitForExistence(timeout: 3))
+        firstChord.tap()
+
+        let editExact = app.buttons["Edit exact voicing"]
+        for _ in 0..<4 where !editExact.isHittable { app.swipeUp() }
+        XCTAssertTrue(editExact.waitForExistence(timeout: 3))
+        editExact.tap()
+        XCTAssertTrue(app.staticTexts["Manual exact voicing"].waitForExistence(timeout: 3))
+
+        let firstVoice = app.buttons.matching(
+            NSPredicate(format: "label BEGINSWITH 'Edit voice 1,'")
+        ).firstMatch
+        XCTAssertTrue(firstVoice.waitForExistence(timeout: 3))
+        firstVoice.tap()
+        let raise = app.buttons["Up one semitone"]
+        XCTAssertTrue(raise.waitForExistence(timeout: 2))
+        raise.tap()
+        XCTAssertTrue(app.staticTexts["Manual exact voicing"].exists)
+
+        let automatic = app.buttons["Use automatic Balanced"]
+        XCTAssertTrue(automatic.waitForExistence(timeout: 3))
+        automatic.tap()
+        XCTAssertTrue(app.staticTexts["Automatic · Balanced"].waitForExistence(timeout: 3))
+    }
 }

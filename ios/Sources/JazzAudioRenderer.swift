@@ -32,14 +32,16 @@ enum JazzAudioRenderer {
     }
 
     nonisolated static func signature(for chart: JazzChart) -> String {
-        let changes = chart.measures
-            .flatMap(\.chords)
-            .map { chord in
-                let realization = chord.manualMIDIPitches.map { pitches in
-                    "manual[" + pitches.map(String.init).joined(separator: ".") + "]"
-                } ?? chord.frozenMIDIPitches.map { pitches in
-                    "frozen[" + pitches.map(String.init).joined(separator: ".") + "]"
-                } ?? "automatic"
+        let chords = chart.measures.flatMap(\.chords)
+        let changes = chords.map { chord -> String in
+                let realization: String
+                if let pitches = chord.manualMIDIPitches {
+                    realization = "manual[" + pitches.map(String.init).joined(separator: ".") + "]"
+                } else if let pitches = chord.frozenMIDIPitches {
+                    realization = "frozen[" + pitches.map(String.init).joined(separator: ".") + "]"
+                } else {
+                    realization = "automatic"
+                }
                 return "\(chord.symbol):\(chord.beats):\(realization)"
             }
             .joined(separator: ",")
