@@ -1117,6 +1117,13 @@
   outline-offset: var(--focus-offset);
 }
 
+@media (pointer: coarse) {
+  .studio-section__loop {
+    min-inline-size: var(--touch-target);
+    min-block-size: var(--touch-target);
+  }
+}
+
 .studio-section__boundary-trigger {
   display: inline-flex;
   align-items: center;
@@ -6100,11 +6107,13 @@ button.studio-paper-head__key:focus-visible {
   #studio-transport-tempo-down,
   #studio-transport-tempo-up,
   .studio-transport__select,
+  .studio-transport__select select,
   #studio-transport-groove,
   #studio-transport-instrument,
   #studio-transport-volume {
     min-inline-size: var(--touch-target);
     min-block-size: var(--touch-target);
+    block-size: var(--touch-target);
   }
 
   /* The range input's visible track stays slim; its hit slab grows. */

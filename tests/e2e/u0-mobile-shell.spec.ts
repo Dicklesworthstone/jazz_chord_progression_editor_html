@@ -173,14 +173,20 @@ for (const mobileCase of [
        * shipped.
        */
       const layoutFit = await page.evaluate(() => {
+        const isShortViewport =
+          window.matchMedia("(max-width: 39.999rem) and (max-height: 37.49rem)").matches;
         const controlIds = [
           "studio-copy-share-link",
           "studio-clear-chart",
           "studio-undo",
           "studio-redo",
           "studio-apply-title",
-          "studio-open-library-sheet",
-          "studio-open-harmony-sheet",
+          isShortViewport
+            ? "studio-transport-open-library"
+            : "studio-open-library-sheet",
+          isShortViewport
+            ? "studio-transport-open-harmony"
+            : "studio-open-harmony-sheet",
         ];
         return {
           bootMessagePresent: document.querySelector(".boot-message") !== null,
@@ -216,7 +222,10 @@ for (const mobileCase of [
 
       const observationsBySheet: Record<string, MobileObservation> = {};
       for (const name of ["Library", "Harmony Lens"] as const) {
-        const trigger = page.getByRole("button", { exact: true, name });
+        const trigger = page
+          .getByRole("button", { name: new RegExp(`^${name}`) })
+          .filter({ visible: true })
+          .first();
         await expect(trigger).toBeVisible();
         await trigger.click();
         const sheet = page.getByRole("dialog", { name });
@@ -519,7 +528,11 @@ test("U0-ENV-006 virtual-keyboard viewport contraction preserves draft authority
     const transportBox = await page.locator("#transport-bar").boundingBox();
     await expect(title).toHaveValue("Uncommitted keyboard draft");
     await expect(page.getByText("Revision 3", { exact: true })).toBeVisible();
-    await page.getByRole("button", { exact: true, name: "Library" }).click();
+    await page
+      .getByRole("button", { name: /^Library/ })
+      .filter({ visible: true })
+      .first()
+      .click();
     const close = page.getByRole("button", { name: "Close Library" });
     await expect(close).toBeVisible();
     await close.click();

@@ -36,7 +36,9 @@ test("mid-run instrument swaps keep the run alive", async ({ page }) => {
       const label = `${startInstrument}→${target}`;
       await page.selectOption("#studio-transport-instrument", startInstrument);
       await page.waitForTimeout(250);
-      await page.click("#studio-transport-play");
+      const playButton = page.locator("#studio-transport-play");
+      await expect(playButton).toBeEnabled({ timeout: 15_000 });
+      await playButton.click();
       const deadline = Date.now() + 25_000;
       let state = await audioState(page);
       while (state !== "playing" && state !== "failed" && Date.now() < deadline) {

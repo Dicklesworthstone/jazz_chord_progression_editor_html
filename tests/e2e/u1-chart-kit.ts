@@ -51,6 +51,7 @@ export async function openStudio(page: Page): Promise<void> {
   const undo = page.locator("#studio-undo");
   for (let press = 0; press < 6 && (await undo.isEnabled()); press += 1) {
     await undo.click();
+    await page.waitForTimeout(50);
   }
   await expect(page.locator(".studio-chord-card")).toHaveCount(0);
   await expect(undo).toBeDisabled();
@@ -76,7 +77,11 @@ export async function showTeachingView(page: Page): Promise<void> {
 export async function typeAndInsert(page: Page, text: string): Promise<void> {
   const field = page.getByTestId("quick-entry-field");
   if (!(await field.first().isVisible())) {
-    await page.locator("#studio-open-library-sheet").click();
+    const trigger = page
+      .locator("#studio-open-library-sheet, #studio-transport-open-library")
+      .filter({ visible: true })
+      .first();
+    await trigger.click();
   }
   const visible = field.filter({ visible: true }).first();
   await visible.fill(text);

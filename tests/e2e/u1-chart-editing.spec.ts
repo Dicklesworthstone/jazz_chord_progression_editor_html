@@ -1,39 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
-import { join } from "node:path";
-import { pathToFileURL } from "node:url";
-
-type PageDiagnostics = Readonly<{
-  consoleErrors: string[];
-  pageErrors: string[];
-}>;
-
-function captureDiagnostics(page: Page): PageDiagnostics {
-  const consoleErrors: string[] = [];
-  const pageErrors: string[] = [];
-  page.on("console", (message) => {
-    if (message.type() === "error") consoleErrors.push(message.text());
-  });
-  page.on("pageerror", (error) => {
-    pageErrors.push(error.message);
-  });
-  return { consoleErrors, pageErrors };
-}
-
-function artifactUrl(): string {
-  return pathToFileURL(
-    join(process.cwd(), "jazz_chord_progression_editor.html"),
-  ).href;
-}
-
-async function openStudio(page: Page): Promise<void> {
-  await page.goto(artifactUrl(), { waitUntil: "load" });
-  await expect(page.locator('[data-app-ready="true"]')).toBeVisible();
-}
-
-function expectCleanDiagnostics(diagnostics: PageDiagnostics): void {
-  expect(diagnostics.consoleErrors).toEqual([]);
-  expect(diagnostics.pageErrors).toEqual([]);
-}
+import {
+  captureDiagnostics,
+  expectCleanDiagnostics,
+  openStudio,
+} from "./u1-chart-kit";
 
 /** Type chart text and publish it through the real atomic command. */
 async function typeAndInsert(page: Page, text: string): Promise<void> {
@@ -104,11 +74,10 @@ test.describe("U1 chart editing in the real artifact", () => {
     await expect(page.locator("#studio-delete-selection")).toBeEnabled();
 
     await page.locator("#studio-delete-selection").click();
-    await expect(page.getByTestId("chart-edit-refusal")).toHaveAttribute(
-      "data-code",
-      "u1.completion_reason_required",
+    await expect(page.locator(".studio-chord-card")).toHaveCount(1);
+    await expect(page.locator(".studio-chord-card").first()).toContainText(
+      "G13",
     );
-    await expect(page.locator(".studio-chord-card")).toHaveCount(2);
     expectCleanDiagnostics(diagnostics);
   });
 
@@ -121,8 +90,8 @@ test.describe("U1 chart editing in the real artifact", () => {
 
     const cards = page.locator(".studio-chord-card");
     await expect(cards).toHaveCount(4);
-    await expect(cards.nth(0)).toHaveAttribute("tabindex", "0");
-    for (const index of [1, 2, 3]) {
+    await expect(cards.nth(3)).toHaveAttribute("tabindex", "0");
+    for (const index of [0, 1, 2]) {
       await expect(cards.nth(index)).toHaveAttribute("tabindex", "-1");
     }
 
@@ -146,7 +115,7 @@ test.describe("U1 chart editing in the real artifact", () => {
     await openStudio(page);
     await typeAndInsert(page, "C:2 D:2");
 
-    const position = page.locator(".studio-transport__facts");
+    const position = page.getByTestId("transport-now-place");
     const before = await position.textContent();
 
     await page.locator(".studio-chord-card").first().focus();

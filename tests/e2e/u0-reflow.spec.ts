@@ -43,8 +43,10 @@ test("U0-ENV-008 U0-VIEW-001 U0-REF-004 U0-REF-005 actual 320 CSS px reflows wit
     );
     await expect(page.locator("#library-rail")).toBeHidden();
     await expect(page.locator("#harmony-lens-rail")).toBeHidden();
-    await expect(page.getByRole("button", { exact: true, name: "Library" })).toBeVisible();
-    await expect(page.getByRole("button", { exact: true, name: "Harmony Lens" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Library/ })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /^Harmony Lens/ }),
+    ).toBeVisible();
 
     const observed = await page.evaluate(() => {
       const viewportMeta = document.querySelector<HTMLMetaElement>('meta[name="viewport"]');
