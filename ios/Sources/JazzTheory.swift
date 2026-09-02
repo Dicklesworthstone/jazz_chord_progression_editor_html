@@ -331,7 +331,9 @@ enum JazzTheory {
                             durationBeats: chord.beats,
                             midiPitches: chord.manualMIDIPitches
                                 ?? chord.frozenMIDIPitches
-                                ?? voicing(for: description, family: chart.voicingFamily)
+                                ?? voicing(for: description, family: chart.voicingFamily),
+                            permitsBassReinforcement: chord.manualMIDIPitches == nil
+                                && chord.frozenMIDIPitches == nil
                         )
                     )
                 }

@@ -94,7 +94,7 @@ enum JazzAudioRenderer {
                     into: &stereo
                 )
             }
-            if let bass = event.midiPitches.first {
+            if event.permitsBassReinforcement, let bass = event.midiPitches.first {
                 mixNote(
                     NoteRequest(
                         midi: max(28, bass - 12),

@@ -85,6 +85,7 @@ final class FrankenJazzCoreTests: XCTestCase {
             XCTAssertEqual(events.count, chart.chordCount, entry.id)
             XCTAssertTrue(events.allSatisfy { !$0.midiPitches.isEmpty }, entry.id)
             XCTAssertTrue(events.flatMap(\.midiPitches).allSatisfy { (21...108).contains($0) }, entry.id)
+            XCTAssertTrue(events.allSatisfy(\.permitsBassReinforcement), entry.id)
         }
     }
 
@@ -684,7 +685,9 @@ final class FrankenJazzCoreTests: XCTestCase {
             ])]
         )
         XCTAssertNoThrow(try JazzDocumentValidator.validate(chart))
-        XCTAssertEqual(JazzTheory.compilePlayback(chart).first?.midiPitches, manual)
+        let playback = try XCTUnwrap(JazzTheory.compilePlayback(chart).first)
+        XCTAssertEqual(playback.midiPitches, manual)
+        XCTAssertFalse(playback.permitsBassReinforcement, "Exact audio must not add a hidden octave bass")
         XCTAssertEqual(noteOnPitches(in: MIDIFileWriter.makeFile(chart: chart)).sorted(), manual.sorted())
 
         let decoded = try JSONDecoder().decode(JazzChart.self, from: JSONEncoder().encode(chart))
@@ -812,6 +815,7 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertTrue(store.canUndo)
         XCTAssertNotEqual(JazzAudioRenderer.signature(for: store.chart), automaticSignature)
         XCTAssertEqual(JazzTheory.compilePlayback(store.chart).first?.midiPitches, automatic)
+        XCTAssertFalse(try XCTUnwrap(JazzTheory.compilePlayback(store.chart).first).permitsBassReinforcement)
         XCTAssertEqual(Set(noteOnPitches(in: MIDIFileWriter.makeFile(chart: store.chart))), Set(automatic))
 
         store.updateVoicing(.spread)

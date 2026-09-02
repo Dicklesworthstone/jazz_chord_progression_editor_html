@@ -214,6 +214,9 @@ struct PlaybackEvent: Identifiable, Sendable {
     var startBeat: Double
     var durationBeats: Double
     var midiPitches: [Int]
+    /// Automatic families may receive the renderer's quiet octave-bass color.
+    /// Stored exact voicings must sound only their authored pitches.
+    var permitsBassReinforcement: Bool
 }
 
 struct LibraryEntry: Identifiable, Hashable, Sendable {
