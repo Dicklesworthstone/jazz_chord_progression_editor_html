@@ -94,6 +94,66 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertEqual(Set(chord.pitchClasses), Set([0, 2, 5, 7, 9]))
         XCTAssertEqual(chord.colorNote, "Extended upper color")
         XCTAssertNotNil(JazzTheory.parseChord("A/B", in: .e)?.bass)
+        XCTAssertEqual(JazzTheory.transpose(symbol: "F6/9", semitones: 2, preferFlats: false), "G6/9")
+    }
+
+    func testExtensionsRetainOctaveAwareIntervalsAndSoundTheirLiteralTones() throws {
+        let sharpEleven = try XCTUnwrap(JazzTheory.parseChord("Fmaj7#11", in: .f))
+        XCTAssertEqual(sharpEleven.intervals, [0, 4, 7, 11, 18])
+        XCTAssertEqual(sharpEleven.toneNames, ["F", "A", "C", "E", "B"])
+        XCTAssertEqual(sharpEleven.colorNote, "Extended upper color")
+        XCTAssertEqual(
+            Set(JazzTheory.voicing(for: sharpEleven, family: .balanced).map { $0 % 12 }),
+            Set(sharpEleven.pitchClasses)
+        )
+
+        let altered = try XCTUnwrap(JazzTheory.parseChord("A7alt", in: .c))
+        XCTAssertEqual(altered.intervals, [0, 4, 10, 13, 15, 20])
+        XCTAssertEqual(altered.colorNote, "Altered dominant tension")
+        XCTAssertEqual(
+            Set(JazzTheory.voicing(for: altered, family: .balanced).map { $0 % 12 }),
+            Set(altered.pitchClasses)
+        )
+    }
+
+    func testUnsupportedSuffixRefusesWithTheNamedFragment() {
+        XCTAssertNil(JazzTheory.parseChord("Cmaj7banana", in: .c))
+        XCTAssertThrowsError(try JazzTheory.parseChart("| Cmaj7banana |")) { error in
+            XCTAssertEqual(
+                error as? ChartParseIssue,
+                .unsupportedChordSuffix(fragment: "maj7banana", symbol: "Cmaj7banana", measure: 1)
+            )
+        }
+    }
+
+    func testEveryLibraryLiteralToneReachesBalancedPlaybackAndMIDIExport() throws {
+        for entry in JazzLibrary.entries + [JazzLibrary.starter] {
+            let parsed = try JazzTheory.parseChart(entry.chartText)
+            let chart = JazzChart(
+                title: entry.title,
+                key: entry.key,
+                tempoBPM: entry.tempo ?? 132,
+                groove: entry.groove,
+                voicingFamily: .balanced,
+                measures: parsed.measures
+            )
+            let chords = chart.measures.flatMap(\.chords)
+            let events = JazzTheory.compilePlayback(chart)
+            XCTAssertEqual(events.count, chords.count, entry.id)
+            for (chord, event) in zip(chords, events) {
+                let description = try XCTUnwrap(JazzTheory.parseChord(chord.symbol, in: chart.key))
+                var expected = Set(description.pitchClasses)
+                if let bass = description.bass, let bassPitch = JazzTheory.pitchClass(for: bass) {
+                    expected.insert(bassPitch)
+                }
+                XCTAssertEqual(Set(event.midiPitches.map { $0 % 12 }), expected, "\(entry.id):\(chord.symbol)")
+            }
+            XCTAssertEqual(
+                Set(noteOnPitches(in: MIDIFileWriter.makeFile(chart: chart))),
+                Set(events.flatMap(\.midiPitches)),
+                entry.id
+            )
+        }
     }
 
     func testNewCanonicalGroovesProduceDistinctAudibleRenders() throws {
@@ -554,5 +614,50 @@ final class FrankenJazzCoreTests: XCTestCase {
             0x83, 0x60, 0x80, 0x3C, 0x00,
             0x00, 0xFF, 0x2F, 0x00
         ])
+    }
+
+    private func noteOnPitches(in data: Data) -> [Int] {
+        let bytes = [UInt8](data)
+        guard bytes.count >= 22 else { return [] }
+        var index = 22
+        var pitches: [Int] = []
+
+        func readVariableLength() -> Int? {
+            var value = 0
+            for _ in 0..<4 {
+                guard index < bytes.count else { return nil }
+                let byte = bytes[index]
+                index += 1
+                value = (value << 7) | Int(byte & 0x7F)
+                if byte & 0x80 == 0 { return value }
+            }
+            return nil
+        }
+
+        while index < bytes.count {
+            guard readVariableLength() != nil, index < bytes.count else { break }
+            let status = bytes[index]
+            index += 1
+            switch status {
+            case 0x90:
+                guard index + 1 < bytes.count else { return pitches }
+                let pitch = Int(bytes[index])
+                let velocity = bytes[index + 1]
+                index += 2
+                if velocity > 0 { pitches.append(pitch) }
+            case 0x80:
+                index += min(2, bytes.count - index)
+            case 0xC0:
+                index += min(1, bytes.count - index)
+            case 0xFF:
+                guard index < bytes.count else { return pitches }
+                index += 1
+                guard let length = readVariableLength(), length <= bytes.count - index else { return pitches }
+                index += length
+            default:
+                return pitches
+            }
+        }
+        return pitches
     }
 }

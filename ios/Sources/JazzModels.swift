@@ -160,6 +160,7 @@ enum ChartParseIssue: LocalizedError, Equatable {
     case emptyMeasure(index: Int)
     case tooManyChords(measure: Int, limit: Int)
     case invalidSymbol(symbol: String, measure: Int)
+    case unsupportedChordSuffix(fragment: String, symbol: String, measure: Int)
     case invalidDuration(token: String, measure: Int)
     case invalidMeasureDuration(measure: Int)
 
@@ -171,6 +172,7 @@ enum ChartParseIssue: LocalizedError, Equatable {
         case let .emptyMeasure(index): "Measure \(index) is empty. Remove it or add a chord."
         case let .tooManyChords(measure, limit): "Measure \(measure) has more than \(limit) chord events."
         case let .invalidSymbol(symbol, measure): "‘\(symbol)’ in measure \(measure) is not a supported chord symbol."
+        case let .unsupportedChordSuffix(fragment, symbol, measure): "‘\(symbol)’ in measure \(measure) uses the unsupported chord suffix ‘\(fragment)’; remove it or choose a supported quality."
         case let .invalidDuration(token, measure): "‘\(token)’ in measure \(measure) has an invalid beat duration. Use a positive value such as :2."
         case let .invalidMeasureDuration(measure): "The explicit durations in measure \(measure) must total exactly four beats."
         }
@@ -182,6 +184,8 @@ struct ChordDescription: Equatable, Sendable {
     var root: String
     var bass: String?
     var suffix: String
+    /// Root-relative semitone intervals, retaining octave placement for extensions.
+    var intervals: [Int]
     var pitchClasses: [Int]
     var toneNames: [String]
     var romanNumeral: String

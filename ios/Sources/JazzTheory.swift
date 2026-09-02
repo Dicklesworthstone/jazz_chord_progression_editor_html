@@ -7,6 +7,13 @@ enum JazzTheory {
 
     private static let sharpNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
     private static let flatNames = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"]
+    private static let supportedSuffixes: Set<String> = [
+        "", "m", "dim", "°", "dim7", "°7", "m7b5", "ø", "ø7", "mmaj7",
+        "maj13", "maj9", "maj7#11", "maj7#5", "maj7", "m13", "13", "m11", "11",
+        "add9", "add2", "6/9", "m9", "9", "7alt", "7b9b5", "7b9#5",
+        "7#9b5", "7#9#5", "7b9", "7#9", "7b5", "7#5", "m7", "7sus4", "7sus",
+        "7", "m6", "6", "sus2", "sus4", "sus", "aug", "+"
+    ]
 
     static func pitchClass(for name: String) -> Int? {
         guard let first = name.first else { return nil }
@@ -75,6 +82,13 @@ enum JazzTheory {
                     explicitBeats = nil
                 }
                 guard parseChord(symbol, in: .c) != nil else {
+                    if let fragment = unsupportedSuffixFragment(in: symbol) {
+                        throw ChartParseIssue.unsupportedChordSuffix(
+                            fragment: fragment,
+                            symbol: symbol,
+                            measure: measureIndex
+                        )
+                    }
                     throw ChartParseIssue.invalidSymbol(symbol: symbol, measure: measureIndex)
                 }
                 parsedTokens.append((symbol, explicitBeats))
@@ -159,35 +173,50 @@ enum JazzTheory {
 
         guard suffix.range(of: #"^[A-Za-z0-9+#()/ø°-]*$"#, options: .regularExpression) != nil else { return nil }
         let lower = suffix.lowercased()
-        let alteredFifth = lower.contains("b5") ? 6 : lower.contains("#5") || lower.contains("aug") ? 8 : 7
-        let suspendedThird = lower.contains("sus2") ? 2 : lower.contains("sus") ? 5 : 4
-        let alteredNinth = lower.contains("b9") ? 13 : lower.contains("#9") ? 15 : 14
+        guard supportedSuffixes.contains(lower) else { return nil }
         let intervals: [Int]
-        if lower.contains("dim7") || lower.contains("°7") { intervals = [0, 3, 6, 9] }
-        else if lower.contains("m7b5") || lower.contains("ø") { intervals = [0, 3, 6, 10] }
-        else if lower.contains("dim") || lower.contains("°") { intervals = [0, 3, 6] }
-        else if lower.contains("mmaj7") { intervals = [0, 3, 7, 11] }
-        else if lower.contains("maj13") { intervals = [0, 4, 7, 11, 14, 21] }
-        else if lower.contains("maj9") { intervals = [0, 4, 7, 11, 14] }
-        else if lower.contains("maj7") { intervals = [0, 4, lower.contains("#5") ? 8 : 7, 11] }
-        else if lower.contains("13") { intervals = [0, lower.hasPrefix("m") ? 3 : 4, 7, 10, 14, 21] }
-        else if lower.contains("11") { intervals = [0, lower.hasPrefix("m") ? 3 : 4, 7, 10, 14, 17] }
-        else if lower == "add9" || lower == "add2" { intervals = [0, 4, 7, 14] }
-        else if lower == "6/9" { intervals = [0, 4, 7, 9, 14] }
-        else if lower.contains("m9") { intervals = [0, 3, 7, 10, 14] }
-        else if lower.contains("9") { intervals = [0, 4, alteredFifth, 10, alteredNinth] }
-        else if lower.contains("m7") { intervals = [0, 3, lower.contains("b5") ? 6 : 7, 10] }
-        else if lower.contains("7") { intervals = [0, suspendedThird, alteredFifth, 10] }
-        else if lower.contains("m6") { intervals = [0, 3, 7, 9] }
-        else if lower.contains("6") { intervals = [0, 4, 7, 9] }
-        else if lower.contains("sus2") { intervals = [0, 2, 7] }
-        else if lower.contains("sus") { intervals = [0, 5, 7] }
-        else if lower.contains("aug") || lower.contains("+") { intervals = [0, 4, 8] }
-        else if lower.hasPrefix("m") && !lower.hasPrefix("maj") { intervals = [0, 3, 7] }
-        else if lower.isEmpty { intervals = [0, 4, 7] }
-        else { return nil }
+        switch lower {
+        case "dim7", "°7": intervals = [0, 3, 6, 9]
+        case "m7b5", "ø", "ø7": intervals = [0, 3, 6, 10]
+        case "dim", "°": intervals = [0, 3, 6]
+        case "mmaj7": intervals = [0, 3, 7, 11]
+        case "maj13": intervals = [0, 4, 7, 11, 14, 21]
+        case "maj9": intervals = [0, 4, 7, 11, 14]
+        case "maj7#11": intervals = [0, 4, 7, 11, 18]
+        case "maj7#5": intervals = [0, 4, 8, 11]
+        case "maj7": intervals = [0, 4, 7, 11]
+        case "m13": intervals = [0, 3, 7, 10, 14, 21]
+        case "13": intervals = [0, 4, 7, 10, 14, 21]
+        case "m11": intervals = [0, 3, 7, 10, 14, 17]
+        case "11": intervals = [0, 4, 7, 10, 14, 17]
+        case "add9", "add2": intervals = [0, 4, 7, 14]
+        case "6/9": intervals = [0, 4, 7, 9, 14]
+        case "m9": intervals = [0, 3, 7, 10, 14]
+        case "9": intervals = [0, 4, 7, 10, 14]
+        case "7alt": intervals = [0, 4, 10, 13, 15, 20]
+        case "7b9b5": intervals = [0, 4, 6, 10, 13]
+        case "7b9#5": intervals = [0, 4, 8, 10, 13]
+        case "7#9b5": intervals = [0, 4, 6, 10, 15]
+        case "7#9#5": intervals = [0, 4, 8, 10, 15]
+        case "7b9": intervals = [0, 4, 7, 10, 13]
+        case "7#9": intervals = [0, 4, 7, 10, 15]
+        case "7b5": intervals = [0, 4, 6, 10]
+        case "7#5": intervals = [0, 4, 8, 10]
+        case "m7": intervals = [0, 3, 7, 10]
+        case "7sus4", "7sus": intervals = [0, 5, 7, 10]
+        case "7": intervals = [0, 4, 7, 10]
+        case "m6": intervals = [0, 3, 7, 9]
+        case "6": intervals = [0, 4, 7, 9]
+        case "sus2": intervals = [0, 2, 7]
+        case "sus4", "sus": intervals = [0, 5, 7]
+        case "aug", "+": intervals = [0, 4, 8]
+        case "m": intervals = [0, 3, 7]
+        case "": intervals = [0, 4, 7]
+        default: return nil
+        }
 
         let uniqueIntervals = Array(Set(intervals)).sorted()
+        let pitchClasses = Array(Set(uniqueIntervals.map { (rootPitch + $0) % 12 })).sorted()
         let flats = root.contains("b") || lower.contains("b") || key.prefersFlats
         let names = uniqueIntervals.map { noteName(rootPitch + $0, flats: flats) }
         let relative = (rootPitch - key.pitchClass + 12) % 12
@@ -208,18 +237,20 @@ enum JazzTheory {
             .prefix(2)
             .map { noteName(rootPitch + $0, flats: flats) }
         let color: String
-        if lower.contains("alt") || lower.contains("b9") || lower.contains("#9") { color = "Altered dominant tension" }
-        else if lower.contains("maj7") { color = "Major-seventh sheen" }
+        let alteredDominantIntervals: Set<Int> = [6, 8, 13, 15, 20]
+        if isDominantQuality, !alteredDominantIntervals.isDisjoint(with: uniqueIntervals) { color = "Altered dominant tension" }
         else if lower == "add9" || lower == "add2" { color = "Added ninth without a seventh" }
-        else if lower.contains("9") || lower.contains("11") || lower.contains("13") { color = "Extended upper color" }
-        else if lower.contains("dim") || lower.contains("ø") { color = "Symmetric instability" }
+        else if uniqueIntervals.contains(where: { $0 > 12 }) { color = "Extended upper color" }
+        else if uniqueIntervals.contains(11) { color = "Major-seventh sheen" }
+        else if isDiminishedQuality { color = "Symmetric instability" }
         else { color = "Core chord tones" }
         return ChordDescription(
             symbol: cleaned,
             root: root,
             bass: bass,
             suffix: suffix,
-            pitchClasses: uniqueIntervals.map { (rootPitch + $0) % 12 },
+            intervals: uniqueIntervals,
+            pitchClasses: pitchClasses,
             toneNames: names,
             romanNumeral: numeral,
             function: function,
@@ -231,26 +262,27 @@ enum JazzTheory {
 
     static func voicing(for chord: ChordDescription, family: VoicingFamily) -> [Int] {
         guard let rootPitch = pitchClass(for: chord.root) else { return [] }
-        var intervals = chord.pitchClasses.map { ($0 - rootPitch + 12) % 12 }.sorted()
+        var intervals = chord.intervals
         if intervals.isEmpty { intervals = [0, 4, 7] }
-        let third = intervals.first(where: { [2, 3, 4, 5].contains($0) }) ?? 4
-        let seventh = intervals.first(where: { [9, 10, 11].contains($0) }) ?? 10
-        let ninth = intervals.first(where: { $0 == 2 }) ?? 14
+        let third = intervals.first(where: { [2, 3, 4, 5].contains($0 % 12) }).map { $0 % 12 } ?? 4
+        let fifth = intervals.first(where: { [6, 7, 8].contains($0 % 12) }).map { $0 % 12 } ?? 7
+        let seventh = intervals.first(where: { [9, 10, 11].contains($0 % 12) }).map { $0 % 12 } ?? 10
+        let ninth = intervals.first(where: { $0 % 12 == 2 }).map { $0 % 12 } ?? 2
         let base = 48 + rootPitch
         var notes: [Int]
         switch family {
         case .balanced:
-            notes = intervals.prefix(5).map { base + $0 }
+            notes = intervals.prefix(6).map { base + $0 }
         case .shell:
             notes = [base, base + third, base + seventh]
         case .rootlessA:
-            let color = intervals.first(where: { [5, 6, 8, 9].contains($0) }) ?? 7
+            let color = intervals.first(where: { [5, 6, 8, 9].contains($0 % 12) }).map { $0 % 12 } ?? 7
             notes = [base + third, base + seventh, base + ninth, base + 12 + color]
         case .rootlessB:
-            let color = intervals.first(where: { [2, 5, 6, 8, 9].contains($0) }) ?? 2
+            let color = intervals.first(where: { [2, 5, 6, 8, 9].contains($0 % 12) }).map { $0 % 12 } ?? 2
             notes = [base + seventh, base + 12 + third, base + 12 + color]
         case .open:
-            notes = [base - 12, base + 7, base + 12 + third, base + 12 + seventh]
+            notes = [base - 12, base + fifth, base + 12 + third, base + 12 + seventh]
         case .spread:
             notes = [base - 12, base + third, base + 12 + seventh, base + 24 + ninth]
         }
@@ -315,11 +347,29 @@ enum JazzTheory {
         let root = String(characters[0..<rootLength])
         guard let rootPitch = pitchClass(for: root) else { return symbol }
         let tail = String(characters.dropFirst(rootLength))
+        if tail.lowercased() == "6/9" {
+            return noteName(rootPitch + semitones, flats: preferFlats) + tail
+        }
         let parts = tail.split(separator: "/", maxSplits: 1, omittingEmptySubsequences: false)
         var result = noteName(rootPitch + semitones, flats: preferFlats) + String(parts[0])
         if parts.count == 2, let bassPitch = pitchClass(for: String(parts[1])) {
             result += "/" + noteName(bassPitch + semitones, flats: preferFlats)
         }
         return result
+    }
+
+    private static func unsupportedSuffixFragment(in symbol: String) -> String? {
+        let cleaned = symbol.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let first = cleaned.first, "ABCDEFGabcdefg".contains(first) else { return nil }
+        let characters = Array(cleaned)
+        var rootLength = 1
+        if characters.count > 1, characters[1] == "#" || characters[1] == "b" { rootLength = 2 }
+        guard characters.count >= rootLength else { return nil }
+        let tail = String(characters.dropFirst(rootLength))
+        let suffix = tail.lowercased() == "6/9"
+            ? tail
+            : String(tail.split(separator: "/", maxSplits: 1, omittingEmptySubsequences: false).first ?? "")
+        guard !supportedSuffixes.contains(suffix.lowercased()), !suffix.isEmpty else { return nil }
+        return suffix
     }
 }
