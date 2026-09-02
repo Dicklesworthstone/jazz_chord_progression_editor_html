@@ -24,17 +24,21 @@ enum JazzKey: String, CaseIterable, Codable, Identifiable, Sendable {
 
 enum GrooveStyle: String, CaseIterable, Codable, Identifiable, Sendable {
     case mediumSwing = "Medium swing"
+    case uptempoSwing = "Uptempo swing"
     case ballad = "Ballad"
     case bossaNova = "Bossa nova"
     case straightEighths = "Straight eighths"
+    case syncopatedSixteenths = "Syncopated sixteenths"
 
     var id: String { rawValue }
     var symbol: String {
         switch self {
         case .mediumSwing: "metronome"
+        case .uptempoSwing: "hare"
         case .ballad: "moon.stars"
         case .bossaNova: "water.waves"
         case .straightEighths: "equal.square"
+        case .syncopatedSixteenths: "waveform.path.ecg"
         }
     }
 }
@@ -199,6 +203,7 @@ struct LibraryEntry: Identifiable, Hashable, Sendable {
         case publicDomain = "Public domain"
         case device = "Harmonic device"
         case study = "Original study"
+        case ownerDirected = "Owner-directed transcription"
     }
 
     var id: String
@@ -208,7 +213,7 @@ struct LibraryEntry: Identifiable, Hashable, Sendable {
     var provenance: Provenance
     var chartText: String
     var key: JazzKey
-    var tempo: Double
+    var tempo: Double?
     var groove: GrooveStyle
 }
 

@@ -562,7 +562,11 @@ private struct LibraryView: View {
                                 HStack {
                                     Text(entry.provenance.rawValue)
                                     Spacer()
-                                    Text("\(Int(entry.tempo)) BPM")
+                                    if let tempo = entry.tempo {
+                                        Text("\(Int(tempo)) BPM")
+                                    } else {
+                                        Text("Keeps tempo")
+                                    }
                                 }
                                 .font(.system(size: JazzTheme.size(8.5), design: .monospaced))
                                 .foregroundStyle(JazzTheme.secondary.opacity(0.8))

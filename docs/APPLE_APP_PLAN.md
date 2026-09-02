@@ -20,8 +20,8 @@ The first Apple release must let a musician:
    playable voicing families;
 3. hear the chart with a local generated instrument, tempo, swing, loop, seek,
    pause, and Stop that actually stop sound;
-4. begin from a substantial reviewed library of public-domain works, harmonic
-   devices, and original studies;
+4. begin from the complete 27-entry reviewed web library—including the four
+   explicitly owner-directed transcriptions—plus two native original studies;
 5. transpose without flattening every accidental spelling;
 6. recover work locally and import/export portable JSON, chart text, and a real
    Standard MIDI File;
@@ -36,7 +36,7 @@ parsed as data and never interpreted as HTML or a URL.
 
 | Live source contract | Native surface |
 | --- | --- |
-| `studio-progression-library.ts` | Bundled library with provenance, tempo, style, and musical purpose |
+| `studio-progression-library.ts` | All 27 stable web-library IDs, charts, provenance classes, canonical tempos/styles, plus two additive native studies |
 | `chart-parser.ts` / `chord-symbol.ts` | Bounded native quick-entry and chord-symbol parser |
 | `studio-controller.ts` | `JazzStudioStore`, one observable owner for document/history/selection |
 | U1 chart-editing operations | Undoable selected-change and bar actions with exact four-beat preservation |
@@ -97,7 +97,9 @@ motif. Motion follows musical time and respects Reduce Motion.
   actions, plus keyboard/pointer basics.
 - Mac Catalyst: build, launch, resize from minimum through wide layout, menus,
   file open/export, and legible typography.
-- Unit tests: parser, voicing, transposition, MIDI header/timing, recovery round
-  trip, and hostile/oversized import refusal.
+- Unit tests: golden library inventory, every bundled chart parsing and reaching
+  playable MIDI pitches, 6/9 quality versus slash-bass parsing, distinct groove
+  rendering, voicing, transposition, MIDI header/timing, recovery round trip,
+  and hostile/oversized import refusal.
 - Fresh-eyes source review, `git diff --check`, changed-file bug scan, and clean
   generated-project rebuild before the tracked task closes.

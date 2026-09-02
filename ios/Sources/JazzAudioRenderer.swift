@@ -127,6 +127,25 @@ enum JazzAudioRenderer {
                     ),
                     into: &stereo
                 )
+            case .uptempoSwing:
+                mixPercussion(
+                    PercussionRequest(
+                        start: start,
+                        frequency: beatInBar == 0 || beatInBar == 2 ? 205 : 305,
+                        strength: beatInBar == 0 ? 0.080 : 0.052,
+                        duration: 0.038
+                    ),
+                    into: &stereo
+                )
+                mixPercussion(
+                    PercussionRequest(
+                        start: Int((beat + 2.0 / 3.0) * beatSeconds * sampleRate),
+                        frequency: 520,
+                        strength: 0.030,
+                        duration: 0.024
+                    ),
+                    into: &stereo
+                )
             case .ballad:
                 if beatInBar == 0 || beatInBar == 2 {
                     mixPercussion(
@@ -154,6 +173,21 @@ enum JazzAudioRenderer {
                     ),
                     into: &stereo
                 )
+            case .syncopatedSixteenths:
+                let accents: [(offset: Double, strength: Double)] = beatInBar % 2 == 0
+                    ? [(0, 0.070), (0.75, 0.040)]
+                    : [(0, 0.042), (0.5, 0.034)]
+                for accent in accents {
+                    mixPercussion(
+                        PercussionRequest(
+                            start: Int((beat + accent.offset) * beatSeconds * sampleRate),
+                            frequency: accent.offset == 0 ? 180 : 680,
+                            strength: accent.strength,
+                            duration: 0.028
+                        ),
+                        into: &stereo
+                    )
+                }
             }
             beat += 1
         }

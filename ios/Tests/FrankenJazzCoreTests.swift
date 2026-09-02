@@ -63,15 +63,69 @@ final class FrankenJazzCoreTests: XCTestCase {
     }
 
     func testEveryBundledLibraryChartParsesAndCompilesToSound() throws {
-        XCTAssertEqual(JazzLibrary.entries.count, 25)
+        let canonicalWebEntryIDs: Set<String> = [
+            "tristan", "commendatore", "lament-bass", "pachelbel", "gymnopedie", "ragtime", "chopin-chromatic",
+            "two-five-one", "one-six-two-five", "minor-two-five-one", "jazz-blues-f", "dorian-vamp",
+            "major-third-cycle", "rhythm-turnaround", "bird-blues", "minor-blues", "tritone-chain",
+            "modal-planing", "chromatic-mediants", "mu-major-study", "lush-ballad-study", "gospel-blues-study",
+            "whole-tone-study", "what-a-fool-believes", "giant-steps", "peg", "hello-its-me"
+        ]
+        XCTAssertEqual(JazzLibrary.entries.count, 29)
+        XCTAssertEqual(Set(JazzLibrary.entries.map(\.id)).count, JazzLibrary.entries.count)
+        XCTAssertTrue(canonicalWebEntryIDs.isSubset(of: Set(JazzLibrary.entries.map(\.id))))
+        XCTAssertEqual(canonicalWebEntryIDs.count, 27)
+        XCTAssertEqual(
+            Set(JazzLibrary.entries.filter { $0.provenance == .ownerDirected }.map(\.id)),
+            ["what-a-fool-believes", "giant-steps", "peg", "hello-its-me"]
+        )
         for entry in JazzLibrary.entries + [JazzLibrary.starter] {
             let parsed = try JazzTheory.parseChart(entry.chartText)
-            let chart = JazzChart(title: entry.title, key: entry.key, tempoBPM: entry.tempo, groove: entry.groove, measures: parsed.measures)
+            let chart = JazzChart(title: entry.title, key: entry.key, tempoBPM: entry.tempo ?? 132, groove: entry.groove, measures: parsed.measures)
             let events = JazzTheory.compilePlayback(chart)
             XCTAssertEqual(events.count, chart.chordCount, entry.id)
             XCTAssertTrue(events.allSatisfy { !$0.midiPitches.isEmpty }, entry.id)
             XCTAssertTrue(events.flatMap(\.midiPitches).allSatisfy { (21...108).contains($0) }, entry.id)
         }
+    }
+
+    func testSixNineQualityIsNotMisreadAsSlashBass() throws {
+        let chord = try XCTUnwrap(JazzTheory.parseChord("F6/9", in: .f))
+        XCTAssertNil(chord.bass)
+        XCTAssertEqual(Set(chord.pitchClasses), Set([0, 2, 5, 7, 9]))
+        XCTAssertEqual(chord.colorNote, "Extended upper color")
+        XCTAssertNotNil(JazzTheory.parseChord("A/B", in: .e)?.bass)
+    }
+
+    func testNewCanonicalGroovesProduceDistinctAudibleRenders() throws {
+        let measures = try JazzTheory.parseChart("| Cmaj9 | Cmaj9 |").measures
+        let medium = try XCTUnwrap(JazzAudioRenderer.render(chart: JazzChart(title: "Medium", tempoBPM: 132, groove: .mediumSwing, measures: measures)))
+        let uptempo = try XCTUnwrap(JazzAudioRenderer.render(chart: JazzChart(title: "Fast", tempoBPM: 132, groove: .uptempoSwing, measures: measures)))
+        let straight = try XCTUnwrap(JazzAudioRenderer.render(chart: JazzChart(title: "Straight", tempoBPM: 132, groove: .straightEighths, measures: measures)))
+        let syncopated = try XCTUnwrap(JazzAudioRenderer.render(chart: JazzChart(title: "Syncopated", tempoBPM: 132, groove: .syncopatedSixteenths, measures: measures)))
+
+        let swingDifference = zip(medium.left, uptempo.left).reduce(0.0) { $0 + Double(abs($1.0 - $1.1)) }
+        let sixteenthDifference = zip(straight.left, syncopated.left).reduce(0.0) { $0 + Double(abs($1.0 - $1.1)) }
+        XCTAssertGreaterThan(swingDifference, 1)
+        XCTAssertGreaterThan(sixteenthDifference, 1)
+    }
+
+    @MainActor
+    func testLibraryLoadAppliesCanonicalMetadataAndPreservesUnspecifiedTempo() throws {
+        let store = JazzStudioStore()
+        store.updateTempo(207)
+        let device = try XCTUnwrap(JazzLibrary.entries.first { $0.id == "major-third-cycle" })
+        XCTAssertNil(device.tempo)
+        store.replaceChart(with: device)
+        XCTAssertEqual(store.chart.title, device.title)
+        XCTAssertEqual(store.chart.tempoBPM, 207)
+        XCTAssertEqual(store.chart.groove, .mediumSwing)
+
+        let transcription = try XCTUnwrap(JazzLibrary.entries.first { $0.id == "giant-steps" })
+        store.replaceChart(with: transcription)
+        XCTAssertEqual(store.chart.tempoBPM, 290)
+        XCTAssertEqual(store.chart.groove, .uptempoSwing)
+        XCTAssertEqual(store.chart.barCount, 16)
+        XCTAssertNoThrow(try JazzDocumentValidator.validate(store.chart))
     }
 
     func testChordEvidenceSeparatesLiteralAndContextualInformation() throws {

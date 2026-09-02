@@ -182,7 +182,7 @@ final class JazzStudioStore: ObservableObject {
     }
 
     func replaceChart(with entry: LibraryEntry) {
-        let newChart = Self.chart(from: entry)
+        let newChart = Self.chart(from: entry, fallbackTempo: chart.tempoBPM)
         commit(newChart, notice: "Loaded “\(entry.title)”.")
         draftText = newChart.chartText
         draftState = .current
@@ -560,9 +560,9 @@ final class JazzStudioStore: ObservableObject {
         }
     }
 
-    private static func chart(from entry: LibraryEntry) -> JazzChart {
+    private static func chart(from entry: LibraryEntry, fallbackTempo: Double = 132) -> JazzChart {
         let parsed = (try? JazzTheory.parseChart(entry.chartText)) ?? ParsedChart(measures: [JazzMeasure(chords: [JazzChordEvent(symbol: "Cmaj7")])], normalizedText: "| Cmaj7 |")
-        return JazzChart(title: entry.title, key: entry.key, tempoBPM: entry.tempo, groove: entry.groove, measures: parsed.measures)
+        return JazzChart(title: entry.title, key: entry.key, tempoBPM: entry.tempo ?? fallbackTempo, groove: entry.groove, measures: parsed.measures)
     }
 }
 

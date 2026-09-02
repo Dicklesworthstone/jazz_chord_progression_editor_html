@@ -143,7 +143,12 @@ enum JazzTheory {
         guard let rootPitch = pitchClass(for: root) else { return nil }
 
         let tail = String(characters.dropFirst(rootLength))
-        let slashParts = tail.split(separator: "/", maxSplits: 1, omittingEmptySubsequences: false)
+        // 6/9 is a chord quality, not an inversion. All other slashes retain
+        // the lead-sheet meaning of an explicit bass note.
+        let isSixNine = tail.lowercased() == "6/9"
+        let slashParts = isSixNine
+            ? [Substring(tail)]
+            : tail.split(separator: "/", maxSplits: 1, omittingEmptySubsequences: false)
         let suffix = String(slashParts.first ?? "")
         var bass: String?
         if slashParts.count == 2 {
@@ -152,7 +157,7 @@ enum JazzTheory {
             bass = value.prefix(1).uppercased() + String(value.dropFirst())
         }
 
-        guard suffix.range(of: #"^[A-Za-z0-9+#()ø°-]*$"#, options: .regularExpression) != nil else { return nil }
+        guard suffix.range(of: #"^[A-Za-z0-9+#()/ø°-]*$"#, options: .regularExpression) != nil else { return nil }
         let lower = suffix.lowercased()
         let alteredFifth = lower.contains("b5") ? 6 : lower.contains("#5") || lower.contains("aug") ? 8 : 7
         let suspendedThird = lower.contains("sus2") ? 2 : lower.contains("sus") ? 5 : 4
@@ -168,6 +173,7 @@ enum JazzTheory {
         else if lower.contains("13") { intervals = [0, lower.hasPrefix("m") ? 3 : 4, 7, 10, 14, 21] }
         else if lower.contains("11") { intervals = [0, lower.hasPrefix("m") ? 3 : 4, 7, 10, 14, 17] }
         else if lower == "add9" || lower == "add2" { intervals = [0, 4, 7, 14] }
+        else if lower == "6/9" { intervals = [0, 4, 7, 9, 14] }
         else if lower.contains("m9") { intervals = [0, 3, 7, 10, 14] }
         else if lower.contains("9") { intervals = [0, 4, alteredFifth, 10, alteredNinth] }
         else if lower.contains("m7") { intervals = [0, 3, lower.contains("b5") ? 6 : 7, 10] }

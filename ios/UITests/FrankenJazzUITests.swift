@@ -37,6 +37,24 @@ final class FrankenJazzUITests: XCTestCase {
         XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS 'Dm7'" )).firstMatch.exists)
     }
 
+    func testOwnerDirectedLibraryEntryIsSearchableAndLoadsCanonicalMetadata() throws {
+        app.buttons["Progression library"].tap()
+        let search = app.searchFields.firstMatch
+        XCTAssertTrue(search.waitForExistence(timeout: 3))
+        search.tap()
+        search.typeText("Giant Steps")
+
+        let entry = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Giant Steps'")).firstMatch
+        XCTAssertTrue(entry.waitForExistence(timeout: 3))
+        entry.tap()
+
+        let chartTitle = app.textFields["Chart title"]
+        XCTAssertTrue(chartTitle.waitForExistence(timeout: 3))
+        XCTAssertEqual(chartTitle.value as? String, "Giant Steps")
+        XCTAssertEqual(app.textFields["Tempo"].value as? String, "290")
+        XCTAssertTrue(app.buttons["Uptempo swing"].exists)
+    }
+
     func testDocumentCenterExposesHonestMIDIImportBoundary() throws {
         let documentActions = app.buttons["Document actions"].firstMatch
         XCTAssertTrue(documentActions.waitForExistence(timeout: 3))
