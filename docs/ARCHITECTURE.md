@@ -124,11 +124,17 @@ what the release artifact is, and how those claims are proved.
   derivation laws, blocked-event enumeration with chart links, the dialog
   state machine and capacity-one preparation registry, object-URL delivery
   and cleanup accounting, the accessibility matrix, exact limits, work
-  counters, traces, provenance, and replayed mutation controls. No U7
-  production component exists yet, and the packet makes no implementation,
-  UI-completion, human-acceptance, or expert-review claim. Production
-  workflow behavior may be compared with the fixtures but may never generate
-  their expectations.
+  counters, traces, provenance, and replayed mutation controls. The
+  production U7 workflow HAS since shipped
+  (`src/application/studio-midi-export.ts`,
+  `src/ui/studio/MidiExportPanel.tsx`, delivery via
+  `src/ui/midi-export-delivery.ts`), but the packet itself still reads
+  `specified-not-implemented` and makes no implementation, UI-completion,
+  human-acceptance, or expert-review claim: amending those reviewed flags
+  requires the recorded human acceptance owned by the U7 verify leg
+  (`jcpe-milestone-advanced-craft-ulj.11.3`). Production workflow behavior
+  may be compared with the fixtures but may never generate their
+  expectations.
 - The legacy HTML remains evidence until the replacement has passed the release
   gate. New production code must not import or evaluate it.
 
