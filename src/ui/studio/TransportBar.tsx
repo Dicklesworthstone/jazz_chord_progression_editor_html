@@ -367,6 +367,7 @@ export function TransportBar({
     <section
       class="studio-transport"
       data-audio-state={view.audioState}
+      data-failure-code={view.failureCode ?? undefined}
       id="transport-bar"
       aria-labelledby="studio-transport-heading"
     >

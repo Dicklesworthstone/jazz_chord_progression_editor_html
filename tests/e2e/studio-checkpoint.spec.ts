@@ -292,10 +292,18 @@ test.describe("interactive studio checkpoint", () => {
 
     await page.locator("#studio-chart-heading").click();
     await page.keyboard.press("Space");
-    await expect(status).toHaveText("Playing", { timeout: 15000 });
+    /*
+     * Audio start crosses gesture-init, a bounded engine-ready wait, and the
+     * render burst; wall time is performance evidence, never a musical law
+     * (repo doctrine), and a 39-minute full-matrix run showed WebKit can
+     * stretch past 15s exactly once while passing 6/6 in isolation
+     * (jcpe-0bjj data point). The bound stays generous, retries stay zero:
+     * a genuinely hung start (the pre-fix Firefox resume hang) still fails.
+     */
+    await expect(status).toHaveText("Playing", { timeout: 30_000 });
 
     await page.keyboard.press("Space");
-    await expect(status).toHaveText("Paused", { timeout: 15000 });
+    await expect(status).toHaveText("Paused", { timeout: 30_000 });
 
     /* Near miss: a text field keeps its own space. */
     const field = page.locator("#studio-document-title");
@@ -324,7 +332,7 @@ test.describe("interactive studio checkpoint", () => {
     await page.locator("#studio-transport-play").click();
     await expect(page.locator(".studio-transport__status p strong")).toHaveText(
       "Playing",
-      { timeout: 15000 },
+      { timeout: 30_000 },
     );
 
     const readVisibility = () =>

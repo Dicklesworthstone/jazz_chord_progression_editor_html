@@ -318,8 +318,15 @@ async function playInstrument(
   let statusHeldPlaying: boolean;
   let captures: BufferCapture[];
   let masterPeak: number;
-  let audioStateDiagnostic: string | null;
-  let noticeTextDiagnostic: string | null;
+  let pageDiagnostics: {
+    audioState: string | null;
+    /* The typed transport refusal path (e.g. "audio.engine_not_ready"),
+     * read from the transport bar's data-failure-code attribute. The
+     * jcpe-0bjj mellow-keys flake could previously be captured only as the
+     * human status string; the code names WHICH prerequisite refused. */
+    failureCode: string | null;
+    noticeText: string | null;
+  };
   try {
     await page.selectOption("#studio-transport-instrument", instrumentId);
     await page.waitForTimeout(400);
@@ -351,7 +358,7 @@ async function playInstrument(
         /* recorded below via status text */
       });
     await page.waitForTimeout(PLAY_LISTEN_MS);
-    const pageDiag = await page
+    pageDiagnostics = await page
       .evaluate(() => {
         const runtime = globalThis as unknown as Readonly<{
           document: Readonly<{
@@ -368,12 +375,11 @@ async function playInstrument(
         );
         return {
           audioState: transport?.getAttribute("data-audio-state") ?? null,
+          failureCode: transport?.getAttribute("data-failure-code") ?? null,
           noticeText: notice?.textContent?.trim() ?? null,
         };
       })
-      .catch(() => ({ audioState: null, noticeText: null }));
-    audioStateDiagnostic = pageDiag.audioState;
-    noticeTextDiagnostic = pageDiag.noticeText;
+      .catch(() => ({ audioState: null, failureCode: null, noticeText: null }));
 
     status =
       (await page.locator("#studio-transport-status-detail").textContent().catch(() => null))?.trim() ??
@@ -417,8 +423,9 @@ async function playInstrument(
   if (pageErrors.length > 0) failures.push(`page errors: ${String(pageErrors.length)}`);
   if (!statusHeldPlaying) {
     let detail = `status after listen window: "${status}"`;
-    if (audioStateDiagnostic) detail += ` [audio-state: ${audioStateDiagnostic}]`;
-    if (noticeTextDiagnostic) detail += ` [notice: "${noticeTextDiagnostic}"]`;
+    if (pageDiagnostics.audioState) detail += ` [audio-state: ${pageDiagnostics.audioState}]`;
+    if (pageDiagnostics.failureCode) detail += ` [failure-code: ${pageDiagnostics.failureCode}]`;
+    if (pageDiagnostics.noticeText) detail += ` [notice: "${pageDiagnostics.noticeText}"]`;
     failures.push(detail);
   }
   if (rendersBuffers) {

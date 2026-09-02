@@ -402,6 +402,14 @@ export type StudioTransportView = Readonly<{
     | "failed";
   audioStatusLabel: string;
   audioStatusDetail: string;
+  /**
+   * The machine-readable transport failure code (e.g.
+   * "audio.engine_not_ready"), or null while none is carried. Rendered as a
+   * DOM attribute so failure-time diagnostics can name the refused path —
+   * the playback gate's mellow-keys flake (jcpe-0bjj) could previously
+   * capture only the human status string.
+   */
+  failureCode: string | null;
   tempoBpm: number;
   instrumentLabel: string;
   /** Musical bar·beat readout ("Bar 2 · beat 3.0"), derived at render time. */

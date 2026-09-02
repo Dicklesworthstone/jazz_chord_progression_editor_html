@@ -38,7 +38,19 @@ export default defineConfig({
     },
     {
       name: "firefox",
-      use: { ...devices["Desktop Firefox"] },
+      use: {
+        ...devices["Desktop Firefox"],
+        /* Real-audio specs press Play with a real click, but headless
+         * Firefox still suspends AudioContext under its autoplay policy and
+         * the transport sticks at "Starting playback". The predeploy
+         * playback gate ships the same two prefs for the same reason. */
+        launchOptions: {
+          firefoxUserPrefs: {
+            "media.autoplay.default": 0,
+            "media.autoplay.blocking_policy": 0,
+          },
+        },
+      },
     },
     {
       name: "webkit",
