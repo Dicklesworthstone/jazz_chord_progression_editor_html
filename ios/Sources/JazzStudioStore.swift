@@ -399,22 +399,23 @@ final class JazzStudioStore: ObservableObject {
         let source = chart.measures[location.measure].chords[location.chord]
         guard symbol != source.symbol else { return nil }
         let storedPitches = source.manualMIDIPitches ?? source.frozenMIDIPitches
+        let hadStoredVoicing = selectedVoicingMode != .automatic
         audio.stop()
         mutate { chart in
             var chord = chart.measures[location.measure].chords[location.chord]
             chord.symbol = symbol
-            if let storedPitches, keepExactPitches {
+            if keepExactPitches, let storedPitches {
                 chord.frozenMIDIPitches = nil
                 chord.manualMIDIPitches = storedPitches
-            } else if storedPitches != nil {
+            } else {
                 chord.frozenMIDIPitches = nil
                 chord.manualMIDIPitches = nil
             }
             chart.measures[location.measure].chords[location.chord] = chord
         }
-        if let storedPitches, keepExactPitches {
+        if keepExactPitches, let storedPitches {
             notice = "Changed \(source.symbol) to \(symbol) and kept \(storedPitches.count) exact pitches as Manual."
-        } else if storedPitches != nil {
+        } else if hadStoredVoicing {
             notice = "Changed \(source.symbol) to \(symbol) and returned the change to Automatic voicing."
         } else {
             notice = "Changed \(source.symbol) to \(symbol)."
