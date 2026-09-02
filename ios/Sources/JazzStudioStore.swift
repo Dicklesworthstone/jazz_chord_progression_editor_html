@@ -107,6 +107,12 @@ final class JazzStudioStore: ObservableObject {
         return JazzTheory.parseChord(selectedChord.symbol, in: chart.key)
     }
 
+    var selectedMIDIPitches: [Int] {
+        guard let selectedChord, let selectedDescription else { return [] }
+        return selectedChord.frozenMIDIPitches
+            ?? JazzTheory.voicing(for: selectedDescription, family: chart.voicingFamily)
+    }
+
     var selectedTransitionSummary: String {
         let chords = chart.measures.flatMap(\.chords)
         guard let selectedChordID,
@@ -233,6 +239,30 @@ final class JazzStudioStore: ObservableObject {
         mutate { $0.voicingFamily = family }
     }
 
+    func freezeSelectedVoicing() {
+        guard let location = selectedLocation,
+              chart.measures[location.measure].chords[location.chord].frozenMIDIPitches == nil,
+              let description = selectedDescription else { return }
+        let pitches = JazzTheory.voicing(for: description, family: chart.voicingFamily)
+        guard !pitches.isEmpty else { return }
+        audio.stop()
+        mutate { chart in
+            chart.measures[location.measure].chords[location.chord].frozenMIDIPitches = pitches
+        }
+        notice = "Frozen \(description.symbol) at \(pitches.count) exact pitches."
+    }
+
+    func clearSelectedFrozenVoicing() {
+        guard let location = selectedLocation,
+              chart.measures[location.measure].chords[location.chord].frozenMIDIPitches != nil else { return }
+        let symbol = chart.measures[location.measure].chords[location.chord].symbol
+        audio.stop()
+        mutate { chart in
+            chart.measures[location.measure].chords[location.chord].frozenMIDIPitches = nil
+        }
+        notice = "\(symbol) now follows the \(chart.voicingFamily.rawValue) family."
+    }
+
     func updateSelectedChordAnnotation(_ annotation: String) {
         guard let selectedChordID else { return }
         let bounded = String(annotation.prefix(500))
@@ -250,6 +280,7 @@ final class JazzStudioStore: ObservableObject {
 
     func transpose(_ semitones: Int) {
         guard semitones != 0 else { return }
+        let frozenCount = chart.measures.flatMap(\.chords).filter { $0.frozenMIDIPitches != nil }.count
         audio.stop()
         mutate { chart in
             let keyPitch = chart.key.pitchClass + semitones
@@ -265,7 +296,13 @@ final class JazzStudioStore: ObservableObject {
         }
         draftText = chart.chartText
         draftState = .current
-        notice = semitones > 0 ? "Transposed up \(semitones) semitone\(semitones == 1 ? "" : "s")." : "Transposed down \(-semitones) semitone\(-semitones == 1 ? "" : "s")."
+        let direction = semitones > 0
+            ? "Transposed up \(semitones) semitone\(semitones == 1 ? "" : "s")."
+            : "Transposed down \(-semitones) semitone\(-semitones == 1 ? "" : "s")."
+        let frozenNotice = frozenCount == 0
+            ? ""
+            : " \(frozenCount) frozen voicing\(frozenCount == 1 ? "" : "s") stayed at its exact pitches."
+        notice = direction + frozenNotice
     }
 
     func select(_ chord: JazzChordEvent, showInspector: Bool = false) {

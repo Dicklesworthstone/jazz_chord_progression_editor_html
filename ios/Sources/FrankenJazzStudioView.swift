@@ -725,6 +725,8 @@ private struct ChordInspectorView: View {
     }
 
     private func voicingCard(_ description: ChordDescription) -> some View {
+        let frozen = store.selectedChord?.frozenMIDIPitches != nil
+        let midi = store.selectedMIDIPitches
         JazzPanel(accent: JazzTheme.emerald) {
             VStack(alignment: .leading, spacing: 11) {
                 JazzSectionLabel(number: "07", title: "Voicing bench", tint: JazzTheme.emerald)
@@ -741,9 +743,9 @@ private struct ChordInspectorView: View {
                 } label: {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(store.chart.voicingFamily.rawValue)
+                            Text(frozen ? "Frozen exact voicing" : "Automatic · \(store.chart.voicingFamily.rawValue)")
                                 .font(.system(size: JazzTheme.size(14), weight: .bold, design: .rounded))
-                            Text(store.chart.voicingFamily.note)
+                            Text(frozen ? "Family changes leave these pitches untouched" : store.chart.voicingFamily.note)
                                 .font(.system(size: JazzTheme.size(10.5), design: .rounded))
                                 .foregroundStyle(JazzTheme.secondary)
                         }
@@ -755,15 +757,28 @@ private struct ChordInspectorView: View {
                     .frame(minHeight: 48)
                     .background(JazzTheme.raised, in: RoundedRectangle(cornerRadius: 12))
                 }
-                let midi = JazzTheory.voicing(for: description, family: store.chart.voicingFamily)
-                HStack(spacing: 7) {
-                    ForEach(Array(midi.enumerated()), id: \.offset) { _, pitch in
-                        Text(midiName(pitch))
-                            .font(.system(size: JazzTheme.size(11), weight: .bold, design: .monospaced))
-                            .foregroundStyle(JazzTheme.background)
-                            .padding(.horizontal, 8).padding(.vertical, 6)
-                            .background(JazzTheme.emerald, in: Capsule())
+                ScrollView(.horizontal) {
+                    HStack(spacing: 7) {
+                        ForEach(Array(midi.enumerated()), id: \.offset) { _, pitch in
+                            Text(midiName(pitch))
+                                .font(.system(size: JazzTheme.size(11), weight: .bold, design: .monospaced))
+                                .foregroundStyle(JazzTheme.background)
+                                .padding(.horizontal, 8).padding(.vertical, 6)
+                                .background(JazzTheme.emerald, in: Capsule())
+                        }
                     }
+                }
+                .scrollIndicators(.hidden)
+                if frozen {
+                    Button("Use automatic \(store.chart.voicingFamily.rawValue)") {
+                        store.clearSelectedFrozenVoicing()
+                    }
+                    .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.emerald))
+                    .accessibilityHint("Discards the exact pitches and follows the chart voicing family")
+                } else {
+                    Button("Freeze exact voicing") { store.freezeSelectedVoicing() }
+                        .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.emerald))
+                        .accessibilityHint("Keeps these exact pitches when the chart voicing family changes")
                 }
             }
         }

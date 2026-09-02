@@ -86,12 +86,22 @@ struct JazzChordEvent: Identifiable, Codable, Equatable, Sendable {
     var symbol: String
     var beats: Double
     var annotation: String
+    /// Exact ascending MIDI pitches captured from an automatic realization.
+    /// `nil` keeps this event linked to the chart's current voicing family.
+    var frozenMIDIPitches: [Int]?
 
-    init(id: UUID = UUID(), symbol: String, beats: Double = 4, annotation: String = "") {
+    init(
+        id: UUID = UUID(),
+        symbol: String,
+        beats: Double = 4,
+        annotation: String = "",
+        frozenMIDIPitches: [Int]? = nil
+    ) {
         self.id = id
         self.symbol = symbol
         self.beats = beats
         self.annotation = annotation
+        self.frozenMIDIPitches = frozenMIDIPitches
     }
 }
 
@@ -267,10 +277,18 @@ enum JazzDocumentValidator {
             }
             for chord in measure.chords {
                 guard chordIDs.insert(chord.id).inserted else { throw JazzDocumentValidationIssue.duplicateChordID }
+                let frozenPitchesAreValid = chord.frozenMIDIPitches.map { pitches in
+                    !pitches.isEmpty &&
+                        pitches.count <= 16 &&
+                        pitches == pitches.sorted() &&
+                        Set(pitches).count == pitches.count &&
+                        pitches.allSatisfy { (21...108).contains($0) }
+                } ?? true
                 guard chord.beats.isFinite,
                       chord.beats > 0,
                       chord.beats <= 4,
                       chord.annotation.count <= 500,
+                      frozenPitchesAreValid,
                       JazzTheory.parseChord(chord.symbol, in: chart.key) != nil else {
                     throw JazzDocumentValidationIssue.invalidChord(index)
                 }
