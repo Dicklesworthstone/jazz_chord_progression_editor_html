@@ -134,7 +134,7 @@
     },
     {
       "path": "dsp/concert-grand/src/clarinet.rs",
-      "sha256": "43cf597e70a4f89c274ab059ad757cf036f62d613d102bbffd6aeaec716ff3d3"
+      "sha256": "74b9940e702483c9c181ece043de8ea602a3ffd51ac56d8411646de4ee786697"
     },
     {
       "path": "dsp/concert-grand/src/clarinet_v2_parameters.rs",
@@ -158,7 +158,7 @@
     },
     {
       "path": "dsp/concert-grand/src/lib.rs",
-      "sha256": "cd998daa666844848af69597e19d172f1c90de7fe1252af317afbd7c8c0dc960"
+      "sha256": "45a81ef259b3766c0a228e4012499f8b94a6ec9f53d3e410718c4f72d39cdaad"
     },
     {
       "path": "dsp/concert-grand/src/physical.rs",
@@ -166,7 +166,7 @@
     },
     {
       "path": "dsp/concert-grand/src/piano_v2.rs",
-      "sha256": "1dbef157afccb2b2ffbd47e592c2252840f997ff7da6d30b64d84de847bf0a91"
+      "sha256": "50f437cfde24f19ac8e469d98fd8d3ee2c43d1d0ca0a40bf08a421ac3b9d0b0c"
     },
     {
       "path": "dsp/concert-grand/src/piano_v2_scale.rs",
@@ -174,11 +174,11 @@
     },
     {
       "path": "dsp/concert-grand/src/piano_v2_soundboard.rs",
-      "sha256": "cea36bd756299b7bd2c1e2363f939abd024a4d673d9c8b1229841cfd1a9cf4e1"
+      "sha256": "8493828d022cf0ac2a36fd15baaec83bd60987b2ae1834335538641914fab805"
     },
     {
       "path": "dsp/concert-grand/src/plucked_v2.rs",
-      "sha256": "e3a3ee19df2b511faaddb0a95c0f819085c2d7276a71f18df60601cc03f36361"
+      "sha256": "c0749ae9c0236b7e1366b7e92f57e19bc188243c8df3031e6dd20a88044403fb"
     },
     {
       "path": "dsp/concert-grand/src/smf.rs",
@@ -186,7 +186,7 @@
     },
     {
       "path": "dsp/concert-grand/src/trumpet.rs",
-      "sha256": "b1e642b8fea3f78391f101f08f5f61f62e45582bbffa8dfa9c52a61b558a8fe0"
+      "sha256": "7138afcfdbb9da6920b5bd886b349d706c56e08814f3fd17634c7921036157a0"
     },
     {
       "path": "dsp/concert-grand/src/trumpet_v3_staging.rs",
@@ -194,15 +194,15 @@
     },
     {
       "path": "dsp/concert-grand/src/upright_bass_body.rs",
-      "sha256": "93c5d2243946d43985dd0548a32bde426a80beac5a88e86e8fbf6787e5ef3561"
+      "sha256": "dd74130fe6d85fbe26c7b9e787e6a908d0bad97f247ee9c42de8692f14dbd193"
     },
     {
       "path": "dsp/concert-grand/src/vibes_v2.rs",
-      "sha256": "bbac2a0886b1279a65f1faf82a6db485d9ba2f51082ffd6d8623bff792f39fde"
+      "sha256": "2b155b57195d4d56c572fc4badbed01a3dc3c89e7da5b774b5c4832da5261161"
     },
     {
       "path": "dsp/concert-grand/src/vibes_v2_eigenpack.rs",
-      "sha256": "9716d6398fd5b02d545c76640656676e848ba8333309d1e6648f160c35961b73"
+      "sha256": "ce47d2ad945582d69dd9f9205ee00e7c2b869d112a4f715b2b8df0d55efe77d3"
     },
     {
       "path": "dsp/concert-grand/src/winds.rs",
@@ -210,15 +210,15 @@
     },
     {
       "path": "scripts/build-dsp.ts",
-      "sha256": "bc838f4a7f30b4942c70cca53ea8c28ddc18074c9ecfa505f994147149e22184"
+      "sha256": "c27d527f903fbe4b5b92c6ed5b096393c781e5a518dab49b47c332fde44ca5a4"
     },
     {
       "path": "src/audio/dsp-renderer.ts",
-      "sha256": "50b20c665f65227e43258eb4ad2c904889e477dc83240c171c982b06917341d5"
+      "sha256": "74d725eb63f520536bbce9b9faa00e919ed6ccf7604dbf3ae681cd26d2afe28e"
     }
   ],
-  "candidateSourceClosureSha256": "4a3afe9b78634a71022c5e10c7c6e536cba631cc45580aeffece4d102870588a",
-  "wasmSha256": "23c98754108a1b0191fc76f4b27d81d09613b7e8e3458d14b4e544cad05a2351",
+  "candidateSourceClosureSha256": "341815599c93527aafb6d638ca80a38480ceb2f37cf48dd7e90fe8f86458b95a",
+  "wasmSha256": "5b4351ab1d63701519e298353d8cb1d2f8211ad61cc5469bd62d0a60583e157f",
   "parameterPackSha256": "262f967c575cd33e2b7dbe95f46e496be2b6b95b6be5d89d56c1c1057fc598db",
   "corpusManifestSha256": "2887a12cc0dbd71326df00e7b9ebbe1e44a09ac2cbe7d0eb1763d7985a12bc48",
   "cells": [
@@ -241,8 +241,8 @@
         },
         "candidate": {
           "rendererAlgorithmId": "changes.dsp.waveguide-clarinet@2",
-          "rendererSourceSha256": "4a3afe9b78634a71022c5e10c7c6e536cba631cc45580aeffece4d102870588a",
-          "wasmSha256": "23c98754108a1b0191fc76f4b27d81d09613b7e8e3458d14b4e544cad05a2351",
+          "rendererSourceSha256": "341815599c93527aafb6d638ca80a38480ceb2f37cf48dd7e90fe8f86458b95a",
+          "wasmSha256": "5b4351ab1d63701519e298353d8cb1d2f8211ad61cc5469bd62d0a60583e157f",
           "parameterPackSha256": "262f967c575cd33e2b7dbe95f46e496be2b6b95b6be5d89d56c1c1057fc598db",
           "renderRequestSha256": "dc55c09e93f8d2dd1ad16e2f58d0fbd7cc37e57b8baba95eed6730c651319815",
           "pcmSha256": "9b64804b8193441c6a7357912beb33a81c9f609136daf438b66f8d57259e7b52"
@@ -379,7 +379,7 @@
           "targetAdvantageDb": 4.356842588494731
         },
         "findings": [],
-        "evidenceSha256": "2147ad9cfea721fc143ce759e6968268bc7ad57cd80cacb93893a737488b4c7f"
+        "evidenceSha256": "18fcc3e79ad46310a5b2c54cc6ea112b4b723426d2a89be89669d606127777d8"
       },
       "reference": {
         "path": "test-results/winds-reference-source/uiowa/BbClar.pp.C5B5.aiff#midi-72",
@@ -409,8 +409,8 @@
         },
         "candidate": {
           "rendererAlgorithmId": "changes.dsp.waveguide-clarinet@2",
-          "rendererSourceSha256": "4a3afe9b78634a71022c5e10c7c6e536cba631cc45580aeffece4d102870588a",
-          "wasmSha256": "23c98754108a1b0191fc76f4b27d81d09613b7e8e3458d14b4e544cad05a2351",
+          "rendererSourceSha256": "341815599c93527aafb6d638ca80a38480ceb2f37cf48dd7e90fe8f86458b95a",
+          "wasmSha256": "5b4351ab1d63701519e298353d8cb1d2f8211ad61cc5469bd62d0a60583e157f",
           "parameterPackSha256": "262f967c575cd33e2b7dbe95f46e496be2b6b95b6be5d89d56c1c1057fc598db",
           "renderRequestSha256": "1b0e605de962d6633ae14d6318dd7f9fdcc2a2e2eae27472d2c4fdd22dfabef0",
           "pcmSha256": "31eed79d12959b83d8ad91703772b96d37f3e4c8fe548bf29bf84f8fb7673365"
@@ -547,7 +547,7 @@
           "targetAdvantageDb": 10.387190448381254
         },
         "findings": [],
-        "evidenceSha256": "4cadfc888cffe930257c1fe9f6ce57614f4e7551c64e7c9ffcf7b4e367a4eef5"
+        "evidenceSha256": "c9d941a07afbd8a1cf0e1329859e975c8055ba9be23915061a893e8fe23d1b30"
       },
       "reference": {
         "path": "test-results/winds-reference-source/uiowa/BbClar.mf.C5B5.aiff#midi-72",
@@ -577,8 +577,8 @@
         },
         "candidate": {
           "rendererAlgorithmId": "changes.dsp.waveguide-clarinet@2",
-          "rendererSourceSha256": "4a3afe9b78634a71022c5e10c7c6e536cba631cc45580aeffece4d102870588a",
-          "wasmSha256": "23c98754108a1b0191fc76f4b27d81d09613b7e8e3458d14b4e544cad05a2351",
+          "rendererSourceSha256": "341815599c93527aafb6d638ca80a38480ceb2f37cf48dd7e90fe8f86458b95a",
+          "wasmSha256": "5b4351ab1d63701519e298353d8cb1d2f8211ad61cc5469bd62d0a60583e157f",
           "parameterPackSha256": "262f967c575cd33e2b7dbe95f46e496be2b6b95b6be5d89d56c1c1057fc598db",
           "renderRequestSha256": "4a8eaa793e2f043988f7f9d721da522d4b91c7652e64a0f739dc03dadc35619c",
           "pcmSha256": "969bfaac5068258cbcb7c8445e6b582c139ca2fdcccbd5c09b04f23a4cf391e2"
@@ -715,7 +715,7 @@
           "targetAdvantageDb": 5.111608109703383
         },
         "findings": [],
-        "evidenceSha256": "4a391db009607f5e70f6a6f9a6d9e0fd5e21260e721dd036b375422befb6e192"
+        "evidenceSha256": "afb442e05124e049c87a0aae01c29d2d056873f40c322b7cf47d4ed6cf93b25b"
       },
       "reference": {
         "path": "test-results/winds-reference-source/uiowa/BbClar.ff.C5B5.aiff#midi-72",
@@ -745,8 +745,8 @@
         },
         "candidate": {
           "rendererAlgorithmId": "changes.dsp.waveguide-clarinet@2",
-          "rendererSourceSha256": "4a3afe9b78634a71022c5e10c7c6e536cba631cc45580aeffece4d102870588a",
-          "wasmSha256": "23c98754108a1b0191fc76f4b27d81d09613b7e8e3458d14b4e544cad05a2351",
+          "rendererSourceSha256": "341815599c93527aafb6d638ca80a38480ceb2f37cf48dd7e90fe8f86458b95a",
+          "wasmSha256": "5b4351ab1d63701519e298353d8cb1d2f8211ad61cc5469bd62d0a60583e157f",
           "parameterPackSha256": "262f967c575cd33e2b7dbe95f46e496be2b6b95b6be5d89d56c1c1057fc598db",
           "renderRequestSha256": "7cc53623ef3cbdb1bea123c8e46bb1a4f83ecd936efb2d1ee9064f9f16597332",
           "pcmSha256": "42dc41cc02d827667e376d4f56869d885807e7ea34b53d5d69169dc7c82d240a"
@@ -883,7 +883,7 @@
           "targetAdvantageDb": 3.7217259643754375
         },
         "findings": [],
-        "evidenceSha256": "9229e9fa25cd6f3b11fe768d249e440fc6f9a38661b533a62d42df07887da7fb"
+        "evidenceSha256": "98bb910e8219a840a863061c4f08a2a9832ac148f832bcc4cddfd2389dbf6968"
       },
       "reference": {
         "path": "test-results/winds-reference-source/uiowa/BbClar.pp.C5B5.aiff#midi-76",
@@ -913,8 +913,8 @@
         },
         "candidate": {
           "rendererAlgorithmId": "changes.dsp.waveguide-clarinet@2",
-          "rendererSourceSha256": "4a3afe9b78634a71022c5e10c7c6e536cba631cc45580aeffece4d102870588a",
-          "wasmSha256": "23c98754108a1b0191fc76f4b27d81d09613b7e8e3458d14b4e544cad05a2351",
+          "rendererSourceSha256": "341815599c93527aafb6d638ca80a38480ceb2f37cf48dd7e90fe8f86458b95a",
+          "wasmSha256": "5b4351ab1d63701519e298353d8cb1d2f8211ad61cc5469bd62d0a60583e157f",
           "parameterPackSha256": "262f967c575cd33e2b7dbe95f46e496be2b6b95b6be5d89d56c1c1057fc598db",
           "renderRequestSha256": "07a0c4250affa5d9ef05a8cbbbed4eda6f6ba9cf07ead40412f7f64d9ceb5a77",
           "pcmSha256": "815f29ea6739d0f893efd3af17c1af9960f16ac86a55d3ef18ce84c239caf4e3"
@@ -1051,7 +1051,7 @@
           "targetAdvantageDb": 3.6874357482893814
         },
         "findings": [],
-        "evidenceSha256": "c6664c003b77071e84a3b921b5ab55966342abb73cd5f1f77291eff7d1dbd534"
+        "evidenceSha256": "21f3adf15cd5cdb6836c0dd26d519af44edf596181992ebe050be2f1d8ed2028"
       },
       "reference": {
         "path": "test-results/winds-reference-source/uiowa/BbClar.mf.C5B5.aiff#midi-76",
@@ -1081,8 +1081,8 @@
         },
         "candidate": {
           "rendererAlgorithmId": "changes.dsp.waveguide-clarinet@2",
-          "rendererSourceSha256": "4a3afe9b78634a71022c5e10c7c6e536cba631cc45580aeffece4d102870588a",
-          "wasmSha256": "23c98754108a1b0191fc76f4b27d81d09613b7e8e3458d14b4e544cad05a2351",
+          "rendererSourceSha256": "341815599c93527aafb6d638ca80a38480ceb2f37cf48dd7e90fe8f86458b95a",
+          "wasmSha256": "5b4351ab1d63701519e298353d8cb1d2f8211ad61cc5469bd62d0a60583e157f",
           "parameterPackSha256": "262f967c575cd33e2b7dbe95f46e496be2b6b95b6be5d89d56c1c1057fc598db",
           "renderRequestSha256": "1240dad269234b12fc77e54db27b3dc0baeefdeccd8a364a757dc2c9ff559f86",
           "pcmSha256": "779c21c35182a691522b88aa0b630c446e320822dccb6d4eb1dbe575b236a096"
@@ -1219,7 +1219,7 @@
           "targetAdvantageDb": 22.851689076722757
         },
         "findings": [],
-        "evidenceSha256": "b43f6295ad9a43da965857129d80d0d7366be8977631a12e592ee5a0b00883a0"
+        "evidenceSha256": "f191922cb2d74f2eca4d3d9de1a22775ac943b5241b10885b9f3a808307ca0b9"
       },
       "reference": {
         "path": "test-results/winds-reference-source/uiowa/BbClar.ff.C5B5.aiff#midi-76",
@@ -1249,8 +1249,8 @@
         },
         "candidate": {
           "rendererAlgorithmId": "changes.dsp.waveguide-clarinet@2",
-          "rendererSourceSha256": "4a3afe9b78634a71022c5e10c7c6e536cba631cc45580aeffece4d102870588a",
-          "wasmSha256": "23c98754108a1b0191fc76f4b27d81d09613b7e8e3458d14b4e544cad05a2351",
+          "rendererSourceSha256": "341815599c93527aafb6d638ca80a38480ceb2f37cf48dd7e90fe8f86458b95a",
+          "wasmSha256": "5b4351ab1d63701519e298353d8cb1d2f8211ad61cc5469bd62d0a60583e157f",
           "parameterPackSha256": "262f967c575cd33e2b7dbe95f46e496be2b6b95b6be5d89d56c1c1057fc598db",
           "renderRequestSha256": "3387bcece0d0157d5afc61495b5be4bfdcc057beaeb47bea2baaa631880d9117",
           "pcmSha256": "84f13ff67086512216d2793e88c80dd3db60a31d61143df1b80594cd826d28b9"
@@ -1387,7 +1387,7 @@
           "targetAdvantageDb": 6.661147752834008
         },
         "findings": [],
-        "evidenceSha256": "1af123a506c4add610f63bcaf299563b8d929443572d7c501215a7531e4e634a"
+        "evidenceSha256": "76ad5e67da88c4fbff2d50a57f4cb7b8c12224eb28e219cc88c6bf55f5bfb73c"
       },
       "reference": {
         "path": "test-results/winds-reference-source/uiowa/BbClar.pp.C5B5.aiff#midi-79",
@@ -1417,8 +1417,8 @@
         },
         "candidate": {
           "rendererAlgorithmId": "changes.dsp.waveguide-clarinet@2",
-          "rendererSourceSha256": "4a3afe9b78634a71022c5e10c7c6e536cba631cc45580aeffece4d102870588a",
-          "wasmSha256": "23c98754108a1b0191fc76f4b27d81d09613b7e8e3458d14b4e544cad05a2351",
+          "rendererSourceSha256": "341815599c93527aafb6d638ca80a38480ceb2f37cf48dd7e90fe8f86458b95a",
+          "wasmSha256": "5b4351ab1d63701519e298353d8cb1d2f8211ad61cc5469bd62d0a60583e157f",
           "parameterPackSha256": "262f967c575cd33e2b7dbe95f46e496be2b6b95b6be5d89d56c1c1057fc598db",
           "renderRequestSha256": "34e0065527405b3cf9f932663ed81161dbc3e0f6fe7b1ff93263cb8193420b6b",
           "pcmSha256": "ac4658837899abb750d6503c278a7bbe549b38276ddb48453350876c9fe39d17"
@@ -1555,7 +1555,7 @@
           "targetAdvantageDb": 9.95162026828675
         },
         "findings": [],
-        "evidenceSha256": "9ebf3c4306e0c7c60afb6943a1bd43ebba6506bbf638ab5121bcb832f926e4d5"
+        "evidenceSha256": "85ad3037e0765da19c51a1345f0035c579297d5a1eb846d1a28ab6f059be05f2"
       },
       "reference": {
         "path": "test-results/winds-reference-source/uiowa/BbClar.mf.C5B5.aiff#midi-79",
@@ -1585,8 +1585,8 @@
         },
         "candidate": {
           "rendererAlgorithmId": "changes.dsp.waveguide-clarinet@2",
-          "rendererSourceSha256": "4a3afe9b78634a71022c5e10c7c6e536cba631cc45580aeffece4d102870588a",
-          "wasmSha256": "23c98754108a1b0191fc76f4b27d81d09613b7e8e3458d14b4e544cad05a2351",
+          "rendererSourceSha256": "341815599c93527aafb6d638ca80a38480ceb2f37cf48dd7e90fe8f86458b95a",
+          "wasmSha256": "5b4351ab1d63701519e298353d8cb1d2f8211ad61cc5469bd62d0a60583e157f",
           "parameterPackSha256": "262f967c575cd33e2b7dbe95f46e496be2b6b95b6be5d89d56c1c1057fc598db",
           "renderRequestSha256": "89cc8c54e02ae99991465d7ad1ced6bae56be1523440cbd9b1e0c27da54f73e5",
           "pcmSha256": "f5e4a571c2cb13d7729442a4c43948a446dd26943cab1670c36c70372383f72d"
@@ -1723,7 +1723,7 @@
           "targetAdvantageDb": 3.5886980383144724
         },
         "findings": [],
-        "evidenceSha256": "0514581559b4cc916867773493a634bb9a0eac98edf4d36eaaba7499258ceb76"
+        "evidenceSha256": "9a85300c886fa7041ef68348d640682c824d73a86c7867e64bf79790239a9f3a"
       },
       "reference": {
         "path": "test-results/winds-reference-source/uiowa/BbClar.ff.C5B5.aiff#midi-79",
@@ -1753,8 +1753,8 @@
         },
         "candidate": {
           "rendererAlgorithmId": "changes.dsp.waveguide-clarinet@2",
-          "rendererSourceSha256": "4a3afe9b78634a71022c5e10c7c6e536cba631cc45580aeffece4d102870588a",
-          "wasmSha256": "23c98754108a1b0191fc76f4b27d81d09613b7e8e3458d14b4e544cad05a2351",
+          "rendererSourceSha256": "341815599c93527aafb6d638ca80a38480ceb2f37cf48dd7e90fe8f86458b95a",
+          "wasmSha256": "5b4351ab1d63701519e298353d8cb1d2f8211ad61cc5469bd62d0a60583e157f",
           "parameterPackSha256": "262f967c575cd33e2b7dbe95f46e496be2b6b95b6be5d89d56c1c1057fc598db",
           "renderRequestSha256": "c0a612a9247c5cc0bfb26380550f0c5b90f423f8815410549d9c953fed02187a",
           "pcmSha256": "0f0c882373f09850e1b6acfa53e68d0c4e2f696f11507c5dbc4fa4303e014750"
@@ -1891,7 +1891,7 @@
           "targetAdvantageDb": 3.7781890013616817
         },
         "findings": [],
-        "evidenceSha256": "36f46dbc3b26dd66d31e400f35b75a3168bf5009c8808fae64add134df9e9dea"
+        "evidenceSha256": "07aa6ca0c09ef5e8bc8fc7f4cb2f6251a24504f7d9396cd66262f368fabf3915"
       },
       "reference": {
         "path": "test-results/winds-reference-source/uiowa/BbClar.pp.C5B5.aiff#midi-82",
@@ -1921,8 +1921,8 @@
         },
         "candidate": {
           "rendererAlgorithmId": "changes.dsp.waveguide-clarinet@2",
-          "rendererSourceSha256": "4a3afe9b78634a71022c5e10c7c6e536cba631cc45580aeffece4d102870588a",
-          "wasmSha256": "23c98754108a1b0191fc76f4b27d81d09613b7e8e3458d14b4e544cad05a2351",
+          "rendererSourceSha256": "341815599c93527aafb6d638ca80a38480ceb2f37cf48dd7e90fe8f86458b95a",
+          "wasmSha256": "5b4351ab1d63701519e298353d8cb1d2f8211ad61cc5469bd62d0a60583e157f",
           "parameterPackSha256": "262f967c575cd33e2b7dbe95f46e496be2b6b95b6be5d89d56c1c1057fc598db",
           "renderRequestSha256": "92e22d82cc40d00f55bd14c4f2abd504e2b5f2dd5878bd36c487de1dc2f2412e",
           "pcmSha256": "a0c4dacc3ec140e988322399d0b519ece2d4aa5a03ae3b65234a74c7a5ea23c1"
@@ -2059,7 +2059,7 @@
           "targetAdvantageDb": 5.757037408171033
         },
         "findings": [],
-        "evidenceSha256": "cc989d0d3f52ca1f5011ed815797f6b9943c35dc57ee7fbd4484633481b75d3f"
+        "evidenceSha256": "f9ceae46b6478f0b6424f8a6b9bd07ff9e06be118874cb88c066514ee57b0365"
       },
       "reference": {
         "path": "test-results/winds-reference-source/uiowa/BbClar.mf.C5B5.aiff#midi-82",
@@ -2089,8 +2089,8 @@
         },
         "candidate": {
           "rendererAlgorithmId": "changes.dsp.waveguide-clarinet@2",
-          "rendererSourceSha256": "4a3afe9b78634a71022c5e10c7c6e536cba631cc45580aeffece4d102870588a",
-          "wasmSha256": "23c98754108a1b0191fc76f4b27d81d09613b7e8e3458d14b4e544cad05a2351",
+          "rendererSourceSha256": "341815599c93527aafb6d638ca80a38480ceb2f37cf48dd7e90fe8f86458b95a",
+          "wasmSha256": "5b4351ab1d63701519e298353d8cb1d2f8211ad61cc5469bd62d0a60583e157f",
           "parameterPackSha256": "262f967c575cd33e2b7dbe95f46e496be2b6b95b6be5d89d56c1c1057fc598db",
           "renderRequestSha256": "9ed297708b9f60dae889fe742379e1e7e72cad4f4c14e133f29ba7199d1c9e49",
           "pcmSha256": "6f393862130178d2b19d1615d75907e06c4d49694465669e525d6686977599ab"
@@ -2227,7 +2227,7 @@
           "targetAdvantageDb": 10.268346359326248
         },
         "findings": [],
-        "evidenceSha256": "f59d8f66dc5967afeb19257c95df1f53e886e80698457e6db860bf9e7627948f"
+        "evidenceSha256": "2161e6721f95c672c58efc0109358db1e592a93fbce6f32886a7d5e19859f75f"
       },
       "reference": {
         "path": "test-results/winds-reference-source/uiowa/BbClar.ff.C5B5.aiff#midi-82",

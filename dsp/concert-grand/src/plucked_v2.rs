@@ -3497,6 +3497,15 @@ fn plk2_gesture(pack_index: i32, string_index: usize, fret: u8, velocity: i32) -
             gesture.width_m = 0.003_2;
             gesture.force_n = 0.24 + 1.95 * velocity_curve;
             gesture.contact_duration_seconds *= 1.18 - 0.16 * normalized;
+            /* The dreadnought's contact-escape defect exists here too
+             * (measured m82/m86 collapse to -40/-45 dBFS pp, the same
+             * regime-threshold signature), but this pack's canonical
+             * trim-425/corner-700 corridor was fitted to the soft contact
+             * and the release gate's archtop-m72 cell rejects the stiff
+             * one. The archtop is not routed by any shipping recipe;
+             * re-derive its corridor together with the stiffness when it
+             * re-lands (finding recorded on the winds/plucked campaign
+             * bead, 2026-09-02). */
         }
         PLK2_MARSHALL_ELECTRIC_PACK => {
             gesture.position_over_scale = 0.13;
@@ -3509,11 +3518,40 @@ fn plk2_gesture(pack_index: i32, string_index: usize, fret: u8, velocity: i32) -
             gesture.width_m = 0.001_8;
             gesture.force_n = 0.28 + 2.35 * velocity_curve;
             gesture.contact_duration_seconds *= 0.86 - 0.14 * normalized;
+            /*
+             * Contact-escape law (2026-09-02, quality-gate NEAR_SILENT
+             * cells): the Hertzian contact at 3.0e6 is under-stiff for
+             * short speaking lengths — below a critical force the contact
+             * never cleanly releases and re-absorbs the launch (measured
+             * as a ~20 dB regime flip: m86 pp peak -38.7 dBFS, and the
+             * non-monotonic m82 dead zone at ff, while m42/m64 sit right).
+             * A plectrum tip against a fretted steel string is rigid on
+             * the string's scale; 1.2e7 lets every register escape:
+             * m76/82/86 become monotonic (-6.9/-8.8/-10.1 ff), pp tracks
+             * ff at the same ~10 dB spread as the low register, and
+             * m42/m64 move under 0.2 dB — the low-register identity is
+             * untouched.
+             */
+            gesture.contact_stiffness_n_per_m_pow_3_over_2 = 1.2e7;
         }
         PLK2_UKULELE_PACK => {
             gesture.position_over_scale = 0.26;
             gesture.width_m = 0.007;
             gesture.force_n = 0.18 + 1.25 * velocity_curve;
+            /*
+             * Contact-escape law (2026-09-02, quality-gate NEAR_SILENT
+             * cells m77/m91): soft_finger's 8.0e5 kept the whole top
+             * register below the contact-escape threshold — the launch was
+             * re-absorbed instead of released (m91 ff peak -33.1 dBFS, a
+             * vanished note; force x2 flipped m77/84 up ~20 dB, the
+             * regime-threshold signature). A nylon-string stroke lands on
+             * the fingertip's nail side, rigid on this string's scale;
+             * 1.2e7 frees every register (pp spread 7 dB, ff 6.4 dB,
+             * m62 moves ~1 dB) and, with it, the steel-string launch-norm
+             * exclusion below keeps the register law inside its <= ~8 dB
+             * bound without starving the top.
+             */
+            gesture.contact_stiffness_n_per_m_pow_3_over_2 = 1.2e7;
             gesture.contact_duration_seconds *= 1.05 - 0.18 * normalized;
         }
         PLK2_UPRIGHT_BASS_PACK => {
@@ -3574,11 +3612,21 @@ fn plk2_gesture(pack_index: i32, string_index: usize, fret: u8, velocity: i32) -
          * launch energy on the shorter, stiffer speaking length; the
          * exponent is fitted canonically to bring the register peak
          * spread inside a real instrument's (<= ~8 dB).
+         *
+         * The ukulele is excluded (2026-09-02): the law compensates the
+         * STEEL-string bodies' measured tilt, and on the nylon/finger
+         * pack the same force cut instead pushed normal playing forces
+         * below the contact-escape threshold (the m77/m91 NEAR_SILENT
+         * cells; see the stiffness note in the gesture table). Measured
+         * without the norm and with the corrected finger contact, the
+         * uke's own physics — 7 mm patch spatial low-pass, the 2 kHz
+         * bridge corner, Hertzian contact — already hold its register
+         * peak spread at 4.5-7 dB, inside the same law.
          */
         if sounding_hz > LAUNCH_NORM_ANCHOR_HZ
             && !matches!(
                 pack_index,
-                PLK2_MARSHALL_ELECTRIC_PACK | PLK2_UPRIGHT_BASS_PACK
+                PLK2_MARSHALL_ELECTRIC_PACK | PLK2_UPRIGHT_BASS_PACK | PLK2_UKULELE_PACK
             )
         {
             gesture.force_n *= pow(LAUNCH_NORM_ANCHOR_HZ / sounding_hz, LAUNCH_NORM_EXPONENT);
@@ -3696,13 +3744,16 @@ const WOLF_ALIGNED_Q_SCALE: f64 = 0.5;
 const LAUNCH_NORM_ANCHOR_HZ: f64 = 261.63;
 /// Canonical fit target: register peak spread <= ~8 dB across m40..m88.
 const LAUNCH_NORM_EXPONENT: f64 = 0.5;
-/// A fingertip rolling off nylon spans ~3 ms regardless of pitch (slower
-/// than a plectrum). At ukulele MIDI 93 the 1.5-period floor is only
-/// 0.85 ms, which left the top-register launch limiter-pinned at 0.998
-/// (canonical 2026-08-08, latent red previously masked by the archtop
-/// panic earlier in the same loop). Gate cells (m60/67/72) sit below the
-/// 720 Hz gate and are untouched.
-const FINGER_RELEASE_TIME_FLOOR_SECONDS: f64 = 0.003;
+/// A fingertip's release has a material time component, but 3 ms proved
+/// an overcorrection of the m93 limiter-pin it was added for: at MIDI 91
+/// it spans 4.7 sounding periods and buries the launch ~20 dB below the
+/// register law's <= ~8 dB spread (measured 2026-09-02: m91 ff peak
+/// -33.1 dBFS vs m62 ff -10.8 — the quality gate's NEAR_SILENT_RENDER
+/// warns at m77/91). 1.2 ms keeps the pad slower than a plectrum
+/// (1.9 ms pick floor governs release SHAPE, not this bound), lets the
+/// model's own measured 1.5-period law rule below ~1.25 kHz, and holds
+/// the m93 ff launch under the no-clip bound (register law re-run green).
+const FINGER_RELEASE_TIME_FLOOR_SECONDS: f64 = 0.0012;
 /// Double-bass pizzicato fingertip release floor (see the gesture builder).
 const UPRIGHT_RELEASE_TIME_FLOOR_SECONDS: f64 = 0.004;
 /// Measured on the ukulele MIDI-79/93 register cells: a finger pad rolling

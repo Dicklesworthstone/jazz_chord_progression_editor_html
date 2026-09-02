@@ -107,19 +107,19 @@
     "changes.dsp.plucked-electric@2",
     "changes.dsp.plucked-ukulele@1"
   ],
-  "wasmSha256": "23c98754108a1b0191fc76f4b27d81d09613b7e8e3458d14b4e544cad05a2351",
+  "wasmSha256": "5b4351ab1d63701519e298353d8cb1d2f8211ad61cc5469bd62d0a60583e157f",
   "sourceBindings": [
     {
       "path": "dsp/concert-grand/src/plucked_v2.rs",
-      "sha256": "e3a3ee19df2b511faaddb0a95c0f819085c2d7276a71f18df60601cc03f36361"
+      "sha256": "c0749ae9c0236b7e1366b7e92f57e19bc188243c8df3031e6dd20a88044403fb"
     },
     {
       "path": "dsp/concert-grand/src/lib.rs",
-      "sha256": "cd998daa666844848af69597e19d172f1c90de7fe1252af317afbd7c8c0dc960"
+      "sha256": "45a81ef259b3766c0a228e4012499f8b94a6ec9f53d3e410718c4f72d39cdaad"
     },
     {
       "path": "src/audio/dsp-renderer.ts",
-      "sha256": "50b20c665f65227e43258eb4ad2c904889e477dc83240c171c982b06917341d5"
+      "sha256": "74d725eb63f520536bbce9b9faa00e919ed6ccf7604dbf3ae681cd26d2afe28e"
     },
     {
       "path": "src/audio/instrument-recipes-contract.ts",
@@ -138,7 +138,7 @@
       "sha256": "ad0401e78e7742ae86d57a8ad5fd75325a999c8489e8239b71ee56ef0d5fe90f"
     }
   ],
-  "sourceClosureSha256": "660cdcec7b5be2c810aa18d67064a600e1ece7af043213678ea84f0e6ccabea4",
+  "sourceClosureSha256": "67751526f3b2ebfb7fc0e5084ce85a45970b829bcc64d1846fed94fc181b4d6c",
   "cells": [
     {
       "id": "archtop-m48",
@@ -279,7 +279,7 @@
       "midi": 60,
       "velocity": 100,
       "sampleRateHz": 48000,
-      "pcmSha256": "7776455b1cc96940cc265f85041d64693bc65e25160208794e9c21700c8af184",
+      "pcmSha256": "3b390951b8a7bc9d53aa8f68033d68f8dc0fbc67e10d0491b47389150d0da95c",
       "features": {
         "peak": 0.3188283443450928,
         "earlyRms": 0.1307935190676128,
@@ -312,7 +312,7 @@
       "midi": 72,
       "velocity": 100,
       "sampleRateHz": 48000,
-      "pcmSha256": "18aee7d73016bfd49d0d4cb85a7c57b2fecef01b7d22c2573d8b8a4d98dd7678",
+      "pcmSha256": "ca90bd8ef525e798cb830d894674f0a4c7a1166b3ffcc936538b4c6e070e2748",
       "features": {
         "peak": 0.28496116399765015,
         "earlyRms": 0.12747107304324704,
@@ -345,28 +345,28 @@
       "midi": 48,
       "velocity": 100,
       "sampleRateHz": 48000,
-      "pcmSha256": "7a5e8c0b22615d1dce962dd78e2307a465aa7b5e4c4e6822b21bb2b409eba37f",
+      "pcmSha256": "0fcbd17cb9cb39623d7da122b003dfc276e3133e119faeac2d1fa41d6e9332e8",
       "features": {
-        "peak": 0.11505594849586487,
-        "earlyRms": 0.027621223671263483,
-        "onsetMs": 0.08333333333333333,
+        "peak": 0.11394378542900085,
+        "earlyRms": 0.02745933608712025,
+        "onsetMs": 0.0625,
         "pitchCents": 2.25,
         "attackGlideCents": 2.5,
         "partialsDb": [
           0,
-          2.0003901782726143,
-          -13.364077625036375,
-          -4.133920109,
-          -13.269601221207969,
-          -9.712741275408835,
-          0.7741504307543606,
-          -8.349743110202525,
-          -26.443203149608493,
-          -23.914183869726322
+          1.9966773983157682,
+          -13.374916287298158,
+          -4.1538166339204565,
+          -13.30054649710869,
+          -9.75660259008513,
+          0.716316727507354,
+          -8.422228629792674,
+          -26.52849671045791,
+          -24.008218637261418
         ],
         "audiblePartialCount": 10,
-        "higherHarmonicMassDb": 5.4639054911216025,
-        "tailDb": -13.635043373680933
+        "higherHarmonicMassDb": 5.435421591254553,
+        "tailDb": -13.590047404664098
       },
       "outcome": "pass",
       "findings": []
@@ -378,28 +378,28 @@
       "midi": 60,
       "velocity": 100,
       "sampleRateHz": 48000,
-      "pcmSha256": "f1842e806f88018b360967bec166486ed19fad76a3d824a3e6020bf20b9abd42",
+      "pcmSha256": "356c23c794bc5ed37177d0e32eda466506548bb426476bc06f22cf54bb5f12f9",
       "features": {
-        "peak": 0.3337002992630005,
-        "earlyRms": 0.10701526345061232,
-        "onsetMs": 0.1875,
+        "peak": 0.3371889889240265,
+        "earlyRms": 0.10726524843710883,
+        "onsetMs": 0.2708333333333333,
         "pitchCents": 1.75,
         "attackGlideCents": 3.75,
         "partialsDb": [
           0,
-          2.893540777991426,
-          -12.705266266723998,
-          -1.4845645076010172,
-          -19.86656346290951,
-          -20.127787075099135,
-          -8.951697817932695,
-          -19.19973869498209,
-          -37.44862806948003,
-          -57.58359497324886
+          2.8971402690087715,
+          -12.694697973219826,
+          -1.4630312588436387,
+          -19.828995712232885,
+          -20.068395766749482,
+          -8.864524816106524,
+          -19.078988364563024,
+          -37.299782663561174,
+          -57.29702445143041
         ],
         "audiblePartialCount": 9,
-        "higherHarmonicMassDb": 4.579694926042955,
-        "tailDb": -16.188262750614395
+        "higherHarmonicMassDb": 4.59242423955657,
+        "tailDb": -16.204520089604873
       },
       "outcome": "pass",
       "findings": []
@@ -411,28 +411,28 @@
       "midi": 72,
       "velocity": 100,
       "sampleRateHz": 48000,
-      "pcmSha256": "39136e7a3dcac0c0acfdc49e3e1550cd897e503bd86b29ff9f25af52dcf1113b",
+      "pcmSha256": "a3ba5553943877ba229956aa5557d0351a2a5cf8391638b17219c0ae723ecae0",
       "features": {
-        "peak": 0.45329946279525757,
-        "earlyRms": 0.13747644418919147,
+        "peak": 0.46177756786346436,
+        "earlyRms": 0.13762541672183942,
         "onsetMs": 0.041666666666666664,
         "pitchCents": 0.25,
         "attackGlideCents": 1,
         "partialsDb": [
           0,
-          -1.431543409897054,
-          -27.77773432587061,
-          -16.784400005947195,
-          -17.56314032648828,
-          -31.759286257898772,
-          -78.70184269488071,
-          -46.33987653180439,
-          -67.59307070469231,
-          -79.25547152321526
+          -1.4256398152840066,
+          -27.742271905130703,
+          -16.676888965151832,
+          -17.31964317600765,
+          -31.300354380010003,
+          -77.85797686028504,
+          -45.152857246594266,
+          -65.85038522112026,
+          -76.84678774789711
         ],
         "audiblePartialCount": 7,
-        "higherHarmonicMassDb": -1.1916007867722775,
-        "tailDb": -18.94572638278338
+        "higherHarmonicMassDb": -1.1767127973267448,
+        "tailDb": -18.955030562605018
       },
       "outcome": "pass",
       "findings": []
@@ -444,28 +444,28 @@
       "midi": 60,
       "velocity": 100,
       "sampleRateHz": 48000,
-      "pcmSha256": "1f9bd3452d6df431a1db0e54ff532c7f02072eddfce45c8b2a5b59095160c22f",
+      "pcmSha256": "673e33110c226063538b7d15f5417ab6ec3a8a39dabdf116bf30e2b84fdfaa7d",
       "features": {
-        "peak": 0.21216170489788055,
-        "earlyRms": 0.042184332894523356,
+        "peak": 0.2699704170227051,
+        "earlyRms": 0.04385516010774035,
         "onsetMs": 0.041666666666666664,
         "pitchCents": 0.5,
         "attackGlideCents": 1,
         "partialsDb": [
           0,
-          0.20814823040344307,
-          -19.997357611650457,
-          -19.819638786673302,
-          -8.423509462923757,
-          -18.738261699401214,
-          -23.102930290570782,
-          -53.16037719375735,
-          -57.29116653710213,
-          -60.405899083187656
+          0.22498222747785052,
+          -19.87828671367881,
+          -19.447805073231542,
+          -7.601581906779188,
+          -17.26172597745412,
+          -20.815773157792435,
+          -50.13044638923037,
+          -53.46536160674012,
+          -56.48601893632183
         ],
-        "audiblePartialCount": 8,
-        "higherHarmonicMassDb": 0.904563426251956,
-        "tailDb": -32.74902923831499
+        "audiblePartialCount": 9,
+        "higherHarmonicMassDb": 1.0571991541876609,
+        "tailDb": -33.09051192635994
       },
       "outcome": "pass",
       "findings": []
@@ -477,28 +477,28 @@
       "midi": 67,
       "velocity": 100,
       "sampleRateHz": 48000,
-      "pcmSha256": "88e17790b778f772c4ef79230d58f12116378b1472101c5e0d462cf74eaea16b",
+      "pcmSha256": "891618b856ed186428cbc18cc18877dbce131c4cb5e5a90e047542df167d7640",
       "features": {
-        "peak": 0.20704984664916992,
-        "earlyRms": 0.05006650883765054,
+        "peak": 0.31814196705818176,
+        "earlyRms": 0.06307782399714165,
         "onsetMs": 0.020833333333333332,
         "pitchCents": 0,
         "attackGlideCents": 0.25,
         "partialsDb": [
           0,
-          -0.4061200273229234,
-          -21.388974720321485,
-          -23.519323519450733,
-          -14.750242522500798,
-          -24.748911592893684,
-          -23.89303775940036,
-          -39.312379125534065,
-          -37.525186497079616,
-          -40.08422653410633
+          -0.34912048230190723,
+          -20.823909034560195,
+          -21.758697934055682,
+          -11.246742111436367,
+          -19.87392865223314,
+          -18.730708030870936,
+          -33.74508682723488,
+          -30.358311393003156,
+          -29.668622088478394
         ],
         "audiblePartialCount": 10,
-        "higherHarmonicMassDb": -0.16033865398744437,
-        "tailDb": -38.0120129850862
+        "higherHarmonicMassDb": 0.16555944244761633,
+        "tailDb": -38.304929977596515
       },
       "outcome": "pass",
       "findings": []
@@ -510,28 +510,28 @@
       "midi": 72,
       "velocity": 100,
       "sampleRateHz": 48000,
-      "pcmSha256": "d17f13dbe80c225086f7a3be569bcaea0a91d5054707b06a4a5940d3db0401fc",
+      "pcmSha256": "27f8898459504f66ac91fd6b175ca1e410ca07356dc4f8d224d19046aca59321",
       "features": {
-        "peak": 0.27781614661216736,
-        "earlyRms": 0.05331662577115461,
+        "peak": 0.566688060760498,
+        "earlyRms": 0.08307420614710756,
         "onsetMs": 0,
         "pitchCents": 0,
         "attackGlideCents": 0.25,
         "partialsDb": [
           0,
-          -3.059566507336406,
-          -35.123327934057535,
-          -16.726142145899107,
-          -20.79695201907343,
-          -39.07581599577023,
-          -35.43789087695504,
-          -43.168184288021095,
-          -55.72317712746844,
-          -65.14038945013758
+          -2.1444820991568347,
+          -31.793037067899803,
+          -10.232345095733779,
+          -14.103113010440111,
+          -32.855475197818855,
+          -26.71684957637938,
+          -30.182602975213296,
+          -43.24549214384212,
+          -52.29982295834537
         ],
-        "audiblePartialCount": 8,
-        "higherHarmonicMassDb": -2.800864489884723,
-        "tailDb": -41.939281986116654
+        "audiblePartialCount": 10,
+        "higherHarmonicMassDb": -1.2592380197854924,
+        "tailDb": -42.6572450368554
       },
       "outcome": "pass",
       "findings": []
@@ -551,7 +551,7 @@
       "leftFamily": "archtop",
       "rightFamily": "dreadnought",
       "midi": 60,
-      "profileDistanceDb": 15.741640104553428,
+      "profileDistanceDb": 15.807341582858408,
       "outcome": "pass"
     },
     {
@@ -559,7 +559,7 @@
       "leftFamily": "archtop",
       "rightFamily": "ukulele",
       "midi": 60,
-      "profileDistanceDb": 6.986167348412926,
+      "profileDistanceDb": 7.068373990364501,
       "outcome": "pass"
     },
     {
@@ -567,7 +567,7 @@
       "leftFamily": "electric",
       "rightFamily": "dreadnought",
       "midi": 60,
-      "profileDistanceDb": 26.134803015414228,
+      "profileDistanceDb": 26.022012724448402,
       "outcome": "pass"
     },
     {
@@ -575,7 +575,7 @@
       "leftFamily": "electric",
       "rightFamily": "ukulele",
       "midi": 60,
-      "profileDistanceDb": 36.36276449760845,
+      "profileDistanceDb": 34.20463256921987,
       "outcome": "pass"
     },
     {
@@ -583,7 +583,7 @@
       "leftFamily": "dreadnought",
       "rightFamily": "ukulele",
       "midi": 60,
-      "profileDistanceDb": 15.932877346403957,
+      "profileDistanceDb": 14.562480571346576,
       "outcome": "pass"
     }
   ],
@@ -601,5 +601,5 @@
     "passedPairwiseCellCount": 6,
     "failedPairwiseCellCount": 0
   },
-  "evidenceSha256": "5bfa95999397bcf7e8a380f02db707c11d47107e7038ea65ab023e2ad0c88233"
+  "evidenceSha256": "54d2532e64395d26cff0ca13aae1eb4a0039d6880fdaee3c377ff74093e72da9"
 }
