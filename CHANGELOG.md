@@ -6,6 +6,60 @@ Repository: [jazz_chord_progression_editor_html](https://github.com/Dicklesworth
 
 ---
 
+## 2026-09-02 -- Native iOS App, Multi-Instrument Audio Verification, and Architecture Polish
+
+### Native iOS Companion (FrankenJazz)
+
+- Shipped native SwiftUI companion app for iOS and macOS Catalyst with offline document playback, dynamic type scaling, accessibility Reduce Motion gating, and share-sheet interchange.
+- Implemented offline SMF MIDI file importing with running-status handling, pitch-class quantizing, and chord recognition.
+
+### Web Audio & Multi-Instrument Real-Browser Verification
+
+- Validated real-browser playback across all 15 selectable synthesizer, physical waveguide, and acoustic presets in automated headless loopback test harnesses.
+- Relocated and cataloged experimental physical synthesis Rust drafts (`flute_v3`, `plucked_string_improved`, `trumpet_model_improved`) into `dsp/staging/` bound to their owning milestone beads.
+
+---
+
+## 2026-08-20 -- Physical Synthesis DSP Engine & Acoustic Space
+
+### Physical Synthesis & WASM Engine
+
+- Integrated WebAssembly + SIMD physical synthesis engine (`dsp/concert-grand`) featuring Pearl PF-661 flute waveguides, acoustic clarinet bore/reed models, concert grand piano physical models, and plucked string instruments.
+- Built multi-rate autocorrelation tuning verification suites (44.1 kHz, 48 kHz, 96 kHz) and pitch-lock validation.
+- Implemented stage spatialization, decorrelated stereophonic image width, and single-instance master early-reflection modeling.
+
+---
+
+## 2026-08-10 -- V2 Ink-on-Paper Studio Redesign
+
+### User Experience & Real Book Aesthetics
+
+- Shipped complete "Ink-on-Paper" Real Book visual overhaul with high-contrast typography, hairline measure borders, and responsive desktop/tablet/mobile layouts.
+- Added quick-entry lead sheet text parser with plain-English grammar diagnostics (`DIAGNOSTIC_PROSE`) and touch-friendly measure slot manipulation (`+`/`−`).
+- Implemented live spectral audio analyzer and harmonic alignment display.
+
+---
+
+## 2026-07-28 -- MIDI Interchange, Workflow, and URL Sharing
+
+### Interchange & Formats
+
+- Built Standard MIDI File (SMF Type 0/1) export engine (E1) with structured loss disclosure, track channel allocation, and lyric/chord marker emission.
+- Added client-side lossless URL fragment sharing (`#data=...`) using compact base64url payload encoding with zero server storage.
+- Shipped local MIDI file intake workflow with track selection, chord recognition, and interactive preview diffs.
+
+---
+
+## 2026-07-11 -- Ground-Up Deterministic Rebuild Architecture
+
+### Core Architecture & Foundation
+
+- Executed ground-up zero-network offline rewrite with Preact as the sole production dependency.
+- Enforced strict unidirectional layered architecture: `domain` (exact rational musical time `RationalDuration`) $\to$ `theory` (pure voice leading, guide-tone subsetting) $\to$ `playback` $\to$ `audio` / `export` / `persistence` $\to$ `application` $\to$ `ui`.
+- Built single persistent Web Audio graph architecture (X0/X1) with zero runtime GC spikes and lookahead event scheduling.
+
+---
+
 ## 2026-02-21 -- License and Social Preview
 
 ### License
