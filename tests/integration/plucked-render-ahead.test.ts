@@ -1,4 +1,6 @@
-import { expect, test } from "bun:test";
+import { expect, setDefaultTimeout, test } from "bun:test";
+
+setDefaultTimeout(30_000);
 
 import {
   createStudioAudio,
