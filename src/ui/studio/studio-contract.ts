@@ -626,7 +626,11 @@ export type StudioMidiExportView = Readonly<{
   tempoBpm: number;
   meter: Readonly<{ beatsPerBar: number; beatUnit: number }>;
   losses: readonly Readonly<{
-    kind: "enharmonic-spelling" | "annotation-text" | "loop-range";
+    kind:
+      | "enharmonic-spelling"
+      | "annotation-text"
+      | "loop-range"
+      | "unison-doubling";
     eventIds: readonly string[];
   }>[];
   markerOmissions: readonly Readonly<{

@@ -205,21 +205,21 @@ export const U7_REVIEWED_COMPANION_SCHEMAS = Object.freeze({
 export const U7_REVIEWED_BYTE_DIGESTS: Readonly<Record<string, string>> =
   Object.freeze({
     "preview-cases.json":
-      "479739d907774c2c4657b8c29bde6cc4c538fa8d15e235d4bea885177de3fd79",
+      "f3b095be4707631528b66a1f03424e65780218203cbc028e976d361b4cda8e32",
     "state-cases.json":
       "8a61316b520f862cea857c3cb5c1727d04784f56bee70c2e9cc174d6625b01e3",
     "limit-cases.json":
       "aaaee0bb3bcdbfe7dc163c2128a432d435a86beb5f54b696081e6bba1666c8bc",
     "trace-ledger.json":
-      "5bd74f3cffdf950413dd541237658b11fdb149f52149cefc130a6d17e03a083f",
+      "ffa07c7f205b6680378ce200946a1ea85ddf9a76fa34b4f6226622862cc55aaf",
     "provenance-ledger.json":
       "836a0d5c4d46362f6aec0191e64f21a21e865148eb2275d1777305d50b027dc6",
     "mutation-controls.json":
-      "6688ac81c434ceeb764e3dca25662727d0466f5225ef0c9cb6af633c3ada9ddf",
+      "3534aed8a405c767af489ab7ab8e549cda551f2bd418e72afe0b1386fcafee94",
   });
 
 export const U7_REVIEWED_SEMANTIC_DIGEST =
-  "095cb9711a5f70a12a312114bdf228952ac128fe668c6c448a5a80262076e1cb";
+  "96d223a9851526264a2960214abffaf826305e9f8193ba0908151371c302515c";
 
 /* -------------------------------------------------------------------------- */
 /* Generic helpers                                                            */
@@ -515,19 +515,9 @@ function emitSmf(
   instrument: string,
   markers: readonly EmitMarker[],
 ): EmitResult {
-  for (const event of plan.events) {
-    const seen = new Set<number>();
-    for (const pitch of event.pitches) {
-      if (seen.has(pitch.midi)) {
-        return Object.freeze({
-          ok: false,
-          code: "midi.plan_invalid",
-          path: `/plan/events/${String(event.ordinal)}/midiPitches`,
-        });
-      }
-      seen.add(pitch.midi);
-    }
-  }
+  /* E1 additive amendment (jcpe-u0mc): a doubled note number inside one
+   * event no longer refuses — the emitter writes one on/off pair per
+   * distinct number and the preview reports a unison-doubling loss. */
   try {
     const bytes: number[] = [];
     // header
@@ -585,12 +575,13 @@ function emitSmf(
     type Channel = Readonly<{ tick: number; order: number; note: number; status: number; velocity: number }>;
     const channels: Channel[] = [];
     for (const event of plan.events) {
-      for (const pitch of event.pitches) {
+      /* One pair per distinct number (jcpe-u0mc amendment). */
+      for (const midi of new Set(event.pitches.map((pitch) => pitch.midi))) {
         channels.push(
           Object.freeze({
             tick: event.startTick,
             order: 1,
-            note: pitch.midi,
+            note: midi,
             status: 0x90,
             velocity: EMIT_VELOCITY,
           }),
@@ -599,7 +590,7 @@ function emitSmf(
           Object.freeze({
             tick: event.startTick + event.gateDurationTicks,
             order: 0,
-            note: pitch.midi,
+            note: midi,
             status: 0x80,
             velocity: EMIT_OFF_VELOCITY,
           }),
@@ -1265,7 +1256,9 @@ function runPreviewOracle(docs: PacketDocs, add: AddFinding): void {
           add("U7_CONTRACT_TEMPO_LAW", at("artifact.tempo"), "tempo encoding or rounding-error pair mismatch");
         }
         let noteCount = 0;
-        for (const event of planSpec.events) noteCount += event.pitches.length;
+        /* jcpe-u0mc amendment: pairs are emitted per distinct number. */
+        for (const event of planSpec.events)
+          noteCount += new Set(event.pitches.map((pitch) => pitch.midi)).size;
         if (artifact["noteCount"] !== noteCount) {
           add("U7_CONTRACT_PREVIEW_DERIVATION", at("artifact.noteCount"), "note count mismatch");
         }
@@ -1287,6 +1280,15 @@ function runPreviewOracle(docs: PacketDocs, add: AddFinding): void {
         const derivedLosses: JsonObject[] = [];
         if (spellingIds.length > 0) derivedLosses.push({ kind: "enharmonic-spelling", eventIds: spellingIds });
         if (annotationIds.length > 0) derivedLosses.push({ kind: "annotation-text", eventIds: annotationIds });
+        /* jcpe-u0mc amendment: doubled numbers inside one event report a loss. */
+        const doubledIds = planSpec.events
+          .filter(
+            (event) =>
+              new Set(event.pitches.map((pitch) => pitch.midi)).size <
+              event.pitches.length,
+          )
+          .map((event) => event.eventId);
+        if (doubledIds.length > 0) derivedLosses.push({ kind: "unison-doubling", eventIds: doubledIds });
         if (planSpec.loop !== null) {
           add("U7_CONTRACT_PREVIEW_DERIVATION", at("planSpec.loop"), "U7 always exports loop=null; a looped planSpec violates the stated invariant");
         }

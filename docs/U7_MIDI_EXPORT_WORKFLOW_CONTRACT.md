@@ -84,13 +84,14 @@ classifies it —
   kind `export`, the E1 code and path verbatim, with the event link recovered
   from a `/plan/events/<ordinal>/…` path when the path names one.
 
-The Manual-unison case is the live example of the last row: a Manual voicing
-may double a unison (Manual pitches are never repaired), and E1's frozen
-`midi.plan_invalid` law then refuses the whole chart
-(`docs/E1_MIDI_EXPORT_CONTRACT.md` section 3). The preview must surface this
-as a blocked state naming the event — never as a crash, and the file is
-never partially written. The contract-tension arbitration itself is
-`jcpe-u0mc`; whichever way it resolves, this preview law still holds.
+The Manual-unison tension (`jcpe-u0mc`) resolved as an additive E1
+amendment: a Manual voicing may double a unison (Manual pitches are never
+repaired), and the doubled number now exports as one on/off pair with the
+`unison-doubling` loss row mirrored in the preview
+(`docs/E1_MIDI_EXPORT_CONTRACT.md` section 3) instead of refusing the
+whole chart. The blocked-state law above still holds for every export
+refusal that remains — never a crash, and the file is never partially
+written.
 
 The blocked list is capped at `MAX_DOCUMENT_CHORD_EVENTS` entries, which the
 walk cannot exceed; there is no separate truncation law.
@@ -162,7 +163,8 @@ the disclosure the "external bass" E2E case proves.
 ### 2.6 Loss mirroring (U7-LAW-LOSS-MIRROR)
 
 The preview lists the exact E1 loss rows the export report carries:
-`enharmonic-spelling`, `annotation-text`, `loop-range`. U7 always exports
+`enharmonic-spelling`, `annotation-text`, `loop-range`, and
+`unison-doubling` (E1 additive amendment, jcpe-u0mc). U7 always exports
 with `loop = null` (the whole chart; an armed playback loop is a
 playback-monitoring construct, not a document property), so the
 `loop-range` loss cannot appear in U7 output — pinned as a stated invariant

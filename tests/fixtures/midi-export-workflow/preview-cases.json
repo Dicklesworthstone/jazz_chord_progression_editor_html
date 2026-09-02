@@ -372,7 +372,7 @@
                 "chord": {
                   "kind": "parsed",
                   "sourceText": "F#7",
-                  "canonicalMarkerText": "F♯7"
+                  "canonicalMarkerText": "F\u266f7"
                 },
                 "voicing": {
                   "mode": "auto",
@@ -459,7 +459,7 @@
           {
             "kind": "chord",
             "eventId": "event-0000",
-            "text": "F♯7"
+            "text": "F\u266f7"
           }
         ],
         "losses": [
@@ -521,7 +521,7 @@
                 "chord": {
                   "kind": "parsed",
                   "sourceText": "C13#11",
-                  "canonicalMarkerText": "C13♯11"
+                  "canonicalMarkerText": "C13\u266f11"
                 },
                 "voicing": {
                   "mode": "auto",
@@ -539,7 +539,7 @@
           {
             "eventId": "event-0000",
             "code": "voicing.constraints_unsatisfied",
-            "message": "“C13♯11” in bar 1 has no voicing that fits its constraints, so the progression cannot be exported yet."
+            "message": "\u201cC13\u266f11\u201d in bar 1 has no voicing that fits its constraints, so the progression cannot be exported yet."
           }
         ],
         "planCompile": "not-reached",
@@ -553,7 +553,7 @@
             "kind": "realization",
             "code": "voicing.constraints_unsatisfied",
             "eventId": "event-0000",
-            "message": "“C13♯11” in bar 1 has no voicing that fits its constraints, so the progression cannot be exported yet."
+            "message": "\u201cC13\u266f11\u201d in bar 1 has no voicing that fits its constraints, so the progression cannot be exported yet."
           }
         ],
         "realization": {
@@ -625,7 +625,7 @@
           {
             "eventId": "event-0000",
             "code": "playback.custom_voicing_missing",
-            "message": "“My cluster” in bar 1 is a custom chord with no voicing to play."
+            "message": "\u201cMy cluster\u201d in bar 1 is a custom chord with no voicing to play."
           }
         ],
         "export": "not-reached"
@@ -638,7 +638,7 @@
             "kind": "plan",
             "code": "playback.custom_voicing_missing",
             "eventId": "event-0000",
-            "message": "“My cluster” in bar 1 is a custom chord with no voicing to play."
+            "message": "\u201cMy cluster\u201d in bar 1 is a custom chord with no voicing to play."
           }
         ],
         "realization": {
@@ -672,7 +672,7 @@
     },
     {
       "id": "U7-PRE-006",
-      "summary": "Blocked at export: a Manual voicing doubles a unison (legal, never repaired) and E1's duplicate-note law refuses the whole chart with midi.plan_invalid at /plan/events/0/midiPitches — the jcpe-u0mc tension surfaced honestly.",
+      "summary": "Exported with a named loss: a Manual voicing doubles a unison (legal, never repaired); E1's additive amendment (jcpe-u0mc) emits one on/off pair for the doubled number and the preview mirrors the unison-doubling loss row instead of blocking the whole chart.",
       "scenario": {
         "documentId": "doc-u7-pre-006",
         "revision": 6,
@@ -706,11 +706,7 @@
       "upstreamScenario": {
         "realization": "ok",
         "planCompile": "ok",
-        "export": "refused",
-        "exportRefusal": {
-          "code": "midi.plan_invalid",
-          "path": "/plan/events/0/midiPitches"
-        }
+        "export": "ok"
       },
       "planSpec": {
         "documentId": "doc-u7-pre-006",
@@ -758,15 +754,8 @@
         ]
       },
       "expectedPreview": {
-        "readiness": "blocked",
-        "blockers": [
-          {
-            "kind": "export",
-            "code": "midi.plan_invalid",
-            "eventId": "event-0000",
-            "message": "The voicing in bar 1 doubles a unison, and this file format cannot hold two copies of one note in one chord."
-          }
-        ],
+        "readiness": "ready",
+        "blockers": [],
         "realization": {
           "storedManualCount": 1,
           "storedFrozenCount": 0,
@@ -792,14 +781,32 @@
             "text": "C"
           }
         ],
-        "losses": [],
+        "losses": [
+          {
+            "kind": "unison-doubling",
+            "eventIds": [
+              "event-0000"
+            ]
+          }
+        ],
         "markerOmissions": [],
         "titleNotice": null,
         "derivedTitle": "Doubled Unison",
-        "artifact": null
+        "artifact": {
+          "filename": "changes-doc-u7-pre-006.mid",
+          "byteLength": 126,
+          "sha256": "22d4eeb84cf27e502f53ad79ee223fb09eddd5e20c2f4ad230488136e669e68c",
+          "tempo": {
+            "requestedBpm": 120,
+            "encodedMicrosecondsPerQuarter": 500000,
+            "roundingErrorNumerator": 0,
+            "roundingErrorDenominator": 120
+          },
+          "noteCount": 3,
+          "markerCount": 2
+        }
       },
       "traceIds": [
-        "U7-TRACE-BLOCKED",
         "U7-TRACE-EXPORT-REFUSAL",
         "U7-TRACE-PREVIEW"
       ],

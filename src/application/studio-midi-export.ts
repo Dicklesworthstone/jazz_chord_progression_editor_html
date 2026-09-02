@@ -129,7 +129,11 @@ export type StudioMidiExportPreview = Readonly<{
   meter: Readonly<{ beatsPerBar: number; beatUnit: number }>;
   derivedMarkers: readonly MidiExportMarker[];
   losses: readonly Readonly<{
-    kind: "enharmonic-spelling" | "annotation-text" | "loop-range";
+    kind:
+      | "enharmonic-spelling"
+      | "annotation-text"
+      | "loop-range"
+      | "unison-doubling";
     eventIds: readonly ChordEventId[];
   }>[];
   markerOmissions: readonly StudioMidiExportMarkerOmission[];

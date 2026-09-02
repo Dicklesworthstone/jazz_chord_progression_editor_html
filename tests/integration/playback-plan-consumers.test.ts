@@ -160,7 +160,15 @@ test("the real MIDI consumer exports a production loop plan and reports the loop
   expect(exported.value.report.filename).toBe("changes-doc-p0-loop.mid");
 });
 
-test("the frozen duplicate-note law refuses the production Manual unison plan (jcpe-u0mc)", () => {
+test("the production Manual unison plan exports with an explicit unison-doubling loss (jcpe-u0mc)", () => {
+  /*
+   * E1 additive amendment: the former duplicate-note refusal claimed "P0
+   * plans are duplicate-free by construction", but this reviewed corpus
+   * case ships a doubled unison (event-p0-a1-2, midiPitches
+   * [71,64,67,60,64]). The chart must export — one on/off pair for the
+   * doubled number, the loss named — because a legal chart that cannot
+   * export MIDI at all is the real defect.
+   */
   const result = compilePlaybackPlan(
     materializeP0TimelineCase("P0-TIME-001").request,
   );
@@ -173,7 +181,15 @@ test("the frozen duplicate-note law refuses the production Manual unison plan (j
   ).toBeLessThan(manual?.midiPitches.length ?? 0);
 
   const exported = exportMidi(midiRequestFor(result.plan));
-  if (exported.ok) throw new Error("P0_E1_JOIN_DUPLICATE_ACCEPTED");
-  expect(exported.refusal.code).toBe("midi.plan_invalid");
-  expect(exported.refusal.path).toEqual(["plan", "events", 1, "midiPitches"]);
+  if (!exported.ok) throw new Error("P0_E1_JOIN_DUPLICATE_REFUSED");
+  const doubling = exported.value.report.losses.find(
+    (loss) => loss.kind === "unison-doubling",
+  );
+  expect(doubling?.eventIds).toEqual(["event-p0-a1-2"]);
+  expect(exported.value.report.noteCount).toBe(
+    result.plan.events.reduce(
+      (sum, event) => sum + new Set(event.midiPitches).size,
+      0,
+    ),
+  );
 });

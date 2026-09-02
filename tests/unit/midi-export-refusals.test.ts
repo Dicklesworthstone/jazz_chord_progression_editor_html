@@ -116,19 +116,6 @@ describe("E1 defensive pin refusals beyond the fixture near-misses", () => {
     expect(pathToPointer(refusal.path)).toBe("/plan/compilerId");
   });
 
-  test("a duplicated note number inside one event refuses midi.plan_invalid", async () => {
-    const base = await compactRequestForCase(
-      await requireGoldenCase("E1-GLD-001"),
-    );
-    const doubled = applyE1Override(base, {
-      path: "/plan/events/0/midiPitches/1",
-      value: 60,
-    });
-    const refusal = requireRefusal(exportMidi(materializeE1Request(doubled)));
-    expect(refusal.code).toBe("midi.plan_invalid");
-    expect(pathToPointer(refusal.path)).toBe("/plan/events/0/midiPitches");
-  });
-
   test("a wrong event ordinal refuses midi.plan_invalid at the ordinal", async () => {
     const refusal = requireRefusal(
       exportMidi(

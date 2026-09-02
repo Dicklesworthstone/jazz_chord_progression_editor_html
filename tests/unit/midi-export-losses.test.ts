@@ -10,7 +10,11 @@ import { describe, expect, test } from "bun:test";
 
 import { exportMidi } from "../../src/export";
 import {
+  applyE1Override,
+  compactRequestForCase,
   goldenRequest,
+  materializeE1Request,
+  parseSmfBytes,
   requireExported,
   requireGoldenCase,
 } from "../support/midi-export-test-kit";
@@ -70,5 +74,52 @@ describe("E1 loss reporting", () => {
       expect(Object.isFrozen(loss)).toBe(true);
       expect(Object.isFrozen(loss.eventIds)).toBe(true);
     }
+  });
+
+  /*
+   * E1 additive amendment (jcpe-u0mc): a note number doubled inside one
+   * event — legal in a Manual voicing — no longer refuses midi.plan_invalid
+   * (that law's premise, "P0 plans are duplicate-free by construction", was
+   * falsified by the reviewed P0 corpus itself). It exports one on/off pair
+   * for the doubled number and reports an explicit unison-doubling loss.
+   */
+  test("a doubled note number exports one on/off pair and reports unison-doubling", async () => {
+    const base = await compactRequestForCase(
+      await requireGoldenCase("E1-GLD-001"),
+    );
+    const doubled = applyE1Override(base, {
+      path: "/plan/events/0/midiPitches/1",
+      value: 60,
+    });
+    const value = requireExported(exportMidi(materializeE1Request(doubled)));
+
+    const doubledEventId = value.report.losses.find(
+      (loss) => loss.kind === "unison-doubling",
+    );
+    expect(doubledEventId?.eventIds.length).toBe(1);
+    expect(doubledEventId?.detail).toBe(
+      "a note number doubled inside one event sounds as one note-on/off pair; the stored voicing keeps the doubling",
+    );
+
+    const parsed = parseSmfBytes(value.bytes);
+    const voicingTrack = parsed.tracks[1] ?? [];
+    const onsAt60 = voicingTrack.filter(
+      (event) => event["kind"] === "on" && event["note"] === 60,
+    );
+    const offsAt60 = voicingTrack.filter(
+      (event) => event["kind"] === "off" && event["note"] === 60,
+    );
+    expect(onsAt60.length).toBe(1);
+    expect(offsAt60.length).toBe(1);
+    expect(value.report.noteCount).toBe(
+      voicingTrack.filter((event) => event["kind"] === "on").length,
+    );
+  });
+
+  test("near-miss: the same note number in different events reports no unison-doubling", async () => {
+    const value = requireExported(exportMidi(await goldenRequest("E1-GLD-001")));
+    expect(
+      value.report.losses.some((loss) => loss.kind === "unison-doubling"),
+    ).toBe(false);
   });
 });

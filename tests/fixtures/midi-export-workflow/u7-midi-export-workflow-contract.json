@@ -267,12 +267,12 @@
     "mutation-controls.json"
   ],
   "companionSha256": {
-    "preview-cases.json": "479739d907774c2c4657b8c29bde6cc4c538fa8d15e235d4bea885177de3fd79",
+    "preview-cases.json": "f3b095be4707631528b66a1f03424e65780218203cbc028e976d361b4cda8e32",
     "state-cases.json": "8a61316b520f862cea857c3cb5c1727d04784f56bee70c2e9cc174d6625b01e3",
     "limit-cases.json": "aaaee0bb3bcdbfe7dc163c2128a432d435a86beb5f54b696081e6bba1666c8bc",
-    "trace-ledger.json": "5bd74f3cffdf950413dd541237658b11fdb149f52149cefc130a6d17e03a083f",
+    "trace-ledger.json": "ffa07c7f205b6680378ce200946a1ea85ddf9a76fa34b4f6226622862cc55aaf",
     "provenance-ledger.json": "836a0d5c4d46362f6aec0191e64f21a21e865148eb2275d1777305d50b027dc6",
-    "mutation-controls.json": "6688ac81c434ceeb764e3dca25662727d0466f5225ef0c9cb6af633c3ada9ddf"
+    "mutation-controls.json": "3534aed8a405c767af489ab7ab8e549cda551f2bd418e72afe0b1386fcafee94"
   },
   "notes": [
     "pinState stays pending-validator-freeze during authoring; the freeze commit flips it to reviewed-byte-and-semantic-pinned and fills companionSha256.",

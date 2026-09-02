@@ -13,7 +13,13 @@
       "id": "U7-MUT-001",
       "category": "hash-relation-drift",
       "targetFile": "preview-cases.json",
-      "mutation": { "operator": "replace", "jsonPointer": "/cases/0/expectedPreview/artifact/sha256", "from": "PINNED", "to": "0000000000000000000000000000000000000000000000000000000000000000", "exactChangedFieldCount": 1 },
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/cases/0/expectedPreview/artifact/sha256",
+        "from": "PINNED",
+        "to": "0000000000000000000000000000000000000000000000000000000000000000",
+        "exactChangedFieldCount": 1
+      },
       "expectedFinding": "U7_CONTRACT_HASH_RELATION",
       "executedBy": "the validator's own SMF emitter recomputes the artifact digest and diffs the pin"
     },
@@ -21,7 +27,13 @@
       "id": "U7-MUT-002",
       "category": "byte-length-drift",
       "targetFile": "preview-cases.json",
-      "mutation": { "operator": "replace", "jsonPointer": "/cases/0/expectedPreview/artifact/byteLength", "from": 129, "to": 130, "exactChangedFieldCount": 1 },
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/cases/0/expectedPreview/artifact/byteLength",
+        "from": 129,
+        "to": 130,
+        "exactChangedFieldCount": 1
+      },
       "expectedFinding": "U7_CONTRACT_BYTE_LENGTH",
       "executedBy": "the validator's own SMF emitter recomputes the artifact length and diffs the pin"
     },
@@ -29,23 +41,41 @@
       "id": "U7-MUT-003",
       "category": "marker-derivation-drift",
       "targetFile": "preview-cases.json",
-      "mutation": { "operator": "replace", "jsonPointer": "/cases/2/expectedPreview/derivedMarkers/1/text", "from": "F♯7", "to": "F#7", "exactChangedFieldCount": 1 },
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/cases/2/expectedPreview/derivedMarkers/1/text",
+        "from": "F\u266f7",
+        "to": "F#7",
+        "exactChangedFieldCount": 1
+      },
       "expectedFinding": "U7_CONTRACT_PREVIEW_DERIVATION",
       "executedBy": "the validator re-derives marker text from the scenario's pinned canonical literals and diffs"
     },
     {
       "id": "U7-MUT-004",
-      "category": "blocker-code-drift",
+      "category": "loss-kind-drift",
       "targetFile": "preview-cases.json",
-      "mutation": { "operator": "replace", "jsonPointer": "/cases/5/expectedPreview/blockers/0/code", "from": "midi.plan_invalid", "to": "midi.text_invalid", "exactChangedFieldCount": 1 },
-      "expectedFinding": "U7_CONTRACT_BLOCKER",
-      "executedBy": "the validator re-runs the E1 duplicate-note law over the declared planSpec and requires the blocker code to match"
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/cases/5/expectedPreview/losses/0/kind",
+        "from": "unison-doubling",
+        "to": "annotation-text",
+        "exactChangedFieldCount": 1
+      },
+      "expectedFinding": "U7_CONTRACT_PREVIEW_DERIVATION",
+      "executedBy": "the validator re-derives the unison-doubling loss from the declared planSpec's doubled note number (jcpe-u0mc amendment) and requires the expectation to match"
     },
     {
       "id": "U7-MUT-005",
       "category": "state-transition-drift",
       "targetFile": "state-cases.json",
-      "mutation": { "operator": "replace", "jsonPointer": "/cases/6/registryAfter", "from": "empty", "to": "ready", "exactChangedFieldCount": 1 },
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/cases/6/registryAfter",
+        "from": "empty",
+        "to": "ready",
+        "exactChangedFieldCount": 1
+      },
       "expectedFinding": "U7_CONTRACT_STATE_CASE",
       "executedBy": "the validator's restated transition oracle requires a stale generate to abandon the preparation"
     },
@@ -53,7 +83,13 @@
       "id": "U7-MUT-006",
       "category": "arithmetic-relation-drift",
       "targetFile": "limit-cases.json",
-      "mutation": { "operator": "replace", "jsonPointer": "/cases/6/expected/holds", "from": true, "to": false, "exactChangedFieldCount": 1 },
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/cases/6/expected/holds",
+        "from": true,
+        "to": false,
+        "exactChangedFieldCount": 1
+      },
       "expectedFinding": "U7_CONTRACT_LIMIT_CASE",
       "executedBy": "the validator recomputes maxChordEvents + maxSections === maxMarkers"
     },
@@ -61,7 +97,13 @@
       "id": "U7-MUT-007",
       "category": "premature-claim",
       "targetFile": "u7-midi-export-workflow-contract.json",
-      "mutation": { "operator": "replace", "jsonPointer": "/productionImplementationClaim", "from": false, "to": true, "exactChangedFieldCount": 1 },
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/productionImplementationClaim",
+        "from": false,
+        "to": true,
+        "exactChangedFieldCount": 1
+      },
       "expectedFinding": "U7_CONTRACT_VERSION",
       "executedBy": "the validator pins every claim flag false for a proposed packet"
     },
@@ -69,7 +111,13 @@
       "id": "U7-MUT-008",
       "category": "limit-drift",
       "targetFile": "u7-midi-export-workflow-contract.json",
-      "mutation": { "operator": "replace", "jsonPointer": "/limits/maxMarkers", "from": 8256, "to": 8257, "exactChangedFieldCount": 1 },
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/limits/maxMarkers",
+        "from": 8256,
+        "to": 8257,
+        "exactChangedFieldCount": 1
+      },
       "expectedFinding": "U7_CONTRACT_LIMITS",
       "executedBy": "the validator restates the E1/domain caps and diffs the manifest"
     },
@@ -77,7 +125,11 @@
       "id": "U7-MUT-009",
       "category": "law-coverage-gap",
       "targetFile": "trace-ledger.json",
-      "mutation": { "operator": "remove", "jsonPointer": "/lawCoverage/16", "exactChangedFieldCount": 1 },
+      "mutation": {
+        "operator": "remove",
+        "jsonPointer": "/lawCoverage/16",
+        "exactChangedFieldCount": 1
+      },
       "expectedFinding": "U7_CONTRACT_LAW_COVERAGE",
       "executedBy": "the validator requires all 17 laws with positive and negative case links"
     },
@@ -85,7 +137,13 @@
       "id": "U7-MUT-010",
       "category": "unknown-link",
       "targetFile": "trace-ledger.json",
-      "mutation": { "operator": "replace", "jsonPointer": "/traces/0/caseIds/0", "from": "U7-PRE-001", "to": "U7-PRE-999", "exactChangedFieldCount": 1 },
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/traces/0/caseIds/0",
+        "from": "U7-PRE-001",
+        "to": "U7-PRE-999",
+        "exactChangedFieldCount": 1
+      },
       "expectedFinding": "U7_CONTRACT_UNKNOWN_LINK",
       "executedBy": "the validator resolves every caseId against the three case files"
     },
@@ -93,7 +151,13 @@
       "id": "U7-MUT-011",
       "category": "independence-claim",
       "targetFile": "provenance-ledger.json",
-      "mutation": { "operator": "replace", "jsonPointer": "/expectedValuesGenerated", "from": false, "to": true, "exactChangedFieldCount": 1 },
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/expectedValuesGenerated",
+        "from": false,
+        "to": true,
+        "exactChangedFieldCount": 1
+      },
       "expectedFinding": "U7_CONTRACT_INDEPENDENCE",
       "executedBy": "the validator pins the independence flags false in every companion"
     },
@@ -101,15 +165,26 @@
       "id": "U7-MUT-012",
       "category": "matrix-completeness-gap",
       "targetFile": "state-cases.json",
-      "mutation": { "operator": "remove", "jsonPointer": "/accessibilityMatrix/11", "exactChangedFieldCount": 1 },
+      "mutation": {
+        "operator": "remove",
+        "jsonPointer": "/accessibilityMatrix/11",
+        "exactChangedFieldCount": 1
+      },
       "expectedFinding": "U7_CONTRACT_MATRIX",
-      "executedBy": "the validator requires every state × surface row exactly once"
+      "executedBy": "the validator requires every state \u00d7 surface row exactly once"
     },
     {
       "id": "U7-MUT-013",
       "category": "semantic-tamper-with-repinned-byte-digest",
       "targetFile": "state-cases.json",
-      "mutation": { "operator": "replace", "jsonPointer": "/cases/0/registryAfter", "from": "ready", "to": "preparing", "repinCompanionByteDigest": true, "exactChangedFieldCount": 1 },
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/cases/0/registryAfter",
+        "from": "ready",
+        "to": "preparing",
+        "repinCompanionByteDigest": true,
+        "exactChangedFieldCount": 1
+      },
       "expectedFinding": "U7_CONTRACT_STATE_CASE",
       "executedBy": "the semantic oracle catches the transition drift even when the manifest byte digest is re-pinned to the mutant"
     },
@@ -117,15 +192,27 @@
       "id": "U7-MUT-014",
       "category": "event-link-loss",
       "targetFile": "preview-cases.json",
-      "mutation": { "operator": "replace", "jsonPointer": "/cases/5/expectedPreview/blockers/0/eventId", "from": "event-0000", "to": null, "exactChangedFieldCount": 1 },
-      "expectedFinding": "U7_CONTRACT_BLOCKER",
-      "executedBy": "the validator recovers the event link from the E1 refusal path ordinal and requires it"
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/cases/5/expectedPreview/losses/0/eventIds/0",
+        "from": "event-0000",
+        "to": "event-9999",
+        "exactChangedFieldCount": 1
+      },
+      "expectedFinding": "U7_CONTRACT_PREVIEW_DERIVATION",
+      "executedBy": "the validator derives the unison-doubling loss's event list from the planSpec and requires the named event ids to match exactly"
     },
     {
       "id": "U7-MUT-015",
       "category": "tempo-law-drift",
       "targetFile": "preview-cases.json",
-      "mutation": { "operator": "replace", "jsonPointer": "/cases/1/expectedPreview/artifact/tempo/roundingErrorNumerator", "from": 30, "to": 31, "exactChangedFieldCount": 1 },
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/cases/1/expectedPreview/artifact/tempo/roundingErrorNumerator",
+        "from": 30,
+        "to": 31,
+        "exactChangedFieldCount": 1
+      },
       "expectedFinding": "U7_CONTRACT_TEMPO_LAW",
       "executedBy": "the validator recomputes |60000000 - encoded*bpm| exactly"
     },
@@ -133,7 +220,13 @@
       "id": "U7-MUT-016",
       "category": "filename-law-drift",
       "targetFile": "limit-cases.json",
-      "mutation": { "operator": "replace", "jsonPointer": "/cases/9/expected/characters", "from": 64, "to": 65, "exactChangedFieldCount": 1 },
+      "mutation": {
+        "operator": "replace",
+        "jsonPointer": "/cases/9/expected/characters",
+        "from": 64,
+        "to": 65,
+        "exactChangedFieldCount": 1
+      },
       "expectedFinding": "U7_CONTRACT_LIMIT_CASE",
       "executedBy": "the validator re-derives the filename under the E1 law and measures it"
     }

@@ -122,6 +122,15 @@ export const MIDI_EXPORT_LOSS_KINDS = Object.freeze([
   "enharmonic-spelling",
   "annotation-text",
   "loop-range",
+  /*
+   * E1 amendment (jcpe-u0mc): a note number doubled inside one event's
+   * midiPitches — legal for Manual voicings, which are never deduplicated —
+   * exports as ONE on/off pair and reports this loss. The former
+   * midi.plan_invalid refusal rested on a false premise ("P0 plans are
+   * duplicate-free by construction"): the reviewed P0 corpus itself ships a
+   * doubled unison (P0-TIME-001 event-p0-a1-2, midiPitches [71,64,67,60,64]).
+   */
+  "unison-doubling",
 ] as const);
 export type MidiExportLossKind = (typeof MIDI_EXPORT_LOSS_KINDS)[number];
 

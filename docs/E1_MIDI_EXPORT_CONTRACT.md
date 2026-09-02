@@ -94,8 +94,17 @@ at `startTick + gateDurationTicks`; end of track at `totalTicks`.
 Channel-event ordering (`MIDI_EXPORT_EVENT_ORDER`): ascending tick; at an
 equal tick, meta before channel, note-offs before note-ons, then ascending
 note number within each kind. A duplicated note number inside one event's
-`midiPitches` refuses `midi.plan_invalid` (P0 plans are duplicate-free by
-construction, so this is a defensive law, not a repair). Overlapping notes
+`midiPitches` — legal for Manual voicings, which are never deduplicated —
+emits **one** note-on/off pair for that number and reports a
+`unison-doubling` loss naming the event (additive amendment, jcpe-u0mc:
+the original refusal claimed "P0 plans are duplicate-free by
+construction", but the reviewed P0 corpus itself ships a doubled unison —
+P0-TIME-001 `event-p0-a1-2`, `midiPitches` [71,64,67,60,64] — and two
+note-ons at one pitch on one channel would make note-off pairing
+ambiguous in SMF; the note cap and report `noteCount` therefore count
+distinct numbers per event, the pairs the file carries). The stored
+voicing is never repaired: only this performance file cannot carry the
+doubling. Overlapping notes
 of the same number from *different* events are legal SMF; the off precedes
 the on at a shared tick by the ordering law.
 
@@ -131,6 +140,11 @@ the deterministic filename, and the loss list:
   an event (its annotation/symbol text is absent from the file).
 - `loop-range` — present exactly when `plan.loop` is non-null: SMF-1 has
   no loop chunk; the loop is dropped from bytes and reported.
+- `unison-doubling` — one loss entry naming every event whose
+  `midiPitches` repeat a note number (a doubled unison in a Manual
+  voicing, or two enharmonic spellings landing on one number); each such
+  number emits one on/off pair, and the stored voicing keeps the doubling
+  (additive amendment, jcpe-u0mc).
 
 Filename law: `changes-` + `documentId` with every character outside
 `[A-Za-z0-9._-]` replaced by `-`, truncated so the full name is at most 64

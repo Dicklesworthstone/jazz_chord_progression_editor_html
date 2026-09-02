@@ -124,6 +124,9 @@ const LOSS_KINDS = Object.freeze([
   "enharmonic-spelling",
   "annotation-text",
   "loop-range",
+  /* E1 additive amendment (jcpe-u0mc): doubled note numbers inside one
+   * event export one on/off pair and report this loss. */
+  "unison-doubling",
 ] as const);
 
 const EVIDENCE_OWNER_PATTERN =
@@ -358,17 +361,9 @@ function validateRequest(request: CompactRequest): ReferenceRefusal | null {
     if (event.ordinal !== i) {
       return { code: "midi.plan_invalid", pointer: `/plan/events/${String(i)}/ordinal` };
     }
-    const seen = new Set<number>();
-    for (const pitch of event.pitches) {
-      if (seen.has(pitch.midi)) {
-        return {
-          code: "midi.plan_invalid",
-          pointer: `/plan/events/${String(i)}/midiPitches`,
-        };
-      }
-      seen.add(pitch.midi);
-    }
-    noteCount += event.pitches.length;
+    /* E1 amendment (jcpe-u0mc): a doubled note number no longer refuses —
+     * it emits one on/off pair, so the cap counts distinct numbers. */
+    noteCount += new Set(event.pitches.map((pitch) => pitch.midi)).size;
   }
   if (noteCount > LOCAL.maxNotes) {
     return { code: "midi.plan_invalid", pointer: "/plan/events" };
@@ -683,12 +678,14 @@ function deriveModel(request: CompactRequest): Derived {
   type NoteEvent = { tick: number; kind: "on" | "off"; note: number };
   const notes: NoteEvent[] = [];
   for (const event of plan.events) {
-    for (const pitch of event.pitches) {
-      notes.push({ tick: event.startTick, kind: "on", note: pitch.midi });
+    /* E1 amendment (jcpe-u0mc): one pair per DISTINCT note number; a
+     * doubled unison collapses and is reported as a unison-doubling loss. */
+    for (const midi of new Set(event.pitches.map((pitch) => pitch.midi))) {
+      notes.push({ tick: event.startTick, kind: "on", note: midi });
       notes.push({
         tick: event.startTick + event.gateDurationTicks,
         kind: "off",
-        note: pitch.midi,
+        note: midi,
       });
     }
   }
@@ -769,6 +766,21 @@ function deriveModel(request: CompactRequest): Derived {
       eventIds: [],
       detail:
         "SMF format 1 has no loop chunk; the plan loop is reported, not encoded",
+    });
+  }
+  const doubledEvents = plan.events
+    .filter(
+      (event) =>
+        new Set(event.pitches.map((pitch) => pitch.midi)).size <
+        event.pitches.length,
+    )
+    .map((event) => event.eventId);
+  if (doubledEvents.length > 0) {
+    losses.push({
+      kind: "unison-doubling",
+      eventIds: doubledEvents,
+      detail:
+        "a note number doubled inside one event sounds as one note-on/off pair; the stored voicing keeps the doubling",
     });
   }
   losses.sort(

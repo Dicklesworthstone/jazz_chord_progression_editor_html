@@ -31,6 +31,8 @@ function lossSentence(kind: string): string {
       return "Note numbers cannot carry sharps or flats; the spelled symbols stay in the marker text and the JSON export.";
     case "annotation-text":
       return "No chord marker text was written for these events.";
+    case "unison-doubling":
+      return "A doubled note at the same pitch sounds once in this file; the chart keeps the doubling.";
     default:
       return "The playback loop range is not part of this file.";
   }

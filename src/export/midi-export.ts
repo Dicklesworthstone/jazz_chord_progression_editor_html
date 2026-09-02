@@ -236,17 +236,14 @@ function validateRequestStages(
         frozenPath("plan", "events", i, "midiPitches"),
       );
     }
-    const seenNoteNumbers = new Set<number>();
-    for (const midi of event.midiPitches) {
-      if (seenNoteNumbers.has(midi)) {
-        return refuse(
-          "midi.plan_invalid",
-          frozenPath("plan", "events", i, "midiPitches"),
-        );
-      }
-      seenNoteNumbers.add(midi);
-    }
-    noteCount += event.midiPitches.length;
+    /*
+     * E1 amendment (jcpe-u0mc): a doubled note number inside one event is
+     * legal (Manual voicings are never deduplicated, and the reviewed P0
+     * corpus ships one). It exports as one on/off pair with an explicit
+     * unison-doubling loss, so the note cap counts distinct numbers — the
+     * pairs the file actually carries.
+     */
+    noteCount += new Set(event.midiPitches).size;
   }
   if (noteCount > MAX_MIDI_EXPORT_NOTES) {
     return refuse("midi.plan_invalid", frozenPath("plan", "events"));
@@ -469,7 +466,14 @@ type NoteEmission = Readonly<{ tick: number; on: boolean; note: number }>;
 function collectNoteEmissions(plan: PlaybackPlan): NoteEmission[] {
   const notes: NoteEmission[] = [];
   for (const event of plan.events) {
-    for (const note of event.midiPitches) {
+    /*
+     * One on/off pair per DISTINCT note number: two note-ons at one pitch on
+     * one channel make note-off pairing ambiguous in SMF, so a doubled
+     * unison (legal in Manual voicings) collapses here and is reported as an
+     * explicit unison-doubling loss (E1 amendment, jcpe-u0mc). The document
+     * keeps its doubling untouched — only this file cannot carry it.
+     */
+    for (const note of new Set(event.midiPitches)) {
       notes.push({ tick: event.startTick, on: true, note });
       notes.push({
         tick: event.startTick + event.gateDurationTicks,
@@ -558,6 +562,19 @@ function deriveLosses(request: MidiExportRequest): readonly MidiExportLoss[] {
         eventIds: Object.freeze([] as ChordEventId[]),
         detail:
           "SMF format 1 has no loop chunk; the plan loop is reported, not encoded",
+      }),
+    );
+  }
+  const doubledEventIds = plan.events
+    .filter((event) => new Set(event.midiPitches).size < event.midiPitches.length)
+    .map((event) => event.eventId);
+  if (doubledEventIds.length > 0) {
+    losses.push(
+      Object.freeze({
+        kind: "unison-doubling" as const,
+        eventIds: Object.freeze(doubledEventIds),
+        detail:
+          "a note number doubled inside one event sounds as one note-on/off pair; the stored voicing keeps the doubling",
       }),
     );
   }
