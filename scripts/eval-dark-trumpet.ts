@@ -14,10 +14,21 @@ import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { estimatePitch } from "./reference-similarity";
 
 const VARIANT = process.env["TRUMPET_VARIANT"] ?? "improved";
-const WASM_PATH =
-  VARIANT === "baseline"
-    ? "/data/tmp/claude-1000/-data-projects-jazz-chord-progression-editor-html/fcc4066d-dfe7-403c-aa33-203a7de51bd3/scratchpad/baseline-trumpet.wasm"
-    : "/data/tmp/claude-1000/-data-projects-jazz-chord-progression-editor-html/fcc4066d-dfe7-403c-aa33-203a7de51bd3/scratchpad/dark-trumpet.wasm";
+/*
+ * The dark wasm is a session-local build product (cargo --features
+ * dark-models), so its location is not stable across sessions: pass
+ * TRUMPET_WASM_PATH explicitly, pointing at the wasm for the chosen
+ * variant. The old hardcoded scratchpad default outlived its session and
+ * failed ENOENT for the next one.
+ */
+const WASM_PATH = process.env["TRUMPET_WASM_PATH"] ?? "";
+if (WASM_PATH === "") {
+  throw new Error(
+    "Set TRUMPET_WASM_PATH to the dark-models wasm for the " +
+      `'${VARIANT}' variant (cargo build --release --target ` +
+      "wasm32-unknown-unknown --features dark-models in dsp/concert-grand).",
+  );
+}
 const OUT_DIR = "test-results/trumpet-dark";
 const RATE = 44_100;
 
