@@ -52,7 +52,6 @@ enum MIDIImportIssue: LocalizedError, Equatable {
     case invalidChunk(offset: Int)
     case invalidVariableLengthQuantity(offset: Int)
     case invalidEvent(offset: Int)
-    case unknownMeta(type: Int, offset: Int)
     case invalidMeta(type: Int, offset: Int)
     case zeroTempo(offset: Int)
     case unsupportedTempo(Double)
@@ -76,7 +75,6 @@ enum MIDIImportIssue: LocalizedError, Equatable {
         case let .invalidChunk(offset): "The MIDI chunk structure is invalid near byte \(offset)."
         case let .invalidVariableLengthQuantity(offset): "A MIDI variable-length value is invalid near byte \(offset)."
         case let .invalidEvent(offset): "A MIDI event is invalid near byte \(offset)."
-        case let .unknownMeta(type, offset): "MIDI meta event 0x\(String(type, radix: 16, uppercase: true)) is unsupported near byte \(offset)."
         case let .invalidMeta(type, offset): "MIDI meta event 0x\(String(type, radix: 16, uppercase: true)) has an invalid payload near byte \(offset)."
         case let .zeroTempo(offset): "The MIDI file declares a zero tempo near byte \(offset)."
         case let .unsupportedTempo(bpm): "The tempo active at the first imported chord is \(bpm.formatted(.number.precision(.fractionLength(0...2)))) BPM; the native editor supports 30–320 BPM."
@@ -369,6 +367,8 @@ private extension MIDIFileImporter {
 }
 
 private enum SMFDecoder {
+    static let headerChunkTag: UInt32 = 0x4D54_6864
+    static let trackChunkTag: UInt32 = 0x4D54_726B
     static let maximumTracks = 64
     static let maximumEvents = 524_288
     static let maximumNotes = 131_072
@@ -426,7 +426,7 @@ private enum SMFDecoder {
         let bytes = [UInt8](data)
         var reader = ByteReader(bytes: bytes, index: 0, limit: bytes.count)
         let headerOffset = reader.index
-        guard try reader.readTag() == "MThd" else { throw MIDIImportIssue.invalidHeader(offset: headerOffset) }
+        guard try reader.readTag() == headerChunkTag else { throw MIDIImportIssue.invalidHeader(offset: headerOffset) }
         guard try reader.readUInt32() == 6 else { throw MIDIImportIssue.invalidHeader(offset: reader.index - 4) }
         let format = try reader.readUInt16()
         guard format == 0 || format == 1 else { throw MIDIImportIssue.unsupportedFormat(format) }
@@ -447,11 +447,11 @@ private enum SMFDecoder {
             let chunkOffset = reader.index
             let tag = try reader.readTag()
             let length = try reader.readUInt32()
-            guard length >= 0, length <= reader.limit - reader.index else {
+            guard length <= reader.limit - reader.index else {
                 throw MIDIImportIssue.truncated(offset: reader.index)
             }
             let end = reader.index + length
-            if tag == "MTrk" {
+            if tag == trackChunkTag {
                 try parseTrack(
                     bytes: bytes,
                     start: reader.index,
@@ -463,7 +463,7 @@ private enum SMFDecoder {
                     counters: &counters
                 )
                 trackIndex += 1
-            } else if tag == "MThd" {
+            } else if tag == headerChunkTag || !isPrintableChunkTag(tag) {
                 throw MIDIImportIssue.invalidChunk(offset: chunkOffset)
             }
             reader.index = end
@@ -476,13 +476,22 @@ private enum SMFDecoder {
             let tag = try reader.readTag()
             let length = try reader.readUInt32()
             guard length <= reader.limit - reader.index else { throw MIDIImportIssue.truncated(offset: reader.index) }
-            if tag == "MTrk" || tag == "MThd" { throw MIDIImportIssue.invalidChunk(offset: chunkOffset) }
+            if tag == trackChunkTag || tag == headerChunkTag || !isPrintableChunkTag(tag) {
+                throw MIDIImportIssue.invalidChunk(offset: chunkOffset)
+            }
             reader.index += length
         }
 
         tempos.sort { $0.tick == $1.tick ? $0.trackIndex < $1.trackIndex : $0.tick < $1.tick }
         meters.sort { $0.tick == $1.tick ? $0.trackIndex < $1.trackIndex : $0.tick < $1.tick }
         return File(ppq: division, trackCount: declaredTracks, notes: allNotes, tempos: tempos, meters: meters)
+    }
+
+    private static func isPrintableChunkTag(_ tag: UInt32) -> Bool {
+        [24, 16, 8, 0].allSatisfy { shift in
+            let byte = UInt8((tag >> shift) & 0xFF)
+            return (0x20...0x7E).contains(byte)
+        }
     }
 
     private static func parseTrack(
@@ -563,10 +572,14 @@ private enum SMFDecoder {
                     guard length == 5 else { throw MIDIImportIssue.invalidMeta(type: metaType, offset: eventOffset) }
                 case 0x59:
                     guard length == 2 else { throw MIDIImportIssue.invalidMeta(type: metaType, offset: eventOffset) }
-                case 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x7F:
+                case 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x7F:
                     break
                 default:
-                    throw MIDIImportIssue.unknownMeta(type: metaType, offset: eventOffset)
+                    // SMF readers are expected to skip well-formed metadata
+                    // they do not consume. The bounded payload has already
+                    // been read, so an unfamiliar type cannot desynchronize
+                    // the track or weaken any resource limit.
+                    break
                 }
                 if reachedEnd { break }
                 continue
@@ -658,8 +671,11 @@ private enum SMFDecoder {
             return Array(bytes[index..<(index + count)])
         }
 
-        mutating func readTag() throws -> String {
-            String(decoding: try readBytes(count: 4), as: UTF8.self)
+        mutating func readTag() throws -> UInt32 {
+            UInt32(try readByte()) << 24
+                | UInt32(try readByte()) << 16
+                | UInt32(try readByte()) << 8
+                | UInt32(try readByte())
         }
 
         mutating func readUInt16() throws -> Int {

@@ -140,6 +140,20 @@ final class FrankenJazzCoreTests: XCTestCase {
             XCTAssertEqual(error as? MIDIImportIssue, .smpteDivisionUnsupported)
         }
 
+        var zeroDivision = [UInt8](independentFormatOneMIDI())
+        zeroDivision[12] = 0
+        zeroDivision[13] = 0
+        XCTAssertThrowsError(try MIDIFileImporter.importChart(data: Data(zeroDivision), title: "Zero PPQ")) { error in
+            XCTAssertEqual(error as? MIDIImportIssue, .zeroDivision)
+        }
+
+        var formatTwo = [UInt8](independentFormatOneMIDI())
+        formatTwo[8] = 0
+        formatTwo[9] = 2
+        XCTAssertThrowsError(try MIDIFileImporter.importChart(data: Data(formatTwo), title: "Format two")) { error in
+            XCTAssertEqual(error as? MIDIImportIssue, .unsupportedFormat(2))
+        }
+
         XCTAssertThrowsError(try MIDIFileImporter.importChart(data: independentFormatOneMIDI(meterNumerator: 3), title: "Three four")) { error in
             XCTAssertEqual(error as? MIDIImportIssue, .unsupportedMeter(numerator: 3, denominator: 4))
         }
@@ -179,6 +193,17 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertEqual(first.omittedSourceMeasureCount, second.omittedSourceMeasureCount)
     }
 
+    func testMIDIImportToleratesBoundedUnconsumedMetadata() throws {
+        var bytes = [UInt8](independentFormatOneMIDI())
+        let secondTrackLengthOffset = 45
+        let secondTrackDataOffset = 49
+        bytes[secondTrackLengthOffset + 3] += 7
+        bytes.insert(contentsOf: [0x00, 0xFF, 0x09, 0x03, 0x44, 0x65, 0x76], at: secondTrackDataOffset)
+
+        let result = try MIDIFileImporter.importChart(data: Data(bytes), title: "Device metadata")
+        XCTAssertEqual(result.chart.chartText, "| Cmaj7 |")
+    }
+
     @MainActor
     func testStoreMIDIImportIsOneUndoableDocumentReplacement() async throws {
         let store = JazzStudioStore()
@@ -200,6 +225,28 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertTrue(store.notice?.contains("editable chords from MIDI") == true)
         store.undo()
         XCTAssertEqual(store.chart, beforeImport)
+    }
+
+    @MainActor
+    func testRefusedStoreMIDIImportPreservesDocumentAndUndoState() async throws {
+        let store = JazzStudioStore()
+        store.newChart()
+        let chartBeforeImport = store.chart
+        let canUndoBeforeImport = store.canUndo
+        let canRedoBeforeImport = store.canRedo
+        let revisionBeforeImport = store.revision
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("frankenjazz-refused-midi-import-\(UUID().uuidString)")
+            .appendingPathExtension("mid")
+        try Data([0x4D]).write(to: url, options: .atomic)
+
+        await store.importFile(url)
+
+        XCTAssertEqual(store.chart, chartBeforeImport)
+        XCTAssertEqual(store.canUndo, canUndoBeforeImport)
+        XCTAssertEqual(store.canRedo, canRedoBeforeImport)
+        XCTAssertEqual(store.revision, revisionBeforeImport)
+        XCTAssertTrue(store.notice?.hasPrefix("Import refused:") == true)
     }
 
     func testNativeDocumentRoundTripsEverySetting() throws {
