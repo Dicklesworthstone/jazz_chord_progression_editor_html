@@ -640,6 +640,92 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertEqual(decoded.measures.first?.chords.first?.annotation, "Keep this top note")
     }
 
+    @MainActor
+    func testDirectSymbolEditPreservesEventDataRecoveryAndOneStepHistory() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FrankenJazzSymbolEditTests-" + UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let recovery = JazzRecoveryStore(directory: directory)
+        let event = JazzChordEvent(symbol: "Cmaj7", annotation: "Keep the top voice")
+        recovery.save(JazzChart(title: "Direct edit", measures: [JazzMeasure(chords: [event])]))
+        let store = JazzStudioStore(recovery: recovery)
+        let revision = store.revision
+
+        XCTAssertNil(store.updateSelectedChordSymbol(" Dm7 ", keepExactPitches: false))
+        XCTAssertEqual(store.selectedChord?.id, event.id)
+        XCTAssertEqual(store.selectedChord?.symbol, "Dm7")
+        XCTAssertEqual(store.selectedChord?.beats, 4)
+        XCTAssertEqual(store.selectedChord?.annotation, "Keep the top voice")
+        XCTAssertEqual(store.draftText, "| Dm7 |")
+        XCTAssertEqual(store.revision, revision + 1)
+        XCTAssertTrue(store.canUndo)
+        XCTAssertEqual(try XCTUnwrap(recovery.load()).measures[0].chords[0].symbol, "Dm7")
+
+        store.undo()
+        XCTAssertEqual(store.selectedChord?.id, event.id)
+        XCTAssertEqual(store.selectedChord?.symbol, "Cmaj7")
+        store.redo()
+        XCTAssertEqual(store.selectedChord?.symbol, "Dm7")
+    }
+
+    @MainActor
+    func testDirectSymbolEditRefusesInvalidOrMultipleChangesWithoutHistory() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FrankenJazzSymbolRefusalTests-" + UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let recovery = JazzRecoveryStore(directory: directory)
+        recovery.save(JazzChart(title: "Refusal", measures: [JazzMeasure(chords: [JazzChordEvent(symbol: "Cmaj7")])]))
+        let store = JazzStudioStore(recovery: recovery)
+        let before = store.chart
+        let revision = store.revision
+
+        XCTAssertEqual(
+            store.updateSelectedChordSymbol("Cmaj7 G7", keepExactPitches: false),
+            "Enter exactly one chord symbol, without a bar line or a second change."
+        )
+        XCTAssertEqual(store.chart, before)
+        XCTAssertEqual(store.revision, revision)
+        XCTAssertFalse(store.canUndo)
+
+        XCTAssertNotNil(store.updateSelectedChordSymbol("Cmaj7banana", keepExactPitches: false))
+        XCTAssertEqual(store.chart, before)
+        XCTAssertEqual(store.revision, revision)
+        XCTAssertFalse(store.canUndo)
+        XCTAssertTrue(store.notice?.hasPrefix("Change refused:") == true)
+    }
+
+    @MainActor
+    func testDirectSymbolEditClearsStoredVoicingByDefaultOrKeepsItAsManualExplicitly() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FrankenJazzSymbolVoicingTests-" + UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let recovery = JazzRecoveryStore(directory: directory)
+        let frozen = [48, 52, 55, 59]
+        recovery.save(JazzChart(title: "Stored", measures: [JazzMeasure(chords: [
+            JazzChordEvent(symbol: "Cmaj7", frozenMIDIPitches: frozen)
+        ])]))
+        let store = JazzStudioStore(recovery: recovery)
+
+        XCTAssertNil(store.updateSelectedChordSymbol("D7", keepExactPitches: true))
+        XCTAssertEqual(store.selectedChord?.symbol, "D7")
+        XCTAssertNil(store.selectedChord?.frozenMIDIPitches)
+        XCTAssertEqual(store.selectedChord?.manualMIDIPitches, frozen)
+        XCTAssertEqual(store.selectedVoicingMode, .manual)
+        XCTAssertTrue(store.notice?.contains("kept 4 exact pitches as Manual") == true)
+
+        store.undo()
+        XCTAssertEqual(store.selectedChord?.symbol, "Cmaj7")
+        XCTAssertEqual(store.selectedVoicingMode, .frozen)
+        XCTAssertNil(store.updateSelectedChordSymbol("Ebmaj7", keepExactPitches: false))
+        XCTAssertEqual(store.selectedVoicingMode, .automatic)
+        XCTAssertNil(store.selectedChord?.frozenMIDIPitches)
+        XCTAssertNil(store.selectedChord?.manualMIDIPitches)
+        XCTAssertTrue(store.notice?.contains("returned the change to Automatic voicing") == true)
+    }
+
     func testNativeDocumentRoundTripsEverySetting() throws {
         let parsed = try JazzTheory.parseChart("| Bbmaj9 | Eb13 |")
         var chart = JazzChart(title: "Round trip", key: .bb, tempoBPM: 87, groove: .ballad, instrument: .vibraphone, voicingFamily: .open, measures: parsed.measures)

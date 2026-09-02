@@ -91,13 +91,21 @@ final class FrankenJazzUITests: XCTestCase {
         XCTAssertTrue(firstChord.waitForExistence(timeout: 3))
         firstChord.tap()
 
-        let editChange = app.buttons["Edit change"]
-        XCTAssertTrue(editChange.waitForExistence(timeout: 3))
-        editChange.tap()
+        let symbol = app.textFields["Selected chord symbol"]
+        XCTAssertTrue(symbol.waitForExistence(timeout: 3))
+        symbol.tap()
+        symbol.typeKey("a", modifierFlags: .command)
+        symbol.typeText("Dm7")
+        app.buttons["Apply symbol"].tap()
+        XCTAssertTrue(app.staticTexts["Changed Cmaj9 to Dm7."].waitForExistence(timeout: 3))
+
+        let moreActions = app.buttons["More change actions"]
+        XCTAssertTrue(moreActions.waitForExistence(timeout: 3))
+        moreActions.tap()
         let duplicate = app.buttons["Duplicate change"]
         XCTAssertTrue(duplicate.waitForExistence(timeout: 2))
         duplicate.tap()
-        XCTAssertTrue(app.staticTexts["Duplicated Cmaj9 and split its beat slot."].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["Duplicated Dm7 and split its beat slot."].waitForExistence(timeout: 3))
     }
 
     func testInspectorFreezesExactVoicingAndReturnsToAutomatic() throws {

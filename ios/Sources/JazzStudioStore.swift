@@ -376,6 +376,52 @@ final class JazzStudioStore: ObservableObject {
         }
     }
 
+    @discardableResult
+    func updateSelectedChordSymbol(_ input: String, keepExactPitches: Bool) -> String? {
+        guard let location = selectedLocation else { return "Select a chord before editing its symbol." }
+        let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        let parsed: ParsedChart
+        do {
+            parsed = try JazzTheory.parseChart("| \(trimmed) |")
+        } catch {
+            let message = error.localizedDescription
+            notice = "Change refused: \(message)"
+            return message
+        }
+        guard parsed.measures.count == 1,
+              parsed.measures[0].chords.count == 1,
+              let symbol = parsed.measures[0].chords.first?.symbol else {
+            let message = "Enter exactly one chord symbol, without a bar line or a second change."
+            notice = "Change refused: \(message)"
+            return message
+        }
+
+        let source = chart.measures[location.measure].chords[location.chord]
+        guard symbol != source.symbol else { return nil }
+        let storedPitches = source.manualMIDIPitches ?? source.frozenMIDIPitches
+        audio.stop()
+        mutate { chart in
+            var chord = chart.measures[location.measure].chords[location.chord]
+            chord.symbol = symbol
+            if let storedPitches, keepExactPitches {
+                chord.frozenMIDIPitches = nil
+                chord.manualMIDIPitches = storedPitches
+            } else if storedPitches != nil {
+                chord.frozenMIDIPitches = nil
+                chord.manualMIDIPitches = nil
+            }
+            chart.measures[location.measure].chords[location.chord] = chord
+        }
+        if let storedPitches, keepExactPitches {
+            notice = "Changed \(source.symbol) to \(symbol) and kept \(storedPitches.count) exact pitches as Manual."
+        } else if storedPitches != nil {
+            notice = "Changed \(source.symbol) to \(symbol) and returned the change to Automatic voicing."
+        } else {
+            notice = "Changed \(source.symbol) to \(symbol)."
+        }
+        return nil
+    }
+
     func transpose(_ semitones: Int) {
         guard semitones != 0 else { return }
         let storedCount = chart.measures.flatMap(\.chords).filter {

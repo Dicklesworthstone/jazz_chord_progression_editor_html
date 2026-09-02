@@ -646,6 +646,8 @@ private struct ChordInspectorView: View {
                 Text(description.colorNote)
                     .font(.system(size: JazzTheme.size(12), design: .rounded))
                     .foregroundStyle(JazzTheme.secondary)
+                SelectedChordSymbolEditor(store: store, chord: chord)
+                    .id(chord.id.uuidString + "-" + chord.symbol)
                 Menu {
                     Button("Duplicate change") { store.duplicateSelectedChord() }
                         .disabled(!store.canDuplicateSelectedChord)
@@ -670,7 +672,7 @@ private struct ChordInspectorView: View {
                     }
                     .disabled(!store.canDeleteSelectedMeasure)
                 } label: {
-                    Label("Edit change", systemImage: "ellipsis.circle")
+                    Label("More change actions", systemImage: "ellipsis.circle")
                         .frame(minHeight: 44)
                 }
                 .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.brass))
@@ -861,6 +863,67 @@ private struct ChordInspectorView: View {
 
     private func midiName(_ midi: Int) -> String {
         JazzTheory.noteName(midi % 12, flats: store.chart.key.prefersFlats) + String(midi / 12 - 1)
+    }
+}
+
+private struct SelectedChordSymbolEditor: View {
+    @ObservedObject var store: JazzStudioStore
+    let chord: JazzChordEvent
+    @State private var draft: String
+    @State private var keepExactPitches = false
+    @State private var issue: String?
+
+    init(store: JazzStudioStore, chord: JazzChordEvent) {
+        self.store = store
+        self.chord = chord
+        _draft = State(initialValue: chord.symbol)
+    }
+
+    private var hasStoredPitches: Bool {
+        chord.manualMIDIPitches != nil || chord.frozenMIDIPitches != nil
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                TextField("Chord symbol", text: $draft)
+                    .font(.system(size: JazzTheme.size(16), weight: .bold, design: .monospaced))
+                    .foregroundStyle(JazzTheme.text)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .submitLabel(.done)
+                    .onSubmit(apply)
+                    .padding(.horizontal, 11)
+                    .frame(minHeight: 44)
+                    .background(Color.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 11))
+                    .overlay(RoundedRectangle(cornerRadius: 11).stroke(JazzTheme.brass.opacity(0.35)))
+                    .accessibilityLabel("Selected chord symbol")
+                Button("Apply symbol", action: apply)
+                    .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.brass))
+                    .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines) == chord.symbol)
+            }
+            if hasStoredPitches {
+                Toggle("Keep exact pitches as Manual", isOn: $keepExactPitches)
+                    .font(.system(size: JazzTheme.size(11), weight: .semibold, design: .rounded))
+                    .tint(JazzTheme.emerald)
+                Text("Off returns the renamed chord to Automatic. On keeps the current pitches intentionally; Frozen becomes Manual.")
+                    .font(.system(size: JazzTheme.size(9.5), design: .rounded))
+                    .foregroundStyle(JazzTheme.secondary)
+            }
+            if let issue {
+                Text(issue)
+                    .font(.system(size: JazzTheme.size(10), weight: .semibold, design: .rounded))
+                    .foregroundStyle(JazzTheme.coral)
+                    .accessibilityLabel("Symbol edit refused: \(issue)")
+            }
+        }
+    }
+
+    private func apply() {
+        issue = store.updateSelectedChordSymbol(draft, keepExactPitches: keepExactPitches)
+        guard issue == nil else { return }
+        draft = store.selectedChord?.symbol ?? draft
+        keepExactPitches = false
     }
 }
 
