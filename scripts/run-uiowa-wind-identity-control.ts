@@ -85,7 +85,14 @@ export async function runUiowaWindIdentityCorpus(root = process.cwd()):
   const scales = new Map<string, readonly MonoPcm[]>();
   for (const file of manifest.files) {
     const path = join(root, CORPUS_DIRECTORY, file.fileName);
-    if (!existsSync(path)) return unavailable("REFERENCE_CORPUS_ABSENT", path);
+    if (!existsSync(path)) {
+      return unavailable(
+        "REFERENCE_CORPUS_ABSENT",
+        `${path} — download the UIowa reference recordings per ` +
+          `docs/DEPLOY_GATE.md § "Reference corpus prerequisite" ` +
+          `(URLs and SHA-256 pins in ${MANIFEST_PATH})`,
+      );
+    }
     const bytes = new Uint8Array(await readFile(path));
     if (bytes.byteLength !== file.bytes || sha256Hex(bytes) !== file.sha256) {
       return unavailable("REFERENCE_CORPUS_DIGEST_MISMATCH", file.fileName);

@@ -291,6 +291,16 @@ export function evaluateGate(
             });
             continue;
           }
+          if (replays.fluteV2.summary.outcome === "unavailable") {
+            findings.push({
+              code: "MODEL_DELEGATED_INVALID_EVIDENCE",
+              detail: `${id} replay is unavailable: install the UIowa reference corpus under ` +
+                `test-results/winds-reference-source/uiowa per docs/DEPLOY_GATE.md ` +
+                `§ "Reference corpus prerequisite" (URLs and SHA-256 pins in ` +
+                `tests/fixtures/uiowa-wind-identity-corpus.v1.json), then rerun`,
+            });
+            continue;
+          }
           semanticPass = verifyFluteV2ReferenceRunEvidenceAgainstReplay(
             evidence,
             replays.fluteV2,
