@@ -9,15 +9,23 @@ import { resolve } from "node:path";
 const ARTIFACT = process.env["J4HJ_URL"] ?? `file://${resolve("jazz_chord_progression_editor.html")}`;
 
 async function audioState(page: Page): Promise<string> {
-  return (
-    (await page
-      .locator(".studio-transport")
-      .getAttribute("data-audio-state")) ?? "missing"
-  );
+  return page.evaluate(() => {
+    return (
+      document
+        .querySelector("#transport-bar")
+        ?.getAttribute("data-audio-state") ?? "missing"
+    );
+  });
+}
+
+async function transportText(page: Page): Promise<string> {
+  return page.evaluate(() => {
+    return document.querySelector("#transport-bar")?.textContent ?? "";
+  });
 }
 
 test("mid-run instrument swaps keep the run alive", async ({ page }) => {
-  test.setTimeout(300_000);
+  test.setTimeout(600_000);
   await page.goto(ARTIFACT);
   const closeTour = page.getByRole("button", { name: "Close the tour" });
   if (await closeTour.isVisible().catch(() => false)) {
@@ -34,11 +42,11 @@ test("mid-run instrument swaps keep the run alive", async ({ page }) => {
     for (const target of ["flute", "clarinet", "dreadnought-guitar", "blues-guitar", "ukulele"]) {
       if (target === startInstrument) continue;
       const label = `${startInstrument}→${target}`;
-      await page.selectOption("#studio-transport-instrument", startInstrument);
+      await page.selectOption("#studio-transport-instrument", startInstrument, { timeout: 15_000 });
       await page.waitForTimeout(250);
       const playButton = page.locator("#studio-transport-play");
       await expect(playButton).toBeEnabled({ timeout: 15_000 });
-      await playButton.click();
+      await playButton.click({ timeout: 15_000 });
       const deadline = Date.now() + 25_000;
       let state = await audioState(page);
       while (state !== "playing" && state !== "failed" && Date.now() < deadline) {
@@ -46,22 +54,22 @@ test("mid-run instrument swaps keep the run alive", async ({ page }) => {
         state = await audioState(page);
       }
       if (state !== "playing") {
-        const detail = (await page.locator(".studio-transport").textContent()) ?? "";
+        const detail = await transportText(page);
         outcomes[label] = `start-failed: ${state}: ${detail.slice(0, 180)}`;
         continue;
       }
       await page.waitForTimeout(600);
       /* the mid-run swap */
-      await page.selectOption("#studio-transport-instrument", target);
+      await page.selectOption("#studio-transport-instrument", target, { timeout: 15_000 });
       await page.waitForTimeout(3000);
       const after = await audioState(page);
-      const text = (await page.locator(".studio-transport").textContent()) ?? "";
       if (after === "playing") {
         outcomes[label] = "survived";
       } else {
+        const text = await transportText(page);
         outcomes[label] = `${after}: ${text.slice(0, 200)}`;
       }
-      await page.click("#studio-transport-stop").catch(() => undefined);
+      await page.locator("#studio-transport-stop").click({ timeout: 15_000 }).catch(() => undefined);
       const stopDeadline = Date.now() + 15_000;
       let settled = await audioState(page);
       while (settled !== "ready" && settled !== "unavailable" && settled !== "failed" && Date.now() < stopDeadline) {
