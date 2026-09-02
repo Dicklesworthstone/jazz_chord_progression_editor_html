@@ -249,6 +249,33 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertTrue(store.notice?.hasPrefix("Import refused:") == true)
     }
 
+    @MainActor
+    func testSelectedChordAnnotationIsBoundedCoalescedAndSurvivesQuickEntry() throws {
+        let store = JazzStudioStore()
+        store.newChart()
+        let selectedID = try XCTUnwrap(store.selectedChordID)
+
+        store.updateSelectedChordAnnotation("Remember the common tone")
+        store.updateSelectedChordAnnotation(String(repeating: "x", count: 540))
+        XCTAssertEqual(store.selectedChord?.annotation.count, 500)
+
+        store.undo()
+        XCTAssertEqual(store.selectedChord?.id, selectedID)
+        XCTAssertEqual(store.selectedChord?.annotation, "")
+        store.redo()
+        XCTAssertEqual(store.selectedChord?.annotation.count, 500)
+
+        store.updateSelectedChordAnnotation("Keep this top note")
+        let unchangedSource = store.chart.chartText
+        store.setDraft(unchangedSource)
+        store.applyDraftNow()
+        XCTAssertEqual(store.selectedChord?.annotation, "Keep this top note")
+
+        let data = try JSONEncoder().encode(store.chart)
+        let decoded = try JSONDecoder().decode(JazzChart.self, from: data)
+        XCTAssertEqual(decoded.measures.first?.chords.first?.annotation, "Keep this top note")
+    }
+
     func testNativeDocumentRoundTripsEverySetting() throws {
         let parsed = try JazzTheory.parseChart("| Bbmaj9 | Eb13 |")
         var chart = JazzChart(title: "Round trip", key: .bb, tempoBPM: 87, groove: .ballad, instrument: .vibraphone, voicingFamily: .open, measures: parsed.measures)

@@ -404,17 +404,37 @@ private struct MeasureCard: View {
                     Button {
                         store.select(chord, showInspector: presentsInspector)
                     } label: {
-                        Text(chord.symbol)
-                            .font(.system(size: JazzTheme.size(measure.chords.count > 2 ? 15 : 19), weight: .bold, design: .serif))
-                            .foregroundStyle(chord.id == store.selectedChordID ? JazzTheme.background : JazzTheme.paper)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.68)
-                            .frame(maxWidth: .infinity, minHeight: 38)
-                            .padding(.horizontal, 5)
-                            .background(chord.id == store.selectedChordID ? JazzTheme.brass : Color.clear, in: RoundedRectangle(cornerRadius: 9))
+                        ZStack(alignment: .topTrailing) {
+                            Text(chord.symbol)
+                                .font(.system(
+                                    size: JazzTheme.size(measure.chords.count > 2 ? 15 : 19),
+                                    weight: .bold,
+                                    design: .serif
+                                ))
+                                .foregroundStyle(
+                                    chord.id == store.selectedChordID ? JazzTheme.background : JazzTheme.paper
+                                )
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.68)
+                                .frame(maxWidth: .infinity, minHeight: 38)
+                                .padding(.horizontal, 5)
+                            if !chord.annotation.isEmpty {
+                                Image(systemName: "note.text")
+                                    .font(.system(size: JazzTheme.size(8), weight: .bold))
+                                    .foregroundStyle(
+                                        chord.id == store.selectedChordID ? JazzTheme.background : JazzTheme.violet
+                                    )
+                                    .padding(4)
+                                    .accessibilityHidden(true)
+                            }
+                        }
+                        .background(
+                            chord.id == store.selectedChordID ? JazzTheme.brass : Color.clear,
+                            in: RoundedRectangle(cornerRadius: 9)
+                        )
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("Measure \(index + 1), \(chord.symbol), \(chord.beats.formatted()) beats")
+                    .accessibilityLabel(chordAccessibilityLabel(chord))
                 }
             }
             Rectangle().fill(active ? JazzTheme.brass : JazzTheme.emerald.opacity(0.28)).frame(height: active ? 2 : 1)
@@ -423,6 +443,12 @@ private struct MeasureCard: View {
         .background(active ? JazzTheme.brass.opacity(0.08) : Color.black.opacity(0.22), in: RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(active ? JazzTheme.brass.opacity(0.55) : .white.opacity(0.055)))
         .animation(.easeInOut(duration: 0.16), value: active)
+    }
+
+    private func chordAccessibilityLabel(_ chord: JazzChordEvent) -> String {
+        var label = "Measure \(index + 1), \(chord.symbol), \(chord.beats.formatted()) beats"
+        if !chord.annotation.isEmpty { label += ", note: \(chord.annotation)" }
+        return label
     }
 }
 
@@ -512,6 +538,7 @@ private struct ChordInspectorView: View {
                 VStack(spacing: 14) {
                     if let chord = store.selectedChord, let description = store.selectedDescription {
                         inspectorHeader(chord, description)
+                        annotationCard(chord)
                         pianoCard(description)
                         voicingCard(description)
                         evidenceCard(description)
@@ -558,11 +585,40 @@ private struct ChordInspectorView: View {
         }
     }
 
+    private func annotationCard(_ chord: JazzChordEvent) -> some View {
+        JazzPanel(accent: JazzTheme.violet) {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    JazzSectionLabel(number: "05", title: "Chord note", tint: JazzTheme.violet)
+                    Spacer()
+                    Text("\(chord.annotation.count)/500")
+                        .font(.system(size: JazzTheme.size(9), weight: .semibold, design: .monospaced))
+                        .foregroundStyle(JazzTheme.secondary)
+                }
+                TextEditor(text: Binding(
+                    get: { store.selectedChord?.annotation ?? "" },
+                    set: store.updateSelectedChordAnnotation
+                ))
+                .font(.system(size: JazzTheme.size(13), design: .rounded))
+                .foregroundStyle(JazzTheme.text)
+                .scrollContentBackground(.hidden)
+                .frame(minHeight: 78, maxHeight: 112)
+                .padding(9)
+                .background(Color.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(JazzTheme.violet.opacity(0.3)))
+                .accessibilityLabel("Note for \(chord.symbol)")
+                Text("Saved only in the private FrankenJazz document; text and MIDI exports omit chord notes.")
+                    .font(.system(size: JazzTheme.size(10), design: .rounded))
+                    .foregroundStyle(JazzTheme.secondary)
+            }
+        }
+    }
+
     private func pianoCard(_ description: ChordDescription) -> some View {
         JazzPanel(accent: JazzTheme.cyan) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    JazzSectionLabel(number: "05", title: "Literal tones", tint: JazzTheme.cyan)
+                    JazzSectionLabel(number: "06", title: "Literal tones", tint: JazzTheme.cyan)
                     Spacer()
                     Text(description.toneNames.joined(separator: " · "))
                         .font(.system(size: JazzTheme.size(10), weight: .semibold, design: .monospaced))
@@ -578,7 +634,7 @@ private struct ChordInspectorView: View {
     private func voicingCard(_ description: ChordDescription) -> some View {
         JazzPanel(accent: JazzTheme.emerald) {
             VStack(alignment: .leading, spacing: 11) {
-                JazzSectionLabel(number: "06", title: "Voicing bench", tint: JazzTheme.emerald)
+                JazzSectionLabel(number: "07", title: "Voicing bench", tint: JazzTheme.emerald)
                 Menu {
                     ForEach(VoicingFamily.allCases) { family in
                         Button { store.updateVoicing(family) } label: {
@@ -623,7 +679,7 @@ private struct ChordInspectorView: View {
     private func evidenceCard(_ description: ChordDescription) -> some View {
         JazzPanel(accent: JazzTheme.violet) {
             VStack(alignment: .leading, spacing: 10) {
-                JazzSectionLabel(number: "07", title: "What is factual", tint: JazzTheme.violet)
+                JazzSectionLabel(number: "08", title: "What is factual", tint: JazzTheme.violet)
                 evidenceRow("Literal", "The symbol resolves to \(description.toneNames.joined(separator: ", ")).")
                 evidenceRow(
                     "Context",

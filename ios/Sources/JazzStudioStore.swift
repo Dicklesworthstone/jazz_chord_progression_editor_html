@@ -194,6 +194,21 @@ final class JazzStudioStore: ObservableObject {
         mutate { $0.voicingFamily = family }
     }
 
+    func updateSelectedChordAnnotation(_ annotation: String) {
+        guard let selectedChordID else { return }
+        let bounded = String(annotation.prefix(500))
+        guard selectedChord?.annotation != bounded else { return }
+        mutate(coalescing: "annotation-\(selectedChordID.uuidString)") { chart in
+            for measureIndex in chart.measures.indices {
+                guard let chordIndex = chart.measures[measureIndex].chords.firstIndex(where: {
+                    $0.id == selectedChordID
+                }) else { continue }
+                chart.measures[measureIndex].chords[chordIndex].annotation = bounded
+                return
+            }
+        }
+    }
+
     func transpose(_ semitones: Int) {
         guard semitones != 0 else { return }
         audio.stop()

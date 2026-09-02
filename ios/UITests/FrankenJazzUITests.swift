@@ -45,4 +45,18 @@ final class FrankenJazzUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Import a chart, text, or MIDI file"].waitForExistence(timeout: 3))
         XCTAssertTrue(app.staticTexts["MIDI chord stacks become editable 4/4 symbols. Files in another meter or with no nameable harmony are refused instead of guessed."].exists)
     }
+
+    func testChordInspectorExposesPersistedChordNoteEditor() throws {
+        let firstChord = app.buttons.matching(
+            NSPredicate(format: "label BEGINSWITH 'Measure 1, Cmaj9'")
+        ).firstMatch
+        XCTAssertTrue(firstChord.waitForExistence(timeout: 3))
+        firstChord.tap()
+
+        XCTAssertTrue(app.staticTexts["05 · CHORD NOTE"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.textViews["Note for Cmaj9"].exists)
+        XCTAssertTrue(app.staticTexts[
+            "Saved only in the private FrankenJazz document; text and MIDI exports omit chord notes."
+        ].exists)
+    }
 }
