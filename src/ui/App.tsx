@@ -1619,6 +1619,7 @@ function viewFromSnapshot(
           : snapshot.chordCount === 0
             ? "Write a chord, then press Play to hear it."
             : "Press Play to hear this chart."),
+      failureCode: snapshot.transport.failureCode,
       tempoBpm: snapshot.tempoBpm,
       instrumentLabel: snapshot.instrumentLabel,
       positionLabel: musicalPositionLabel(playheadLabel),

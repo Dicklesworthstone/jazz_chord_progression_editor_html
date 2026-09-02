@@ -184,6 +184,7 @@ const BASE_VIEW: Omit<StudioShellView, "layout"> = Object.freeze({
     audioState: "unavailable",
     audioStatusLabel: "Audio off",
     audioStatusDetail: "Playback is unavailable in this focused proof.",
+    failureCode: null,
     tempoBpm: 120,
     instrumentLabel: "Studio piano",
     positionLabel: "Bar 1 · beat 1.0",
