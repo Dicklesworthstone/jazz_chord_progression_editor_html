@@ -14,7 +14,8 @@ not a visual mock of its controls.
 
 The first Apple release must let a musician:
 
-1. type or paste a bar-delimited chart and see a real parsed lead sheet;
+1. type or paste a bar-delimited chart, directly duplicate/delete/reorder
+   changes and insert/delete bars, and see a real parsed lead sheet;
 2. select a chord and inspect literal tones, function, guide tones, and several
    playable voicing families;
 3. hear the chart with a local generated instrument, tempo, swing, loop, seek,
@@ -38,6 +39,7 @@ parsed as data and never interpreted as HTML or a URL.
 | `studio-progression-library.ts` | Bundled library with provenance, tempo, style, and musical purpose |
 | `chart-parser.ts` / `chord-symbol.ts` | Bounded native quick-entry and chord-symbol parser |
 | `studio-controller.ts` | `JazzStudioStore`, one observable owner for document/history/selection |
+| U1 chart-editing operations | Undoable selected-change and bar actions with exact four-beat preservation |
 | domain pitch/key/duration types | Codable value types with stable UUID identities and exact bar slots |
 | voicing family and optimizer modules | Close, shell, rootless, open, and spread voicing previews |
 | chord resolution / chart analysis | Literal tones, Roman reading, guide tones, and transition motion |

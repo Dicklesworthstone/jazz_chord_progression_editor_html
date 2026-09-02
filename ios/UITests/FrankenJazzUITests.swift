@@ -59,4 +59,20 @@ final class FrankenJazzUITests: XCTestCase {
             "Saved only in the private FrankenJazz document; text and MIDI exports omit chord notes."
         ].exists)
     }
+
+    func testInspectorDirectEditingDuplicatesAChangeAndPreservesAccess() throws {
+        let firstChord = app.buttons.matching(
+            NSPredicate(format: "label BEGINSWITH 'Measure 1, Cmaj9'")
+        ).firstMatch
+        XCTAssertTrue(firstChord.waitForExistence(timeout: 3))
+        firstChord.tap()
+
+        let editChange = app.buttons["Edit change"]
+        XCTAssertTrue(editChange.waitForExistence(timeout: 3))
+        editChange.tap()
+        let duplicate = app.buttons["Duplicate change"]
+        XCTAssertTrue(duplicate.waitForExistence(timeout: 2))
+        duplicate.tap()
+        XCTAssertTrue(app.staticTexts["Duplicated Cmaj9 and split its beat slot."].waitForExistence(timeout: 3))
+    }
 }

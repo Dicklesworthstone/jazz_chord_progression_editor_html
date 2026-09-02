@@ -117,6 +117,101 @@ final class FrankenJazzCoreTests: XCTestCase {
     }
 
     @MainActor
+    func testDirectDuplicateAndDeletePreserveExactBarTimeAndUndo() throws {
+        let store = JazzStudioStore()
+        store.newChart()
+        store.setDraft("| Cmaj7 G7 |")
+        store.applyDraftNow()
+        let original = try XCTUnwrap(store.chart.measures.first?.chords.first)
+        store.select(original)
+        store.updateSelectedChordAnnotation("Keep the top voice")
+
+        store.duplicateSelectedChord()
+
+        XCTAssertEqual(store.chart.measures[0].chords.map(\.symbol), ["Cmaj7", "Cmaj7", "G7"])
+        XCTAssertEqual(store.chart.measures[0].chords.map(\.beats), [1, 1, 2])
+        XCTAssertEqual(store.selectedChord?.annotation, "Keep the top voice")
+        XCTAssertEqual(Set(store.chart.measures[0].chords.map(\.id)).count, 3)
+        XCTAssertNoThrow(try JazzDocumentValidator.validate(store.chart))
+
+        store.deleteSelectedChord()
+        XCTAssertEqual(store.chart.measures[0].chords.map(\.symbol), ["Cmaj7", "G7"])
+        XCTAssertEqual(store.chart.measures[0].chords.map(\.beats), [1, 3])
+        XCTAssertEqual(store.selectedChord?.symbol, "G7")
+        XCTAssertNoThrow(try JazzDocumentValidator.validate(store.chart))
+
+        store.undo()
+        XCTAssertEqual(store.chart.measures[0].chords.map(\.symbol), ["Cmaj7", "Cmaj7", "G7"])
+    }
+
+    @MainActor
+    func testDirectMoveAndBarManagementAreBoundedUndoableOperations() throws {
+        let store = JazzStudioStore()
+        store.newChart()
+        store.setDraft("| Cmaj7 G7 |")
+        store.applyDraftNow()
+        let dominant = try XCTUnwrap(store.chart.measures[0].chords.last)
+        store.select(dominant)
+
+        store.moveSelectedChord(by: -1)
+        XCTAssertEqual(store.chart.measures[0].chords.map(\.symbol), ["G7", "Cmaj7"])
+        store.moveSelectedChord(by: 1)
+        XCTAssertEqual(store.chart.measures[0].chords.map(\.symbol), ["Cmaj7", "G7"])
+
+        let originalMeasureID = try XCTUnwrap(store.selectedMeasureID)
+        store.insertMeasure(after: originalMeasureID)
+        XCTAssertEqual(store.chart.measures.count, 2)
+        XCTAssertEqual(store.selectedChord?.symbol, "Cmaj7")
+        let insertedMeasureID = try XCTUnwrap(store.selectedMeasureID)
+        store.deleteMeasure(insertedMeasureID)
+        XCTAssertEqual(store.chart.measures.count, 1)
+        XCTAssertNoThrow(try JazzDocumentValidator.validate(store.chart))
+
+        store.deleteMeasure(originalMeasureID)
+        XCTAssertEqual(store.chart.measures.count, 1)
+        XCTAssertEqual(store.notice, "A chart needs at least one bar.")
+        store.undo()
+        XCTAssertEqual(store.chart.measures.count, 2)
+    }
+
+    @MainActor
+    func testDirectEditingRefusesInvalidBoundaryOperationsWithoutHistory() throws {
+        let store = JazzStudioStore()
+        store.newChart()
+        let onlyChord = try XCTUnwrap(store.selectedChord)
+        store.select(onlyChord)
+        let before = store.chart
+        let canUndoBefore = store.canUndo
+
+        store.deleteSelectedChord()
+        XCTAssertEqual(store.chart, before)
+        XCTAssertEqual(store.canUndo, canUndoBefore)
+        XCTAssertEqual(store.notice, "A bar needs at least one change. Delete the bar instead.")
+
+        store.moveSelectedChord(by: -1)
+        XCTAssertEqual(store.chart, before)
+        XCTAssertEqual(store.notice, "This change is already first in its bar.")
+    }
+
+    @MainActor
+    func testDirectDuplicateRefusesSubnormalDurationUnderflow() throws {
+        let store = JazzStudioStore()
+        store.newChart()
+        store.setDraft("| Cmaj7:5e-324 G7:4 |")
+        store.applyDraftNow()
+        let tiny = try XCTUnwrap(store.chart.measures.first?.chords.first)
+        store.select(tiny)
+        let before = store.chart
+        let canUndoBefore = store.canUndo
+
+        store.duplicateSelectedChord()
+
+        XCTAssertEqual(store.chart, before)
+        XCTAssertEqual(store.canUndo, canUndoBefore)
+        XCTAssertEqual(store.notice, "This change's beat slot is too small to split safely.")
+    }
+
+    @MainActor
     func testSaveCopyProducesACompleteNativeDocument() throws {
         let store = JazzStudioStore()
         store.newChart()

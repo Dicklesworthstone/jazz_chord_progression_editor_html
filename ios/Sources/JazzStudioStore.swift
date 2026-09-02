@@ -118,6 +118,30 @@ final class JazzStudioStore: ObservableObject {
         return JazzTheory.transitionMotion(from: source, to: destination, flats: chart.key.prefersFlats)
     }
 
+    var selectedMeasureID: UUID? {
+        guard let location = selectedLocation else { return nil }
+        return chart.measures[location.measure].id
+    }
+
+    var canDuplicateSelectedChord: Bool {
+        guard let location = selectedLocation else { return false }
+        return chart.measures[location.measure].chords.count < JazzTheory.maximumChordsPerMeasure
+    }
+
+    var canDeleteSelectedChord: Bool {
+        guard let location = selectedLocation else { return false }
+        return chart.measures[location.measure].chords.count > 1
+    }
+
+    var canMoveSelectedChordEarlier: Bool { selectedLocation?.chord ?? 0 > 0 }
+
+    var canMoveSelectedChordLater: Bool {
+        guard let location = selectedLocation else { return false }
+        return location.chord + 1 < chart.measures[location.measure].chords.count
+    }
+
+    var canDeleteSelectedMeasure: Bool { selectedLocation != nil && chart.measures.count > 1 }
+
     var filteredLibrary: [LibraryEntry] {
         let query = librarySearch.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else { return JazzLibrary.entries }
@@ -246,6 +270,94 @@ final class JazzStudioStore: ObservableObject {
     func select(_ chord: JazzChordEvent, showInspector: Bool = false) {
         selectedChordID = chord.id
         if showInspector { isInspectorPresented = true }
+    }
+
+    func duplicateSelectedChord() {
+        guard let location = selectedLocation else { return }
+        guard canDuplicateSelectedChord else {
+            notice = "A bar can contain at most \(JazzTheory.maximumChordsPerMeasure) changes."
+            return
+        }
+        let source = chart.measures[location.measure].chords[location.chord]
+        let firstDuration = source.beats / 2
+        let secondDuration = source.beats - firstDuration
+        guard firstDuration.isFinite, secondDuration.isFinite, firstDuration > 0, secondDuration > 0 else {
+            notice = "This change's beat slot is too small to split safely."
+            return
+        }
+        audio.stop()
+        let duplicateID = UUID()
+        mutate { chart in
+            chart.measures[location.measure].chords[location.chord].beats = firstDuration
+            var duplicate = source
+            duplicate.id = duplicateID
+            duplicate.beats = secondDuration
+            chart.measures[location.measure].chords.insert(duplicate, at: location.chord + 1)
+        }
+        selectedChordID = duplicateID
+        notice = "Duplicated \(source.symbol) and split its beat slot."
+    }
+
+    func deleteSelectedChord() {
+        guard let location = selectedLocation else { return }
+        guard canDeleteSelectedChord else {
+            notice = "A bar needs at least one change. Delete the bar instead."
+            return
+        }
+        audio.stop()
+        let chords = chart.measures[location.measure].chords
+        let removed = chords[location.chord]
+        let survivorIndex = location.chord < chords.count - 1 ? location.chord + 1 : location.chord - 1
+        let survivorID = chords[survivorIndex].id
+        mutate { chart in
+            chart.measures[location.measure].chords.remove(at: location.chord)
+            let adjustedIndex = survivorIndex > location.chord ? survivorIndex - 1 : survivorIndex
+            chart.measures[location.measure].chords[adjustedIndex].beats += removed.beats
+        }
+        selectedChordID = survivorID
+        notice = "Deleted \(removed.symbol) and preserved the four-beat bar."
+    }
+
+    func moveSelectedChord(by offset: Int) {
+        guard offset == -1 || offset == 1, let location = selectedLocation else { return }
+        let destination = location.chord + offset
+        guard chart.measures[location.measure].chords.indices.contains(destination) else {
+            notice = offset < 0 ? "This change is already first in its bar." : "This change is already last in its bar."
+            return
+        }
+        audio.stop()
+        mutate { chart in
+            chart.measures[location.measure].chords.swapAt(location.chord, destination)
+        }
+        notice = offset < 0 ? "Moved the change earlier." : "Moved the change later."
+    }
+
+    func insertMeasure(after measureID: UUID) {
+        guard let index = chart.measures.firstIndex(where: { $0.id == measureID }),
+              chart.measures.count < JazzTheory.maximumMeasures else {
+            notice = "The chart is already at its measure limit."
+            return
+        }
+        audio.stop()
+        let chord = JazzChordEvent(symbol: "Cmaj7")
+        let measure = JazzMeasure(chords: [chord])
+        mutate { $0.measures.insert(measure, at: index + 1) }
+        selectedChordID = chord.id
+        notice = "Inserted a new bar after bar \(index + 1)."
+    }
+
+    func deleteMeasure(_ measureID: UUID) {
+        guard chart.measures.count > 1,
+              let index = chart.measures.firstIndex(where: { $0.id == measureID }) else {
+            notice = "A chart needs at least one bar."
+            return
+        }
+        audio.stop()
+        let selectionIndex = index < chart.measures.count - 1 ? index + 1 : index - 1
+        let selectionID = chart.measures[selectionIndex].chords.first?.id
+        mutate { $0.measures.remove(at: index) }
+        selectedChordID = selectionID
+        notice = "Deleted bar \(index + 1)."
     }
 
     func undo() {
@@ -392,6 +504,16 @@ final class JazzStudioStore: ObservableObject {
         draftText = parsed.normalizedText
         draftState = .current
         if selectedChord == nil { selectedChordID = preserved.first?.chords.first?.id }
+    }
+
+    private var selectedLocation: (measure: Int, chord: Int)? {
+        guard let selectedChordID else { return nil }
+        for measureIndex in chart.measures.indices {
+            if let chordIndex = chart.measures[measureIndex].chords.firstIndex(where: { $0.id == selectedChordID }) {
+                return (measureIndex, chordIndex)
+            }
+        }
+        return nil
     }
 
     private func mutate(coalescing key: String? = nil, _ edit: (inout JazzChart) -> Void) {

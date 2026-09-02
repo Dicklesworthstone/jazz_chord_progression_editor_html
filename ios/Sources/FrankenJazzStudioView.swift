@@ -408,6 +408,23 @@ private struct MeasureCard: View {
                     }
                     .accessibilityHidden(true)
                 }
+                Menu {
+                    Button {
+                        store.insertMeasure(after: measure.id)
+                    } label: {
+                        Label("Insert bar after", systemImage: "plus.rectangle.on.rectangle")
+                    }
+                    Button(role: .destructive) {
+                        store.deleteMeasure(measure.id)
+                    } label: {
+                        Label("Delete bar", systemImage: "trash")
+                    }
+                    .disabled(store.chart.measures.count == 1)
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                        .frame(width: 32, height: 32)
+                }
+                .accessibilityLabel("Actions for bar \(index + 1)")
             }
             HStack(spacing: 5) {
                 ForEach(measure.chords) { chord in
@@ -445,6 +462,40 @@ private struct MeasureCard: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(chordAccessibilityLabel(chord))
+                    .contextMenu {
+                        Button {
+                            store.select(chord)
+                            store.duplicateSelectedChord()
+                        } label: {
+                            Label("Duplicate change", systemImage: "plus.square.on.square")
+                        }
+                        Button {
+                            store.select(chord)
+                            store.moveSelectedChord(by: -1)
+                        } label: {
+                            Label("Move earlier", systemImage: "arrow.left")
+                        }
+                        Button {
+                            store.select(chord)
+                            store.moveSelectedChord(by: 1)
+                        } label: {
+                            Label("Move later", systemImage: "arrow.right")
+                        }
+                        Button(role: .destructive) {
+                            store.select(chord)
+                            store.deleteSelectedChord()
+                        } label: {
+                            Label("Delete change", systemImage: "trash")
+                        }
+                    }
+                    .accessibilityAction(named: "Duplicate change") {
+                        store.select(chord)
+                        store.duplicateSelectedChord()
+                    }
+                    .accessibilityAction(named: "Delete change") {
+                        store.select(chord)
+                        store.deleteSelectedChord()
+                    }
                 }
             }
             Rectangle().fill(active ? JazzTheme.brass : JazzTheme.emerald.opacity(0.28)).frame(height: active ? 2 : 1)
@@ -591,6 +642,34 @@ private struct ChordInspectorView: View {
                 Text(description.colorNote)
                     .font(.system(size: JazzTheme.size(12), design: .rounded))
                     .foregroundStyle(JazzTheme.secondary)
+                Menu {
+                    Button("Duplicate change") { store.duplicateSelectedChord() }
+                        .disabled(!store.canDuplicateSelectedChord)
+                    Button("Move earlier") { store.moveSelectedChord(by: -1) }
+                        .disabled(!store.canMoveSelectedChordEarlier)
+                    Button("Move later") { store.moveSelectedChord(by: 1) }
+                        .disabled(!store.canMoveSelectedChordLater)
+                    Button(role: .destructive) {
+                        store.deleteSelectedChord()
+                    } label: {
+                        Text("Delete change")
+                    }
+                    .disabled(!store.canDeleteSelectedChord)
+                    Divider()
+                    Button("Insert bar after") {
+                        if let id = store.selectedMeasureID { store.insertMeasure(after: id) }
+                    }
+                    Button(role: .destructive) {
+                        if let id = store.selectedMeasureID { store.deleteMeasure(id) }
+                    } label: {
+                        Text("Delete bar")
+                    }
+                    .disabled(!store.canDeleteSelectedMeasure)
+                } label: {
+                    Label("Edit change", systemImage: "ellipsis.circle")
+                        .frame(minHeight: 44)
+                }
+                .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.brass))
             }
         }
     }

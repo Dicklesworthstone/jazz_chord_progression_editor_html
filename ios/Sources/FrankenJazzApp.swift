@@ -34,6 +34,29 @@ struct FrankenJazzApp: App {
                     .keyboardShortcut("z", modifiers: [.command, .shift])
                     .disabled(!store.canRedo)
             }
+            CommandMenu("Edit Chart") {
+                Button("Duplicate Change") { store.duplicateSelectedChord() }
+                    .keyboardShortcut("d", modifiers: .command)
+                    .disabled(!store.canDuplicateSelectedChord)
+                Button("Delete Change") { store.deleteSelectedChord() }
+                    .keyboardShortcut(.delete, modifiers: .command)
+                    .disabled(!store.canDeleteSelectedChord)
+                Divider()
+                Button("Move Change Earlier") { store.moveSelectedChord(by: -1) }
+                    .keyboardShortcut(.leftArrow, modifiers: [.command, .option])
+                    .disabled(!store.canMoveSelectedChordEarlier)
+                Button("Move Change Later") { store.moveSelectedChord(by: 1) }
+                    .keyboardShortcut(.rightArrow, modifiers: [.command, .option])
+                    .disabled(!store.canMoveSelectedChordLater)
+                Divider()
+                Button("Insert Bar After") {
+                    if let id = store.selectedMeasureID { store.insertMeasure(after: id) }
+                }
+                Button("Delete Bar") {
+                    if let id = store.selectedMeasureID { store.deleteMeasure(id) }
+                }
+                .disabled(!store.canDeleteSelectedMeasure)
+            }
             CommandMenu("Playback") {
                 Button(store.audio.isPlaying ? "Pause" : "Play") { store.audio.toggle(chart: store.chart) }
                     .keyboardShortcut(.space, modifiers: [])
