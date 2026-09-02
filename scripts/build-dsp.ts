@@ -10,10 +10,23 @@
  *
  * Usage:
  *   bun scripts/build-dsp.ts            # regenerate the embedded module
- *   bun scripts/build-dsp.ts --check    # rebuild and verify zero drift
+ *   bun scripts/build-dsp.ts --check    # rebuild and verify zero drift (cargo)
+ *   bun scripts/build-dsp.ts --sources  # compare the dsp/ source tree against
+ *                                       # the closure ledger recorded in the
+ *                                       # checked-in module (bun-only, no cargo)
+ *
+ * The generated module additionally records a SOURCE-CLOSURE LEDGER: the
+ * sha256 of every Rust source, Cargo manifest/lock, and toolchain pin that
+ * fed the payload, plus one closure hash over the sorted ledger. `--sources`
+ * compares the live tree against that ledger without any Rust toolchain, so
+ * "the crate no longer describes the shipping payload" is detectable on any
+ * machine (bead jcpe-deploy-pipeline-restoration-kbvj.2; the observed defect
+ * was vibes_v2.rs changing the day after a payload pin with nothing watching).
+ * Exit codes for --sources: 0 match, 1 drift, 2 ledger-absent (a pre-ledger
+ * pin) — distinct so a future gate wiring can choose its own strictness.
  */
 import { createHash } from "node:crypto";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -25,7 +38,136 @@ const wasmPath = resolve(
   "wasm32-unknown-unknown/release/concert_grand.wasm",
 );
 
+
+/** Files whose bytes determine the compiled payload, relative to the repo. */
+async function closureFiles(): Promise<readonly string[]> {
+  const files: string[] = [
+    "dsp/concert-grand/Cargo.toml",
+    "dsp/concert-grand/Cargo.lock",
+    "dsp/concert-grand/rust-toolchain.toml",
+  ];
+  const srcDir = resolve(crateDir, "src");
+  const walk = async (dir: string, prefix: string): Promise<void> => {
+    for (const entry of await readdir(dir, { withFileTypes: true })) {
+      const path = `${prefix}/${entry.name}`;
+      if (entry.isDirectory()) await walk(resolve(dir, entry.name), path);
+      else if (entry.name.endsWith(".rs")) files.push(path);
+    }
+  };
+  await walk(srcDir, "dsp/concert-grand/src");
+  return Object.freeze([...files].sort());
+}
+
+export type DspSourceClosure = Readonly<{
+  closureSha256: string;
+  files: ReadonlyMap<string, string>;
+}>;
+
+/** Deterministic ledger: sha256 per closure file + one hash over the ledger. */
+export async function computeDspSourceClosure(): Promise<DspSourceClosure> {
+  const files = new Map<string, string>();
+  for (const relPath of await closureFiles()) {
+    const bytes = await readFile(resolve(root, relPath));
+    files.set(relPath, createHash("sha256").update(bytes).digest("hex"));
+  }
+  const ledger = [...files.entries()]
+    .map(([path, hash]) => `${hash}  ${path}`)
+    .join("\n");
+  return Object.freeze({
+    closureSha256: createHash("sha256").update(ledger, "utf8").digest("hex"),
+    files,
+  });
+}
+
+export type DspSourceComparison =
+  | Readonly<{ outcome: "match"; closureSha256: string }>
+  | Readonly<{ outcome: "ledger-absent" }>
+  | Readonly<{
+      outcome: "drift";
+      recordedClosureSha256: string;
+      liveClosureSha256: string;
+      changed: readonly string[];
+      added: readonly string[];
+      removed: readonly string[];
+    }>;
+
+/** Compare a live closure against the ledger inside generated module text. */
+export function compareDspSourceClosure(
+  moduleText: string,
+  live: DspSourceClosure,
+): DspSourceComparison {
+  const recordedHash =
+    /CONCERT_GRAND_DSP_SOURCE_CLOSURE_SHA256 =\n {2}"([0-9a-f]{64})"/u.exec(
+      moduleText,
+    )?.[1];
+  const ledgerMatch = /CONCERT_GRAND_DSP_SOURCE_CLOSURE = Object\.freeze\(\n(\{[\s\S]*?\}) as const,\n\)/u.exec(
+    moduleText,
+  )?.[1];
+  if (recordedHash === undefined || ledgerMatch === undefined) {
+    return Object.freeze({ outcome: "ledger-absent" });
+  }
+  const recorded = new Map<string, string>(
+    Object.entries(JSON.parse(ledgerMatch) as Record<string, string>),
+  );
+  if (recordedHash === live.closureSha256) {
+    return Object.freeze({ outcome: "match", closureSha256: recordedHash });
+  }
+  const changed: string[] = [];
+  const added: string[] = [];
+  const removed: string[] = [];
+  for (const [path, hash] of live.files) {
+    const prior = recorded.get(path);
+    if (prior === undefined) added.push(path);
+    else if (prior !== hash) changed.push(path);
+  }
+  for (const path of recorded.keys()) {
+    if (!live.files.has(path)) removed.push(path);
+  }
+  return Object.freeze({
+    outcome: "drift",
+    recordedClosureSha256: recordedHash,
+    liveClosureSha256: live.closureSha256,
+    changed: Object.freeze(changed),
+    added: Object.freeze(added),
+    removed: Object.freeze(removed),
+  });
+}
+
+async function runSourcesMode(): Promise<never> {
+  const moduleText = await readFile(modulePath, "utf8").catch(() => null);
+  if (moduleText === null) throw new Error(`DSP_MODULE_MISSING: ${modulePath}`);
+  const comparison = compareDspSourceClosure(
+    moduleText,
+    await computeDspSourceClosure(),
+  );
+  if (comparison.outcome === "ledger-absent") {
+    process.stdout.write(
+      "dsp-sources ledger-absent: the checked-in payload predates the " +
+        "source-closure ledger; the next re-pin records it\n",
+    );
+    process.exit(2);
+  }
+  if (comparison.outcome === "match") {
+    process.stdout.write(
+      `dsp-sources ok closure=${comparison.closureSha256}\n`,
+    );
+    process.exit(0);
+  }
+  process.stdout.write(
+    `dsp-sources DRIFT recorded=${comparison.recordedClosureSha256} ` +
+      `live=${comparison.liveClosureSha256}\n` +
+      [
+        ...comparison.changed.map((path) => `  changed ${path}`),
+        ...comparison.added.map((path) => `  added ${path}`),
+        ...comparison.removed.map((path) => `  removed ${path}`),
+      ].join("\n") +
+      "\n",
+  );
+  process.exit(1);
+}
+
 async function run(): Promise<void> {
+  if (process.argv.includes("--sources")) await runSourcesMode();
   const checkOnly = process.argv.includes("--check");
 
   const build = Bun.spawn(
@@ -94,6 +236,7 @@ async function run(): Promise<void> {
   }
   const sha256 = createHash("sha256").update(wasm).digest("hex");
   const base64 = Buffer.from(wasm).toString("base64");
+  const closure = await computeDspSourceClosure();
 
   const generated = `/**
  * @generated by scripts/build-dsp.ts — do not hand-edit.
@@ -116,6 +259,18 @@ export const CONCERT_GRAND_WASM_BYTE_LENGTH = ${String(wasm.byteLength)};
 
 export const CONCERT_GRAND_WASM_BASE64 =
   "${base64}";
+
+/**
+ * Source-closure ledger: sha256 of every file that fed this payload, and one
+ * hash over the sorted ledger. \`bun scripts/build-dsp.ts --sources\` compares
+ * the live tree against it without cargo.
+ */
+export const CONCERT_GRAND_DSP_SOURCE_CLOSURE_SHA256 =
+  "${closure.closureSha256}";
+
+export const CONCERT_GRAND_DSP_SOURCE_CLOSURE = Object.freeze(
+  ${JSON.stringify(Object.fromEntries(closure.files), null, 2).split("\n").join("\n  ")} as const,
+);
 `;
 
   if (checkOnly) {
@@ -141,4 +296,4 @@ export const CONCERT_GRAND_WASM_BASE64 =
   );
 }
 
-await run();
+if (import.meta.main) await run();
