@@ -9,7 +9,7 @@
  * Bun's node shim):
  *
  *   node scripts/check-predeploy-playback.ts [artifactPath] [--json out.json]
- *                                            [--enforce-recovery]
+ *                                            [--no-enforce-recovery]
  *
  * Default artifact: dist/index.html. The script serves the artifact bytes on
  * a loopback server, opens a FRESH Chromium page per selectable instrument
@@ -30,10 +30,11 @@
  *
  * A final RECOVERY fixture reproduces the RC2 sequence on one page: force a
  * refusal-capable instrument, then switch instrument and Play again; the
- * second Play must reach "Playing". Until the RC2 engine fix
- * (jcpe-engine-refusal-fault-cascade-vg8h) lands this fixture is recorded
- * but UNENFORCED (status "pending" on failure, gate exit unaffected) unless
- * --enforce-recovery is passed; its result is never fabricated.
+ * second Play must reach "Playing". The RC2 engine fix
+ * (jcpe-engine-refusal-fault-cascade-vg8h) landed, so the fixture is
+ * ENFORCED by default; --no-enforce-recovery downgrades it to recorded-only
+ * strictly for diagnosing a broken fixture, never for shipping past it.
+ * Its result is never fabricated.
  *
  * Output: human lines on stderr, machine-readable JSON on stdout (and to
  * --json path when given). Exit 0 only when every enforced assertion passed
@@ -481,7 +482,11 @@ async function recoveryFixture(
 
 async function main(): Promise<number> {
   const args = process.argv.slice(2);
-  const enforceRecovery = args.includes("--enforce-recovery");
+  /* jcpe-engine-refusal-fault-cascade-vg8h landed, so the recovery fixture
+   * is enforced by default (bead jcpe-deploy-pipeline-restoration-kbvj.3);
+   * --no-enforce-recovery exists only for diagnosing a broken fixture and
+   * never for shipping past it. */
+  const enforceRecovery = !args.includes("--no-enforce-recovery");
   const jsonIndex = args.indexOf("--json");
   const jsonPath = jsonIndex >= 0 ? args[jsonIndex + 1] : undefined;
   const browserIndex = args.indexOf("--browser");

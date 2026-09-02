@@ -120,10 +120,11 @@ rendered buffers with a chromatic pitch-lock (±35 cents of some
 equal-tempered pitch, search-boundary locks rejected) for rendered/sampled
 recipes, or a master-output analyser peak for live-graph synth recipes. A
 final recovery fixture seeds with a refusing instrument when one exists and
-asserts the session recovers; until the RC2 engine fix
-(`jcpe-engine-refusal-fault-cascade-vg8h`) lands it is recorded but
-unenforced (`--enforce-recovery` flips it), and on a healthy artifact it
-passes vacuously and says so.
+asserts the session recovers. The RC2 engine fix
+(`jcpe-engine-refusal-fault-cascade-vg8h`) landed, so the fixture is
+enforced by default; `--no-enforce-recovery` exists only for diagnosing a
+broken fixture and never for shipping past it. On a healthy artifact the
+fixture passes vacuously and says so.
 
 Proven against both fixtures at creation: the approved artifact `67b9ae08`
 passes 13/13 with recovery vacuous; the broken artifact `61c5e018` fails
