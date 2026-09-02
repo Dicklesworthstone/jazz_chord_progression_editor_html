@@ -2149,6 +2149,19 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
       ]),
     });
 
+  /*
+   * Ephemeral loop intents (whole-chart toggle, V2R-18 section arm) change
+   * controller-side session state without touching the document, and a
+   * successful recordEditResult sets already-null state — which Preact
+   * skips, leaving aria-pressed stale until an unrelated render. Bumping
+   * this counter after every loop-intent dispatch keeps the pressed truth
+   * current without inventing document state.
+   */
+  const [, setLoopIntentVersion] = useState(0);
+  const bumpLoopIntent = (): void => {
+    setLoopIntentVersion((version) => version + 1);
+  };
+
   const recordEditResult = (
     result: StudioControllerActionResult,
     pending: PendingEdit = null,
@@ -2458,6 +2471,7 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
           recordEditResult(actions.armSectionLoop(sectionId), {
             kind: "delete",
           });
+          bumpLoopIntent();
         }
         if (transportStatus !== "playing") {
           recordEditResult(
@@ -2628,11 +2642,13 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
         },
         onLoopToggle: () => {
           recordEditResult(actions.toggleLoop());
+          bumpLoopIntent();
         },
         onSectionLoopToggle: (sectionId) => {
           /* V2R-18: a refusal (empty or vanished section) surfaces as the
            * standard notice; the armed state only ever reflects success. */
           recordEditResult(actions.armSectionLoop(sectionId));
+          bumpLoopIntent();
         },
         readLoopState: actions.readLoopView,
         readLoopRegion: actions.readLoopRegionView,
@@ -3193,6 +3209,7 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
         },
         onSectionLoopToggle: (sectionId) => {
           recordEditResult(actions.armSectionLoop(sectionId));
+          bumpLoopIntent();
         },
         readSectionLoopId: () => actions.readLoopView().sectionId,
         onRenameSection: (sectionId, name) => {
