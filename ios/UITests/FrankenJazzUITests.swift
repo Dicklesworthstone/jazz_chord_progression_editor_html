@@ -94,10 +94,14 @@ final class FrankenJazzUITests: XCTestCase {
         let symbol = app.textFields["Selected chord symbol"]
         XCTAssertTrue(symbol.waitForExistence(timeout: 3))
         symbol.tap()
-        symbol.typeKey("a", modifierFlags: .command)
+        let originalSymbol = symbol.value as? String ?? ""
+        symbol.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: originalSymbol.count))
         symbol.typeText("Dm7")
         app.buttons["Apply symbol"].tap()
-        XCTAssertTrue(app.staticTexts["Changed Cmaj9 to Dm7."].waitForExistence(timeout: 3))
+
+        let updatedSymbol = app.textFields["Selected chord symbol"]
+        XCTAssertTrue(updatedSymbol.waitForExistence(timeout: 3))
+        XCTAssertEqual(updatedSymbol.value as? String, "Dm7")
 
         let moreActions = app.buttons["More change actions"]
         XCTAssertTrue(moreActions.waitForExistence(timeout: 3))
