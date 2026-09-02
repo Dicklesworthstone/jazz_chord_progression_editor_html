@@ -18,7 +18,8 @@ Support directory.
 - a persistent transport with background preparation, play/pause, Stop, loop,
   playhead highlighting, and interactive waveform-style seeking;
 - atomic local recovery with a previous valid fallback;
-- bounded `.frankenjazz`, lead-sheet text, and format-0/1 Standard MIDI File import;
+- bounded `.frankenjazz`, lead-sheet text, and format-0/1 Standard MIDI File
+  import, with reported salvage for conventional DAW note-state quirks;
 - actual `.frankenjazz`, `.txt`, and `.mid` exports through the system share sheet;
 - iPhone sheets, iPad split workspaces, keyboard shortcuts, and a freely
   resizable three-column Mac Catalyst studio.
