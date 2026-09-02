@@ -11,8 +11,11 @@ Support directory.
 - a substantial bundled library of public-domain progressions, shared harmonic
   devices, and original studies with provenance and musical notes;
 - selectable native measure cards, chord-tone piano, Roman/context reading,
-  guide-tone evidence, six realized voicing families, and per-chord frozen exact
-  pitches that drive playback and MIDI export;
+  guide-tone evidence, six realized voicing families, and distinct per-chord
+  Frozen and Manual exact voicings that drive playback and MIDI export;
+- a compact note-by-note exact-voicing editor with semitone/octave moves,
+  voice addition/removal, exact order and doubling preservation, and named
+  range/count refusals;
 - bounded per-chord rehearsal notes with lead-sheet indicators, undo, recovery,
   and canonical FrankenJazz document persistence;
 - transposition, key, tempo, groove, and generated instrument controls;

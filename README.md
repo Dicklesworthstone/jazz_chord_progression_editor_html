@@ -30,7 +30,7 @@ The repository now also contains `ios/`, a native SwiftUI sibling named
 lead-sheet entry, a bundled progression library, literal/contextual chord
 inspection, six voicing families, transposition, an adaptive iPhone/iPad/Mac
 workspace, asynchronous generated playback, local recovery, per-chord frozen
-exact voicings, and real
+and manual exact voicings with note-by-note pitch editing, and real
 FrankenJazz JSON, chart-text, and Standard MIDI files.
 
 The Apple app has no account, telemetry, third-party AI service, sample

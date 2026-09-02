@@ -1,0 +1,110 @@
+{
+  "schema": "frankenjazz.ios-test-evidence.v1",
+  "recordedAt": "2026-09-02T05:25:43Z",
+  "sourceCommit": "5f55c056a9c816542a01e575f0975019d7352a97",
+  "sourceCommitWasPublishedBeforeRun": true,
+  "environment": {
+    "host": "Apple silicon Mac mini",
+    "hostOS": "macOS 26.2 (25C56)",
+    "xcode": "26.1.1 (17B100)",
+    "xcodegen": "2.46.0",
+    "networkRequiredByApp": false
+  },
+  "runs": [
+    {
+      "id": "catalyst-unit",
+      "command": "xcodebuild -project ios/FrankenJazz.xcodeproj -scheme FrankenJazz -destination 'platform=macOS,variant=Mac Catalyst' -derivedDataPath /tmp/FrankenJazzManualRecordedDerived -resultBundlePath /tmp/FrankenJazzManualRecorded-5f55c05.xcresult CODE_SIGNING_ALLOWED=NO test -only-testing:FrankenJazzTests",
+      "resultBundle": "/tmp/FrankenJazzManualRecorded-5f55c05.xcresult",
+      "summaryReader": "xcrun xcresulttool get test-results summary --path /tmp/FrankenJazzManualRecorded-5f55c05.xcresult",
+      "result": "Passed",
+      "passed": 48,
+      "failed": 0,
+      "skipped": 0,
+      "expectedFailures": 0,
+      "device": "Mac Catalyst on Mac mini arm64 / macOS 26.2"
+    },
+    {
+      "id": "iphone-ui-full-exact-source",
+      "command": "xcodebuild -project ios/FrankenJazz.xcodeproj -scheme FrankenJazz -derivedDataPath /tmp/FrankenJazzManualUIRecordedDerived -destination 'platform=iOS Simulator,id=12EC3EAF-28DE-4880-B763-1BD4F118D935' -resultBundlePath /tmp/FrankenJazzManualUIFinal-5f55c05.xcresult -only-testing:FrankenJazzUITests test-without-building",
+      "resultBundle": "/tmp/FrankenJazzManualUIFinal-5f55c05.xcresult",
+      "summaryReader": "xcrun xcresulttool get test-results summary --path /tmp/FrankenJazzManualUIFinal-5f55c05.xcresult",
+      "result": "InfrastructureInterrupted",
+      "passed": 7,
+      "assertionFailures": 0,
+      "signalTerminations": 1,
+      "skipped": 0,
+      "expectedFailures": 0,
+      "terminatedTest": "testOwnerDirectedLibraryEntryIsSearchableAndLoadsCanonicalMetadata",
+      "device": "iPhone 17 Pro arm64 simulator / iOS 26.1 (23B86)",
+      "infrastructureObservation": "The xcresult reports the one non-pass as 'Test crashed with signal term.' while a concurrent host process was issuing simctl shutdown all. The named case passed in the targeted exact-source rerun below."
+    },
+    {
+      "id": "iphone-ui-terminated-case-retry",
+      "command": "xcodebuild -project ios/FrankenJazz.xcodeproj -scheme FrankenJazz -derivedDataPath /tmp/FrankenJazzManualUIRecordedDerived -destination 'platform=iOS Simulator,id=12EC3EAF-28DE-4880-B763-1BD4F118D935' -resultBundlePath /tmp/FrankenJazzManualUIOwner-5f55c05.xcresult -only-testing:FrankenJazzUITests/FrankenJazzUITests/testOwnerDirectedLibraryEntryIsSearchableAndLoadsCanonicalMetadata test-without-building",
+      "resultBundle": "/tmp/FrankenJazzManualUIOwner-5f55c05.xcresult",
+      "summaryReader": "xcrun xcresulttool get test-results summary --path /tmp/FrankenJazzManualUIOwner-5f55c05.xcresult",
+      "result": "Passed",
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "expectedFailures": 0,
+      "device": "iPhone 17 Pro arm64 simulator / iOS 26.1 (23B86)",
+      "coverageBoundary": "Together with the seven passing cases in iphone-ui-full-exact-source, this completes all eight exact-source UI cases. No single uninterrupted eight-pass xcresult is claimed."
+    },
+    {
+      "id": "generic-ios-build",
+      "command": "xcodebuild -project ios/FrankenJazz.xcodeproj -scheme FrankenJazz -destination 'generic/platform=iOS Simulator' -derivedDataPath /tmp/FrankenJazzManualGenericDerived CODE_SIGNING_ALLOWED=NO build",
+      "result": "Passed"
+    },
+    {
+      "id": "generated-project-drift",
+      "command": "cd ios && xcodegen generate --spec project.yml && git diff --exit-code -- FrankenJazz.xcodeproj Sources/Info.plist",
+      "result": "Passed"
+    }
+  ],
+  "newCoverage": {
+    "document": [
+      "legacy JSON without either stored-voicing field remains Automatic",
+      "Manual and Frozen states are mutually exclusive",
+      "Manual exact pitch order and doublings survive JSON and isolated recovery startup",
+      "empty, out-of-range, over-limit, and dual-mode stored voicings are refused"
+    ],
+    "musicalAuthority": [
+      "playback and Standard MIDI export prefer Manual, then Frozen, then Automatic pitches",
+      "Manual and Frozen render events forbid hidden octave-bass reinforcement",
+      "Automatic render events retain the deliberate quiet octave-bass reinforcement",
+      "audio-cache identity distinguishes voicing mode and exact pitch sequence",
+      "transposition preserves stored Manual and Frozen pitches exactly and reports that behavior"
+    ],
+    "editing": [
+      "starting Manual copies the displayed Automatic realization",
+      "editing a Frozen voice explicitly converts the event to Manual",
+      "semitone and octave moves, add voice, and remove voice are undoable",
+      "range, count, and last-voice bounds refuse without mutating history",
+      "unchanged quick entry, duplicate, undo, and redo preserve Manual pitches"
+    ],
+    "interface": [
+      "the inspector visibly distinguishes Automatic, Frozen exact voicing, and Manual exact voicing",
+      "accessible voice menus expose semitone/octave moves and removal",
+      "the real iPhone flow creates Manual, edits one voice, and returns to Automatic"
+    ]
+  },
+  "sourceHashes": {
+    "ios/Sources/FrankenJazzStudioView.swift": "074a34ee19e71e15392b7b5c40c00d23063d457999e9506190c1ad20a5894408",
+    "ios/Sources/JazzAudioRenderer.swift": "a40b909dbc1edc1de79c81a65846e62341961f28f421e6e4f2fc6eb9c44dac22",
+    "ios/Sources/JazzModels.swift": "3e06f0111b345d29507dd9661b7fe8f649211e3d27114c180b6d14aea8abcd7c",
+    "ios/Sources/JazzStudioStore.swift": "e0fe6f400a6d0ab15fafdd625a70ae2f6cba52c9c7eed2de19c2d6e5eb27b240",
+    "ios/Sources/JazzTheory.swift": "881bcec33fa72382ea9106ceb6117912d30732522d84259ec9e635d8cae2c8f2",
+    "ios/Tests/FrankenJazzCoreTests.swift": "d6aaf9141e25b65c3b3aede1d81fa3ac815cc3b50382d53c5e05e37ec80dc0a1",
+    "ios/UITests/FrankenJazzUITests.swift": "3431f20ac2ecbb99b019b3d825566ec910db4c943d228b5f345611be5a98a6e3",
+    "ios/project.yml": "7a5d23d3b2b11c1ef82c893847fce5489927a0024a7cd433739c9832221e8ae5",
+    ".github/workflows/apple.yml": "7a3c4328cf99e5f56f0bb6f25af8f1ebd7be45cfde72e5792499cd1602d7fd2c"
+  },
+  "honestBoundaries": {
+    "webU2Parity": "The native editor now supports exact note-by-note Manual and Frozen voicings. It does not claim the web app's larger U2 inspector or progression-optimization surface is complete.",
+    "fullUIResultBundle": "All eight exact-source UI cases passed across two finalized result bundles: seven in the full-suite bundle and the signal-terminated owner-library case in its targeted rerun. The full bundle truthfully retains its infrastructure termination; no single uninterrupted eight-pass xcresult is claimed.",
+    "hostedCI": "Apple workflow run 33592788421 for sourceCommit remains pending; newer run 33593416163 is queued. Earlier Apple runs were cancelled by workflow concurrency before executing runner steps. No hosted pass is claimed.",
+    "manualAcceptance": "This record does not claim physical-device listening, signed distribution, human fresh-eyes approval, or a complete screenshot/manual interaction matrix for every iPhone, iPad, and Catalyst acceptance row.",
+    "staticAnalysis": "UBS 5.2.42 reported 41 criticals, three warnings, and 48 info items across the seven changed Swift files. Review found the criticals are false positives where SwiftUI systemImage labels were classified as shell system calls; the warnings are the existing bounded Data(contentsOf:) import/recovery reads. This is not represented as a zero-finding scan."
+  }
+}
