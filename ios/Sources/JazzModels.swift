@@ -89,19 +89,23 @@ struct JazzChordEvent: Identifiable, Codable, Equatable, Sendable {
     /// Exact ascending MIDI pitches captured from an automatic realization.
     /// `nil` keeps this event linked to the chart's current voicing family.
     var frozenMIDIPitches: [Int]?
+    /// User-authored pitches. Order and doublings are intentional document data.
+    var manualMIDIPitches: [Int]?
 
     init(
         id: UUID = UUID(),
         symbol: String,
         beats: Double = 4,
         annotation: String = "",
-        frozenMIDIPitches: [Int]? = nil
+        frozenMIDIPitches: [Int]? = nil,
+        manualMIDIPitches: [Int]? = nil
     ) {
         self.id = id
         self.symbol = symbol
         self.beats = beats
         self.annotation = annotation
         self.frozenMIDIPitches = frozenMIDIPitches
+        self.manualMIDIPitches = manualMIDIPitches
     }
 }
 
@@ -250,7 +254,7 @@ enum JazzDocumentValidationIssue: LocalizedError, Equatable {
         case .duplicateMeasureID: "Two measures reuse the same stable identity."
         case .duplicateChordID: "Two chord events reuse the same stable identity."
         case let .invalidMeasure(index): "Measure \(index) must contain 1–\(JazzTheory.maximumChordsPerMeasure) events totaling exactly four beats."
-        case let .invalidChord(index): "A chord in measure \(index) contains an invalid symbol, duration, annotation, or frozen voicing."
+        case let .invalidChord(index): "A chord in measure \(index) contains an invalid symbol, duration, annotation, or stored voicing."
         }
     }
 }
@@ -284,11 +288,18 @@ enum JazzDocumentValidator {
                         Set(pitches).count == pitches.count &&
                         pitches.allSatisfy { (21...108).contains($0) }
                 } ?? true
+                let manualPitchesAreValid = chord.manualMIDIPitches.map { pitches in
+                    !pitches.isEmpty &&
+                        pitches.count <= 16 &&
+                        pitches.allSatisfy { (21...108).contains($0) }
+                } ?? true
                 guard chord.beats.isFinite,
                       chord.beats > 0,
                       chord.beats <= 4,
                       chord.annotation.count <= 500,
+                      chord.frozenMIDIPitches == nil || chord.manualMIDIPitches == nil,
                       frozenPitchesAreValid,
+                      manualPitchesAreValid,
                       JazzTheory.parseChord(chord.symbol, in: chart.key) != nil else {
                     throw JazzDocumentValidationIssue.invalidChord(index)
                 }

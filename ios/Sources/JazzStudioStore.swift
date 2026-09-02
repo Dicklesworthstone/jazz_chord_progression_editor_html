@@ -28,6 +28,12 @@ struct JazzImportFence {
     }
 }
 
+enum JazzVoicingMode: Equatable {
+    case automatic
+    case frozen
+    case manual
+}
+
 @MainActor
 final class JazzStudioStore: ObservableObject {
     enum DraftState: Equatable {
@@ -109,8 +115,16 @@ final class JazzStudioStore: ObservableObject {
 
     var selectedMIDIPitches: [Int] {
         guard let selectedChord, let selectedDescription else { return [] }
-        return selectedChord.frozenMIDIPitches
+        return selectedChord.manualMIDIPitches
+            ?? selectedChord.frozenMIDIPitches
             ?? JazzTheory.voicing(for: selectedDescription, family: chart.voicingFamily)
+    }
+
+    var selectedVoicingMode: JazzVoicingMode {
+        guard let selectedChord else { return .automatic }
+        if selectedChord.manualMIDIPitches != nil { return .manual }
+        if selectedChord.frozenMIDIPitches != nil { return .frozen }
+        return .automatic
     }
 
     var selectedTransitionSummary: String {
@@ -242,6 +256,7 @@ final class JazzStudioStore: ObservableObject {
     func freezeSelectedVoicing() {
         guard let location = selectedLocation,
               chart.measures[location.measure].chords[location.chord].frozenMIDIPitches == nil,
+              chart.measures[location.measure].chords[location.chord].manualMIDIPitches == nil,
               let description = selectedDescription else { return }
         let pitches = JazzTheory.voicing(for: description, family: chart.voicingFamily)
         guard !pitches.isEmpty else { return }
@@ -252,15 +267,98 @@ final class JazzStudioStore: ObservableObject {
         notice = "Frozen \(description.symbol) at \(pitches.count) exact pitches."
     }
 
-    func clearSelectedFrozenVoicing() {
+    func beginManualSelectedVoicing() {
         guard let location = selectedLocation,
-              chart.measures[location.measure].chords[location.chord].frozenMIDIPitches != nil else { return }
+              selectedVoicingMode == .automatic,
+              !selectedMIDIPitches.isEmpty else { return }
+        let pitches = selectedMIDIPitches
+        let symbol = chart.measures[location.measure].chords[location.chord].symbol
+        audio.stop()
+        mutate { chart in
+            chart.measures[location.measure].chords[location.chord].manualMIDIPitches = pitches
+        }
+        notice = "Editing \(symbol) as \(pitches.count) exact manual voices."
+    }
+
+    func clearSelectedStoredVoicing() {
+        guard let location = selectedLocation,
+              selectedVoicingMode != .automatic else { return }
         let symbol = chart.measures[location.measure].chords[location.chord].symbol
         audio.stop()
         mutate { chart in
             chart.measures[location.measure].chords[location.chord].frozenMIDIPitches = nil
+            chart.measures[location.measure].chords[location.chord].manualMIDIPitches = nil
         }
         notice = "\(symbol) now follows the \(chart.voicingFamily.rawValue) family."
+    }
+
+    func moveSelectedVoice(at index: Int, semitones: Int) {
+        guard [-12, -1, 1, 12].contains(semitones),
+              let location = selectedLocation,
+              selectedMIDIPitches.indices.contains(index) else { return }
+        var pitches = selectedMIDIPitches
+        let original = pitches[index]
+        let moved = original + semitones
+        guard (21...108).contains(moved) else {
+            notice = "That move would leave the supported A0–C8 MIDI range."
+            return
+        }
+        pitches[index] = moved
+        audio.stop()
+        mutate { chart in
+            chart.measures[location.measure].chords[location.chord].frozenMIDIPitches = nil
+            chart.measures[location.measure].chords[location.chord].manualMIDIPitches = pitches
+        }
+        notice = "Moved voice \(index + 1) from \(midiName(original)) to \(midiName(moved)); voicing is Manual."
+    }
+
+    func addSelectedVoice() {
+        guard let location = selectedLocation,
+              let description = selectedDescription,
+              selectedVoicingMode != .automatic else { return }
+        var pitches = selectedMIDIPitches
+        guard pitches.count < 16 else {
+            notice = "A manual voicing can contain at most 16 voices."
+            return
+        }
+        let pitchClasses = Set(description.pitchClasses)
+        let highest = pitches.max() ?? 60
+        let lowest = pitches.min() ?? 60
+        let upper = stride(from: highest + 1, through: 108, by: 1).first {
+            pitchClasses.contains(($0 % 12 + 12) % 12)
+        }
+        let lower = stride(from: lowest - 1, through: 21, by: -1).first {
+            pitchClasses.contains(($0 % 12 + 12) % 12)
+        }
+        guard let added = upper ?? lower else {
+            notice = "No chord tone fits inside the supported A0–C8 MIDI range."
+            return
+        }
+        if upper != nil { pitches.append(added) } else { pitches.insert(added, at: 0) }
+        audio.stop()
+        mutate { chart in
+            chart.measures[location.measure].chords[location.chord].frozenMIDIPitches = nil
+            chart.measures[location.measure].chords[location.chord].manualMIDIPitches = pitches
+        }
+        notice = "Added \(midiName(added)); voicing is Manual."
+    }
+
+    func removeSelectedVoice(at index: Int) {
+        guard let location = selectedLocation,
+              selectedVoicingMode != .automatic,
+              selectedMIDIPitches.indices.contains(index) else { return }
+        var pitches = selectedMIDIPitches
+        guard pitches.count > 1 else {
+            notice = "A manual or frozen voicing needs at least one voice."
+            return
+        }
+        let removed = pitches.remove(at: index)
+        audio.stop()
+        mutate { chart in
+            chart.measures[location.measure].chords[location.chord].frozenMIDIPitches = nil
+            chart.measures[location.measure].chords[location.chord].manualMIDIPitches = pitches
+        }
+        notice = "Removed \(midiName(removed)); voicing is Manual."
     }
 
     func updateSelectedChordAnnotation(_ annotation: String) {
@@ -280,7 +378,9 @@ final class JazzStudioStore: ObservableObject {
 
     func transpose(_ semitones: Int) {
         guard semitones != 0 else { return }
-        let frozenCount = chart.measures.flatMap(\.chords).filter { $0.frozenMIDIPitches != nil }.count
+        let storedCount = chart.measures.flatMap(\.chords).filter {
+            $0.frozenMIDIPitches != nil || $0.manualMIDIPitches != nil
+        }.count
         audio.stop()
         mutate { chart in
             let keyPitch = chart.key.pitchClass + semitones
@@ -299,10 +399,10 @@ final class JazzStudioStore: ObservableObject {
         let direction = semitones > 0
             ? "Transposed up \(semitones) semitone\(semitones == 1 ? "" : "s")."
             : "Transposed down \(-semitones) semitone\(-semitones == 1 ? "" : "s")."
-        let frozenNotice = frozenCount == 0
+        let storedNotice = storedCount == 0
             ? ""
-            : " \(frozenCount) frozen voicing\(frozenCount == 1 ? "" : "s") stayed at its exact pitches."
-        notice = direction + frozenNotice
+            : " \(storedCount) stored voicing\(storedCount == 1 ? "" : "s") stayed at its exact pitches."
+        notice = direction + storedNotice
     }
 
     func select(_ chord: JazzChordEvent, showInspector: Bool = false) {
@@ -596,6 +696,10 @@ final class JazzStudioStore: ObservableObject {
             guard !Task.isCancelled, let self else { return }
             self.audio.prime(chart: self.chart)
         }
+    }
+
+    private func midiName(_ midi: Int) -> String {
+        JazzTheory.noteName(midi % 12, flats: chart.key.prefersFlats) + String(midi / 12 - 1)
     }
 
     private static func chart(from entry: LibraryEntry, fallbackTempo: Double = 132) -> JazzChart {

@@ -35,7 +35,9 @@ enum JazzAudioRenderer {
         let changes = chart.measures
             .flatMap(\.chords)
             .map { chord in
-                let realization = chord.frozenMIDIPitches.map { pitches in
+                let realization = chord.manualMIDIPitches.map { pitches in
+                    "manual[" + pitches.map(String.init).joined(separator: ".") + "]"
+                } ?? chord.frozenMIDIPitches.map { pitches in
                     "frozen[" + pitches.map(String.init).joined(separator: ".") + "]"
                 } ?? "automatic"
                 return "\(chord.symbol):\(chord.beats):\(realization)"

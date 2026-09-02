@@ -725,7 +725,7 @@ private struct ChordInspectorView: View {
     }
 
     private func voicingCard() -> some View {
-        let frozen = store.selectedChord?.frozenMIDIPitches != nil
+        let mode = store.selectedVoicingMode
         let midi = store.selectedMIDIPitches
         return JazzPanel(accent: JazzTheme.emerald) {
             VStack(alignment: .leading, spacing: 11) {
@@ -743,9 +743,9 @@ private struct ChordInspectorView: View {
                 } label: {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(frozen ? "Frozen exact voicing" : "Automatic · \(store.chart.voicingFamily.rawValue)")
+                            Text(voicingTitle(mode))
                                 .font(.system(size: JazzTheme.size(14), weight: .bold, design: .rounded))
-                            Text(frozen ? "Family changes leave these pitches untouched" : store.chart.voicingFamily.note)
+                            Text(voicingNote(mode))
                                 .font(.system(size: JazzTheme.size(10.5), design: .rounded))
                                 .foregroundStyle(JazzTheme.secondary)
                         }
@@ -759,29 +759,71 @@ private struct ChordInspectorView: View {
                 }
                 ScrollView(.horizontal) {
                     HStack(spacing: 7) {
-                        ForEach(Array(midi.enumerated()), id: \.offset) { _, pitch in
-                            Text(midiName(pitch))
-                                .font(.system(size: JazzTheme.size(11), weight: .bold, design: .monospaced))
-                                .foregroundStyle(JazzTheme.background)
-                                .padding(.horizontal, 8).padding(.vertical, 6)
-                                .background(JazzTheme.emerald, in: Capsule())
+                        ForEach(Array(midi.enumerated()), id: \.offset) { index, pitch in
+                            if mode == .automatic {
+                                voicingPitchLabel(pitch)
+                            } else {
+                                Menu {
+                                    Button("Down one octave") { store.moveSelectedVoice(at: index, semitones: -12) }
+                                    Button("Down one semitone") { store.moveSelectedVoice(at: index, semitones: -1) }
+                                    Button("Up one semitone") { store.moveSelectedVoice(at: index, semitones: 1) }
+                                    Button("Up one octave") { store.moveSelectedVoice(at: index, semitones: 12) }
+                                    Divider()
+                                    Button("Remove voice", role: .destructive) { store.removeSelectedVoice(at: index) }
+                                        .disabled(midi.count == 1)
+                                } label: {
+                                    voicingPitchLabel(pitch)
+                                }
+                                .accessibilityLabel("Edit voice \(index + 1), \(midiName(pitch))")
+                                .accessibilityHint("Moves or removes this exact voice; editing a frozen voicing makes it manual")
+                            }
                         }
                     }
                 }
                 .scrollIndicators(.hidden)
-                if frozen {
-                    Button("Use automatic \(store.chart.voicingFamily.rawValue)") {
-                        store.clearSelectedFrozenVoicing()
-                    }
-                    .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.emerald))
-                    .accessibilityHint("Discards the exact pitches and follows the chart voicing family")
-                } else {
+                if mode == .automatic {
+                    Button("Edit exact voicing") { store.beginManualSelectedVoicing() }
+                        .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.emerald))
+                        .accessibilityHint("Copies these pitches into a note-by-note manual voicing")
                     Button("Freeze exact voicing") { store.freezeSelectedVoicing() }
                         .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.emerald))
                         .accessibilityHint("Keeps these exact pitches when the chart voicing family changes")
+                } else {
+                    Button("Add voice") { store.addSelectedVoice() }
+                        .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.emerald))
+                        .accessibilityHint("Adds the next available chord tone as an editable manual voice")
+                    Button("Use automatic \(store.chart.voicingFamily.rawValue)") {
+                        store.clearSelectedStoredVoicing()
+                    }
+                    .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.emerald))
+                    .accessibilityHint("Discards the exact pitches and follows the chart voicing family")
                 }
             }
         }
+    }
+
+    private func voicingTitle(_ mode: JazzVoicingMode) -> String {
+        switch mode {
+        case .automatic: "Automatic · \(store.chart.voicingFamily.rawValue)"
+        case .frozen: "Frozen exact voicing"
+        case .manual: "Manual exact voicing"
+        }
+    }
+
+    private func voicingNote(_ mode: JazzVoicingMode) -> String {
+        switch mode {
+        case .automatic: store.chart.voicingFamily.note
+        case .frozen: "Family changes leave these pitches untouched; edit a note to make it Manual"
+        case .manual: "User-authored order, octaves, and doublings play and export exactly"
+        }
+    }
+
+    private func voicingPitchLabel(_ pitch: Int) -> some View {
+        Text(midiName(pitch))
+            .font(.system(size: JazzTheme.size(11), weight: .bold, design: .monospaced))
+            .foregroundStyle(JazzTheme.background)
+            .padding(.horizontal, 8).padding(.vertical, 6)
+            .background(JazzTheme.emerald, in: Capsule())
     }
 
     private func evidenceCard(_ description: ChordDescription) -> some View {
