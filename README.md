@@ -28,8 +28,9 @@ That bounded, explainable design remains the product contract. See [Roadmap](#ro
 The repository now also contains `ios/`, a native SwiftUI sibling named
 **FrankenJazz**. It is not a WebView wrapper. The Apple app includes native
 lead-sheet entry, a bundled progression library, literal/contextual chord
-inspection, five voicing families, transposition, an adaptive iPhone/iPad/Mac
-workspace, asynchronous generated playback, local recovery, and real
+inspection, six voicing families, transposition, an adaptive iPhone/iPad/Mac
+workspace, asynchronous generated playback, local recovery, per-chord frozen
+exact voicings, and real
 FrankenJazz JSON, chart-text, and Standard MIDI files.
 
 The Apple app has no account, telemetry, third-party AI service, sample
