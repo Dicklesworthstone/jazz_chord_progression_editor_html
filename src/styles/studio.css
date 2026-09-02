@@ -1084,6 +1084,39 @@
   position: relative;
 }
 
+/* V2R-18: the quiet per-section Loop button. Armed intent presses it;
+ * the transport's engaged truth renders on the scrub line, never here. */
+.studio-section__loop {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: var(--control-min-block);
+  min-inline-size: var(--control-min-block);
+  padding: var(--space-1) var(--space-2);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.studio-section__loop:hover {
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+
+.studio-section__loop[aria-pressed="true"] {
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+  background: var(--surface-sunken);
+}
+
+.studio-section__loop:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
 .studio-section__boundary-trigger {
   display: inline-flex;
   align-items: center;
@@ -3365,6 +3398,18 @@
   block-size: 2px;
   z-index: 1;
   background-color: var(--red);
+}
+
+/* V2R-18: the engaged loop's span on the scrub line — a quiet band under
+ * the sweep so the repeating region reads at a glance. */
+.studio-transport__sweep > .studio-transport__loop-region {
+  position: absolute;
+  inset-block-start: 3px;
+  block-size: 6px;
+  z-index: 0;
+  border-radius: 3px;
+  background-color: var(--focus-ring);
+  opacity: 0.35;
 }
 
 .studio-transport__sweep::before {

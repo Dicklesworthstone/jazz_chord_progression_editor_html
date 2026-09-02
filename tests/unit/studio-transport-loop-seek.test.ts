@@ -87,16 +87,19 @@ describe("V2R-15 loop", () => {
     expect(controller.readLoopView()).toEqual({
       enabled: false,
       engaged: false,
+      sectionId: null,
     });
     expect(controller.toggleLoop().ok).toBe(true);
     expect(controller.readLoopView()).toEqual({
       enabled: true,
       engaged: false,
+      sectionId: null,
     });
     expect(controller.toggleLoop().ok).toBe(true);
     expect(controller.readLoopView()).toEqual({
       enabled: false,
       engaged: false,
+      sectionId: null,
     });
   });
 
@@ -105,13 +108,18 @@ describe("V2R-15 loop", () => {
     expect(controller.toggleLoop().ok).toBe(true);
     expect(controller.playProgression(GESTURE).ok).toBe(true);
     await settle(() => controller.readLoopView().engaged);
-    expect(controller.readLoopView()).toEqual({ enabled: true, engaged: true });
+    expect(controller.readLoopView()).toEqual({
+      enabled: true,
+      engaged: true,
+      sectionId: null,
+    });
     /* Toggling off during the run re-binds without one. */
     expect(controller.toggleLoop().ok).toBe(true);
     await settle(() => !controller.readLoopView().engaged);
     expect(controller.readLoopView()).toEqual({
       enabled: false,
       engaged: false,
+      sectionId: null,
     });
   });
 
@@ -122,10 +130,15 @@ describe("V2R-15 loop", () => {
     expect(controller.readLoopView()).toEqual({
       enabled: false,
       engaged: false,
+      sectionId: null,
     });
     expect(controller.toggleLoop().ok).toBe(true);
     await settle(() => controller.readLoopView().engaged);
-    expect(controller.readLoopView()).toEqual({ enabled: true, engaged: true });
+    expect(controller.readLoopView()).toEqual({
+      enabled: true,
+      engaged: true,
+      sectionId: null,
+    });
   });
 
   test("loop and seek leave the document and history untouched", async () => {
@@ -138,6 +151,91 @@ describe("V2R-15 loop", () => {
     await settle(() => controller.getSnapshot().transport.status === "playing");
     expect(controller.seekToFraction(0.25).ok).toBe(true);
     await settle();
+    expect(controller.getSnapshot().revision).toBe(revision);
+    expect(controller.getSnapshot().history.canUndo).toBe(undoDepthBefore);
+  });
+});
+
+describe("V2R-18 section loop", () => {
+  test("arming a section stores exclusive intent and disarms on a second press", () => {
+    const controller = makeController();
+    const sectionId = controller.getSnapshot().sections[0]?.id ?? "";
+    expect(sectionId.length > 0).toBe(true);
+    /* Whole-chart armed first: the section press must displace it. */
+    expect(controller.toggleLoop().ok).toBe(true);
+    expect(controller.armSectionLoop(sectionId).ok).toBe(true);
+    expect(controller.readLoopView()).toEqual({
+      enabled: false,
+      engaged: false,
+      sectionId,
+    });
+    /* The whole-chart press while a section is armed widens, not disarms. */
+    expect(controller.toggleLoop().ok).toBe(true);
+    expect(controller.readLoopView()).toEqual({
+      enabled: true,
+      engaged: false,
+      sectionId: null,
+    });
+    expect(controller.toggleLoop().ok).toBe(true);
+    expect(controller.armSectionLoop(sectionId).ok).toBe(true);
+    expect(controller.armSectionLoop(sectionId).ok).toBe(true);
+    expect(controller.readLoopView()).toEqual({
+      enabled: false,
+      engaged: false,
+      sectionId: null,
+    });
+  });
+
+  test("an unknown section refuses honestly", () => {
+    const controller = makeController();
+    const result = controller.armSectionLoop("no-such-section");
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.refusal.code).toBe("u1.playback_refused");
+  });
+
+  test("an armed section loop engages the transport over the section's exact span", async () => {
+    const controller = makeController();
+    /* Two sections with hand-authored spans: the starter chart occupies
+     * 24/1 beats in one section; splitting after bar 4 leaves A = [0, 16)
+     * and B = [16, 24). Expected values derive from the chart's written
+     * durations (four 2+2 bars, then two whole-note bars), never from the
+     * controller's own answers. */
+    const first = controller.getSnapshot().sections[0]?.id ?? "";
+    const fifthMeasureId =
+      controller.getSnapshot().sections[0]?.measures[4]?.id ?? "";
+    expect(fifthMeasureId.length > 0).toBe(true);
+    const split = controller.splitSection(first, fifthMeasureId, "B");
+    expect(split.ok).toBe(true);
+    const second = controller.getSnapshot().sections[1]?.id ?? "";
+    expect(second.length > 0).toBe(true);
+    expect(controller.armSectionLoop(second).ok).toBe(true);
+    expect(controller.playProgression(GESTURE).ok).toBe(true);
+    await settle(() => controller.readLoopView().engaged);
+    expect(controller.readLoopView()).toEqual({
+      enabled: false,
+      engaged: true,
+      sectionId: second,
+    });
+    const region = controller.readLoopRegionView();
+    expect(region).not.toBeNull();
+    if (region !== null) {
+      expect(region.startFraction).toBeCloseTo(16 / 24, 10);
+      expect(region.endFraction).toBe(1);
+    }
+    /* Disarming live re-binds to no loop and clears the region marker. */
+    expect(controller.armSectionLoop(second).ok).toBe(true);
+    await settle(() => !controller.readLoopView().engaged);
+    expect(controller.readLoopRegionView()).toBeNull();
+  });
+
+  test("section loop and seek leave the document and history untouched", async () => {
+    const controller = makeController();
+    const sectionId = controller.getSnapshot().sections[0]?.id ?? "";
+    const revision = controller.getSnapshot().revision;
+    const undoDepthBefore = controller.getSnapshot().history.canUndo;
+    expect(controller.armSectionLoop(sectionId).ok).toBe(true);
+    expect(controller.playProgression(GESTURE).ok).toBe(true);
+    await settle(() => controller.readLoopView().engaged);
     expect(controller.getSnapshot().revision).toBe(revision);
     expect(controller.getSnapshot().history.canUndo).toBe(undoDepthBefore);
   });

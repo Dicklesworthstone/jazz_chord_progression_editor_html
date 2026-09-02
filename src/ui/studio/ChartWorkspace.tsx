@@ -58,6 +58,13 @@ export type ChartWorkspaceProps = Readonly<{
   onCancelPendingEdit: () => void;
   onDeclareMeasureCompletion: (measureId: string) => void;
   onRenameSection: (sectionId: string, name: string) => void;
+  /**
+   * V2R-18 (jcpe-v2r-section-loop-jjsw): arm/disarm this section's loop.
+   * `sectionLoopId` is the armed intent for pressed-state honesty; the
+   * transport's engaged truth renders on the scrub line, never here.
+   */
+  onSectionLoopToggle: (sectionId: string) => void;
+  sectionLoopId: string | null;
   onAnnotateSection: (sectionId: string, annotation: string) => void;
   onSetSectionBoundary: (
     sectionId: string,
@@ -425,6 +432,8 @@ export function ChartWorkspace({
   onCancelPendingEdit,
   onDeclareMeasureCompletion,
   onRenameSection,
+  onSectionLoopToggle,
+  sectionLoopId,
   onAnnotateSection,
   onSetSectionBoundary,
   onDropChordOnMeasure,
@@ -2417,6 +2426,26 @@ export function ChartWorkspace({
                       <span data-testid="section-boundary-label">
                         {section.voiceLeadingLabel}
                       </span>
+                      <button
+                        aria-label={`Loop section ${section.label}`}
+                        aria-pressed={
+                          sectionLoopId === section.id ? "true" : "false"
+                        }
+                        class="studio-section__loop"
+                        data-testid={`section-loop-${section.id}`}
+                        id={`studio-section-loop-${section.id}`}
+                        onClick={() => {
+                          onSectionLoopToggle(section.id);
+                        }}
+                        title={
+                          sectionLoopId === section.id
+                            ? "Section loop armed — press again to disarm"
+                            : "Loop this section"
+                        }
+                        type="button"
+                      >
+                        ↻
+                      </button>
                       <button
                         aria-controls={`studio-section-boundary-menu-${section.id}`}
                         aria-expanded={

@@ -218,8 +218,19 @@ export type AppActions = Readonly<{
   seekToFraction: (fraction: number) => StudioControllerActionResult;
   /** Toggle whole-chart looping; armed intent applies at the next Play. */
   toggleLoop: () => StudioControllerActionResult;
+  /** Arm/disarm a section loop (V2R-18); exclusive with the whole-chart flag. */
+  armSectionLoop: (sectionId: string) => StudioControllerActionResult;
   /** Display-only loop state: armed intent vs transport truth. */
-  readLoopView: () => Readonly<{ enabled: boolean; engaged: boolean }>;
+  readLoopView: () => Readonly<{
+    enabled: boolean;
+    engaged: boolean;
+    sectionId: string | null;
+  }>;
+  /** Engaged loop span as run fractions for the scrub region; null when none. */
+  readLoopRegionView: () => Readonly<{
+    startFraction: number;
+    endFraction: number;
+  }> | null;
   previewMasterVolume: (volume: number) => StudioControllerActionResult;
   toggleMute: () => StudioControllerActionResult;
   readMixView: () => Readonly<{ muted: boolean }>;
@@ -2405,9 +2416,7 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== " " && event.code !== "Space") return;
       if (event.defaultPrevented) return;
-      if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) {
-        return;
-      }
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
       const target = event.target;
       if (target instanceof HTMLElement) {
         const tag = target.tagName;
@@ -2416,6 +2425,48 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
         if (target.closest('button, a[href], [role="button"]')) return;
       }
       event.preventDefault();
+      if (event.shiftKey) {
+        /*
+         * Shift+Space plays the selected section (REBUILD_PLAN 6.8) through
+         * the V2R-18 section loop: arm the section that owns the selection
+         * (or the first section), then start playback if it is not already
+         * running. An armed section presses through to a live run via the
+         * same serialized re-bind the Loop buttons use.
+         */
+        if (chordCountForKeys === 0) return;
+        const snapshotNow = actions.getSnapshot();
+        const selectedEventId =
+          snapshotNow.bookmarks.selectedEventIds[0] ?? null;
+        let selectedSectionId: string | null = null;
+        if (selectedEventId !== null) {
+          outer: for (const section of snapshotNow.sections) {
+            for (const measure of section.measures) {
+              for (const chordEvent of measure.events) {
+                if (chordEvent.id === selectedEventId) {
+                  selectedSectionId = chordEvent.sectionId;
+                  break outer;
+                }
+              }
+            }
+          }
+        }
+        const sectionId =
+          selectedSectionId ?? snapshotNow.sections[0]?.id ?? null;
+        if (sectionId === null) return;
+        const loopNow = actions.readLoopView();
+        if (loopNow.sectionId !== sectionId) {
+          recordEditResult(actions.armSectionLoop(sectionId), {
+            kind: "delete",
+          });
+        }
+        if (transportStatus !== "playing") {
+          recordEditResult(
+            actions.playProgression(nextAudioGesture("trusted-keyboard")),
+            { kind: "delete" },
+          );
+        }
+        return;
+      }
       if (transportStatus === "playing") {
         recordEditResult(actions.pauseProgression(), { kind: "delete" });
         return;
@@ -2578,7 +2629,13 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
         onLoopToggle: () => {
           recordEditResult(actions.toggleLoop());
         },
+        onSectionLoopToggle: (sectionId) => {
+          /* V2R-18: a refusal (empty or vanished section) surfaces as the
+           * standard notice; the armed state only ever reflects success. */
+          recordEditResult(actions.armSectionLoop(sectionId));
+        },
         readLoopState: actions.readLoopView,
+        readLoopRegion: actions.readLoopRegionView,
         onVolumePreview: (volume) => {
           /* Display-only ride; a refusal (out-of-range) is impossible from
            * the clamped range input, so the result is deliberately unread. */
@@ -3134,6 +3191,10 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
             }
           }
         },
+        onSectionLoopToggle: (sectionId) => {
+          recordEditResult(actions.armSectionLoop(sectionId));
+        },
+        readSectionLoopId: () => actions.readLoopView().sectionId,
         onRenameSection: (sectionId, name) => {
           recordEditResult(actions.renameSection(sectionId, name));
         },
@@ -3642,7 +3703,9 @@ export function StudioRoot({
         stopProgression: controller.stopProgression,
         seekToFraction: controller.seekToFraction,
         toggleLoop: controller.toggleLoop,
+        armSectionLoop: controller.armSectionLoop,
         readLoopView: controller.readLoopView,
+        readLoopRegionView: controller.readLoopRegionView,
         previewMasterVolume: controller.previewMasterVolume,
         toggleMute: controller.toggleMute,
         readMixView: controller.readMixView,
