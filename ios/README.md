@@ -18,6 +18,8 @@ Support directory.
   range/count refusals;
 - bounded per-chord rehearsal notes with lead-sheet indicators, undo, recovery,
   and canonical FrankenJazz document persistence;
+- direct selected-chord symbol editing with parser-backed refusal, one-step
+  undo, and an explicit choice to clear stored pitches or keep them as Manual;
 - transposition, key, tempo, groove, and generated instrument controls;
 - a persistent transport with background preparation, play/pause, Stop, loop,
   playhead highlighting, and interactive waveform-style seeking;

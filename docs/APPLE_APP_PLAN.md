@@ -39,7 +39,7 @@ parsed as data and never interpreted as HTML or a URL.
 | `studio-progression-library.ts` | All 27 stable web-library IDs, charts, provenance classes, canonical tempos/styles, plus two additive native studies |
 | `chart-parser.ts` / `chord-symbol.ts` | Bounded native quick-entry and exact suffix grammar; octave-aware 9th/11th/13th/altered intervals feed the same inspector, playback, and MIDI authority |
 | `studio-controller.ts` | `JazzStudioStore`, one observable owner for document/history/selection |
-| U1 chart-editing operations | Undoable selected-change and bar actions with exact four-beat preservation |
+| U1 chart-editing operations | Undoable direct symbol editing plus selected-change and bar actions with exact four-beat preservation; a rename explicitly clears stored pitches or converts them to intentional Manual authority |
 | domain pitch/key/duration types | Codable value types with stable UUID identities and exact bar slots |
 | voicing family and optimizer modules | Close, shell, rootless, open, and spread voicing previews |
 | chord resolution / chart analysis | Literal tones, Roman reading, guide tones, and transition motion |

@@ -1,0 +1,83 @@
+{
+  "schema": "frankenjazz.ios-test-evidence.v1",
+  "recordedAt": "2026-09-02T05:59:50Z",
+  "sourceCommit": "a0955ac3bfc77dc172251d856f2eedeb55bfdd23",
+  "sourceCommitWasPublishedBeforeRun": true,
+  "environment": {
+    "host": "Apple silicon Mac mini",
+    "hostOS": "macOS 26.2 (25C56)",
+    "xcode": "26.1.1 (17B100)",
+    "xcodegen": "2.46.0",
+    "networkRequiredByApp": false
+  },
+  "runs": [
+    {
+      "id": "catalyst-unit",
+      "command": "xcodebuild -project ios/FrankenJazz.xcodeproj -scheme FrankenJazz -destination 'platform=macOS,variant=Mac Catalyst' CODE_SIGNING_ALLOWED=NO test -only-testing:FrankenJazzTests -resultBundlePath /tmp/FrankenJazzSymbolFinalCatalyst-a0955ac.xcresult",
+      "resultBundle": "/tmp/FrankenJazzSymbolFinalCatalyst-a0955ac.xcresult",
+      "summaryReader": "xcrun xcresulttool get test-results summary --path /tmp/FrankenJazzSymbolFinalCatalyst-a0955ac.xcresult --format json",
+      "result": "Passed",
+      "passed": 53,
+      "failed": 0,
+      "skipped": 0,
+      "expectedFailures": 0,
+      "device": "Mac Catalyst on Mac mini arm64 / macOS 26.2"
+    },
+    {
+      "id": "iphone-ui",
+      "command": "xcodebuild -project ios/FrankenJazz.xcodeproj -scheme FrankenJazz -destination 'platform=iOS Simulator,name=iPhone 17 Pro' CODE_SIGNING_ALLOWED=NO test -only-testing:FrankenJazzUITests -resultBundlePath /tmp/FrankenJazzSymbolFinalUI-a0955ac.xcresult",
+      "resultBundle": "/tmp/FrankenJazzSymbolFinalUI-a0955ac.xcresult",
+      "summaryReader": "xcrun xcresulttool get test-results summary --path /tmp/FrankenJazzSymbolFinalUI-a0955ac.xcresult --format json",
+      "result": "Passed",
+      "passed": 8,
+      "failed": 0,
+      "skipped": 0,
+      "expectedFailures": 0,
+      "device": "iPhone 17 Pro arm64 simulator / iOS 26.1 (23B86)"
+    },
+    {
+      "id": "generic-ios-build",
+      "command": "xcodebuild -project ios/FrankenJazz.xcodeproj -scheme FrankenJazz -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build",
+      "result": "Passed"
+    },
+    {
+      "id": "generated-project-drift",
+      "command": "cd ios && xcodegen generate --spec project.yml && git diff --exit-code -- FrankenJazz.xcodeproj Sources/Info.plist",
+      "result": "Passed"
+    }
+  ],
+  "newCoverage": {
+    "editingAuthority": [
+      "the selected chord symbol is directly editable in the native inspector",
+      "the same bounded chart parser validates the proposed symbol and requires exactly one change",
+      "valid edits retain event identity, beats, annotation, selection, and recovery state",
+      "each accepted rename is one undoable and redoable mutation"
+    ],
+    "storedVoicingSemantics": [
+      "renaming clears Frozen or Manual pitches and returns to Automatic by default",
+      "an explicit keep choice preserves the current exact pitches as Manual",
+      "kept Frozen pitches are relabeled Manual so the document does not falsely attribute them to the renamed symbol"
+    ],
+    "refusalAndInterface": [
+      "invalid and multi-symbol input visibly refuse without revision or undo-history mutation",
+      "the accessible iPhone field applies Cmaj9 to Dm7 and the existing action menu then duplicates Dm7",
+      "the full eight-behavior iPhone UI bundle passed in one run"
+    ]
+  },
+  "sourceHashes": {
+    "ios/Sources/JazzStudioStore.swift": "8e46c47433f594e71e5059b7d238c9c256f03cfb5d623c2290ba04d60ff5c688",
+    "ios/Sources/FrankenJazzStudioView.swift": "1ef8f033e2b8cf812c185b11c72e893d1ff6bac09e54de49f6b99acc232e6123",
+    "ios/Tests/FrankenJazzCoreTests.swift": "2f07089b1bf26ecfc1741eae91ea40554ec28b9c84d9c54180dd58aaf144affb",
+    "ios/UITests/FrankenJazzUITests.swift": "82b0b29c640fbeb7914df4ad5e8255cba7ca345b543858c0dc4790f14ad42eac",
+    "ios/project.yml": "7a5d23d3b2b11c1ef82c893847fce5489927a0024a7cd433739c9832221e8ae5",
+    ".github/workflows/apple.yml": "7a3c4328cf99e5f56f0bb6f25af8f1ebd7be45cfde72e5792499cd1602d7fd2c"
+  },
+  "honestBoundaries": {
+    "symbolScope": "This surface edits exactly one selected chord symbol. Beat-duration editing remains available through validated quick entry rather than this inspector field.",
+    "storedPitches": "Keeping exact pitches does not reinterpret them against the new symbol. It records the user's explicit decision as Manual authority; the default is to discard them and recompute Automatic voicing.",
+    "webParity": "Direct native symbol editing closes a release-one integration gap. It does not claim that the native app contains the web project's deeper deterministic research workbenches.",
+    "hostedCI": "Apple workflow run 33596606094 for sourceCommit was queued with no runner steps when this record was written. The immediately preceding source runs were cancelled by workflow concurrency before runner execution. No hosted pass is claimed.",
+    "manualAcceptance": "This record does not claim physical-device listening, signed distribution, human fresh-eyes approval, or a complete screenshot/manual interaction matrix for every iPhone, iPad, and Catalyst acceptance row.",
+    "staticAnalysis": "UBS 5.2.42 reported 45 criticals, three warnings, and 51 info items across the four changed Swift files. Review found the criticals are false positives where SwiftUI systemImage labels were classified as shell system calls; the warnings are existing bounded Data(contentsOf:) import/recovery reads. This is not represented as a zero-finding scan."
+  }
+}
