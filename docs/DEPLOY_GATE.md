@@ -58,6 +58,20 @@ listening note, or a machine reference-gate report path. Moving a recipe or
 engine routing to a new model version is a **ship decision**: the new id
 needs its row before the tree can deploy.
 
+## Source-closure drift law
+
+The gate also compares the `dsp/concert-grand` source tree against the
+closure ledger recorded inside the shipping WASM module
+(`bun scripts/build-dsp.ts --sources` is the standalone form; no Rust
+toolchain is needed). A mismatch means the crate no longer describes the
+shipping audio: the gate fails closed with `MODEL_WASM_SOURCE_DRIFT`
+naming every changed/added/removed file, and the resolution is a re-pin
+with the pinned toolchain (`rust-toolchain.toml` + wasm-opt 131) plus
+refreshed delegated-evidence replays — or reverting the source change.
+A payload pinned before the ledger existed passes with an explicit
+printed NOTICE; the next re-pin records the ledger and closes that
+window permanently.
+
 ## Reference corpus prerequisite
 
 Machine-delegated wind rows are validated by **replaying** their evidence
