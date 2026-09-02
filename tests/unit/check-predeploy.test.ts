@@ -28,6 +28,7 @@ import {
   collectEngineRoutedAlgorithmIds,
   collectRecipeAlgorithmIds,
   embeddedWasmDigestMatchesDeclaration,
+  dspSourceDriftFinding,
   evaluateGate,
   parseLedger,
   type LedgerRow,
@@ -311,7 +312,6 @@ describe("ledger evaluation fails closed", () => {
     expect(unavailableFindings[0]?.detail).toContain(
       "test-results/winds-reference-source/uiowa",
     );
-
     const staleSourceSha256 = sha256Hex("stale-flute-renderer-source");
     const staleCells = replay.cells.map((cell) => {
       return bindFluteV2ReferenceMatrixCell({
@@ -356,6 +356,25 @@ describe("ledger evaluation fails closed", () => {
       CONCERT_GRAND_WASM_SHA256,
       { fluteV2: replay },
     ).map((finding) => finding.code)).toEqual(["MODEL_DELEGATED_INVALID_EVIDENCE"]);
+  });
+
+  test("dsp source drift maps to a blocking finding; match and pre-ledger pins do not", () => {
+    expect(dspSourceDriftFinding({ outcome: "ledger-absent" })).toBeNull();
+    expect(
+      dspSourceDriftFinding({ outcome: "match", closureSha256: "a".repeat(64) }),
+    ).toBeNull();
+    const finding = dspSourceDriftFinding({
+      outcome: "drift",
+      recordedClosureSha256: "a".repeat(64),
+      liveClosureSha256: "b".repeat(64),
+      changed: ["dsp/concert-grand/src/vibes_v2.rs"],
+      added: [],
+      removed: ["dsp/concert-grand/src/retired.rs"],
+    });
+    expect(finding?.code).toBe("MODEL_WASM_SOURCE_DRIFT");
+    expect(finding?.detail).toContain("dsp/concert-grand/src/vibes_v2.rs");
+    expect(finding?.detail).toContain("removed: dsp/concert-grand/src/retired.rs");
+    expect(finding?.detail).toContain("docs/DEPLOY_GATE.md");
   });
 
   test("sample replacements cannot delegate from stored evidence without shipping-WASM replay", () => {
