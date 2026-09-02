@@ -134,6 +134,7 @@ private struct ChartEditorView: View {
     let presentsInspectorOnSelection: Bool
     @FocusState private var editorFocused: Bool
     @State private var quickEntryExpanded = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var columns: [GridItem] {
         [GridItem(.adaptive(minimum: compact ? 142 : 165, maximum: compact ? 220 : 260), spacing: 10)]
@@ -295,7 +296,7 @@ private struct ChartEditorView: View {
             VStack(alignment: .leading, spacing: 10) {
                 if compact {
                     Button {
-                        withAnimation(.snappy) { quickEntryExpanded.toggle() }
+                        withAnimation(reduceMotion ? nil : .snappy) { quickEntryExpanded.toggle() }
                     } label: {
                         HStack {
                             JazzSectionLabel(number: "03", title: "Quick entry", tint: JazzTheme.violet)

@@ -25,7 +25,7 @@ GitHub Actions result.
      fields rather than requiring byte-identical `Date` precision.
    - Final run: PASS, 28 tests, 0 failures, 0 skipped tests, and 0 expected
      failures, independently read with `xcresulttool get test-results summary`.
-   - Result bundle: `/tmp/FrankenJazzDerived/Logs/Test/Test-FrankenJazz-2026.09.01_22-37-54--0400.xcresult` on the executing host.
+   - Result bundle: `/tmp/FrankenJazzDerived/Logs/Test/Test-FrankenJazz-2026.09.01_22-55-24--0400.xcresult` on the executing host.
 3. `xcodebuild -project FrankenJazz.xcodeproj -scheme FrankenJazz -destination 'generic/platform=iOS Simulator' -derivedDataPath /tmp/FrankenJazzIOSDerived CODE_SIGNING_ALLOWED=NO build`
    - Result: PASS (`BUILD SUCCEEDED`).
 4. Catalyst build-setting inspection
@@ -45,7 +45,7 @@ requests that touch the Apple app.
 872e213111ba77a96c5167482ec748ca20f4a3c7cc2b92d32b3e71c68a4bb4f2  ios/Sources/JazzTheory.swift
 720b57a4cde560c87c3c5e4f3f1cb54034e12a4c3817a01ee73bc03b628bb310  ios/Sources/JazzModels.swift
 0bb54272d0d4ed8007a0d18e70cdd8f7b1142cefcd0612d8483e6437bd783fdd  ios/Sources/JazzStudioStore.swift
-b1d70bbdc6aa0385a11dabb5d5f08b7a350e6ab14b8296491e89a00a3c2afad6  ios/Sources/FrankenJazzStudioView.swift
+2f4fd76ea7e3007a7bbfbd99164fa76baaa920648ebe4d1eec63d59804c44843  ios/Sources/FrankenJazzStudioView.swift
 19a256eb6a1dd4a59153fd3f3340a45ce1441048358374c22035acf0b6bb2b26  ios/Sources/FrankenJazzApp.swift
 6849ee5a4ff2e35d099a0bfdc74188f043e7dd075a586b20fb08af8a1c4c7328  ios/Sources/FrankenJazzTheme.swift
 0a77fbde41cae61513c9e1bcb91c8f529b8fe7604ce537f9dca46723a5eee23e  ios/Tests/FrankenJazzCoreTests.swift
