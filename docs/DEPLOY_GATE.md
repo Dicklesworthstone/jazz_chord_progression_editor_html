@@ -58,6 +58,33 @@ listening note, or a machine reference-gate report path. Moving a recipe or
 engine routing to a new model version is a **ship decision**: the new id
 needs its row before the tree can deploy.
 
+## One-command deploy
+
+`bun run deploy` (`scripts/deploy.ts`) is the production path and encodes
+every law in this document: committed-bytes-only staging from
+`git show HEAD`, the running-suite guard, the model-acceptance gate, the
+real-browser playback gate against the exact staged bytes (the gate ledger
+and the upload share one file — that identity is the hash coupling), the
+Cloudflare Pages and Vercel uploads, and a byte-hash poll of both hosts.
+`--check` runs every gate and skips the uploads. There is deliberately no
+flag that skips a gate, and the script always prints the one obligation
+tooling cannot discharge: a real-browser boot check at desktop and phone
+widths on each host.
+
+## Source-closure drift law
+
+The gate also compares the `dsp/concert-grand` source tree against the
+closure ledger recorded inside the shipping WASM module
+(`bun scripts/build-dsp.ts --sources` is the standalone form; no Rust
+toolchain is needed). A mismatch means the crate no longer describes the
+shipping audio: the gate fails closed with `MODEL_WASM_SOURCE_DRIFT`
+naming every changed/added/removed file, and the resolution is a re-pin
+with the pinned toolchain (`rust-toolchain.toml` + wasm-opt 131) plus
+refreshed delegated-evidence replays — or reverting the source change.
+A payload pinned before the ledger existed passes with an explicit
+printed NOTICE; the next re-pin records the ledger and closes that
+window permanently.
+
 ## Reference corpus prerequisite
 
 Machine-delegated wind rows are validated by **replaying** their evidence

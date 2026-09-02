@@ -95,6 +95,11 @@ The live site is Cloudflare Pages on the `jazzchords.org` custom domain, with
 a byte-identical Vercel mirror. Both serve the tracked root artifact as
 `index.html`. Every rule below was paid for by a real failure.
 
+- `bun run deploy` is the production path: it stages committed bytes,
+  runs both predeploy gates against the exact staged file, uploads to both
+  hosts, and polls for the byte match — the rules below are what it
+  automates, and they still bind any manual deploy.
+
 - Verify deployed bytes against `git show HEAD:jazz_chord_progression_editor.html`,
   never the working-tree copy. `bun run build` builds the TREE, so a tree
   carrying anyone's uncommitted edits yields an artifact reproducible from no

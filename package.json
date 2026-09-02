@@ -56,6 +56,7 @@
     "build": "bun scripts/build.ts",
     "predeploy:check": "bun scripts/check-predeploy.ts && bun scripts/run-instrument-quality-gate.ts",
     "predeploy:playback": "node scripts/check-predeploy-playback.ts",
+    "deploy": "bun scripts/deploy.ts",
     "quality:instruments": "bun scripts/run-instrument-quality-gate.ts",
     "character:ab": "bun scripts/render-character-ab.ts",
     "verify:standalone": "bun scripts/verify-standalone.ts",
