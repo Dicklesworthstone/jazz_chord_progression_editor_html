@@ -39,6 +39,7 @@ targets:
         SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: false
         DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER: false
         MACCATALYST_USE_NATIVE_DESIGN: true
+        "CODE_SIGN_ENTITLEMENTS[sdk=macosx*]": Sources/FrankenJazz.entitlements
     sources:
       - path: Sources
       - path: Assets.xcassets

@@ -5,6 +5,7 @@ struct FrankenJazzStudioView: View {
     @ObservedObject var store: JazzStudioStore
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 #if DEBUG
     @State private var didApplyDebugLaunch = false
 #endif
@@ -25,6 +26,13 @@ struct FrankenJazzStudioView: View {
         .sheet(isPresented: $store.isInspectorPresented) { NavigationStack { ChordInspectorView(store: store, sheetMode: true) } }
         .sheet(isPresented: $store.isLibraryPresented) { NavigationStack { LibraryView(store: store, sheetMode: true) } }
         .sheet(isPresented: $store.isDocumentPresented) { NavigationStack { DocumentCenterView(store: store) } }
+        .fileExporter(
+            isPresented: $store.isSaveCopyPresented,
+            document: store.saveCopyDocument,
+            contentType: .frankenJazz,
+            defaultFilename: store.nativeExportFilename,
+            onCompletion: store.finishSaveCopy
+        )
         .overlay(alignment: .top) { noticeBanner }
         .onChange(of: scenePhase) { _, phase in if phase != .active { store.audio.pause() } }
 #if DEBUG
@@ -79,7 +87,7 @@ struct FrankenJazzStudioView: View {
                 if width >= 1_080 {
                     ChordInspectorView(store: store, sheetMode: false)
                         .frame(width: min(380, width * 0.29))
-                        .transition(.move(edge: .trailing).combined(with: .opacity))
+                        .transition(reduceMotion ? .opacity : .move(edge: .trailing).combined(with: .opacity))
                 }
             }
             .padding(.horizontal, width > 1_250 ? 18 : 12)
@@ -110,11 +118,11 @@ struct FrankenJazzStudioView: View {
                 .background(.ultraThinMaterial, in: Capsule())
                 .overlay(Capsule().stroke(JazzTheme.emerald.opacity(0.35)))
                 .padding(.top, 8)
-                .transition(.move(edge: .top).combined(with: .opacity))
-                .onTapGesture { withAnimation { store.notice = nil } }
+                .transition(reduceMotion ? .opacity : .move(edge: .top).combined(with: .opacity))
+                .onTapGesture { withAnimation(reduceMotion ? nil : .default) { store.notice = nil } }
                 .task(id: notice) {
                     try? await Task.sleep(for: .seconds(3.5))
-                    if store.notice == notice { withAnimation { store.notice = nil } }
+                    if store.notice == notice { withAnimation(reduceMotion ? nil : .default) { store.notice = nil } }
                 }
         }
     }
@@ -380,6 +388,7 @@ private struct MeasureCard: View {
     let measure: JazzMeasure
     @ObservedObject var store: JazzStudioStore
     let presentsInspector: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var active: Bool { measure.chords.contains { $0.id == store.audio.activeChordID } }
 
@@ -442,7 +451,7 @@ private struct MeasureCard: View {
         .padding(10)
         .background(active ? JazzTheme.brass.opacity(0.08) : Color.black.opacity(0.22), in: RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(active ? JazzTheme.brass.opacity(0.55) : .white.opacity(0.055)))
-        .animation(.easeInOut(duration: 0.16), value: active)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.16), value: active)
     }
 
     private func chordAccessibilityLabel(_ chord: JazzChordEvent) -> String {
@@ -688,9 +697,7 @@ private struct ChordInspectorView: View {
                 )
                 evidenceRow(
                     "Motion",
-                    description.guideToneNames.isEmpty
-                        ? "No conventional third/seventh guide-tone pair is present."
-                        : "Listen for \(description.guideToneNames.joined(separator: " and ")) in the inner voices."
+                    store.selectedTransitionSummary
                 )
                 Text("Contextual readings explain one useful interpretation; they do not claim a single authorial intent.")
                     .font(.system(size: JazzTheme.size(10.5), design: .rounded))

@@ -46,6 +46,8 @@ final class JazzStudioStore: ObservableObject {
     @Published var isInspectorPresented = false
     @Published var isLibraryPresented = false
     @Published var isDocumentPresented = false
+    @Published var isSaveCopyPresented = false
+    @Published var saveCopyDocument: JazzExportDocument?
     @Published private(set) var canUndo = false
     @Published private(set) var canRedo = false
     @Published private(set) var revision = 0
@@ -102,6 +104,18 @@ final class JazzStudioStore: ObservableObject {
     var selectedDescription: ChordDescription? {
         guard let selectedChord else { return nil }
         return JazzTheory.parseChord(selectedChord.symbol, in: chart.key)
+    }
+
+    var selectedTransitionSummary: String {
+        let chords = chart.measures.flatMap(\.chords)
+        guard let selectedChordID,
+              let index = chords.firstIndex(where: { $0.id == selectedChordID }),
+              chords.indices.contains(index + 1),
+              let source = JazzTheory.parseChord(chords[index].symbol, in: chart.key),
+              let destination = JazzTheory.parseChord(chords[index + 1].symbol, in: chart.key) else {
+            return "This is the final change; there is no following chord to compare."
+        }
+        return JazzTheory.transitionMotion(from: source, to: destination, flats: chart.key.prefersFlats)
     }
 
     var filteredLibrary: [LibraryEntry] {
@@ -260,17 +274,45 @@ final class JazzStudioStore: ObservableObject {
         let base = slug.isEmpty ? "frankenjazz-chart" : slug
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(base).appendingPathExtension(kind.extensionName)
         do {
-            let data: Data
-            switch kind {
-            case .nativeJSON: data = try encoder.encode(chart)
-            case .chartText: data = Data(("# \(chart.title)\n# key \(chart.key.rawValue) · \(Int(chart.tempoBPM)) BPM · \(chart.groove.rawValue)\n\n" + chart.chartText + "\n").utf8)
-            case .midi: data = MIDIFileWriter.makeFile(chart: chart)
-            }
+            let data = try exportData(kind: kind)
             try data.write(to: url, options: .atomic)
             return url
         } catch {
             notice = "Export failed: \(error.localizedDescription)"
             return nil
+        }
+    }
+
+    func requestSaveCopy() {
+        do {
+            saveCopyDocument = JazzExportDocument(data: try exportData(kind: .nativeJSON))
+            isSaveCopyPresented = true
+        } catch {
+            notice = "Save Copy failed: \(error.localizedDescription)"
+        }
+    }
+
+    func finishSaveCopy(_ result: Result<URL, Error>) {
+        isSaveCopyPresented = false
+        saveCopyDocument = nil
+        switch result {
+        case let .success(url): notice = "Saved a copy as “\(url.lastPathComponent)”."
+        case let .failure(error): notice = "Save Copy failed: \(error.localizedDescription)"
+        }
+    }
+
+    var nativeExportFilename: String {
+        let slug = chart.title
+            .replacingOccurrences(of: #"[/:]"#, with: "-", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return slug.isEmpty ? "FrankenJazz chart" : slug
+    }
+
+    private func exportData(kind: ExportKind) throws -> Data {
+        switch kind {
+        case .nativeJSON: try encoder.encode(chart)
+        case .chartText: Data(("# \(chart.title)\n# key \(chart.key.rawValue) · \(Int(chart.tempoBPM)) BPM · \(chart.groove.rawValue)\n\n" + chart.chartText + "\n").utf8)
+        case .midi: MIDIFileWriter.makeFile(chart: chart)
         }
     }
 
@@ -399,6 +441,22 @@ final class JazzStudioStore: ObservableObject {
     private static func chart(from entry: LibraryEntry) -> JazzChart {
         let parsed = (try? JazzTheory.parseChart(entry.chartText)) ?? ParsedChart(measures: [JazzMeasure(chords: [JazzChordEvent(symbol: "Cmaj7")])], normalizedText: "| Cmaj7 |")
         return JazzChart(title: entry.title, key: entry.key, tempoBPM: entry.tempo, groove: entry.groove, measures: parsed.measures)
+    }
+}
+
+struct JazzExportDocument: FileDocument {
+    static var readableContentTypes: [UTType] { [.frankenJazz] }
+    let data: Data
+
+    init(data: Data) { self.data = data }
+
+    init(configuration: ReadConfiguration) throws {
+        guard let data = configuration.file.regularFileContents else { throw ImportError.invalidDocument }
+        self.data = data
+    }
+
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+        FileWrapper(regularFileWithContents: data)
     }
 }
 

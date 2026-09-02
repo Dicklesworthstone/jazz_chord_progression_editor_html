@@ -116,6 +116,7 @@ struct FrankenJazzWordmark: View {
 struct JazzPrimaryButtonStyle: ButtonStyle {
     var tint = JazzTheme.brass
     @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -126,7 +127,7 @@ struct JazzPrimaryButtonStyle: ButtonStyle {
             .background(tint.opacity(configuration.isPressed ? 0.78 : 1), in: Capsule())
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
             .opacity(isEnabled ? 1 : 0.38)
-            .animation(.easeOut(duration: 0.14), value: configuration.isPressed)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.14), value: configuration.isPressed)
     }
 }
 

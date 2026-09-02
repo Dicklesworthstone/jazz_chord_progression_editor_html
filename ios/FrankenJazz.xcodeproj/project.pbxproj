@@ -43,6 +43,7 @@
 
 /* Begin PBXFileReference section */
 		0575E2391C8906F38AFCD111 /* FrankenJazz.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = FrankenJazz.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		083EEDECB9E1564591CF37AA /* FrankenJazz.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FrankenJazz.entitlements; sourceTree = "<group>"; };
 		0B0098B8D5669EE9A7C05387 /* FrankenJazzUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrankenJazzUITests.swift; sourceTree = "<group>"; };
 		2FA325F7DCBDACFF4927C2CD /* FrankenJazzStudioView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrankenJazzStudioView.swift; sourceTree = "<group>"; };
 		36D63379B10C57704EA5F87B /* MIDIFileWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MIDIFileWriter.swift; sourceTree = "<group>"; };
@@ -85,6 +86,7 @@
 		715B54B5E283C3F9D54A5354 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
+				083EEDECB9E1564591CF37AA /* FrankenJazz.entitlements */,
 				82C195442D5307014EC8CA82 /* FrankenJazzApp.swift */,
 				2FA325F7DCBDACFF4927C2CD /* FrankenJazzStudioView.swift */,
 				5EEEB0929ABCA3C303443F4B /* FrankenJazzTheme.swift */,
@@ -307,6 +309,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = Sources/FrankenJazz.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = NO;
 				INFOPLIST_FILE = Sources/Info.plist;
@@ -509,6 +512,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = Sources/FrankenJazz.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = NO;
 				INFOPLIST_FILE = Sources/Info.plist;

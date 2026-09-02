@@ -1,0 +1,41 @@
+name: Apple app
+
+on:
+  push:
+    paths:
+      - "ios/**"
+      - ".github/workflows/apple.yml"
+  pull_request:
+    paths:
+      - "ios/**"
+      - ".github/workflows/apple.yml"
+
+concurrency:
+  group: apple-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install project generator
+        run: brew install xcodegen
+      - name: Prove generated project is current
+        working-directory: ios
+        run: |
+          xcodegen generate --spec project.yml
+          git diff --exit-code -- FrankenJazz.xcodeproj Sources/Info.plist
+      - name: Build for iOS Simulator
+        working-directory: ios
+        run: >-
+          xcodebuild -project FrankenJazz.xcodeproj -scheme FrankenJazz
+          -destination 'generic/platform=iOS Simulator'
+          CODE_SIGNING_ALLOWED=NO build
+      - name: Run Mac Catalyst unit tests
+        working-directory: ios
+        run: >-
+          xcodebuild -project FrankenJazz.xcodeproj -scheme FrankenJazz
+          -destination 'platform=macOS,variant=Mac Catalyst'
+          CODE_SIGNING_ALLOWED=NO test -only-testing:FrankenJazzTests

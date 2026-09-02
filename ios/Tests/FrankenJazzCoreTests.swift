@@ -35,6 +35,25 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertEqual(try JazzTheory.parseChart(chart.chartText).measures.map { $0.chords.map(\.beats) }, [[1, 3], [2, 2]])
     }
 
+    func testExplicitDurationFormatterAlwaysRoundTripsAcceptedChart() throws {
+        let measures = [JazzMeasure(chords: [
+            JazzChordEvent(symbol: "Cmaj7", beats: 0.123456789012345),
+            JazzChordEvent(symbol: "Dm7", beats: 1.111111111111111),
+            JazzChordEvent(symbol: "G7", beats: 2.765432099876544)
+        ])]
+        XCTAssertNoThrow(try JazzDocumentValidator.validate(JazzChart(title: "Precision", measures: measures)))
+        let formatted = JazzTheory.formatChartText(measures)
+        let reparsed = try JazzTheory.parseChart(formatted)
+        XCTAssertEqual(reparsed.measures[0].chords.map(\.beats), measures[0].chords.map(\.beats))
+    }
+
+    func testAddedNinthIsNotParsedAsDominantNinth() throws {
+        let chord = try XCTUnwrap(JazzTheory.parseChord("Cadd9", in: .c))
+        XCTAssertEqual(Set(chord.pitchClasses), Set([0, 2, 4, 7]))
+        XCTAssertFalse(chord.pitchClasses.contains(10))
+        XCTAssertEqual(chord.colorNote, "Added ninth without a seventh")
+    }
+
     func testQuickEntryDistributesUnspecifiedRemainderAndRefusesOverfill() throws {
         let parsed = try JazzTheory.parseChart("| Cmaj7:2 Dm7 G7 |")
         XCTAssertEqual(parsed.measures[0].chords.map(\.beats), [2, 1, 1])
@@ -62,6 +81,61 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertEqual(chord.function, "Dominant pull")
         XCTAssertTrue(chord.toneNames.contains("Ab"))
         XCTAssertFalse(chord.guideToneNames.isEmpty)
+    }
+
+    func testFunctionLabelsUseQualityAndKeyContextInsteadOfSevenSubstring() throws {
+        XCTAssertEqual(JazzTheory.parseChord("E7", in: .c)?.function, "Secondary dominant")
+        XCTAssertEqual(JazzTheory.parseChord("Ebmaj7", in: .c)?.function, "Chromatic color")
+        XCTAssertEqual(JazzTheory.parseChord("G7", in: .c)?.function, "Dominant pull")
+        XCTAssertEqual(JazzTheory.parseChord("Bdim7", in: .c)?.function, "Leading-tone pull")
+        XCTAssertEqual(JazzTheory.parseChord("Am7", in: .c)?.function, "Tonic family")
+    }
+
+    func testSlashBassIsTheAudibleLowestPlaybackPitch() throws {
+        let slash = try XCTUnwrap(JazzTheory.parseChord("Cmaj7/E", in: .c))
+        for family in VoicingFamily.allCases {
+            let pitches = JazzTheory.voicing(for: slash, family: family)
+            XCTAssertEqual(try XCTUnwrap(pitches.first) % 12, 4, family.rawValue)
+        }
+    }
+
+    func testSpreadIsDistinctAndWiderThanOpen() throws {
+        let chord = try XCTUnwrap(JazzTheory.parseChord("Cmaj9", in: .c))
+        let open = JazzTheory.voicing(for: chord, family: .open)
+        let spread = JazzTheory.voicing(for: chord, family: .spread)
+        XCTAssertNotEqual(open, spread)
+        XCTAssertGreaterThan(try XCTUnwrap(spread.last) - XCTUnwrap(spread.first), try XCTUnwrap(open.last) - XCTUnwrap(open.first))
+    }
+
+    func testTransitionMotionNamesDestinationCommonToneAndNearestMove() throws {
+        let source = try XCTUnwrap(JazzTheory.parseChord("Dm7", in: .c))
+        let destination = try XCTUnwrap(JazzTheory.parseChord("G7", in: .c))
+        let summary = JazzTheory.transitionMotion(from: source, to: destination, flats: false)
+        XCTAssertTrue(summary.hasPrefix("To G7:"))
+        XCTAssertTrue(summary.contains("common tones D, F"))
+        XCTAssertTrue(summary.contains("1 semitone"))
+    }
+
+    @MainActor
+    func testSaveCopyProducesACompleteNativeDocument() throws {
+        let store = JazzStudioStore()
+        store.newChart()
+        store.requestSaveCopy()
+
+        XCTAssertTrue(store.isSaveCopyPresented)
+        let data = try XCTUnwrap(store.saveCopyDocument?.data)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let decoded = try decoder.decode(JazzChart.self, from: data)
+        XCTAssertEqual(decoded.id, store.chart.id)
+        XCTAssertEqual(decoded.title, store.chart.title)
+        XCTAssertEqual(decoded.key, store.chart.key)
+        XCTAssertEqual(decoded.tempoBPM, store.chart.tempoBPM)
+        XCTAssertEqual(decoded.groove, store.chart.groove)
+        XCTAssertEqual(decoded.instrument, store.chart.instrument)
+        XCTAssertEqual(decoded.voicingFamily, store.chart.voicingFamily)
+        XCTAssertEqual(decoded.measures, store.chart.measures)
+        XCTAssertNoThrow(try JazzDocumentValidator.validate(decoded))
     }
 
     func testTransposeMovesRootAndSlashBassWithoutChangingQuality() {

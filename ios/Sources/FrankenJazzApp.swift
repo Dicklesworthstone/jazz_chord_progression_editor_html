@@ -23,6 +23,8 @@ struct FrankenJazzApp: App {
                     .keyboardShortcut("n", modifiers: .command)
                 Button("Open or Export…") { store.isDocumentPresented = true }
                     .keyboardShortcut("o", modifiers: [.command, .shift])
+                Button("Save Copy…") { store.requestSaveCopy() }
+                    .keyboardShortcut("s", modifiers: [.command, .shift])
             }
             CommandGroup(replacing: .undoRedo) {
                 Button("Undo") { store.undo() }

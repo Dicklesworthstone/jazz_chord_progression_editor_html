@@ -62,6 +62,7 @@ enum VoicingFamily: String, CaseIterable, Codable, Identifiable, Sendable {
     case rootlessA = "Rootless A"
     case rootlessB = "Rootless B"
     case open = "Open"
+    case spread = "Spread"
 
     var id: String { rawValue }
     var note: String {
@@ -70,7 +71,8 @@ enum VoicingFamily: String, CaseIterable, Codable, Identifiable, Sendable {
         case .shell: "Root, third, and seventh"
         case .rootlessA: "Guide tones with the ninth"
         case .rootlessB: "Guide tones with upper color"
-        case .open: "A wider two-hand spread"
+        case .open: "Open fifths across both hands"
+        case .spread: "Maximum register separation"
         }
     }
 }

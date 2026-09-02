@@ -118,7 +118,10 @@ enum JazzTheory {
 
     private static func formatBeatDuration(_ beats: Double) -> String {
         if abs(beats.rounded() - beats) < 0.000_001 { return String(Int(beats.rounded())) }
-        return beats.formatted(.number.precision(.fractionLength(0...3)).locale(Locale(identifier: "en_US_POSIX")))
+        // Swift's Double description is locale-independent and uses enough
+        // digits to reconstruct the same value. A display-only three-decimal
+        // rounding could make an otherwise valid four-beat measure unparsable.
+        return String(beats)
     }
 
     // The grammar is deliberately ordered from specific spellings to broad
@@ -164,6 +167,7 @@ enum JazzTheory {
         else if lower.contains("maj7") { intervals = [0, 4, lower.contains("#5") ? 8 : 7, 11] }
         else if lower.contains("13") { intervals = [0, lower.hasPrefix("m") ? 3 : 4, 7, 10, 14, 21] }
         else if lower.contains("11") { intervals = [0, lower.hasPrefix("m") ? 3 : 4, 7, 10, 14, 17] }
+        else if lower == "add9" || lower == "add2" { intervals = [0, 4, 7, 14] }
         else if lower.contains("m9") { intervals = [0, 3, 7, 10, 14] }
         else if lower.contains("9") { intervals = [0, 4, alteredFifth, 10, alteredNinth] }
         else if lower.contains("m7") { intervals = [0, 3, lower.contains("b5") ? 6 : 7, 10] }
@@ -174,7 +178,7 @@ enum JazzTheory {
         else if lower.contains("sus") { intervals = [0, 5, 7] }
         else if lower.contains("aug") || lower.contains("+") { intervals = [0, 4, 8] }
         else if lower.hasPrefix("m") && !lower.hasPrefix("maj") { intervals = [0, 3, 7] }
-        else if lower.isEmpty || lower == "add9" || lower == "add2" { intervals = lower.isEmpty ? [0, 4, 7] : [0, 4, 7, 14] }
+        else if lower.isEmpty { intervals = [0, 4, 7] }
         else { return nil }
 
         let uniqueIntervals = Array(Set(intervals)).sorted()
@@ -184,10 +188,14 @@ enum JazzTheory {
         let numerals = ["I", "♭II", "II", "♭III", "III", "IV", "♯IV", "V", "♭VI", "VI", "♭VII", "VII"]
         let isMinor = uniqueIntervals.contains(3) && !uniqueIntervals.contains(4)
         let numeral = isMinor ? numerals[relative].lowercased() : numerals[relative]
+        let isDominantQuality = uniqueIntervals.contains(4) && uniqueIntervals.contains(10)
+        let isDiminishedQuality = uniqueIntervals.contains(3) && uniqueIntervals.contains(6)
         let function: String
-        if [0, 4, 9].contains(relative) { function = "Tonic family" }
+        if relative == 7 && isDominantQuality { function = "Dominant pull" }
+        else if isDominantQuality { function = "Secondary dominant" }
+        else if relative == 11 && isDiminishedQuality { function = "Leading-tone pull" }
+        else if [0, 4, 9].contains(relative) { function = "Tonic family" }
         else if [2, 5].contains(relative) { function = "Predominant motion" }
-        else if [7, 11].contains(relative) || lower.contains("7") { function = "Dominant pull" }
         else { function = "Chromatic color" }
         let guides = uniqueIntervals
             .filter { [3, 4, 9, 10, 11].contains($0 % 12) }
@@ -196,6 +204,7 @@ enum JazzTheory {
         let color: String
         if lower.contains("alt") || lower.contains("b9") || lower.contains("#9") { color = "Altered dominant tension" }
         else if lower.contains("maj7") { color = "Major-seventh sheen" }
+        else if lower == "add9" || lower == "add2" { color = "Added ninth without a seventh" }
         else if lower.contains("9") || lower.contains("11") || lower.contains("13") { color = "Extended upper color" }
         else if lower.contains("dim") || lower.contains("ø") { color = "Symmetric instability" }
         else { color = "Core chord tones" }
@@ -236,8 +245,38 @@ enum JazzTheory {
             notes = [base + seventh, base + 12 + third, base + 12 + color]
         case .open:
             notes = [base - 12, base + 7, base + 12 + third, base + 12 + seventh]
+        case .spread:
+            notes = [base - 12, base + third, base + 12 + seventh, base + 24 + ninth]
+        }
+        if let bass = chord.bass, let bassPitch = pitchClass(for: bass), bassPitch != rootPitch {
+            var bassNote = 36 + bassPitch
+            if let lowest = notes.min(), bassNote >= lowest { bassNote -= 12 }
+            notes.append(bassNote)
         }
         return Array(Set(notes.map { min(92, max(28, $0)) })).sorted()
+    }
+
+    static func transitionMotion(from source: ChordDescription, to destination: ChordDescription, flats: Bool) -> String {
+        let sourcePitches = Set(source.pitchClasses)
+        let destinationPitches = Set(destination.pitchClasses)
+        let common = sourcePitches.intersection(destinationPitches).sorted()
+        let commonText = common.isEmpty
+            ? "no common tones"
+            : "common tone\(common.count == 1 ? "" : "s") " + common.map { noteName($0, flats: flats) }.joined(separator: ", ")
+
+        let moves = sourcePitches.flatMap { start in
+            destinationPitches.compactMap { end -> (distance: Int, start: Int, end: Int)? in
+                var signed = (end - start + 12) % 12
+                if signed > 6 { signed -= 12 }
+                return signed == 0 ? nil : (abs(signed), start, end)
+            }
+        }
+        guard let closest = moves.sorted(by: {
+            ($0.distance, $0.start, $0.end) < ($1.distance, $1.start, $1.end)
+        }).first else {
+            return "To \(destination.symbol): \(commonText); the pitch-class set is unchanged."
+        }
+        return "To \(destination.symbol): \(commonText); nearest motion is \(noteName(closest.start, flats: flats)) to \(noteName(closest.end, flats: flats)) by \(closest.distance) semitone\(closest.distance == 1 ? "" : "s")."
     }
 
     static func compilePlayback(_ chart: JazzChart) -> [PlaybackEvent] {
