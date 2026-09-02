@@ -73,7 +73,9 @@ describe("DSP source-closure ledger", () => {
     );
     if (addedPath === undefined) throw new Error("closure lost Cargo.lock");
     /* Recorded ledger lacking a live file => that file reads as added. */
-    const { [addedPath]: _dropped, ...recordedWithout } = recorded;
+    const recordedWithout = Object.fromEntries(
+      Object.entries(recorded).filter(([path]) => path !== addedPath),
+    );
     const moduleText = syntheticModule("a".repeat(64), recordedWithout);
     const comparison = compareDspSourceClosure(moduleText, live);
     if (comparison.outcome !== "drift") {
