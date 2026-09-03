@@ -163,7 +163,7 @@ function createHarness(options: HarnessOptions = {}) {
   }
 
   const ownerRequest: PrepareImportReplacementPublicationRequest =
-    disposition === "retained"
+    (disposition === "retained"
       ? Object.freeze({
           identity,
           sourceFormat: "canonical-json-v2" as const,
@@ -183,7 +183,7 @@ function createHarness(options: HarnessOptions = {}) {
           disclosedImpact: unavailableImpact,
           currentTransition: transition as any,
           nonUndoableConfirmation: acknowledgement,
-        });
+        })) as any;
 
   return {
     composition,
