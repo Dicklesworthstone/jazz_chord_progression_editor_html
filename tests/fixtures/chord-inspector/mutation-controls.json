@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "controls": [
+    {
+      "id": "U2-MUT-001",
+      "target": "voicing-mode-confirmation",
+      "description": "A mutation that allows Manual -> Auto switch without confirmation must be killed by refusal check.",
+      "killedByCase": "U2-VOICE-002",
+      "traceIds": ["U2-TRACE-VOICING-TRANSITION"]
+    },
+    {
+      "id": "U2-MUT-002",
+      "target": "manual-unison-duplicate-rejection",
+      "description": "A mutation that allows identical MIDI pitch duplicate in manual voicing must be killed.",
+      "killedByCase": "U2-PIANO-004",
+      "traceIds": ["U2-TRACE-VOICING-TRANSITION"]
+    },
+    {
+      "id": "U2-MUT-003",
+      "target": "annotation-markup-sanitization",
+      "description": "A mutation that renders raw HTML tags in annotations must be killed by markup sanitization.",
+      "killedByCase": "U2-NOTE-002",
+      "traceIds": ["U2-TRACE-ANNOTATION-SAFETY"]
+    },
+    {
+      "id": "U2-MUT-004",
+      "target": "custom-chord-symbol-preservation",
+      "description": "A mutation that overwrites custom/unrecognized chords with a guessed canonical chord must be killed.",
+      "killedByCase": "U2-INSP-004",
+      "traceIds": ["U2-TRACE-CUSTOM-PRESERVATION"]
+    },
+    {
+      "id": "U2-MUT-005",
+      "target": "annotation-length-bounding",
+      "description": "A mutation that permits annotations longer than 500 code points must be killed by length refusal.",
+      "killedByCase": "U2-NOTE-004",
+      "traceIds": ["U2-TRACE-ANNOTATION-SAFETY"]
+    },
+    {
+      "id": "U2-MUT-006",
+      "target": "piano-midi-key-bounds",
+      "description": "A mutation that renders piano keys outside the 88-key physical MIDI bounds (21..108) must be killed.",
+      "killedByCase": "U2-PIANO-001",
+      "traceIds": ["U2-TRACE-PIANO-GEOMETRY"]
+    },
+    {
+      "id": "U2-MUT-007",
+      "target": "piano-guide-tone-role-assignment",
+      "description": "A mutation that drops 3rd/7th guide tone identification on piano keys must be killed.",
+      "killedByCase": "U2-PIANO-002",
+      "traceIds": ["U2-TRACE-STRUCTURE", "U2-TRACE-PIANO-GEOMETRY"]
+    },
+    {
+      "id": "U2-MUT-008",
+      "target": "structural-alteration-synchronization",
+      "description": "A mutation that alters chord quality without synchronizing spelled degrees and pitch classes must be killed.",
+      "killedByCase": "U2-INSP-003",
+      "traceIds": ["U2-TRACE-ALTERATION-SYNC"]
+    }
+  ]
+}

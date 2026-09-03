@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "cases": [
+    {
+      "id": "U2-VOICE-001",
+      "name": "auto-to-manual-snapshot",
+      "fromMode": "auto",
+      "toMode": "manual",
+      "confirmDiscardManual": false,
+      "synthesizedAutoPitches": [
+        { "step": "E", "alter": 0, "octave": 4 },
+        { "step": "G", "alter": 0, "octave": 4 },
+        { "step": "B", "alter": 0, "octave": 4 },
+        { "step": "D", "alter": 0, "octave": 5 }
+      ],
+      "expectedOutcome": {
+        "ok": true,
+        "resultingMode": "manual",
+        "resultingPitches": [
+          { "step": "E", "alter": 0, "octave": 4 },
+          { "step": "G", "alter": 0, "octave": 4 },
+          { "step": "B", "alter": 0, "octave": 4 },
+          { "step": "D", "alter": 0, "octave": 5 }
+        ],
+        "confirmationRequired": false
+      },
+      "traceIds": ["U2-TRACE-VOICING-TRANSITION"]
+    },
+    {
+      "id": "U2-VOICE-002",
+      "name": "manual-to-auto-refuses-without-confirmation",
+      "fromMode": "manual",
+      "toMode": "auto",
+      "confirmDiscardManual": false,
+      "currentManualPitches": [
+        { "step": "C", "alter": 0, "octave": 4 },
+        { "step": "F", "alter": 1, "octave": 4 },
+        { "step": "B", "alter": -1, "octave": 4 }
+      ],
+      "expectedOutcome": {
+        "ok": false,
+        "code": "u2.mode_switch_requires_confirmation",
+        "message": "Switching from Manual to Auto will discard custom note edits.",
+        "confirmationRequired": true
+      },
+      "traceIds": ["U2-TRACE-VOICING-TRANSITION"]
+    },
+    {
+      "id": "U2-VOICE-003",
+      "name": "manual-to-auto-succeeds-with-confirmation",
+      "fromMode": "manual",
+      "toMode": "auto",
+      "confirmDiscardManual": true,
+      "currentManualPitches": [
+        { "step": "C", "alter": 0, "octave": 4 },
+        { "step": "F", "alter": 1, "octave": 4 },
+        { "step": "B", "alter": -1, "octave": 4 }
+      ],
+      "expectedOutcome": {
+        "ok": true,
+        "resultingMode": "auto",
+        "confirmationRequired": false
+      },
+      "traceIds": ["U2-TRACE-VOICING-TRANSITION"]
+    },
+    {
+      "id": "U2-VOICE-004",
+      "name": "auto-to-frozen-locks-pitches",
+      "fromMode": "auto",
+      "toMode": "frozen",
+      "confirmDiscardManual": false,
+      "synthesizedAutoPitches": [
+        { "step": "D", "alter": 0, "octave": 4 },
+        { "step": "F", "alter": 0, "octave": 4 },
+        { "step": "A", "alter": 0, "octave": 4 },
+        { "step": "C", "alter": 0, "octave": 5 }
+      ],
+      "expectedOutcome": {
+        "ok": true,
+        "resultingMode": "frozen",
+        "resultingPitches": [
+          { "step": "D", "alter": 0, "octave": 4 },
+          { "step": "F", "alter": 0, "octave": 4 },
+          { "step": "A", "alter": 0, "octave": 4 },
+          { "step": "C", "alter": 0, "octave": 5 }
+        ],
+        "confirmationRequired": false
+      },
+      "traceIds": ["U2-TRACE-VOICING-TRANSITION"]
+    }
+  ]
+}

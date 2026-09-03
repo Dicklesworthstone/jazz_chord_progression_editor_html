@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "traces": [
+    {
+      "id": "U2-TRACE-EMPTY-STATE",
+      "description": "Inspector cleanly presents empty/disabled state when no chord event is selected.",
+      "cases": ["U2-INSP-001"],
+      "legacyId": null
+    },
+    {
+      "id": "U2-TRACE-STRUCTURE",
+      "description": "Spelled degrees, pitch classes, root, quality, and omissions accurately reflect chord structure.",
+      "cases": ["U2-INSP-002", "U2-INSP-003", "U2-PIANO-002"],
+      "legacyId": "L-THEORY-03"
+    },
+    {
+      "id": "U2-TRACE-VOICING",
+      "description": "Auto, Manual, and Frozen voicings expose exact spelled pitches, MIDI numbers, and families.",
+      "cases": ["U2-INSP-002", "U2-INSP-003", "U2-INSP-004"],
+      "legacyId": null
+    },
+    {
+      "id": "U2-TRACE-HARMONY",
+      "description": "Guide tones (3rd & 7th), tensions, scale suggestions, and Roman numeral analyses are disclosed.",
+      "cases": ["U2-INSP-002", "U2-INSP-003"],
+      "legacyId": null
+    },
+    {
+      "id": "U2-TRACE-MOTION",
+      "description": "Voice leading paths, interval semitones, and common tone metrics are computed in context.",
+      "cases": ["U2-INSP-002"],
+      "legacyId": null
+    },
+    {
+      "id": "U2-TRACE-ALTERATION-SYNC",
+      "description": "Displayed chord alterations correctly update spelled degrees and synthesized voicing notes.",
+      "cases": ["U2-INSP-003", "U2-PIANO-003"],
+      "legacyId": "L-THEORY-03"
+    },
+    {
+      "id": "U2-TRACE-CUSTOM-PRESERVATION",
+      "description": "Custom / unrecognized chords preserve raw user input without being overwritten by guesses.",
+      "cases": ["U2-INSP-004"],
+      "legacyId": null
+    },
+    {
+      "id": "U2-TRACE-PIANO-GEOMETRY",
+      "description": "Piano visualizer accurately renders 88-key layout, flats/sharps, octave tags, and accessible names.",
+      "cases": ["U2-PIANO-001", "U2-PIANO-002", "U2-PIANO-003"],
+      "legacyId": "L-PIANO-01"
+    },
+    {
+      "id": "U2-TRACE-VOICING-TRANSITION",
+      "description": "Voicing mode transitions preserve notes, require confirmation when destructive, and reject unisons.",
+      "cases": ["U2-VOICE-001", "U2-VOICE-002", "U2-VOICE-003", "U2-VOICE-004", "U2-PIANO-004"],
+      "legacyId": null
+    },
+    {
+      "id": "U2-TRACE-ANNOTATION-SAFETY",
+      "description": "User annotations are strictly sanitized against unsafe HTML markup and bounded to 500 code points.",
+      "cases": ["U2-NOTE-001", "U2-NOTE-002", "U2-NOTE-003", "U2-NOTE-004"],
+      "legacyId": "L-MARKUP-01"
+    },
+    {
+      "id": "U2-TRACE-PREVIEW-ISOLATION",
+      "description": "Audio preview sounds via real X1 generation without mutating playhead, selection, or document.",
+      "cases": ["U2-INSP-002"],
+      "legacyId": "L-RUNTIME-02"
+    }
+  ]
+}

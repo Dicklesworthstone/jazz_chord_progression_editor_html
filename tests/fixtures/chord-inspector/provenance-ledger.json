@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "authorities": [
+    {
+      "id": "U0",
+      "name": "Accessible UI Primitives & Overlays",
+      "package": "U0",
+      "role": "Supplies accessible Buttons, Tabs, Inputs, and VisuallyHidden components."
+    },
+    {
+      "id": "U1",
+      "name": "Lead Sheet Chart Editing & Selection",
+      "package": "U1",
+      "role": "Provides active selection state, event IDs, measure contexts, and edit intents."
+    },
+    {
+      "id": "T0",
+      "name": "Chord Syntax & Formatting",
+      "package": "T0",
+      "role": "Parses chord symbol strings and generates canonical textual representations."
+    },
+    {
+      "id": "T1",
+      "name": "Chord Resolution & Spelling",
+      "package": "T1",
+      "role": "Resolves chord qualities, spelled degrees, pitch classes, and tension categories."
+    },
+    {
+      "id": "V0",
+      "name": "Voicing Generation",
+      "package": "V0",
+      "role": "Generates jazz voicing family candidates (drop-2, rootless, quartal, etc.)."
+    },
+    {
+      "id": "X1",
+      "name": "Serialized Transport & Audio Stop Guarantee",
+      "package": "X1",
+      "role": "Executes isolated chord audio previews without mutating progression state."
+    }
+  ],
+  "laws": [
+    {
+      "id": "U2-LAW-PROGRESSIVE-TABS",
+      "description": "Inspector organizes chord analysis into exactly seven progressive tabs."
+    },
+    {
+      "id": "U2-LAW-PIANO-BOUNDS",
+      "description": "Piano keyboard maps accurately across 88 physical keys (21..108 MIDI)."
+    },
+    {
+      "id": "U2-LAW-VOICING-DISCARD-CONFIRMATION",
+      "description": "Switching from Manual to Auto voicing requires user confirmation to prevent accidental loss."
+    },
+    {
+      "id": "U2-LAW-MANUAL-UNISON-REJECTION",
+      "description": "Adding an exact MIDI unison duplicate in manual mode is rejected; octave doublings are permitted."
+    },
+    {
+      "id": "U2-LAW-ANNOTATION-SANITIZATION",
+      "description": "All annotation text is strictly sanitized to prevent HTML/script injection and bounded to 500 code points."
+    },
+    {
+      "id": "U2-LAW-PREVIEW-ISOLATION",
+      "description": "Chord preview sounds via real audio channels without side effects on playhead, selection, or document."
+    }
+  ]
+}

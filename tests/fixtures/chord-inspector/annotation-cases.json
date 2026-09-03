@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "cases": [
+    {
+      "id": "U2-NOTE-001",
+      "name": "clean-plain-text-annotation",
+      "rawInput": "Play with light staccato feel in second chorus.",
+      "expected": {
+        "sanitized": "Play with light staccato feel in second chorus.",
+        "codePoints": 47,
+        "isWithinLimit": true,
+        "hasUnsafeMarkup": false,
+        "isRefused": false
+      },
+      "traceIds": ["U2-TRACE-ANNOTATION-SAFETY"]
+    },
+    {
+      "id": "U2-NOTE-002",
+      "name": "unsafe-html-markup-sanitization",
+      "rawInput": "<script>alert('pwned')</script>Use <b onclick='eval()'>rootless</b> A voicing & <img src=x onerror=alert(1) />",
+      "expected": {
+        "sanitized": "alert('pwned')Use rootless A voicing & ",
+        "codePoints": 39,
+        "isWithinLimit": true,
+        "hasUnsafeMarkup": true,
+        "isRefused": false
+      },
+      "traceIds": ["U2-TRACE-ANNOTATION-SAFETY"]
+    },
+    {
+      "id": "U2-NOTE-003",
+      "name": "unicode-musical-symbols-and-emojis",
+      "rawInput": "🎷 Bill Evans style: ♭9 / ♯11 resolution 🎵",
+      "expected": {
+        "sanitized": "🎷 Bill Evans style: ♭9 / ♯11 resolution 🎵",
+        "codePoints": 42,
+        "isWithinLimit": true,
+        "hasUnsafeMarkup": false,
+        "isRefused": false
+      },
+      "traceIds": ["U2-TRACE-ANNOTATION-SAFETY"]
+    },
+    {
+      "id": "U2-NOTE-004",
+      "name": "annotation-exceeds-maximum-code-points",
+      "rawInput": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "expected": {
+        "sanitized": "",
+        "codePoints": 501,
+        "isWithinLimit": false,
+        "hasUnsafeMarkup": false,
+        "isRefused": true,
+        "refusalCode": "u2.annotation_length_exceeded"
+      },
+      "traceIds": ["U2-TRACE-ANNOTATION-SAFETY"]
+    }
+  ]
+}

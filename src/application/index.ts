@@ -6,6 +6,8 @@ export * from "./x1-retirement-adapter";
 export * from "./studio-recovery";
 export * from "./e0-v2-port-normalization";
 export * from "./e0-interchange";
+export * from "./u2-chord-inspector-contract";
+export * from "./chord-inspector";
 
 export {
   applicationHistoryRetainedByteEstimator,

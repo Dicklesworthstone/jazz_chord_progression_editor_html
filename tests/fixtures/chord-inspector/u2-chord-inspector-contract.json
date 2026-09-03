@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "contractSchema": "changes.ui.u2-chord-inspector-contract.v1",
+  "manifestSchema": "changes.fixtures.u2-chord-inspector-contract.v1",
+  "package": "U2",
+  "beadId": "jcpe-milestone-reliable-studio-l3a.11.1",
+  "policyId": "changes.u2-chord-inspector",
+  "policyVersion": 1,
+  "files": [
+    "inspector-cases.json",
+    "piano-cases.json",
+    "voicing-transition-cases.json",
+    "annotation-cases.json",
+    "mutation-controls.json",
+    "trace-ledger.json",
+    "provenance-ledger.json"
+  ],
+  "counts": {
+    "tabs": 7,
+    "inspectorCases": 4,
+    "pianoCases": 4,
+    "voicingTransitionCases": 4,
+    "annotationCases": 4,
+    "mutationControls": 8,
+    "traces": 11,
+    "authorities": 6,
+    "laws": 6
+  }
+}

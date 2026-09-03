@@ -1,0 +1,381 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "cases": [
+    {
+      "id": "U2-INSP-001",
+      "name": "no-selection-empty-state",
+      "selectedChord": null,
+      "expected": {
+        "hasSelectedEvent": false,
+        "selectedEventId": null,
+        "activeTab": "symbol",
+        "symbol": {
+          "sourceText": "",
+          "canonicalText": null,
+          "isValidSyntax": false,
+          "isCustomUnrecognized": false,
+          "draftText": "",
+          "isDirty": false
+        },
+        "structure": {
+          "rootSpelling": null,
+          "qualityName": null,
+          "bassSpelling": null,
+          "degrees": [],
+          "omissions": [],
+          "alterations": [],
+          "additions": []
+        },
+        "timing": {
+          "duration": { "numerator": 0, "denominator": 1 },
+          "durationLabel": "0 beats",
+          "measureIndex": 0,
+          "measureOrdinal": 1,
+          "measureStartBeat": { "numerator": 0, "denominator": 1 },
+          "beatInMeasure": { "numerator": 0, "denominator": 1 },
+          "isMeasureComplete": false
+        },
+        "voicing": {
+          "mode": "auto",
+          "family": null,
+          "activePitches": [],
+          "spelledPitches": [],
+          "midiNoteNumbers": [],
+          "canSwitchToManual": false,
+          "canSwitchToAuto": false,
+          "canSwitchToFrozen": false,
+          "manualNoteCount": 0,
+          "isUnisonDuplicateRejected": false
+        },
+        "harmony": {
+          "qualityCategory": "None",
+          "guideTones": [],
+          "tensions": [],
+          "characteristicTones": [],
+          "scaleSuggestions": [],
+          "romanNumeral": null,
+          "tonalFunction": null
+        },
+        "motion": {
+          "previousChordSymbol": null,
+          "nextChordSymbol": null,
+          "commonToneCount": 0,
+          "stepwiseMotionCount": 0,
+          "voicePaths": []
+        },
+        "notes": {
+          "rawAnnotation": "",
+          "sanitizedAnnotation": "",
+          "codePointCount": 0,
+          "maxCodePoints": 500,
+          "hasUnsafeMarkupStripped": false,
+          "isDirty": false
+        }
+      },
+      "traceIds": ["U2-TRACE-EMPTY-STATE"]
+    },
+    {
+      "id": "U2-INSP-002",
+      "name": "c-major-seven-standard",
+      "selectedChord": {
+        "id": "chord-1",
+        "symbolText": "Cmaj7",
+        "duration": { "numerator": 4, "denominator": 1 },
+        "measureIndex": 0,
+        "measureOrdinal": 1,
+        "measureStartBeat": { "numerator": 0, "denominator": 1 },
+        "beatInMeasure": { "numerator": 0, "denominator": 1 },
+        "voicingMode": "auto",
+        "voicingFamily": "rootless-a",
+        "annotation": "Opening tonic"
+      },
+      "expected": {
+        "hasSelectedEvent": true,
+        "selectedEventId": "chord-1",
+        "activeTab": "symbol",
+        "symbol": {
+          "sourceText": "Cmaj7",
+          "canonicalText": "Cmaj7",
+          "isValidSyntax": true,
+          "isCustomUnrecognized": false,
+          "draftText": "Cmaj7",
+          "isDirty": false
+        },
+        "structure": {
+          "rootSpelling": { "step": "C", "alter": 0 },
+          "qualityName": "Major Seventh",
+          "bassSpelling": null,
+          "degrees": [
+            { "degree": 1, "spelling": { "step": "C", "alter": 0 }, "pitchClass": 0, "isRoot": true, "isBass": false, "isOmitted": false, "role": "root" },
+            { "degree": 3, "spelling": { "step": "E", "alter": 0 }, "pitchClass": 4, "isRoot": false, "isBass": false, "isOmitted": false, "role": "guide-third" },
+            { "degree": 5, "spelling": { "step": "G", "alter": 0 }, "pitchClass": 7, "isRoot": false, "isBass": false, "isOmitted": false, "role": "color" },
+            { "degree": 7, "spelling": { "step": "B", "alter": 0 }, "pitchClass": 11, "isRoot": false, "isBass": false, "isOmitted": false, "role": "guide-seventh" }
+          ],
+          "omissions": [],
+          "alterations": [],
+          "additions": []
+        },
+        "timing": {
+          "duration": { "numerator": 4, "denominator": 1 },
+          "durationLabel": "4 beats",
+          "measureIndex": 0,
+          "measureOrdinal": 1,
+          "measureStartBeat": { "numerator": 0, "denominator": 1 },
+          "beatInMeasure": { "numerator": 0, "denominator": 1 },
+          "isMeasureComplete": true
+        },
+        "voicing": {
+          "mode": "auto",
+          "family": "rootless-a",
+          "activePitches": [
+            { "step": "E", "alter": 0, "octave": 4 },
+            { "step": "G", "alter": 0, "octave": 4 },
+            { "step": "B", "alter": 0, "octave": 4 },
+            { "step": "D", "alter": 0, "octave": 5 }
+          ],
+          "spelledPitches": [
+            { "step": "E", "alter": 0 },
+            { "step": "G", "alter": 0 },
+            { "step": "B", "alter": 0 },
+            { "step": "D", "alter": 0 }
+          ],
+          "midiNoteNumbers": [64, 67, 71, 74],
+          "canSwitchToManual": true,
+          "canSwitchToAuto": false,
+          "canSwitchToFrozen": true,
+          "manualNoteCount": 0,
+          "isUnisonDuplicateRejected": false
+        },
+        "harmony": {
+          "qualityCategory": "Major",
+          "guideTones": [
+            { "step": "E", "alter": 0 },
+            { "step": "B", "alter": 0 }
+          ],
+          "tensions": ["9", "13", "#11"],
+          "characteristicTones": ["7", "3"],
+          "scaleSuggestions": ["Ionian", "Lydian"],
+          "romanNumeral": "Imaj7",
+          "tonalFunction": "Tonic"
+        },
+        "motion": {
+          "previousChordSymbol": null,
+          "nextChordSymbol": "Dm7",
+          "commonToneCount": 1,
+          "stepwiseMotionCount": 3,
+          "voicePaths": [
+            { "fromPitch": { "step": "E", "alter": 0, "octave": 4 }, "toPitch": { "step": "F", "alter": 0, "octave": 4 }, "intervalSemis": 1, "motionType": "step" },
+            { "fromPitch": { "step": "G", "alter": 0, "octave": 4 }, "toPitch": { "step": "A", "alter": 0, "octave": 4 }, "intervalSemis": 2, "motionType": "step" },
+            { "fromPitch": { "step": "B", "alter": 0, "octave": 4 }, "toPitch": { "step": "C", "alter": 0, "octave": 5 }, "intervalSemis": 1, "motionType": "step" },
+            { "fromPitch": { "step": "D", "alter": 0, "octave": 5 }, "toPitch": { "step": "D", "alter": 0, "octave": 5 }, "intervalSemis": 0, "motionType": "common" }
+          ]
+        },
+        "notes": {
+          "rawAnnotation": "Opening tonic",
+          "sanitizedAnnotation": "Opening tonic",
+          "codePointCount": 13,
+          "maxCodePoints": 500,
+          "hasUnsafeMarkupStripped": false,
+          "isDirty": false
+        }
+      },
+      "traceIds": ["U2-TRACE-STRUCTURE", "U2-TRACE-VOICING", "U2-TRACE-MOTION"]
+    },
+    {
+      "id": "U2-INSP-003",
+      "name": "g-seven-altered-tensions",
+      "selectedChord": {
+        "id": "chord-2",
+        "symbolText": "G7b9#11",
+        "duration": { "numerator": 4, "denominator": 1 },
+        "measureIndex": 1,
+        "measureOrdinal": 2,
+        "measureStartBeat": { "numerator": 4, "denominator": 1 },
+        "beatInMeasure": { "numerator": 0, "denominator": 1 },
+        "voicingMode": "auto",
+        "voicingFamily": "drop-2",
+        "annotation": "Altered dominant turnaround"
+      },
+      "expected": {
+        "hasSelectedEvent": true,
+        "selectedEventId": "chord-2",
+        "activeTab": "symbol",
+        "symbol": {
+          "sourceText": "G7b9#11",
+          "canonicalText": "G7(b9,#11)",
+          "isValidSyntax": true,
+          "isCustomUnrecognized": false,
+          "draftText": "G7b9#11",
+          "isDirty": false
+        },
+        "structure": {
+          "rootSpelling": { "step": "G", "alter": 0 },
+          "qualityName": "Dominant Seventh Altered",
+          "bassSpelling": null,
+          "degrees": [
+            { "degree": 1, "spelling": { "step": "G", "alter": 0 }, "pitchClass": 7, "isRoot": true, "isBass": false, "isOmitted": false, "role": "root" },
+            { "degree": 3, "spelling": { "step": "B", "alter": 0 }, "pitchClass": 11, "isRoot": false, "isBass": false, "isOmitted": false, "role": "guide-third" },
+            { "degree": 5, "spelling": { "step": "D", "alter": 0 }, "pitchClass": 2, "isRoot": false, "isBass": false, "isOmitted": true, "role": "omitted" },
+            { "degree": 7, "spelling": { "step": "F", "alter": 0 }, "pitchClass": 5, "isRoot": false, "isBass": false, "isOmitted": false, "role": "guide-seventh" },
+            { "degree": 9, "spelling": { "step": "A", "alter": -1 }, "pitchClass": 8, "isRoot": false, "isBass": false, "isOmitted": false, "role": "tension" },
+            { "degree": 11, "spelling": { "step": "C", "alter": 1 }, "pitchClass": 6, "isRoot": false, "isBass": false, "isOmitted": false, "role": "tension" }
+          ],
+          "omissions": [5],
+          "alterations": ["b9", "#11"],
+          "additions": []
+        },
+        "timing": {
+          "duration": { "numerator": 4, "denominator": 1 },
+          "durationLabel": "4 beats",
+          "measureIndex": 1,
+          "measureOrdinal": 2,
+          "measureStartBeat": { "numerator": 4, "denominator": 1 },
+          "beatInMeasure": { "numerator": 0, "denominator": 1 },
+          "isMeasureComplete": true
+        },
+        "voicing": {
+          "mode": "auto",
+          "family": "drop-2",
+          "activePitches": [
+            { "step": "F", "alter": 0, "octave": 4 },
+            { "step": "A", "alter": -1, "octave": 4 },
+            { "step": "B", "alter": 0, "octave": 4 },
+            { "step": "C", "alter": 1, "octave": 5 }
+          ],
+          "spelledPitches": [
+            { "step": "F", "alter": 0 },
+            { "step": "A", "alter": -1 },
+            { "step": "B", "alter": 0 },
+            { "step": "C", "alter": 1 }
+          ],
+          "midiNoteNumbers": [65, 68, 71, 73],
+          "canSwitchToManual": true,
+          "canSwitchToAuto": false,
+          "canSwitchToFrozen": true,
+          "manualNoteCount": 0,
+          "isUnisonDuplicateRejected": false
+        },
+        "harmony": {
+          "qualityCategory": "Dominant",
+          "guideTones": [
+            { "step": "B", "alter": 0 },
+            { "step": "F", "alter": 0 }
+          ],
+          "tensions": ["b9", "#11", "b13", "#9"],
+          "characteristicTones": ["3", "b7", "b9", "#11"],
+          "scaleSuggestions": ["Altered", "Half-Whole Diminished", "Lydian Dominant"],
+          "romanNumeral": "V7",
+          "tonalFunction": "Dominant"
+        },
+        "motion": {
+          "previousChordSymbol": "Dm7",
+          "nextChordSymbol": "Cmaj7",
+          "commonToneCount": 0,
+          "stepwiseMotionCount": 4,
+          "voicePaths": []
+        },
+        "notes": {
+          "rawAnnotation": "Altered dominant turnaround",
+          "sanitizedAnnotation": "Altered dominant turnaround",
+          "codePointCount": 27,
+          "maxCodePoints": 500,
+          "hasUnsafeMarkupStripped": false,
+          "isDirty": false
+        }
+      },
+      "traceIds": ["U2-TRACE-ALTERATION-SYNC", "U2-TRACE-STRUCTURE", "U2-TRACE-HARMONY"]
+    },
+    {
+      "id": "U2-INSP-004",
+      "name": "custom-unrecognized-chord",
+      "selectedChord": {
+        "id": "chord-3",
+        "symbolText": "CcustomX",
+        "duration": { "numerator": 4, "denominator": 1 },
+        "measureIndex": 2,
+        "measureOrdinal": 3,
+        "measureStartBeat": { "numerator": 8, "denominator": 1 },
+        "beatInMeasure": { "numerator": 0, "denominator": 1 },
+        "voicingMode": "manual",
+        "voicingFamily": null,
+        "annotation": "Experimental user chord"
+      },
+      "expected": {
+        "hasSelectedEvent": true,
+        "selectedEventId": "chord-3",
+        "activeTab": "symbol",
+        "symbol": {
+          "sourceText": "CcustomX",
+          "canonicalText": null,
+          "isValidSyntax": false,
+          "isCustomUnrecognized": true,
+          "draftText": "CcustomX",
+          "isDirty": false
+        },
+        "structure": {
+          "rootSpelling": null,
+          "qualityName": "Custom / Unrecognized",
+          "bassSpelling": null,
+          "degrees": [],
+          "omissions": [],
+          "alterations": [],
+          "additions": []
+        },
+        "timing": {
+          "duration": { "numerator": 4, "denominator": 1 },
+          "durationLabel": "4 beats",
+          "measureIndex": 2,
+          "measureOrdinal": 3,
+          "measureStartBeat": { "numerator": 8, "denominator": 1 },
+          "beatInMeasure": { "numerator": 0, "denominator": 1 },
+          "isMeasureComplete": true
+        },
+        "voicing": {
+          "mode": "manual",
+          "family": null,
+          "activePitches": [
+            { "step": "C", "alter": 0, "octave": 4 },
+            { "step": "F", "alter": 1, "octave": 4 },
+            { "step": "B", "alter": -1, "octave": 4 }
+          ],
+          "spelledPitches": [
+            { "step": "C", "alter": 0 },
+            { "step": "F", "alter": 1 },
+            { "step": "B", "alter": -1 }
+          ],
+          "midiNoteNumbers": [60, 66, 70],
+          "canSwitchToManual": false,
+          "canSwitchToAuto": true,
+          "canSwitchToFrozen": true,
+          "manualNoteCount": 3,
+          "isUnisonDuplicateRejected": false
+        },
+        "harmony": {
+          "qualityCategory": "Custom",
+          "guideTones": [],
+          "tensions": [],
+          "characteristicTones": [],
+          "scaleSuggestions": [],
+          "romanNumeral": null,
+          "tonalFunction": null
+        },
+        "motion": {
+          "previousChordSymbol": null,
+          "nextChordSymbol": null,
+          "commonToneCount": 0,
+          "stepwiseMotionCount": 0,
+          "voicePaths": []
+        },
+        "notes": {
+          "rawAnnotation": "Experimental user chord",
+          "sanitizedAnnotation": "Experimental user chord",
+          "codePointCount": 23,
+          "maxCodePoints": 500,
+          "hasUnsafeMarkupStripped": false,
+          "isDirty": false
+        }
+      },
+      "traceIds": ["U2-TRACE-CUSTOM-PRESERVATION"]
+    }
+  ]
+}
