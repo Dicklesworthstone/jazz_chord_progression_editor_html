@@ -597,7 +597,7 @@ export const buildChartDocumentCandidate: BuildChartDocumentCandidate = (
     if (requestCount > MAX_E0_CHART_IMPORT_ID_REQUESTS) {
       return null;
     }
-    const res = idFactory(kind);
+    const res = idFactory.next(kind);
     if (!res.ok) return null;
     if (existingIds.has(res.value)) return null;
     existingIds.add(res.value);
@@ -1364,7 +1364,9 @@ export function createPreparedCanonicalExportDeliveryRegistry(): PreparedCanonic
   let activeIdentity: CanonicalExportPreparationIdentity | null = null;
 
   return Object.freeze({
-    begin: (stateIdentity) => {
+    begin: (
+      stateIdentity: Readonly<{ documentId: DocumentId; revision: AppRevision }>,
+    ): BeginCanonicalExportPreparationResult => {
       if (registryState === "preparing" || registryState === "delivering") {
         return Object.freeze({
           ok: false,
@@ -1376,7 +1378,7 @@ export function createPreparedCanonicalExportDeliveryRegistry(): PreparedCanonic
         return Object.freeze({
           ok: false,
           code: "export.preparation_sequence_exhausted",
-          state: registryState,
+          state: registryState === "ready" ? "empty" : registryState,
         });
       }
       const prepId = currentPreparationId as CanonicalExportPreparationId;
@@ -1399,7 +1401,9 @@ export function createPreparedCanonicalExportDeliveryRegistry(): PreparedCanonic
         state: "preparing",
       });
     },
-    publish: (value) => {
+    publish: (
+      value: PreparedCanonicalExportDelivery,
+    ): PublishPreparedCanonicalExportDeliveryResult => {
       if (
         activeIdentity !== null &&
         value.identity.preparationId === activeIdentity.preparationId &&
@@ -1414,7 +1418,15 @@ export function createPreparedCanonicalExportDeliveryRegistry(): PreparedCanonic
       registryState = "empty";
       return Object.freeze({ outcome: "discarded-stale", state: "empty" });
     },
-    take: (request) => {
+    take: (
+      request: Readonly<{
+        preparationId: CanonicalExportPreparationId;
+        stateIdentity: Readonly<{
+          documentId: DocumentId;
+          revision: AppRevision;
+        }>;
+      }>,
+    ): TakePreparedCanonicalExportDeliveryResult => {
       if (
         registryState === "ready" &&
         storedDelivery !== null &&
@@ -1452,7 +1464,9 @@ export function createPreparedCanonicalExportDeliveryRegistry(): PreparedCanonic
         registryState,
       });
     },
-    abandonPreparation: (preparationId) => {
+    abandonPreparation: (
+      preparationId: CanonicalExportPreparationId,
+    ): AbandonCanonicalExportPreparationResult => {
       if (
         activeIdentity !== null &&
         preparationId === activeIdentity.preparationId &&
@@ -1471,7 +1485,9 @@ export function createPreparedCanonicalExportDeliveryRegistry(): PreparedCanonic
         registryState,
       });
     },
-    finishDelivery: (preparationId) => {
+    finishDelivery: (
+      preparationId: CanonicalExportPreparationId,
+    ): FinishPreparedCanonicalExportDeliveryResult => {
       if (
         activeIdentity !== null &&
         preparationId === activeIdentity.preparationId &&
@@ -1515,7 +1531,6 @@ export function createE0InterchangeOperations(
       const preview = request.preview;
       const identity = preview.identity;
       const format = preview.sourceFormat;
-      const origin = preview.replacementOrigin;
 
       let prepResRaw: unknown;
       try {
@@ -1579,7 +1594,7 @@ export function createE0InterchangeOperations(
         });
       }
 
-      if (prepResRaw.ok === false) {
+      if (prepResRaw["ok"] === false) {
         return Object.freeze({
           ok: false,
           refusal: Object.freeze({
@@ -1663,7 +1678,7 @@ export function createE0InterchangeOperations(
         });
       }
 
-      if (retireResRaw.ok === false) {
+      if (retireResRaw["ok"] === false) {
         const invalidation = dependencies.discardImportReplacementPublication({
           identity,
           reason: "retirement-refused",
@@ -1682,7 +1697,22 @@ export function createE0InterchangeOperations(
         });
       }
 
-      const retirementEvidence = retireResRaw["value"] as X1ReplacementRetirementEvidence;
+      const rawRetirementEvidence = retireResRaw["value"] as any;
+      const rawReceipt = rawRetirementEvidence.receipt;
+      const retirementReceipt: ReplacementRetirementReceipt = Object.freeze({
+        requestId: rawReceipt.requestId,
+        retiredTransportGeneration: rawReceipt.retiredTransportGeneration,
+        progressionRetired: true as const,
+        previewRetired: true as const,
+        noFutureAttack: true as const,
+      });
+
+      const retirementEvidence: X1ReplacementRetirementEvidence = Object.freeze({
+        schema: "changes.x1-replacement-retirement-evidence.v1" as const,
+        authority: "x1-serialized-transport" as const,
+        request: rawRetirementEvidence.request,
+        receipt: retirementReceipt,
+      });
 
       let pubResRaw: unknown;
       try {
@@ -1820,7 +1850,7 @@ export function createE0InterchangeOperations(
         });
       }
 
-      if (!exportResRaw.ok) {
+      if (exportResRaw["ok"] === false) {
         deliveryRegistry.abandonPreparation(beginRes.identity.preparationId);
         return Object.freeze({
           ok: false,
@@ -1929,10 +1959,12 @@ export function createE0InterchangeOperations(
           outcome: "delivery-protocol-invalid",
           code: "export.delivery_result_invalid",
           delivery: null,
+          cleanupKnowledge: "unknown",
+          maximumPossibleOutstandingOwnedResources: 4,
+          deliveryResourceReconciliation: "required",
+          protocolDiagnostic: diagnostic,
           a0Publication: null,
           a1Persistence: null,
-          protocolDiagnostic: diagnostic,
-          configurationDisposition: "release-gate-failed",
           durability: "unchanged",
         });
       }
@@ -1954,10 +1986,44 @@ export function createE0InterchangeOperations(
           outcome: "delivery-protocol-invalid",
           code: "export.delivery_result_invalid",
           delivery: null,
+          cleanupKnowledge: "unknown",
+          maximumPossibleOutstandingOwnedResources: 4,
+          deliveryResourceReconciliation: "required",
+          protocolDiagnostic: diagnostic,
           a0Publication: null,
           a1Persistence: null,
-          protocolDiagnostic: diagnostic,
-          configurationDisposition: "release-gate-failed",
+          durability: "unchanged",
+        });
+      }
+
+      if (deliveryCompletion["outcome"] === "cancelled") {
+        return Object.freeze({
+          outcome: "unchanged-cancelled",
+          delivery: deliveryCompletion as any,
+          a0Publication: null,
+          a1Persistence: null,
+          durability: "unchanged",
+        });
+      }
+
+      if (deliveryCompletion["outcome"] === "failed") {
+        return Object.freeze({
+          outcome: "unchanged-failed",
+          delivery: deliveryCompletion as any,
+          a0Publication: null,
+          a1Persistence: null,
+          durability: "unchanged",
+        });
+      }
+
+      if (deliveryCompletion["outcome"] === "cleanup-failed") {
+        return Object.freeze({
+          outcome: "delivery-cleanup-reconciliation-required",
+          code: "export.delivery_cleanup_failed",
+          delivery: deliveryCompletion as any,
+          deliveryResourceReconciliation: "required",
+          a0Publication: null,
+          a1Persistence: null,
           durability: "unchanged",
         });
       }
@@ -1966,9 +2032,21 @@ export function createE0InterchangeOperations(
         deliveryCompletion["outcome"] !== "completed" &&
         deliveryCompletion["outcome"] !== "handed-off"
       ) {
+        const diagnostic: E0AdapterProtocolDiagnostic & {
+          boundary: "export-delivery";
+        } = Object.freeze({
+          boundary: "export-delivery",
+          reason: "invalid-envelope-or-binding",
+          rawResultRetained: false,
+        });
         return Object.freeze({
-          outcome: "delivery-terminal",
-          delivery: deliveryCompletion as any,
+          outcome: "delivery-protocol-invalid",
+          code: "export.delivery_result_invalid",
+          delivery: null,
+          cleanupKnowledge: "unknown",
+          maximumPossibleOutstandingOwnedResources: 4,
+          deliveryResourceReconciliation: "required",
+          protocolDiagnostic: diagnostic,
           a0Publication: null,
           a1Persistence: null,
           durability: "unchanged",
@@ -2035,7 +2113,7 @@ export function createE0InterchangeOperations(
         });
       }
 
-      if (!pubRaw.ok) {
+      if (pubRaw["ok"] === false) {
         return Object.freeze({
           outcome: "publication-refused",
           delivery,
@@ -2115,7 +2193,10 @@ export function createE0InterchangeOperations(
           outcome: "persistence-protocol-invalid",
           code: "recovery.marker_persistence_result_invalid",
           delivery,
-          a0Publication,
+          a0Publication: Object.freeze({
+            request: pubReq,
+            result: a0Publication.result,
+          }),
           a1Persistence: Object.freeze({
             handoff: persistHandoff,
             protocolDiagnostic: diagnostic,
@@ -2136,7 +2217,10 @@ export function createE0InterchangeOperations(
           outcome: "persistence-protocol-invalid",
           code: "recovery.marker_persistence_result_invalid",
           delivery,
-          a0Publication,
+          a0Publication: Object.freeze({
+            request: pubReq,
+            result: a0Publication.result,
+          }),
           a1Persistence: Object.freeze({
             handoff: persistHandoff,
             protocolDiagnostic: diagnostic,
@@ -2145,7 +2229,7 @@ export function createE0InterchangeOperations(
         });
       }
 
-      if (persistRaw.ok === true) {
+      if (persistRaw["ok"] === true) {
         return Object.freeze({
           outcome: "advanced",
           delivery,

@@ -12,13 +12,9 @@ import {
   classifyJsonLexically,
   decodeUtf8Fatal,
   buildChartDocumentCandidate,
-  createE0ExportOperations,
   createE0V2TransactionDriver,
   createPrepareImportPreviewCoordinator,
-  deliverExportArtifact,
   readImportSource,
-  sanitizeExportFilename,
-  serializeCanonicalJsonDocument,
   validateDocumentSemantics,
   type AppState,
   type ImportPayload,
@@ -26,6 +22,12 @@ import {
   type ImportSourceHandle,
   type PrepareImportPreviewDependencies,
 } from "../../src/application";
+import {
+  createE0ExportOperations,
+  deliverExportArtifact,
+  sanitizeExportFilename,
+  serializeCanonicalJsonDocument,
+} from "../../src/export";
 import {
   formatChordSymbol,
   parseChartText,
