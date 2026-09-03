@@ -135,7 +135,7 @@ export interface G2Refusal {
   readonly eventId?: ChordEventId;
 }
 
-export type ContinuationResult =
+export type G2ContinuationResult =
   | {
       readonly ok: true;
       readonly schema: typeof G2_CONTINUATION_RESULT_SCHEMA;
@@ -145,8 +145,9 @@ export type ContinuationResult =
   | {
       readonly ok: false;
       readonly refusal: G2Refusal;
-    }
-  | LegacyContinuationResult;
+    };
+
+export type ContinuationResult = G2ContinuationResult;
 
 export interface ContinuationOptions {
   readonly keyContext?: KeyContext;
