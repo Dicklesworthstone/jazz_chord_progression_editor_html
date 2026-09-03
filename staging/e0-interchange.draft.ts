@@ -1922,7 +1922,7 @@ export function createE0InterchangeOperations(
 
       let deliveryCompletion: unknown;
       try {
-        const startResult = dependencies.canonicalExportDelivery.startPreparedExportDelivery({
+        const startResult = dependencies.startPreparedExportDelivery({
           binding: preparedDelivery.binding,
           privateBytes: preparedDelivery.privateBytes,
           preference: request.deliveryPreference,
@@ -2058,7 +2058,7 @@ export function createE0InterchangeOperations(
 
       let pubRaw: unknown;
       try {
-        pubRaw = dependencies.canonicalExportMarkerSettlement.publishCanonicalExportRevision(
+        pubRaw = dependencies.settlementAdapters.publishCanonicalExportRevision(
           pubReq,
         );
       } catch {
@@ -2126,7 +2126,7 @@ export function createE0InterchangeOperations(
       // A1 persistence stage
       let timestampRaw: unknown;
       try {
-        timestampRaw = dependencies.canonicalExportDelivery.readExportTimestamp();
+        timestampRaw = dependencies.readExportTimestamp();
       } catch {
         return Object.freeze({
           outcome: "advanced",
@@ -2170,7 +2170,7 @@ export function createE0InterchangeOperations(
 
       let persistRaw: unknown;
       try {
-        persistRaw = await dependencies.canonicalExportMarkerSettlement.queueCanonicalExportMarkerPersistence(
+        persistRaw = await dependencies.settlementAdapters.queueCanonicalExportMarkerPersistence(
           persistHandoff,
         );
       } catch {
