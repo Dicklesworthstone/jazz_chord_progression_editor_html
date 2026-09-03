@@ -1,4 +1,5 @@
 import type { ValidatedDocument } from "../domain";
+import type { ImportReplacementImpact } from "./e0-interchange-contract";
 import {
   CANONICAL_EXPORT_REVISION_PUBLICATION_SCHEMA,
   DISCARD_IMPORT_REPLACEMENT_PUBLICATION_REASONS,
@@ -48,6 +49,7 @@ import { enforceHistoryCaps, isValidHistoryEstimate } from "./application-histor
 import {
   buildDocumentIndex,
   createWorkCounters,
+  type MutableApplicationWorkCounters,
   deepStructuralEqual,
   freezeWorkCounters,
   isBoundedToken,
@@ -272,6 +274,103 @@ export function applyPreparedImportReplacementToLatestState(
     }),
     notices,
     nextSequence,
+  });
+}
+
+/**
+ * Composition-private replacement-impact assessor (l3a.2 wiring): the
+ * EXACT step-7/8/9 computation the prepare port performs, extracted so
+ * the composition can compute the E0V2-RES-02 projection with the same
+ * math the owner recomputes at preparation — the projection is never
+ * authority, and duplicated drifting math would refuse every commit
+ * with import.replacement_impact_mismatch. Behavior-neutral: the port
+ * below calls this function with the same inputs it always used.
+ */
+export type ReplacementImpactMaterial =
+  | Readonly<{
+      ok: true;
+      impact: ImportReplacementImpact;
+      historyEntry: HistoryEntry;
+      retainedHistory: HistoryState | null;
+      oversized: boolean;
+      afterBookmarks: StableUiBookmarks;
+    }>
+  | Readonly<{ ok: false; code: "import.replacement_history_estimate_failed" }>;
+
+export function assessReplacementImpactOverState(
+  state: AppState,
+  candidate: ValidatedDocument,
+  seed: Readonly<{ id: string; label: string; logicalTimeMs: number }>,
+  estimateHistoryRetainedBytes: ApplicationCommandDependencies["estimateHistoryRetainedBytes"],
+  counters: MutableApplicationWorkCounters,
+): ReplacementImpactMaterial {
+  const afterBookmarks = initialBookmarks(candidate, counters);
+  const entryWithoutEstimate: Omit<HistoryEntry, "retainedBytesEstimate"> = {
+    commandId: seed.id,
+    commandKind: "replace-document",
+    label: seed.label,
+    before: state.document,
+    after: candidate,
+    beforeBookmarks: state.bookmarks,
+    afterBookmarks,
+    coalescing: null,
+    firstLogicalTimeMs: seed.logicalTimeMs,
+    lastLogicalTimeMs: seed.logicalTimeMs,
+  };
+  const retainedBytesEstimate =
+    estimateHistoryRetainedBytes(entryWithoutEstimate);
+  if (!isValidHistoryEstimate(retainedBytesEstimate)) {
+    return Object.freeze({
+      ok: false as const,
+      code: "import.replacement_history_estimate_failed" as const,
+    });
+  }
+  counters.historyBytesEstimated += retainedBytesEstimate;
+  const historyEntry: HistoryEntry = Object.freeze({
+    ...entryWithoutEstimate,
+    retainedBytesEstimate,
+  });
+  const oversized = retainedBytesEstimate > MAX_HISTORY_RETAINED_BYTES;
+  let retainedHistory: HistoryState | null = null;
+  if (!oversized) {
+    retainedHistory = enforceHistoryCaps([...state.history.undo, historyEntry]);
+    if (retainedHistory === null) {
+      return Object.freeze({
+        ok: false as const,
+        code: "import.replacement_history_estimate_failed" as const,
+      });
+    }
+  }
+  const impact: ImportReplacementImpact = oversized
+    ? Object.freeze({
+        historyEntryRetainedBytes: retainedBytesEstimate,
+        evictedUndoEntries: state.history.undo.length,
+        redoEntriesCleared: state.history.redo.length,
+        confirmationRequired: true as const,
+        undoDisposition: "explicitly-unavailable" as const,
+        undoEntriesAfterCommit: 0 as const,
+        undoRetainedBytesAfterCommit: 0 as const,
+        exportRecommended: true as const,
+      })
+    : Object.freeze({
+        historyEntryRetainedBytes: retainedBytesEstimate,
+        evictedUndoEntries:
+          state.history.undo.length + 1 - (retainedHistory?.undo.length ?? 0),
+        redoEntriesCleared: state.history.redo.length,
+        confirmationRequired: true as const,
+        undoDisposition: "retained" as const,
+        undoEntriesAfterCommit: retainedHistory?.undo.length ?? 0,
+        undoRetainedBytesAfterCommit:
+          retainedHistory?.retainedBytesEstimate ?? 0,
+        exportRecommended: false as const,
+      });
+  return Object.freeze({
+    ok: true as const,
+    impact,
+    historyEntry,
+    retainedHistory,
+    oversized,
+    afterBookmarks,
   });
 }
 
@@ -521,78 +620,37 @@ export function createStudioInterchangeOwnerOperations(
       return refuse("import.candidate_semantic_invalid");
     }
 
-    /* 7. Replacement bookmark/focus material (A0's replacement reset law). */
+    /* 7-9. Replacement bookmark material, the real A0 retained-history
+     * estimator/cap policy, and the exact impact recomputation — the
+     * shared composition-private assessor (extracted verbatim; see
+     * assessReplacementImpactOverState above). */
     emit(
       "prepareImportReplacementPublication",
       "repair.bookmarks-and-focus",
     );
-    const afterBookmarks = initialBookmarks(validated.value, counters);
-
-    /* 8. The real A0 retained-history byte estimator and cap policy. */
     emit("prepareImportReplacementPublication", "estimate.history");
-    const entryWithoutEstimate: Omit<HistoryEntry, "retainedBytesEstimate"> = {
-      commandId: seedId,
-      commandKind: "replace-document",
-      label: seedLabel,
-      before: state.document,
-      after: validated.value,
-      beforeBookmarks: state.bookmarks,
-      afterBookmarks,
-      coalescing: null,
-      firstLogicalTimeMs: seedLogicalTimeMs,
-      lastLogicalTimeMs: seedLogicalTimeMs,
-    };
-    const retainedBytesEstimate =
-      dependencies.estimateHistoryRetainedBytes(entryWithoutEstimate);
-    if (!isValidHistoryEstimate(retainedBytesEstimate)) {
-      return refuse("import.replacement_history_estimate_failed");
+    const impactMaterial = assessReplacementImpactOverState(
+      state,
+      validated.value,
+      Object.freeze({
+        id: seedId,
+        label: seedLabel,
+        logicalTimeMs: seedLogicalTimeMs,
+      }),
+      dependencies.estimateHistoryRetainedBytes,
+      counters,
+    );
+    if (!impactMaterial.ok) {
+      return refuse(impactMaterial.code);
     }
-    counters.historyBytesEstimated += retainedBytesEstimate;
-    const historyEntry: HistoryEntry = Object.freeze({
-      ...entryWithoutEstimate,
-      retainedBytesEstimate,
-    });
-    const oversized = retainedBytesEstimate > MAX_HISTORY_RETAINED_BYTES;
+    const { historyEntry, retainedHistory, oversized, afterBookmarks } =
+      impactMaterial;
     if (disclosedDisposition === "retained" && oversized) {
       // The disclosed retained impact does not exist for this replacement.
       return refuse("import.replacement_impact_unavailable");
     }
-    let retainedHistory: HistoryState | null = null;
-    if (!oversized) {
-      retainedHistory = enforceHistoryCaps([...state.history.undo, historyEntry]);
-      if (retainedHistory === null) {
-        return refuse("import.replacement_history_estimate_failed");
-      }
-    }
-
-    /* 9. Recompute the current replacement impact and compare exactly. */
     emit("prepareImportReplacementPublication", "recompute.impact");
-    const recomputedImpact = oversized
-      ? Object.freeze({
-          historyEntryRetainedBytes: retainedBytesEstimate,
-          evictedUndoEntries: state.history.undo.length,
-          redoEntriesCleared: state.history.redo.length,
-          confirmationRequired: true as const,
-          undoDisposition: "explicitly-unavailable" as const,
-          undoEntriesAfterCommit: 0 as const,
-          undoRetainedBytesAfterCommit: 0 as const,
-          exportRecommended: true as const,
-        })
-      : Object.freeze({
-          historyEntryRetainedBytes: retainedBytesEstimate,
-          evictedUndoEntries:
-            state.history.undo.length +
-            1 -
-            (retainedHistory?.undo.length ?? 0),
-          redoEntriesCleared: state.history.redo.length,
-          confirmationRequired: true as const,
-          undoDisposition: "retained" as const,
-          undoEntriesAfterCommit: retainedHistory?.undo.length ?? 0,
-          undoRetainedBytesAfterCommit:
-            retainedHistory?.retainedBytesEstimate ?? 0,
-          exportRecommended: false as const,
-        });
-    if (!deepStructuralEqual(rawImpact, recomputedImpact)) {
+    if (!deepStructuralEqual(rawImpact, impactMaterial.impact)) {
       return refuse("import.replacement_impact_mismatch");
     }
 

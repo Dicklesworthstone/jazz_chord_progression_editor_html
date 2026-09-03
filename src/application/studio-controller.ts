@@ -1192,6 +1192,13 @@ export type StudioComposition = Readonly<{
    */
   replacementWorkflow: StudioReplacementWorkflow;
   /**
+   * Composition-private read of the live application state (l3a.2
+   * recovery wiring: the orchestrator's impact assessor and mutation
+   * feed need the raw state, which the public view model deliberately
+   * does not carry). Root-only, like the owner and workflow.
+   */
+  readApplicationState: () => AppState;
+  /**
    * The U7 MIDI export workflow service, built in the controller closure and
    * handed only to the composition root. Null when the composition wired no
    * hash port or delivery adapter.
@@ -6656,6 +6663,7 @@ function makeStudioComposition(
     controller,
     interchangeOwner,
     replacementWorkflow,
+    readApplicationState: () => state,
     midiExport,
   });
 }
