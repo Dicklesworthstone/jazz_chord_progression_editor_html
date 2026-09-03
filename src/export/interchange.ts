@@ -222,6 +222,7 @@ export function createLeadSheetTextExportCoordinator(
           ? `[${sec.name}] ${JSON.stringify(sec.annotation)}`
           : `[${sec.name}]`;
       lines.push(secHeader);
+      const sectionBars: string[] = [];
 
       let prevCanonicalChordText: string | null = null;
 
@@ -332,11 +333,21 @@ export function createLeadSheetTextExportCoordinator(
           eventTokens.push(token);
         }
 
-        const measureLine =
-          eventTokens.length > 0
-            ? `| ${eventTokens.join(" ")} |`
-            : "| |";
-        lines.push(measureLine);
+        /* T0's canonical layout joins every measure of a section on ONE
+         * line with a shared closing bar (verified against the parser's
+         * own canonicalText for the reviewed goldens, 2026-09-03): a
+         * one-measure-per-line emission round-trips semantically but is
+         * not the canonical bytes. */
+        sectionBars.push(
+          eventTokens.length > 0 ? eventTokens.join(" ") : "",
+        );
+      }
+      if (sectionBars.length > 0) {
+        /* An empty measure's canonical form is a single space between its
+         * bars ("| |", probed against the T0 parser's canonicalText). */
+        lines.push(
+          `|${sectionBars.map((bar) => (bar === "" ? " " : ` ${bar} `)).join("|")}|`,
+        );
       }
     }
 
