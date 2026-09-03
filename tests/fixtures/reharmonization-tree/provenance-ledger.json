@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "authorities": [
+    {
+      "source": "Mark Levine, The Jazz Theory Book (Sher Music Co., 1995)",
+      "topics": ["Reharmonization Strategies", "Composed Tritone and Backdoor Substitutions", "Coltrane Matrix Injections"]
+    },
+    {
+      "source": "Jerry Coker, Elements of the Jazz Language (Alfred Music, 1991)",
+      "topics": ["Secondary Dominant Chains", "Turnaround Reharmonization Paths"]
+    },
+    {
+      "source": "Barrie Nettles & Richard Graf, The Chord Scale Theory & Jazz Harmony (Advance Music, 1997)",
+      "topics": ["Diatonic vs Chromatic Substitutions", "Passing Diminished Chords in Progressions"]
+    },
+    {
+      "source": "Andy Jaffe, Jazz Harmony (Advance Music, 1996)",
+      "topics": ["Proof-Carrying Voice Leading Trees", "Tree Depth and Branching Factors in Reharmonization"]
+    }
+  ]
+}

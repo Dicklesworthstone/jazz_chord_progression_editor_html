@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "authorities": [
+    {
+      "id": "LEVINE_JAZZ_THEORY_1995",
+      "citation": "Mark Levine. The Jazz Theory Book. Sher Music Co., 1995.",
+      "domains": ["guide-tones", "chord-scales", "upper-structures", "avoid-notes"]
+    },
+    {
+      "id": "NETTLES_GRAF_CHORD_SCALE_1997",
+      "citation": "Barrie Nettles and Richard Graf. The Chord Scale Theory & Jazz Harmony. Advance Music, 1997.",
+      "domains": ["tensions", "chord-scales", "avoid-notes", "modal-color"]
+    },
+    {
+      "id": "RAWLINS_BAHHA_JAZZOLOGY_2005",
+      "citation": "Robert Rawlins and Nor Eddine Bahha. Jazzology: The Encyclopedia of Jazz Theory for All Musicians. Hal Leonard, 2005.",
+      "domains": ["guide-tone-lines", "voice-leading", "substitutions", "harmonic-motion"]
+    },
+    {
+      "id": "HAERLE_JAZZ_LANGUAGE_1980",
+      "citation": "Dan Haerle. The Jazz Language: A Theory Text for Jazz Composition and Improvisation. Studio 224, 1980.",
+      "domains": ["guide-tones", "chord-types", "altered-scales"]
+    },
+    {
+      "id": "PEASE_JAZZ_COMPOSITION_2003",
+      "citation": "Ted Pease. Jazz Composition: Theory and Practice. Berklee Press, 2003.",
+      "domains": ["upper-structure-triads", "tensions", "voicing-color"]
+    },
+    {
+      "id": "LIGON_COMPREHENSIVE_HARMONIC_2001",
+      "citation": "Bert Ligon. Comprehensive Technique for Jazz Musicians / Connecting Chords with Linear Harmony. Houston Publishing, 2001.",
+      "domains": ["linear-harmony", "guide-tone-paths", "smooth-voice-leading"]
+    }
+  ]
+}

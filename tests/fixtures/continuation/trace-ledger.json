@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "traces": [
+    {
+      "requirement": "Provider registry generating exact timed edit plans across functional, modal, chromatic, diminished, and line-cliche continuations",
+      "fixtureRef": "tests/fixtures/continuation/continuation-cases.json",
+      "testRef": "tests/unit/continuation.test.ts"
+    },
+    {
+      "requirement": "Prediction-locked held-out continuation corpus evaluation with precision and category classification",
+      "fixtureRef": "tests/fixtures/continuation/prediction-held-out-corpus.json",
+      "testRef": "tests/integration/continuation-integration.test.ts"
+    },
+    {
+      "requirement": "Explainable HarmonicProof emitting voice-leading score, tension delta, preserved guide tones, and why/why-not explanations",
+      "fixtureRef": "tests/fixtures/continuation/continuation-cases.json",
+      "testRef": "tests/unit/continuation.test.ts"
+    },
+    {
+      "requirement": "Bounded context execution up to 8 events with typed structured refusals",
+      "fixtureRef": "tests/fixtures/continuation/mutation-controls.json",
+      "testRef": "tests/static/g2-contract.test.ts"
+    }
+  ]
+}

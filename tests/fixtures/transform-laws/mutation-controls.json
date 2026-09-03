@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "mutationControls": [
+    {
+      "id": "MUTATION_EMPTY_PROGRESSION",
+      "description": "Progression contains no events",
+      "corruptedField": "progression",
+      "expectedRefusal": "h1.empty_target"
+    },
+    {
+      "id": "MUTATION_EVENTS_EXCEEDED",
+      "description": "Progression exceeds maximum limit of 64 events",
+      "corruptedField": "eventsCount",
+      "expectedRefusal": "h1.events_exceeded"
+    },
+    {
+      "id": "MUTATION_UNSATISFIED_PRECONDITIONS",
+      "description": "Attempting tritone substitution on non-dominant chord",
+      "corruptedField": "chordQuality",
+      "expectedRefusal": "h1.preconditions_not_met"
+    },
+    {
+      "id": "MUTATION_DURATION_MISMATCH",
+      "description": "Edit plan replacement introduces uncompensated duration mismatch",
+      "corruptedField": "totalDuration",
+      "expectedRefusal": "h1.duration_mismatch"
+    },
+    {
+      "id": "MUTATION_INVALID_CHORD_SYNTAX",
+      "description": "Target chord contains invalid unparseable token syntax",
+      "corruptedField": "chordSymbol",
+      "expectedRefusal": "h1.invalid_chord"
+    },
+    {
+      "id": "MUTATION_STALE_REVISION",
+      "description": "Edit plan applied against mutated/stale document revision",
+      "corruptedField": "baseRevision",
+      "expectedRefusal": "h1.stale_revision"
+    }
+  ]
+}

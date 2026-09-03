@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "authorities": [
+    {
+      "source": "Mark Levine, The Jazz Theory Book (Sher Music Co., 1995)",
+      "topics": ["Secondary ii-V Planning", "Turnarounds and Extensions", "Tritone Bridge Routes"]
+    },
+    {
+      "source": "Dmitri Tymoczko, A Geometry of Music (Oxford University Press, 2011)",
+      "topics": ["Voice Leading Distance Metric", "Harmonic Cost Spaces", "Shortest Paths in Chord Graphs"]
+    },
+    {
+      "source": "Joseph Schillinger, The Schillinger System of Musical Composition (Carl Fischer, 1946)",
+      "topics": ["Permutational Harmonic Routing", "Symmetric Root Cycles"]
+    },
+    {
+      "source": "George Russell, The Lydian Chromatic Concept of Tonal Organization (Concept Publishing, 2001)",
+      "topics": ["Tonal Gravity Pathways", "Modal Interchange Routes"]
+    }
+  ]
+}

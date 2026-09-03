@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "cases": [
+    {
+      "id": "CASE_RHYTHM_DIMINUTION",
+      "name": "Diminution transform halving durations of 4-beat chords to 2 beats",
+      "transformKind": "diminution",
+      "inputEvents": [
+        { "chordSymbol": "Dm7", "offsetBeat": { "numerator": 0, "denominator": 1 }, "duration": { "numerator": 4, "denominator": 1 } },
+        { "chordSymbol": "G7", "offsetBeat": { "numerator": 4, "denominator": 1 }, "duration": { "numerator": 4, "denominator": 1 } }
+      ],
+      "expectedTransformedEvents": [
+        { "chordSymbol": "Dm7", "offsetBeat": { "numerator": 0, "denominator": 1 }, "duration": { "numerator": 2, "denominator": 1 } },
+        { "chordSymbol": "G7", "offsetBeat": { "numerator": 2, "denominator": 1 }, "duration": { "numerator": 2, "denominator": 1 } }
+      ]
+    },
+    {
+      "id": "CASE_RHYTHM_AUGMENTATION",
+      "name": "Augmentation transform doubling durations of 4-beat chords to 8 beats",
+      "transformKind": "augmentation",
+      "inputEvents": [
+        { "chordSymbol": "Dm7", "offsetBeat": { "numerator": 0, "denominator": 1 }, "duration": { "numerator": 4, "denominator": 1 } },
+        { "chordSymbol": "G7", "offsetBeat": { "numerator": 4, "denominator": 1 }, "duration": { "numerator": 4, "denominator": 1 } }
+      ],
+      "expectedTransformedEvents": [
+        { "chordSymbol": "Dm7", "offsetBeat": { "numerator": 0, "denominator": 1 }, "duration": { "numerator": 8, "denominator": 1 } },
+        { "chordSymbol": "G7", "offsetBeat": { "numerator": 8, "denominator": 1 }, "duration": { "numerator": 8, "denominator": 1 } }
+      ]
+    },
+    {
+      "id": "CASE_TENSION_CURVE_II_V_I",
+      "name": "Tension curve profile across ii-V-I progression (Dm7 -> G7 -> Cmaj7)",
+      "inputEvents": [
+        { "chordSymbol": "Dm7", "offsetBeat": { "numerator": 0, "denominator": 1 }, "duration": { "numerator": 4, "denominator": 1 } },
+        { "chordSymbol": "G7", "offsetBeat": { "numerator": 4, "denominator": 1 }, "duration": { "numerator": 4, "denominator": 1 } },
+        { "chordSymbol": "Cmaj7", "offsetBeat": { "numerator": 8, "denominator": 1 }, "duration": { "numerator": 4, "denominator": 1 } }
+      ],
+      "expectedTensionProfile": {
+        "dominantHasHighestTension": true,
+        "tonicHasLowestTension": true
+      }
+    }
+  ]
+}

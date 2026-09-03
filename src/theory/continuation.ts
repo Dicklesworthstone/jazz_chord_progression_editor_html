@@ -6,11 +6,11 @@ import {
   MAX_CONTINUATION_CONTEXT_EVENTS,
   MAX_CONTINUATION_PER_PROVIDER,
   MAX_CONTINUATION_SUGGESTIONS,
-  type ContinuationCategory,
-  type ContinuationProviderId,
   type ContinuationRequest,
-  type ContinuationResult,
   type ContinuationSuggestion,
+  type LegacyContinuationCategory,
+  type LegacyContinuationProviderId,
+  type LegacyContinuationResult as ContinuationResult,
 } from "./continuation-contract";
 import type { ResolutionOperations } from "./resolution-contract";
 
@@ -39,7 +39,7 @@ const SHARP_KEYS: ReadonlySet<number> = new Set([7, 2, 9, 4, 11]);
 
 const MAJOR_SCALE_STEPS = Object.freeze([0, 2, 4, 5, 7, 9, 11] as const);
 
-const CATEGORY_ORDER: Readonly<Record<ContinuationCategory, number>> =
+const CATEGORY_ORDER: Readonly<Record<LegacyContinuationCategory, number>> =
   Object.freeze({
     "resolve": 0,
     "continue-pattern": 1,
@@ -56,12 +56,12 @@ type ContextFacts = Readonly<{
 }>;
 
 type Candidate = Readonly<{
-  providerId: ContinuationProviderId;
+  providerId: LegacyContinuationProviderId;
   providerIndex: number;
   /** Emission order inside the provider: an informed ordering, kept stable. */
   emissionIndex: number;
   symbolText: string;
-  category: ContinuationCategory;
+  category: LegacyContinuationCategory;
   sentence: string;
   sourceSymbols: readonly string[];
 }>;
@@ -132,12 +132,12 @@ export function deriveContinuationSuggestions(
 
   const candidates: Candidate[] = [];
   let providersRun = 0;
-  const providerIndex = (id: ContinuationProviderId): number =>
+  const providerIndex = (id: LegacyContinuationProviderId): number =>
     CONTINUATION_PROVIDER_IDS.indexOf(id);
   const emit = (
-    providerId: ContinuationProviderId,
+    providerId: LegacyContinuationProviderId,
     symbolText: string,
-    category: ContinuationCategory,
+    category: LegacyContinuationCategory,
     sentence: string,
     sourceSymbols: readonly string[],
   ): void => {

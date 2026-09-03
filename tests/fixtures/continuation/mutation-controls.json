@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "mutationControls": [
+    {
+      "id": "MUTATION_EMPTY_CONTEXT",
+      "description": "Empty progression context supplied to continuation engine",
+      "corruptedField": "events",
+      "expectedRefusal": "g2.empty_context"
+    },
+    {
+      "id": "MUTATION_CONTEXT_EXCEEDED",
+      "description": "Context exceeds maximum of 8 prior events",
+      "corruptedField": "eventsCount",
+      "expectedRefusal": "g2.context_exceeded"
+    },
+    {
+      "id": "MUTATION_INVALID_CHORD",
+      "description": "Context contains unparseable corrupted chord syntax",
+      "corruptedField": "chordSymbol",
+      "expectedRefusal": "g2.invalid_chord"
+    },
+    {
+      "id": "MUTATION_STALE_REVISION",
+      "description": "Stale revision supplied for continuation generation",
+      "corruptedField": "baseRevision",
+      "expectedRefusal": "g2.stale_revision"
+    }
+  ]
+}

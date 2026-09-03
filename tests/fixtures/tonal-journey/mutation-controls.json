@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "mutationControls": [
+    {
+      "id": "MUTATION_EMPTY_PROGRESSION",
+      "description": "Empty chord progression input",
+      "corruptedField": "events",
+      "expectedRefusal": "g0.empty_progression"
+    },
+    {
+      "id": "MUTATION_EVENTS_EXCEEDED",
+      "description": "Progression exceeds maximum limit of 256 events",
+      "corruptedField": "eventsCount",
+      "expectedRefusal": "g0.events_exceeded"
+    },
+    {
+      "id": "MUTATION_INVALID_CHORD_SYNTAX",
+      "description": "Progression contains unparseable corrupted chord token",
+      "corruptedField": "chordSymbol",
+      "expectedRefusal": "g0.invalid_chord"
+    },
+    {
+      "id": "MUTATION_STALE_REVISION",
+      "description": "Analysis invoked on stale document revision",
+      "corruptedField": "baseRevision",
+      "expectedRefusal": "g0.stale_revision"
+    }
+  ]
+}

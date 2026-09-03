@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "G2 Contextual Continuation Engine Contract Authority",
+  "version": "1.0.0",
+  "package": "G2",
+  "schemas": {
+    "continuationResult": "changes.continuation-result.v1"
+  },
+  "limits": {
+    "maxCandidatesPerProvider": 32,
+    "maxDisplayOptions": 16,
+    "maxContextEvents": 8
+  },
+  "categories": [
+    "smooth",
+    "functional",
+    "colorful",
+    "exploratory"
+  ],
+  "providers": [
+    "provider.functional.circle-cadence",
+    "provider.modal.step-vamp",
+    "provider.chromatic.tritone-approach",
+    "provider.diminished.passing",
+    "provider.sequence.descending-fifths",
+    "provider.line-cliche.minor-step",
+    "provider.nonfunctional.planing"
+  ]
+}

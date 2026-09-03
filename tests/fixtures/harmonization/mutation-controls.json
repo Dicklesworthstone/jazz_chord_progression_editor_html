@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "mutationControls": [
+    {
+      "id": "MUTATION_EMPTY_SLOTS",
+      "description": "Empty slots array supplied to harmonization engine",
+      "corruptedField": "slots",
+      "expectedRefusal": "g4.empty_slots"
+    },
+    {
+      "id": "MUTATION_SLOTS_EXCEEDED",
+      "description": "Slots array exceeds limit of 16",
+      "corruptedField": "slotsLength",
+      "expectedRefusal": "g4.slots_exceeded"
+    },
+    {
+      "id": "MUTATION_UNSATISFIABLE_CONSTRAINTS",
+      "description": "Contradictory constraints with impossible pitch inclusion",
+      "corruptedField": "melodyPitch",
+      "expectedRefusal": "g4.unsatisfiable_constraints"
+    },
+    {
+      "id": "MUTATION_STALE_REVISION",
+      "description": "Stale revision supplied for harmonization",
+      "corruptedField": "baseRevision",
+      "expectedRefusal": "g4.stale_revision"
+    }
+  ]
+}

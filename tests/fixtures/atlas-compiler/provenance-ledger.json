@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "authorities": [
+    {
+      "source": "U.S. Copyright Office Compendium of Practices, Section 313.3(A) (Musical Elements & Common Harmonic Progressions)",
+      "topics": ["Public Domain Standard Harmonic Progressions", "Non-copyrightability of standard chord progressions"]
+    },
+    {
+      "source": "Creative Commons Legal Code - CC0 1.0 Universal / CC-BY 4.0",
+      "topics": ["Permissive License Classifications", "Attribution and Source Evidence"]
+    },
+    {
+      "source": "WIPO Copyright Treaty (WCT 1996) Article 4 & 5",
+      "topics": ["Rights Management Information", "Fingerprint vs Full Expression Policies"]
+    },
+    {
+      "source": "NIST FIPS 180-4 Secure Hash Standard (SHA-256)",
+      "topics": ["Payload Hash Verification", "Tamper Resistance"]
+    }
+  ]
+}

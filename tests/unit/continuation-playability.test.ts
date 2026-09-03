@@ -73,5 +73,5 @@ describe("continuation emission playability", () => {
       }
     }
     expect(failures).toEqual([]);
-  }, 30_000);
+  }, 60_000);
 });

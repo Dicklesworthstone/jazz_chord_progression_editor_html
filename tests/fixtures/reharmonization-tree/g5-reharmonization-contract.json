@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "G5 Proof-Carrying Reharmonization Tree Contract Authority",
+  "version": "1.0.0",
+  "package": "G5",
+  "schemas": {
+    "reharmonizationTree": "changes.reharmonization-tree.v1"
+  },
+  "limits": {
+    "maxBranchDepth": 3,
+    "maxChildrenPerNode": 8,
+    "maxTotalNodes": 128
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "traces": [
+    {
+      "requirement": "Stable versioned SuggestionLaw/TransformLaw registry with exact preconditions, edit plans, postconditions",
+      "fixtureRef": "tests/fixtures/transform-laws/h1-transform-contract.json",
+      "testRef": "tests/static/h1-contract.test.ts"
+    },
+    {
+      "requirement": "Initial laws cover diatonic motion, dominant/applied/ii-V, tritone/backdoor, modal interchange, diminished, dominant chain, sequence, pivot, chromatic",
+      "fixtureRef": "tests/fixtures/transform-laws/transform-law-cases.json",
+      "testRef": "tests/unit/transform-laws.test.ts"
+    },
+    {
+      "requirement": "Implement SpelledInterval transpose for chord/range/section/document, keys, slash bass, and optional manual/frozen pitch handling",
+      "fixtureRef": "tests/fixtures/transform-laws/spelled-transposition-cases.json",
+      "testRef": "tests/unit/spelled-transposition.test.ts"
+    },
+    {
+      "requirement": "Every multi-event replace/insert carries exact duration, anchor/IDs, base revision, and explicit rebalance confirmation",
+      "fixtureRef": "tests/fixtures/transform-laws/mutation-controls.json",
+      "testRef": "tests/integration/transform-laws-integration.test.ts"
+    },
+    {
+      "requirement": "All laws survive all-root transposition; transpose+inverse restores AST/spelling exactly",
+      "fixtureRef": "tests/fixtures/transform-laws/spelled-transposition-cases.json",
+      "testRef": "tests/integration/transform-laws-integration.test.ts"
+    },
+    {
+      "requirement": "Invalid targets and constraints refuse clearly with structured typed refusals",
+      "fixtureRef": "tests/fixtures/transform-laws/mutation-controls.json",
+      "testRef": "tests/unit/transform-laws.test.ts"
+    }
+  ]
+}

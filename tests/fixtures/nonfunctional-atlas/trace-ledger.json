@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "traces": [
+    {
+      "requirement": "Neo-Riemannian Parallel (P), Leittonwechsel (L), Relative (R) transformations on eligible triads with exact voice motion",
+      "fixtureRef": "tests/fixtures/nonfunctional-atlas/neo-riemannian-truth-tables.json",
+      "testRef": "tests/unit/nonfunctional-transforms.test.ts"
+    },
+    {
+      "requirement": "Invertibility identities P(P(T)) = T, L(L(T)) = T, R(R(T)) = T",
+      "fixtureRef": "tests/fixtures/nonfunctional-atlas/neo-riemannian-truth-tables.json",
+      "testRef": "tests/unit/nonfunctional-transforms.test.ts"
+    },
+    {
+      "requirement": "Harmonic sequences with exact interval transposition, repetition bounds, and landing accuracy",
+      "fixtureRef": "tests/fixtures/nonfunctional-atlas/harmonic-sequence-cases.json",
+      "testRef": "tests/integration/nonfunctional-atlas-integration.test.ts"
+    },
+    {
+      "requirement": "Refusal of non-triad chords and bounded sequence lengths with structured error codes",
+      "fixtureRef": "tests/fixtures/nonfunctional-atlas/mutation-controls.json",
+      "testRef": "tests/static/g8-contract.test.ts"
+    }
+  ]
+}

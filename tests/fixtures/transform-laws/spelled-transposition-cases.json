@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "cases": [
+    {
+      "id": "TRANSPOSE_MAJOR_SECOND_UP",
+      "name": "Transpose C Major ii-V-I up a Major 2nd to D Major",
+      "interval": {
+        "diatonicNumber": 2,
+        "quality": "major",
+        "semitones": 2,
+        "direction": "up",
+        "scaleSteps": 1,
+        "alter": 0
+      },
+      "sourceChords": ["Dm7", "G7", "Cmaj7"],
+      "expectedTransposedChords": ["Em7", "A7", "Dmaj7"],
+      "expectedKeyTransposition": {
+        "fromTonic": "C",
+        "toTonic": "D"
+      }
+    },
+    {
+      "id": "TRANSPOSE_PERFECT_FOURTH_UP",
+      "name": "Transpose C Major ii-V-I up a Perfect 4th to F Major",
+      "interval": {
+        "diatonicNumber": 4,
+        "quality": "perfect",
+        "semitones": 5,
+        "direction": "up",
+        "scaleSteps": 3,
+        "alter": 0
+      },
+      "sourceChords": ["Dm7", "G7", "Cmaj7"],
+      "expectedTransposedChords": ["Gm7", "C7", "Fmaj7"],
+      "expectedKeyTransposition": {
+        "fromTonic": "C",
+        "toTonic": "F"
+      }
+    },
+    {
+      "id": "TRANSPOSE_MINOR_THIRD_DOWN",
+      "name": "Transpose C Major ii-V-I down a Minor 3rd to A Major",
+      "interval": {
+        "diatonicNumber": 3,
+        "quality": "minor",
+        "semitones": -3,
+        "direction": "down",
+        "scaleSteps": 2,
+        "alter": 0
+      },
+      "sourceChords": ["Dm7", "G7", "Cmaj7"],
+      "expectedTransposedChords": ["Bm7", "E7", "Amaj7"],
+      "expectedKeyTransposition": {
+        "fromTonic": "C",
+        "toTonic": "A"
+      }
+    },
+    {
+      "id": "TRANSPOSE_HALF_STEP_UP_CHROMATIC",
+      "name": "Transpose Db7 / tritone sub up a Minor 2nd to D7",
+      "interval": {
+        "diatonicNumber": 2,
+        "quality": "minor",
+        "semitones": 1,
+        "direction": "up",
+        "scaleSteps": 1,
+        "alter": -1
+      },
+      "sourceChords": ["C#7", "Cmaj7"],
+      "expectedTransposedChords": ["D7", "Dbmaj7"],
+      "expectedKeyTransposition": {
+        "fromTonic": "C",
+        "toTonic": "Db"
+      }
+    },
+    {
+      "id": "TRANSPOSE_SLASH_BASS_AND_ALTERATIONS",
+      "name": "Transpose complex altered chord with slash bass C7alt/Bb up a Perfect 5th to G7alt/F",
+      "interval": {
+        "diatonicNumber": 5,
+        "quality": "perfect",
+        "semitones": 7,
+        "direction": "up",
+        "scaleSteps": 4,
+        "alter": 0
+      },
+      "sourceChords": ["C7b9/Bb", "Fmaj7"],
+      "expectedTransposedChords": ["G7b9/F", "Cmaj7"],
+      "expectedKeyTransposition": {
+        "fromTonic": "F",
+        "toTonic": "C"
+      }
+    }
+  ]
+}

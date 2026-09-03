@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "plantedFailures": [
+    {
+      "entryId": "fail_quarantined_entry",
+      "title": "Quarantined Unauthorized Transcription",
+      "chords": ["Cmaj7", "Am7", "Dm7", "G7"],
+      "provenance": {
+        "rightsClass": "quarantined",
+        "commitAllowed": false,
+        "expressionBytePolicy": "reject",
+        "sourceEvidence": "Unchecked web scraping upload",
+        "payloadHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "expectedRejection": "g1.quarantined_source"
+    },
+    {
+      "entryId": "fail_protected_smuggling",
+      "title": "Smuggled Proprietary Arrangement",
+      "chords": ["F#m7b5", "B7b9", "Em7"],
+      "provenance": {
+        "rightsClass": "protected-fingerprint-only",
+        "commitAllowed": true,
+        "expressionBytePolicy": "embed-full",
+        "sourceEvidence": "Copyrighted sheet music book",
+        "payloadHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "expectedRejection": "g1.rights_violation"
+    },
+    {
+      "entryId": "fail_hash_mismatch",
+      "title": "Altered Payload Tampering",
+      "chords": ["Dm7", "G7", "Cmaj7"],
+      "provenance": {
+        "rightsClass": "public-domain",
+        "commitAllowed": true,
+        "expressionBytePolicy": "embed-full",
+        "sourceEvidence": "Verified public domain standard",
+        "payloadHash": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "expectedRejection": "g1.hash_mismatch"
+    }
+  ]
+}

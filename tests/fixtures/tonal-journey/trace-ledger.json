@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "traces": [
+    {
+      "requirement": "Pure deterministic phrase/cadence feature extraction with explicit status lattice candidate->supported->attenuated->closed",
+      "fixtureRef": "tests/fixtures/tonal-journey/phrase-cadence-cases.json",
+      "testRef": "tests/unit/phrase-cadence.test.ts"
+    },
+    {
+      "requirement": "Bounded k-best sequence analysis (Tonal Journey) returning non-dominated paths with key-area spans, pivots, and confidence",
+      "fixtureRef": "tests/fixtures/tonal-journey/tonal-journey-cases.json",
+      "testRef": "tests/unit/tonal-journey.test.ts"
+    },
+    {
+      "requirement": "Plural analysis respecting pinned and ambiguous keys, modulations, and modal vamps",
+      "fixtureRef": "tests/fixtures/tonal-journey/tonal-journey-cases.json",
+      "testRef": "tests/integration/tonal-journey-integration.test.ts"
+    },
+    {
+      "requirement": "Bounded execution up to 256 progression events with honest typed refusals",
+      "fixtureRef": "tests/fixtures/tonal-journey/mutation-controls.json",
+      "testRef": "tests/static/g0-contract.test.ts"
+    }
+  ]
+}

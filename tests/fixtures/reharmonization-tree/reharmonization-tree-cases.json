@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "cases": [
+    {
+      "id": "CASE_REHARM_TREE_II_V_I",
+      "name": "Branching reharmonizations for standard ii-V-I (Dm7 -> G7 -> Cmaj7)",
+      "inputChords": ["Dm7", "G7", "Cmaj7"],
+      "expectedChildrenAtDepth1": [
+        {
+          "label": "Tritone substitution on dominant (G7 -> Db7)",
+          "chords": ["Dm7", "Db7", "Cmaj7"],
+          "lawId": "law.tritone-substitute"
+        },
+        {
+          "label": "Secondary dominant insertion on tonic (Cmaj7 -> A7)",
+          "chords": ["Dm7", "G7", "A7"],
+          "lawId": "law.secondary-dominant"
+        }
+      ]
+    },
+    {
+      "id": "CASE_REHARM_DEPTH_2_COMPOSITION",
+      "name": "Depth-2 composed reharmonization (Dm7 -> Db7 -> Cmaj7 -> A7)",
+      "inputChords": ["Dm7", "G7", "Cmaj7"],
+      "expectedDepth2Lineage": [
+        "law.tritone-substitute",
+        "law.secondary-dominant"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "contractId": "changes.theory.g6-contract.v1",
+  "package": "G6",
+  "title": "Guide-Tone Designer and Contextual Color Laboratory Contract",
+  "version": 1,
+  "schemas": {
+    "contract": "changes.theory.guide-tones-contract.v1",
+    "guideToneExtraction": "changes.theory.guide-tone-extraction.v1",
+    "guideTonePathsResult": "changes.theory.guide-tone-paths-result.v1",
+    "colorLabContract": "changes.theory.color-lab-contract.v1",
+    "colorLabResult": "changes.theory.color-lab-result.v1"
+  },
+  "declaredFiles": [
+    "g6-guide-tones-contract.json",
+    "guide-tone-cases.json",
+    "color-lab-cases.json",
+    "mutation-controls.json",
+    "provenance-ledger.json",
+    "trace-ledger.json"
+  ],
+  "limits": {
+    "maxProgressionEvents": 64,
+    "maxGuideTonesPerEvent": 4,
+    "maxOptimizedPaths": 8,
+    "maxVoiceLinesPerPath": 4,
+    "maxTotalWorkSteps": 8192,
+    "maxMotionSemitones": 12,
+    "maxColorOptions": 16,
+    "maxUpperStructureOptions": 12,
+    "maxTensionsPerOption": 6,
+    "maxClashesPerOption": 4
+  },
+  "roles": [
+    "third",
+    "seventh",
+    "suspension",
+    "essential-color"
+  ],
+  "motionKinds": [
+    "contrary",
+    "oblique",
+    "similar",
+    "parallel",
+    "common-tone",
+    "step-resolution",
+    "leap",
+    "entering",
+    "leaving"
+  ],
+  "colorFamilies": [
+    "diatonic-extension",
+    "altered-dominant",
+    "lydian-dominant",
+    "modal-color",
+    "blues-color",
+    "upper-structure-triad"
+  ],
+  "tensionDegrees": [
+    "9",
+    "b9",
+    "#9",
+    "11",
+    "#11",
+    "13",
+    "b13"
+  ],
+  "upperStructureQualities": [
+    "major",
+    "minor",
+    "augmented",
+    "diminished"
+  ],
+  "clashKinds": [
+    "minor-ninth-against-root",
+    "minor-ninth-against-third",
+    "minor-ninth-against-fifth",
+    "bass-clash"
+  ],
+  "upperStructureCatalog": [
+    {
+      "id": "UST_II_MAJ",
+      "numeral": "II",
+      "quality": "major",
+      "tensions": ["9", "#11", "13"],
+      "resultingDegrees": ["9", "#11", "13"],
+      "scaleFamily": "lydian-dominant",
+      "description": "Major triad on degree 2 over dominant 7th yields 9, #11, 13 (acoustic / Lydian dominant color)."
+    },
+    {
+      "id": "UST_bVI_MAJ",
+      "numeral": "bVI",
+      "quality": "major",
+      "tensions": ["b13", "#9"],
+      "resultingDegrees": ["b13", "1", "#9"],
+      "scaleFamily": "altered",
+      "description": "Major triad on degree b6 over dominant 7th yields b13, root, #9 (Altered / Super Locrian color)."
+    },
+    {
+      "id": "UST_VI_MAJ",
+      "numeral": "VI",
+      "quality": "major",
+      "tensions": ["13", "b9"],
+      "resultingDegrees": ["13", "b9", "3"],
+      "scaleFamily": "diminished-half-whole",
+      "description": "Major triad on degree 6 over dominant 7th yields 13, b9, 3 (Half-Whole Diminished color)."
+    },
+    {
+      "id": "UST_bV_MAJ",
+      "numeral": "bV",
+      "quality": "major",
+      "tensions": ["#11", "b7", "b9"],
+      "resultingDegrees": ["#11", "b7", "b9"],
+      "scaleFamily": "altered",
+      "description": "Major triad on degree b5/#4 over dominant 7th yields #11, b7, b9 (Altered / Tri-tone dominant color)."
+    },
+    {
+      "id": "UST_bIII_MAJ",
+      "numeral": "bIII",
+      "quality": "major",
+      "tensions": ["#9"],
+      "resultingDegrees": ["#9", "5", "b7"],
+      "scaleFamily": "altered",
+      "description": "Major triad on degree b3/#9 over dominant 7th yields #9, 5, b7 (Hendrix / blues dominant color)."
+    },
+    {
+      "id": "UST_bII_MAJ",
+      "numeral": "bII",
+      "quality": "major",
+      "tensions": ["b9", "11", "b13"],
+      "resultingDegrees": ["b9", "11", "b13"],
+      "scaleFamily": "phrygian-dominant",
+      "description": "Major triad on degree b2 over dominant 7th yields b9, 11, b13 (Phrygian dominant / Neapolitan color)."
+    }
+  ],
+  "refusals": [
+    "g6.empty_progression",
+    "g6.events_exceeded",
+    "g6.invalid_event",
+    "g6.no_guide_tones_found",
+    "g6.motion_limit_exceeded",
+    "g6.work_limit_exceeded",
+    "g6.invalid_chord",
+    "g6.unsupported_quality",
+    "g6.context_mismatch",
+    "g6.custom_unsupported"
+  ]
+}

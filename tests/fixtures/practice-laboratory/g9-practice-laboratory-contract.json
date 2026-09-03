@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "G9 Deterministic Chart-to-Practice Laboratory Contract Authority",
+  "version": "1.0.0",
+  "package": "G9",
+  "schemas": {
+    "practiceSession": "changes.practice-session.v1",
+    "practiceRubric": "changes.practice-rubric.v1"
+  },
+  "limits": {
+    "maxPromptsPerSession": 32,
+    "maxOptionsPerPrompt": 8
+  },
+  "exerciseKinds": [
+    "spelling",
+    "chord-roles",
+    "guide-tones",
+    "cadence-recognition",
+    "constrained-completion",
+    "reharmonization-comparison"
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "cases": [
+    {
+      "id": "CASE_HARMONIZE_MELODY_C_LINE",
+      "name": "Harmonize descending melody line E4 -> D4 -> C4",
+      "slots": [
+        {
+          "slotIndex": 0,
+          "melodyPitch": { "step": "E", "alter": 0, "octave": 4 },
+          "expectedChords": ["Cmaj7", "Em7", "Am7"]
+        },
+        {
+          "slotIndex": 1,
+          "melodyPitch": { "step": "D", "alter": 0, "octave": 4 },
+          "expectedChords": ["G7", "Dm7", "Bbmaj7"]
+        },
+        {
+          "slotIndex": 2,
+          "melodyPitch": { "step": "C", "alter": 0, "octave": 4 },
+          "expectedChords": ["Cmaj7", "Am7", "Fmaj7"]
+        }
+      ],
+      "expectedSolutionProgression": ["Cmaj7", "G7", "Cmaj7"]
+    },
+    {
+      "id": "CASE_HARMONIZE_BASS_PEDAL_LINE",
+      "name": "Harmonize with pinned C tonic bass pedal and melody G4",
+      "slots": [
+        {
+          "slotIndex": 0,
+          "melodyPitch": { "step": "G", "alter": 0, "octave": 4 },
+          "bassPitchClass": 0,
+          "expectedChords": ["Cmaj7", "C7"]
+        }
+      ],
+      "expectedSolutionProgression": ["Cmaj7"]
+    },
+    {
+      "id": "CASE_HARMONIZE_PINNED_CHORD_PRESERVATION",
+      "name": "Preserve pinned chord while harmonizing surrounding slots",
+      "slots": [
+        {
+          "slotIndex": 0,
+          "melodyPitch": { "step": "A", "alter": 0, "octave": 4 },
+          "expectedChords": ["Dm7", "Fmaj7"]
+        },
+        {
+          "slotIndex": 1,
+          "pinnedChordSymbol": "G7",
+          "expectedChords": ["G7"]
+        }
+      ],
+      "expectedSolutionProgression": ["Dm7", "G7"]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "traces": [
+    {
+      "requirement": "Build nonmutating tree of exact patches derived from versioned TransformLaw applications up to depth 3 and 128 nodes",
+      "fixtureRef": "tests/fixtures/reharmonization-tree/reharmonization-tree-cases.json",
+      "testRef": "tests/unit/reharmonization-tree.test.ts"
+    },
+    {
+      "requirement": "Record lineage, literal before/after, composed proof, voice-leading score, and branch identity",
+      "fixtureRef": "tests/fixtures/reharmonization-tree/reharmonization-tree-cases.json",
+      "testRef": "tests/unit/reharmonization-tree.test.ts"
+    },
+    {
+      "requirement": "Support branch A/B comparison and diff calculation",
+      "fixtureRef": "tests/fixtures/reharmonization-tree/reharmonization-tree-cases.json",
+      "testRef": "tests/integration/reharmonization-tree-integration.test.ts"
+    },
+    {
+      "requirement": "Bounded tree exploration with typed structured refusals for limits and stale revisions",
+      "fixtureRef": "tests/fixtures/reharmonization-tree/mutation-controls.json",
+      "testRef": "tests/static/g5-contract.test.ts"
+    }
+  ]
+}

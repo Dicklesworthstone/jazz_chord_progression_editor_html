@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "authorities": [
+    {
+      "source": "Mark Levine, The Jazz Harmony Book (Sher Music Co., 1995)",
+      "topics": ["Tritone Substitution", "Secondary Dominants", "Coltrane Changes", "Diminished Passing Chords"]
+    },
+    {
+      "source": "Jerry Coker, Elements of the Jazz Language for the Developing Improviser (CPP/Belwin, 1991)",
+      "topics": ["Secondary ii-V Groups", "Turnarounds", "Cycle of Fifths Progressions"]
+    },
+    {
+      "source": "Barrie Nettles & Richard Graf, The Chord Scale Theory & Jazz Harmony (Advance Music, 1997)",
+      "topics": ["Modal Interchange / Subdominant Minor", "Backdoor Cadence (bVII7)", "Available Tensions"]
+    },
+    {
+      "source": "Robert Rawlins & Nor Eddine Bahha, Jazzology: The Encyclopedia of Jazz Theory for All Musicians (Hal Leonard, 2005)",
+      "topics": ["Voice Leading Motion", "Spelled Transposition Laws", "Pivot Modulation"]
+    }
+  ]
+}

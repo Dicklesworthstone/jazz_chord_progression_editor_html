@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "G3 Harmonic Route Planner Contract Authority",
+  "version": "1.0.0",
+  "package": "G3",
+  "schemas": {
+    "routePlannerResult": "changes.route-planner-result.v1"
+  },
+  "limits": {
+    "maxRouteSteps": 8,
+    "maxOutgoingPerState": 64,
+    "maxSearchStates": 50000,
+    "maxReturnedRoutes": 8
+  },
+  "strategies": [
+    "circle-of-fifths",
+    "tritone-substitute",
+    "chromatic-approach",
+    "modal-interchange",
+    "diminished-pivot",
+    "coltrane-matrix"
+  ]
+}

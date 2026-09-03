@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "authorities": [
+    {
+      "source": "Mark Levine, The Jazz Theory Book (Sher Music Co., 1995)",
+      "topics": ["Harmonic Rhythm and Push/Anticipation", "Cadence Acceleration and Delay"]
+    },
+    {
+      "source": "Grosvenor Cooper & Leonard Meyer, The Rhythmic Structure of Music (University of Chicago Press, 1960)",
+      "topics": ["Rhythmic Augmentation and Diminution", "Metric Accent and Syncopation"]
+    },
+    {
+      "source": "Fred Lerdahl & Ray Jackendoff, A Generative Theory of Tonal Music (MIT Press, 1983)",
+      "topics": ["Tension-Relaxation Curves", "Prolongational Hierarchy and Cadential Weight"]
+    },
+    {
+      "source": "Jerry Coker, Elements of the Jazz Language (Alfred Music, 1991)",
+      "topics": ["Split Bars in Bebop", "Harmonic Rhythm Variation in Jazz Standards"]
+    }
+  ]
+}

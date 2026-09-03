@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "controls": [
+    {
+      "id": "MUT_G6_CONTRACT_VERSION_DRIFT",
+      "targetFile": "g6-guide-tones-contract.json",
+      "mutationPath": "version",
+      "mutatedValue": 2,
+      "expectedFinding": "G6_CONTRACT_VERSION_MISMATCH"
+    },
+    {
+      "id": "MUT_G6_OMIT_ROLE_THIRD",
+      "targetFile": "g6-guide-tones-contract.json",
+      "mutationPath": "roles",
+      "mutatedValue": ["seventh", "suspension", "essential-color"],
+      "expectedFinding": "G6_ROLE_SET_CORRUPTED"
+    },
+    {
+      "id": "MUT_G6_OMIT_ROLE_SEVENTH",
+      "targetFile": "g6-guide-tones-contract.json",
+      "mutationPath": "roles",
+      "mutatedValue": ["third", "suspension", "essential-color"],
+      "expectedFinding": "G6_ROLE_SET_CORRUPTED"
+    },
+    {
+      "id": "MUT_G6_OMIT_MOTION_STEP_RESOLUTION",
+      "targetFile": "g6-guide-tones-contract.json",
+      "mutationPath": "motionKinds",
+      "mutatedValue": ["contrary", "oblique", "similar", "parallel", "common-tone", "leap", "entering", "leaving"],
+      "expectedFinding": "G6_MOTION_KINDS_CORRUPTED"
+    },
+    {
+      "id": "MUT_G6_OMIT_MOTION_CONTRARY",
+      "targetFile": "g6-guide-tones-contract.json",
+      "mutationPath": "motionKinds",
+      "mutatedValue": ["oblique", "similar", "parallel", "common-tone", "step-resolution", "leap", "entering", "leaving"],
+      "expectedFinding": "G6_MOTION_KINDS_CORRUPTED"
+    },
+    {
+      "id": "MUT_G6_OMIT_TENSION_SHARP_ELEVEN",
+      "targetFile": "g6-guide-tones-contract.json",
+      "mutationPath": "tensionDegrees",
+      "mutatedValue": ["9", "b9", "#9", "11", "13", "b13"],
+      "expectedFinding": "G6_TENSION_DEGREES_CORRUPTED"
+    },
+    {
+      "id": "MUT_G6_OMIT_TENSION_FLAT_NINE",
+      "targetFile": "g6-guide-tones-contract.json",
+      "mutationPath": "tensionDegrees",
+      "mutatedValue": ["9", "#9", "11", "#11", "13", "b13"],
+      "expectedFinding": "G6_TENSION_DEGREES_CORRUPTED"
+    },
+    {
+      "id": "MUT_G6_TAMPER_LIMIT_EVENTS",
+      "targetFile": "g6-guide-tones-contract.json",
+      "mutationPath": "limits.maxProgressionEvents",
+      "mutatedValue": 128,
+      "expectedFinding": "G6_LIMIT_DRIFT"
+    },
+    {
+      "id": "MUT_G6_TAMPER_LIMIT_WORK_STEPS",
+      "targetFile": "g6-guide-tones-contract.json",
+      "mutationPath": "limits.maxTotalWorkSteps",
+      "mutatedValue": 1024,
+      "expectedFinding": "G6_LIMIT_DRIFT"
+    },
+    {
+      "id": "MUT_G6_TAMPER_UST_II_NUMERAL",
+      "targetFile": "g6-guide-tones-contract.json",
+      "mutationPath": "upperStructureCatalog[0].numeral",
+      "mutatedValue": "III",
+      "expectedFinding": "G6_UST_CATALOG_CORRUPTED"
+    },
+    {
+      "id": "MUT_G6_TAMPER_UST_bVI_SCALE",
+      "targetFile": "g6-guide-tones-contract.json",
+      "mutationPath": "upperStructureCatalog[1].scaleFamily",
+      "mutatedValue": "ionian",
+      "expectedFinding": "G6_UST_CATALOG_CORRUPTED"
+    },
+    {
+      "id": "MUT_G6_TAMPER_CASE_II_V_I_PITCH",
+      "targetFile": "guide-tone-cases.json",
+      "mutationPath": "cases[0].expectedExtractions[0].guideTones[0].spelledPitchClass",
+      "mutatedValue": "F#",
+      "expectedFinding": "G6_CASE_EXTRACTION_MISMATCH"
+    },
+    {
+      "id": "MUT_G6_TAMPER_CASE_II_V_I_ROLE",
+      "targetFile": "guide-tone-cases.json",
+      "mutationPath": "cases[0].expectedExtractions[0].guideTones[0].role",
+      "mutatedValue": "seventh",
+      "expectedFinding": "G6_CASE_EXTRACTION_MISMATCH"
+    },
+    {
+      "id": "MUT_G6_TAMPER_CASE_II_V_I_COST",
+      "targetFile": "guide-tone-cases.json",
+      "mutationPath": "cases[0].expectedBestPath.totalMotionCost",
+      "mutatedValue": 10,
+      "expectedFinding": "G6_CASE_PATH_COST_MISMATCH"
+    },
+    {
+      "id": "MUT_G6_TAMPER_TRITONE_SUB_PITCH",
+      "targetFile": "guide-tone-cases.json",
+      "mutationPath": "cases[3].expectedExtractions[0].guideTones[1].spelledPitchClass",
+      "mutatedValue": "B",
+      "expectedFinding": "G6_CASE_EXTRACTION_MISMATCH"
+    },
+    {
+      "id": "MUT_G6_TAMPER_COLOR_C7_LYDIAN_TENSION",
+      "targetFile": "color-lab-cases.json",
+      "mutationPath": "cases[0].expectedColorOptions[1].tensions",
+      "mutatedValue": ["9", "11", "13"],
+      "expectedFinding": "G6_COLOR_OPTION_MISMATCH"
+    },
+    {
+      "id": "MUT_G6_TAMPER_COLOR_C7_CLASH_KIND",
+      "targetFile": "color-lab-cases.json",
+      "mutationPath": "cases[0].detectedClashes[0].kind",
+      "mutatedValue": "bass-clash",
+      "expectedFinding": "G6_COLOR_CLASH_MISMATCH"
+    },
+    {
+      "id": "MUT_G6_TAMPER_COLOR_CMAJ7_CLASH",
+      "targetFile": "color-lab-cases.json",
+      "mutationPath": "cases[1].detectedClashes",
+      "mutatedValue": [],
+      "expectedFinding": "G6_COLOR_CLASH_MISMATCH"
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "cases": [
+    {
+      "id": "CASE_ROUTE_C_TO_F_VIA_SECONDARY_II_V",
+      "name": "Route from Cmaj7 to Fmaj7 via secondary ii-V (Gm7 -> C7)",
+      "startChord": "Cmaj7",
+      "endChord": "Fmaj7",
+      "maxSteps": 2,
+      "expectedPrimaryRoute": {
+        "intermediateChords": ["Gm7", "C7"],
+        "strategies": ["circle-of-fifths", "circle-of-fifths"]
+      }
+    },
+    {
+      "id": "CASE_ROUTE_C_TO_C_TURNAROUND",
+      "name": "Turnaround route from Cmaj7 back to Cmaj7 (A7 -> Dm7 -> G7)",
+      "startChord": "Cmaj7",
+      "endChord": "Cmaj7",
+      "maxSteps": 3,
+      "expectedPrimaryRoute": {
+        "intermediateChords": ["A7", "Dm7", "G7"],
+        "strategies": ["circle-of-fifths", "circle-of-fifths", "circle-of-fifths"]
+      }
+    },
+    {
+      "id": "CASE_ROUTE_TRITONE_SUB_ARRIVAL",
+      "name": "Route from Dm7 to Cmaj7 via tritone sub Db7",
+      "startChord": "Dm7",
+      "endChord": "Cmaj7",
+      "maxSteps": 1,
+      "expectedPrimaryRoute": {
+        "intermediateChords": ["Db7"],
+        "strategies": ["tritone-substitute"]
+      }
+    },
+    {
+      "id": "CASE_ROUTE_MODAL_INTERCHANGE_SUBDOMINANT",
+      "name": "Route from Cmaj7 to Cmaj7 via subdominant minor (Fm7 -> Bb7)",
+      "startChord": "Cmaj7",
+      "endChord": "Cmaj7",
+      "maxSteps": 2,
+      "expectedPrimaryRoute": {
+        "intermediateChords": ["Fm7", "Bb7"],
+        "strategies": ["modal-interchange", "tritone-substitute"]
+      }
+    }
+  ]
+}

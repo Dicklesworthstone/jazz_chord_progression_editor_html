@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "G8 Nonfunctional Transforms and Sequence Atlas Contract Authority",
+  "version": "1.0.0",
+  "package": "G8",
+  "schemas": {
+    "nonfunctionalTransform": "changes.nonfunctional-transform.v1",
+    "harmonicSequence": "changes.harmonic-sequence.v1"
+  },
+  "limits": {
+    "maxSequenceLength": 16,
+    "maxNonfunctionalVariants": 32
+  },
+  "neoRiemannianOps": ["P", "L", "R"]
+}

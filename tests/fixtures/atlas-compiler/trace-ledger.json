@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "traces": [
+    {
+      "requirement": "Total source/compiled Atlas schemas, provenance, review, and derivation records",
+      "fixtureRef": "tests/fixtures/atlas-compiler/g1-atlas-contract.json",
+      "testRef": "tests/static/g1-contract.test.ts"
+    },
+    {
+      "requirement": "Enforceable rights firewall rejecting quarantined sources, smuggled protected expressions, and corrupted hashes",
+      "fixtureRef": "tests/fixtures/atlas-compiler/planted-rights-failures.json",
+      "testRef": "tests/unit/atlas-compiler.test.ts"
+    },
+    {
+      "requirement": "Deterministic Atlas compilation, deduplication, and layered fingerprint extraction",
+      "fixtureRef": "tests/fixtures/atlas-compiler/source-corpus-fixtures.json",
+      "testRef": "tests/unit/atlas-compiler.test.ts"
+    },
+    {
+      "requirement": "Injected read-only AtlasQuery adapter satisfying decoupled interface boundary",
+      "fixtureRef": "tests/fixtures/atlas-compiler/compiled-corpus-golden.json",
+      "testRef": "tests/integration/atlas-compiler-integration.test.ts"
+    }
+  ]
+}

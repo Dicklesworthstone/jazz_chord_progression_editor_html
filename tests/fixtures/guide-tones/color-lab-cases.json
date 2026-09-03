@@ -1,0 +1,186 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "cases": [
+    {
+      "id": "COLOR_CASE_C7_DOMINANT",
+      "chord": "C7",
+      "root": "C",
+      "quality": "dominant-seventh",
+      "expectedColorOptions": [
+        {
+          "optionId": "C7_MIXOLYDIAN",
+          "family": "diatonic-extension",
+          "title": "Natural 9, 13 (Mixolydian)",
+          "tensions": ["9", "13"],
+          "resultingDegrees": ["1", "3", "5", "b7", "9", "13"],
+          "spelledPitches": ["C", "E", "G", "Bb", "D", "A"],
+          "compatibleScaleId": "scale.mixolydian",
+          "compatibleScaleName": "Mixolydian",
+          "guideTonesRetained": true,
+          "clashes": []
+        },
+        {
+          "optionId": "C7_LYDIAN_DOMINANT",
+          "family": "lydian-dominant",
+          "title": "Bright #11, 9, 13 (Lydian Dominant)",
+          "tensions": ["9", "#11", "13"],
+          "resultingDegrees": ["1", "3", "5", "b7", "9", "#11", "13"],
+          "spelledPitches": ["C", "E", "G", "Bb", "D", "F#", "A"],
+          "compatibleScaleId": "scale.lydian-dominant",
+          "compatibleScaleName": "Lydian Dominant",
+          "guideTonesRetained": true,
+          "clashes": []
+        },
+        {
+          "optionId": "C7_ALTERED",
+          "family": "altered-dominant",
+          "title": "Full Altered (b9, #9, #11, b13)",
+          "tensions": ["b9", "#9", "#11", "b13"],
+          "resultingDegrees": ["1", "3", "b7", "b9", "#9", "#11", "b13"],
+          "spelledPitches": ["C", "E", "Bb", "Db", "D#", "F#", "Ab"],
+          "compatibleScaleId": "scale.altered",
+          "compatibleScaleName": "Altered (Super Locrian)",
+          "guideTonesRetained": true,
+          "clashes": []
+        }
+      ],
+      "expectedUpperStructures": [
+        {
+          "ustId": "UST_D_OVER_C7",
+          "triadRoot": "D",
+          "triadQuality": "major",
+          "numeralRelation": "II",
+          "resultingTensions": ["9", "#11", "13"],
+          "symbolNotation": "D/C7",
+          "triadPitches": ["D", "F#", "A"],
+          "compatibleScaleId": "scale.lydian-dominant"
+        },
+        {
+          "ustId": "UST_Ab_OVER_C7",
+          "triadRoot": "Ab",
+          "triadQuality": "major",
+          "numeralRelation": "bVI",
+          "resultingTensions": ["b13", "#9"],
+          "symbolNotation": "Ab/C7",
+          "triadPitches": ["Ab", "C", "Eb"],
+          "compatibleScaleId": "scale.altered"
+        },
+        {
+          "ustId": "UST_A_OVER_C7",
+          "triadRoot": "A",
+          "triadQuality": "major",
+          "numeralRelation": "VI",
+          "resultingTensions": ["13", "b9"],
+          "symbolNotation": "A/C7",
+          "triadPitches": ["A", "C#", "E"],
+          "compatibleScaleId": "scale.diminished-half-whole"
+        },
+        {
+          "ustId": "UST_Gb_OVER_C7",
+          "triadRoot": "Gb",
+          "triadQuality": "major",
+          "numeralRelation": "bV",
+          "resultingTensions": ["#11", "b7", "b9"],
+          "symbolNotation": "Gb/C7",
+          "triadPitches": ["Gb", "Bb", "Db"],
+          "compatibleScaleId": "scale.altered"
+        },
+        {
+          "ustId": "UST_Eb_OVER_C7",
+          "triadRoot": "Eb",
+          "triadQuality": "major",
+          "numeralRelation": "bIII",
+          "resultingTensions": ["#9"],
+          "symbolNotation": "Eb/C7",
+          "triadPitches": ["Eb", "G", "Bb"],
+          "compatibleScaleId": "scale.altered"
+        }
+      ],
+      "detectedClashes": [
+        {
+          "kind": "minor-ninth-against-third",
+          "intervalSemitones": 1,
+          "clashingDegree": "11",
+          "againstDegree": "3",
+          "explanation": "Natural 11 (F) forms a harsh minor 9th (semitone clash) against major 3rd (E)."
+        }
+      ]
+    },
+    {
+      "id": "COLOR_CASE_CMAJ7_MAJOR",
+      "chord": "Cmaj7",
+      "root": "C",
+      "quality": "major-seventh",
+      "expectedColorOptions": [
+        {
+          "optionId": "CMAJ7_IONIAN",
+          "family": "diatonic-extension",
+          "title": "Natural 9, 13 (Ionian / Major)",
+          "tensions": ["9", "13"],
+          "resultingDegrees": ["1", "3", "5", "7", "9", "13"],
+          "spelledPitches": ["C", "E", "G", "B", "D", "A"],
+          "compatibleScaleId": "scale.ionian",
+          "compatibleScaleName": "Ionian",
+          "guideTonesRetained": true,
+          "clashes": []
+        },
+        {
+          "optionId": "CMAJ7_LYDIAN",
+          "family": "modal-color",
+          "title": "Acoustic #11, 9, 13 (Lydian)",
+          "tensions": ["9", "#11", "13"],
+          "resultingDegrees": ["1", "3", "5", "7", "9", "#11", "13"],
+          "spelledPitches": ["C", "E", "G", "B", "D", "F#", "A"],
+          "compatibleScaleId": "scale.lydian",
+          "compatibleScaleName": "Lydian",
+          "guideTonesRetained": true,
+          "clashes": []
+        }
+      ],
+      "expectedUpperStructures": [],
+      "detectedClashes": [
+        {
+          "kind": "minor-ninth-against-third",
+          "intervalSemitones": 1,
+          "clashingDegree": "11",
+          "againstDegree": "3",
+          "explanation": "Natural 11 (F) forms a minor 9th against major 3rd (E) in major 7th chords."
+        }
+      ]
+    },
+    {
+      "id": "COLOR_CASE_CM7_DORIAN",
+      "chord": "Cm7",
+      "root": "C",
+      "quality": "minor-seventh",
+      "expectedColorOptions": [
+        {
+          "optionId": "CM7_DORIAN",
+          "family": "modal-color",
+          "title": "Standard 9, 11, 13 (Dorian)",
+          "tensions": ["9", "11", "13"],
+          "resultingDegrees": ["1", "b3", "5", "b7", "9", "11", "13"],
+          "spelledPitches": ["C", "Eb", "G", "Bb", "D", "F", "A"],
+          "compatibleScaleId": "scale.dorian",
+          "compatibleScaleName": "Dorian",
+          "guideTonesRetained": true,
+          "clashes": []
+        },
+        {
+          "optionId": "CM7_AEOLIAN",
+          "family": "modal-color",
+          "title": "Natural Minor 9, 11, b13 (Aeolian)",
+          "tensions": ["9", "11", "b13"],
+          "resultingDegrees": ["1", "b3", "5", "b7", "9", "11", "b13"],
+          "spelledPitches": ["C", "Eb", "G", "Bb", "D", "F", "Ab"],
+          "compatibleScaleId": "scale.aeolian",
+          "compatibleScaleName": "Aeolian",
+          "guideTonesRetained": true,
+          "clashes": []
+        }
+      ],
+      "expectedUpperStructures": [],
+      "detectedClashes": []
+    }
+  ]
+}

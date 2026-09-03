@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "mutationControls": [
+    {
+      "id": "MUTATION_INELIGIBLE_SONORITY",
+      "description": "Non-triad chord (e.g. 7th or altered) supplied directly to strict P/L/R transform",
+      "corruptedField": "chordType",
+      "expectedRefusal": "g8.ineligible_sonority"
+    },
+    {
+      "id": "MUTATION_SEQUENCE_EXCEEDED",
+      "description": "Requested sequence repetitions exceed limit of 16",
+      "corruptedField": "repetitions",
+      "expectedRefusal": "g8.sequence_exceeded"
+    },
+    {
+      "id": "MUTATION_INVALID_CHORD",
+      "description": "Input contains unparseable chord syntax",
+      "corruptedField": "chordSymbol",
+      "expectedRefusal": "g8.invalid_chord"
+    },
+    {
+      "id": "MUTATION_STALE_REVISION",
+      "description": "Stale revision supplied for sequence transform",
+      "corruptedField": "baseRevision",
+      "expectedRefusal": "g8.stale_revision"
+    }
+  ]
+}

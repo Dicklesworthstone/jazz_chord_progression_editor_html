@@ -1,21 +1,14 @@
-import type { ChordSpec } from "../domain";
+import {
+  type BeatValue,
+  type ChordEventId,
+  type ChordSpec,
+  type KeyContext,
+} from "../domain";
+import type { AccidentalStyle } from "./syntax-contract";
 
-/**
- * Session-scale next-chord continuation: the public types and frozen limits.
- *
- * This is deliberately NOT the G2 Contextual Continuation Engine the rebuild
- * plan specifies (providers over plural H0 readings, Pareto pruning, cost
- * profiles, 100 ms gate). It is a bounded, explainable subset that answers
- * "what could come next?" from the literal chord facts alone, so the Harmony
- * Lens can offer plural options today without claiming any G2/U3 milestone.
- * Every law the Theory Idea Wizard binds to suggestion-type features still
- * applies: plural options, typed explanations, determinism, explicit bounds,
- * and no result ever labeled correct or best.
- */
-
+/** Legacy Session Continuation Contract for Studio Controller */
 export const CONTINUATION_ENGINE_VERSION = "session-continuation@1" as const;
 
-/** Providers run in exactly this order; the order is part of the contract. */
 export const CONTINUATION_PROVIDER_IDS = Object.freeze([
   "dominant-resolution",
   "turnaround",
@@ -24,8 +17,7 @@ export const CONTINUATION_PROVIDER_IDS = Object.freeze([
   "tritone-approach",
   "backdoor",
 ] as const);
-export type ContinuationProviderId =
-  (typeof CONTINUATION_PROVIDER_IDS)[number];
+export type LegacyContinuationProviderId = (typeof CONTINUATION_PROVIDER_IDS)[number];
 
 export const CONTINUATION_CATEGORIES = Object.freeze([
   "resolve",
@@ -34,49 +26,33 @@ export const CONTINUATION_CATEGORIES = Object.freeze([
   "increase-color",
   "explore",
 ] as const);
-export type ContinuationCategory = (typeof CONTINUATION_CATEGORIES)[number];
+export type LegacyContinuationCategory = (typeof CONTINUATION_CATEGORIES)[number];
 
-/**
- * The only qualities the engine may ever emit. The playability law
- * (jcpe-tkos) demands that anything the surface offers reaches sound; a
- * closed emission set makes that provable by exhaustion: 12 roots by these
- * suffixes, every one parsed by T0 and played through the real path.
- */
 export const CONTINUATION_EMISSION_QUALITIES = Object.freeze([
   "maj7",
   "m7",
   "7",
 ] as const);
-export type ContinuationEmissionQuality =
-  (typeof CONTINUATION_EMISSION_QUALITIES)[number];
+export type ContinuationEmissionQuality = (typeof CONTINUATION_EMISSION_QUALITIES)[number];
 
 export const MAX_CONTINUATION_CONTEXT_EVENTS = 4;
 export const MAX_CONTINUATION_SUGGESTIONS = 8;
 export const MAX_CONTINUATION_PER_PROVIDER = 2;
 
 export type ContinuationExplanation = Readonly<{
-  providerId: ContinuationProviderId;
-  /** One concrete sentence naming the trigger chord(s) and the law applied. */
+  providerId: LegacyContinuationProviderId;
   sentence: string;
-  /** The exact context symbols the provider reasoned from. */
   sourceSymbols: readonly string[];
 }>;
 
 export type ContinuationSuggestion = Readonly<{
-  /** Stable and deterministic: `${providerId}:${symbolText}`. */
   id: string;
-  /** ASCII the T0 grammar parses `ready`; root name plus an emission quality. */
   symbolText: string;
-  category: ContinuationCategory;
+  category: LegacyContinuationCategory;
   explanation: ContinuationExplanation;
 }>;
 
 export type ContinuationRequest = Readonly<{
-  /**
-   * The last chords before the insertion point, oldest first, at most
-   * MAX_CONTINUATION_CONTEXT_EVENTS. Each carries the exact stored spec;
-   * the engine never re-parses source text.
-   */
   context: readonly ChordSpec[];
 }>;
 
@@ -88,8 +64,94 @@ export type ContinuationWorkEvidence = Readonly<{
   termination: "complete";
 }>;
 
-export type ContinuationResult = Readonly<{
+export type LegacyContinuationResult = Readonly<{
   engineVersion: typeof CONTINUATION_ENGINE_VERSION;
   suggestions: readonly ContinuationSuggestion[];
   evidence: ContinuationWorkEvidence;
 }>;
+
+/** G2 Contextual Continuation Engine Contract */
+export const G2_CONTINUATION_RESULT_SCHEMA = "changes.continuation-result.v1" as const;
+
+export const MAX_G2_CANDIDATES_PER_PROVIDER = 32 as const;
+export const MAX_G2_DISPLAY_OPTIONS = 16 as const;
+export const MAX_G2_CONTEXT_EVENTS = 8 as const;
+
+export type ContinuationCategory =
+  | "smooth"
+  | "functional"
+  | "colorful"
+  | "exploratory"
+  | "resolve"
+  | "continue-pattern"
+  | "approach-target"
+  | "increase-color"
+  | "explore";
+
+export type ContinuationProviderId =
+  | "provider.functional.circle-cadence"
+  | "provider.modal.step-vamp"
+  | "provider.chromatic.tritone-approach"
+  | "provider.diminished.passing"
+  | "provider.sequence.descending-fifths"
+  | "provider.line-cliche.minor-step"
+  | "provider.nonfunctional.planing"
+  | LegacyContinuationProviderId;
+
+export interface ContinuationHarmonicProof {
+  readonly voiceLeadingScore: number; // 0..100
+  readonly tensionDelta: number; // -5..+5
+  readonly preservedGuideTones: boolean;
+  readonly expectedMotion: "stepwise" | "cycle-fifth" | "chromatic" | "common-tone";
+  readonly whyExplanation: string;
+  readonly whyNotConsiderations?: readonly string[];
+}
+
+export interface ContinuationEditPlan {
+  readonly targetEventId: ChordEventId;
+  readonly insertedChordSymbol: string;
+  readonly offsetBeat: BeatValue;
+  readonly duration: BeatValue;
+}
+
+export interface ContinuationCandidate {
+  readonly candidateId: string;
+  readonly providerId: ContinuationProviderId;
+  readonly category: ContinuationCategory;
+  readonly chordSymbol: string;
+  readonly editPlan: ContinuationEditPlan;
+  readonly proof: ContinuationHarmonicProof;
+  readonly rank: number;
+}
+
+export interface G2Refusal {
+  readonly code:
+    | "g2.empty_context"
+    | "g2.context_exceeded"
+    | "g2.invalid_chord"
+    | "g2.no_candidate_generated"
+    | "g2.stale_revision";
+  readonly message: string;
+  readonly eventId?: ChordEventId;
+}
+
+export type ContinuationResult =
+  | {
+      readonly ok: true;
+      readonly schema: typeof G2_CONTINUATION_RESULT_SCHEMA;
+      readonly candidates: readonly ContinuationCandidate[];
+      readonly workSteps: number;
+    }
+  | {
+      readonly ok: false;
+      readonly refusal: G2Refusal;
+    }
+  | LegacyContinuationResult;
+
+export interface ContinuationOptions {
+  readonly keyContext?: KeyContext;
+  readonly categoryFilter?: ContinuationCategory;
+  readonly accidentalStyle?: AccidentalStyle;
+  readonly maxDisplayOptions?: number;
+  readonly defaultDuration?: BeatValue;
+}

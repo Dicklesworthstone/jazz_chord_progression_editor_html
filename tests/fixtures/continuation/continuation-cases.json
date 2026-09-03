@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "cases": [
+    {
+      "id": "CASE_CONTINUATION_II_V_TO_TONIC",
+      "name": "ii-V progression requesting functional resolution to Imaj7",
+      "priorChords": ["Dm7", "G7"],
+      "expectedCandidates": [
+        {
+          "chordSymbol": "Cmaj7",
+          "category": "functional",
+          "providerId": "provider.functional.circle-cadence"
+        },
+        {
+          "chordSymbol": "Dbmaj7",
+          "category": "colorful",
+          "providerId": "provider.chromatic.tritone-approach"
+        }
+      ]
+    },
+    {
+      "id": "CASE_CONTINUATION_TONIC_TO_TURNAROUND",
+      "name": "Imaj7 chord requesting turnaround continuation (VI7 / ii)",
+      "priorChords": ["Cmaj7"],
+      "expectedCandidates": [
+        {
+          "chordSymbol": "A7",
+          "category": "functional",
+          "providerId": "provider.functional.circle-cadence"
+        },
+        {
+          "chordSymbol": "C#dim7",
+          "category": "colorful",
+          "providerId": "provider.diminished.passing"
+        }
+      ]
+    },
+    {
+      "id": "CASE_CONTINUATION_MINOR_LINE_CLICHE",
+      "name": "Minor tonic chord requesting minor line-cliche progression",
+      "priorChords": ["Dm"],
+      "expectedCandidates": [
+        {
+          "chordSymbol": "Dm(maj7)",
+          "category": "smooth",
+          "providerId": "provider.line-cliche.minor-step"
+        }
+      ]
+    },
+    {
+      "id": "CASE_CONTINUATION_MODAL_DORIAN_STEP",
+      "name": "Dorian minor chord requesting whole-step minor vamp",
+      "priorChords": ["Dm7"],
+      "expectedCandidates": [
+        {
+          "chordSymbol": "Em7",
+          "category": "exploratory",
+          "providerId": "provider.modal.step-vamp"
+        }
+      ]
+    }
+  ]
+}

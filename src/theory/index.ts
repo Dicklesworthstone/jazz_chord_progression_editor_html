@@ -211,3 +211,84 @@ export {
   chartAnalysisOperations,
   type ChartAnalysisOperations,
 } from "./chart-analysis-operations";
+
+export * from "./g6-contract";
+export {
+  extractEventGuideTones,
+  classifyGuideToneMotion,
+  optimizeGuideTonePaths,
+  spelledPitchClassToString,
+  transposeSpelledPitchClass,
+} from "./guide-tones";
+export { deriveContextualColor } from "./color-lab";
+export { g6Operations, type G6Operations } from "./g6-operations";
+
+export * from "./h1-contract";
+export {
+  TRANSFORM_LAWS,
+  getTransformLaw,
+  listTransformLaws,
+  evaluateTransformCandidates,
+} from "./transform-laws";
+export {
+  makeSpelledInterval,
+  invertInterval,
+  transposePitchByInterval,
+  transposeChordSymbolByInterval,
+  transposeProgressionByInterval,
+} from "./spelled-transposition";
+export { h1Operations, type H1Operations } from "./h1-operations";
+
+export * from "./g0-contract";
+export { detectCadence } from "./phrase-cadence";
+export { analyzeTonalJourney } from "./tonal-journey";
+export { g0Operations, type G0Operations } from "./g0-operations";
+
+export * from "./g1-contract";
+export {
+  sha256Sync,
+  computeFingerprints,
+  compileAtlasCorpus,
+} from "./atlas-compiler";
+export { makeAtlasQueryAdapter } from "./atlas-query";
+export { g1Operations, type G1Operations } from "./g1-operations";
+
+export * from "./g2-contract";
+export { generateContextualContinuations } from "./contextual-continuation";
+export { g2Operations, type G2Operations } from "./g2-operations";
+
+export * from "./g3-contract";
+export { planHarmonicRoutes } from "./route-planner";
+export { g3Operations, type G3Operations } from "./g3-operations";
+
+export * from "./g4-contract";
+export { harmonizeConstraints } from "./harmonization-workbench";
+export { g4Operations, type G4Operations } from "./g4-operations";
+
+export * from "./g5-contract";
+export {
+  buildReharmonizationTree,
+  compareReharmonizationBranches,
+} from "./reharmonization-tree";
+export { g5Operations, type G5Operations } from "./g5-operations";
+
+export * from "./g7-contract";
+export {
+  computeTensionCurve,
+  applyRhythmTransform,
+} from "./rhythm-transforms";
+export { g7Operations, type G7Operations } from "./g7-operations";
+
+export * from "./g8-contract";
+export {
+  applyNeoRiemannianTransform,
+  generateHarmonicSequence,
+} from "./nonfunctional-transforms";
+export { g8Operations, type G8Operations } from "./g8-operations";
+
+export * from "./g9-contract";
+export {
+  createPracticeSession,
+  gradePracticeSubmission,
+} from "./practice-laboratory";
+export { g9Operations, type G9Operations } from "./g9-operations";

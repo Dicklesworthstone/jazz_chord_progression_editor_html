@@ -185,7 +185,8 @@ test("the production Manual unison plan exports with an explicit unison-doubling
   const doubling = exported.value.report.losses.find(
     (loss) => loss.kind === "unison-doubling",
   );
-  expect(doubling?.eventIds).toEqual(["event-p0-a1-2"]);
+  if (manual === undefined) throw new Error("P0_MANUAL_EVENT_NOT_FOUND");
+  expect(doubling?.eventIds).toEqual([manual.eventId]);
   expect(exported.value.report.noteCount).toBe(
     result.plan.events.reduce(
       (sum, event) => sum + new Set(event.midiPitches).size,

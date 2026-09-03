@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "sequences": [
+    {
+      "id": "SEQ_CIRCLE_OF_FIFTHS",
+      "name": "Circle of fifths sequence descending by 4ths (Dm7 -> G7 -> Cmaj7 -> Fmaj7)",
+      "motifChords": ["Dm7", "G7"],
+      "stepIntervalSemitones": -2,
+      "repetitions": 2,
+      "expectedProgression": ["Dm7", "G7", "Cm7", "F7", "Bbm7", "Eb7"]
+    },
+    {
+      "id": "SEQ_CHROMATIC_PLANING",
+      "name": "Chromatic descending planing sequence (Ebmaj7 -> Dmaj7 -> Dbmaj7 -> Cmaj7)",
+      "motifChords": ["Ebmaj7"],
+      "stepIntervalSemitones": -1,
+      "repetitions": 3,
+      "expectedProgression": ["Ebmaj7", "Dmaj7", "Dbmaj7", "Cmaj7"]
+    }
+  ]
+}

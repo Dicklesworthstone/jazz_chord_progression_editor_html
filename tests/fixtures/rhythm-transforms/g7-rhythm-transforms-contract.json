@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "G7 Rhythm Transforms and Tension Curve Contract Authority",
+  "version": "1.0.0",
+  "package": "G7",
+  "schemas": {
+    "tensionCurve": "changes.tension-curve.v1",
+    "rhythmTransform": "changes.rhythm-transform.v1"
+  },
+  "limits": {
+    "maxProgressionEvents": 64,
+    "maxTensionPoints": 128
+  },
+  "transformKinds": [
+    "anticipation",
+    "delay",
+    "split",
+    "merge",
+    "augmentation",
+    "diminution",
+    "metric-displacement"
+  ]
+}

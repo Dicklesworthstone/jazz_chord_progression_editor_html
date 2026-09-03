@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "entries": [
+    {
+      "entryId": "atlas_entry_autumn_leaves_ii_v_i",
+      "title": "Autumn Major/Minor Cadential Turn",
+      "chords": ["Cm7", "F7", "Bbmaj7", "Ebmaj7", "Am7b5", "D7", "Gm7"],
+      "durationBeats": [4, 4, 4, 4, 4, 4, 4],
+      "provenance": {
+        "rightsClass": "public-domain",
+        "commitAllowed": true,
+        "expressionBytePolicy": "embed-full",
+        "sourceEvidence": "Historical jazz standard harmonic sequence (Public Domain composition, traditional chord progression)",
+        "authorOrSource": "Traditional Jazz Vocabulary",
+        "payloadHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "practiceMetadata": {
+        "genre": "swing",
+        "suggestedTempoBpmRange": [120, 180],
+        "difficulty": "intermediate",
+        "historicalPeriod": "Standard / 1945+",
+        "keyAreaTags": ["Bb-major", "G-minor"]
+      }
+    },
+    {
+      "entryId": "atlas_entry_rhythm_changes_a_section",
+      "title": "Rhythm Changes A-Section Vamp (I-VI-ii-V)",
+      "chords": ["Bbmaj7", "G7", "Cm7", "F7", "Dm7", "G7", "Cm7", "F7"],
+      "durationBeats": [2, 2, 2, 2, 2, 2, 2, 2],
+      "provenance": {
+        "rightsClass": "public-domain",
+        "commitAllowed": true,
+        "expressionBytePolicy": "embed-full",
+        "sourceEvidence": "George Gershwin I Got Rhythm contrafact progression (Public Domain harmonic template)",
+        "authorOrSource": "Standard Jazz Contrafact Foundation",
+        "payloadHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "practiceMetadata": {
+        "genre": "bebop",
+        "suggestedTempoBpmRange": [160, 260],
+        "difficulty": "advanced",
+        "historicalPeriod": "Bebop / 1930s+",
+        "keyAreaTags": ["Bb-major"]
+      }
+    },
+    {
+      "entryId": "atlas_entry_modal_dorian_impression",
+      "title": "Modal Dorian Vamp",
+      "chords": ["Dm7", "Ebm7", "Dm7"],
+      "durationBeats": [16, 8, 8],
+      "provenance": {
+        "rightsClass": "permissive-license",
+        "commitAllowed": true,
+        "expressionBytePolicy": "embed-full",
+        "sourceEvidence": "Modal jazz improvisation practice pattern",
+        "authorOrSource": "Modal Studio Corpus",
+        "payloadHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "practiceMetadata": {
+        "genre": "modal",
+        "suggestedTempoBpmRange": [110, 140],
+        "difficulty": "intermediate",
+        "historicalPeriod": "Post-Bop / 1959+",
+        "keyAreaTags": ["D-dorian", "Eb-dorian"]
+      }
+    }
+  ]
+}

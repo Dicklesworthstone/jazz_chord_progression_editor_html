@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "mutationControls": [
+    {
+      "id": "MUTATION_INVALID_START_CHORD",
+      "description": "Invalid start chord token",
+      "corruptedField": "startChord",
+      "expectedRefusal": "g3.invalid_endpoint"
+    },
+    {
+      "id": "MUTATION_INVALID_END_CHORD",
+      "description": "Invalid end chord token",
+      "corruptedField": "endChord",
+      "expectedRefusal": "g3.invalid_endpoint"
+    },
+    {
+      "id": "MUTATION_STEPS_EXCEEDED",
+      "description": "Requested max steps exceeds limit of 8",
+      "corruptedField": "maxSteps",
+      "expectedRefusal": "g3.steps_exceeded"
+    },
+    {
+      "id": "MUTATION_STALE_REVISION",
+      "description": "Stale revision supplied for route planning",
+      "corruptedField": "baseRevision",
+      "expectedRefusal": "g3.stale_revision"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "authorities": [
+    {
+      "source": "David Lewin, Generalized Musical Intervals and Transformations (Yale University Press, 1987)",
+      "topics": ["Transformational Music Theory", "Neo-Riemannian Group Properties"]
+    },
+    {
+      "source": "Richard Cohn, Audacious Euphony: Chromaticism and the Triad's Second Nature (Oxford University Press, 2012)",
+      "topics": ["P, L, R Operations", "Voice Leading Parsimony", "Hexatonic and Octatonic Cycles"]
+    },
+    {
+      "source": "Dmitri Tymoczko, A Geometry of Music (Oxford University Press, 2011)",
+      "topics": ["Voice Leading Distance", "Planing and Parallel Symmetrical Transformations"]
+    },
+    {
+      "source": "Mark Levine, The Jazz Theory Book (Sher Music Co., 1995)",
+      "topics": ["Chromatic Mediant Progressions", "Coltrane Changes and Third Cycles", "Planing in Modern Jazz"]
+    }
+  ]
+}

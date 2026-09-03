@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "traces": [
+    {
+      "requirement": "Rhythm transforms across anticipation, delay, split, merge, augmentation, diminution, and metric displacement with exact rational time",
+      "fixtureRef": "tests/fixtures/rhythm-transforms/rhythm-transform-cases.json",
+      "testRef": "tests/unit/rhythm-transforms.test.ts"
+    },
+    {
+      "requirement": "Deterministic tension curve computation across function, dissonance, voice motion, register, harmonic rhythm, and context confidence",
+      "fixtureRef": "tests/fixtures/rhythm-transforms/rhythm-transform-cases.json",
+      "testRef": "tests/unit/rhythm-transforms.test.ts"
+    },
+    {
+      "requirement": "Transposition and meter invariance across all keys and meters",
+      "fixtureRef": "tests/fixtures/rhythm-transforms/rhythm-transform-cases.json",
+      "testRef": "tests/integration/rhythm-transforms-integration.test.ts"
+    },
+    {
+      "requirement": "Bounded execution with structured refusals for limits and invalid durations",
+      "fixtureRef": "tests/fixtures/rhythm-transforms/mutation-controls.json",
+      "testRef": "tests/static/g7-contract.test.ts"
+    }
+  ]
+}

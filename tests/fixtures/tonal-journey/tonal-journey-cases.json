@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "cases": [
+    {
+      "id": "JOURNEY_CASE_DIATONIC_II_V_I_C_MAJOR",
+      "name": "Monotonal diatonic ii-V-I in C Major",
+      "chords": ["Dm7", "G7", "Cmaj7"],
+      "expectedKeyAreas": [
+        {
+          "tonic": "C",
+          "mode": "major",
+          "startIndex": 0,
+          "endIndex": 2,
+          "isTonicization": false
+        }
+      ],
+      "expectedModulationsCount": 0,
+      "expectedIsDiatonic": true
+    },
+    {
+      "id": "JOURNEY_CASE_DIRECT_MODULATION_C_TO_F",
+      "name": "Direct modulation from C major to F major via secondary ii-V",
+      "chords": ["Dm7", "G7", "Cmaj7", "Gm7", "C7", "Fmaj7"],
+      "expectedKeyAreas": [
+        {
+          "tonic": "C",
+          "mode": "major",
+          "startIndex": 0,
+          "endIndex": 2,
+          "isTonicization": false
+        },
+        {
+          "tonic": "F",
+          "mode": "major",
+          "startIndex": 3,
+          "endIndex": 5,
+          "isTonicization": false
+        }
+      ],
+      "expectedModulationsCount": 1,
+      "expectedIsDiatonic": false
+    },
+    {
+      "id": "JOURNEY_CASE_COLTRANE_CHANGES_MAJOR_THIRDS",
+      "name": "Coltrane Changes multi-tonic cycle (C -> Eb -> G -> C)",
+      "chords": ["Cmaj7", "Eb7", "Abmaj7", "B7", "Emaj7", "G7", "Cmaj7"],
+      "expectedKeyAreas": [
+        {
+          "tonic": "C",
+          "mode": "major",
+          "startIndex": 0,
+          "endIndex": 0,
+          "isTonicization": false
+        },
+        {
+          "tonic": "Ab",
+          "mode": "major",
+          "startIndex": 1,
+          "endIndex": 2,
+          "isTonicization": true
+        },
+        {
+          "tonic": "E",
+          "mode": "major",
+          "startIndex": 3,
+          "endIndex": 4,
+          "isTonicization": true
+        },
+        {
+          "tonic": "C",
+          "mode": "major",
+          "startIndex": 5,
+          "endIndex": 6,
+          "isTonicization": false
+        }
+      ],
+      "expectedModulationsCount": 3,
+      "expectedIsDiatonic": false
+    },
+    {
+      "id": "JOURNEY_CASE_MODAL_DORIAN_VAMP",
+      "name": "Modal So What / Impression Dorian vamp in D minor",
+      "chords": ["Dm7", "Em7", "Dm7", "Em7"],
+      "expectedKeyAreas": [
+        {
+          "tonic": "D",
+          "mode": "natural-minor",
+          "startIndex": 0,
+          "endIndex": 3,
+          "isTonicization": false
+        }
+      ],
+      "expectedModulationsCount": 0,
+      "expectedIsDiatonic": true
+    }
+  ]
+}

@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "cases": [
+    {
+      "id": "H1_CASE_TRITONE_SUB_DOMINANT",
+      "name": "Tritone substitution of primary dominant (G7 -> Db7 before Cmaj7)",
+      "inputProgression": ["Dm7", "G7", "Cmaj7"],
+      "targetEventIndex": 1,
+      "expectedLaw": "law.tritone-sub.primary",
+      "expectedTransformedChord": "Db7",
+      "expectedTransformedProgression": ["Dm7", "Db7", "Cmaj7"],
+      "expectedGuideTonesRetained": true,
+      "expectedVoiceLeading": "half-step"
+    },
+    {
+      "id": "H1_CASE_SECONDARY_DOMINANT_V_OF_V",
+      "name": "Secondary dominant insertion (D7 -> G7 -> Cmaj7)",
+      "inputProgression": ["Dm7", "G7", "Cmaj7"],
+      "targetEventIndex": 0,
+      "expectedLaw": "law.secondary-dominant.v-of-v",
+      "expectedTransformedChord": "D7",
+      "expectedTransformedProgression": ["D7", "G7", "Cmaj7"],
+      "expectedGuideTonesRetained": false,
+      "expectedVoiceLeading": "stepwise"
+    },
+    {
+      "id": "H1_CASE_SECONDARY_II_V_INSERTION",
+      "name": "Secondary ii-V insertion splitting a 4-beat dominant (G7 -> Dm7 G7)",
+      "inputProgression": ["G7", "Cmaj7"],
+      "targetEventIndex": 0,
+      "expectedLaw": "law.secondary-ii-v.insertion",
+      "expectedTransformedProgression": ["Dm7", "G7", "Cmaj7"],
+      "expectedGuideTonesRetained": true,
+      "expectedVoiceLeading": "stepwise"
+    },
+    {
+      "id": "H1_CASE_BACKDOOR_DOMINANT",
+      "name": "Backdoor dominant resolution (Bb7 -> Cmaj7)",
+      "inputProgression": ["Fm7", "Bb7", "Cmaj7"],
+      "targetEventIndex": 1,
+      "expectedLaw": "law.backdoor.resolution",
+      "expectedTransformedChord": "Bb7",
+      "expectedTransformedProgression": ["Fm7", "Bb7", "Cmaj7"],
+      "expectedGuideTonesRetained": true,
+      "expectedVoiceLeading": "half-step"
+    },
+    {
+      "id": "H1_CASE_MODAL_INTERCHANGE_SUBDOM_MINOR",
+      "name": "Modal interchange subdominant minor (Fm7 for Fmaj7 in C major)",
+      "inputProgression": ["Fmaj7", "G7", "Cmaj7"],
+      "targetEventIndex": 0,
+      "expectedLaw": "law.modal-interchange.subdominant-minor",
+      "expectedTransformedChord": "Fm7",
+      "expectedTransformedProgression": ["Fm7", "G7", "Cmaj7"],
+      "expectedGuideTonesRetained": true,
+      "expectedVoiceLeading": "stepwise"
+    },
+    {
+      "id": "H1_CASE_PASSING_DIMINISHED_SHARP_ONE",
+      "name": "Passing diminished #Idim7 (Cmaj7 -> C#dim7 -> Dm7)",
+      "inputProgression": ["Cmaj7", "Dm7", "G7"],
+      "targetEventIndex": 0,
+      "expectedLaw": "law.diminished.passing-sharp-one",
+      "expectedTransformedProgression": ["Cmaj7", "C#dim7", "Dm7", "G7"],
+      "expectedGuideTonesRetained": true,
+      "expectedVoiceLeading": "half-step"
+    },
+    {
+      "id": "H1_CASE_DOMINANT_CHAIN_CYCLE",
+      "name": "Dominant chain extended cycle (E7 -> A7 -> D7 -> G7 -> Cmaj7)",
+      "inputProgression": ["A7", "D7", "G7", "Cmaj7"],
+      "targetEventIndex": 0,
+      "expectedLaw": "law.dominant-chain.cycle",
+      "expectedTransformedProgression": ["E7", "A7", "D7", "G7", "Cmaj7"],
+      "expectedGuideTonesRetained": true,
+      "expectedVoiceLeading": "stepwise"
+    },
+    {
+      "id": "H1_CASE_CHROMATIC_APPROACH_ABOVE",
+      "name": "Chromatic approach from half-step above (Ab7 -> G7 -> Cmaj7)",
+      "inputProgression": ["G7", "Cmaj7"],
+      "targetEventIndex": 0,
+      "expectedLaw": "law.chromatic.half-step-above",
+      "expectedTransformedProgression": ["Ab7", "G7", "Cmaj7"],
+      "expectedGuideTonesRetained": true,
+      "expectedVoiceLeading": "half-step"
+    }
+  ]
+}

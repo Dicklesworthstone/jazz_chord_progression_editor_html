@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "cases": [
+    {
+      "id": "CADENCE_PERFECT_AUTHENTIC_C",
+      "name": "Perfect Authentic Cadence (G7 -> Cmaj7)",
+      "chords": ["G7", "Cmaj7"],
+      "expectedCadence": {
+        "cadenceType": "perfect-authentic",
+        "status": "closed",
+        "metricStrength": 90,
+        "harmonicStrength": 100
+      }
+    },
+    {
+      "id": "CADENCE_HALF_CADENCE_C",
+      "name": "Half Cadence ending on dominant (Dm7 -> G7)",
+      "chords": ["Dm7", "G7"],
+      "expectedCadence": {
+        "cadenceType": "half",
+        "status": "supported",
+        "metricStrength": 75,
+        "harmonicStrength": 80
+      }
+    },
+    {
+      "id": "CADENCE_DECEPTIVE_C_TO_A_MIN",
+      "name": "Deceptive Cadence resolving to submediant vi (G7 -> Am7)",
+      "chords": ["G7", "Am7"],
+      "expectedCadence": {
+        "cadenceType": "deceptive",
+        "status": "supported",
+        "metricStrength": 70,
+        "harmonicStrength": 85
+      }
+    },
+    {
+      "id": "CADENCE_BACKDOOR_C",
+      "name": "Backdoor Cadence (Bb7 -> Cmaj7)",
+      "chords": ["Bb7", "Cmaj7"],
+      "expectedCadence": {
+        "cadenceType": "backdoor",
+        "status": "supported",
+        "metricStrength": 80,
+        "harmonicStrength": 90
+      }
+    },
+    {
+      "id": "CADENCE_PLAGAL_C",
+      "name": "Plagal Cadence (Fmaj7 -> Cmaj7)",
+      "chords": ["Fmaj7", "Cmaj7"],
+      "expectedCadence": {
+        "cadenceType": "plagal",
+        "status": "supported",
+        "metricStrength": 65,
+        "harmonicStrength": 70
+      }
+    },
+    {
+      "id": "NEAR_MISS_NON_CADENCE_PROGRESSION",
+      "name": "Near-miss: sequential circle chord motion without cadence arrival (Em7 -> A7 -> Dm7)",
+      "chords": ["Em7", "A7", "Dm7"],
+      "expectedCadence": null
+    }
+  ]
+}

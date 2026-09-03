@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "G4 Constraint Harmonization Workbench Contract Authority",
+  "version": "1.0.0",
+  "package": "G4",
+  "schemas": {
+    "harmonizationResult": "changes.harmonization-result.v1"
+  },
+  "limits": {
+    "maxSlots": 16,
+    "maxCandidatesPerSlot": 128,
+    "maxSearchStates": 100000,
+    "maxSolutions": 8
+  }
+}

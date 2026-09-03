@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "traces": [
+    {
+      "requirementId": "REQ_G6_GUIDE_TONE_EXTRACTION",
+      "description": "Extract thirds, sevenths, suspensions, and essential alteration tones with exact spelled pitches and roles.",
+      "fixtureCases": ["GT_CASE_II_V_I_C_MAJOR", "GT_CASE_II_V_I_F_MAJOR", "GT_CASE_MINOR_II_V_I_C", "GT_CASE_TRITONE_SUB_C", "GT_CASE_SUSPENSION_RESOLUTION"],
+      "authorities": ["LEVINE_JAZZ_THEORY_1995", "RAWLINS_BAHHA_JAZZOLOGY_2005"]
+    },
+    {
+      "requirementId": "REQ_G6_MOTION_CLASSIFICATION",
+      "description": "Classify pairwise guide-tone motion into contrary, oblique, similar, parallel, common-tone, and step-resolution.",
+      "fixtureCases": ["GT_CASE_II_V_I_C_MAJOR", "GT_CASE_TURNAROUND_C", "GT_CASE_SUSPENSION_RESOLUTION"],
+      "authorities": ["RAWLINS_BAHHA_JAZZOLOGY_2005", "LIGON_COMPREHENSIVE_HARMONIC_2001"]
+    },
+    {
+      "requirementId": "REQ_G6_PATH_OPTIMIZATION",
+      "description": "Enumerate and rank smooth, noncrossing multi-voice guide-tone paths with bounded motion cost.",
+      "fixtureCases": ["GT_CASE_II_V_I_C_MAJOR", "GT_CASE_II_V_I_F_MAJOR", "GT_CASE_TURNAROUND_C"],
+      "authorities": ["LIGON_COMPREHENSIVE_HARMONIC_2001", "LEVINE_JAZZ_THEORY_1995"]
+    },
+    {
+      "requirementId": "REQ_G6_TENSION_DERIVATION",
+      "description": "Derive compatible tensions (9, b9, #9, 11, #11, 13, b13) mapped to reviewed chord-scale families.",
+      "fixtureCases": ["COLOR_CASE_C7_DOMINANT", "COLOR_CASE_CMAJ7_MAJOR", "COLOR_CASE_CM7_DORIAN"],
+      "authorities": ["NETTLES_GRAF_CHORD_SCALE_1997", "LEVINE_JAZZ_THEORY_1995"]
+    },
+    {
+      "requirementId": "REQ_G6_UPPER_STRUCTURE_TRIADS",
+      "description": "Derive Upper Structure Triads (UST II, bVI, VI, bV, bIII) with explicit tension yields and omission requirements.",
+      "fixtureCases": ["COLOR_CASE_C7_DOMINANT"],
+      "authorities": ["PEASE_JAZZ_COMPOSITION_2003", "LEVINE_JAZZ_THEORY_1995"]
+    },
+    {
+      "requirementId": "REQ_G6_CLASH_DETECTION",
+      "description": "Detect harsh minor-ninth clashes and avoid notes against chord tones or bass.",
+      "fixtureCases": ["COLOR_CASE_C7_DOMINANT", "COLOR_CASE_CMAJ7_MAJOR"],
+      "authorities": ["NETTLES_GRAF_CHORD_SCALE_1997", "LEVINE_JAZZ_THEORY_1995"]
+    },
+    {
+      "requirementId": "REQ_G6_BOUNDED_EXECUTION",
+      "description": "Enforce deterministic execution within max progression events (64) and work steps (8192).",
+      "fixtureCases": ["GT_CASE_II_V_I_C_MAJOR"],
+      "authorities": ["LEVINE_JAZZ_THEORY_1995"]
+    }
+  ]
+}

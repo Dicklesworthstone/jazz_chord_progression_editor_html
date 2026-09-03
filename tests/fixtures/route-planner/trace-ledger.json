@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "traces": [
+    {
+      "requirement": "Search lawful routes of at most 8 events and 64 outgoing candidates per state between validated endpoints",
+      "fixtureRef": "tests/fixtures/route-planner/route-planner-cases.json",
+      "testRef": "tests/unit/route-planner.test.ts"
+    },
+    {
+      "requirement": "Return exact symbols, proof chain, cost vector, and non-mutating edit patch",
+      "fixtureRef": "tests/fixtures/route-planner/route-planner-cases.json",
+      "testRef": "tests/unit/route-planner.test.ts"
+    },
+    {
+      "requirement": "Transposition invariance across all 12 chromatic key centers",
+      "fixtureRef": "tests/fixtures/route-planner/route-planner-cases.json",
+      "testRef": "tests/integration/route-planner-integration.test.ts"
+    },
+    {
+      "requirement": "Deterministic state and work bounds with honest typed refusals",
+      "fixtureRef": "tests/fixtures/route-planner/mutation-controls.json",
+      "testRef": "tests/static/g3-contract.test.ts"
+    }
+  ]
+}

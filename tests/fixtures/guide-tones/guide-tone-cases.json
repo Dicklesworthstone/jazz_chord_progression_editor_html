@@ -1,0 +1,223 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "cases": [
+    {
+      "id": "GT_CASE_II_V_I_C_MAJOR",
+      "name": "Standard Major ii-V-I in C Major",
+      "chords": ["Dm7", "G7", "Cmaj7"],
+      "expectedExtractions": [
+        {
+          "chord": "Dm7",
+          "guideTones": [
+            { "spelledPitchClass": "F", "pitchClass": "F", "degree": "b3", "role": "third", "isTendencyTone": false, "isLeadingTone": false },
+            { "spelledPitchClass": "C", "pitchClass": "C", "degree": "b7", "role": "seventh", "isTendencyTone": false, "isLeadingTone": false }
+          ]
+        },
+        {
+          "chord": "G7",
+          "guideTones": [
+            { "spelledPitchClass": "B", "pitchClass": "B", "degree": "3", "role": "third", "isTendencyTone": true, "isLeadingTone": true },
+            { "spelledPitchClass": "F", "pitchClass": "F", "degree": "b7", "role": "seventh", "isTendencyTone": true, "isLeadingTone": false }
+          ]
+        },
+        {
+          "chord": "Cmaj7",
+          "guideTones": [
+            { "spelledPitchClass": "E", "pitchClass": "E", "degree": "3", "role": "third", "isTendencyTone": false, "isLeadingTone": false },
+            { "spelledPitchClass": "B", "pitchClass": "B", "degree": "7", "role": "seventh", "isTendencyTone": true, "isLeadingTone": true }
+          ]
+        }
+      ],
+      "expectedBestPath": {
+        "line1Pitches": ["F", "F", "E"],
+        "line1Roles": ["third", "seventh", "third"],
+        "line2Pitches": ["C", "B", "B"],
+        "line2Roles": ["seventh", "third", "seventh"],
+        "totalMotionCost": 2,
+        "hasCrossings": false
+      }
+    },
+    {
+      "id": "GT_CASE_II_V_I_F_MAJOR",
+      "name": "Standard Major ii-V-I transposed to F Major",
+      "chords": ["Gm7", "C7", "Fmaj7"],
+      "expectedExtractions": [
+        {
+          "chord": "Gm7",
+          "guideTones": [
+            { "spelledPitchClass": "Bb", "pitchClass": "Bb", "degree": "b3", "role": "third", "isTendencyTone": false, "isLeadingTone": false },
+            { "spelledPitchClass": "F", "pitchClass": "F", "degree": "b7", "role": "seventh", "isTendencyTone": false, "isLeadingTone": false }
+          ]
+        },
+        {
+          "chord": "C7",
+          "guideTones": [
+            { "spelledPitchClass": "E", "pitchClass": "E", "degree": "3", "role": "third", "isTendencyTone": true, "isLeadingTone": true },
+            { "spelledPitchClass": "Bb", "pitchClass": "Bb", "degree": "b7", "role": "seventh", "isTendencyTone": true, "isLeadingTone": false }
+          ]
+        },
+        {
+          "chord": "Fmaj7",
+          "guideTones": [
+            { "spelledPitchClass": "A", "pitchClass": "A", "degree": "3", "role": "third", "isTendencyTone": false, "isLeadingTone": false },
+            { "spelledPitchClass": "E", "pitchClass": "E", "degree": "7", "role": "seventh", "isTendencyTone": true, "isLeadingTone": true }
+          ]
+        }
+      ],
+      "expectedBestPath": {
+        "line1Pitches": ["Bb", "Bb", "A"],
+        "line1Roles": ["third", "seventh", "third"],
+        "line2Pitches": ["F", "E", "E"],
+        "line2Roles": ["seventh", "third", "seventh"],
+        "totalMotionCost": 2,
+        "hasCrossings": false
+      }
+    },
+    {
+      "id": "GT_CASE_MINOR_II_V_I_C",
+      "name": "Minor ii-V-i in C minor",
+      "chords": ["Dm7b5", "G7b9", "Cm7"],
+      "expectedExtractions": [
+        {
+          "chord": "Dm7b5",
+          "guideTones": [
+            { "spelledPitchClass": "F", "pitchClass": "F", "degree": "b3", "role": "third", "isTendencyTone": false, "isLeadingTone": false },
+            { "spelledPitchClass": "C", "pitchClass": "C", "degree": "b7", "role": "seventh", "isTendencyTone": false, "isLeadingTone": false },
+            { "spelledPitchClass": "Ab", "pitchClass": "Ab", "degree": "b5", "role": "essential-color", "isTendencyTone": true, "isLeadingTone": false }
+          ]
+        },
+        {
+          "chord": "G7b9",
+          "guideTones": [
+            { "spelledPitchClass": "B", "pitchClass": "B", "degree": "3", "role": "third", "isTendencyTone": true, "isLeadingTone": true },
+            { "spelledPitchClass": "F", "pitchClass": "F", "degree": "b7", "role": "seventh", "isTendencyTone": true, "isLeadingTone": false },
+            { "spelledPitchClass": "Ab", "pitchClass": "Ab", "degree": "b9", "role": "essential-color", "isTendencyTone": true, "isLeadingTone": false }
+          ]
+        },
+        {
+          "chord": "Cm7",
+          "guideTones": [
+            { "spelledPitchClass": "Eb", "pitchClass": "Eb", "degree": "b3", "role": "third", "isTendencyTone": false, "isLeadingTone": false },
+            { "spelledPitchClass": "Bb", "pitchClass": "Bb", "degree": "b7", "role": "seventh", "isTendencyTone": false, "isLeadingTone": false }
+          ]
+        }
+      ],
+      "expectedBestPath": {
+        "line1Pitches": ["F", "F", "Eb"],
+        "line1Roles": ["third", "seventh", "third"],
+        "line2Pitches": ["C", "B", "Bb"],
+        "line2Roles": ["seventh", "third", "seventh"],
+        "totalMotionCost": 3,
+        "hasCrossings": false
+      }
+    },
+    {
+      "id": "GT_CASE_TRITONE_SUB_C",
+      "name": "Tritone substitution Db7 -> Cmaj7",
+      "chords": ["Db7", "Cmaj7"],
+      "expectedExtractions": [
+        {
+          "chord": "Db7",
+          "guideTones": [
+            { "spelledPitchClass": "F", "pitchClass": "F", "degree": "3", "role": "third", "isTendencyTone": true, "isLeadingTone": false },
+            { "spelledPitchClass": "Cb", "pitchClass": "B", "degree": "b7", "role": "seventh", "isTendencyTone": true, "isLeadingTone": true }
+          ]
+        },
+        {
+          "chord": "Cmaj7",
+          "guideTones": [
+            { "spelledPitchClass": "E", "pitchClass": "E", "degree": "3", "role": "third", "isTendencyTone": false, "isLeadingTone": false },
+            { "spelledPitchClass": "B", "pitchClass": "B", "degree": "7", "role": "seventh", "isTendencyTone": true, "isLeadingTone": true }
+          ]
+        }
+      ],
+      "expectedBestPath": {
+        "line1Pitches": ["F", "E"],
+        "line1Roles": ["third", "third"],
+        "line2Pitches": ["Cb", "B"],
+        "line2Roles": ["seventh", "seventh"],
+        "totalMotionCost": 1,
+        "hasCrossings": false
+      }
+    },
+    {
+      "id": "GT_CASE_SUSPENSION_RESOLUTION",
+      "name": "Suspended dominant resolving: G7sus4 -> G7 -> Cmaj7",
+      "chords": ["G7sus4", "G7", "Cmaj7"],
+      "expectedExtractions": [
+        {
+          "chord": "G7sus4",
+          "guideTones": [
+            { "spelledPitchClass": "C", "pitchClass": "C", "degree": "4", "role": "suspension", "isTendencyTone": true, "isLeadingTone": false },
+            { "spelledPitchClass": "F", "pitchClass": "F", "degree": "b7", "role": "seventh", "isTendencyTone": true, "isLeadingTone": false }
+          ]
+        },
+        {
+          "chord": "G7",
+          "guideTones": [
+            { "spelledPitchClass": "B", "pitchClass": "B", "degree": "3", "role": "third", "isTendencyTone": true, "isLeadingTone": true },
+            { "spelledPitchClass": "F", "pitchClass": "F", "degree": "b7", "role": "seventh", "isTendencyTone": true, "isLeadingTone": false }
+          ]
+        },
+        {
+          "chord": "Cmaj7",
+          "guideTones": [
+            { "spelledPitchClass": "E", "pitchClass": "E", "degree": "3", "role": "third", "isTendencyTone": false, "isLeadingTone": false },
+            { "spelledPitchClass": "B", "pitchClass": "B", "degree": "7", "role": "seventh", "isTendencyTone": true, "isLeadingTone": true }
+          ]
+        }
+      ],
+      "expectedBestPath": {
+        "line1Pitches": ["C", "B", "B"],
+        "line1Roles": ["suspension", "third", "seventh"],
+        "line2Pitches": ["F", "F", "E"],
+        "line2Roles": ["seventh", "seventh", "third"],
+        "totalMotionCost": 2,
+        "hasCrossings": false
+      }
+    },
+    {
+      "id": "GT_CASE_TURNAROUND_C",
+      "name": "Standard Turnaround: Cmaj7 -> A7 -> Dm7 -> G7",
+      "chords": ["Cmaj7", "A7", "Dm7", "G7"],
+      "expectedExtractions": [
+        {
+          "chord": "Cmaj7",
+          "guideTones": [
+            { "spelledPitchClass": "E", "pitchClass": "E", "degree": "3", "role": "third", "isTendencyTone": false, "isLeadingTone": false },
+            { "spelledPitchClass": "B", "pitchClass": "B", "degree": "7", "role": "seventh", "isTendencyTone": true, "isLeadingTone": true }
+          ]
+        },
+        {
+          "chord": "A7",
+          "guideTones": [
+            { "spelledPitchClass": "C#", "pitchClass": "Db", "degree": "3", "role": "third", "isTendencyTone": true, "isLeadingTone": true },
+            { "spelledPitchClass": "G", "pitchClass": "G", "degree": "b7", "role": "seventh", "isTendencyTone": true, "isLeadingTone": false }
+          ]
+        },
+        {
+          "chord": "Dm7",
+          "guideTones": [
+            { "spelledPitchClass": "F", "pitchClass": "F", "degree": "b3", "role": "third", "isTendencyTone": false, "isLeadingTone": false },
+            { "spelledPitchClass": "C", "pitchClass": "C", "degree": "b7", "role": "seventh", "isTendencyTone": false, "isLeadingTone": false }
+          ]
+        },
+        {
+          "chord": "G7",
+          "guideTones": [
+            { "spelledPitchClass": "B", "pitchClass": "B", "degree": "3", "role": "third", "isTendencyTone": true, "isLeadingTone": true },
+            { "spelledPitchClass": "F", "pitchClass": "F", "degree": "b7", "role": "seventh", "isTendencyTone": true, "isLeadingTone": false }
+          ]
+        }
+      ],
+      "expectedBestPath": {
+        "line1Pitches": ["E", "G", "F", "F"],
+        "line1Roles": ["third", "seventh", "third", "seventh"],
+        "line2Pitches": ["B", "C#", "C", "B"],
+        "line2Roles": ["seventh", "third", "seventh", "third"],
+        "totalMotionCost": 7,
+        "hasCrossings": false
+      }
+    }
+  ]
+}

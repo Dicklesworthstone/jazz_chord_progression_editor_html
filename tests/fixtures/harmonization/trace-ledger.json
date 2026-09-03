@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "traces": [
+    {
+      "requirement": "Compile typed melody, bass, chord, and style constraints into legal candidate chords across up to 16 slots",
+      "fixtureRef": "tests/fixtures/harmonization/harmonization-cases.json",
+      "testRef": "tests/unit/harmonization.test.ts"
+    },
+    {
+      "requirement": "Separation of hard constraints from soft cost axes with Pareto solutions",
+      "fixtureRef": "tests/fixtures/harmonization/harmonization-cases.json",
+      "testRef": "tests/unit/harmonization.test.ts"
+    },
+    {
+      "requirement": "Transposition invariance across all 12 chromatic keys",
+      "fixtureRef": "tests/fixtures/harmonization/harmonization-cases.json",
+      "testRef": "tests/integration/harmonization-integration.test.ts"
+    },
+    {
+      "requirement": "Bounded execution with typed structured refusals for unsatisfiable constraints",
+      "fixtureRef": "tests/fixtures/harmonization/mutation-controls.json",
+      "testRef": "tests/static/g4-contract.test.ts"
+    }
+  ]
+}

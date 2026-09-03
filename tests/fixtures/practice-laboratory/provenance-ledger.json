@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "authorities": [
+    {
+      "source": "Mark Levine, The Jazz Theory Book (Sher Music Co., 1995)",
+      "topics": ["Chord Tone Drilling", "Guide-Tone Line Practice", "Cadential Voice-Leading Exercises"]
+    },
+    {
+      "source": "Jerry Coker, Elements of the Jazz Language (Alfred Music, 1991)",
+      "topics": ["Ear Training Progressions", "ii-V-I Sequence Drills", "Pattern Recognition"]
+    },
+    {
+      "source": "Hal Crook, How to Improvise (Advance Music, 1991)",
+      "topics": ["Constrained Practice Drills", "Pacing and Target Note Landing"]
+    },
+    {
+      "source": "Berklee College of Music Jazz Harmony & Ear Training Curricula",
+      "topics": ["Objective Chord Spelling Rubrics", "Voice-Leading Grading Standards"]
+    }
+  ]
+}

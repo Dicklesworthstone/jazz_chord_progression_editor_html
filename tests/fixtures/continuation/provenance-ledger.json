@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "authorities": [
+    {
+      "source": "Mark Levine, The Jazz Theory Book (Sher Music Co., 1995)",
+      "topics": ["Functional Cadential Continuations", "Tritone Approximations", "Line Cliches"]
+    },
+    {
+      "source": "Jerry Coker, Elements of the Jazz Language (Alfred Music, 1991)",
+      "topics": ["Turnarounds and Cycles", "Secondary Progressions", "Rhythm Changes Patterns"]
+    },
+    {
+      "source": "Barrie Nettles & Richard Graf, The Chord Scale Theory & Jazz Harmony (Advance Music, 1997)",
+      "topics": ["Berklee Cadence Typologies", "Passing Diminished Chords", "Modal Progression Continuations"]
+    },
+    {
+      "source": "Andy Jaffe, Jazz Harmony (Advance Music, 1996)",
+      "topics": ["Harmonic Motion and Voice Leading", "Voice-Leading Smoothness", "Tension Profiles"]
+    }
+  ]
+}

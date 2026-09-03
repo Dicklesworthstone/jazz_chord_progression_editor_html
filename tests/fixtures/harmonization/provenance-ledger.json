@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "authorities": [
+    {
+      "source": "Mark Levine, The Jazz Theory Book (Sher Music Co., 1995)",
+      "topics": ["Melody Harmonization and Chord-Scale Alignment", "Upper Extensions in Melody", "Reharmonization Principles"]
+    },
+    {
+      "source": "Walter Piston, Harmony (W. W. Norton & Co., 1941)",
+      "topics": ["Harmonic Rhythm and Slot Segmentation", "Bass Line Counterpoint and Pedal Tones"]
+    },
+    {
+      "source": "Arnold Schoenberg, Structural Functions of Harmony (Williams & Norgate, 1954)",
+      "topics": ["Root Progression Laws", "Monotonality and Regions"]
+    },
+    {
+      "source": "Ted Pease & Ken Pullig, Modern Jazz Voicings (Berklee Press, 2001)",
+      "topics": ["Lead Melody Voice Assignment", "Four-Way Close and Drop Voicings"]
+    }
+  ]
+}

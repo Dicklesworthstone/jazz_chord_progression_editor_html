@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "H1 Transform Laws and Spelled Transposition Contract Authority",
+  "version": "1.0.0",
+  "package": "H1",
+  "schemas": {
+    "transformLaw": "changes.transform-law.v1",
+    "transformResult": "changes.transform-result.v1",
+    "spelledTransposition": "changes.spelled-transposition.v1"
+  },
+  "limits": {
+    "maxProgressionEvents": 64,
+    "maxLawsPerCandidate": 16,
+    "maxEditPlanOperations": 32
+  },
+  "lawFamilies": [
+    "diatonic-functional",
+    "secondary-dominant",
+    "secondary-ii-v",
+    "tritone-substitute",
+    "backdoor-dominant",
+    "modal-interchange",
+    "diminished-passing",
+    "dominant-chain",
+    "harmonic-sequence",
+    "pivot-modulation",
+    "chromatic-approach"
+  ],
+  "registeredLaws": [
+    "law.diatonic.tonic-extension",
+    "law.diatonic.subdominant-expansion",
+    "law.secondary-dominant.v-of-v",
+    "law.secondary-dominant.v-of-ii",
+    "law.secondary-ii-v.insertion",
+    "law.tritone-sub.primary",
+    "law.tritone-sub.secondary",
+    "law.backdoor.resolution",
+    "law.modal-interchange.subdominant-minor",
+    "law.modal-interchange.bvi-major",
+    "law.diminished.passing-sharp-one",
+    "law.diminished.passing-sharp-two",
+    "law.dominant-chain.cycle",
+    "law.sequence.descending-fifths",
+    "law.pivot.common-chord",
+    "law.chromatic.half-step-above",
+    "law.chromatic.half-step-below"
+  ]
+}

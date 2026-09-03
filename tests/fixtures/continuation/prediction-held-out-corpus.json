@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "heldOutPredictions": [
+    {
+      "id": "PREDICT_AUTUMN_LEAVES_BAR_3",
+      "context": ["Cm7", "F7"],
+      "groundTruthNextChord": "Bbmaj7",
+      "expectedMatchingCategory": "functional",
+      "expectedMatchingProvider": "provider.functional.circle-cadence"
+    },
+    {
+      "id": "PREDICT_RHYTHM_CHANGES_BAR_2",
+      "context": ["Bbmaj7", "G7"],
+      "groundTruthNextChord": "Cm7",
+      "expectedMatchingCategory": "functional",
+      "expectedMatchingProvider": "provider.functional.circle-cadence"
+    },
+    {
+      "id": "PREDICT_SO_WHAT_MODAL_SHIFT",
+      "context": ["Dm7"],
+      "groundTruthNextChord": "Ebm7",
+      "expectedMatchingCategory": "exploratory",
+      "expectedMatchingProvider": "provider.modal.step-vamp"
+    }
+  ]
+}

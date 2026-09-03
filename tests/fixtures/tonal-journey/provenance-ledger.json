@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "authorities": [
+    {
+      "source": "Felix Salzer, Structural Hearing: Tonal Coherence in Music (Dover, 1962)",
+      "topics": ["Tonal Journey", "Key Area Prolongation", "Multi-Tonic Cycles", "Linear Intervallic Patterns"]
+    },
+    {
+      "source": "Stefan Kostka & Dorothy Payne, Tonal Harmony (McGraw-Hill, 2017)",
+      "topics": ["Cadence Types and Closure Lattice", "Phrase Boundaries", "Pivot Modulations"]
+    },
+    {
+      "source": "Fred Lerdahl & Ray Jackendoff, A Generative Theory of Tonal Music (MIT Press, 1983)",
+      "topics": ["Time-Span Reduction", "Prolongational Reduction", "Metric and Grouping Preference Rules"]
+    },
+    {
+      "source": "Dmitri Tymoczko, A Geometry of Music (Oxford University Press, 2011)",
+      "topics": ["Scale Consistency", "Voice Leading Distance", "Centricity and Dual-Tonic Planes"]
+    }
+  ]
+}

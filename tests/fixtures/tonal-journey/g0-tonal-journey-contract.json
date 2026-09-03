@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "G0 Tonal Journey and Phrase Analysis Contract Authority",
+  "version": "1.0.0",
+  "package": "G0",
+  "schemas": {
+    "tonalJourneyResult": "changes.tonal-journey.v1",
+    "phraseAnalysis": "changes.phrase-analysis.v1"
+  },
+  "limits": {
+    "maxProgressionEvents": 256,
+    "maxKBestPaths": 5,
+    "maxKeyAreasPerPath": 16
+  },
+  "cadenceTypes": [
+    "perfect-authentic",
+    "imperfect-authentic",
+    "half",
+    "deceptive",
+    "backdoor",
+    "plagal",
+    "phrygian-half",
+    "evaporating"
+  ],
+  "closureStatuses": [
+    "candidate",
+    "supported",
+    "attenuated",
+    "closed"
+  ]
+}

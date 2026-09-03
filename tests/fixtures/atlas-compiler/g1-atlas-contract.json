@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "G1 Atlas Schema and Rights Firewall Authority",
+  "version": "1.0.0",
+  "package": "G1",
+  "schemas": {
+    "sourceAtlas": "changes.atlas-source.v1",
+    "compiledAtlas": "changes.atlas-compiled.v1",
+    "manifest": "changes.atlas-manifest.v1",
+    "rejections": "changes.atlas-rejections.v1"
+  },
+  "limits": {
+    "maxFixtureEntries": 128,
+    "maxProgressionLength": 64,
+    "maxFingerprintLayers": 8
+  },
+  "rightsClasses": [
+    "public-domain",
+    "permissive-license",
+    "internal-original",
+    "protected-fingerprint-only",
+    "quarantined"
+  ],
+  "expressionBytePolicies": [
+    "embed-full",
+    "fingerprint-only",
+    "reject"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "cases": [
+    {
+      "id": "CASE_PRACTICE_SESSION_II_V_I",
+      "name": "Practice session for ii-V-I progression (Dm7 -> G7 -> Cmaj7)",
+      "seed": 42,
+      "inputChords": ["Dm7", "G7", "Cmaj7"],
+      "expectedPromptKinds": ["spelling", "guide-tones", "cadence-recognition"]
+    }
+  ]
+}

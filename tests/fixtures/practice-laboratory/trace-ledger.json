@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "traces": [
+    {
+      "requirement": "Seeded deterministic practice session generation across spelling, chord-roles, guide-tones, cadence-recognition, and completion",
+      "fixtureRef": "tests/fixtures/practice-laboratory/practice-session-cases.json",
+      "testRef": "tests/unit/practice-laboratory.test.ts"
+    },
+    {
+      "requirement": "Arithmetic rubric grading for objective answer submissions with itemized feedback and point accounting",
+      "fixtureRef": "tests/fixtures/practice-laboratory/practice-session-cases.json",
+      "testRef": "tests/unit/practice-laboratory.test.ts"
+    },
+    {
+      "requirement": "Seeded byte-for-byte reproducibility and invariant distribution",
+      "fixtureRef": "tests/fixtures/practice-laboratory/practice-session-cases.json",
+      "testRef": "tests/integration/practice-laboratory-integration.test.ts"
+    },
+    {
+      "requirement": "Bounded session sizes and typed structured refusals for limits and invalid inputs",
+      "fixtureRef": "tests/fixtures/practice-laboratory/mutation-controls.json",
+      "testRef": "tests/static/g9-contract.test.ts"
+    }
+  ]
+}

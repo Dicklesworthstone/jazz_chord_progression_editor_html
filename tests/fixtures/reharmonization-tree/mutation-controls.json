@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "mutationControls": [
+    {
+      "id": "MUTATION_EMPTY_EVENTS",
+      "description": "Empty chord events supplied for tree generation",
+      "corruptedField": "events",
+      "expectedRefusal": "g5.empty_events"
+    },
+    {
+      "id": "MUTATION_DEPTH_EXCEEDED",
+      "description": "Requested tree depth exceeds limit of 3",
+      "corruptedField": "maxDepth",
+      "expectedRefusal": "g5.depth_exceeded"
+    },
+    {
+      "id": "MUTATION_INVALID_CHORD",
+      "description": "Progression contains invalid unparseable chord syntax",
+      "corruptedField": "chordSymbol",
+      "expectedRefusal": "g5.invalid_chord"
+    },
+    {
+      "id": "MUTATION_STALE_REVISION",
+      "description": "Stale revision supplied for branch application",
+      "corruptedField": "baseRevision",
+      "expectedRefusal": "g5.stale_revision"
+    }
+  ]
+}
