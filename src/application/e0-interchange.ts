@@ -698,16 +698,16 @@ export const buildChartDocumentCandidate: BuildChartDocumentCandidate = (
 
       measures.push(
         Object.freeze({
-          id: measId,
+          id: measId as any,
           events: Object.freeze(events),
-          completion: mDraft.completion,
+          completion: Object.freeze({ kind: "complete" as const }),
         }),
       );
     }
 
     sections.push(
       Object.freeze({
-        id: secId,
+        id: secId as any,
         name: sDraft.name ?? `Section ${sIdx + 1}`,
         annotation: sDraft.annotation ?? "",
         keyOverride: null,
@@ -719,10 +719,10 @@ export const buildChartDocumentCandidate: BuildChartDocumentCandidate = (
 
   const shape: ProgressionDocumentShapeV2 = Object.freeze({
     schema: "changes.progression.v2" as const,
-    id: docId,
+    id: docId as DocumentId,
     title: draft.headers.title ?? CHART_IMPORT_DEFAULTS.title,
     description: draft.headers.description ?? CHART_IMPORT_DEFAULTS.description,
-    meter: draft.headers.meter,
+    meter: draft.headers.meter ?? CHART_IMPORT_DEFAULTS.meter,
     tempoBpm: draft.headers.tempoBpm ?? CHART_IMPORT_DEFAULTS.tempoBpm,
     key: draft.headers.key ?? null,
     sections: Object.freeze(sections),
