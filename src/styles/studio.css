@@ -4433,15 +4433,35 @@
 }
 
 .studio-midi-export__facts {
+  /*
+   * The pairs are wrapped in divs, so the GRID ITEMS are those divs — the
+   * old auto/1fr template flowed them into alternating narrow/wide
+   * columns and character-wrapped the SHA-256 into a 90px sliver
+   * (2026-09-03 audit). Even card columns fit each dt/dd stack; the hash
+   * gets a full-width row below.
+   */
   display: grid;
-  grid-template-columns: auto 1fr;
-  gap: var(--space-2) var(--space-4);
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: var(--space-3) var(--space-4);
   margin: 0;
   padding: var(--space-3);
   border: var(--border-width) solid var(--rule-2);
   border-radius: var(--radius-sm);
   background: var(--surface-sunken);
   font-size: var(--text-sm);
+}
+
+.studio-midi-export__facts > div:has(code) {
+  grid-column: 1 / -1;
+}
+
+.studio-midi-export__facts code {
+  display: block;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: var(--text-xs);
+  overflow-wrap: break-word;
+  word-break: break-all;
+  letter-spacing: 0.02em;
 }
 
 .studio-midi-export__facts dt {
