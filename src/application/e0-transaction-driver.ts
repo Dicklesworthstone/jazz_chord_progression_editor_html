@@ -37,6 +37,8 @@ import {
   type CanonicalExportMarkerPersistenceHandoff,
   type ImportNonUndoableConfirmationAcknowledgement,
   type ImportPreview,
+  PREPARED_CANONICAL_EXPORT_DELIVERY_SCHEMA,
+  type CanonicalExportPreparationBinding,
   type CanonicalExportPreparationId,
   type MarkerEligibleCanonicalExportDelivery,
   type PreparedCanonicalExportDeliveryRegistry,
@@ -46,16 +48,21 @@ import {
 } from "./e0-interchange-contract";
 import {
   E0_V2_COMMIT_REQUEST_SCHEMA,
+  E0_V2_EXPORT_DELIVERY_REQUEST_SCHEMA,
   E0_V2_MARKER_SETTLEMENT_REQUEST_SCHEMA,
   type CommitImportReplacementRequestV2,
   type CommitImportReplacementResultV2,
   type CompleteCanonicalExportMarkerSettlementRequestV2,
   type E0V2PortProtocolDiagnostic,
+  type PrepareCanonicalExportDeliveryRequestV2,
 } from "./e0-interchange-v2-contract";
 import type {
+  CanonicalJsonArtifact,
   ExportDeliveryResult,
+  PrepareCanonicalJsonExport,
   StartPreparedExportDelivery,
 } from "../export";
+import type { ValidatedDocument } from "../domain";
 import {
   normalizeIdentityResult,
   normalizeMarkerResult,
@@ -1050,6 +1057,218 @@ export function createE0V2ExportDeliveryClickDriver(
       ok: true as const,
       outcome: "terminal" as const,
       delivery: completionRaw,
+    });
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* Section-10 async prepare leg, E0V2-RES-11: state-free request       */
+/* ------------------------------------------------------------------ */
+
+export type E0V2ExportDeliveryPrepareResult =
+  | Readonly<{
+      ok: true;
+      outcome: "prepared";
+      binding: CanonicalExportPreparationBinding;
+    }>
+  | Readonly<{
+      ok: false;
+      outcome: "refused";
+      code:
+        | "export.delivery_request_invalid"
+        | "export.preparation_busy"
+        | "export.preparation_sequence_exhausted"
+        | "export.prepared_canonical_stale";
+    }>
+  | Readonly<{
+      ok: false;
+      outcome: "canonical-export-refused";
+      refusal: unknown;
+    }>
+  | Readonly<{
+      ok: false;
+      outcome: "protocol-invalid";
+      stage: "port-protocol";
+      diagnostic: E0V2PortProtocolDiagnostic;
+      releaseConfiguration: "failed";
+    }>
+  | Readonly<{
+      ok: false;
+      outcome: "preparation-protocol-invalid";
+      code: "export.prepared_canonical_artifact_invalid";
+      releaseConfiguration: "failed";
+    }>;
+
+export type E0V2ExportDeliveryPrepareDriver = (
+  request: PrepareCanonicalExportDeliveryRequestV2,
+  document: ValidatedDocument,
+) => Promise<E0V2ExportDeliveryPrepareResult>;
+
+function prepareRequestShapeValid(request: unknown): boolean {
+  if (!isRecord(request)) return false;
+  if (!hasExactKeys(request, ["schema", "identity"])) return false;
+  if (request["schema"] !== E0_V2_EXPORT_DELIVERY_REQUEST_SCHEMA) return false;
+  const identity = request["identity"];
+  return (
+    isRecord(identity) &&
+    hasExactKeys(identity, ["requestId", "documentId", "baseRevision"]) &&
+    typeof identity["requestId"] === "number" &&
+    typeof identity["documentId"] === "string" &&
+    typeof identity["baseRevision"] === "number"
+  );
+}
+
+function isCanonicalArtifactEnvelope(
+  raw: unknown,
+): raw is Readonly<{ ok: true; value: CanonicalJsonArtifact }> {
+  if (!isRecord(raw) || raw["ok"] !== true) return false;
+  const value = raw["value"];
+  return (
+    isRecord(value) &&
+    value["kind"] === "canonical-json" &&
+    typeof value["filename"] === "string" &&
+    typeof value["text"] === "string" &&
+    typeof value["byteLength"] === "number" &&
+    typeof value["semanticDocumentHash"] === "string" &&
+    typeof value["sourceDocumentId"] === "string"
+  );
+}
+
+/**
+ * E0V2-RES-11 asynchronous prepare leg: the request carries only its
+ * schema and the workflow identity token — no state. The registry
+ * identity is read at need through the NORMALIZED identity port (a
+ * malformed or throwing read fails the release configuration and begins
+ * nothing); the document to serialize is handed in by the composition
+ * caller, because the controller closure is the sole current-state
+ * authority and E0 never re-reads it. The canonical projection,
+ * round-trip checks, hash, and UTF-8 encoding all run HERE, before any
+ * click; an artifact whose source document disagrees with the observed
+ * identity abandons the preparation and refuses stale. Single-flight,
+ * generation, and byte-zeroing semantics are the registry's own proven
+ * laws.
+ */
+export function createE0V2ExportDeliveryPrepareDriver(
+  ports: A0E0InterchangeOwnerPorts,
+  registry: PreparedCanonicalExportDeliveryRegistry,
+  prepareCanonicalJsonExport: PrepareCanonicalJsonExport,
+): E0V2ExportDeliveryPrepareDriver {
+  return async (request, document) => {
+    if (!prepareRequestShapeValid(request)) {
+      return Object.freeze({
+        ok: false as const,
+        outcome: "refused" as const,
+        code: "export.delivery_request_invalid" as const,
+      });
+    }
+
+    let identity: ApplicationDocumentIdentity;
+    try {
+      const normalized = normalizeIdentityResult(
+        ports.readCurrentApplicationDocumentIdentity(),
+      );
+      if (normalized.outcome === "protocol-invalid") {
+        return Object.freeze({
+          ok: false as const,
+          outcome: "protocol-invalid" as const,
+          stage: "port-protocol" as const,
+          diagnostic: normalized.diagnostic,
+          releaseConfiguration: "failed" as const,
+        });
+      }
+      identity = normalized.value;
+    } catch {
+      return Object.freeze({
+        ok: false as const,
+        outcome: "protocol-invalid" as const,
+        stage: "port-protocol" as const,
+        diagnostic: threwOrRejected("readCurrentApplicationDocumentIdentity"),
+        releaseConfiguration: "failed" as const,
+      });
+    }
+
+    const begun = registry.begin(
+      Object.freeze({
+        documentId: identity.documentId,
+        revision: identity.revision,
+      }),
+    );
+    if (!begun.ok) {
+      return Object.freeze({
+        ok: false as const,
+        outcome: "refused" as const,
+        code: begun.code,
+      });
+    }
+
+    let exportRaw: unknown;
+    try {
+      exportRaw = await prepareCanonicalJsonExport({ document });
+    } catch {
+      registry.abandonPreparation(begun.identity.preparationId);
+      return Object.freeze({
+        ok: false as const,
+        outcome: "preparation-protocol-invalid" as const,
+        code: "export.prepared_canonical_artifact_invalid" as const,
+        releaseConfiguration: "failed" as const,
+      });
+    }
+    if (isRecord(exportRaw) && exportRaw["ok"] === false) {
+      registry.abandonPreparation(begun.identity.preparationId);
+      return Object.freeze({
+        ok: false as const,
+        outcome: "canonical-export-refused" as const,
+        refusal: exportRaw["refusal"],
+      });
+    }
+    if (!isCanonicalArtifactEnvelope(exportRaw)) {
+      registry.abandonPreparation(begun.identity.preparationId);
+      return Object.freeze({
+        ok: false as const,
+        outcome: "preparation-protocol-invalid" as const,
+        code: "export.prepared_canonical_artifact_invalid" as const,
+        releaseConfiguration: "failed" as const,
+      });
+    }
+    const artifact = exportRaw.value;
+    if (String(artifact.sourceDocumentId) !== String(identity.documentId)) {
+      registry.abandonPreparation(begun.identity.preparationId);
+      return Object.freeze({
+        ok: false as const,
+        outcome: "refused" as const,
+        code: "export.prepared_canonical_stale" as const,
+      });
+    }
+
+    registry.publish(
+      Object.freeze({
+        schema: PREPARED_CANONICAL_EXPORT_DELIVERY_SCHEMA,
+        identity: begun.identity,
+        binding: Object.freeze({
+          kind: "canonical-json" as const,
+          sourceDocumentId: artifact.sourceDocumentId,
+          filename: artifact.filename,
+          byteLength: artifact.byteLength,
+          semanticDocumentHash: artifact.semanticDocumentHash,
+        }),
+        privateBytes: new TextEncoder().encode(artifact.text),
+      }),
+    );
+
+    return Object.freeze({
+      ok: true as const,
+      outcome: "prepared" as const,
+      binding: Object.freeze({
+        preparationId: begun.identity.preparationId,
+        generation: begun.identity.generation,
+        documentId: begun.identity.documentId,
+        revision: begun.identity.revision,
+        filename: artifact.filename,
+        byteLength: artifact.byteLength,
+        semanticDocumentHash: artifact.semanticDocumentHash,
+        canonicalPolicyVersion: 1 as const,
+        semanticHashPolicyVersion: 1 as const,
+      }),
     });
   };
 }
