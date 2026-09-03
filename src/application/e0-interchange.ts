@@ -60,11 +60,15 @@ import {
   type ImportIssue,
   type ImportIssueCode,
   type ImportIssueSummary,
+  type ImportFormatHint,
+  type ImportNonUndoableConfirmationSeed,
   type ImportPayload,
   type ImportPreviewReport,
   type ImportPreviewReportItem,
   type ImportPreviewSummary,
   type ImportPublicPath,
+  type ImportReplacementCommandSeed,
+  type ImportReplacementImpact,
   type ImportPublicPathField,
   type ImportSourceFormat,
   type ImportStage,
@@ -93,6 +97,7 @@ import {
   type TakePreparedCanonicalExportDeliveryResult,
   type X1ReplacementRetirementEvidence,
 } from "./e0-interchange-contract";
+import type { PrepareImportPreviewRequestV2 } from "./e0-interchange-v2-contract";
 import type { LegacyMigrationRefusal } from "../compatibility";
 
 /* TS narrows `signal.aborted` to false after the first guard and keeps the
@@ -705,14 +710,34 @@ export const buildChartDocumentCandidate: BuildChartDocumentCandidate = (
   return Object.freeze({ ok: true, value: shape });
 };
 
-export function createPrepareImportPreviewCoordinator(
-  dependencies: PrepareImportPreviewDependencies,
-): PrepareImportPreview {
-  return (
-    request: PrepareImportPreviewRequest,
-  ): PrepareImportPreviewResult => {
-    const payload = request.payload;
-    const formatHint = request.formatHint;
+/**
+ * The impact resolver is the single point where v1 and v2 previews differ:
+ * v1 recomputes the disclosure from the state-bearing impact context after
+ * the candidate exists; v2 (E0V2-RES-02) receives the composition-computed
+ * projection with an application-allocated command seed, and the owner
+ * recomputes at preparation — the projection is never authority.
+ */
+type ResolvePreviewImpact = (
+  candidate: ValidatedDocument,
+) =>
+  | Readonly<{
+      ok: true;
+      impact: ImportReplacementImpact;
+      command: ImportReplacementCommandSeed;
+    }>
+  | Readonly<{ ok: false }>;
+
+function runPrepareImportPreview(
+  dependencies: Omit<
+    PrepareImportPreviewDependencies,
+    "assessImportReplacementImpact"
+  >,
+  payload: ImportPayload,
+  formatHint: ImportFormatHint,
+  confirmationSeed: ImportNonUndoableConfirmationSeed,
+  resolveImpact: ResolvePreviewImpact,
+): PrepareImportPreviewResult {
+  {
 
     const makeRefusal = (
       code: ImportIssueCode,
@@ -1013,17 +1038,15 @@ export function createPrepareImportPreviewCoordinator(
       migrationRejectedEvents: 0,
     });
 
-    const impactRes = dependencies.assessImportReplacementImpact(
-      request.replacementImpactContext,
-      candidateDoc,
-    );
+    const impactRes = resolveImpact(candidateDoc);
     if (!impactRes.ok) {
       return makeRefusal(
         "import.replacement_impact_unavailable",
         "preview-publication",
       );
     }
-    const impact = impactRes.value;
+    const impact = impactRes.impact;
+    const commandSeed = impactRes.command;
 
     const report: ImportPreviewReport = Object.freeze({
       totalItems: reportItems.length,
@@ -1050,7 +1073,7 @@ export function createPrepareImportPreviewCoordinator(
       summary: previewSummary,
       issues,
       report,
-      replacementCommandSeed: request.replacementImpactContext.command,
+      replacementCommandSeed: commandSeed,
       rawSourceRetained: false as const,
       autoApplyAuthorized: false as const,
     };
@@ -1065,10 +1088,10 @@ export function createPrepareImportPreviewCoordinator(
     } else {
       const req: ImportNonUndoableConfirmationRequirement = Object.freeze({
         schema: IMPORT_NONUNDOABLE_CONFIRMATION_SCHEMA,
-        confirmationId: request.nonUndoableConfirmationSeed.confirmationId,
+        confirmationId: confirmationSeed.confirmationId,
         identity: payload.identity,
         candidateDocumentId: candidateDoc.id,
-        commandId: request.replacementImpactContext.command.id,
+        commandId: commandSeed.id,
         disclosedImpact: impact,
       });
       const preview: ExplicitlyUnavailableImportPreview = Object.freeze({
@@ -1078,7 +1101,59 @@ export function createPrepareImportPreviewCoordinator(
       });
       return Object.freeze({ ok: true, value: preview });
     }
-  };
+  }
+}
+
+export function createPrepareImportPreviewCoordinator(
+  dependencies: PrepareImportPreviewDependencies,
+): PrepareImportPreview {
+  return (request: PrepareImportPreviewRequest): PrepareImportPreviewResult =>
+    runPrepareImportPreview(
+      dependencies,
+      request.payload,
+      request.formatHint,
+      request.nonUndoableConfirmationSeed,
+      (candidate) => {
+        const assessed = dependencies.assessImportReplacementImpact(
+          request.replacementImpactContext,
+          candidate,
+        );
+        if (!assessed.ok) return Object.freeze({ ok: false as const });
+        return Object.freeze({
+          ok: true as const,
+          impact: assessed.value,
+          command: request.replacementImpactContext.command,
+        });
+      },
+    );
+}
+
+/**
+ * E0V2-RES-02 production preview: state-free request; the disclosure is
+ * the composition-computed projection and the displayed command seed is
+ * application-allocated before the preview (the same provenance rule as
+ * the confirmation seed — the preview cannot mint either token).
+ */
+export function createPrepareImportPreviewCoordinatorV2(
+  dependencies: Omit<
+    PrepareImportPreviewDependencies,
+    "assessImportReplacementImpact"
+  >,
+  allocateReplacementCommandSeed: () => ImportReplacementCommandSeed,
+): (request: PrepareImportPreviewRequestV2) => PrepareImportPreviewResult {
+  return (request: PrepareImportPreviewRequestV2): PrepareImportPreviewResult =>
+    runPrepareImportPreview(
+      dependencies,
+      request.payload,
+      request.formatHint,
+      request.nonUndoableConfirmationSeed,
+      () =>
+        Object.freeze({
+          ok: true as const,
+          impact: request.replacementImpactProjection,
+          command: allocateReplacementCommandSeed(),
+        }),
+    );
 }
 
 /* The v2 transaction driver lives in ./e0-transaction-driver: the accepted

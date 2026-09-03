@@ -20,15 +20,21 @@
  * honestly with `retirementEffect: "none"`. Installing a fake success
  * adapter is forbidden by the contract.
  */
-import type {
-  A0E0InterchangeOwnerPorts,
-  ApplicationDocumentIdentity,
-  ImportRequestIdentity,
-  PreparedImportReplacementPublication,
+import {
+  IMPORT_REPLACEMENT_ORIGIN_BY_SOURCE_FORMAT,
+  type A0E0InterchangeOwnerPorts,
+  type ApplicationDocumentIdentity,
+  type ImportReplacementSourceIdentity,
+  type ImportRequestIdentity,
+  type PrepareImportReplacementPublicationRequest,
+  type PreparedImportReplacementPublication,
+  type RetiringTransportDocumentTransition,
 } from "./application-interchange-owner-contract";
 import type { ReplacementRetirementReceipt } from "./application-state-contract";
 import {
   X1_REPLACEMENT_RETIREMENT_EVIDENCE_SCHEMA,
+  type ImportNonUndoableConfirmationAcknowledgement,
+  type ImportPreview,
   type RetireImportReplacementRequest,
   type X1ReplacementRetirementAdapter,
 } from "./e0-interchange-contract";
@@ -47,6 +53,96 @@ import {
 export type E0V2TransactionDriver = (
   request: CommitImportReplacementRequestV2,
 ) => Promise<CommitImportReplacementResultV2>;
+
+export type ProjectPreviewToCommitRequestV2Result =
+  | Readonly<{ ok: true; value: CommitImportReplacementRequestV2 }>
+  | Readonly<{
+      ok: false;
+      code:
+        | "history.nonundoable_confirmation_required"
+        | "import.replacement_transition_mismatch";
+    }>;
+
+/**
+ * E0V2-RES-03: the exact preview-to-owner-request projection. Every owner
+ * request field comes from exactly one declared preview field — identity
+ * from the preview's request token, source format/origin from the routed
+ * source, the validated candidate BY REFERENCE (never re-decoded), the
+ * displayed command seed, the RES-02 disclosed impact, the exact
+ * retiring-transport transition, and the RES-04 acknowledgement. The
+ * confirmation binding retains verbatim the requirement the preview
+ * displayed (null for the retained disposition, where none is shown);
+ * the driver proves the byte match before the owner call. Refusals:
+ * an explicitly-unavailable preview with no acknowledgement is
+ * `history.nonundoable_confirmation_required`; a transition whose
+ * disposition disagrees with the preview's disclosure is
+ * `import.replacement_transition_mismatch`. Both are total and precede
+ * every owner call.
+ */
+export function projectPreviewToCommitRequestV2(
+  preview: ImportPreview,
+  currentTransition: RetiringTransportDocumentTransition,
+  acknowledgement: ImportNonUndoableConfirmationAcknowledgement | null,
+): ProjectPreviewToCommitRequestV2Result {
+  if (
+    currentTransition.undoDisposition !==
+    preview.replacementImpact.undoDisposition
+  ) {
+    return Object.freeze({
+      ok: false as const,
+      code: "import.replacement_transition_mismatch" as const,
+    });
+  }
+  /* "owner-table-for-source-format": the origin is never taken from the
+   * preview field — the owner table is the sole pairing authority. */
+  const sourceIdentity = Object.freeze({
+    sourceFormat: preview.sourceFormat,
+    replacementOrigin:
+      IMPORT_REPLACEMENT_ORIGIN_BY_SOURCE_FORMAT[preview.sourceFormat],
+  }) as ImportReplacementSourceIdentity;
+  let ownerRequest: PrepareImportReplacementPublicationRequest;
+  if (preview.nonUndoableConfirmationRequirement === null) {
+    ownerRequest = Object.freeze({
+      identity: preview.identity,
+      ...sourceIdentity,
+      candidate: preview.candidate,
+      replacementCommandSeed: preview.replacementCommandSeed,
+      disclosedImpact: preview.replacementImpact,
+      currentTransition: currentTransition as RetiringTransportDocumentTransition &
+        Readonly<{ undoDisposition: "retained" }>,
+      nonUndoableConfirmation: null,
+    });
+  } else {
+    if (acknowledgement === null) {
+      return Object.freeze({
+        ok: false as const,
+        code: "history.nonundoable_confirmation_required" as const,
+      });
+    }
+    ownerRequest = Object.freeze({
+      identity: preview.identity,
+      ...sourceIdentity,
+      candidate: preview.candidate,
+      replacementCommandSeed: preview.replacementCommandSeed,
+      disclosedImpact: preview.replacementImpact,
+      currentTransition: currentTransition as RetiringTransportDocumentTransition &
+        Readonly<{ undoDisposition: "explicitly-unavailable" }>,
+      nonUndoableConfirmation: acknowledgement,
+    });
+  }
+  return Object.freeze({
+    ok: true as const,
+    value: Object.freeze({
+      schema: E0_V2_COMMIT_REQUEST_SCHEMA,
+      ownerRequest,
+      confirmationBinding: Object.freeze({
+        displayedRequirement: preview.nonUndoableConfirmationRequirement,
+        acknowledgement,
+        byteMatchProvedBeforeOwnerCall: true as const,
+      }),
+    }),
+  });
+}
 
 /**
  * The honest stand-in demanded by the contract while X1's serialized
