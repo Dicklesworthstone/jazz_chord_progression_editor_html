@@ -5,6 +5,7 @@ import {
   type DomainPath,
 } from "../domain";
 import type {
+  ChartDiagnostic,
   SymbolDiagnostic,
 } from "../theory";
 import {

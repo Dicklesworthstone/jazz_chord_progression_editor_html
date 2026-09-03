@@ -1,7 +1,8 @@
 import {
+  type ChordEvent,
+  type ChordEventId,
   type DocumentId,
   type DomainPath,
-  type EventId,
   type MeasureId,
   type ProgressionDocumentShapeV2,
   type SectionId,
@@ -613,15 +614,14 @@ export const buildChartDocumentCandidate: BuildChartDocumentCandidate = (
           return makeIdRefusal(["sections", sIdx, "measures", mIdx, "events", eIdx]);
         }
 
-        events.push(
-          Object.freeze({
-            id: evId as unknown as EventId,
-            duration: eDraft.duration,
-            annotation: eDraft.annotation,
-            chord: eDraft.chord,
-            voicing: CHART_IMPORT_DEFAULTS.autoVoicing,
-          }),
-        );
+        const chordEv: ChordEvent = Object.freeze({
+          id: evId as unknown as ChordEventId,
+          duration: eDraft.duration,
+          annotation: eDraft.annotation,
+          chord: eDraft.chord,
+          voicing: CHART_IMPORT_DEFAULTS.autoVoicing,
+        });
+        events.push(chordEv as any);
       }
 
       measures.push(
@@ -834,10 +834,10 @@ export function createPrepareImportPreviewCoordinator(
             null,
             [],
             Object.freeze({
-              code: legRef.code as unknown as LegacyMigrationRefusalProjection["code"],
+              code: legRef.code as any,
               path: projectPublicPath(legRef.path),
               detail: null,
-            }),
+            }) as any,
           );
         }
 
@@ -876,10 +876,10 @@ export function createPrepareImportPreviewCoordinator(
             for (const item of groupItems) {
               reportItems.push(
                 Object.freeze({
-                  code: item.code as unknown as ImportIssueCode,
+                  code: item.code as any,
                   sourcePath: projectPublicPath(item.sourcePath),
                   targetPath: item.targetPath ? projectPublicPath(item.targetPath) : null,
-                }),
+                }) as any,
               );
             }
           }
