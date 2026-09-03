@@ -118,6 +118,7 @@ export default tseslint.config(
       "dist/**",
       "eslint.config.mjs",
       "jazz_chord_progression_editor.html",
+      "ios/TheoryBridge/**",
       "node_modules/**",
       /* Owner-supplied design prototype: reference material with fake guts,
          ported piecewise by jcpe-v2-redesign-z323, never released. */
@@ -147,6 +148,11 @@ export default tseslint.config(
   {
     files: ["src/**/*.{ts,tsx}"],
     languageOptions: project("./tsconfig.app.json"),
+    rules: typedSourceRules,
+  },
+  {
+    files: ["ios/TheoryBridgeSource/**/*.ts"],
+    languageOptions: project("./tsconfig.tests.json"),
     rules: typedSourceRules,
   },
   {

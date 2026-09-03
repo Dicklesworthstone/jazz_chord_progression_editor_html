@@ -57,6 +57,8 @@ final class JazzStudioStore: ObservableObject {
     @Published private(set) var canUndo = false
     @Published private(set) var canRedo = false
     @Published private(set) var revision = 0
+    @Published private(set) var continuationOptions: [JazzContinuationOption] = []
+    @Published private(set) var continuationIssue: String?
 
     let audio = JazzAudioEngine()
 
@@ -69,11 +71,16 @@ final class JazzStudioStore: ObservableObject {
     private var importFence = JazzImportFence()
     private var audioChanges: AnyCancellable?
     private let recovery: JazzRecoveryStore
+    private let theoryBridge: JazzTheoryBridge
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
 
-    init(recovery: JazzRecoveryStore = JazzRecoveryStore()) {
+    init(
+        recovery: JazzRecoveryStore = JazzRecoveryStore(),
+        theoryBridge: JazzTheoryBridge? = nil
+    ) {
         self.recovery = recovery
+        self.theoryBridge = theoryBridge ?? JazzTheoryBridge()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         encoder.dateEncodingStrategy = .iso8601
         decoder.dateDecodingStrategy = .iso8601
@@ -97,6 +104,7 @@ final class JazzStudioStore: ObservableObject {
             self?.objectWillChange.send()
         }
         audio.prime(chart: chart)
+        refreshContinuations()
     }
 
     deinit {
@@ -454,7 +462,59 @@ final class JazzStudioStore: ObservableObject {
 
     func select(_ chord: JazzChordEvent, showInspector: Bool = false) {
         selectedChordID = chord.id
+        refreshContinuations()
         if showInspector { isInspectorPresented = true }
+    }
+
+    func applyContinuation(_ option: JazzContinuationOption) {
+        guard option.sourceRevision == revision,
+              continuationOptions.contains(option) else {
+            notice = "That suggestion is stale because the chart changed. Review the refreshed options."
+            refreshContinuations()
+            return
+        }
+        guard JazzTheory.parseChord(option.candidate.chordSymbol, in: chart.key) != nil,
+              let location = selectedLocation else {
+            notice = "That continuation cannot be represented by this native chart yet."
+            return
+        }
+
+        let target: (measure: Int, chord: Int)?
+        if chart.measures[location.measure].chords.indices.contains(location.chord + 1) {
+            target = (location.measure, location.chord + 1)
+        } else if chart.measures.indices.contains(location.measure + 1),
+                  !chart.measures[location.measure + 1].chords.isEmpty {
+            target = (location.measure + 1, 0)
+        } else {
+            target = nil
+        }
+
+        audio.stop()
+        if let target {
+            let existing = chart.measures[target.measure].chords[target.chord]
+            guard existing.symbol != option.candidate.chordSymbol else {
+                selectedChordID = existing.id
+                notice = "The next change is already \(existing.symbol)."
+                refreshContinuations()
+                return
+            }
+            selectedChordID = existing.id
+            mutate { chart in
+                chart.measures[target.measure].chords[target.chord].symbol = option.candidate.chordSymbol
+                chart.measures[target.measure].chords[target.chord].frozenMIDIPitches = nil
+                chart.measures[target.measure].chords[target.chord].manualMIDIPitches = nil
+            }
+            notice = "Used \(option.candidate.chordSymbol) for the next change. Undo restores the prior harmony."
+        } else {
+            guard chart.measures.count < JazzTheory.maximumMeasures else {
+                notice = "The chart is at its bar limit; no continuation was applied."
+                return
+            }
+            let chord = JazzChordEvent(symbol: option.candidate.chordSymbol)
+            selectedChordID = chord.id
+            mutate { $0.measures.append(JazzMeasure(chords: [chord])) }
+            notice = "Added \(option.candidate.chordSymbol) as a new final bar. Undo removes it."
+        }
     }
 
     func duplicateSelectedChord() {
@@ -734,6 +794,7 @@ final class JazzStudioStore: ObservableObject {
         canRedo = !redoStack.isEmpty
         if let notice { self.notice = notice }
         if selectedChord == nil { selectedChordID = chart.measures.first?.chords.first?.id }
+        refreshContinuations()
         draftText = chart.chartText
         draftState = .current
         recovery.save(chart)
@@ -742,6 +803,29 @@ final class JazzStudioStore: ObservableObject {
             try? await Task.sleep(for: .milliseconds(280))
             guard !Task.isCancelled, let self else { return }
             self.audio.prime(chart: self.chart)
+        }
+    }
+
+    private func refreshContinuations() {
+        let chords = chart.measures.flatMap(\.chords)
+        guard let selectedChordID,
+              let selectedIndex = chords.firstIndex(where: { $0.id == selectedChordID }) else {
+            continuationOptions = []
+            continuationIssue = "Select a change to explore what could follow it."
+            return
+        }
+        let context = chords.prefix(selectedIndex + 1).suffix(8).map(\.symbol)
+        switch theoryBridge.continuations(for: Array(context)) {
+        case let .success(candidates):
+            continuationOptions = candidates.map {
+                JazzContinuationOption(candidate: $0, sourceRevision: revision)
+            }
+            continuationIssue = candidates.isEmpty
+                ? "The bounded engine found no supported option for this context."
+                : nil
+        case let .failure(issue):
+            continuationOptions = []
+            continuationIssue = issue.localizedDescription
         }
     }
 

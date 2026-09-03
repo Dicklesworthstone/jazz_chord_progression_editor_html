@@ -611,6 +611,7 @@ private struct ChordInspectorView: View {
                         annotationCard(chord)
                         pianoCard(description)
                         voicingCard()
+                        continuationCard()
                         evidenceCard(description)
                     } else {
                         ContentUnavailableView("Select a chord", systemImage: "music.quarternote.3", description: Text("Tap any change in the lead sheet to inspect its sound and motion."))
@@ -836,7 +837,7 @@ private struct ChordInspectorView: View {
     private func evidenceCard(_ description: ChordDescription) -> some View {
         JazzPanel(accent: JazzTheme.violet) {
             VStack(alignment: .leading, spacing: 10) {
-                JazzSectionLabel(number: "08", title: "What is factual", tint: JazzTheme.violet)
+                JazzSectionLabel(number: "09", title: "What is factual", tint: JazzTheme.violet)
                 evidenceRow("Literal", "The symbol resolves to \(description.toneNames.joined(separator: ", ")).")
                 evidenceRow(
                     "Context",
@@ -852,6 +853,68 @@ private struct ChordInspectorView: View {
                     .foregroundStyle(JazzTheme.secondary)
             }
         }
+    }
+
+    private func continuationCard() -> some View {
+        JazzPanel(accent: JazzTheme.brass) {
+            VStack(alignment: .leading, spacing: 11) {
+                HStack(alignment: .firstTextBaseline) {
+                    JazzSectionLabel(number: "08", title: "Next changes", tint: JazzTheme.brass)
+                    Spacer()
+                    Text("G2 · BOUNDED")
+                        .font(.system(size: JazzTheme.size(8), weight: .bold, design: .monospaced))
+                        .foregroundStyle(JazzTheme.secondary)
+                }
+
+                Text("Options from the source-owned continuation engine—not predictions or rules you must follow.")
+                    .font(.system(size: JazzTheme.size(10.5), design: .rounded))
+                    .foregroundStyle(JazzTheme.secondary)
+
+                if let issue = store.continuationIssue {
+                    Label(issue, systemImage: "info.circle")
+                        .font(.system(size: JazzTheme.size(10.5), design: .rounded))
+                        .foregroundStyle(JazzTheme.secondary)
+                } else {
+                    ForEach(store.continuationOptions) { option in
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack(alignment: .firstTextBaseline) {
+                                Text(option.candidate.chordSymbol)
+                                    .font(.system(size: JazzTheme.size(22), weight: .bold, design: .serif))
+                                    .foregroundStyle(JazzTheme.paper)
+                                Spacer()
+                                Text(option.candidate.category.replacingOccurrences(of: "-", with: " ").uppercased())
+                                    .font(.system(size: JazzTheme.size(7.5), weight: .bold, design: .monospaced))
+                                    .foregroundStyle(JazzTheme.brass)
+                            }
+                            Text(option.candidate.whyExplanation)
+                                .font(.system(size: JazzTheme.size(10.5), design: .rounded))
+                                .foregroundStyle(JazzTheme.text)
+                                .lineSpacing(2)
+                            HStack(spacing: 12) {
+                                Label(
+                                    option.candidate.expectedMotion.replacingOccurrences(of: "-", with: " "),
+                                    systemImage: "arrow.triangle.swap"
+                                )
+                                Label(
+                                    option.candidate.preservedGuideTones ? "guide tones kept" : "new guide-tone color",
+                                    systemImage: option.candidate.preservedGuideTones ? "link" : "sparkles"
+                                )
+                            }
+                            .font(.system(size: JazzTheme.size(8.5), weight: .semibold, design: .rounded))
+                            .foregroundStyle(JazzTheme.secondary)
+                            Button("Use for next change") { store.applyContinuation(option) }
+                                .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.brass))
+                                .accessibilityHint("Applies this option as one undoable edit if the chart has not changed")
+                        }
+                        .padding(12)
+                        .background(JazzTheme.raised, in: RoundedRectangle(cornerRadius: 14))
+                        .accessibilityElement(children: .contain)
+                        .accessibilityIdentifier("continuation-option-\(option.candidate.rank)")
+                    }
+                }
+            }
+        }
+        .accessibilityIdentifier("continuation-lab")
     }
 
     private func evidenceRow(_ label: String, _ text: String) -> some View {

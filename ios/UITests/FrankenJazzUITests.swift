@@ -26,6 +26,20 @@ final class FrankenJazzUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Tonic family"].exists)
     }
 
+    func testInspectorDiscoversSourceOwnedContinuationOptions() throws {
+        let firstChord = app.buttons.matching(
+            NSPredicate(format: "label BEGINSWITH 'Measure 1, Cmaj9'")
+        ).firstMatch
+        XCTAssertTrue(firstChord.waitForExistence(timeout: 3))
+        firstChord.tap()
+
+        let lab = app.descendants(matching: .any)["continuation-lab"]
+        for _ in 0..<6 where !lab.isHittable { app.swipeUp() }
+        XCTAssertTrue(lab.waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["G2 · BOUNDED"].exists)
+        XCTAssertTrue(app.buttons["Use for next change"].firstMatch.exists)
+    }
+
     func testAppearanceTogglePersistsLightModeAcrossLaunches() throws {
         let toggle = app.buttons["appearance-toggle"]
         XCTAssertTrue(toggle.waitForExistence(timeout: 3))

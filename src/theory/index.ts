@@ -253,7 +253,6 @@ export {
 export { makeAtlasQueryAdapter } from "./atlas-query";
 export { g1Operations, type G1Operations } from "./g1-operations";
 
-export * from "./g2-contract";
 export { generateContextualContinuations } from "./contextual-continuation";
 export { g2Operations, type G2Operations } from "./g2-operations";
 

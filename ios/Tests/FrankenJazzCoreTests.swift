@@ -1089,6 +1089,82 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertEqual(realized.count, VoicingFamily.allCases.count, "Every advertised family must produce a distinct realization")
     }
 
+    @MainActor
+    func testBundledContinuationBridgeReturnsAuthoritativeFunctionalResolution() throws {
+        let bridge = JazzTheoryBridge()
+        let candidates = try bridge.continuations(for: ["Dm7", "G7"]).get()
+
+        let tonic = try XCTUnwrap(candidates.first)
+        XCTAssertEqual(tonic.chordSymbol, "Cmaj7")
+        XCTAssertEqual(tonic.category, "functional")
+        XCTAssertEqual(tonic.providerID, "provider.functional.circle-cadence")
+        XCTAssertEqual(tonic.expectedMotion, "cycle-fifth")
+        XCTAssertTrue(tonic.preservedGuideTones)
+        XCTAssertEqual(candidates.map(\.rank), Array(1...candidates.count))
+        XCTAssertTrue(candidates.contains {
+            $0.chordSymbol == "Cm7" && $0.category == "functional"
+        })
+        XCTAssertEqual(
+            bridge.continuations(for: []),
+            .failure(.refused("The selected context must contain 1 through 8 bounded chord symbols."))
+        )
+    }
+
+    @MainActor
+    func testContinuationApplyIsSingleStepUndoableAndRejectsStaleOptions() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FrankenJazzContinuationTests-" + UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let recovery = JazzRecoveryStore(directory: directory)
+        recovery.save(JazzChart(
+            title: "Cadence",
+            measures: try JazzTheory.parseChart("| Dm7 G7 |").measures
+        ))
+        let store = JazzStudioStore(recovery: recovery)
+        let dominant = try XCTUnwrap(store.chart.measures.first?.chords.last)
+        store.select(dominant)
+        let option = try XCTUnwrap(store.continuationOptions.first { $0.candidate.chordSymbol == "Cmaj7" })
+        let revisionBeforeApply = store.revision
+
+        store.applyContinuation(option)
+
+        XCTAssertEqual(store.chart.measures.count, 2)
+        XCTAssertEqual(store.chart.measures.last?.chords.first?.symbol, "Cmaj7")
+        XCTAssertEqual(store.revision, revisionBeforeApply + 1)
+        XCTAssertTrue(store.canUndo)
+        store.undo()
+        XCTAssertEqual(store.chart.measures.count, 1)
+        XCTAssertEqual(store.chart.measures.first?.chords.map(\.symbol), ["Dm7", "G7"])
+
+        store.select(try XCTUnwrap(store.chart.measures.first?.chords.last))
+        let stale = try XCTUnwrap(store.continuationOptions.first)
+        let measuresBeforeStaleApply = store.chart.measures
+        store.updateTitle("Revised cadence")
+        store.applyContinuation(stale)
+        XCTAssertEqual(store.chart.measures, measuresBeforeStaleApply)
+        XCTAssertEqual(store.notice, "That suggestion is stale because the chart changed. Review the refreshed options.")
+    }
+
+    @MainActor
+    func testContinuationBridgeFailsClosedOnForeignEngineSchema() {
+        let bridge = JazzTheoryBridge(script: """
+        globalThis.FrankenJazzTheoryBridge = {
+          continuations: function(_) {
+            return JSON.stringify({
+              schema: "frankenjazz.native-continuation-response.v1",
+              ok: true,
+              engineSchema: "changes.continuation-result.v999",
+              candidates: []
+            });
+          }
+        };
+        """)
+
+        XCTAssertEqual(bridge.continuations(for: ["G7"]), .failure(.malformed))
+    }
+
     /// Hand-assembled independently from the production writer: format 1,
     /// conductor tempo/meter, and a voicing track whose later note-on and all
     /// velocity-zero note-offs use running status.

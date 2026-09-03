@@ -54,6 +54,8 @@
     "test": "bun test",
     "test:e2e": "bun scripts/run-playwright.ts test",
     "build": "bun scripts/build.ts",
+    "build:ios-theory-bridge": "bun scripts/build-ios-theory-bridge.ts",
+    "check:ios-theory-bridge": "bun scripts/build-ios-theory-bridge.ts --check",
     "predeploy:check": "bun scripts/check-predeploy.ts && bun scripts/run-instrument-quality-gate.ts",
     "predeploy:playback": "node scripts/check-predeploy-playback.ts",
     "deploy": "bun scripts/deploy.ts",

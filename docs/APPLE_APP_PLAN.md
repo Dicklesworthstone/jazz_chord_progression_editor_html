@@ -1,9 +1,9 @@
 # FrankenJazz Apple App Plan
 
 Status: implementation baseline, reviewed against the live TypeScript source on
-2026-08-30. The web README still describes an earlier checkpoint; this plan is
-based on the current application, theory, playback, audio, export, and library
-modules.
+2026-09-02. The native app consumes the source-owned G2 continuation engine
+through a generated JavaScriptCore bridge; the remaining G0-G1/G3-G9 discovery
+surfaces stay explicitly outside the shipped native boundary.
 
 ## Product promise
 
@@ -48,13 +48,15 @@ parsed as data and never interpreted as HTML or a URL.
 | M0/M1 MIDI import doctrine | Bounded SMF 0/1 decoding; accepted named cells retain their exact MIDI stack as editable Manual voicings, conventional DAW note-state quirks are repaired into a reported salvage ledger, and structural corruption still refuses |
 | JSON/text/MIDI exporters | Real files delivered through the system share/export sheet |
 | recovery lifecycle | Atomic Application Support JSON with current and previous valid envelopes |
+| G2 contextual continuation | Generated offline JavaScriptCore bundle over the authoritative domain/theory modules; native Next Change cards preserve bounded results, explanations, and revision-checked application |
 
-The web project contains much deeper deterministic research workflows (route
+The web project contains additional deterministic research workflows (route
 planning, constraint harmonization, reharmonization branches, tonal journey,
 practice generation, and the compiled Atlas). Those are not represented by
-nonfunctional buttons in release one. Their future native port must consume the
-same deterministic rules and proof metadata, with results labeled as literal,
-contextual, or optional exactly as the web architecture requires.
+nonfunctional buttons. Their future native surfaces must consume the same
+deterministic rules and proof metadata, as the G2 bridge does, with results
+labeled as literal, contextual, or optional exactly as the web architecture
+requires.
 
 ## Adaptive experience
 
