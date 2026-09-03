@@ -163,17 +163,27 @@ function createHarness(options: HarnessOptions = {}) {
   }
 
   const ownerRequest: PrepareImportReplacementPublicationRequest =
-    Object.freeze({
-      identity,
-      sourceFormat: "canonical-json-v2",
-      replacementOrigin: "canonical-import",
-      candidate,
-      replacementCommandSeed: seed,
-      disclosedImpact:
-        disposition === "retained" ? retainedImpact : unavailableImpact,
-      currentTransition: transition,
-      nonUndoableConfirmation: acknowledgement,
-    });
+    disposition === "retained"
+      ? Object.freeze({
+          identity,
+          sourceFormat: "canonical-json-v2" as const,
+          replacementOrigin: "canonical-import" as const,
+          candidate,
+          replacementCommandSeed: seed,
+          disclosedImpact: retainedImpact,
+          currentTransition: transition as any,
+          nonUndoableConfirmation: null,
+        })
+      : Object.freeze({
+          identity,
+          sourceFormat: "canonical-json-v2" as const,
+          replacementOrigin: "canonical-import" as const,
+          candidate,
+          replacementCommandSeed: seed,
+          disclosedImpact: unavailableImpact,
+          currentTransition: transition as any,
+          nonUndoableConfirmation: acknowledgement,
+        });
 
   return {
     composition,

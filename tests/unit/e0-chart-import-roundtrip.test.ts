@@ -151,7 +151,7 @@ describe("E0 chart-text golden round trip", () => {
     expect(value.playback.instrumentId).toBe("mellow-keys");
     expect(value.playback.grooveStyleId).toBeUndefined();
     const firstEvent = value.sections[0]?.measures[0]?.events[0];
-    expect(firstEvent?.voicing).toEqual(CHART_IMPORT_DEFAULTS.autoVoicing);
+    expect(firstEvent?.voicing).toEqual(CHART_IMPORT_DEFAULTS.autoVoicing as any);
     expect(String(value.id)).toBe("document-0001");
     expect(String(value.sections[0]?.id)).toBe("section-0001");
   });

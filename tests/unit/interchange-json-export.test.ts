@@ -21,14 +21,14 @@ import {
   serializeCanonicalDocument,
 } from "../../src/export/interchange-json";
 import type { CanonicalJsonExportDependencies } from "../../src/export/interchange-contract";
-import type { ValidatedDocument } from "../../src/domain";
+import type { DomainPath, ValidatedDocument } from "../../src/domain";
 
 const fixtureRoot = resolve(import.meta.dirname, "../fixtures/interchange");
 
 const realDependencies: CanonicalJsonExportDependencies = Object.freeze({
   decodeDocumentShape,
   validateCanonicalRoundTrip: (candidate: unknown) => {
-    const result = validateDocumentSemantics(candidate);
+    const result = validateDocumentSemantics(candidate as any);
     if (result.ok) return { ok: true as const, value: result.value };
     return {
       ok: false as const,
