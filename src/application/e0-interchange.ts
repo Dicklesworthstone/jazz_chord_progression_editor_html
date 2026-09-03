@@ -78,7 +78,9 @@ import {
   MAX_IMPORT_PUBLIC_PATH_SEGMENTS,
   MIN_CANONICAL_EXPORT_PREPARATION_ID,
   PREPARED_CANONICAL_EXPORT_DELIVERY_SCHEMA,
+  type AbandonCanonicalExportPreparationResult,
   type AssessImportReplacementImpact,
+  type BeginCanonicalExportPreparationResult,
   type BuildChartDocumentCandidate,
   type CanonicalExportMarkerCandidate,
   type CanonicalExportMarkerSettlementAdapters,
@@ -820,44 +822,61 @@ export function createPrepareImportPreviewCoordinator(
         return makeRefusal("import.format_mismatch", "schema-route");
       }
       if (formatHint === "legacy-json" && route === "canonical-v2") {
-        return makeRefusal("import.format_mismatch", "schema-route");
-      }
-
-      if (route === "future-canonical") {
-        return makeRefusal("import.future_schema_unsupported", "schema-route");
-      }
       if (route === "unsupported-schema") {
-        return makeRefusal("import.schema_unsupported", "schema-route");
+        return makeRefusal(
+          "import.unsupported_schema",
+          "schema-route",
+          Object.freeze(["schema"] as const),
+        );
+      }
+      if (route === "future-canonical") {
+        return makeRefusal(
+          "import.future_canonical_schema",
+          "schema-route",
+          Object.freeze(["schema"] as const),
+        );
       }
       if (route === "unversioned-unrecognized") {
-        return makeRefusal("import.json_shape_unrecognized", "schema-route");
+        return makeRefusal(
+          "import.unrecognized_format",
+          "schema-route",
+          Object.freeze([] as const),
+        );
+      }
+      if (route === "host-parse-to-diagnose-malformed") {
+        const parsed = dependencies.parseJsonData(text);
+        if (!parsed.ok) {
+          return makeRefusal(
+            parsed.code,
+            "json-parse-or-legacy-migration",
+            projectPublicPath(parsed.path),
+            parsed.range,
+          );
+        }
+        return makeRefusal(
+          "import.unrecognized_format",
+          "schema-route",
+          Object.freeze([] as const),
+        );
       }
 
-      if (route === "canonical-v2" || route === "host-parse-to-diagnose-malformed") {
-        const parsedRes = dependencies.parseJsonData(text);
-        if (!parsedRes.ok) {
-          return makeRefusal(parsedRes.code, "json-parse-or-legacy-migration", Object.freeze([] as const), parsedRes.range);
-        }
-        if (route === "host-parse-to-diagnose-malformed") {
-          return makeRefusal("import.json_shape_unrecognized", "schema-route");
+      if (route === "canonical-v2") {
+        const parsed = dependencies.parseJsonData(text);
+        if (!parsed.ok) {
+          return makeRefusal(
+            parsed.code,
+            "json-parse-or-legacy-migration",
+            projectPublicPath(parsed.path),
+            parsed.range,
+          );
         }
 
-        const decoded = dependencies.decodeDocumentShape(parsedRes.value);
+        const decoded = dependencies.decodeDocumentShape(parsed.value);
         if (!decoded.ok) {
-          const firstErr = decoded.errors[0];
           return makeRefusal(
             "import.canonical_structural_invalid",
             "structural-decode",
-            projectPublicPath(firstErr.path),
-            null,
-            decoded.errors.map((e) =>
-              Object.freeze({
-                code: e.code as ImportIssueCode,
-                stage: "structural-decode" as const,
-                path: projectPublicPath(e.path),
-                range: null,
-              }),
-            ),
+            projectPublicPath(decoded.errors[0].path),
           );
         }
 
@@ -865,7 +884,7 @@ export function createPrepareImportPreviewCoordinator(
         if (!validated.ok) {
           const firstErr = validated.errors[0];
           return makeRefusal(
-            "import.canonical_semantic_invalid",
+            firstErr.code as ImportIssueCode,
             "semantic-validation",
             projectPublicPath(firstErr.path),
             null,
@@ -883,9 +902,9 @@ export function createPrepareImportPreviewCoordinator(
         candidateDoc = validated.value;
         sourceFormat = "canonical-json-v2";
         origin = "canonical-import";
-      } else if (route === "unversioned-legacy") {
+      } else {
         const legacyRes = dependencies.migrateLegacyJson(
-          payload.bytes,
+          Object.freeze({ sourceBytes: payload.bytes }),
           dependencies.legacyMigrationDependencies,
         );
         if (!legacyRes.ok) {
@@ -904,7 +923,8 @@ export function createPrepareImportPreviewCoordinator(
           );
         }
 
-        const decoded = dependencies.decodeDocumentShape(legacyRes.candidate);
+        const legacyCand = legacyRes.value;
+        const decoded = dependencies.decodeDocumentShape(legacyCand.document);
         if (!decoded.ok) {
           return makeRefusal(
             "import.canonical_structural_invalid",
@@ -926,8 +946,8 @@ export function createPrepareImportPreviewCoordinator(
         sourceFormat = "unversioned-legacy-json";
         origin = "legacy-import";
 
-        if (legacyRes.report && legacyRes.report.groups) {
-          for (const group of legacyRes.report.groups) {
+        if (legacyCand.report && legacyCand.report.groups) {
+          for (const group of legacyCand.report.groups) {
             for (const item of group.items) {
               reportItems.push(
                 Object.freeze({
@@ -1058,9 +1078,9 @@ export function createPrepareImportPreviewCoordinator(
     });
 
     const basePreview = {
-      schema: IMPORT_PREVIEW_SCHEMA,
-      policyId: IMPORT_PREVIEW_POLICY_ID,
-      policyVersion: IMPORT_PREVIEW_POLICY_VERSION,
+      schema: IMPORT_PREVIEW_SCHEMA as typeof IMPORT_PREVIEW_SCHEMA,
+      policyId: IMPORT_PREVIEW_POLICY_ID as typeof IMPORT_PREVIEW_POLICY_ID,
+      policyVersion: IMPORT_PREVIEW_POLICY_VERSION as typeof IMPORT_PREVIEW_POLICY_VERSION,
       identity: payload.identity,
       sourceFormat,
       replacementOrigin: origin,
@@ -1108,48 +1128,32 @@ export function createE0V2TransactionDriver(
   ): Promise<CommitImportReplacementResultV2> => {
     const ownerReq = request.ownerRequest;
     const identity = ownerReq.identity;
-    const binding = request.confirmationBinding;
 
-    // Step 1: Prove consent / provenance before calling owner (E0V2-RES-04)
+    // Step 1: Prove non-undoable consent provenance before preparing owner
     if (ownerReq.disclosedImpact.undoDisposition === "explicitly-unavailable") {
-      if (binding.acknowledgement === null) {
-        const observed = ownerPorts.readCurrentApplicationDocumentIdentity();
-        return Object.freeze({
-          ok: false,
-          outcome: "refused",
-          stage: "pre-owner-provenance",
-          code: "history.nonundoable_confirmation_required",
-          identity,
-          observedIdentity: observed,
-          liveForRequest: 0,
-        });
-      }
+      const binding = request.confirmationBinding;
       if (
         binding.displayedRequirement === null ||
-        !deepStructuralEqual(
-          binding.displayedRequirement,
-          binding.acknowledgement.requirement,
-        )
+        binding.acknowledgement === null ||
+        binding.byteMatchProvedBeforeOwnerCall !== true ||
+        binding.acknowledgement.kind !== "acknowledged" ||
+        binding.displayedRequirement.confirmationId !==
+          binding.acknowledgement.requirement.confirmationId ||
+        binding.displayedRequirement.candidateDocumentId !==
+          binding.acknowledgement.requirement.candidateDocumentId ||
+        binding.displayedRequirement.identity.requestId !==
+          binding.acknowledgement.requirement.identity.requestId ||
+        binding.displayedRequirement.identity.documentId !==
+          binding.acknowledgement.requirement.identity.documentId ||
+        binding.displayedRequirement.identity.baseRevision !==
+          binding.acknowledgement.requirement.identity.baseRevision
       ) {
         const observed = ownerPorts.readCurrentApplicationDocumentIdentity();
         return Object.freeze({
           ok: false,
           outcome: "refused",
           stage: "pre-owner-provenance",
-          code: "import.confirmation_identity_mismatch",
-          identity,
-          observedIdentity: observed,
-          liveForRequest: 0,
-        });
-      }
-    } else {
-      if (binding.acknowledgement !== null) {
-        const observed = ownerPorts.readCurrentApplicationDocumentIdentity();
-        return Object.freeze({
-          ok: false,
-          outcome: "refused",
-          stage: "pre-owner-provenance",
-          code: "import.confirmation_identity_mismatch",
+          code: "import.replacement_confirmation_missing",
           identity,
           observedIdentity: observed,
           liveForRequest: 0,
@@ -1157,7 +1161,7 @@ export function createE0V2TransactionDriver(
       }
     }
 
-    // Step 2: Prepare publication with owner port
+    // Step 2: Prepare with owner port
     let prepResult: ReturnType<typeof ownerPorts.prepareImportReplacementPublication>;
     try {
       prepResult = ownerPorts.prepareImportReplacementPublication(ownerReq);
@@ -1169,30 +1173,10 @@ export function createE0V2TransactionDriver(
         stage: "port-protocol",
         diagnostic: Object.freeze({
           port: "prepareImportReplacementPublication",
-          reason: "threw-or-rejected",
-          rawResultRetained: false,
+          error: "threw-or-rejected",
         }),
         identity,
         observedIdentity: observed,
-        reconciliation: "none",
-        liveForRequest: 0,
-      });
-    }
-
-    if (!isPlainRecord(prepResult) || typeof prepResult["ok"] !== "boolean") {
-      const observed = ownerPorts.readCurrentApplicationDocumentIdentity();
-      return Object.freeze({
-        ok: false,
-        outcome: "protocol-invalid",
-        stage: "port-protocol",
-        diagnostic: Object.freeze({
-          port: "prepareImportReplacementPublication",
-          reason: "invalid-envelope",
-          rawResultRetained: false,
-        }),
-        identity,
-        observedIdentity: observed,
-        reconciliation: "none",
         liveForRequest: 0,
       });
     }
@@ -1226,7 +1210,7 @@ export function createE0V2TransactionDriver(
     } catch {
       ownerPorts.discardImportReplacementPublication({
         identity,
-        reason: "transport-retirement-evidence-invalid",
+        reason: "retirement-protocol-invalid",
       });
       const observed = ownerPorts.readCurrentApplicationDocumentIdentity();
       return Object.freeze({
@@ -1249,7 +1233,7 @@ export function createE0V2TransactionDriver(
     ) {
       ownerPorts.discardImportReplacementPublication({
         identity,
-        reason: "transport-retirement-evidence-invalid",
+        reason: "retirement-protocol-invalid",
       });
       const observed = ownerPorts.readCurrentApplicationDocumentIdentity();
       return Object.freeze({
@@ -1263,10 +1247,10 @@ export function createE0V2TransactionDriver(
       });
     }
 
-    if (!retireRaw.ok) {
+    if (retireRaw["ok"] === false) {
       ownerPorts.discardImportReplacementPublication({
         identity,
-        reason: "transport-retirement-refused",
+        reason: "retirement-refused",
       });
       const observed = ownerPorts.readCurrentApplicationDocumentIdentity();
       return Object.freeze({
