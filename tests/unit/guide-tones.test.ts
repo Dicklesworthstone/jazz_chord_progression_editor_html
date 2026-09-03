@@ -29,9 +29,9 @@ describe("G6 Guide-Tone Engine", () => {
       expect(seventh).toBeDefined();
       if (third && seventh) {
         expect(spelledPitchClassToString(third.spelledPitchClass)).toBe("E");
-        expect(third.degree).toBe("3");
+        expect(third.degree).toEqual({ number: 3, alter: 0 });
         expect(spelledPitchClassToString(seventh.spelledPitchClass)).toBe("B");
-        expect(seventh.degree).toBe("7");
+        expect(seventh.degree).toEqual({ number: 7, alter: 0 });
       }
     });
 
@@ -45,9 +45,9 @@ describe("G6 Guide-Tone Engine", () => {
       expect(seventh).toBeDefined();
       if (third && seventh) {
         expect(spelledPitchClassToString(third.spelledPitchClass)).toBe("F");
-        expect(third.degree).toBe("b3");
+        expect(third.degree).toEqual({ number: 3, alter: -1 });
         expect(spelledPitchClassToString(seventh.spelledPitchClass)).toBe("C");
-        expect(seventh.degree).toBe("b7");
+        expect(seventh.degree).toEqual({ number: 7, alter: -1 });
       }
     });
 
@@ -75,7 +75,7 @@ describe("G6 Guide-Tone Engine", () => {
       expect(seventh).toBeDefined();
       if (sus && seventh) {
         expect(spelledPitchClassToString(sus.spelledPitchClass)).toBe("C");
-        expect(sus.degree).toBe("4");
+        expect(sus.degree).toEqual({ number: 4, alter: 0 });
         expect(spelledPitchClassToString(seventh.spelledPitchClass)).toBe("F");
       }
     });
