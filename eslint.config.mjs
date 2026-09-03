@@ -124,6 +124,7 @@ export default tseslint.config(
          ported piecewise by jcpe-v2-redesign-z323, never released. */
       "redesign_prototype/**",
       "playwright-report/**",
+      "staging/**",
       "test-results/**",
       "tests/fixtures/**",
     ],

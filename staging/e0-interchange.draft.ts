@@ -592,35 +592,56 @@ export const buildChartDocumentCandidate: BuildChartDocumentCandidate = (
     }> => {
   let requestCount = 0;
   const existingIds = new Set<string>();
+  let collisionOccurred = false;
+  let factoryFailed = false;
+  let limitExceeded = false;
 
   const nextId = (kind: "document" | "section" | "measure" | "event"): string | null => {
     requestCount++;
     if (requestCount > MAX_E0_CHART_IMPORT_ID_REQUESTS) {
+      limitExceeded = true;
       return null;
     }
     const res = idFactory.next(kind);
-    if (!res.ok) return null;
-    if (existingIds.has(res.value)) return null;
+    if (!res.ok) {
+      factoryFailed = true;
+      return null;
+    }
+    if (existingIds.has(res.value)) {
+      collisionOccurred = true;
+      return null;
+    }
     existingIds.add(res.value);
     return res.value;
   };
 
-  const docId = nextId("document");
-  if (docId === null) {
-    if (requestCount > MAX_E0_CHART_IMPORT_ID_REQUESTS) {
+  const makeIdRefusal = (path: readonly (string | number)[]) => {
+    if (limitExceeded) {
       return Object.freeze({
-        ok: false,
-        code: "limit.chart_import_id_requests_exceeded",
-        path: Object.freeze([] as const),
-        received: 73_794,
+        ok: false as const,
+        code: "limit.chart_import_id_requests_exceeded" as const,
+        path: Object.freeze([...path] as any),
+        received: 73_794 as const,
         maximum: MAX_E0_CHART_IMPORT_ID_REQUESTS,
       });
     }
+    if (collisionOccurred) {
+      return Object.freeze({
+        ok: false as const,
+        code: "import.chart_id_collision" as const,
+        path: Object.freeze([...path] as any),
+      });
+    }
     return Object.freeze({
-      ok: false,
-      code: "import.chart_id_factory_failed",
-      path: Object.freeze([] as const),
+      ok: false as const,
+      code: "import.chart_id_factory_failed" as const,
+      path: Object.freeze([...path] as any),
     });
+  };
+
+  const docId = nextId("document");
+  if (docId === null) {
+    return makeIdRefusal([]);
   }
 
   const sections: Array<ProgressionDocumentShapeV2["sections"][number]> = [];
@@ -628,20 +649,7 @@ export const buildChartDocumentCandidate: BuildChartDocumentCandidate = (
     const sDraft = draft.sections[sIdx]!;
     const secId = nextId("section");
     if (secId === null) {
-      if (requestCount > MAX_E0_CHART_IMPORT_ID_REQUESTS) {
-        return Object.freeze({
-          ok: false,
-          code: "limit.chart_import_id_requests_exceeded",
-          path: Object.freeze(["sections", sIdx] as const),
-          received: 73_794,
-          maximum: MAX_E0_CHART_IMPORT_ID_REQUESTS,
-        });
-      }
-      return Object.freeze({
-        ok: false,
-        code: "import.chart_id_factory_failed",
-        path: Object.freeze(["sections", sIdx] as const),
-      });
+      return makeIdRefusal(["sections", sIdx]);
     }
 
     const measures: Array<ProgressionDocumentShapeV2["sections"][number]["measures"][number]> = [];
@@ -649,20 +657,7 @@ export const buildChartDocumentCandidate: BuildChartDocumentCandidate = (
       const mDraft = sDraft.measures[mIdx]!;
       const measId = nextId("measure");
       if (measId === null) {
-        if (requestCount > MAX_E0_CHART_IMPORT_ID_REQUESTS) {
-          return Object.freeze({
-            ok: false,
-            code: "limit.chart_import_id_requests_exceeded",
-            path: Object.freeze(["sections", sIdx, "measures", mIdx] as const),
-            received: 73_794,
-            maximum: MAX_E0_CHART_IMPORT_ID_REQUESTS,
-          });
-        }
-        return Object.freeze({
-          ok: false,
-          code: "import.chart_id_factory_failed",
-          path: Object.freeze(["sections", sIdx, "measures", mIdx] as const),
-        });
+        return makeIdRefusal(["sections", sIdx, "measures", mIdx]);
       }
 
       const events: Array<ProgressionDocumentShapeV2["sections"][number]["measures"][number]["events"][number]> = [];
@@ -670,20 +665,7 @@ export const buildChartDocumentCandidate: BuildChartDocumentCandidate = (
         const eDraft = mDraft.events[eIdx]!;
         const evId = nextId("event");
         if (evId === null) {
-          if (requestCount > MAX_E0_CHART_IMPORT_ID_REQUESTS) {
-            return Object.freeze({
-              ok: false,
-              code: "limit.chart_import_id_requests_exceeded",
-              path: Object.freeze(["sections", sIdx, "measures", mIdx, "events", eIdx] as const),
-              received: 73_794,
-              maximum: MAX_E0_CHART_IMPORT_ID_REQUESTS,
-            });
-          }
-          return Object.freeze({
-            ok: false,
-            code: "import.chart_id_factory_failed",
-            path: Object.freeze(["sections", sIdx, "measures", mIdx, "events", eIdx] as const),
-          });
+          return makeIdRefusal(["sections", sIdx, "measures", mIdx, "events", eIdx]);
         }
 
         events.push(

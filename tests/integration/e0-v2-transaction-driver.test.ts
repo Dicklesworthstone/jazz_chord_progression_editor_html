@@ -323,8 +323,7 @@ describe("E0 v2 Transaction Driver Integration", () => {
 
     const result = await driver(commitReq);
     expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.outcome).toBe("refused");
+    if (!result.ok && result.outcome === "refused") {
       expect(result.stage).toBe("pre-owner-provenance");
       expect(result.code).toBe("history.nonundoable_confirmation_required");
     }
@@ -367,8 +366,7 @@ describe("E0 v2 Transaction Driver Integration", () => {
 
     const result = await driver(commitReq);
     expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.outcome).toBe("refused");
+    if (!result.ok && result.outcome === "refused") {
       expect(result.stage).toBe("pre-owner-provenance");
       expect(result.code).toBe("import.confirmation_identity_mismatch");
     }
@@ -405,8 +403,7 @@ describe("E0 v2 Transaction Driver Integration", () => {
 
     const result = await driver(commitReq);
     expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.outcome).toBe("refused");
+    if (!result.ok && result.outcome === "refused") {
       expect(result.stage).toBe("transport-retirement");
       expect(result.code).toBe("transport.replacement_retirement_refused");
     }

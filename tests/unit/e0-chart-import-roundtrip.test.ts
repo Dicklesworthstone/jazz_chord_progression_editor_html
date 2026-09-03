@@ -14,8 +14,11 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { describe, expect, test } from "bun:test";
 
-import { buildChartDocumentCandidate } from "../../src/application/e0-chart-import";
-import { CHART_IMPORT_PARSE_ACCIDENTAL_STYLE } from "../../src/application/e0-interchange-contract";
+import { buildChartDocumentCandidate } from "../../src/application";
+import {
+  CHART_IMPORT_DEFAULTS,
+  CHART_IMPORT_PARSE_ACCIDENTAL_STYLE,
+} from "../../src/application/e0-interchange-contract";
 import { validateDocumentSemantics } from "../../src/application/document-validation";
 import type { StableIdFactory, StableIdFor, StableIdKind } from "../../src/domain";
 import {
@@ -148,15 +151,9 @@ describe("E0 chart-text golden round trip", () => {
     expect(value.playback.instrumentId).toBe("mellow-keys");
     expect(value.playback.grooveStyleId).toBeUndefined();
     const firstEvent = value.sections[0]?.measures[0]?.events[0];
-    expect(firstEvent?.voicing).toEqual({
-      mode: "auto",
-      family: "balanced",
-      voiceCount: 4,
-      range: { lowMidi: 48, highMidi: 84 },
-      bassPolicy: "generated",
-    });
-    expect(value.id).toBe("document-0001");
-    expect(value.sections[0]?.id).toBe("section-0001");
+    expect(firstEvent?.voicing).toEqual(CHART_IMPORT_DEFAULTS.autoVoicing);
+    expect(String(value.id)).toBe("document-0001");
+    expect(String(value.sections[0]?.id)).toBe("section-0001");
   });
 
   test("an id collision is total and exposes no partial candidate", async () => {

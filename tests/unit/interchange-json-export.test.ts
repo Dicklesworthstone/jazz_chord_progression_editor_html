@@ -27,25 +27,24 @@ const fixtureRoot = resolve(import.meta.dirname, "../fixtures/interchange");
 
 const realDependencies: CanonicalJsonExportDependencies = Object.freeze({
   decodeDocumentShape,
-  validateCanonicalRoundTrip: (candidate) => {
+  validateCanonicalRoundTrip: (candidate: unknown) => {
     const result = validateDocumentSemantics(candidate);
-    if (result.ok) return { ok: true, value: result.value };
+    if (result.ok) return { ok: true as const, value: result.value };
     return {
-      ok: false,
+      ok: false as const,
       errors: result.errors.map((issue) => ({
         code: issue.code,
         path: issue.path,
-      })) as unknown as Readonly<{
-        errors: readonly [
-          Readonly<{ code: string; path: readonly (string | number)[] }>,
-        ];
-      }>["errors"],
+      })) as unknown as readonly [
+        Readonly<{ code: string; path: DomainPath }>,
+        ...Readonly<{ code: string; path: DomainPath }>[],
+      ],
     };
   },
   semanticallyEqualDocuments: documentsSemanticallyEqual,
-  hashBytes: async (bytes) => {
+  hashBytes: async (bytes: Uint8Array) => {
     const digest = createHash("sha256").update(bytes).digest("hex");
-    return { ok: true, digest };
+    return { ok: true as const, digest };
   },
   sanitizeExportFilename,
 });
@@ -107,7 +106,7 @@ describe("E0 canonical JSON export against the reviewed goldens", () => {
       expect(`${entry.id} sha=${digest}`).toBe(
         `${entry.id} sha=${golden.sha256}`,
       );
-      expect(result.value.semanticDocumentHash).toBe(golden.sha256);
+      expect(String(result.value.semanticDocumentHash)).toBe(golden.sha256);
       /* Byte identity against the golden file itself: importing the
        * reviewed artifact and re-exporting reproduces it exactly. */
       const original = await readFile(resolve(fixtureRoot, golden.file), "utf8");
