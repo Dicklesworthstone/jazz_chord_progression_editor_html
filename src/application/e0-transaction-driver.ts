@@ -32,19 +32,27 @@ import {
 } from "./application-interchange-owner-contract";
 import type { ReplacementRetirementReceipt } from "./application-state-contract";
 import {
+  CANONICAL_EXPORT_MARKER_PERSISTENCE_HANDOFF_SCHEMA,
   X1_REPLACEMENT_RETIREMENT_EVIDENCE_SCHEMA,
+  type CanonicalExportMarkerPersistenceHandoff,
   type ImportNonUndoableConfirmationAcknowledgement,
   type ImportPreview,
+  type MarkerEligibleCanonicalExportDelivery,
+  type QueueCanonicalExportMarkerPersistence,
   type RetireImportReplacementRequest,
   type X1ReplacementRetirementAdapter,
 } from "./e0-interchange-contract";
 import {
   E0_V2_COMMIT_REQUEST_SCHEMA,
+  E0_V2_MARKER_SETTLEMENT_REQUEST_SCHEMA,
   type CommitImportReplacementRequestV2,
   type CommitImportReplacementResultV2,
+  type CompleteCanonicalExportMarkerSettlementRequestV2,
+  type E0V2PortProtocolDiagnostic,
 } from "./e0-interchange-v2-contract";
 import {
   normalizeIdentityResult,
+  normalizeMarkerResult,
   normalizePreparationResult,
   normalizePublicationResult,
   threwOrRejected,
@@ -610,4 +618,255 @@ export function createE0V2TransactionDriver(
   };
 
   return commitImportReplacement;
+}
+
+/* ------------------------------------------------------------------ */
+/* E0V2-RES-08/-11: the state-free marker settlement driver            */
+/* ------------------------------------------------------------------ */
+
+export type CompleteCanonicalExportMarkerSettlementResultV2 =
+  | Readonly<{
+      ok: true;
+      outcome: "advanced";
+      receipt: Readonly<{ documentId: string; revision: number }>;
+      handoff: CanonicalExportMarkerPersistenceHandoff;
+      durability: "recovery-persisted" | "pending-failed";
+    }>
+  | Readonly<{
+      ok: false;
+      outcome: "refused";
+      code:
+        | "export.marker_request_invalid"
+        | "export.marker_artifact_mismatch"
+        | "export.marker_timestamp_invalid";
+    }>
+  | Readonly<{
+      ok: false;
+      outcome: "publication-refused";
+      code:
+        | "export.marker_publication_stale"
+        | "export.marker_publication_failed";
+      observedDocumentId: string;
+      observedRevision: number;
+    }>
+  | Readonly<{
+      ok: false;
+      outcome: "protocol-invalid";
+      stage: "port-protocol";
+      diagnostic: E0V2PortProtocolDiagnostic;
+      applicationReconciliation: "required";
+    }>
+  | Readonly<{
+      ok: false;
+      outcome: "persistence-protocol-invalid";
+      code: "recovery.marker_persistence_result_invalid";
+      receipt: Readonly<{ documentId: string; revision: number }>;
+      handoff: CanonicalExportMarkerPersistenceHandoff;
+      durability: "reconciliation-required";
+    }>;
+
+export type E0V2MarkerSettlementDriver = (
+  request: CompleteCanonicalExportMarkerSettlementRequestV2,
+  delivery: MarkerEligibleCanonicalExportDelivery,
+) => Promise<CompleteCanonicalExportMarkerSettlementResultV2>;
+
+/** Section-11 clock law: exactly one 24-character canonical UTC millisecond
+ * instant in `toISOString()` form; anything else is invalid. */
+function isCanonicalExportInstant(value: unknown): value is string {
+  if (typeof value !== "string" || value.length !== 24) return false;
+  const time = Date.parse(value);
+  if (Number.isNaN(time)) return false;
+  return new Date(time).toISOString() === value;
+}
+
+function settlementRequestShapeValid(request: unknown): boolean {
+  if (!isRecord(request)) return false;
+  if (!hasExactKeys(request, ["schema", "ownerRequest"])) return false;
+  if (request["schema"] !== E0_V2_MARKER_SETTLEMENT_REQUEST_SCHEMA) {
+    return false;
+  }
+  const ownerRequest = request["ownerRequest"];
+  if (!isRecord(ownerRequest) || !hasExactKeys(ownerRequest, ["publication"])) {
+    return false;
+  }
+  const publication = ownerRequest["publication"];
+  return (
+    isRecord(publication) &&
+    hasExactKeys(publication, ["schema", "documentId", "revision"]) &&
+    typeof publication["documentId"] === "string" &&
+    typeof publication["revision"] === "number" &&
+    Number.isSafeInteger(publication["revision"]) &&
+    publication["revision"] >= 0
+  );
+}
+
+/** Exact-key validation of the A1 consumer adapter's return (A1 is not an
+ * owner port, so it is outside the section-3 five-port tuple, but the same
+ * key-exactness discipline applies). */
+function isExactA1PersistenceResult(raw: unknown): boolean {
+  if (!isRecord(raw)) return false;
+  if (raw["ok"] === true) {
+    return (
+      hasExactKeys(raw, ["ok", "outcome", "durability"]) &&
+      raw["outcome"] === "persisted" &&
+      raw["durability"] === "recovery-persisted"
+    );
+  }
+  if (raw["ok"] === false) {
+    return (
+      hasExactKeys(raw, ["ok", "outcome", "code", "durability"]) &&
+      ((raw["outcome"] === "unavailable" &&
+        raw["code"] === "recovery.marker_persistence_unavailable") ||
+        (raw["outcome"] === "failed" &&
+          raw["code"] === "recovery.marker_persistence_failed")) &&
+      raw["durability"] === "pending-failed"
+    );
+  }
+  return false;
+}
+
+/**
+ * E0V2-RES-11 marker settlement over the sealed owner CAS port. Order is
+ * the section-11 law: request shape (a smuggled v1 `state` refuses with
+ * ZERO owner calls), consumed-artifact identity check, application clock
+ * check (before any A0/A1 call — an invalid instant makes no application
+ * mutation and claims none), then A0 CAS through the NORMALIZED port
+ * (E0V2-RES-08: the v1 adapter's observedBefore/state shape is retired; a
+ * malformed return is the invalid-envelope diagnostic with application
+ * reconciliation and NO A1 call), and only after checked A0 success the
+ * A1 persistence handoff. A1 is a consumer contract, not a durability
+ * claim: refusal is `pending-failed`, and only exact success reports
+ * `recovery-persisted`.
+ */
+export function createE0V2MarkerSettlementDriver(
+  ports: A0E0InterchangeOwnerPorts,
+  queuePersistence: QueueCanonicalExportMarkerPersistence,
+  readExportTimestamp: () => unknown,
+): E0V2MarkerSettlementDriver {
+  return async (
+    request: CompleteCanonicalExportMarkerSettlementRequestV2,
+    delivery: MarkerEligibleCanonicalExportDelivery,
+  ): Promise<CompleteCanonicalExportMarkerSettlementResultV2> => {
+    if (!settlementRequestShapeValid(request)) {
+      return Object.freeze({
+        ok: false as const,
+        outcome: "refused" as const,
+        code: "export.marker_request_invalid" as const,
+      });
+    }
+    const publication = request.ownerRequest.publication;
+    if (publication.documentId !== delivery.artifact.sourceDocumentId) {
+      return Object.freeze({
+        ok: false as const,
+        outcome: "refused" as const,
+        code: "export.marker_artifact_mismatch" as const,
+      });
+    }
+
+    let instantRaw: unknown;
+    try {
+      instantRaw = readExportTimestamp();
+    } catch {
+      instantRaw = null;
+    }
+    if (!isCanonicalExportInstant(instantRaw)) {
+      return Object.freeze({
+        ok: false as const,
+        outcome: "refused" as const,
+        code: "export.marker_timestamp_invalid" as const,
+      });
+    }
+    const exportedAt = instantRaw;
+
+    let rawMarker: unknown;
+    try {
+      rawMarker = ports.publishCanonicalExportRevision(request.ownerRequest);
+    } catch {
+      return Object.freeze({
+        ok: false as const,
+        outcome: "protocol-invalid" as const,
+        stage: "port-protocol" as const,
+        diagnostic: threwOrRejected("publishCanonicalExportRevision"),
+        applicationReconciliation: "required" as const,
+      });
+    }
+    const normalized = normalizeMarkerResult(rawMarker);
+    if (normalized.outcome === "protocol-invalid") {
+      return Object.freeze({
+        ok: false as const,
+        outcome: "protocol-invalid" as const,
+        stage: "port-protocol" as const,
+        diagnostic: normalized.diagnostic,
+        applicationReconciliation: "required" as const,
+      });
+    }
+    if (!normalized.value.ok) {
+      return Object.freeze({
+        ok: false as const,
+        outcome: "publication-refused" as const,
+        code: normalized.value.code,
+        observedDocumentId: normalized.value.observedDocumentId,
+        observedRevision: normalized.value.observedRevision,
+      });
+    }
+    const receipt = Object.freeze({
+      documentId: String(normalized.value.documentId),
+      revision: normalized.value.revision,
+    });
+
+    const handoff: CanonicalExportMarkerPersistenceHandoff = Object.freeze({
+      schema: CANONICAL_EXPORT_MARKER_PERSISTENCE_HANDOFF_SCHEMA,
+      marker: Object.freeze({
+        documentId: delivery.artifact.sourceDocumentId,
+        revision: normalized.value.revision,
+        exportedAt,
+        semanticDocumentHash: delivery.artifact.semanticDocumentHash,
+        canonicalPolicyVersion: 1 as const,
+        semanticHashPolicyVersion: 1 as const,
+      }),
+      artifact: Object.freeze({
+        kind: "canonical-json" as const,
+        sourceDocumentId: delivery.artifact.sourceDocumentId,
+        byteLength: delivery.artifact.byteLength,
+        filename: delivery.artifact.filename,
+        semanticDocumentHash: delivery.artifact.semanticDocumentHash,
+        canonicalPolicyVersion: 1 as const,
+        semanticHashPolicyVersion: 1 as const,
+      }),
+    });
+
+    let rawPersistence: unknown;
+    try {
+      rawPersistence = await queuePersistence(handoff);
+    } catch {
+      return Object.freeze({
+        ok: false as const,
+        outcome: "persistence-protocol-invalid" as const,
+        code: "recovery.marker_persistence_result_invalid" as const,
+        receipt,
+        handoff,
+        durability: "reconciliation-required" as const,
+      });
+    }
+    if (!isExactA1PersistenceResult(rawPersistence)) {
+      return Object.freeze({
+        ok: false as const,
+        outcome: "persistence-protocol-invalid" as const,
+        code: "recovery.marker_persistence_result_invalid" as const,
+        receipt,
+        handoff,
+        durability: "reconciliation-required" as const,
+      });
+    }
+    const persisted = rawPersistence as Readonly<{ ok: boolean }>;
+    return Object.freeze({
+      ok: true as const,
+      outcome: "advanced" as const,
+      receipt,
+      handoff,
+      durability: persisted.ok
+        ? ("recovery-persisted" as const)
+        : ("pending-failed" as const),
+    });
+  };
 }
