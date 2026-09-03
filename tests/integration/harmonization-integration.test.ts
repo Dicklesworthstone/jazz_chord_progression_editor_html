@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import {
+  type Alteration,
   type BeatValue,
   type ChordEventId,
   normalizeBeatValue,
@@ -52,9 +53,17 @@ describe("G4 Comprehensive Conformance and Evidence", () => {
         eventId: eventIdOf(`evt_${testCase.id}_${String(idx)}`),
         offsetBeat: beat(idx * 4),
         duration: beat(4),
-        melodyPitch: s.melodyPitch,
-        bassPitchClass: s.bassPitchClass,
-        pinnedChordSymbol: s.pinnedChordSymbol,
+        ...(s.melodyPitch
+          ? {
+              melodyPitch: {
+                step: s.melodyPitch.step,
+                alter: s.melodyPitch.alter as Alteration,
+                octave: s.melodyPitch.octave,
+              },
+            }
+          : {}),
+        ...(s.bassPitchClass !== undefined ? { bassPitchClass: s.bassPitchClass } : {}),
+        ...(s.pinnedChordSymbol ? { pinnedChordSymbol: s.pinnedChordSymbol } : {}),
       }));
 
       const result = harmonizeConstraints(slots);
@@ -78,14 +87,14 @@ describe("G4 Comprehensive Conformance and Evidence", () => {
         eventId: eventIdOf("s0"),
         offsetBeat: beat(0),
         duration: beat(4),
-        melodyPitch: { step: "E" as const, alter: 0, octave: 4 },
+        melodyPitch: { step: "E" as const, alter: 0 as Alteration, octave: 4 },
       },
       {
         slotIndex: 1,
         eventId: eventIdOf("s1"),
         offsetBeat: beat(4),
         duration: beat(4),
-        melodyPitch: { step: "D" as const, alter: 0, octave: 4 },
+        melodyPitch: { step: "D" as const, alter: 0 as Alteration, octave: 4 },
       },
     ];
 
@@ -102,7 +111,7 @@ describe("G4 Comprehensive Conformance and Evidence", () => {
         eventId: eventIdOf("slot_impossible"),
         offsetBeat: beat(0),
         duration: beat(4),
-        melodyPitch: { step: "E" as const, alter: 0, octave: 4 },
+        melodyPitch: { step: "E" as const, alter: 0 as Alteration, octave: 4 },
         bassPitchClass: 6, // F# / Gb bass with E melody -> filtered set empty
       },
     ];

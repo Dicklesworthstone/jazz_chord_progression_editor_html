@@ -82,7 +82,7 @@ describe("G9 Comprehensive Conformance and Evidence", () => {
       // 1. Perfect score submission
       const perfectSubs = session.prompts.map((p) => ({
         promptId: p.promptId,
-        selectedOptionId: p.options.find((o) => o.isCorrect)?.optionId,
+        selectedOptionId: p.options.find((o) => o.isCorrect)?.optionId ?? "opt_correct",
       }));
       const perfectReport = gradePracticeSubmission(session, perfectSubs);
       expect(perfectReport.scorePercentage).toBe(100);
@@ -91,7 +91,7 @@ describe("G9 Comprehensive Conformance and Evidence", () => {
       // 2. Zero score submission
       const zeroSubs = session.prompts.map((p) => ({
         promptId: p.promptId,
-        selectedOptionId: p.options.find((o) => !o.isCorrect)?.optionId,
+        selectedOptionId: p.options.find((o) => !o.isCorrect)?.optionId ?? "opt_incorrect",
       }));
       const zeroReport = gradePracticeSubmission(session, zeroSubs);
       expect(zeroReport.scorePercentage).toBe(0);

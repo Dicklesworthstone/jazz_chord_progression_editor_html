@@ -29,7 +29,7 @@ describe("G6 Color Laboratory Engine", () => {
       const alt = result.colorOptions.find((o) => o.family === "altered-dominant");
       expect(alt).toBeDefined();
       expect(alt?.tensions).toEqual(["b9", "#9", "#11", "b13"]);
-      expect(alt?.omittedDegrees).toContain("5");
+      expect(alt?.omittedDegrees).toEqual([{ number: 5, alter: 0 }]);
     }
   });
 

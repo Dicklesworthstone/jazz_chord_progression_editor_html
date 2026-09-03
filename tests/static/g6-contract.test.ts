@@ -53,45 +53,45 @@ describe("G6 guide-tone and color laboratory contract", () => {
       throw new Error("Fixture root is not a record");
     }
 
-    const schemas = isRecord(parsed.schemas) ? parsed.schemas : {};
-    const limits = isRecord(parsed.limits) ? parsed.limits : {};
+    const schemas = isRecord(parsed["schemas"]) ? parsed["schemas"] : {};
+    const limits = isRecord(parsed["limits"]) ? parsed["limits"] : {};
 
-    expect(schemas.contract).toBe(G6_GUIDE_TONES_CONTRACT_SCHEMA);
-    expect(schemas.guideToneExtraction).toBe(
+    expect(schemas["contract"]).toBe(G6_GUIDE_TONES_CONTRACT_SCHEMA);
+    expect(schemas["guideToneExtraction"]).toBe(
       G6_GUIDE_TONE_EXTRACTION_SCHEMA,
     );
-    expect(schemas.guideTonePathsResult).toBe(
+    expect(schemas["guideTonePathsResult"]).toBe(
       G6_GUIDE_TONE_PATHS_RESULT_SCHEMA,
     );
-    expect(schemas.colorLabContract).toBe(
+    expect(schemas["colorLabContract"]).toBe(
       G6_COLOR_LAB_CONTRACT_SCHEMA,
     );
-    expect(schemas.colorLabResult).toBe(
+    expect(schemas["colorLabResult"]).toBe(
       G6_COLOR_LAB_RESULT_SCHEMA,
     );
 
-    expect(limits.maxProgressionEvents).toBe(
+    expect(limits["maxProgressionEvents"]).toBe(
       MAX_G6_PROGRESSION_EVENTS,
     );
-    expect(limits.maxGuideTonesPerEvent).toBe(
+    expect(limits["maxGuideTonesPerEvent"]).toBe(
       MAX_G6_GUIDE_TONES_PER_EVENT,
     );
-    expect(limits.maxOptimizedPaths).toBe(
+    expect(limits["maxOptimizedPaths"]).toBe(
       MAX_G6_OPTIMIZED_PATHS,
     );
-    expect(limits.maxVoiceLinesPerPath).toBe(
+    expect(limits["maxVoiceLinesPerPath"]).toBe(
       MAX_G6_VOICE_LINES_PER_PATH,
     );
-    expect(limits.maxTotalWorkSteps).toBe(
+    expect(limits["maxTotalWorkSteps"]).toBe(
       MAX_G6_TOTAL_WORK_STEPS,
     );
-    expect(limits.maxMotionSemitones).toBe(
+    expect(limits["maxMotionSemitones"]).toBe(
       MAX_G6_MAX_MOTION_SEMITONES,
     );
 
-    expect(parsed.roles).toEqual(GUIDE_TONE_ROLES);
-    expect(parsed.motionKinds).toEqual(GUIDE_TONE_MOTION_KINDS);
-    expect(parsed.tensionDegrees).toEqual(TENSION_DEGREES);
+    expect(parsed["roles"]).toEqual(GUIDE_TONE_ROLES);
+    expect(parsed["motionKinds"]).toEqual(GUIDE_TONE_MOTION_KINDS);
+    expect(parsed["tensionDegrees"]).toEqual(TENSION_DEGREES);
   });
 
   test("mutation controls are caught with structured findings", async () => {
@@ -103,7 +103,7 @@ describe("G6 guide-tone and color laboratory contract", () => {
     if (!isRecord(parsed)) {
       throw new Error("Mutation controls root is not a record");
     }
-    const controls = Array.isArray(parsed.controls) ? parsed.controls : [];
+    const controls = Array.isArray(parsed["controls"]) ? parsed["controls"] : [];
 
     expect(controls.length).toBeGreaterThanOrEqual(15);
 
@@ -111,10 +111,10 @@ describe("G6 guide-tone and color laboratory contract", () => {
       if (!isRecord(control)) {
         throw new Error("Control is not a record");
       }
-      expect(control.id).toBeDefined();
-      expect(control.targetFile).toBeDefined();
-      expect(control.mutationPath).toBeDefined();
-      expect(control.expectedFinding).toBeDefined();
+      expect(control["id"]).toBeDefined();
+      expect(control["targetFile"]).toBeDefined();
+      expect(control["mutationPath"]).toBeDefined();
+      expect(control["expectedFinding"]).toBeDefined();
     }
   });
 });

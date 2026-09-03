@@ -52,9 +52,15 @@ describe("G6 Comprehensive Conformance and Evidence", () => {
         expect(ext.guideTones.length).toBeGreaterThanOrEqual(expected.guideTones.length);
 
         for (const expGt of expected.guideTones) {
-          const found = ext.guideTones.find(
-            (g) => g.degree === expGt.degree && g.role === expGt.role,
-          );
+          const found = ext.guideTones.find((g) => {
+            const degStr =
+              (g.degree.alter < 0
+                ? "b".repeat(-g.degree.alter)
+                : g.degree.alter > 0
+                  ? "#".repeat(g.degree.alter)
+                  : "") + String(g.degree.number);
+            return degStr === expGt.degree && g.role === expGt.role;
+          });
           expect(found).toBeDefined();
           if (found) {
             expect(spelledPitchClassToString(found.spelledPitchClass)).toBe(expGt.spelledPitchClass);
