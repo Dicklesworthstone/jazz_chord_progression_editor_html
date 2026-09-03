@@ -32,9 +32,10 @@ import {
   type RetireImportReplacementRequest,
   type X1ReplacementRetirementAdapter,
 } from "./e0-interchange-contract";
-import type {
-  CommitImportReplacementRequestV2,
-  CommitImportReplacementResultV2,
+import {
+  E0_V2_COMMIT_REQUEST_SCHEMA,
+  type CommitImportReplacementRequestV2,
+  type CommitImportReplacementResultV2,
 } from "./e0-interchange-v2-contract";
 import {
   normalizeIdentityResult,
@@ -67,6 +68,79 @@ export function createUnavailableReplacementRetirementAdapter(): X1ReplacementRe
 
 function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function hasExactKeys(
+  record: Readonly<Record<string, unknown>>,
+  keys: readonly string[],
+): boolean {
+  const present = Object.keys(record);
+  if (present.length !== keys.length) return false;
+  return keys.every((key) => Object.hasOwn(record, key));
+}
+
+const OWNER_REQUEST_KEYS = Object.freeze([
+  "identity",
+  "sourceFormat",
+  "replacementOrigin",
+  "candidate",
+  "replacementCommandSeed",
+  "disclosedImpact",
+  "currentTransition",
+  "nonUndoableConfirmation",
+] as const);
+
+/**
+ * E0V2-RES-01: the commit request is state-free evidence with the exact
+ * key set schema/ownerRequest/confirmationBinding. A smuggled v1
+ * `currentState` (or any other extra key, at the request or owner-request
+ * level), a wrong schema, or a malformed confirmation binding refuses
+ * `import.replacement_request_invalid` before ANY owner call — including
+ * the identity read, so the observed identity is request-derived.
+ */
+function requestShapeValid(request: unknown): boolean {
+  if (!isRecord(request)) return false;
+  if (!hasExactKeys(request, ["schema", "ownerRequest", "confirmationBinding"])) {
+    return false;
+  }
+  if (request["schema"] !== E0_V2_COMMIT_REQUEST_SCHEMA) return false;
+  const ownerRequest = request["ownerRequest"];
+  if (!isRecord(ownerRequest) || !hasExactKeys(ownerRequest, OWNER_REQUEST_KEYS)) {
+    return false;
+  }
+  const binding = request["confirmationBinding"];
+  return (
+    isRecord(binding) &&
+    hasExactKeys(binding, [
+      "displayedRequirement",
+      "acknowledgement",
+      "byteMatchProvedBeforeOwnerCall",
+    ]) &&
+    binding["byteMatchProvedBeforeOwnerCall"] === true
+  );
+}
+
+function requestDerivedIdentity(request: unknown): ImportRequestIdentity {
+  if (isRecord(request)) {
+    const ownerRequest = request["ownerRequest"];
+    if (isRecord(ownerRequest)) {
+      const identity = ownerRequest["identity"];
+      if (
+        isRecord(identity) &&
+        typeof identity["requestId"] === "number" &&
+        typeof identity["documentId"] === "string" &&
+        typeof identity["baseRevision"] === "number"
+      ) {
+        return identity as unknown as ImportRequestIdentity;
+      }
+    }
+  }
+  /* The request is untyped garbage; an honest zero identity beats a throw. */
+  return Object.freeze({
+    requestId: 0,
+    documentId: "",
+    baseRevision: 0,
+  }) as unknown as ImportRequestIdentity;
 }
 
 function identitiesEqual(
@@ -186,6 +260,23 @@ export function createE0V2TransactionDriver(
   const commitImportReplacement = async (
     request: CommitImportReplacementRequestV2,
   ): Promise<CommitImportReplacementResultV2> => {
+    if (!requestShapeValid(request)) {
+      const fallback = requestDerivedIdentity(request);
+      return Object.freeze({
+        ok: false as const,
+        outcome: "refused" as const,
+        stage: "pre-owner-provenance" as const,
+        code: "import.replacement_request_invalid" as const,
+        identity: fallback,
+        /* No owner call may precede this refusal (E0V2-RESCASE-002's
+         * ownerCalls: 0), so the observation is request-derived. */
+        observedIdentity: Object.freeze({
+          documentId: fallback.documentId,
+          revision: fallback.baseRevision,
+        }),
+        liveForRequest: 0 as const,
+      });
+    }
     const ownerRequest = request.ownerRequest;
     const identity = ownerRequest.identity;
 
