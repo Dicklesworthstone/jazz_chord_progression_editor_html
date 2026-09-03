@@ -1,8 +1,10 @@
 import {
   type DocumentId,
-  type DocumentShapeDecodeResult,
   type DomainPath,
+  type EventId,
+  type MeasureId,
   type ProgressionDocumentShapeV2,
+  type SectionId,
   type StableIdFactory,
   type ValidatedDocument,
 } from "../domain";
@@ -11,77 +13,34 @@ import {
   type A0E0InterchangeOwnerOperations,
   type ImportNonUndoableConfirmationAcknowledgement,
   type ImportNonUndoableConfirmationRequirement,
-  type ImportReplacementImpact,
-  type ImportRequestIdentity,
-  type PrepareImportReplacementPublicationRequest,
   type PreparedImportReplacementPublication,
   type PublishCanonicalExportRevisionRequest,
 } from "./application-interchange-owner-contract";
 import {
-  MAX_APPLICATION_REVISION,
-  MAX_APPLICATION_SEQUENCE,
-  MAX_COMMAND_ID_CODE_POINTS,
-  MAX_COMMAND_LABEL_CODE_POINTS,
-  MAX_DRAFT_ISSUES,
-  MAX_HISTORY_ENTRIES,
-  MAX_HISTORY_RETAINED_BYTES,
   type AppRevision,
-  type AppState,
-  type ApplicationCommandDependencies,
-  type ApplicationEffect,
-  type ApplicationRequestId,
-  type ApplicationWorkCounters,
-  type HistoryEntry,
-  type HistoryState,
-  type Notice,
-  type ReplaceDocumentCommand,
   type ReplacementRetirementReceipt,
-  type StableUiBookmarks,
-  type TransportGeneration,
 } from "./application-state-contract";
 import {
-  enforceHistoryCaps,
-  isValidHistoryEstimate,
-} from "./application-history";
-import { initialBookmarks } from "./application-bookmarks";
-import {
-  buildDocumentIndex,
-  createWorkCounters,
-  deepStructuralEqual,
-  freezeWorkCounters,
-  isBoundedToken,
   isNonnegativeSafeInteger,
-  isPositiveSafeInteger,
   runtimeField,
 } from "./application-state-helpers";
 import {
   CHART_IMPORT_DEFAULTS,
   CHART_IMPORT_PARSE_ACCIDENTAL_STYLE,
-  E0_INTERCHANGE_CONTRACT_SCHEMA,
-  IMPORT_FORMAT_HINTS,
   IMPORT_NONUNDOABLE_CONFIRMATION_SCHEMA,
   IMPORT_PREVIEW_POLICY_ID,
   IMPORT_PREVIEW_POLICY_VERSION,
   IMPORT_PREVIEW_SCHEMA,
   IMPORT_PUBLIC_PATH_FIELDS,
-  IMPORT_REPLACEMENT_ORIGIN_BY_FORMAT,
-  IMPORT_ROUTING_POLICY,
-  IMPORT_SOURCE_CHANNELS,
-  IMPORT_SOURCE_FORMATS,
-  INTERCHANGE_IMPORT_DRAFT_SCHEMA,
   MAX_CANONICAL_EXPORT_PREPARATION_ID,
   MAX_E0_CHART_IMPORT_ID_REQUESTS,
-  MAX_E0_IMPORT_UTF8_BYTES,
   MAX_IMPORT_PUBLIC_PATH_INDEX,
   MAX_IMPORT_PUBLIC_PATH_SEGMENTS,
-  MIN_CANONICAL_EXPORT_PREPARATION_ID,
   PREPARED_CANONICAL_EXPORT_DELIVERY_SCHEMA,
   type AbandonCanonicalExportPreparationResult,
-  type AssessImportReplacementImpact,
   type BeginCanonicalExportPreparationResult,
   type BuildChartDocumentCandidate,
   type CanonicalExportMarkerOrchestrationDependencies,
-  type CanonicalExportMarkerSettlementAdapters,
   type CanonicalExportPreparationBinding,
   type CanonicalExportPreparationId,
   type CanonicalExportPreparationIdentity,
@@ -91,7 +50,6 @@ import {
   type CommitImportReplacementDependencies,
   type CommitImportReplacementRequest,
   type CommitImportReplacementResult,
-  type CompleteCanonicalExportMarkerSettlement,
   type CompleteCanonicalExportMarkerSettlementRequest,
   type CompleteCanonicalExportMarkerSettlementResult,
   type DecodeUtf8Fatal,
@@ -101,7 +59,6 @@ import {
   type ExplicitlyUnavailableImportPreview,
   type ExplicitlyUnavailableImportReplacementImpact,
   type FinishPreparedCanonicalExportDeliveryResult,
-  type ImportFormatHint,
   type ImportIssue,
   type ImportIssueCode,
   type ImportIssueSummary,
@@ -113,9 +70,6 @@ import {
   type ImportPreviewSummary,
   type ImportPublicPath,
   type ImportPublicPathField,
-  type ImportReplacementCommandSeed,
-  type ImportReplacementImpactContext,
-  type ImportSourceChannel,
   type ImportSourceFormat,
   type ImportStage,
   type JsonLexicalRoute,
@@ -123,7 +77,6 @@ import {
   type MarkerEligibleCanonicalExportDelivery,
   type ParseJsonData,
   type ParseJsonDataResult,
-  type PrepareCanonicalExportDelivery,
   type PrepareCanonicalExportDeliveryRequest,
   type PrepareCanonicalExportDeliveryResult,
   type PrepareImportPreview,
@@ -146,10 +99,6 @@ import {
   type X1ReplacementRetirementEvidence,
 } from "./e0-interchange-contract";
 import {
-  E0_V2_COMMIT_REQUEST_SCHEMA,
-  E0_V2_EXPORT_DELIVERY_REQUEST_SCHEMA,
-  E0_V2_MARKER_SETTLEMENT_REQUEST_SCHEMA,
-  E0_V2_PREVIEW_TO_OWNER_REQUEST_PROJECTION,
   type CommitImportReplacementRequestV2,
   type CommitImportReplacementResultV2,
   type CompleteCanonicalExportMarkerSettlementRequestV2,
@@ -159,16 +108,11 @@ import {
   type PrepareCanonicalExportDeliveryRequestV2,
   type PrepareImportPreviewRequestV2,
 } from "./e0-interchange-v2-contract";
-import {
-  applyPreparedImportReplacementToLatestState,
-  createExportRevisionMarkedState,
-} from "./studio-interchange-owner";
 import type {
-  ChartDiagnostic,
   ChartTextDraft,
-  ChartWarning,
   SourceRange,
 } from "../theory";
+import type { CanonicalJsonArtifact } from "../export";
 
 function isPlainRecord(
   value: unknown,
@@ -562,7 +506,7 @@ export const parseJsonData: ParseJsonData = (
   sourceText: string,
 ): ParseJsonDataResult => {
   try {
-    const value = JSON.parse(sourceText);
+    const value: unknown = JSON.parse(sourceText);
     return Object.freeze({ ok: true, value });
   } catch {
     return Object.freeze({
@@ -593,7 +537,6 @@ export const buildChartDocumentCandidate: BuildChartDocumentCandidate = (
   let requestCount = 0;
   const existingIds = new Set<string>();
   let collisionOccurred = false;
-  let factoryFailed = false;
   let limitExceeded = false;
 
   const nextId = (kind: "document" | "section" | "measure" | "event"): string | null => {
@@ -604,7 +547,6 @@ export const buildChartDocumentCandidate: BuildChartDocumentCandidate = (
     }
     const res = idFactory.next(kind);
     if (!res.ok) {
-      factoryFailed = true;
       return null;
     }
     if (existingIds.has(res.value)) {
@@ -620,7 +562,7 @@ export const buildChartDocumentCandidate: BuildChartDocumentCandidate = (
       return Object.freeze({
         ok: false as const,
         code: "limit.chart_import_id_requests_exceeded" as const,
-        path: Object.freeze([...path] as any),
+        path: Object.freeze([...path]) as unknown as DomainPath,
         received: 73_794 as const,
         maximum: MAX_E0_CHART_IMPORT_ID_REQUESTS,
       });
@@ -629,13 +571,13 @@ export const buildChartDocumentCandidate: BuildChartDocumentCandidate = (
       return Object.freeze({
         ok: false as const,
         code: "import.chart_id_collision" as const,
-        path: Object.freeze([...path] as any),
+        path: Object.freeze([...path]) as unknown as DomainPath,
       });
     }
     return Object.freeze({
       ok: false as const,
       code: "import.chart_id_factory_failed" as const,
-      path: Object.freeze([...path] as any),
+      path: Object.freeze([...path]) as unknown as DomainPath,
     });
   };
 
@@ -646,7 +588,8 @@ export const buildChartDocumentCandidate: BuildChartDocumentCandidate = (
 
   const sections: Array<ProgressionDocumentShapeV2["sections"][number]> = [];
   for (let sIdx = 0; sIdx < draft.sections.length; sIdx++) {
-    const sDraft = draft.sections[sIdx]!;
+    const sDraft = draft.sections[sIdx];
+    if (!sDraft) continue;
     const secId = nextId("section");
     if (secId === null) {
       return makeIdRefusal(["sections", sIdx]);
@@ -654,7 +597,8 @@ export const buildChartDocumentCandidate: BuildChartDocumentCandidate = (
 
     const measures: Array<ProgressionDocumentShapeV2["sections"][number]["measures"][number]> = [];
     for (let mIdx = 0; mIdx < sDraft.measures.length; mIdx++) {
-      const mDraft = sDraft.measures[mIdx]!;
+      const mDraft = sDraft.measures[mIdx];
+      if (!mDraft) continue;
       const measId = nextId("measure");
       if (measId === null) {
         return makeIdRefusal(["sections", sIdx, "measures", mIdx]);
@@ -662,7 +606,8 @@ export const buildChartDocumentCandidate: BuildChartDocumentCandidate = (
 
       const events: Array<ProgressionDocumentShapeV2["sections"][number]["measures"][number]["events"][number]> = [];
       for (let eIdx = 0; eIdx < mDraft.events.length; eIdx++) {
-        const eDraft = mDraft.events[eIdx]!;
+        const eDraft = mDraft.events[eIdx];
+        if (!eDraft) continue;
         const evId = nextId("event");
         if (evId === null) {
           return makeIdRefusal(["sections", sIdx, "measures", mIdx, "events", eIdx]);
@@ -670,18 +615,18 @@ export const buildChartDocumentCandidate: BuildChartDocumentCandidate = (
 
         events.push(
           Object.freeze({
-            id: evId as any,
+            id: evId as unknown as EventId,
             duration: eDraft.duration,
             annotation: eDraft.annotation,
             chord: eDraft.chord,
             voicing: CHART_IMPORT_DEFAULTS.autoVoicing,
-          }) as any,
+          }),
         );
       }
 
       measures.push(
         Object.freeze({
-          id: measId as any,
+          id: measId as unknown as MeasureId,
           events: Object.freeze(events),
           completion: Object.freeze({ kind: "complete" as const }),
         }),
@@ -690,9 +635,9 @@ export const buildChartDocumentCandidate: BuildChartDocumentCandidate = (
 
     sections.push(
       Object.freeze({
-        id: secId as any,
-        name: sDraft.name ?? `Section ${sIdx + 1}`,
-        annotation: sDraft.annotation ?? "",
+        id: secId as unknown as SectionId,
+        name: sDraft.name ?? `Section ${String(sIdx + 1)}`,
+        annotation: sDraft.annotation,
         keyOverride: null,
         voiceLeadingBoundary: "reset" as const,
         measures: Object.freeze(measures),
@@ -787,10 +732,10 @@ export function createPrepareImportPreviewCoordinator(
       return makeRefusal("import.format_mismatch", "format-classification");
     }
 
-    let candidateDoc: ValidatedDocument | null = null;
+    let candidateDoc: ValidatedDocument;
     let sourceFormat: ImportSourceFormat = "canonical-json-v2";
     let origin: "canonical-import" | "legacy-import" = "canonical-import";
-    let reportItems: ImportPreviewReportItem[] = [];
+    const reportItems: ImportPreviewReportItem[] = [];
 
     if (isJsonLooking) {
       const lexical = dependencies.classifyJsonLexically(text);
@@ -865,20 +810,10 @@ export function createPrepareImportPreviewCoordinator(
 
         const validated = dependencies.validateDocumentSemantics(decoded.value);
         if (!validated.ok) {
-          const firstErr = validated.errors[0];
           return makeRefusal(
-            firstErr.code as ImportIssueCode,
+            "import.canonical_semantic_invalid",
             "semantic-validation",
-            projectPublicPath(firstErr.path),
-            null,
-            validated.errors.map((e) =>
-              Object.freeze({
-                code: e.code as ImportIssueCode,
-                stage: "semantic-validation" as const,
-                path: projectPublicPath(e.path),
-                range: null,
-              }),
-            ),
+            projectPublicPath(validated.errors[0].path),
           );
         }
 
@@ -899,7 +834,7 @@ export function createPrepareImportPreviewCoordinator(
             null,
             [],
             Object.freeze({
-              code: legRef.code as any,
+              code: legRef.code as unknown as LegacyMigrationRefusalProjection["code"],
               path: projectPublicPath(legRef.path),
               detail: null,
             }),
@@ -929,7 +864,7 @@ export function createPrepareImportPreviewCoordinator(
         sourceFormat = "unversioned-legacy-json";
         origin = "legacy-import";
 
-        if (legacyCand.report && legacyCand.report.groups) {
+        if (legacyCand.report) {
           const allGroups = [
             legacyCand.report.groups.preserved,
             legacyCand.report.groups.canonicalized,
@@ -941,7 +876,7 @@ export function createPrepareImportPreviewCoordinator(
             for (const item of groupItems) {
               reportItems.push(
                 Object.freeze({
-                  code: item.code as any,
+                  code: item.code as unknown as ImportIssueCode,
                   sourcePath: projectPublicPath(item.sourcePath),
                   targetPath: item.targetPath ? projectPublicPath(item.targetPath) : null,
                 }),
@@ -957,11 +892,12 @@ export function createPrepareImportPreviewCoordinator(
         CHART_IMPORT_PARSE_ACCIDENTAL_STYLE,
       );
       if (!parseRes.ok) {
+        const firstDiag = parseRes.diagnostics[0];
         return makeRefusal(
           "import.chart_invalid",
           "chart-parse",
           Object.freeze([] as const),
-          parseRes.diagnostics[0]?.range ?? null,
+          firstDiag ? firstDiag.range : null,
         );
       }
 
@@ -1002,10 +938,6 @@ export function createPrepareImportPreviewCoordinator(
       candidateDoc = validated.value;
       sourceFormat = "chart-text-v1";
       origin = "canonical-import";
-    }
-
-    if (candidateDoc === null) {
-      return makeRefusal("import.json_shape_unrecognized", "schema-route");
     }
 
     let chordEventsCount = 0;
@@ -1136,8 +1068,7 @@ export function createE0V2TransactionDriver(
       }
       if (
         binding.displayedRequirement === null ||
-        binding.byteMatchProvedBeforeOwnerCall !== true ||
-        binding.acknowledgement.kind !== "acknowledged" ||
+        !binding.byteMatchProvedBeforeOwnerCall ||
         binding.displayedRequirement.confirmationId !==
           binding.acknowledgement.requirement.confirmationId ||
         binding.displayedRequirement.candidateDocumentId !==
@@ -1594,11 +1525,11 @@ export function createE0InterchangeOperations(
         });
       }
 
-      if (prepResRaw["ok"] === false) {
+      if (!prepResRaw["ok"]) {
         return Object.freeze({
           ok: false,
           refusal: Object.freeze({
-            code: prepResRaw["code"] as any,
+            code: String(prepResRaw["code"]) as any,
             path: Object.freeze([] as const),
           }),
           state: request.currentState,
@@ -1678,7 +1609,7 @@ export function createE0InterchangeOperations(
         });
       }
 
-      if (retireResRaw["ok"] === false) {
+      if (!retireResRaw["ok"]) {
         const invalidation = dependencies.discardImportReplacementPublication({
           identity,
           reason: "retirement-refused",
@@ -1686,7 +1617,7 @@ export function createE0InterchangeOperations(
         return Object.freeze({
           ok: false,
           refusal: Object.freeze({
-            code: retireResRaw["code"] as any,
+            code: String(retireResRaw["code"]) as any,
             path: Object.freeze([] as const),
           }),
           state: request.currentState,
@@ -1697,7 +1628,7 @@ export function createE0InterchangeOperations(
         });
       }
 
-      const rawRetirementEvidence = retireResRaw["value"] as any;
+      const rawRetirementEvidence = retireResRaw["value"] as unknown as X1ReplacementRetirementEvidence;
       const rawReceipt = rawRetirementEvidence.receipt;
       const retirementReceipt: ReplacementRetirementReceipt = Object.freeze({
         requestId: rawReceipt.requestId,
@@ -1749,7 +1680,7 @@ export function createE0InterchangeOperations(
 
       if (
         !isPlainRecord(pubResRaw) ||
-        pubResRaw["ok"] !== true ||
+        !pubResRaw["ok"] ||
         pubResRaw["outcome"] !== "committed"
       ) {
         const invalidation = dependencies.discardImportReplacementPublication({
@@ -1850,7 +1781,7 @@ export function createE0InterchangeOperations(
         });
       }
 
-      if (exportResRaw["ok"] === false) {
+      if (!exportResRaw["ok"]) {
         deliveryRegistry.abandonPreparation(beginRes.identity.preparationId);
         return Object.freeze({
           ok: false,
@@ -1859,7 +1790,7 @@ export function createE0InterchangeOperations(
         });
       }
 
-      const artifact = exportResRaw["value"] as any;
+      const artifact = exportResRaw["value"] as unknown as CanonicalJsonArtifact;
       const binding: CanonicalExportPreparationBinding = Object.freeze({
         preparationId: beginRes.identity.preparationId,
         generation: beginRes.identity.generation,

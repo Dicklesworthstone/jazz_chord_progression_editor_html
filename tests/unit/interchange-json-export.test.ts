@@ -42,10 +42,11 @@ const realDependencies: CanonicalJsonExportDependencies = Object.freeze({
     };
   },
   semanticallyEqualDocuments: documentsSemanticallyEqual,
-  hashBytes: async (bytes: Uint8Array) => {
-    const digest = createHash("sha256").update(bytes).digest("hex");
-    return { ok: true as const, digest };
-  },
+  hashBytes: (bytes: Uint8Array) =>
+    Promise.resolve({
+      ok: true as const,
+      digest: createHash("sha256").update(bytes).digest("hex"),
+    }),
   sanitizeExportFilename,
 });
 
@@ -150,7 +151,7 @@ describe("E0 canonical JSON export against the reviewed goldens", () => {
     ]) {
       const result = await prepareCanonicalJsonExport(
         { document },
-        { ...realDependencies, hashBytes: async () => raw },
+        { ...realDependencies, hashBytes: () => Promise.resolve(raw as any) },
       );
       expect(result.ok).toBe(false);
       if (result.ok) continue;
@@ -203,7 +204,7 @@ describe("E0 safe filename projection", () => {
   test("120-scalar truncation strips re-exposed trailing dots", () => {
     const long = `${"a".repeat(119)}.x`;
     const out = sanitizeExportFilename(long, "canonical-json");
-    expect([...out.basename].length).toBeLessThanOrEqual(120);
+    expect(Array.from(out.basename).length).toBeLessThanOrEqual(120);
     expect(out.basename.endsWith(".")).toBe(false);
   });
 

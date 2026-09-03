@@ -10,7 +10,6 @@ import {
   type AppState,
   type ApplicationCommandDependencies,
   type PendingApplicationRequest,
-  type StudioComposition,
   type X1ReplacementRetirementAdapter,
 } from "../../src/application";
 import type {
@@ -99,7 +98,7 @@ function createHarness(options: HarnessOptions = {}) {
     documentTransition: transition,
   });
 
-  const diagnostics: any[] = [];
+  const diagnostics: unknown[] = [];
   const composition = createStudioCompositionOverState(state, dependencies, {
     interchangeDiagnostics: (d) => diagnostics.push(d),
   });
@@ -202,22 +201,24 @@ describe("E0 v2 Transaction Driver Integration", () => {
     const h = createHarness({ disposition: "retained" });
 
     const x1Adapter: X1ReplacementRetirementAdapter = {
-      retireImportReplacement: async (req) =>
-        Object.freeze({
-          ok: true,
-          value: Object.freeze({
-            schema: "changes.x1-replacement-retirement-evidence.v1",
-            authority: "x1-serialized-transport",
-            request: req,
-            receipt: Object.freeze({
-              requestId: req.identity.requestId,
-              retiredTransportGeneration: 0,
-              progressionRetired: true,
-              previewRetired: true,
-              noFutureAttack: true,
+      retireImportReplacement: (req) =>
+        Promise.resolve(
+          Object.freeze({
+            ok: true,
+            value: Object.freeze({
+              schema: "changes.x1-replacement-retirement-evidence.v1",
+              authority: "x1-serialized-transport",
+              request: req,
+              receipt: Object.freeze({
+                requestId: req.identity.requestId,
+                retiredTransportGeneration: 0,
+                progressionRetired: true,
+                previewRetired: true,
+                noFutureAttack: true,
+              }),
             }),
           }),
-        }),
+        ),
     };
 
     const driver = createE0V2TransactionDriver(
@@ -256,22 +257,24 @@ describe("E0 v2 Transaction Driver Integration", () => {
     const h = createHarness({ disposition: "explicitly-unavailable" });
 
     const x1Adapter: X1ReplacementRetirementAdapter = {
-      retireImportReplacement: async (req) =>
-        Object.freeze({
-          ok: true,
-          value: Object.freeze({
-            schema: "changes.x1-replacement-retirement-evidence.v1",
-            authority: "x1-serialized-transport",
-            request: req,
-            receipt: Object.freeze({
-              requestId: req.identity.requestId,
-              retiredTransportGeneration: 0,
-              progressionRetired: true,
-              previewRetired: true,
-              noFutureAttack: true,
+      retireImportReplacement: (req) =>
+        Promise.resolve(
+          Object.freeze({
+            ok: true,
+            value: Object.freeze({
+              schema: "changes.x1-replacement-retirement-evidence.v1",
+              authority: "x1-serialized-transport",
+              request: req,
+              receipt: Object.freeze({
+                requestId: req.identity.requestId,
+                retiredTransportGeneration: 0,
+                progressionRetired: true,
+                previewRetired: true,
+                noFutureAttack: true,
+              }),
             }),
           }),
-        }),
+        ),
     };
 
     const driver = createE0V2TransactionDriver(
@@ -292,10 +295,6 @@ describe("E0 v2 Transaction Driver Integration", () => {
     });
 
     const result = await driver(commitReq);
-    if (!result.ok) {
-      console.log("DRIVER_TEST_2_FAILED:", JSON.stringify(result));
-      console.log("DRIVER_TEST_2_DIAGS:", JSON.stringify(h.diagnostics));
-    }
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.outcome).toBe("committed");
@@ -309,9 +308,8 @@ describe("E0 v2 Transaction Driver Integration", () => {
     const h = createHarness({ disposition: "explicitly-unavailable" });
 
     const x1Adapter: X1ReplacementRetirementAdapter = {
-      retireImportReplacement: async () => {
-        throw new Error("X1 should not be called when provenance fails");
-      },
+      retireImportReplacement: () =>
+        Promise.reject(new Error("X1 should not be called when provenance fails")),
     };
 
     const driver = createE0V2TransactionDriver(
@@ -343,9 +341,8 @@ describe("E0 v2 Transaction Driver Integration", () => {
     const h = createHarness({ disposition: "explicitly-unavailable" });
 
     const x1Adapter: X1ReplacementRetirementAdapter = {
-      retireImportReplacement: async () => {
-        throw new Error("X1 should not be called when provenance fails");
-      },
+      retireImportReplacement: () =>
+        Promise.reject(new Error("X1 should not be called when provenance fails")),
     };
 
     const driver = createE0V2TransactionDriver(
@@ -353,9 +350,14 @@ describe("E0 v2 Transaction Driver Integration", () => {
       x1Adapter,
     );
 
+    const activeRequirement = h.requirement;
+    if (!activeRequirement) {
+      throw new Error("ACTIVE_REQUIREMENT_MISSING");
+    }
+
     const forgedRequirement: ImportNonUndoableConfirmationRequirement =
       Object.freeze({
-        ...h.requirement!,
+        ...activeRequirement,
         confirmationId: "different-id",
       });
 
@@ -386,12 +388,14 @@ describe("E0 v2 Transaction Driver Integration", () => {
     const h = createHarness({ disposition: "retained" });
 
     const x1Adapter: X1ReplacementRetirementAdapter = {
-      retireImportReplacement: async () =>
-        Object.freeze({
-          ok: false,
-          code: "transport.replacement_retirement_failed",
-          retirementEffect: "none",
-        }),
+      retireImportReplacement: () =>
+        Promise.resolve(
+          Object.freeze({
+            ok: false,
+            code: "transport.replacement_retirement_failed",
+            retirementEffect: "none",
+          }),
+        ),
     };
 
     const driver = createE0V2TransactionDriver(

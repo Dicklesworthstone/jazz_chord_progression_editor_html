@@ -168,7 +168,7 @@ describe("E0 chart-text golden round trip", () => {
     );
     if (!parsed.ok) throw new Error("T0_PARSE_FAILED");
     const colliding: StableIdFactory = {
-      next: <K extends StableIdKind>(kind: K) => ({
+      next: <K extends StableIdKind>(_kind: K) => ({
         ok: true as const,
         value: "same-id" as StableIdFor<K>,
         source: "deterministic-test" as const,
