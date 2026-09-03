@@ -1,7 +1,26 @@
 import XCTest
+import UIKit
 @testable import FrankenJazz
 
 final class FrankenJazzCoreTests: XCTestCase {
+    func testEditorSurfaceAdaptsAndMaintainsReadableContrast() throws {
+        let darkTraits = UITraitCollection(userInterfaceStyle: .dark)
+        let lightTraits = UITraitCollection(userInterfaceStyle: .light)
+        let surface = UIColor(JazzTheme.editorSurface)
+        let text = UIColor(JazzTheme.text)
+
+        let darkSurface = try rgba(surface.resolvedColor(with: darkTraits))
+        let lightSurface = try rgba(surface.resolvedColor(with: lightTraits))
+        let darkText = try rgba(text.resolvedColor(with: darkTraits))
+        let lightText = try rgba(text.resolvedColor(with: lightTraits))
+
+        XCTAssertLessThan(relativeLuminance(darkSurface), 0.01)
+        XCTAssertGreaterThan(relativeLuminance(lightSurface), 0.70)
+        XCTAssertGreaterThan(contrastRatio(darkText, darkSurface), 7)
+        XCTAssertGreaterThan(contrastRatio(lightText, lightSurface), 7)
+        XCTAssertNotEqual(darkSurface, lightSurface)
+    }
+
     func testImportFenceRejectsOlderCompletionAndInterveningEdit() {
         var fence = JazzImportFence()
         let older = fence.claim(revision: 4)
@@ -1193,5 +1212,32 @@ final class FrankenJazzCoreTests: XCTestCase {
             }
         }
         return pitches
+    }
+
+    private func rgba(_ color: UIColor) throws -> [CGFloat] {
+        var red: CGFloat = 0
+        var green: CGFloat = 0
+        var blue: CGFloat = 0
+        var alpha: CGFloat = 0
+        guard color.getRed(&red, green: &green, blue: &blue, alpha: &alpha) else {
+            throw XCTSkip("Theme color could not be resolved in the active color space")
+        }
+        return [red, green, blue, alpha]
+    }
+
+    private func relativeLuminance(_ rgba: [CGFloat]) -> CGFloat {
+        func linear(_ component: CGFloat) -> CGFloat {
+            component <= 0.04045
+                ? component / 12.92
+                : pow((component + 0.055) / 1.055, 2.4)
+        }
+        return 0.2126 * linear(rgba[0]) + 0.7152 * linear(rgba[1]) + 0.0722 * linear(rgba[2])
+    }
+
+    private func contrastRatio(_ first: [CGFloat], _ second: [CGFloat]) -> CGFloat {
+        let firstLuminance = relativeLuminance(first)
+        let secondLuminance = relativeLuminance(second)
+        return (max(firstLuminance, secondLuminance) + 0.05)
+            / (min(firstLuminance, secondLuminance) + 0.05)
     }
 }

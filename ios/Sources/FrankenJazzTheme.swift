@@ -23,6 +23,10 @@ enum JazzTheme {
         dark: UIColor(red: 0.040, green: 0.070, blue: 0.080, alpha: 1),
         light: UIColor(red: 0.915, green: 0.895, blue: 0.825, alpha: 1)
     )
+    static let editorSurface = adaptive(
+        dark: UIColor(red: 0.017, green: 0.033, blue: 0.040, alpha: 1),
+        light: UIColor(red: 0.925, green: 0.900, blue: 0.820, alpha: 1)
+    )
     static let paper = adaptive(
         dark: UIColor(red: 0.94, green: 0.92, blue: 0.84, alpha: 1),
         light: UIColor(red: 0.985, green: 0.965, blue: 0.895, alpha: 1)
