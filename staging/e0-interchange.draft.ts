@@ -1504,11 +1504,10 @@ export function createPreparedCanonicalExportDeliveryRegistry(): PreparedCanonic
 }
 
 export function createE0InterchangeOperations(
-  dependencies: CommitImportReplacementDependencies & {
-    prepareImportPreview: PrepareImportPreviewDependencies;
-    canonicalExportDelivery: PrepareCanonicalExportDeliveryDependencies;
-    canonicalExportMarkerSettlement: CompleteCanonicalExportMarkerSettlementDependencies;
-  },
+  dependencies: CommitImportReplacementDependencies &
+    CanonicalExportMarkerOrchestrationDependencies & {
+      prepareImportPreview: PrepareImportPreviewDependencies;
+    },
 ): E0InterchangeOperations {
   const previewCoordinator = createPrepareImportPreviewCoordinator(
     dependencies.prepareImportPreview,
@@ -1801,7 +1800,7 @@ export function createE0InterchangeOperations(
 
       let exportResRaw: unknown;
       try {
-        exportResRaw = await dependencies.canonicalExportDelivery.prepareCanonicalJsonExport({
+        exportResRaw = await dependencies.prepareCanonicalJsonExport({
           document: request.state.document,
         });
       } catch {
