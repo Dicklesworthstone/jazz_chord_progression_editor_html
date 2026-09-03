@@ -35,6 +35,10 @@ function ThemeToggle() {
           <span class="studio-theme-toggle__ray" data-ray="s" />
           <span class="studio-theme-toggle__ray" data-ray="w" />
           <span class="studio-theme-toggle__ray" data-ray="e" />
+          <span class="studio-theme-toggle__ray" data-ray="ne" />
+          <span class="studio-theme-toggle__ray" data-ray="nw" />
+          <span class="studio-theme-toggle__ray" data-ray="se" />
+          <span class="studio-theme-toggle__ray" data-ray="sw" />
         </span>
       ) : (
         <span aria-hidden="true" class="studio-theme-toggle__moon">

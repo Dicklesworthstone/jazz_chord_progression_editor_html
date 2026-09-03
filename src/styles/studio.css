@@ -235,6 +235,38 @@
   block-size: 0.125rem;
 }
 
+/*
+ * Diagonal rays: with only the four orthogonal rays the drawn sun read as
+ * a crosshair-in-a-box at 1rem (2026-09-03 visual audit). Each diagonal is
+ * the same bar rotated about the icon center from the north position.
+ */
+.studio-theme-toggle__ray[data-ray="ne"],
+.studio-theme-toggle__ray[data-ray="nw"],
+.studio-theme-toggle__ray[data-ray="se"],
+.studio-theme-toggle__ray[data-ray="sw"] {
+  inset-inline-start: 0.4375rem;
+  inset-block-start: 0;
+  inline-size: 0.125rem;
+  block-size: 0.1875rem;
+  transform-origin: 0.0625rem 0.5rem;
+}
+
+.studio-theme-toggle__ray[data-ray="ne"] {
+  transform: rotate(45deg);
+}
+
+.studio-theme-toggle__ray[data-ray="nw"] {
+  transform: rotate(-45deg);
+}
+
+.studio-theme-toggle__ray[data-ray="se"] {
+  transform: rotate(135deg);
+}
+
+.studio-theme-toggle__ray[data-ray="sw"] {
+  transform: rotate(-135deg);
+}
+
 .studio-kicker {
   margin: 0;
   color: var(--text-subtle);
@@ -1732,10 +1764,17 @@
 .studio-command-bar {
   flex: none;
   display: flex;
+  /* The combined state — a change notice AND an active selection — needs
+     more inline room than one row offers at the sheet column's width
+     (measured: sentence ellipsized at 139px and the verbs strip cut
+     "Duration" to its first letter behind an undiscoverable horizontal
+     scroll). Wrapping the verbs/undo group under the sentence keeps every
+     label whole; the fixed 3rem returns the moment either occupant leaves. */
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-1) var(--space-3);
   min-block-size: 3rem;
-  block-size: 3rem;
+  padding-block: var(--space-1);
   padding-inline: var(--space-4);
   border-block-start: var(--border-width) solid var(--border-default);
   background: color-mix(in srgb, var(--surface-header) 94%, transparent);

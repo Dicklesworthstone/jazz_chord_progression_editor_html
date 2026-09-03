@@ -691,7 +691,12 @@ export function StudioShell({
             closeLabel="Close the tour"
             content={
               <TourDialogContent
+                finishLabel={transport.canPlay ? "Start playing" : "Done"}
                 onClose={closeTour}
+                onFinish={() => {
+                  closeTour();
+                  if (transport.canPlay) transport.onPlay("pointer");
+                }}
                 onStepChange={setTourStep}
                 step={tourStep}
               />

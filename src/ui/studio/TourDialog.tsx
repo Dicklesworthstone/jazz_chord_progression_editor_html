@@ -145,12 +145,23 @@ export type TourDialogContentProps = Readonly<{
   step: number;
   onStepChange: (step: number) => void;
   onClose: () => void;
+  /**
+   * The last step's call to action. When the chart can play, the shell
+   * passes the real Play dispatch so "Start playing" keeps its promise —
+   * the click is a genuine trusted pointer gesture. With nothing to play,
+   * the shell passes a plain close and the label says "Done" instead:
+   * the button never promises sound it cannot make.
+   */
+  onFinish: () => void;
+  finishLabel: string;
 }>;
 
 export function TourDialogContent({
   step,
   onStepChange,
   onClose,
+  onFinish,
+  finishLabel,
 }: TourDialogContentProps) {
   const active = TOUR_STEPS[step] ?? TOUR_STEPS[0];
   if (active === undefined) return null;
@@ -206,12 +217,12 @@ export function TourDialogContent({
           class="studio-tour__next"
           id="studio-tour-next"
           onClick={() => {
-            if (last) onClose();
+            if (last) onFinish();
             else onStepChange(step + 1);
           }}
           type="button"
         >
-          {last ? "Start playing" : "Next"}
+          {last ? finishLabel : "Next"}
         </button>
       </div>
     </div>
