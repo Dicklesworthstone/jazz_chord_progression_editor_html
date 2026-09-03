@@ -3750,9 +3750,12 @@ export function StudioRoot({
       <RecoveryStatusLine text={recoveryUi.text} />
     ) : null;
 
+  /* The recovery region renders AFTER the app in DOM order so the shell's
+   * skip link keeps the document's first tab stop (the 2026-09-03 e2e
+   * matrix caught the banner stealing it); the stylesheet floats the
+   * region visually as a top card, and role=alertdialog announces it. */
   return (
     <>
-      {recoveryRegion}
       <App
       snapshot={snapshot}
       startupNotice={startupNotice ?? null}
@@ -3868,6 +3871,7 @@ export function StudioRoot({
         undo: controller.undo,
       }}
     />
+    {recoveryRegion}
     </>
   );
 }

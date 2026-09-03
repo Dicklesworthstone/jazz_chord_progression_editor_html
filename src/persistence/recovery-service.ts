@@ -670,6 +670,17 @@ export function createRecoveryService(
 
   async function discardRecovery(documentId: DocumentId): Promise<void> {
     await ensureProbed();
+    /* A discard supersedes any write scheduled before it: without this, a
+     * snapshot queued moments earlier fires after the user chose Discard
+     * and resurrects the envelope on the next load (caught 2026-09-03 by
+     * the A1 keep/discard browser matrix on Firefox and WebKit, where the
+     * boot write was still pending when Discard ran). Future mutations
+     * reschedule normally. */
+    if (queue.input !== null && queue.input.documentId === documentId) {
+      queue.input = null;
+      clearTimers();
+      pendingRevision = null;
+    }
     if (selected === null) return;
     await selected.remove(recoveryStorageKey(documentId, "current"));
     await selected.remove(recoveryStorageKey(documentId, "previous"));
