@@ -12,7 +12,6 @@ import {
   type ImportNonUndoableConfirmationAcknowledgement,
   type ImportNonUndoableConfirmationRequirement,
   type ImportReplacementImpact,
-  type ImportReplacementOrigin,
   type ImportRequestIdentity,
   type PrepareImportReplacementPublicationRequest,
   type PreparedImportReplacementPublication,
@@ -41,7 +40,6 @@ import {
   type TransportGeneration,
 } from "./application-state-contract";
 import {
-  applicationHistoryRetainedByteEstimator,
   enforceHistoryCaps,
   isValidHistoryEstimate,
 } from "./application-history";
@@ -82,7 +80,7 @@ import {
   type AssessImportReplacementImpact,
   type BeginCanonicalExportPreparationResult,
   type BuildChartDocumentCandidate,
-  type CanonicalExportMarkerCandidate,
+  type CanonicalExportMarkerOrchestrationDependencies,
   type CanonicalExportMarkerSettlementAdapters,
   type CanonicalExportPreparationBinding,
   type CanonicalExportPreparationId,
@@ -94,7 +92,6 @@ import {
   type CommitImportReplacementRequest,
   type CommitImportReplacementResult,
   type CompleteCanonicalExportMarkerSettlement,
-  type CompleteCanonicalExportMarkerSettlementDependencies,
   type CompleteCanonicalExportMarkerSettlementRequest,
   type CompleteCanonicalExportMarkerSettlementResult,
   type DecodeUtf8Fatal,
@@ -118,6 +115,7 @@ import {
   type ImportPublicPathField,
   type ImportReplacementCommandSeed,
   type ImportReplacementImpactContext,
+  type ImportReplacementOrigin,
   type ImportSourceChannel,
   type ImportSourceFormat,
   type ImportStage,
@@ -127,7 +125,6 @@ import {
   type ParseJsonData,
   type ParseJsonDataResult,
   type PrepareCanonicalExportDelivery,
-  type PrepareCanonicalExportDeliveryDependencies,
   type PrepareCanonicalExportDeliveryRequest,
   type PrepareCanonicalExportDeliveryResult,
   type PrepareImportPreview,
@@ -421,8 +418,8 @@ export const classifyJsonLexically: ClassifyJsonLexically = (
           schema: schemaValue,
           hasSections,
           dupKeyRange: Object.freeze({
-            startOffset: strToken.start,
-            endOffset: strToken.end,
+            start: strToken.start,
+            end: strToken.end,
           }),
         };
       }
@@ -627,7 +624,7 @@ export const buildChartDocumentCandidate: BuildChartDocumentCandidate = (
     });
   }
 
-  const sections: ProgressionDocumentShapeV2["sections"] = [];
+  const sections: Array<ProgressionDocumentShapeV2["sections"][number]> = [];
   for (let sIdx = 0; sIdx < draft.sections.length; sIdx++) {
     const sDraft = draft.sections[sIdx]!;
     const secId = nextId("section");
@@ -648,7 +645,7 @@ export const buildChartDocumentCandidate: BuildChartDocumentCandidate = (
       });
     }
 
-    const measures: ProgressionDocumentShapeV2["sections"][number]["measures"] = [];
+    const measures: Array<ProgressionDocumentShapeV2["sections"][number]["measures"][number]> = [];
     for (let mIdx = 0; mIdx < sDraft.measures.length; mIdx++) {
       const mDraft = sDraft.measures[mIdx]!;
       const measId = nextId("measure");
@@ -669,7 +666,7 @@ export const buildChartDocumentCandidate: BuildChartDocumentCandidate = (
         });
       }
 
-      const events: ProgressionDocumentShapeV2["sections"][number]["measures"][number]["events"] = [];
+      const events: Array<ProgressionDocumentShapeV2["sections"][number]["measures"][number]["events"][number]> = [];
       for (let eIdx = 0; eIdx < mDraft.events.length; eIdx++) {
         const eDraft = mDraft.events[eIdx]!;
         const evId = nextId("event");
@@ -727,7 +724,7 @@ export const buildChartDocumentCandidate: BuildChartDocumentCandidate = (
     id: docId as DocumentId,
     title: draft.headers.title ?? CHART_IMPORT_DEFAULTS.title,
     description: draft.headers.description ?? CHART_IMPORT_DEFAULTS.description,
-    meter: draft.headers.meter ?? CHART_IMPORT_DEFAULTS.meter,
+    meter: draft.headers.meter ?? Object.freeze({ beatsPerBar: 4 as const, beatUnit: 4 as const }),
     tempoBpm: draft.headers.tempoBpm ?? CHART_IMPORT_DEFAULTS.tempoBpm,
     key: draft.headers.key ?? null,
     sections: Object.freeze(sections),
@@ -825,23 +822,25 @@ export function createPrepareImportPreviewCoordinator(
         return makeRefusal("import.format_mismatch", "schema-route");
       }
       if (formatHint === "legacy-json" && route === "canonical-v2") {
+        return makeRefusal("import.format_mismatch", "schema-route");
+      }
       if (route === "unsupported-schema") {
         return makeRefusal(
-          "import.unsupported_schema",
+          "import.schema_unsupported",
           "schema-route",
           Object.freeze(["schema"] as const),
         );
       }
       if (route === "future-canonical") {
         return makeRefusal(
-          "import.future_canonical_schema",
+          "import.future_schema_unsupported",
           "schema-route",
           Object.freeze(["schema"] as const),
         );
       }
       if (route === "unversioned-unrecognized") {
         return makeRefusal(
-          "import.unrecognized_format",
+          "import.json_shape_unrecognized",
           "schema-route",
           Object.freeze([] as const),
         );
@@ -852,12 +851,12 @@ export function createPrepareImportPreviewCoordinator(
           return makeRefusal(
             parsed.code,
             "json-parse-or-legacy-migration",
-            projectPublicPath(parsed.path),
+            Object.freeze([] as const),
             parsed.range,
           );
         }
         return makeRefusal(
-          "import.unrecognized_format",
+          "import.json_shape_unrecognized",
           "schema-route",
           Object.freeze([] as const),
         );
@@ -869,7 +868,7 @@ export function createPrepareImportPreviewCoordinator(
           return makeRefusal(
             parsed.code,
             "json-parse-or-legacy-migration",
-            projectPublicPath(parsed.path),
+            Object.freeze([] as const),
             parsed.range,
           );
         }
@@ -950,8 +949,15 @@ export function createPrepareImportPreviewCoordinator(
         origin = "legacy-import";
 
         if (legacyCand.report && legacyCand.report.groups) {
-          for (const group of legacyCand.report.groups) {
-            for (const item of group.items) {
+          const allGroups = [
+            legacyCand.report.groups.preserved,
+            legacyCand.report.groups.canonicalized,
+            legacyCand.report.groups.custom,
+            legacyCand.report.groups.ignored,
+            legacyCand.report.groups.rejected,
+          ];
+          for (const groupItems of allGroups) {
+            for (const item of groupItems) {
               reportItems.push(
                 Object.freeze({
                   code: item.code as any,
