@@ -577,6 +577,21 @@ fn target_mouth_pressure_pa_for_center(
         5.9
     } else if has_open_hole {
         5.9
+    } else if fingering.register_harmonic == 4
+        && fingering.openness.iter().all(|openness| *openness == 0.0)
+    {
+        // All-closed third register (C6/m84): the same pianissimo
+        // register-capture weakness as its all-closed second-register
+        // sibling C5/m72 below, one octave up (measured 2026-09-03:
+        // wrong-register ratio 0.847 at 44.1 kHz v36 while every
+        // neighbor and every louder dynamic sits at 0.001-0.013). The
+        // identical cure in the identical idiom: only the pianissimo jet
+        // gets extra convective momentum; louder dynamics keep the
+        // proven 4.82 baseline.
+        {
+            let softness = 1.0 - ((velocity as f64 - 36.0) / 36.0).clamp(0.0, 1.0);
+            4.82 + 0.12 * softness
+        }
     } else if fingering.register_harmonic >= 4 {
         4.82
     } else if fingering.register_harmonic == 2
@@ -987,6 +1002,72 @@ fn decode_state(
     Some(state)
 }
 
+/*
+ * Decode a state minted on a DIFFERENT note whose tuned sound speed gave a
+ * different segment layout, then re-project each segment's travelling-wave
+ * rail onto the new layout by linear resampling. The physical bore is
+ * unchanged between notes — the layout only differs because per-note
+ * intonation pull warps the numeric sound speed — so stretching each
+ * segment's contents to its new capacity preserves the wave field to first
+ * order. Same sample rate only: a rate change is a genuine geometry change
+ * for the state and stays refused.
+ */
+#[allow(clippy::too_many_arguments)]
+fn decode_state_reprojected(
+    bytes: &[u8],
+    sample_rate: f32,
+    new_layout: SegmentLayout,
+    forward: &mut [f64],
+    backward: &mut [f64],
+    forward_scratch: &mut [f64; MAX_WAVE_SAMPLES],
+    backward_scratch: &mut [f64; MAX_WAVE_SAMPLES],
+    jet: &mut [f64; MAX_JET_HISTORY],
+) -> Option<PhraseState> {
+    let prior_midi = read_u32(bytes, 24)? as i32;
+    if !(60..=96).contains(&prior_midi) {
+        return None;
+    }
+    let old_layout = segment_layout(sample_rate as f64, tuned_sound_speed(prior_midi))?;
+    if old_layout.total_samples == new_layout.total_samples {
+        /* Same size means plain decode_state already refused for a
+         * different reason; do not mask it. */
+        return None;
+    }
+    forward_scratch[..old_layout.total_samples].fill(0.0);
+    backward_scratch[..old_layout.total_samples].fill(0.0);
+    let state = decode_state(
+        bytes,
+        sample_rate,
+        old_layout,
+        forward_scratch,
+        backward_scratch,
+        jet,
+    )?;
+    for segment in 0..SEGMENTS {
+        let old_offset = old_layout.offsets[segment];
+        let old_capacity = old_layout.capacities[segment];
+        let new_offset = new_layout.offsets[segment];
+        let new_capacity = new_layout.capacities[segment];
+        for index in 0..new_capacity {
+            let position = if new_capacity > 1 {
+                index as f64 * (old_capacity - 1) as f64 / (new_capacity - 1) as f64
+            } else {
+                0.0
+            };
+            let low = position as usize;
+            let high = (low + 1).min(old_capacity - 1);
+            let fraction = position - low as f64;
+            forward[new_offset + index] = forward_scratch[old_offset + low] * (1.0 - fraction)
+                + forward_scratch[old_offset + high] * fraction;
+            backward[new_offset + index] = backward_scratch[old_offset + low] * (1.0 - fraction)
+                + backward_scratch[old_offset + high] * fraction;
+        }
+    }
+    forward_scratch[..old_layout.total_samples].fill(0.0);
+    backward_scratch[..old_layout.total_samples].fill(0.0);
+    Some(state)
+}
+
 #[allow(clippy::too_many_arguments)]
 fn render_with_storage(
     midi: i32,
@@ -1031,7 +1112,30 @@ fn render_with_storage(
         Some(bytes) => {
             match decode_state(bytes, sample_rate, layout, forward, backward, jet_history) {
                 Some(value) => value,
-                None => return 0,
+                /*
+                 * Cross-note handoff (regression window 6d75b54..25c5835,
+                 * red lib law since): per-note tuned_sound_speed changed
+                 * the segment layout per midi, so a state minted on one
+                 * note stopped matching the next note's total_samples and
+                 * every legato continuation refused to silence. The bore
+                 * geometry never changed — only the numeric tuning warp —
+                 * so the honest recovery is to decode against the PRIOR
+                 * note's layout (prior_midi is in the state header) and
+                 * re-project each segment rail onto this note's layout.
+                 */
+                None => match decode_state_reprojected(
+                    bytes,
+                    sample_rate,
+                    layout,
+                    forward,
+                    backward,
+                    forward_next,
+                    backward_next,
+                    jet_history,
+                ) {
+                    Some(value) => value,
+                    None => return 0,
+                },
             }
         }
         None => PhraseState::at_rest(midi, velocity, sample_rate),

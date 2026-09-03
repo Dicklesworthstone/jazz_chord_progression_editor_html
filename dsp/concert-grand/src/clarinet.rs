@@ -1483,6 +1483,36 @@ fn clr_render_inner(
             vibrato_cos = vibrato_cos * vibrato_step_cos - vibrato_sin * vibrato_step_sin;
             vibrato_sin = next_sin;
         }
+        /*
+         * In-band startup seed (2026-09-03, quality-gate ONSET_SLOW 147 ms;
+         * the lever comment 167 on the winds bead prescribed: periodic
+         * in-band energy, never more pressure). Hopf growth from broadband
+         * turbulence alone is slowest exactly where the reed operates near
+         * its amplitude maximum (mid velocities measured 115-264 ms to
+         * -20 dB of peak). The tongue-release transient of a real attack
+         * carries column-correlated energy at the sounding mode, so the
+         * first ~28 ms of breath is modulated by a small decaying tone at
+         * f0 (8% peak) — the regeneration loop then starts from in-band
+         * energy instead of waiting for noise to find the mode, and the
+         * kick also lands the oscillation in the intended attractor's
+         * basin: the hot late-peaking mid-velocity limit cycle measured
+         * before (m66 v72 sustain -5.7 dB ABOVE ff, peak at 454-887 ms)
+         * no longer captures. Measured after: every gate cell speaks in
+         * <= 86 ms (was 147) and sustain grows sensibly toward pp.
+         * Phrase-relative decay: a continued state's large phrase_frame
+         * makes it zero, so legato joins get no second kick.
+         */
+        /* The kick clock starts at tongue release (untongued: breath
+         * start), so tongued and untongued attacks receive the identical
+         * kick relative to their breath — the chiff sustain-identity law
+         * caught the frame-zero version giving tongued starts a weaker
+         * effective kick and an 11% hotter sustain attractor. */
+        let seed_frame = phrase_frame_f64 - tongue_hold_frames as f64;
+        let startup_seed = if dynamic_reed || seed_frame < 0.0 {
+            0.0
+        } else {
+            0.08 * exp(-seed_frame / (0.028 * sr)) * sin(TAU * f0 * seed_frame / sr)
+        };
         let turbulence = seed.bipolar();
         noise_lp += noise_alpha * (turbulence - noise_lp);
         chiff_low += chiff_low_alpha * (turbulence - chiff_low);
@@ -1497,7 +1527,7 @@ fn clr_render_inner(
         if phrase_frame >= tongue_hold_frames {
             overshoot_envelope *= overshoot_decay;
         }
-        let breath = pressure * vibrato * (1.0 + noise_level * noise_lp);
+        let breath = pressure * vibrato * (1.0 + noise_level * noise_lp + startup_seed);
 
         /* In v2 the bell and reed ends are spatially separate travelling-wave
          * ports. Legacy retains its one-loop reflection for byte stability. */
