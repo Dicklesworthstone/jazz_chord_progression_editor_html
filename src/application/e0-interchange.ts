@@ -12,7 +12,6 @@ import {
   type ImportNonUndoableConfirmationAcknowledgement,
   type ImportNonUndoableConfirmationRequirement,
   type ImportReplacementImpact,
-  type ImportReplacementOrigin,
   type ImportRequestIdentity,
   type PrepareImportReplacementPublicationRequest,
   type PreparedImportReplacementPublication,
@@ -694,7 +693,7 @@ export const buildChartDocumentCandidate: BuildChartDocumentCandidate = (
             annotation: eDraft.annotation,
             chord: eDraft.chord,
             voicing: CHART_IMPORT_DEFAULTS.autoVoicing,
-          }),
+          }) as any,
         );
       }
 
@@ -1737,7 +1736,7 @@ export function createE0InterchangeOperations(
       try {
         pubResRaw = await dependencies.publishImportReplacement({
           prepared,
-          retirement: retirementEvidence.receipt,
+          retirement: retirementReceipt,
         });
       } catch {
         const invalidation = dependencies.discardImportReplacementPublication({
