@@ -46,6 +46,8 @@ import {
   type SanitizedExportFilename,
   type SemanticDocumentHash,
 } from "./interchange-contract";
+const EMPTY_REFUSAL_PATH: readonly [] = Object.freeze([]);
+
 
 /* ------------------------------------------------------------------ */
 /* Canonical value writer                                             */
@@ -343,7 +345,7 @@ export const sanitizeExportFilename = (
   projected = stripTrailingSpacesAndDots(projected);
 
   /* Step 6: truncate to 120 Unicode scalar values, then re-strip. */
-  const scalars = [...projected];
+  const scalars = Array.from(projected);
   if (scalars.length > 120) {
     projected = scalars.slice(0, 120).join("");
     projected = stripTrailingSpacesAndDots(projected);
@@ -408,7 +410,7 @@ export const prepareCanonicalJsonExport = async (
       ok: false,
       refusal: Object.freeze({
         code: "export.canonical_bytes_exceeded" as const,
-        path: Object.freeze([]) as readonly [],
+        path: EMPTY_REFUSAL_PATH,
         received: bytes.length,
         maximum: MAX_CANONICAL_JSON_EXPORT_BYTES,
       }),
@@ -424,7 +426,7 @@ export const prepareCanonicalJsonExport = async (
       ok: false,
       refusal: Object.freeze({
         code: "export.canonical_parse_failed" as const,
-        path: Object.freeze([]) as readonly [],
+        path: EMPTY_REFUSAL_PATH,
       }),
     });
   }
@@ -463,7 +465,7 @@ export const prepareCanonicalJsonExport = async (
       ok: false,
       refusal: Object.freeze({
         code: "export.canonical_semantic_mismatch" as const,
-        path: Object.freeze([]) as readonly [],
+        path: EMPTY_REFUSAL_PATH,
       }),
     });
   }
@@ -471,7 +473,7 @@ export const prepareCanonicalJsonExport = async (
   /* 3.4: injected hash boundary normalized to the exact envelope; a throw,
    * rejection, malformed envelope, or malformed digest is
    * export.hash_unavailable and nothing raw survives. */
-  let digest: SemanticDocumentHash | null = null;
+  let digest: SemanticDocumentHash | null;
   try {
     digest = normalizeHashResult(await dependencies.hashBytes(bytes));
   } catch {
@@ -482,7 +484,7 @@ export const prepareCanonicalJsonExport = async (
       ok: false,
       refusal: Object.freeze({
         code: "export.hash_unavailable" as const,
-        path: Object.freeze([]) as readonly [],
+        path: EMPTY_REFUSAL_PATH,
       }),
     });
   }

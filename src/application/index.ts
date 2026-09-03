@@ -1,6 +1,8 @@
 export * from "./application-state-contract";
 export * from "./e0-interchange-contract";
 export * from "./e0-interchange-v2-contract";
+export * from "./e0-transaction-driver";
+export * from "./e0-v2-port-normalization";
 export * from "./e0-interchange";
 
 export {

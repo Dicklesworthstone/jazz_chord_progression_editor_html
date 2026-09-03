@@ -13,8 +13,6 @@ import {
 } from "../domain";
 import {
   CANONICAL_EXPORT_REVISION_PUBLICATION_SCHEMA,
-  type A0E0InterchangeOwnerOperations,
-  type ImportNonUndoableConfirmationAcknowledgement,
   type ImportNonUndoableConfirmationRequirement,
   type PreparedImportReplacementPublication,
   type PublishCanonicalExportRevisionRequest,
@@ -25,7 +23,6 @@ import {
 } from "./application-state-contract";
 import {
   isNonnegativeSafeInteger,
-  runtimeField,
 } from "./application-state-helpers";
 import {
   CHART_IMPORT_DEFAULTS,
@@ -49,7 +46,6 @@ import {
   type CanonicalExportPreparationIdentity,
   type ClassifyJsonLexically,
   type ClassifyJsonLexicallyResult,
-  type CommitImportReplacement,
   type CommitImportReplacementDependencies,
   type CommitImportReplacementRequest,
   type CommitImportReplacementResult,
@@ -60,14 +56,11 @@ import {
   type E0AdapterProtocolDiagnostic,
   type E0InterchangeOperations,
   type ExplicitlyUnavailableImportPreview,
-  type ExplicitlyUnavailableImportReplacementImpact,
   type FinishPreparedCanonicalExportDeliveryResult,
   type ImportIssue,
   type ImportIssueCode,
   type ImportIssueSummary,
   type ImportPayload,
-  type ImportPreview,
-  type ImportPreviewRefusal,
   type ImportPreviewReport,
   type ImportPreviewReportItem,
   type ImportPreviewSummary,
@@ -97,26 +90,65 @@ import {
   type ReadImportSourceRequest,
   type ReadImportSourceResult,
   type RetainedImportPreview,
-  type RetainedImportReplacementImpact,
   type TakePreparedCanonicalExportDeliveryResult,
-  type X1ReplacementRetirementAdapter,
   type X1ReplacementRetirementEvidence,
 } from "./e0-interchange-contract";
-import {
-  type CommitImportReplacementRequestV2,
-  type CommitImportReplacementResultV2,
-  type CompleteCanonicalExportMarkerSettlementRequestV2,
-  type E0V2CommitRefusalStage,
-  type E0V2PortProtocolDiagnostic,
-  type E0V2RetainedConfirmationBinding,
-  type PrepareCanonicalExportDeliveryRequestV2,
-  type PrepareImportPreviewRequestV2,
-} from "./e0-interchange-v2-contract";
+import type { LegacyMigrationRefusal } from "../compatibility";
+
+/* TS narrows `signal.aborted` to false after the first guard and keeps the
+ * narrowing across awaits, which is unsound for an AbortSignal; reading it
+ * through a call keeps the post-await re-checks honest. */
+function signalAborted(signal: AbortSignal): boolean {
+  return signal.aborted;
+}
 import type {
   ChartTextDraft,
   SourceRange,
 } from "../theory";
 import type { CanonicalJsonArtifact, ExportDeliveryResult } from "../export";
+
+/* Total projection of a C0 legacy-migration refusal into its public shape:
+ * the real refusal code always survives; collision ids and raw source stay
+ * private per the projection contract. */
+function projectLegacyRefusal(
+  refusal: LegacyMigrationRefusal,
+): LegacyMigrationRefusalProjection {
+  const path = projectPublicPath(refusal.path);
+  if (refusal.code === "legacy.id_factory_failed") {
+    return Object.freeze({
+      code: refusal.code,
+      path,
+      detail: Object.freeze({
+        kind: "id-factory" as const,
+        idKind: refusal.kind,
+        factoryCode: refusal.factoryCode,
+      }),
+    });
+  }
+  if (refusal.code === "legacy.id_collision") {
+    return Object.freeze({
+      code: refusal.code,
+      path,
+      detail: Object.freeze({
+        kind: "id-collision" as const,
+        idKind: refusal.kind,
+        firstSourcePath: projectPublicPath(refusal.firstSourcePath),
+      }),
+    });
+  }
+  if ("maximum" in refusal) {
+    return Object.freeze({
+      code: refusal.code,
+      path,
+      detail: Object.freeze({
+        kind: "limit" as const,
+        received: refusal.received,
+        maximum: refusal.maximum,
+      }),
+    });
+  }
+  return Object.freeze({ code: refusal.code, path, detail: null });
+}
 
 function isPlainRecord(
   value: unknown,
@@ -171,7 +203,7 @@ export const readImportSource: ReadImportSource = async (
   try {
     rawResult = await request.source.readAtMost(2_097_153, signal);
   } catch {
-    if (signal.aborted) {
+    if (signalAborted(signal)) {
       return Object.freeze({
         ok: false,
         outcome: "cancelled",
@@ -187,7 +219,7 @@ export const readImportSource: ReadImportSource = async (
     });
   }
 
-  if (signal.aborted) {
+  if (signalAborted(signal)) {
     return Object.freeze({
       ok: false,
       outcome: "cancelled",
@@ -566,7 +598,7 @@ export const buildChartDocumentCandidate: BuildChartDocumentCandidate = (
       return Object.freeze({
         ok: false,
         code: "limit.chart_import_id_requests_exceeded" as const,
-        path: Object.freeze([...path]) as unknown as DomainPath,
+        path: Object.freeze([...path]),
         received: 73_794 as const,
         maximum: MAX_E0_CHART_IMPORT_ID_REQUESTS,
       });
@@ -575,13 +607,13 @@ export const buildChartDocumentCandidate: BuildChartDocumentCandidate = (
       return Object.freeze({
         ok: false,
         code: "import.chart_id_collision" as const,
-        path: Object.freeze([...path]) as unknown as DomainPath,
+        path: Object.freeze([...path]),
       });
     }
     return Object.freeze({
       ok: false,
       code: "import.chart_id_factory_failed" as const,
-      path: Object.freeze([...path]) as unknown as DomainPath,
+      path: Object.freeze([...path]),
     });
   };
 
@@ -839,16 +871,13 @@ export function createPrepareImportPreviewCoordinator(
           dependencies.legacyMigrationDependencies,
         );
         if (!legacyRes.ok) {
-          const legRef = legacyRes.refusal;
-          const projectedLegacyRefusal: LegacyMigrationRefusalProjection = Object.freeze({
-            code: "legacy.structural_malformed",
-            path: projectPublicPath(legRef.path),
-            detail: null,
-          });
+          const projectedLegacyRefusal = projectLegacyRefusal(
+            legacyRes.refusal,
+          );
           return makeRefusal(
             "import.legacy_refused",
             "json-parse-or-legacy-migration",
-            projectPublicPath(legRef.path),
+            projectedLegacyRefusal.path,
             null,
             [],
             projectedLegacyRefusal,
@@ -1022,8 +1051,8 @@ export function createPrepareImportPreviewCoordinator(
       issues,
       report,
       replacementCommandSeed: request.replacementImpactContext.command,
-      rawSourceRetained: false,
-      autoApplyAuthorized: false,
+      rawSourceRetained: false as const,
+      autoApplyAuthorized: false as const,
     };
 
     if (impact.undoDisposition === "retained") {
@@ -1052,251 +1081,11 @@ export function createPrepareImportPreviewCoordinator(
   };
 }
 
-export function createE0V2TransactionDriver(
-  ownerPorts: A0E0InterchangeOwnerOperations,
-  x1Adapter: X1ReplacementRetirementAdapter,
-) {
-  return async (
-    request: CommitImportReplacementRequestV2,
-  ): Promise<CommitImportReplacementResultV2> => {
-    const ownerReq = request.ownerRequest;
-    const identity = ownerReq.identity;
-
-    // Step 1: Prove non-undoable consent provenance before preparing owner
-    if (ownerReq.disclosedImpact.undoDisposition === "explicitly-unavailable") {
-      const binding = request.confirmationBinding;
-      if (binding.acknowledgement === null) {
-        const observed = ownerPorts.readCurrentApplicationDocumentIdentity();
-        return Object.freeze({
-          ok: false,
-          outcome: "refused",
-          stage: "pre-owner-provenance",
-          code: "history.nonundoable_confirmation_required",
-          identity,
-          observedIdentity: observed,
-          liveForRequest: 0,
-        });
-      }
-      if (
-        binding.displayedRequirement === null ||
-        binding.displayedRequirement.confirmationId !==
-          binding.acknowledgement.requirement.confirmationId ||
-        binding.displayedRequirement.candidateDocumentId !==
-          binding.acknowledgement.requirement.candidateDocumentId ||
-        binding.displayedRequirement.identity.requestId !==
-          binding.acknowledgement.requirement.identity.requestId ||
-        binding.displayedRequirement.identity.documentId !==
-          binding.acknowledgement.requirement.identity.documentId ||
-        binding.displayedRequirement.identity.baseRevision !==
-          binding.acknowledgement.requirement.identity.baseRevision
-      ) {
-        const observed = ownerPorts.readCurrentApplicationDocumentIdentity();
-        return Object.freeze({
-          ok: false,
-          outcome: "refused",
-          stage: "pre-owner-provenance",
-          code: "import.confirmation_identity_mismatch",
-          identity,
-          observedIdentity: observed,
-          liveForRequest: 0,
-        });
-      }
-    } else {
-      const binding = request.confirmationBinding;
-      if (binding.acknowledgement !== null) {
-        const observed = ownerPorts.readCurrentApplicationDocumentIdentity();
-        return Object.freeze({
-          ok: false,
-          outcome: "refused",
-          stage: "pre-owner-provenance",
-          code: "import.confirmation_identity_mismatch",
-          identity,
-          observedIdentity: observed,
-          liveForRequest: 0,
-        });
-      }
-    }
-
-    // Step 2: Prepare with owner port
-    let prepResult: ReturnType<typeof ownerPorts.prepareImportReplacementPublication>;
-    try {
-      prepResult = ownerPorts.prepareImportReplacementPublication(ownerReq);
-    } catch {
-      const observed = ownerPorts.readCurrentApplicationDocumentIdentity();
-      return Object.freeze({
-        ok: false,
-        outcome: "protocol-invalid",
-        stage: "port-protocol",
-        diagnostic: Object.freeze({
-          port: "prepareImportReplacementPublication",
-          reason: "threw-or-rejected",
-          rawResultRetained: false,
-        }),
-        identity,
-        observedIdentity: observed,
-        reconciliation: "none",
-        liveForRequest: 0,
-      });
-    }
-
-    if (!prepResult.ok) {
-      const observed = ownerPorts.readCurrentApplicationDocumentIdentity();
-      return Object.freeze({
-        ok: false,
-        outcome: "refused",
-        stage: "owner-preparation",
-        code: prepResult.code,
-        identity,
-        observedIdentity: observed,
-        liveForRequest: 0,
-      });
-    }
-
-    const preparedEcho = prepResult.value;
-
-    // Step 3: Drive X1 transport retirement
-    let retireRaw: unknown;
-    try {
-      retireRaw = await x1Adapter.retireImportReplacement({
-        identity,
-        sourceFormat: ownerReq.sourceFormat,
-        candidateDocumentId: ownerReq.candidate.id,
-        expectedTransportGeneration: preparedEcho.expectedTransportGeneration,
-        scope: "progression-and-preview",
-        requiredPostcondition: "zero-future-attack",
-      });
-    } catch {
-      ownerPorts.discardImportReplacementPublication({
-        identity,
-        reason: "retirement-protocol-invalid",
-      });
-      const observed = ownerPorts.readCurrentApplicationDocumentIdentity();
-      return Object.freeze({
-        ok: false,
-        outcome: "refused",
-        stage: "transport-retirement",
-        code: "transport.replacement_retirement_evidence_invalid",
-        identity,
-        observedIdentity: observed,
-        liveForRequest: 0,
-      });
-    }
-
-    if (
-      !isPlainRecord(retireRaw) ||
-      typeof retireRaw["ok"] !== "boolean" ||
-      (retireRaw["ok"] &&
-        (!isPlainRecord(retireRaw["value"]) ||
-          !isPlainRecord(runtimeField(retireRaw["value"], "receipt"))))
-    ) {
-      ownerPorts.discardImportReplacementPublication({
-        identity,
-        reason: "retirement-protocol-invalid",
-      });
-      const observed = ownerPorts.readCurrentApplicationDocumentIdentity();
-      return Object.freeze({
-        ok: false,
-        outcome: "refused",
-        stage: "transport-retirement",
-        code: "transport.replacement_retirement_evidence_invalid",
-        identity,
-        observedIdentity: observed,
-        liveForRequest: 0,
-      });
-    }
-
-    if (!retireRaw["ok"]) {
-      ownerPorts.discardImportReplacementPublication({
-        identity,
-        reason: "retirement-refused",
-      });
-      const observed = ownerPorts.readCurrentApplicationDocumentIdentity();
-      return Object.freeze({
-        ok: false,
-        outcome: "refused",
-        stage: "transport-retirement",
-        code: "transport.replacement_retirement_refused",
-        identity,
-        observedIdentity: observed,
-        liveForRequest: 0,
-      });
-    }
-
-    const retirementEvidence = retireRaw["value"] as {
-      receipt: ReplacementRetirementReceipt;
-    };
-    const retirementReceipt = retirementEvidence.receipt;
-
-    // Step 4: Publish with owner port
-    let pubResult: ReturnType<typeof ownerPorts.publishImportReplacement>;
-    try {
-      pubResult = ownerPorts.publishImportReplacement({
-        prepared: preparedEcho,
-        retirement: retirementReceipt,
-      });
-    } catch {
-      const observed = ownerPorts.readCurrentApplicationDocumentIdentity();
-      return Object.freeze({
-        ok: false,
-        outcome: "protocol-invalid",
-        stage: "port-protocol",
-        diagnostic: Object.freeze({
-          port: "publishImportReplacement",
-          reason: "threw-or-rejected",
-          rawResultRetained: false,
-        }),
-        identity,
-        observedIdentity: observed,
-        reconciliation: "application-transport-reconciliation-required",
-        liveForRequest: 0,
-      });
-    }
-
-    if (!isPlainRecord(pubResult) || typeof pubResult["ok"] !== "boolean") {
-      const observed = ownerPorts.readCurrentApplicationDocumentIdentity();
-      return Object.freeze({
-        ok: false,
-        outcome: "protocol-invalid",
-        stage: "port-protocol",
-        diagnostic: Object.freeze({
-          port: "publishImportReplacement",
-          reason: "invalid-envelope",
-          rawResultRetained: false,
-        }),
-        identity,
-        observedIdentity: observed,
-        reconciliation: "application-transport-reconciliation-required",
-        liveForRequest: 0,
-      });
-    }
-
-    if (!pubResult.ok) {
-      return Object.freeze({
-        ok: false,
-        outcome: "refused",
-        stage: "owner-publication",
-        code: pubResult.code,
-        identity,
-        observedIdentity: Object.freeze({
-          documentId: pubResult.observedDocumentId,
-          revision: pubResult.observedRevision,
-        }),
-        liveForRequest: 0,
-      });
-    }
-
-    return Object.freeze({
-      ok: true,
-      outcome: "committed",
-      identity,
-      documentId: pubResult.documentId,
-      revision: pubResult.revision,
-      effects: pubResult.effects,
-      counters: pubResult.counters,
-      liveForRequest: 0,
-    });
-  };
-}
+/* The v2 transaction driver lives in ./e0-transaction-driver: the accepted
+ * v2 amendment requires every fallible owner-port return to pass exact-key
+ * normalization (./e0-v2-port-normalization) and the confirmation binding
+ * to prove a full requirement byte-match before the owner call. A driver
+ * consuming trusted Operations types cannot satisfy either law. */
 
 export function createPreparedCanonicalExportDeliveryRegistry(): PreparedCanonicalExportDeliveryRegistry {
   let registryState: PreparedCanonicalExportRegistryState = "empty";
@@ -1539,7 +1328,7 @@ export function createE0InterchangeOperations(
         return Object.freeze({
           ok: false,
           refusal: Object.freeze({
-            code: String(prepResRaw["code"]) as unknown as CommitImportReplacementResult & { ok: false }["refusal"]["code"],
+            code: String(prepResRaw["code"]) as never,
             path: Object.freeze([] as const),
           }),
           state: request.currentState,
@@ -1627,7 +1416,7 @@ export function createE0InterchangeOperations(
         return Object.freeze({
           ok: false,
           refusal: Object.freeze({
-            code: String(retireResRaw["code"]) as unknown as CommitImportReplacementResult & { ok: false }["refusal"]["code"],
+            code: String(retireResRaw["code"]) as never,
             path: Object.freeze([] as const),
           }),
           state: request.currentState,
@@ -1796,7 +1585,7 @@ export function createE0InterchangeOperations(
         return Object.freeze({
           ok: false,
           outcome: "canonical-export-refused",
-          refusal: exportResRaw["refusal"] as unknown as Extract<PrepareCanonicalExportDeliveryResult, { outcome: "canonical-export-refused" }>["refusal"],
+          refusal: exportResRaw["refusal"] as Extract<PrepareCanonicalExportDeliveryResult, { outcome: "canonical-export-refused" }>["refusal"],
         });
       }
 

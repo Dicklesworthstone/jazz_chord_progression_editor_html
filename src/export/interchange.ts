@@ -1,6 +1,4 @@
-import {
-  type DomainPath,
-} from "../domain";
+import { type DomainPath } from "../domain";
 import {
   CANONICAL_JSON_FILENAME_EXTENSION,
   LEAD_SHEET_TEXT_ARTIFACT_SCHEMA,
@@ -75,9 +73,7 @@ export function createLeadSheetTextExportCoordinator(
       });
     }
 
-    for (let sIdx = 0; sIdx < doc.sections.length; sIdx++) {
-      const sec = doc.sections[sIdx];
-      if (!sec) continue;
+    for (const [sIdx, sec] of doc.sections.entries()) {
       if (sec.measures.length === 0) {
         return Object.freeze({
           ok: false,
@@ -87,9 +83,7 @@ export function createLeadSheetTextExportCoordinator(
           }),
         });
       }
-      for (let mIdx = 0; mIdx < sec.measures.length; mIdx++) {
-        const meas = sec.measures[mIdx];
-        if (!meas) continue;
+      for (const [mIdx, meas] of sec.measures.entries()) {
         if (
           meas.completion.kind === "pickup" ||
           meas.completion.kind === "incomplete"
@@ -109,9 +103,7 @@ export function createLeadSheetTextExportCoordinator(
             }),
           });
         }
-        for (let eIdx = 0; eIdx < meas.events.length; eIdx++) {
-          const ev = meas.events[eIdx];
-          if (!ev) continue;
+        for (const [eIdx, ev] of meas.events.entries()) {
           if (ev.chord.kind === "custom") {
             return Object.freeze({
               ok: false,
@@ -137,7 +129,9 @@ export function createLeadSheetTextExportCoordinator(
     const lines: string[] = [];
     lines.push(`@title ${JSON.stringify(doc.title)}`);
     lines.push(`@description ${JSON.stringify(doc.description)}`);
-    lines.push(`@meter ${String(doc.meter.beatsPerBar)}/${String(doc.meter.beatUnit)}`);
+    lines.push(
+      `@meter ${String(doc.meter.beatsPerBar)}/${String(doc.meter.beatUnit)}`,
+    );
     lines.push(`@tempo ${String(doc.tempoBpm)}`);
 
     if (doc.key !== null) {
@@ -178,9 +172,7 @@ export function createLeadSheetTextExportCoordinator(
       addLoss("text.loss.derived_analysis", Object.freeze([] as const));
     }
 
-    for (let sIdx = 0; sIdx < doc.sections.length; sIdx++) {
-      const sec = doc.sections[sIdx];
-      if (!sec) continue;
+    for (const [sIdx, sec] of doc.sections.entries()) {
       if (sec.keyOverride !== null) {
         addLoss(
           "text.loss.section_key_override",
@@ -203,14 +195,11 @@ export function createLeadSheetTextExportCoordinator(
 
       let prevCanonicalChordText: string | null = null;
 
-      for (let mIdx = 0; mIdx < sec.measures.length; mIdx++) {
-        const meas = sec.measures[mIdx];
-        if (!meas) continue;
+      for (const [mIdx, meas] of sec.measures.entries()) {
         const eventTokens: string[] = [];
 
-        for (let eIdx = 0; eIdx < meas.events.length; eIdx++) {
-          const ev = meas.events[eIdx];
-          if (!ev || ev.chord.kind !== "parsed") {
+        for (const [eIdx, ev] of meas.events.entries()) {
+          if (ev.chord.kind !== "parsed") {
             continue;
           }
           const parsedChord = ev.chord;
@@ -488,6 +477,8 @@ export const deliverExportArtifact: DeliverExportArtifact = async (
                 ? "Changes Progression JSON"
                 : "Changes Lead Sheet Text",
             accept: {
+              /* split() always yields at least one element; ?? satisfies
+               * noUncheckedIndexedAccess without an assertion. */
               [artifact.mediaType.split(";")[0] ?? artifact.mediaType]: [
                 artifact.kind === "canonical-json"
                   ? CANONICAL_JSON_FILENAME_EXTENSION

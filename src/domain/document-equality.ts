@@ -202,8 +202,9 @@ export function documentsSemanticallyEqual(
   if (left.sections.length !== right.sections.length) return false;
   const grooveLeft = left.playback.grooveStyleId;
   const grooveRight = right.playback.grooveStyleId;
+  /* Both schemas are the same F2-pinned literal; comparing them would be
+   * provably constant, so identity starts at the id. */
   return (
-    left.schema === right.schema &&
     left.id === right.id &&
     left.title === right.title &&
     left.description === right.description &&
