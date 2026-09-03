@@ -27,6 +27,10 @@ import {
   type PrepareCanonicalJsonExportRequest,
   type PrepareLeadSheetTextExport,
   type PrepareLeadSheetTextExportRequest,
+  type PreparedExportDeliveryRequest,
+  type PreparedExportDeliveryStart,
+  type StartPreparedExportDelivery,
+  CANONICAL_JSON_MEDIA_TYPE,
 } from "./interchange-contract";
 
 /*
@@ -617,5 +621,337 @@ export const createE0ExportOperations: CreateE0ExportOperations = (
     ),
     sanitizeExportFilename: dependencies.canonicalJson.sanitizeExportFilename,
     deliverExportArtifact,
+  });
+};
+
+/* ------------------------------------------------------------------ */
+/* Section-10 activation-safe start primitive                          */
+/* ------------------------------------------------------------------ */
+
+type BrowserDeliveryGlobals = Readonly<{
+  navigator?: Readonly<{ userActivation?: Readonly<{ isActive?: boolean }> }>;
+  showSaveFilePicker?: (options: unknown) => Promise<
+    Readonly<{
+      createWritable: () => Promise<
+        Readonly<{
+          write: (data: Uint8Array) => Promise<void>;
+          close: () => Promise<void>;
+          abort?: () => Promise<void>;
+        }>
+      >;
+    }>
+  >;
+  window?: Readonly<{
+    showSaveFilePicker?: BrowserDeliveryGlobals["showSaveFilePicker"];
+  }>;
+  document?: Readonly<{
+    createElement: (tag: string) => {
+      href: string;
+      download: string;
+      style: { display: string };
+      click: () => void;
+    };
+    body: Readonly<{
+      appendChild: (el: unknown) => void;
+      removeChild: (el: unknown) => void;
+    }>;
+  }>;
+  URL?: Readonly<{
+    createObjectURL: (blob: Blob) => string;
+    revokeObjectURL: (url: string) => void;
+  }>;
+  Blob?: typeof Blob;
+}>;
+
+/**
+ * The composition-private synchronous start primitive
+ * (docs/E0_INTERCHANGE_CONTRACT.md section 10). Before this function
+ * returns — before any await or queued microtask — it probes transient
+ * user activation and invokes either `showSaveFilePicker()` or the
+ * temporary-anchor activation; the bytes were prepared earlier and no
+ * encode, hash, clock read, A0 call, or A1 call occurs in the activation
+ * interval. A false activation probe refuses
+ * `export.delivery_user_gesture_required` and starts no browser work
+ * (an ABSENT probe API is capability absence, not gesture absence, and
+ * does not refuse). User AbortError is `cancelled` and never launches a
+ * Blob fallback; every terminal closes or aborts its writer, removes its
+ * anchor, and revokes its object URL exactly once, and reports honest
+ * channel-discriminated cleanup evidence.
+ */
+export const startPreparedExportDelivery: StartPreparedExportDelivery = (
+  request: PreparedExportDeliveryRequest,
+): PreparedExportDeliveryStart => {
+  const binding = request.binding;
+  const bytes = request.privateBytes;
+  const g = globalThis as unknown as BrowserDeliveryGlobals;
+
+  const cleanZero = Object.freeze({
+    cleanup: "complete" as const,
+    objectUrlsCreated: 0 as const,
+    objectUrlsRevoked: 0 as const,
+    outstandingOwnedResources: 0 as const,
+  });
+
+  /* Activation probe: synchronous, adapter-observed, never caller-asserted. */
+  const activation = g.navigator?.userActivation;
+  if (activation !== undefined && activation.isActive !== true) {
+    return Object.freeze({
+      completion: Promise.resolve(
+        Object.freeze({
+          ok: false as const,
+          outcome: "failed" as const,
+          code: "export.delivery_user_gesture_required" as const,
+          channel: null,
+          artifact: binding,
+          ...cleanZero,
+        }),
+      ),
+    });
+  }
+
+  const picker = g.showSaveFilePicker ?? g.window?.showSaveFilePicker;
+  const mediaType =
+    binding.kind === "canonical-json"
+      ? CANONICAL_JSON_MEDIA_TYPE
+      : LEAD_SHEET_TEXT_MEDIA_TYPE;
+
+  if (
+    request.preference === "prefer-file-system-access" &&
+    typeof picker === "function"
+  ) {
+    /* The picker is invoked HERE, synchronously, inside the activation
+     * interval; everything after the first await runs on the completion. */
+    let pickerPromise: Promise<
+      Readonly<{
+        createWritable: () => Promise<
+          Readonly<{
+            write: (data: Uint8Array) => Promise<void>;
+            close: () => Promise<void>;
+            abort?: () => Promise<void>;
+          }>
+        >;
+      }>
+    >;
+    try {
+      pickerPromise = picker({
+        suggestedName: binding.filename,
+        types: [
+          {
+            description:
+              binding.kind === "canonical-json"
+                ? "Changes Progression JSON"
+                : "Changes Lead Sheet Text",
+            accept: {
+              [mediaType.split(";")[0] ?? mediaType]: [
+                binding.kind === "canonical-json"
+                  ? CANONICAL_JSON_FILENAME_EXTENSION
+                  : LEAD_SHEET_TEXT_FILENAME_EXTENSION,
+              ],
+            },
+          },
+        ],
+      });
+    } catch {
+      return Object.freeze({
+        completion: Promise.resolve(
+          Object.freeze({
+            ok: false as const,
+            outcome: "failed" as const,
+            code: "export.delivery_activation_failed" as const,
+            channel: "file-system-access" as const,
+            artifact: binding,
+            ...cleanZero,
+          }),
+        ),
+      });
+    }
+    const completion = (async (): Promise<ExportDeliveryResult> => {
+      let handle: Awaited<typeof pickerPromise>;
+      try {
+        handle = await pickerPromise;
+      } catch (error) {
+        if (
+          typeof error === "object" &&
+          error !== null &&
+          (error as { name?: unknown }).name === "AbortError"
+        ) {
+          return Object.freeze({
+            ok: true as const,
+            outcome: "cancelled" as const,
+            channel: "file-system-access" as const,
+            artifact: binding,
+            ...cleanZero,
+          });
+        }
+        return Object.freeze({
+          ok: false as const,
+          outcome: "failed" as const,
+          code: "export.delivery_capability_failed" as const,
+          channel: "file-system-access" as const,
+          artifact: binding,
+          ...cleanZero,
+        });
+      }
+      let writer: Awaited<ReturnType<typeof handle.createWritable>>;
+      try {
+        writer = await handle.createWritable();
+      } catch {
+        return Object.freeze({
+          ok: false as const,
+          outcome: "failed" as const,
+          code: "export.delivery_write_failed" as const,
+          channel: "file-system-access" as const,
+          artifact: binding,
+          ...cleanZero,
+        });
+      }
+      try {
+        await writer.write(bytes);
+        await writer.close();
+      } catch {
+        /* write or close failed: abort the writer; an abort failure is a
+         * channel-discriminated cleanup breach with honest counts. */
+        try {
+          if (typeof writer.abort === "function") await writer.abort();
+        } catch {
+          return Object.freeze({
+            ok: false as const,
+            outcome: "cleanup-failed" as const,
+            code: "export.delivery_cleanup_failed" as const,
+            artifact: null,
+            cleanup: "reconciliation-required" as const,
+            channel: "file-system-access" as const,
+            cleanupFailureKinds: Object.freeze([
+              "writer-close",
+              "writer-abort",
+            ] as const),
+            objectUrlsCreated: 0 as const,
+            objectUrlsRevoked: 0 as const,
+            outstandingOwnedResources: 1 as const,
+          });
+        }
+        return Object.freeze({
+          ok: false as const,
+          outcome: "failed" as const,
+          code: "export.delivery_write_failed" as const,
+          channel: "file-system-access" as const,
+          artifact: binding,
+          ...cleanZero,
+        });
+      }
+      return Object.freeze({
+        ok: true as const,
+        outcome: "completed" as const,
+        channel: "file-system-access" as const,
+        bytesOffered: bytes.byteLength,
+        artifact: binding,
+        ...cleanZero,
+      });
+    })();
+    return Object.freeze({ completion });
+  }
+
+  /* Object-URL download path: one Blob, one URL, one temporary anchor,
+   * activated once, removed, revoked exactly once — all synchronous. */
+  if (
+    g.Blob === undefined ||
+    g.URL === undefined ||
+    g.document === undefined
+  ) {
+    return Object.freeze({
+      completion: Promise.resolve(
+        Object.freeze({
+          ok: false as const,
+          outcome: "failed" as const,
+          code: "export.delivery_capability_failed" as const,
+          channel: null,
+          artifact: binding,
+          ...cleanZero,
+        }),
+      ),
+    });
+  }
+  const blob = new g.Blob([bytes as never], { type: mediaType });
+  const url = g.URL.createObjectURL(blob);
+  const anchor = g.document.createElement("a");
+  anchor.href = url;
+  anchor.download = binding.filename;
+  anchor.style.display = "none";
+  g.document.body.appendChild(anchor);
+  let clickFailed = false;
+  try {
+    anchor.click();
+  } catch {
+    clickFailed = true;
+  }
+  let removeFailed = false;
+  try {
+    g.document.body.removeChild(anchor);
+  } catch {
+    removeFailed = true;
+  }
+  let revokeFailed = false;
+  try {
+    g.URL.revokeObjectURL(url);
+  } catch {
+    revokeFailed = true;
+  }
+
+  if (removeFailed || revokeFailed) {
+    const kinds =
+      removeFailed && revokeFailed
+        ? (Object.freeze(["anchor-remove", "object-url-revoke"] as const))
+        : removeFailed
+          ? (Object.freeze(["anchor-remove"] as const))
+          : (Object.freeze(["object-url-revoke"] as const));
+    return Object.freeze({
+      completion: Promise.resolve(
+        Object.freeze({
+          ok: false as const,
+          outcome: "cleanup-failed" as const,
+          code: "export.delivery_cleanup_failed" as const,
+          artifact: null,
+          cleanup: "reconciliation-required" as const,
+          channel: "object-url-download" as const,
+          cleanupFailureKinds: kinds,
+          objectUrlsCreated: 1 as const,
+          objectUrlsRevoked: revokeFailed ? (0 as const) : (1 as const),
+          outstandingOwnedResources:
+            removeFailed && revokeFailed ? (2 as const) : (1 as const),
+        }) as never,
+      ),
+    });
+  }
+  if (clickFailed) {
+    return Object.freeze({
+      completion: Promise.resolve(
+        Object.freeze({
+          ok: false as const,
+          outcome: "failed" as const,
+          code: "export.delivery_activation_failed" as const,
+          channel: "object-url-download" as const,
+          artifact: binding,
+          cleanup: "complete" as const,
+          objectUrlsCreated: 1 as const,
+          objectUrlsRevoked: 1 as const,
+          outstandingOwnedResources: 0 as const,
+        }),
+      ),
+    });
+  }
+  return Object.freeze({
+    completion: Promise.resolve(
+      Object.freeze({
+        ok: true as const,
+        outcome: "handed-off" as const,
+        channel: "object-url-download" as const,
+        bytesOffered: bytes.byteLength,
+        artifact: binding,
+        cleanup: "complete" as const,
+        objectUrlsCreated: 1 as const,
+        objectUrlsRevoked: 1 as const,
+        outstandingOwnedResources: 0 as const,
+      }),
+    ),
   });
 };

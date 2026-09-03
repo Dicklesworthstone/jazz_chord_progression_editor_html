@@ -37,7 +37,9 @@ import {
   type CanonicalExportMarkerPersistenceHandoff,
   type ImportNonUndoableConfirmationAcknowledgement,
   type ImportPreview,
+  type CanonicalExportPreparationId,
   type MarkerEligibleCanonicalExportDelivery,
+  type PreparedCanonicalExportDeliveryRegistry,
   type QueueCanonicalExportMarkerPersistence,
   type RetireImportReplacementRequest,
   type X1ReplacementRetirementAdapter,
@@ -50,6 +52,10 @@ import {
   type CompleteCanonicalExportMarkerSettlementRequestV2,
   type E0V2PortProtocolDiagnostic,
 } from "./e0-interchange-v2-contract";
+import type {
+  ExportDeliveryResult,
+  StartPreparedExportDelivery,
+} from "../export";
 import {
   normalizeIdentityResult,
   normalizeMarkerResult,
@@ -867,6 +873,183 @@ export function createE0V2MarkerSettlementDriver(
       durability: persisted.ok
         ? ("recovery-persisted" as const)
         : ("pending-failed" as const),
+    });
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* Section-10 click path, E0V2-RES-11: port-read identity              */
+/* ------------------------------------------------------------------ */
+
+export type E0V2ExportDeliveryClickResult =
+  | Readonly<{
+      ok: true;
+      outcome: "terminal";
+      delivery: ExportDeliveryResult;
+    }>
+  | Readonly<{
+      ok: false;
+      outcome: "refused";
+      code:
+        | "export.prepared_canonical_unavailable"
+        | "export.prepared_canonical_stale";
+    }>
+  | Readonly<{
+      ok: false;
+      outcome: "protocol-invalid";
+      stage: "port-protocol";
+      diagnostic: E0V2PortProtocolDiagnostic;
+      releaseConfiguration: "failed";
+    }>
+  | Readonly<{
+      ok: false;
+      outcome: "delivery-protocol-invalid";
+      code: "export.delivery_result_invalid";
+      cleanupKnowledge: "unknown";
+      maximumPossibleOutstandingOwnedResources: 4;
+      deliveryResourceReconciliation: "required";
+    }>;
+
+export type E0V2ExportDeliveryClickDriver = (
+  request: Readonly<{
+    preparationId: CanonicalExportPreparationId;
+    deliveryPreference: "prefer-file-system-access" | "download-only";
+  }>,
+) => Promise<E0V2ExportDeliveryClickResult>;
+
+const EXPORT_DELIVERY_TERMINAL_OUTCOMES = Object.freeze([
+  "completed",
+  "handed-off",
+  "cancelled",
+  "failed",
+  "cleanup-failed",
+] as const);
+
+function isTerminalDeliveryEnvelope(raw: unknown): raw is ExportDeliveryResult {
+  return (
+    isRecord(raw) &&
+    typeof raw["ok"] === "boolean" &&
+    EXPORT_DELIVERY_TERMINAL_OUTCOMES.some(
+      (outcome) => outcome === raw["outcome"],
+    )
+  );
+}
+
+/**
+ * E0V2-RES-11 click path: the identity that gates consumption is read at
+ * need through the NORMALIZED `readCurrentApplicationDocumentIdentity`
+ * port — no click-time snapshot crosses the boundary. A malformed or
+ * throwing identity read fails the release configuration and starts NO
+ * browser work and NO registry consumption (WF-008: browser/A0/A1 calls
+ * all zero). The taken entry is consumed exactly once; every terminal —
+ * including a malformed start envelope — runs the generation-keyed
+ * `finishDelivery`, and a completion the driver cannot type yields
+ * `export.delivery_result_invalid` with unknown cleanup knowledge and the
+ * fixed maximum of four possibly-outstanding resources, never a
+ * fabricated count.
+ */
+export function createE0V2ExportDeliveryClickDriver(
+  ports: A0E0InterchangeOwnerPorts,
+  registry: PreparedCanonicalExportDeliveryRegistry,
+  start: StartPreparedExportDelivery,
+): E0V2ExportDeliveryClickDriver {
+  return async (request) => {
+    let identity: ApplicationDocumentIdentity;
+    try {
+      const normalized = normalizeIdentityResult(
+        ports.readCurrentApplicationDocumentIdentity(),
+      );
+      if (normalized.outcome === "protocol-invalid") {
+        return Object.freeze({
+          ok: false as const,
+          outcome: "protocol-invalid" as const,
+          stage: "port-protocol" as const,
+          diagnostic: normalized.diagnostic,
+          releaseConfiguration: "failed" as const,
+        });
+      }
+      identity = normalized.value;
+    } catch {
+      return Object.freeze({
+        ok: false as const,
+        outcome: "protocol-invalid" as const,
+        stage: "port-protocol" as const,
+        diagnostic: threwOrRejected("readCurrentApplicationDocumentIdentity"),
+        releaseConfiguration: "failed" as const,
+      });
+    }
+
+    const taken = registry.take({
+      preparationId: request.preparationId,
+      stateIdentity: Object.freeze({
+        documentId: identity.documentId,
+        revision: identity.revision,
+      }),
+    });
+    if (taken.outcome === "discarded-stale") {
+      return Object.freeze({
+        ok: false as const,
+        outcome: "refused" as const,
+        code: "export.prepared_canonical_stale" as const,
+      });
+    }
+    if (taken.outcome === "unavailable") {
+      return Object.freeze({
+        ok: false as const,
+        outcome: "refused" as const,
+        code: "export.prepared_canonical_unavailable" as const,
+      });
+    }
+
+    let completionRaw: unknown;
+    try {
+      const startEnvelope = start({
+        binding: taken.value.binding,
+        privateBytes: taken.value.privateBytes,
+        preference: request.deliveryPreference,
+      });
+      if (
+        !isRecord(startEnvelope) ||
+        !(startEnvelope["completion"] instanceof Promise)
+      ) {
+        registry.finishDelivery(request.preparationId);
+        return Object.freeze({
+          ok: false as const,
+          outcome: "delivery-protocol-invalid" as const,
+          code: "export.delivery_result_invalid" as const,
+          cleanupKnowledge: "unknown" as const,
+          maximumPossibleOutstandingOwnedResources: 4 as const,
+          deliveryResourceReconciliation: "required" as const,
+        });
+      }
+      completionRaw = await startEnvelope["completion"];
+    } catch {
+      registry.finishDelivery(request.preparationId);
+      return Object.freeze({
+        ok: false as const,
+        outcome: "delivery-protocol-invalid" as const,
+        code: "export.delivery_result_invalid" as const,
+        cleanupKnowledge: "unknown" as const,
+        maximumPossibleOutstandingOwnedResources: 4 as const,
+        deliveryResourceReconciliation: "required" as const,
+      });
+    }
+    registry.finishDelivery(request.preparationId);
+
+    if (!isTerminalDeliveryEnvelope(completionRaw)) {
+      return Object.freeze({
+        ok: false as const,
+        outcome: "delivery-protocol-invalid" as const,
+        code: "export.delivery_result_invalid" as const,
+        cleanupKnowledge: "unknown" as const,
+        maximumPossibleOutstandingOwnedResources: 4 as const,
+        deliveryResourceReconciliation: "required" as const,
+      });
+    }
+    return Object.freeze({
+      ok: true as const,
+      outcome: "terminal" as const,
+      delivery: completionRaw,
     });
   };
 }
