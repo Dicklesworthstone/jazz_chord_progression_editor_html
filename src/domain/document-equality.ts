@@ -22,7 +22,7 @@ import type {
   SpelledPitch,
   SpelledPitchClass,
   Voicing,
-} from ".";
+} from "./index";
 
 function numbersEqual(left: number, right: number): boolean {
   return Object.is(left, right);

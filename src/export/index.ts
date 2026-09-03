@@ -1,6 +1,6 @@
 export * from "./interchange";
 export * from "./interchange-contract";
-export * from "./interchange-json";
+export { prepareCanonicalJsonExport, serializeCanonicalDocument } from "./interchange-json";
 export * from "./midi-export";
 export * from "./midi-export-contract";
 export * from "./midi-import";
