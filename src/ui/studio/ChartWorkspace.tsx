@@ -2287,11 +2287,16 @@ export function ChartWorkspace({
         <div class="studio-three-ways" data-testid="empty-chart-ways">
           <p class="studio-three-ways__title">An empty chart.</p>
           <p class="studio-three-ways__subtitle">Three ways in. All land here.</p>
-          <div class="studio-three-ways__rows" role="list">
+          {/*
+            Buttons carried role="listitem" here, which erased their button
+            semantics for assistive technology (2026-09-03 audit). Group
+            semantics keep the trio announced together while each row stays
+            a real button.
+          */}
+          <div class="studio-three-ways__rows" role="group" aria-label="Three ways to start">
             <button
               class="studio-three-ways__row"
               type="button"
-              role="listitem"
               id="studio-way-foundation"
               onClick={onStartFoundation}
             >
@@ -2306,7 +2311,6 @@ export function ChartWorkspace({
             <button
               class="studio-three-ways__row"
               type="button"
-              role="listitem"
               id="studio-way-lane"
               onClick={onOpenCommandLane}
             >
@@ -2323,7 +2327,6 @@ export function ChartWorkspace({
             <button
               class="studio-three-ways__row"
               type="button"
-              role="listitem"
               id="studio-way-standards"
               onClick={onOpenStandards}
             >

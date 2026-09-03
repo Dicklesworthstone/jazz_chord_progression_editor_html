@@ -353,10 +353,15 @@ export function ChordDetailPanel({
         rest are inert spans by construction (the owner law): no handler, no
         button role, no pointer affordance — a non-chord key cannot sound.
       */}
+      {/*
+        role="group", not "img": an img role hides every descendant from
+        assistive technology, which left the in-chord Preview buttons
+        focusable yet unannounced (2026-09-03 audit).
+      */}
       <div
         class="studio-chord-detail__keyboard"
         aria-label="Two-octave keyboard with the chord tones lit"
-        role="img"
+        role="group"
         onMouseLeave={release}
       >
         <div class="studio-chord-detail__whites">

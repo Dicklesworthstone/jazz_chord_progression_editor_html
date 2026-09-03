@@ -194,7 +194,11 @@ export {
   progressionOptimizerOperations,
 } from "./progression-optimizer";
 
-export * from "./continuation-contract";
+/*
+ * continuation-contract's surface reaches this barrel through g2-contract's
+ * own wildcard re-export below; publishing it here as well tripped the
+ * SOURCE_DUPLICATE_EXPORT law (28 findings, 2026-09-03).
+ */
 export { deriveContinuationSuggestions } from "./continuation";
 export {
   continuationOperations,

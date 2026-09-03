@@ -233,18 +233,30 @@ export function StudioHeader({
             control — never a native confirm dialog: press once to arm, again
             to clear, and the armed state announces itself politely.
           */}
-          <Button
-            busy={false}
-            density="comfortable"
-            describedBy={[]}
-            disabled={!view.canClearChart}
-            id="studio-clear-chart"
-            invalid={false}
-            label={view.clearLabel}
-            onAction={callbacks.onClearChart}
-            type="button"
-            variant="destructive"
-          />
+          {/*
+            The armed window is 5 s (App.tsx onClearChart). Without a visible
+            time-box a second click that lands after the silent disarm merely
+            re-arms, and the button reads as broken (2026-09-03 audit hit
+            exactly that). The wrapper draws a draining bar for the window;
+            the Button primitive itself stays a sealed reviewed surface.
+          */}
+          <span
+            class="studio-clear-arm"
+            data-armed={view.clearArmed ? "true" : "false"}
+          >
+            <Button
+              busy={false}
+              density="comfortable"
+              describedBy={[]}
+              disabled={!view.canClearChart}
+              id="studio-clear-chart"
+              invalid={false}
+              label={view.clearLabel}
+              onAction={callbacks.onClearChart}
+              type="button"
+              variant="destructive"
+            />
+          </span>
           <span aria-live="polite">
             <VisuallyHidden
               content={

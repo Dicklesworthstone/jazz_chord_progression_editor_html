@@ -2163,7 +2163,14 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
     setLoopIntentVersion((version) => version + 1);
   };
 
-  const recordEditResult = (
+  /*
+   * Stable identity matters: this function sits in the dependency list of
+   * the global keydown effect, so a per-render identity re-subscribed the
+   * window listener on every render — including every live playhead tick
+   * while playing (2026-09-03 audit). Its body touches only stable state
+   * setters and module constants.
+   */
+  const recordEditResult = useCallback((
     result: StudioControllerActionResult,
     pending: PendingEdit = null,
   ): void => {
@@ -2190,7 +2197,7 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
         resolutions: RESOLUTIONS[code] ?? Object.freeze([]),
       }),
     );
-  };
+  }, []);
 
   const applyHistoryResult = (
     result: StudioControllerActionResult,

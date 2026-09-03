@@ -267,6 +267,46 @@
   transform: rotate(-135deg);
 }
 
+/*
+ * Armed-clear time-box. The wrapper (not the sealed Button primitive)
+ * shows the 5 s confirmation window draining, so a user who hesitates
+ * sees WHY a later click re-arms instead of clearing. Duration mirrors
+ * the 5000 ms timer in App.tsx onClearChart — change both together.
+ */
+.studio-clear-arm {
+  position: relative;
+  display: inline-flex;
+}
+
+.studio-clear-arm[data-armed="true"]::after {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block-end: -0.2rem;
+  block-size: 0.14rem;
+  inline-size: 100%;
+  border-radius: 999px;
+  background: var(--state-error);
+  transform-origin: left center;
+  animation: studio-clear-arm-drain 5s linear forwards;
+}
+
+@keyframes studio-clear-arm-drain {
+  from {
+    transform: scaleX(1);
+  }
+
+  to {
+    transform: scaleX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .studio-clear-arm[data-armed="true"]::after {
+    animation: none;
+  }
+}
+
 .studio-kicker {
   margin: 0;
   color: var(--text-subtle);
@@ -3651,7 +3691,8 @@
    * #studio-transport-status-detail, the aria-describedby target of the
    * playback controls group -- display:none would drop that description.
    */
-  .studio-transport__status p span {
+  .studio-transport__status p span,
+  .studio-transport__status p strong {
     position: absolute;
     inline-size: 1px;
     block-size: 1px;
@@ -3659,6 +3700,17 @@
     clip: rect(0 0 0 0);
     clip-path: inset(50%);
     white-space: nowrap;
+  }
+
+  /*
+   * The strong label joins the span above (2026-09-03 audit): in the
+   * ~70px the dock row leaves it, "Audio ready" painted as the stub
+   * "Audio r…". The play button's own state colors carry the condition
+   * on a phone; both text nodes stay attached for the describedby wiring,
+   * assistive technology, and the gates that read them.
+   */
+  .studio-transport__status {
+    flex: 0 0 auto;
   }
 
   #studio-transport-play:not(:disabled) {
