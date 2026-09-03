@@ -1,6 +1,7 @@
 export * from "./application-state-contract";
 export * from "./e0-interchange-contract";
 export * from "./e0-interchange-v2-contract";
+export * from "./e0-interchange";
 
 export {
   applicationHistoryRetainedByteEstimator,
