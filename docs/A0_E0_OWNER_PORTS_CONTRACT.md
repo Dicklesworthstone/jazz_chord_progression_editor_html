@@ -4,7 +4,23 @@ Status: proposed specification authority
 Contract schema: `changes.application.interchange-owner-contract.v1`  
 Owner: A0 application controller  
 Prospective consumer: separately versioned E0 v2 composition  
-Production status: specified, unimplemented
+Production status: implemented, composition-sealed (see the build-phase
+amendment record below; originally "specified, unimplemented")
+
+Build-phase amendment record (2026-09-03, jcpe-94yu.2): the five owner
+operations are implemented in `src/application/studio-interchange-owner.ts`,
+constructed exactly once beside the controller closure and returned only on
+the composition (`composition.interchangeOwner`), never on
+`StudioController`, the barrels, or any public E0 call. Evidence at the
+amendment: the bridge integration suite against the real controller,
+state-reference laws, mutation-control replays, and the AST source-policy
+seal — 90/90 — plus the E0 v2 amendment's golden acceptance
+(`docs/evidence/E0_V2_GOLDEN_PACKET_REVIEW.md`), which makes a future
+consumer binding legitimate. The frozen bridge fixture packet's own
+at-authoring claims (`productionImplementationAvailableWhenAuthored: false`,
+`semanticBindingStatus` pending acceptance) remain true statements about
+authoring time and are deliberately unmodified. Real-controller concurrency
+and browser proof remain `jcpe-94yu.3`.
 
 This owner-only contract proposes five A0 capabilities for transactional
 document replacement and canonical-export marker publication. It does not bind,

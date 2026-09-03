@@ -8040,7 +8040,10 @@ export async function validateA0E0BridgeContract(
     for (const token of [
       "export interface A0E0InterchangeOwnerOperations",
       "export interface A0E0InterchangeOwnerPorts",
-      '"specified-unimplemented"',
+      /* jcpe-94yu.2 amendment (2026-09-03): the build phase landed and the
+       * live source's status literal flipped; the frozen fixture packet's
+       * own at-authoring claims are untouched. */
+      '"implemented-composition-sealed"',
       "PrepareImportReplacementPublicationOperation",
       "PrepareImportReplacementPublicationPort",
       "DiscardImportReplacementPublicationOperation",

@@ -169,15 +169,12 @@ describe("implementation-status constants versus production reachability", () =>
         owner: "jcpe-milestone-reliable-studio-l3a.8.4",
       },
       {
-        /* KNOWN DIVERGENCE, review-gated: the controller-owned production
-         * ports exist (src/application/studio-interchange-owner.ts, reachable
-         * and deliberately sealed in the composition root) while the packet
-         * still reads specified-unimplemented. Amending the packet is
-         * jcpe-94yu.2's recorded-acceptance work; delete this note and flip
-         * expectedDeclared in that change. */
+        /* Flipped 2026-09-03 by jcpe-94yu.2's recorded amendment: the
+         * controller-owned production ports exist, are proven by the bridge
+         * suites, and stay sealed in the composition root. */
         constant: "A0_E0_INTERCHANGE_OWNER_IMPLEMENTATION_STATUS",
         declared: A0_E0_INTERCHANGE_OWNER_IMPLEMENTATION_STATUS,
-        expectedDeclared: "specified-unimplemented",
+        expectedDeclared: "implemented-composition-sealed",
         witness: "src/application/studio-interchange-owner.ts",
         expectedReachable: true,
         owner: "jcpe-94yu.2",

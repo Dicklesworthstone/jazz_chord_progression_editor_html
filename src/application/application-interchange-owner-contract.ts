@@ -20,15 +20,21 @@ import type {
 /**
  * A0-owned authority exposed only through the application composition root.
  *
- * This module is a specification surface only. It does not bind or amend any
- * consumer contract. The controller-owned production implementation is
- * deliberately deferred to the bridge build phase.
+ * This module is the type-contract surface. It binds no consumer contract.
+ * The controller-owned production implementation exists in
+ * `src/application/studio-interchange-owner.ts`, constructed exactly once
+ * beside the controller and sealed in the composition root; the status flip
+ * below is jcpe-94yu.2's recorded amendment (2026-09-03), made after the
+ * bridge integration/unit/mutation/policy suites proved the build (90/90)
+ * and after the E0 v2 amendment's golden acceptance
+ * (docs/evidence/E0_V2_GOLDEN_PACKET_REVIEW.md). Real-controller concurrency
+ * and browser proof remain jcpe-94yu.3's separately gated claim.
  */
 export const A0_E0_INTERCHANGE_OWNER_CONTRACT_SCHEMA =
   "changes.application.interchange-owner-contract.v1";
 
 export const A0_E0_INTERCHANGE_OWNER_IMPLEMENTATION_STATUS =
-  "specified-unimplemented" as const;
+  "implemented-composition-sealed" as const;
 
 export const A0_E0_INTERCHANGE_OWNER_OPERATION_NAMES = Object.freeze([
   "prepareImportReplacementPublication",
