@@ -195,10 +195,12 @@ export {
 } from "./progression-optimizer";
 
 /*
- * continuation-contract's surface reaches this barrel through g2-contract's
- * own wildcard re-export below; publishing it here as well tripped the
- * SOURCE_DUPLICATE_EXPORT law (28 findings, 2026-09-03).
+ * The one barrel publication of the continuation-contract surface. A second
+ * path (a g2-contract wildcard) tripped SOURCE_DUPLICATE_EXPORT with 28
+ * findings on 2026-09-03; if g2-contract returns to this barrel, it must
+ * not wildcard continuation-contract again.
  */
+export * from "./continuation-contract";
 export { deriveContinuationSuggestions } from "./continuation";
 export {
   continuationOperations,
