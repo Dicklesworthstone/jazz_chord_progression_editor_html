@@ -281,14 +281,17 @@
 .studio-clear-arm[data-armed="true"]::after {
   content: "";
   position: absolute;
-  inset-inline-start: 0;
-  inset-block-end: -0.2rem;
+  /* Inside the button's own box: drawn below it, the bar was clipped by
+     the wrapper bounds and header overflow. */
+  inset-inline-start: 0.3rem;
+  inset-block-end: 0.22rem;
   block-size: 0.14rem;
-  inline-size: 100%;
+  inline-size: calc(100% - 0.6rem);
   border-radius: 999px;
-  background: var(--state-error);
+  background: color-mix(in srgb, var(--text-inverse) 85%, transparent);
   transform-origin: left center;
   animation: studio-clear-arm-drain 5s linear forwards;
+  pointer-events: none;
 }
 
 @keyframes studio-clear-arm-drain {

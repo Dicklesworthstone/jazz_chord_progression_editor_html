@@ -694,8 +694,12 @@ export function StudioShell({
                 finishLabel={transport.canPlay ? "Start playing" : "Done"}
                 onClose={closeTour}
                 onFinish={() => {
-                  closeTour();
+                  /* Play first, close second: the dispatch must own the
+                   * click's user-activation before the dialog teardown
+                   * cascade runs (close-first initialized the engine but
+                   * never engaged playback, 2026-09-03 audit). */
                   if (transport.canPlay) transport.onPlay("pointer");
+                  closeTour();
                 }}
                 onStepChange={setTourStep}
                 step={tourStep}
