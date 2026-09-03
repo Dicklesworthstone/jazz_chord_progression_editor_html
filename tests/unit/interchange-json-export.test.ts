@@ -21,14 +21,14 @@ import {
   serializeCanonicalDocument,
 } from "../../src/export/interchange-json";
 import type { CanonicalJsonExportDependencies } from "../../src/export/interchange-contract";
-import type { DomainPath, ValidatedDocument } from "../../src/domain";
+import type { DomainPath, ProgressionDocumentShapeV2, ValidatedDocument } from "../../src/domain";
 
 const fixtureRoot = resolve(import.meta.dirname, "../fixtures/interchange");
 
 const realDependencies: CanonicalJsonExportDependencies = Object.freeze({
   decodeDocumentShape,
   validateCanonicalRoundTrip: (candidate: unknown) => {
-    const result = validateDocumentSemantics(candidate as any);
+    const result = validateDocumentSemantics(candidate as ProgressionDocumentShapeV2);
     if (result.ok) return { ok: true as const, value: result.value };
     return {
       ok: false as const,
@@ -151,7 +151,15 @@ describe("E0 canonical JSON export against the reviewed goldens", () => {
     ]) {
       const result = await prepareCanonicalJsonExport(
         { document },
-        { ...realDependencies, hashBytes: () => Promise.resolve(raw as any) },
+        {
+          ...realDependencies,
+          hashBytes: () =>
+            Promise.resolve(
+              raw as Awaited<
+                ReturnType<CanonicalJsonExportDependencies["hashBytes"]>
+              >,
+            ),
+        },
       );
       expect(result.ok).toBe(false);
       if (result.ok) continue;

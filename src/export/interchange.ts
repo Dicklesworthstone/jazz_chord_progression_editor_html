@@ -1,13 +1,6 @@
 import {
-  type ChordDegree,
-  type ChordSpec,
-  type CustomChordSpec,
   type DomainPath,
 } from "../domain";
-import type {
-  ChartDiagnostic,
-  SymbolDiagnostic,
-} from "../theory";
 import {
   CANONICAL_JSON_FILENAME_EXTENSION,
   LEAD_SHEET_TEXT_ARTIFACT_SCHEMA,
@@ -60,8 +53,8 @@ export function createCanonicalJsonExportCoordinator(
 }
 
 function formatDuration(num: number, den: number): string {
-  if (den === 1) return `:${num}`;
-  return `:${num}/${den}`;
+  if (den === 1) return `:${String(num)}`;
+  return `:${String(num)}/${String(den)}`;
 }
 
 export function createLeadSheetTextExportCoordinator(
@@ -83,7 +76,8 @@ export function createLeadSheetTextExportCoordinator(
     }
 
     for (let sIdx = 0; sIdx < doc.sections.length; sIdx++) {
-      const sec = doc.sections[sIdx]!;
+      const sec = doc.sections[sIdx];
+      if (!sec) continue;
       if (sec.measures.length === 0) {
         return Object.freeze({
           ok: false,
@@ -94,7 +88,8 @@ export function createLeadSheetTextExportCoordinator(
         });
       }
       for (let mIdx = 0; mIdx < sec.measures.length; mIdx++) {
-        const meas = sec.measures[mIdx]!;
+        const meas = sec.measures[mIdx];
+        if (!meas) continue;
         if (
           meas.completion.kind === "pickup" ||
           meas.completion.kind === "incomplete"
@@ -115,7 +110,8 @@ export function createLeadSheetTextExportCoordinator(
           });
         }
         for (let eIdx = 0; eIdx < meas.events.length; eIdx++) {
-          const ev = meas.events[eIdx]!;
+          const ev = meas.events[eIdx];
+          if (!ev) continue;
           if (ev.chord.kind === "custom") {
             return Object.freeze({
               ok: false,
@@ -141,8 +137,8 @@ export function createLeadSheetTextExportCoordinator(
     const lines: string[] = [];
     lines.push(`@title ${JSON.stringify(doc.title)}`);
     lines.push(`@description ${JSON.stringify(doc.description)}`);
-    lines.push(`@meter ${doc.meter.beatsPerBar}/${doc.meter.beatUnit}`);
-    lines.push(`@tempo ${doc.tempoBpm}`);
+    lines.push(`@meter ${String(doc.meter.beatsPerBar)}/${String(doc.meter.beatUnit)}`);
+    lines.push(`@tempo ${String(doc.tempoBpm)}`);
 
     if (doc.key !== null) {
       const alterStr =
@@ -183,7 +179,8 @@ export function createLeadSheetTextExportCoordinator(
     }
 
     for (let sIdx = 0; sIdx < doc.sections.length; sIdx++) {
-      const sec = doc.sections[sIdx]!;
+      const sec = doc.sections[sIdx];
+      if (!sec) continue;
       if (sec.keyOverride !== null) {
         addLoss(
           "text.loss.section_key_override",
@@ -207,12 +204,13 @@ export function createLeadSheetTextExportCoordinator(
       let prevCanonicalChordText: string | null = null;
 
       for (let mIdx = 0; mIdx < sec.measures.length; mIdx++) {
-        const meas = sec.measures[mIdx]!;
+        const meas = sec.measures[mIdx];
+        if (!meas) continue;
         const eventTokens: string[] = [];
 
         for (let eIdx = 0; eIdx < meas.events.length; eIdx++) {
-          const ev = meas.events[eIdx]!;
-          if (ev.chord.kind !== "parsed") {
+          const ev = meas.events[eIdx];
+          if (!ev || ev.chord.kind !== "parsed") {
             continue;
           }
           const parsedChord = ev.chord;
@@ -226,9 +224,7 @@ export function createLeadSheetTextExportCoordinator(
               refusal: Object.freeze({
                 code: "export.text_format_failed",
                 path: Object.freeze([] as const),
-                diagnostics: Object.freeze([
-                  ...formatRes.diagnostics,
-                ]) as readonly [SymbolDiagnostic, ...SymbolDiagnostic[]],
+                diagnostics: formatRes.diagnostics,
               }),
             });
           }
@@ -371,9 +367,7 @@ export function createLeadSheetTextExportCoordinator(
         refusal: Object.freeze({
           code: "export.text_round_trip_parse_failed",
           path: Object.freeze([] as const),
-          diagnostics: Object.freeze([
-            ...parseResult.diagnostics,
-          ]) as readonly [ChartDiagnostic, ...ChartDiagnostic[]],
+          diagnostics: parseResult.diagnostics,
         }),
       });
     }
@@ -494,7 +488,7 @@ export const deliverExportArtifact: DeliverExportArtifact = async (
                 ? "Changes Progression JSON"
                 : "Changes Lead Sheet Text",
             accept: {
-              [artifact.mediaType.split(";")[0]!]: [
+              [artifact.mediaType.split(";")[0] ?? artifact.mediaType]: [
                 artifact.kind === "canonical-json"
                   ? CANONICAL_JSON_FILENAME_EXTENSION
                   : LEAD_SHEET_TEXT_FILENAME_EXTENSION,

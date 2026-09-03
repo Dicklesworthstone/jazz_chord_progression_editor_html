@@ -16,6 +16,7 @@ import type {
   ImportNonUndoableConfirmationAcknowledgement,
   ImportNonUndoableConfirmationRequirement,
   PrepareImportReplacementPublicationRequest,
+  RetiringTransportDocumentTransition,
 } from "../../src/application/application-interchange-owner-contract";
 import type {
   CommitImportReplacementRequestV2,
@@ -100,7 +101,7 @@ function createHarness(options: HarnessOptions = {}) {
 
   const diagnostics: unknown[] = [];
   const composition = createStudioCompositionOverState(state, dependencies, {
-    interchangeDiagnostics: (d) => diagnostics.push(d),
+    interchangeDiagnostics: (d: unknown) => diagnostics.push(d),
   });
 
   let notifications = 0;
@@ -161,28 +162,35 @@ function createHarness(options: HarnessOptions = {}) {
     });
   }
 
+  const baseReq = {
+    identity,
+    sourceFormat: "canonical-json-v2" as const,
+    replacementOrigin: "canonical-import" as const,
+    candidate,
+    replacementCommandSeed: seed,
+  };
+
   const ownerRequest: PrepareImportReplacementPublicationRequest =
-    (disposition === "retained"
+    disposition === "retained"
       ? Object.freeze({
-          identity,
-          sourceFormat: "canonical-json-v2" as const,
-          replacementOrigin: "canonical-import" as const,
-          candidate,
-          replacementCommandSeed: seed,
+          ...baseReq,
           disclosedImpact: retainedImpact,
-          currentTransition: transition as any,
+          currentTransition: transition as RetiringTransportDocumentTransition & {
+            undoDisposition: "retained";
+          },
           nonUndoableConfirmation: null,
         })
       : Object.freeze({
-          identity,
-          sourceFormat: "canonical-json-v2" as const,
-          replacementOrigin: "canonical-import" as const,
-          candidate,
-          replacementCommandSeed: seed,
+          ...baseReq,
           disclosedImpact: unavailableImpact,
-          currentTransition: transition as any,
-          nonUndoableConfirmation: acknowledgement,
-        })) as any;
+          currentTransition: transition as RetiringTransportDocumentTransition & {
+            undoDisposition: "explicitly-unavailable";
+          },
+          nonUndoableConfirmation: acknowledgement ?? Object.freeze({
+            kind: "acknowledged" as const,
+            requirement: requirement ?? ({} as unknown as ImportNonUndoableConfirmationRequirement),
+          }),
+        });
 
   return {
     composition,

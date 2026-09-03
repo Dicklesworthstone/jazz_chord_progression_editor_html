@@ -102,7 +102,7 @@ describe("G4 Constraint Harmonization Workbench", () => {
       eventId: eventIdOf(`slot_${String(i)}`),
       offsetBeat: beat(i * 4),
       duration: beat(4),
-      melodyPitch: { step: "C" as const, alter: 0, octave: 4 },
+      melodyPitch: { step: "C" as const, alter: 0 as const, octave: 4 },
     }));
 
     const result = harmonizeConstraints(hugeSlots);

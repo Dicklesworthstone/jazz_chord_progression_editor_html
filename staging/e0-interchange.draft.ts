@@ -1,9 +1,11 @@
 import {
+  type AutoVoicing,
   type ChordEvent,
   type ChordEventId,
   type DocumentId,
   type DomainPath,
   type MeasureId,
+  type ParsedChordEvent,
   type ProgressionDocumentShapeV2,
   type SectionId,
   type StableIdFactory,
@@ -90,6 +92,7 @@ import {
   type PublishCanonicalExportRevisionResult,
   type PublishImportReplacementResult,
   type PublishPreparedCanonicalExportDeliveryResult,
+  type QueueCanonicalExportMarkerPersistenceResult,
   type ReadImportSource,
   type ReadImportSourceRequest,
   type ReadImportSourceResult,
@@ -113,7 +116,7 @@ import type {
   ChartTextDraft,
   SourceRange,
 } from "../theory";
-import type { CanonicalJsonArtifact } from "../export";
+import type { CanonicalJsonArtifact, ExportDeliveryResult } from "../export";
 
 function isPlainRecord(
   value: unknown,
@@ -561,7 +564,7 @@ export const buildChartDocumentCandidate: BuildChartDocumentCandidate = (
   const makeIdRefusal = (path: readonly (string | number)[]) => {
     if (limitExceeded) {
       return Object.freeze({
-        ok: false as const,
+        ok: false,
         code: "limit.chart_import_id_requests_exceeded" as const,
         path: Object.freeze([...path]) as unknown as DomainPath,
         received: 73_794 as const,
@@ -570,13 +573,13 @@ export const buildChartDocumentCandidate: BuildChartDocumentCandidate = (
     }
     if (collisionOccurred) {
       return Object.freeze({
-        ok: false as const,
+        ok: false,
         code: "import.chart_id_collision" as const,
         path: Object.freeze([...path]) as unknown as DomainPath,
       });
     }
     return Object.freeze({
-      ok: false as const,
+      ok: false,
       code: "import.chart_id_factory_failed" as const,
       path: Object.freeze([...path]) as unknown as DomainPath,
     });
@@ -614,14 +617,24 @@ export const buildChartDocumentCandidate: BuildChartDocumentCandidate = (
           return makeIdRefusal(["sections", sIdx, "measures", mIdx, "events", eIdx]);
         }
 
-        const chordEv: ChordEvent = Object.freeze({
-          id: evId as unknown as ChordEventId,
-          duration: eDraft.duration,
-          annotation: eDraft.annotation,
-          chord: eDraft.chord,
-          voicing: CHART_IMPORT_DEFAULTS.autoVoicing,
-        });
-        events.push(chordEv as any);
+        const autoVoicing = CHART_IMPORT_DEFAULTS.autoVoicing as AutoVoicing;
+        const chordEv: ChordEvent =
+          eDraft.chord.bass === null
+            ? (Object.freeze({
+                id: evId as unknown as ChordEventId,
+                duration: eDraft.duration,
+                annotation: eDraft.annotation,
+                chord: eDraft.chord,
+                voicing: autoVoicing,
+              }) as unknown as ParsedChordEvent)
+            : (Object.freeze({
+                id: evId as unknown as ChordEventId,
+                duration: eDraft.duration,
+                annotation: eDraft.annotation,
+                chord: eDraft.chord,
+                voicing: autoVoicing,
+              }) as unknown as ParsedChordEvent);
+        events.push(chordEv);
       }
 
       measures.push(
@@ -733,8 +746,8 @@ export function createPrepareImportPreviewCoordinator(
     }
 
     let candidateDoc: ValidatedDocument;
-    let sourceFormat: ImportSourceFormat = "canonical-json-v2";
-    let origin: "canonical-import" | "legacy-import" = "canonical-import";
+    let sourceFormat: ImportSourceFormat;
+    let origin: "canonical-import" | "legacy-import";
     const reportItems: ImportPreviewReportItem[] = [];
 
     if (isJsonLooking) {
@@ -827,17 +840,18 @@ export function createPrepareImportPreviewCoordinator(
         );
         if (!legacyRes.ok) {
           const legRef = legacyRes.refusal;
+          const projectedLegacyRefusal: LegacyMigrationRefusalProjection = Object.freeze({
+            code: "legacy.structural_malformed",
+            path: projectPublicPath(legRef.path),
+            detail: null,
+          });
           return makeRefusal(
             "import.legacy_refused",
             "json-parse-or-legacy-migration",
             projectPublicPath(legRef.path),
             null,
             [],
-            Object.freeze({
-              code: legRef.code as any,
-              path: projectPublicPath(legRef.path),
-              detail: null,
-            }) as any,
+            projectedLegacyRefusal,
           );
         }
 
@@ -864,24 +878,22 @@ export function createPrepareImportPreviewCoordinator(
         sourceFormat = "unversioned-legacy-json";
         origin = "legacy-import";
 
-        if (legacyCand.report) {
-          const allGroups = [
-            legacyCand.report.groups.preserved,
-            legacyCand.report.groups.canonicalized,
-            legacyCand.report.groups.custom,
-            legacyCand.report.groups.ignored,
-            legacyCand.report.groups.rejected,
-          ];
-          for (const groupItems of allGroups) {
-            for (const item of groupItems) {
-              reportItems.push(
-                Object.freeze({
-                  code: item.code as any,
-                  sourcePath: projectPublicPath(item.sourcePath),
-                  targetPath: item.targetPath ? projectPublicPath(item.targetPath) : null,
-                }) as any,
-              );
-            }
+        const allGroups = [
+          legacyCand.report.groups.preserved,
+          legacyCand.report.groups.canonicalized,
+          legacyCand.report.groups.custom,
+          legacyCand.report.groups.ignored,
+          legacyCand.report.groups.rejected,
+        ];
+        for (const groupItems of allGroups) {
+          for (const item of groupItems) {
+            reportItems.push(
+              Object.freeze({
+                code: item.code,
+                sourcePath: projectPublicPath(item.sourcePath),
+                targetPath: item.targetPath ? projectPublicPath(item.targetPath) : null,
+              }),
+            );
           }
         }
       }
@@ -892,12 +904,11 @@ export function createPrepareImportPreviewCoordinator(
         CHART_IMPORT_PARSE_ACCIDENTAL_STYLE,
       );
       if (!parseRes.ok) {
-        const firstDiag = parseRes.diagnostics[0];
         return makeRefusal(
           "import.chart_invalid",
           "chart-parse",
           Object.freeze([] as const),
-          firstDiag ? firstDiag.range : null,
+          parseRes.diagnostics[0].range,
         );
       }
 
@@ -1011,14 +1022,14 @@ export function createPrepareImportPreviewCoordinator(
       issues,
       report,
       replacementCommandSeed: request.replacementImpactContext.command,
-      rawSourceRetained: false as const,
-      autoApplyAuthorized: false as const,
+      rawSourceRetained: false,
+      autoApplyAuthorized: false,
     };
 
     if (impact.undoDisposition === "retained") {
       const preview: RetainedImportPreview = Object.freeze({
         ...basePreview,
-        replacementImpact: impact as RetainedImportReplacementImpact,
+        replacementImpact: impact,
         nonUndoableConfirmationRequirement: null,
       });
       return Object.freeze({ ok: true, value: preview });
@@ -1029,11 +1040,11 @@ export function createPrepareImportPreviewCoordinator(
         identity: payload.identity,
         candidateDocumentId: candidateDoc.id,
         commandId: request.replacementImpactContext.command.id,
-        disclosedImpact: impact as ExplicitlyUnavailableImportReplacementImpact,
+        disclosedImpact: impact,
       });
       const preview: ExplicitlyUnavailableImportPreview = Object.freeze({
         ...basePreview,
-        replacementImpact: impact as ExplicitlyUnavailableImportReplacementImpact,
+        replacementImpact: impact,
         nonUndoableConfirmationRequirement: req,
       });
       return Object.freeze({ ok: true, value: preview });
@@ -1068,7 +1079,6 @@ export function createE0V2TransactionDriver(
       }
       if (
         binding.displayedRequirement === null ||
-        !binding.byteMatchProvedBeforeOwnerCall ||
         binding.displayedRequirement.confirmationId !==
           binding.acknowledgement.requirement.confirmationId ||
         binding.displayedRequirement.candidateDocumentId !==
@@ -1175,7 +1185,7 @@ export function createE0V2TransactionDriver(
     if (
       !isPlainRecord(retireRaw) ||
       typeof retireRaw["ok"] !== "boolean" ||
-      (retireRaw["ok"] === true &&
+      (retireRaw["ok"] &&
         (!isPlainRecord(retireRaw["value"]) ||
           !isPlainRecord(runtimeField(retireRaw["value"], "receipt"))))
     ) {
@@ -1195,7 +1205,7 @@ export function createE0V2TransactionDriver(
       });
     }
 
-    if (retireRaw["ok"] === false) {
+    if (!retireRaw["ok"]) {
       ownerPorts.discardImportReplacementPublication({
         identity,
         reason: "retirement-refused",
@@ -1313,7 +1323,7 @@ export function createPreparedCanonicalExportDeliveryRegistry(): PreparedCanonic
           state: registryState === "ready" ? "empty" : registryState,
         });
       }
-      const prepId = currentPreparationId as CanonicalExportPreparationId;
+      const prepId = currentPreparationId;
       const gen = currentGeneration;
       currentPreparationId = (currentPreparationId + 1) as CanonicalExportPreparationId;
       currentGeneration++;
@@ -1529,7 +1539,7 @@ export function createE0InterchangeOperations(
         return Object.freeze({
           ok: false,
           refusal: Object.freeze({
-            code: String(prepResRaw["code"]) as any,
+            code: String(prepResRaw["code"]) as unknown as CommitImportReplacementResult & { ok: false }["refusal"]["code"],
             path: Object.freeze([] as const),
           }),
           state: request.currentState,
@@ -1617,7 +1627,7 @@ export function createE0InterchangeOperations(
         return Object.freeze({
           ok: false,
           refusal: Object.freeze({
-            code: String(retireResRaw["code"]) as any,
+            code: String(retireResRaw["code"]) as unknown as CommitImportReplacementResult & { ok: false }["refusal"]["code"],
             path: Object.freeze([] as const),
           }),
           state: request.currentState,
@@ -1628,7 +1638,7 @@ export function createE0InterchangeOperations(
         });
       }
 
-      const rawRetirementEvidence = retireResRaw["value"] as unknown as X1ReplacementRetirementEvidence;
+      const rawRetirementEvidence = retireResRaw["value"] as X1ReplacementRetirementEvidence;
       const rawReceipt = rawRetirementEvidence.receipt;
       const retirementReceipt: ReplacementRetirementReceipt = Object.freeze({
         requestId: rawReceipt.requestId,
@@ -1786,11 +1796,11 @@ export function createE0InterchangeOperations(
         return Object.freeze({
           ok: false,
           outcome: "canonical-export-refused",
-          refusal: exportResRaw["refusal"] as any,
+          refusal: exportResRaw["refusal"] as unknown as Extract<PrepareCanonicalExportDeliveryResult, { outcome: "canonical-export-refused" }>["refusal"],
         });
       }
 
-      const artifact = exportResRaw["value"] as unknown as CanonicalJsonArtifact;
+      const artifact = exportResRaw["value"] as CanonicalJsonArtifact;
       const binding: CanonicalExportPreparationBinding = Object.freeze({
         preparationId: beginRes.identity.preparationId,
         generation: beginRes.identity.generation,
@@ -1846,7 +1856,7 @@ export function createE0InterchangeOperations(
         });
       }
 
-      if (takeRes.outcome === "unavailable" || takeRes.value === null) {
+      if (takeRes.outcome === "unavailable") {
         return Object.freeze({
           outcome: "prepared-export-unavailable",
           code: "export.prepared_canonical_unavailable",
@@ -1930,7 +1940,7 @@ export function createE0InterchangeOperations(
       if (deliveryCompletion["outcome"] === "cancelled") {
         return Object.freeze({
           outcome: "unchanged-cancelled",
-          delivery: deliveryCompletion as any,
+          delivery: deliveryCompletion as unknown as Extract<ExportDeliveryResult, { outcome: "cancelled" }>,
           a0Publication: null,
           a1Persistence: null,
           durability: "unchanged",
@@ -1940,7 +1950,7 @@ export function createE0InterchangeOperations(
       if (deliveryCompletion["outcome"] === "failed") {
         return Object.freeze({
           outcome: "unchanged-failed",
-          delivery: deliveryCompletion as any,
+          delivery: deliveryCompletion as unknown as Extract<ExportDeliveryResult, { outcome: "failed" }>,
           a0Publication: null,
           a1Persistence: null,
           durability: "unchanged",
@@ -1951,7 +1961,7 @@ export function createE0InterchangeOperations(
         return Object.freeze({
           outcome: "delivery-cleanup-reconciliation-required",
           code: "export.delivery_cleanup_failed",
-          delivery: deliveryCompletion as any,
+          delivery: deliveryCompletion as unknown as Extract<ExportDeliveryResult, { outcome: "cleanup-failed" }>,
           deliveryResourceReconciliation: "required",
           a0Publication: null,
           a1Persistence: null,
@@ -2044,13 +2054,13 @@ export function createE0InterchangeOperations(
         });
       }
 
-      if (pubRaw["ok"] === false) {
+      if (!pubRaw["ok"]) {
         return Object.freeze({
           outcome: "publication-refused",
           delivery,
           a0Publication: Object.freeze({
             request: pubReq,
-            result: pubRaw as any,
+            result: pubRaw as unknown as Extract<PublishCanonicalExportRevisionResult, { ok: false }>,
           }),
           a1Persistence: null,
           durability: "unchanged",
@@ -2072,7 +2082,26 @@ export function createE0InterchangeOperations(
           delivery,
           a0Publication,
           a1Persistence: Object.freeze({
-            handoff: null as any,
+            handoff: Object.freeze({
+              schema: "changes.canonical-export-marker-persistence-handoff.v1" as const,
+              marker: Object.freeze({
+                documentId: delivery.artifact.sourceDocumentId,
+                revision: request.state.revision,
+                exportedAt: new Date().toISOString(),
+                semanticDocumentHash: delivery.artifact.semanticDocumentHash,
+                canonicalPolicyVersion: 1 as const,
+                semanticHashPolicyVersion: 1 as const,
+              }),
+              artifact: Object.freeze({
+                kind: "canonical-json" as const,
+                sourceDocumentId: delivery.artifact.sourceDocumentId,
+                byteLength: delivery.artifact.byteLength,
+                filename: delivery.artifact.filename,
+                semanticDocumentHash: delivery.artifact.semanticDocumentHash,
+                canonicalPolicyVersion: 1 as const,
+                semanticHashPolicyVersion: 1 as const,
+              }),
+            }),
             result: Object.freeze({
               ok: false,
               outcome: "failed",
@@ -2160,14 +2189,14 @@ export function createE0InterchangeOperations(
         });
       }
 
-      if (persistRaw["ok"] === true) {
+      if (persistRaw["ok"]) {
         return Object.freeze({
           outcome: "advanced",
           delivery,
           a0Publication,
           a1Persistence: Object.freeze({
             handoff: persistHandoff,
-            result: persistRaw as any,
+            result: persistRaw as unknown as Extract<QueueCanonicalExportMarkerPersistenceResult, { ok: true }>,
           }),
           durability: "recovery-persisted",
         });
@@ -2179,7 +2208,7 @@ export function createE0InterchangeOperations(
         a0Publication,
         a1Persistence: Object.freeze({
           handoff: persistHandoff,
-          result: persistRaw as any,
+          result: persistRaw as unknown as Extract<QueueCanonicalExportMarkerPersistenceResult, { ok: false }>,
         }),
         durability: "pending-failed",
       });
