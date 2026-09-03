@@ -192,6 +192,13 @@ export type StudioAudioPort = Readonly<{
    * evidence the browser proofs assert on; nothing here can steer playback.
    */
   inspect: () => StudioAudioInspection;
+  /**
+   * Composition-private raw serialized transport (l3a.2 X1 binding: the
+   * replacement-retirement adapter submits replace-plan through the same
+   * FIFO). The command-ID law is app-wide strictly increasing, so every
+   * submitter must draw from the composition's single allocator.
+   */
+  transportService: TransportService;
 }>;
 
 export type StudioAudioInspection = Readonly<{
@@ -719,6 +726,7 @@ export function createStudioAudio(
         engine: engine.inspectAudioEngine(),
         transport: transport.inspectTransport(),
       }),
+    transportService: transport,
   });
 }
 

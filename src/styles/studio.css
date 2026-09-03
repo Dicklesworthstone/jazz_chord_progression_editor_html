@@ -6570,3 +6570,43 @@ li[data-resize-preview]::after {
     inset-inline-end: calc(-0.5 * var(--touch-target));
   }
 }
+
+/* A1 recovery surfaces (l3a.2 step 4): the Keep/Discard offer banner and
+ * the frozen-vocabulary status line. Rendered by StudioRoot above the
+ * shell so a recovery decision is visible before any panel work. */
+.studio-recovery-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-block-end: var(--border-width) solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface-header));
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+}
+
+.studio-recovery-notice__text h2 {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-base);
+}
+
+.studio-recovery-notice__text p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.studio-recovery-notice__actions {
+  display: flex;
+  flex: none;
+  gap: var(--space-2);
+}
+
+.studio-recovery-status {
+  margin: 0;
+  padding: var(--space-1) var(--space-4);
+  background: var(--surface-header);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}

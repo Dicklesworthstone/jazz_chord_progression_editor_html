@@ -5,9 +5,20 @@ import {
   createStudioAudio,
   createStudioComposition,
   createStudioMidiImport,
+  createStudioRecoveryOrchestrator,
+  createX1SerializedTransportRetirementAdapter,
+  applicationHistoryRetainedByteEstimator,
+  validateDocumentSemantics,
   decodeShareFragment,
   seedStarterChart,
 } from "./application/runtime";
+import { decodeDocumentShape } from "./domain";
+import {
+  RECOVERY_STATUS_VOCABULARY,
+  createIndexedDbRecoveryAdapter,
+  createLocalStorageRecoveryAdapter,
+  createRecoveryService,
+} from "./persistence";
 import {
   createBrowserAudioPlatform,
   loadSmfWasmDecoder,
@@ -110,7 +121,8 @@ if (creation.ok) {
    * Seeding happens before the first render so the opening paint already
    * shows a playable progression.
    */
-  const { controller, midiExport } = creation.composition;
+  const composition = creation.composition;
+  const { controller, midiExport } = composition;
   let startupNotice: string | null = null;
   const shared = decodeShareFragment(window.location.hash);
   if (shared.ok) {
@@ -125,12 +137,103 @@ if (creation.ok) {
   } else {
     seedStarterChart(controller);
   }
+  /*
+   * A1 recovery wiring (l3a.2): the service over the real browser
+   * adapters (IndexedDB primary, localStorage fallback), the mutation
+   * feed on the controller, best-effort flush on visibilitychange, and
+   * the Keep/Discard startup surface. Every session that reaches this
+   * point has already edited (the share apply or the starter seed ran
+   * real commands), so the reviewed matrix downgrades auto-open to the
+   * Keep/Discard offer — recovery never silently overwrites work.
+   * Keep rides the transactional replacement channel over the sealed
+   * owner ports and the REAL serialized-transport X1 retirement; a
+   * refused Keep changes nothing. Browser recovery is never called Save.
+   */
+  const recoveryService = createRecoveryService({
+    adapters: [
+      createIndexedDbRecoveryAdapter(),
+      createLocalStorageRecoveryAdapter(),
+    ],
+    clock: {
+      nowMs: () => performance.now(),
+      nowIso: () => new Date().toISOString(),
+      setTimeout: (callback, delayMs) =>
+        window.setTimeout(callback, delayMs),
+      clearTimeout: (handle) => {
+        window.clearTimeout(handle);
+      },
+    },
+  });
+  let recoverySeedOrdinal = 0;
+  const recoveryOrchestrator = createStudioRecoveryOrchestrator({
+    composition,
+    recovery: recoveryService,
+    retirement: createX1SerializedTransportRetirementAdapter(
+      audio.transportService,
+      composition.allocateTransportCommandRequestId,
+    ),
+    decodeDocumentShape,
+    validateDocumentSemantics,
+    readState: composition.readApplicationState,
+    estimateHistoryRetainedBytes: applicationHistoryRetainedByteEstimator,
+    nowMs: () => performance.now(),
+    allocateCommandSeedId: () => {
+      recoverySeedOrdinal += 1;
+      return `recovery-keep-${String(recoverySeedOrdinal)}`;
+    },
+  });
+  recoveryOrchestrator.attachMutationFeed();
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") {
+      void recoveryOrchestrator.flush();
+    }
+  });
+  const recoveryBinding = {
+    startup: async () => {
+      const view = await recoveryOrchestrator.startup({
+        sessionEdited: true,
+      });
+      if (view.kind !== "offer") {
+        return Object.freeze({ kind: "none" as const });
+      }
+      const savedAtMs = Date.parse(view.savedAt);
+      return Object.freeze({
+        kind: "offer" as const,
+        savedAtLabel: Number.isNaN(savedAtMs)
+          ? view.savedAt
+          : new Date(savedAtMs).toLocaleString(),
+        revision: view.revision,
+        token: view.envelope,
+      });
+    },
+    keep: async (token: unknown) => {
+      const kept = await recoveryOrchestrator.keep(token as never);
+      if (kept.ok) {
+        return Object.freeze({
+          ok: true as const,
+          recoveredAtLabel: RECOVERY_STATUS_VOCABULARY.recoveredLocally.replace(
+            "{time}",
+            new Date().toLocaleTimeString(),
+          ),
+        });
+      }
+      return Object.freeze({
+        ok: false as const,
+        message: `The recovered chart could not be opened (${kept.code}). The current chart is unchanged.`,
+      });
+    },
+    discard: async () => {
+      await recoveryOrchestrator.discard();
+    },
+  };
+
   render(
     <StudioRoot
       controller={controller}
       midiExport={midiExport}
       midiImport={midiImport}
       startupNotice={startupNotice}
+      recovery={recoveryBinding}
     />,
     mountPoint,
   );

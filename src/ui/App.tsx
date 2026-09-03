@@ -58,6 +58,8 @@ const MIN_STUDIO_TEMPO_BPM = 20;
 const MAX_STUDIO_TEMPO_BPM = 300;
 import {
   AnalyzerPanel,
+  RecoveryNotice,
+  RecoveryStatusLine,
   StudioShell,
   type StudioCardMenuItemView,
   type StudioFactView,
@@ -3598,6 +3600,32 @@ export function StudioStartupFailure({
  * module — `ui/runtime` is pinned to re-export from `./App` alone so the test
  * gallery inventory can never enter the release graph through a new entry.
  */
+/**
+ * The composition-bound A1 recovery surface (l3a.2 step 4). Every method
+ * is orchestrator-backed: `startup` runs the reviewed matrix after share
+ * handling, `keep` rides the transactional replacement channel, and
+ * `discard` is the service's idempotent discard. The envelope token is
+ * opaque to the UI layer.
+ */
+export type StudioRecoveryUiBinding = Readonly<{
+  startup: () => Promise<
+    | Readonly<{ kind: "none" }>
+    | Readonly<{
+        kind: "offer";
+        savedAtLabel: string;
+        revision: number;
+        token: unknown;
+      }>
+  >;
+  keep: (
+    token: unknown,
+  ) => Promise<
+    | Readonly<{ ok: true; recoveredAtLabel: string }>
+    | Readonly<{ ok: false; message: string }>
+  >;
+  discard: () => Promise<void>;
+}>;
+
 export type StudioRootProps = Readonly<{
   controller: StudioController;
   /** A boot-time refusal (for example, an unreadable share link). */
@@ -3614,17 +3642,36 @@ export type StudioRootProps = Readonly<{
    * means the surface is not offered at all.
    */
   midiExport?: StudioMidiExportService | null;
+  /** Absent means the recovery surface is not offered at all. */
+  recovery?: StudioRecoveryUiBinding | null;
 }>;
+
+type RecoveryUiState =
+  | Readonly<{ kind: "idle" }>
+  | Readonly<{
+      kind: "offer";
+      savedAtLabel: string;
+      revision: number;
+      token: unknown;
+      busy: boolean;
+      failureMessage: string | null;
+    }>
+  | Readonly<{ kind: "status"; text: string }>;
 
 export function StudioRoot({
   controller,
   startupNotice,
   midiImport,
   midiExport,
+  recovery,
 }: StudioRootProps) {
   const midiImportService = midiImport ?? null;
   const midiExportService = midiExport ?? null;
+  const recoveryBinding = recovery ?? null;
   const [snapshot, setSnapshot] = useState(controller.getSnapshot());
+  const [recoveryUi, setRecoveryUi] = useState<RecoveryUiState>(
+    Object.freeze({ kind: "idle" as const }),
+  );
 
   useEffect(() => {
     const publishSnapshot = (): void => {
@@ -3635,8 +3682,78 @@ export function StudioRoot({
     return unsubscribe;
   }, [controller]);
 
+  useEffect(() => {
+    if (recoveryBinding === null) return;
+    let live = true;
+    void recoveryBinding.startup().then((view) => {
+      if (!live || view.kind !== "offer") return;
+      setRecoveryUi(
+        Object.freeze({
+          kind: "offer" as const,
+          savedAtLabel: view.savedAtLabel,
+          revision: view.revision,
+          token: view.token,
+          busy: false,
+          failureMessage: null,
+        }),
+      );
+    });
+    return () => {
+      live = false;
+    };
+  }, [recoveryBinding]);
+
+  const recoveryRegion =
+    recoveryUi.kind === "offer" ? (
+      <>
+        <RecoveryNotice
+          offer={{
+            savedAtLabel: recoveryUi.savedAtLabel,
+            revision: recoveryUi.revision,
+          }}
+          busy={recoveryUi.busy}
+          onKeep={() => {
+            if (recoveryBinding === null || recoveryUi.busy) return;
+            setRecoveryUi(Object.freeze({ ...recoveryUi, busy: true }));
+            void recoveryBinding.keep(recoveryUi.token).then((kept) => {
+              if (kept.ok) {
+                setRecoveryUi(
+                  Object.freeze({
+                    kind: "status" as const,
+                    text: kept.recoveredAtLabel,
+                  }),
+                );
+              } else {
+                setRecoveryUi(
+                  Object.freeze({
+                    ...recoveryUi,
+                    busy: false,
+                    failureMessage: kept.message,
+                  }),
+                );
+              }
+            });
+          }}
+          onDiscard={() => {
+            if (recoveryBinding === null || recoveryUi.busy) return;
+            void recoveryBinding.discard();
+            setRecoveryUi(Object.freeze({ kind: "idle" as const }));
+          }}
+        />
+        {recoveryUi.failureMessage === null ? null : (
+          <p class="studio-recovery-status" role="alert">
+            {recoveryUi.failureMessage}
+          </p>
+        )}
+      </>
+    ) : recoveryUi.kind === "status" ? (
+      <RecoveryStatusLine text={recoveryUi.text} />
+    ) : null;
+
   return (
-    <App
+    <>
+      {recoveryRegion}
+      <App
       snapshot={snapshot}
       startupNotice={startupNotice ?? null}
       actions={{
@@ -3751,5 +3868,6 @@ export function StudioRoot({
         undo: controller.undo,
       }}
     />
+    </>
   );
 }

@@ -63,3 +63,9 @@ export type {
 } from "./studio-contract";
 export { AnalyzerPanel } from "./AnalyzerPanel";
 export type { AnalyzerPanelProps } from "./AnalyzerPanel";
+export { RecoveryNotice, RecoveryStatusLine } from "./RecoveryNotice";
+export type {
+  RecoveryNoticeProps,
+  RecoveryOfferView,
+  RecoveryStatusLineProps,
+} from "./RecoveryNotice";

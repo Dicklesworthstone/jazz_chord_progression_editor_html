@@ -14,6 +14,14 @@ export {
   createStudioController,
   STUDIO_CONTROLLER_REFUSAL_CODES,
 } from "./studio-controller";
+export { applicationHistoryRetainedByteEstimator } from "./application-state";
+export { validateDocumentSemantics } from "./document-validation";
+export {
+  createStudioRecoveryOrchestrator,
+  type StudioRecoveryOrchestrator,
+  type StudioRecoveryStartupView,
+} from "./studio-recovery";
+export { createX1SerializedTransportRetirementAdapter } from "./x1-retirement-adapter";
 
 export type {
   StudioBoundaryInput,

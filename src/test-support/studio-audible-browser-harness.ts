@@ -347,6 +347,7 @@ function bootHarness(): StudioAudibleEvidenceApi {
       isInitialized: realPort.isInitialized,
       readPlayheadBeat: realPort.readPlayheadBeat,
       inspect: realPort.inspect,
+      transportService: realPort.transportService,
     });
     inspectionReader = () => {
       const inspection = realPort.inspect();

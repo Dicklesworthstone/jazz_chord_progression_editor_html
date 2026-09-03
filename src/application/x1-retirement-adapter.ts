@@ -49,6 +49,30 @@ export function createX1SerializedTransportRetirementAdapter(
       request: RetireImportReplacementRequest,
     ): Promise<unknown> => {
       const before = transport.inspectTransport();
+      if (before.state === "locked") {
+        /* Vacuous retirement: a locked transport has never opened an
+         * epoch — no plan is bound, nothing is scheduled, and no attack
+         * can start without a trusted-gesture initialize. The recovery
+         * contract forbids startup from initializing audio, so boot-time
+         * Keep retires against this state; the postconditions hold
+         * trivially and the evidence is honest for the expected
+         * generation the owner echoed. */
+        return Object.freeze({
+          ok: true as const,
+          value: Object.freeze({
+            schema: X1_REPLACEMENT_RETIREMENT_EVIDENCE_SCHEMA,
+            authority: "x1-serialized-transport" as const,
+            request,
+            receipt: Object.freeze({
+              requestId: request.identity.requestId,
+              retiredTransportGeneration: request.expectedTransportGeneration,
+              progressionRetired: true as const,
+              previewRetired: true as const,
+              noFutureAttack: true as const,
+            }),
+          }),
+        });
+      }
       if (before.generation !== request.expectedTransportGeneration) {
         /* Nothing submitted; the world already moved past the prepared
          * echo. The exact no-effect refusal is honest. */

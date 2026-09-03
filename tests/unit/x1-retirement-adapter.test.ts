@@ -109,21 +109,27 @@ describe("X1 serialized-transport retirement adapter (real transport)", () => {
     expect(after.lastCommandRequestId).toBe(before.lastCommandRequestId);
   });
 
-  test("a locked transport's refusal maps to the no-effect failed envelope", async () => {
+  test("a locked transport retires vacuously: no epoch exists and no attack can start", async () => {
     const h = createTransportHarness();
     const before = h.service.inspectTransport();
+    expect(before.state).toBe("locked");
     const adapter = createX1SerializedTransportRetirementAdapter(
       h.service,
       h.nextRequestId,
     );
-    const raw = await adapter.retireImportReplacement(
-      makeRequest(before.generation),
-    );
-    expect(raw).toEqual({
-      ok: false,
-      code: "transport.replacement_retirement_failed",
-      retirementEffect: "none",
-    } as never);
+    const raw = (await adapter.retireImportReplacement(
+      makeRequest(0),
+    )) as Readonly<Record<string, unknown>>;
+    expect(raw["ok"]).toBe(true);
+    const receipt = (raw["value"] as Readonly<Record<string, unknown>>)[
+      "receipt"
+    ] as Readonly<Record<string, unknown>>;
+    expect(receipt["retiredTransportGeneration"]).toBe(0);
+    expect(receipt["noFutureAttack"]).toBe(true);
+    /* nothing was submitted to the FIFO */
+    const after = h.service.inspectTransport();
+    expect(after.lastCommandRequestId).toBe(before.lastCommandRequestId);
+    expect(after.state).toBe("locked");
   });
 
   test("the PRODUCTION commit driver over this adapter drives a replacement to committed", async () => {

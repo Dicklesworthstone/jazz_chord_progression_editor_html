@@ -1199,6 +1199,12 @@ export type StudioComposition = Readonly<{
    */
   readApplicationState: () => AppState;
   /**
+   * The composition's single transport command-ID allocator (the FIFO's
+   * ID law is app-wide strictly increasing). The X1 retirement adapter
+   * must draw from here, never a second counter.
+   */
+  allocateTransportCommandRequestId: () => number;
+  /**
    * The U7 MIDI export workflow service, built in the controller closure and
    * handed only to the composition root. Null when the composition wired no
    * hash port or delivery adapter.
@@ -6664,6 +6670,7 @@ function makeStudioComposition(
     interchangeOwner,
     replacementWorkflow,
     readApplicationState: () => state,
+    allocateTransportCommandRequestId: nextTransportRequestId,
     midiExport,
   });
 }
