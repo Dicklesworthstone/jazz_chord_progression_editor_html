@@ -1,7 +1,9 @@
 # E0 v2 Interchange Amendment Contract
 
-Status: proposed specification authority — pending explicit project-owner
-golden acceptance
+Status: accepted specification authority — golden acceptance recorded in
+`docs/evidence/E0_V2_GOLDEN_PACKET_REVIEW.md` (2026-09-03, granted by the
+owner's deputized session under standing orders; see that record's exact
+provenance and revocation clause)
 Contract schema: `changes.application.e0-interchange-v2-contract.v1`
 Amended policies: `changes.import-transaction@2`,
 `changes.export-marker-settlement@2`
