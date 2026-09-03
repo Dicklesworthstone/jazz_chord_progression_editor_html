@@ -76,7 +76,7 @@ const E0_V2_SPEC_BYTE_DIGESTS: Readonly<Record<string, string>> =
     [CONTRACT_FILENAME]:
       "beea52d09b0e3fc1da2a43ba2476c1777a8b72dfe2ce9014923c9e597ff8cd40",
     "normalization-cases.json":
-      "eba43965f65a8833f0f09e3f89c575db7763a0b59dc14a848ecab6798fa65d69",
+      "9a2187d068777af7bab5d2939e2b2553bec417d63bf96d4760f597adcdc57e5d",
     "resolution-cases.json":
       "9e8d3e3ece79325b454f43240a160cac52470f41c990ebf03126c6818474a25d",
     "projection-cases.json":
@@ -92,7 +92,7 @@ const E0_V2_SPEC_BYTE_DIGESTS: Readonly<Record<string, string>> =
   });
 
 const E0_V2_SPEC_SEMANTIC_DIGEST =
-  "185dc700b81d82e546aa614314a4f230195a5aaab4f4cfd1b75bdaf539585171";
+  "3a60229b685ef58c67a6d95d4bbd7022320685bf8ede2582c041e703e61f3aaf";
 
 /** Independent copy of the eleven resolution rows (doc section 2). */
 const EXPECTED_RESOLUTION_IDS = Object.freeze([

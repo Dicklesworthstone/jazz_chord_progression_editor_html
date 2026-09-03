@@ -163,7 +163,7 @@ describe("E0 v2 full production loop (workflow + owner + real X1)", () => {
     expect(afterBegin).toBeGreaterThanOrEqual(1);
 
     const result = await h.driver(
-      buildCommitRequest(h, begun, generation),
+      buildCommitRequest(h, begun),
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -215,7 +215,7 @@ describe("E0 v2 full production loop (workflow + owner + real X1)", () => {
     });
     if (!begun.ok) throw new Error("BEGIN_FAILED");
     /* a wrong disclosed impact makes the owner refuse at preparation */
-    const request = buildCommitRequest(h, begun, 0);
+    const request = buildCommitRequest(h, begun);
     const tampered = Object.freeze({
       ...request,
       ownerRequest: Object.freeze({

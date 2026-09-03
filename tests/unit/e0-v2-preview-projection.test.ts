@@ -316,7 +316,7 @@ describe("E0 v2 preview coordinator (real pipeline, state-free)", () => {
     const outcome = await driver(projected.value);
     expect(outcome.ok).toBe(true);
     if (!outcome.ok) return;
-    expect(outcome.documentId).toBe(String(preview.candidate.id));
+    expect(outcome.documentId).toBe(preview.candidate.id);
     expect(outcome.revision).toBe(10);
     /* the owner received the exact projected request object */
     expect(prepareRequests[0]).toBe(projected.value.ownerRequest);

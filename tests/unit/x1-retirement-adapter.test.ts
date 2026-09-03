@@ -12,6 +12,7 @@
  */
 import { describe, expect, test } from "bun:test";
 
+import type { DocumentId } from "../../src/domain";
 import {
   createE0V2TransactionDriver,
   createX1SerializedTransportRetirementAdapter,
@@ -221,7 +222,7 @@ describe("X1 serialized-transport retirement adapter (real transport)", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.outcome).toBe("committed");
-    expect(result.documentId).toBe("doc-x1-next");
+    expect(result.documentId).toBe("doc-x1-next" as DocumentId);
     /* the REAL transport was retired: generation advanced, plan gone */
     const after = h.service.inspectTransport();
     expect(after.generation).toBe(generation + 1);

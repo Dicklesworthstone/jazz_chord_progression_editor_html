@@ -14,6 +14,7 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { describe, expect, test } from "bun:test";
 
+import type { DocumentId } from "../../src/domain";
 import {
   createE0V2TransactionDriver,
   type CommitImportReplacementRequestV2,
@@ -207,7 +208,7 @@ describe("E0 v2 workflow conformance (commit path, scripted ports)", () => {
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.documentId).toBe("D2");
+    expect(result.documentId).toBe("D2" as DocumentId);
     expect(result.revision).toBe(5);
     expect(result.liveForRequest).toBe(0);
     expect(result.counters).toEqual(COUNTERS as never);
