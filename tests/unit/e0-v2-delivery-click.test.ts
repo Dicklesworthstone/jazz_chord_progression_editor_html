@@ -16,7 +16,6 @@ import { afterEach, describe, expect, test } from "bun:test";
 import {
   createE0V2ExportDeliveryClickDriver,
   createPreparedCanonicalExportDeliveryRegistry,
-  type CanonicalExportPreparationId,
 } from "../../src/application";
 import type { A0E0InterchangeOwnerPorts } from "../../src/application/application-interchange-owner-contract";
 import {
@@ -339,7 +338,7 @@ describe("E0 v2 click driver over the real registry (WF-008)", () => {
       deliveryPreference: "download-only",
     });
     expect(result.ok).toBe(true);
-    if (!result.ok || result.outcome !== "terminal") return;
+    if (!result.ok) return;
     expect(result.delivery.outcome).toBe("handed-off");
     /* consumed exactly once: the double-click is unavailable */
     const second = await h.driver({
