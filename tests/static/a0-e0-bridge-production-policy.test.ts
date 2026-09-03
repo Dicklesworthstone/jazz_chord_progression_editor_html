@@ -356,9 +356,15 @@ describe("A0/E0 bridge production source policy: composition privacy", () => {
             return null;
           })
           .filter((name): name is string => name !== null);
-        /* The reviewed composition return is exactly this triple (midiExport
-           joined it in b3000e2, the U7 MIDI-export panel). */
-        const reviewedComposition = ["controller", "interchangeOwner", "midiExport"];
+        /* The reviewed composition return is exactly this sextuple. */
+        const reviewedComposition = [
+          "controller",
+          "interchangeOwner",
+          "replacementWorkflow",
+          "readApplicationState",
+          "allocateTransportCommandRequestId",
+          "midiExport",
+        ];
         if (
           names.includes("controller") &&
           names.includes("interchangeOwner") &&

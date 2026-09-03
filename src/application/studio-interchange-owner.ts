@@ -1,5 +1,4 @@
 import type { ValidatedDocument } from "../domain";
-import type { ImportReplacementImpact } from "./e0-interchange-contract";
 import {
   CANONICAL_EXPORT_REVISION_PUBLICATION_SCHEMA,
   DISCARD_IMPORT_REPLACEMENT_PUBLICATION_REASONS,
@@ -13,6 +12,7 @@ import type {
   A0E0InterchangeOwnerOperationName,
   A0E0InterchangeOwnerOperations,
   DiscardImportReplacementPublicationOperation,
+  ImportReplacementImpact,
   ImportRequestIdentity,
   ImportSourceFormat,
   PrepareImportReplacementPublicationOperation,
