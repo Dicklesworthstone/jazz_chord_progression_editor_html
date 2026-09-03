@@ -111,6 +111,10 @@ import {
 } from "./studio-bootstrap";
 import type { A0E0InterchangeOwnerOperations } from "./application-interchange-owner-contract";
 import {
+  createStudioReplacementWorkflow,
+  type StudioReplacementWorkflow,
+} from "./studio-replacement-workflow";
+import {
   createStudioInterchangeOwnerOperations,
   type StudioInterchangeOwnerDiagnostic,
 } from "./studio-interchange-owner";
@@ -1181,6 +1185,12 @@ export type StudioControllerOptions = Readonly<{
 export type StudioComposition = Readonly<{
   controller: StudioController;
   interchangeOwner: A0E0InterchangeOwnerOperations;
+  /**
+   * Composition-private producer of the retiring-transport workflow the
+   * owner prepare port demands (l3a.2 wiring). Same closure discipline
+   * as the owner: handed only to the composition root, never to UI.
+   */
+  replacementWorkflow: StudioReplacementWorkflow;
   /**
    * The U7 MIDI export workflow service, built in the controller closure and
    * handed only to the composition root. Null when the composition wired no
@@ -6521,6 +6531,16 @@ function makeStudioComposition(
         },
   );
 
+  /* The replacement workflow closes over the same state cell and install
+   * path as the owner ports; it is the sole lawful producer of the
+   * pending document-transition request + retiring-transport transition
+   * the prepare port validates. */
+  const replacementWorkflow = createStudioReplacementWorkflow({
+    readState: () => state,
+    installState: installOwnerState,
+    notifyListeners: notify,
+  });
+
   const controller: StudioController = Object.freeze({
     acknowledgeFocus,
     declareMeasureCompletion,
@@ -6632,7 +6652,12 @@ function makeStudioComposition(
           startDelivery: options.midiExportDelivery,
         });
 
-  return Object.freeze({ controller, interchangeOwner, midiExport });
+  return Object.freeze({
+    controller,
+    interchangeOwner,
+    replacementWorkflow,
+    midiExport,
+  });
 }
 
 /**
