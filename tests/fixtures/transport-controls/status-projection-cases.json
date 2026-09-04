@@ -1,0 +1,278 @@
+{
+  "schema": "changes.fixtures.u4-status-projection-cases.v1",
+  "reviewState": "proposed-independent-spec",
+  "pinState": "pinned",
+  "expectedValuesGenerated": false,
+  "productionOutputUsedAsOracle": false,
+  "notificationAcceptanceLaw": {
+    "authority": "docs/A0_APPLICATION_CONTRACT.md sections 9 and 13",
+    "acceptWhen": "documentId and planRevision equal the installed view target, commandRequestId equals the latest, generation greater than accepted, or equal generation with strictly greater notificationSequence",
+    "rejectAs": "ignored-stale"
+  },
+  "cases": [
+    {
+      "id": "U4-STATUS-001",
+      "kind": "positive",
+      "family": "initial-load",
+      "subject": "initial render never shows playing",
+      "given": "the studio loads with a demo chart and no accepted transport notification",
+      "expected": "badge renders 'Audio unavailable' or 'Ready' with generation 0; never 'Playing'; scrub slider disabled with no-bound-plan until a plan binds",
+      "lawIds": ["U4-LAW-TRUTHFUL-STATUS"],
+      "traceIds": ["TR-U4-STATUS-PROJECTION", "TR-LEGACY-STATE-02"],
+      "authorityIds": ["U4-AUTH-A0", "U4-AUTH-BEAD"]
+    },
+    {
+      "id": "U4-STATUS-002",
+      "kind": "positive",
+      "family": "status-badge",
+      "subject": "unavailable badge",
+      "given": "accepted TransportViewState with status unavailable and no failureCode",
+      "expected": "badge 'Audio unavailable', detail carries the actionable locked/engine-unavailable reason, Play disabled with audio-unavailable",
+      "lawIds": ["U4-LAW-TRUTHFUL-STATUS"],
+      "traceIds": ["TR-U4-STATUS-PROJECTION"],
+      "authorityIds": ["U4-AUTH-A0"]
+    },
+    {
+      "id": "U4-STATUS-003",
+      "kind": "positive",
+      "family": "status-badge",
+      "subject": "ready badge",
+      "given": "accepted status ready with a bound plan",
+      "expected": "badge 'Ready', detail names the bound plan or the empty-transport hint; Play and Restart enabled",
+      "lawIds": ["U4-LAW-TRUTHFUL-STATUS"],
+      "traceIds": ["TR-U4-STATUS-PROJECTION"],
+      "authorityIds": ["U4-AUTH-A0"]
+    },
+    {
+      "id": "U4-STATUS-004",
+      "kind": "positive",
+      "family": "status-badge",
+      "subject": "starting badge",
+      "given": "expect-transport optimism installed status starting",
+      "expected": "badge 'Starting…' with no detail; all transport controls disabled with status-settling",
+      "lawIds": ["U4-LAW-TRUTHFUL-STATUS"],
+      "traceIds": ["TR-U4-STATUS-PROJECTION"],
+      "authorityIds": ["U4-AUTH-A0"]
+    },
+    {
+      "id": "U4-STATUS-005",
+      "kind": "positive",
+      "family": "status-badge",
+      "subject": "playing badge",
+      "given": "accepted status playing",
+      "expected": "badge 'Playing', detail carries the current chord label and exact Bar·beat; Pause/Stop/Restart enabled, Play disabled with not-running",
+      "lawIds": ["U4-LAW-TRUTHFUL-STATUS"],
+      "traceIds": ["TR-U4-STATUS-PROJECTION"],
+      "authorityIds": ["U4-AUTH-A0"]
+    },
+    {
+      "id": "U4-STATUS-006",
+      "kind": "positive",
+      "family": "status-badge",
+      "subject": "ordinary paused badge",
+      "given": "accepted status paused with null failureCode",
+      "expected": "badge 'Paused', detail carries the paused-at exact beat; Stop and Restart remain enabled",
+      "lawIds": ["U4-LAW-TRUTHFUL-STATUS", "U4-LAW-STOP-WHILE-PAUSED"],
+      "traceIds": ["TR-U4-STATUS-PROJECTION", "TR-U4-CONTROLS"],
+      "authorityIds": ["U4-AUTH-A0", "U4-AUTH-X1"]
+    },
+    {
+      "id": "U4-STATUS-007",
+      "kind": "positive",
+      "family": "status-badge",
+      "subject": "interrupted presentation",
+      "given": "accepted status paused with failureCode transport.interrupted",
+      "expected": "badge 'Interrupted', detail states resume requires a trusted gesture and offers the Resume action; distinct from ordinary Paused",
+      "lawIds": ["U4-LAW-TRUTHFUL-STATUS", "U4-LAW-INTERRUPTED-ACTIONABLE"],
+      "traceIds": ["TR-U4-STATUS-PROJECTION"],
+      "authorityIds": ["U4-AUTH-X1", "U4-AUTH-A0"]
+    },
+    {
+      "id": "U4-STATUS-008",
+      "kind": "positive",
+      "family": "status-badge",
+      "subject": "stopping badge",
+      "given": "expect-transport optimism installed status stopping",
+      "expected": "badge 'Stopping…' with no detail; controls disabled with status-settling",
+      "lawIds": ["U4-LAW-TRUTHFUL-STATUS"],
+      "traceIds": ["TR-U4-STATUS-PROJECTION"],
+      "authorityIds": ["U4-AUTH-A0"]
+    },
+    {
+      "id": "U4-STATUS-009",
+      "kind": "positive",
+      "family": "status-badge",
+      "subject": "fault badge with recovery",
+      "given": "accepted status failed with a stable failure code",
+      "expected": "badge 'Audio fault', detail carries the stable code and offers reinitialize-audio; chart editing and export remain fully interactive",
+      "lawIds": ["U4-LAW-TRUTHFUL-STATUS", "U4-LAW-FAULT-NONBLOCKING"],
+      "traceIds": ["TR-U4-STATUS-PROJECTION"],
+      "authorityIds": ["U4-AUTH-BEAD", "U4-AUTH-A0"]
+    },
+    {
+      "id": "U4-STATUS-010",
+      "kind": "negative",
+      "family": "stale-notification",
+      "subject": "older generation cannot repaint",
+      "given": "accepted generation 9 sequence 40; a notification arrives with generation 8 sequence 99",
+      "expected": "A0 rejects as ignored-stale; badge, scrubber, and now block render the generation-9 state unchanged",
+      "lawIds": ["U4-LAW-TRUTHFUL-STATUS", "U4-LAW-STALE-IMMUNITY"],
+      "traceIds": ["TR-U4-STALE-IMMUNITY"],
+      "authorityIds": ["U4-AUTH-A0"]
+    },
+    {
+      "id": "U4-STATUS-011",
+      "kind": "negative",
+      "family": "stale-notification",
+      "subject": "same generation older sequence cannot repaint",
+      "given": "accepted generation 9 sequence 40; a notification arrives with generation 9 sequence 40",
+      "expected": "rejected as ignored-stale (sequence must be strictly greater); no repaint",
+      "lawIds": ["U4-LAW-STALE-IMMUNITY"],
+      "traceIds": ["TR-U4-STALE-IMMUNITY"],
+      "authorityIds": ["U4-AUTH-A0"]
+    },
+    {
+      "id": "U4-STATUS-012",
+      "kind": "negative",
+      "family": "stale-notification",
+      "subject": "wrong document identity cannot repaint",
+      "given": "a notification whose documentId differs from the installed view target",
+      "expected": "rejected as ignored-stale; no repaint",
+      "lawIds": ["U4-LAW-STALE-IMMUNITY"],
+      "traceIds": ["TR-U4-STALE-IMMUNITY"],
+      "authorityIds": ["U4-AUTH-A0"]
+    },
+    {
+      "id": "U4-STATUS-013",
+      "kind": "negative",
+      "family": "stale-notification",
+      "subject": "wrong plan revision cannot repaint",
+      "given": "a notification whose planRevision differs from the installed document revision",
+      "expected": "rejected as ignored-stale; no repaint",
+      "lawIds": ["U4-LAW-STALE-IMMUNITY"],
+      "traceIds": ["TR-U4-STALE-IMMUNITY"],
+      "authorityIds": ["U4-AUTH-A0"]
+    },
+    {
+      "id": "U4-STATUS-014",
+      "kind": "negative",
+      "family": "stale-notification",
+      "subject": "wrong command request cannot repaint",
+      "given": "a notification whose commandRequestId is not the latest",
+      "expected": "rejected as ignored-stale; no repaint",
+      "lawIds": ["U4-LAW-STALE-IMMUNITY"],
+      "traceIds": ["TR-U4-STALE-IMMUNITY"],
+      "authorityIds": ["U4-AUTH-A0"]
+    },
+    {
+      "id": "U4-STATUS-015",
+      "kind": "positive",
+      "family": "acceptance-sequence",
+      "subject": "the eight-step run projects in order",
+      "given": "the X1 browser-matrix run: initialize, play, natural end replay, pause, resume, preview, release, stop",
+      "expected": "the badge sequence is Ready, Playing, Ready, Playing, Paused, Playing, Ready with strictly increasing notificationSequence; stop's last frame shows the playhead at the run startBeat",
+      "lawIds": ["U4-LAW-TRUTHFUL-STATUS", "U4-LAW-STOP-RETURNS-TO-START"],
+      "traceIds": ["TR-U4-STATUS-PROJECTION", "TR-U4-CONTROLS"],
+      "authorityIds": ["U4-AUTH-X1"]
+    },
+    {
+      "id": "U4-STATUS-016",
+      "kind": "positive",
+      "family": "boundary-notice",
+      "subject": "instrument change while playing",
+      "given": "an instrument-change intent settles while a run is playing",
+      "expected": "the status detail shows the transient statement 'Takes effect at the next unstarted note' until the next accepted notification",
+      "lawIds": ["U4-LAW-INSTRUMENT-BOUNDARY"],
+      "traceIds": ["TR-U4-BOUNDARY"],
+      "authorityIds": ["U4-AUTH-X1", "U4-AUTH-DOC"]
+    },
+    {
+      "id": "U4-STATUS-017",
+      "kind": "positive",
+      "family": "boundary-notice",
+      "subject": "instrument change while stopped",
+      "given": "an instrument-change intent settles while ready or paused",
+      "expected": "the persistent hint 'Applies to the next Play.' shows until the next play begins",
+      "lawIds": ["U4-LAW-INSTRUMENT-BOUNDARY"],
+      "traceIds": ["TR-U4-BOUNDARY"],
+      "authorityIds": ["U4-AUTH-X1", "U4-AUTH-DOC"]
+    },
+    {
+      "id": "U4-STATUS-018",
+      "kind": "negative",
+      "family": "boundary-notice",
+      "subject": "instrument change while audio is down",
+      "given": "an instrument-change attempt while unavailable or failed",
+      "expected": "pre-dispatch refusal audio-unavailable; the picker shows the unchanged value; no boundary notice appears",
+      "lawIds": ["U4-LAW-INSTRUMENT-BOUNDARY"],
+      "traceIds": ["TR-U4-BOUNDARY"],
+      "authorityIds": ["U4-AUTH-DOC"]
+    },
+    {
+      "id": "U4-STATUS-019",
+      "kind": "negative",
+      "family": "boundary-notice",
+      "subject": "document replacement clears the boundary notice",
+      "given": "a boundary notice is showing when replace-plan settles",
+      "expected": "the notice is gone in the next render; a stale notice never names an instrument boundary after replacement",
+      "lawIds": ["U4-LAW-INSTRUMENT-BOUNDARY", "U4-LAW-STALE-IMMUNITY"],
+      "traceIds": ["TR-U4-BOUNDARY", "TR-U4-STALE-IMMUNITY"],
+      "authorityIds": ["U4-AUTH-DOC"]
+    },
+    {
+      "id": "U4-STATUS-020",
+      "kind": "negative",
+      "family": "sweep-isolation",
+      "subject": "the display sweep writes nothing back",
+      "given": "the animation-frame sweep polls the display playhead while playing",
+      "expected": "no application state, notification, or transport command results; committed playhead changes arrive only via accepted notifications",
+      "lawIds": ["U4-LAW-DISPLAY-ONLY-SWEEP"],
+      "traceIds": ["TR-U4-STATUS-PROJECTION"],
+      "authorityIds": ["U4-AUTH-X1", "U4-AUTH-A0"]
+    },
+    {
+      "id": "U4-STATUS-021",
+      "kind": "positive",
+      "family": "refusal-settlement",
+      "subject": "refused command settles optimism exactly",
+      "given": "a play intent whose X1 command refuses (for example a plan mismatch)",
+      "expected": "the expectation settles via settle-transport-expectation with the echoed actual state and the stable refusal code; the badge never parks at starting",
+      "lawIds": ["U4-LAW-TRUTHFUL-STATUS"],
+      "traceIds": ["TR-U4-STATUS-PROJECTION"],
+      "authorityIds": ["U4-AUTH-A0", "U4-AUTH-X1"]
+    },
+    {
+      "id": "U4-STATUS-022",
+      "kind": "positive",
+      "family": "plan-superseded",
+      "subject": "superseded expectation settles as ready",
+      "given": "a still-optimistic expectation whose plan was superseded by replacement",
+      "expected": "settlement carries cause transport.plan_superseded and the badge returns to the truthful state; no stale playhead frame",
+      "lawIds": ["U4-LAW-TRUTHFUL-STATUS", "U4-LAW-STALE-IMMUNITY"],
+      "traceIds": ["TR-U4-STATUS-PROJECTION", "TR-U4-STALE-IMMUNITY"],
+      "authorityIds": ["U4-AUTH-A0"]
+    },
+    {
+      "id": "U4-STATUS-023",
+      "kind": "negative",
+      "family": "optimism-isolation",
+      "subject": "count-in toggle renders no optimism",
+      "given": "a count-in toggle intent whose X1 command refuses",
+      "expected": "the toggle renders the selector's unchanged effective state after the refusal; no local optimistic flip persists",
+      "lawIds": ["U4-LAW-CLICK-TRUTHFULNESS"],
+      "traceIds": ["TR-U4-CLICKS"],
+      "authorityIds": ["U4-AUTH-DOC", "U4-AUTH-X1"]
+    },
+    {
+      "id": "U4-STATUS-024",
+      "kind": "positive",
+      "family": "failure-detail-vocabulary",
+      "subject": "every X1 refusal code has a detail rendering",
+      "given": "the frozen TRANSPORT_REFUSAL_CODES union",
+      "expected": "the detail layer renders a stable, non-chart-text message for every code, including count_in and metronome refusals; unknown codes render the generic fault detail",
+      "lawIds": ["U4-LAW-TRUTHFUL-STATUS"],
+      "traceIds": ["TR-U4-STATUS-PROJECTION"],
+      "authorityIds": ["U4-AUTH-X1"]
+    }
+  ]
+}

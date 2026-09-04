@@ -1,0 +1,368 @@
+{
+  "schema": "changes.fixtures.u4-transport-controls-contract.v1",
+  "reviewState": "proposed-independent-spec",
+  "pinState": "pinned",
+  "expectedValuesGenerated": false,
+  "productionOutputUsedAsOracle": false,
+  "package": "U4",
+  "contractVersion": 1,
+  "policyId": "changes.ui.transport-controls",
+  "policyVersion": 1,
+  "beadId": "jcpe-milestone-reliable-studio-l3a.12.1",
+  "contractModule": "src/ui/studio/u4-transport-controls-contract.ts",
+  "contractDocument": "docs/U4_TRANSPORT_CONTROLS_CONTRACT.md",
+  "implementationStatus": "specified-not-implemented",
+  "productionImplementationClaim": false,
+  "uiCompletionClaim": false,
+  "humanAcceptanceClaim": false,
+  "expertReviewClaim": false,
+  "surfaces": [
+    "transport-bar",
+    "status",
+    "settings",
+    "scope"
+  ],
+  "components": [
+    {
+      "id": "U4-CMP-001",
+      "name": "TransportBar",
+      "surface": "transport-bar"
+    },
+    {
+      "id": "U4-CMP-002",
+      "name": "TransportPlayButton",
+      "surface": "transport-bar"
+    },
+    {
+      "id": "U4-CMP-003",
+      "name": "TransportPauseButton",
+      "surface": "transport-bar"
+    },
+    {
+      "id": "U4-CMP-004",
+      "name": "TransportStopButton",
+      "surface": "transport-bar"
+    },
+    {
+      "id": "U4-CMP-005",
+      "name": "TransportRestartButton",
+      "surface": "transport-bar"
+    },
+    {
+      "id": "U4-CMP-006",
+      "name": "TransportPreviousButton",
+      "surface": "transport-bar"
+    },
+    {
+      "id": "U4-CMP-007",
+      "name": "TransportNextButton",
+      "surface": "transport-bar"
+    },
+    {
+      "id": "U4-CMP-008",
+      "name": "TransportScrubSlider",
+      "surface": "transport-bar"
+    },
+    {
+      "id": "U4-CMP-009",
+      "name": "TransportLoopToggle",
+      "surface": "transport-bar"
+    },
+    {
+      "id": "U4-CMP-010",
+      "name": "TransportLoopRegionOverlay",
+      "surface": "transport-bar"
+    },
+    {
+      "id": "U4-CMP-011",
+      "name": "TransportNowBlock",
+      "surface": "transport-bar"
+    },
+    {
+      "id": "U4-CMP-012",
+      "name": "TransportMeterStrip",
+      "surface": "transport-bar"
+    },
+    {
+      "id": "U4-CMP-013",
+      "name": "TransportStatusBadge",
+      "surface": "status"
+    },
+    {
+      "id": "U4-CMP-014",
+      "name": "TransportStatusDetail",
+      "surface": "status"
+    },
+    {
+      "id": "U4-CMP-015",
+      "name": "TransportInstrumentBoundaryNotice",
+      "surface": "status"
+    },
+    {
+      "id": "U4-CMP-016",
+      "name": "TransportTempoStepper",
+      "surface": "settings"
+    },
+    {
+      "id": "U4-CMP-017",
+      "name": "TransportTempoField",
+      "surface": "settings"
+    },
+    {
+      "id": "U4-CMP-018",
+      "name": "TransportGrooveSelect",
+      "surface": "settings"
+    },
+    {
+      "id": "U4-CMP-019",
+      "name": "TransportInstrumentSelect",
+      "surface": "settings"
+    },
+    {
+      "id": "U4-CMP-020",
+      "name": "TransportClickToggles",
+      "surface": "settings"
+    },
+    {
+      "id": "U4-CMP-021",
+      "name": "SectionLoopButton",
+      "surface": "scope"
+    },
+    {
+      "id": "U4-CMP-022",
+      "name": "SoundSheetTrigger",
+      "surface": "scope"
+    }
+  ],
+  "componentCount": 22,
+  "operationCount": 24,
+  "limits": {
+    "seekQuantumTicksPerBeat": 960,
+    "minTempoBpm": 20,
+    "maxTempoBpm": 300,
+    "tempoStepBpm": 4,
+    "maxStatusDetailCodePoints": 256,
+    "maxBoundaryNoticeCodePoints": 128,
+    "maxOperations": 24,
+    "maxComponents": 22,
+    "maxArmedSectionScopes": 1,
+    "coarsePointerMinTargetCssPx": 44,
+    "transportMinBlockDefaultRem": 4.5,
+    "transportMinBlockCoarseRem": 6,
+    "settingsSheetBreakpointRem": 71.875
+  },
+  "x1TransportStates": [
+    "locked",
+    "ready",
+    "playing",
+    "paused",
+    "interrupted",
+    "fault",
+    "disposed"
+  ],
+  "a0TransportStatuses": [
+    "unavailable",
+    "ready",
+    "starting",
+    "playing",
+    "paused",
+    "stopping",
+    "failed"
+  ],
+  "x1CommandKindsConsumed": [
+    "initialize-transport",
+    "play",
+    "pause",
+    "resume",
+    "seek",
+    "stop",
+    "set-tempo",
+    "set-loop",
+    "set-performance",
+    "set-instrument",
+    "set-mix",
+    "set-count-in",
+    "set-metronome",
+    "dispose-transport"
+  ],
+  "authorizedEphemeralIntentKinds": [],
+  "forbiddenEphemeralIntentKinds": [
+    "set-bookmarks",
+    "set-panels",
+    "push-dialog",
+    "pop-dialog",
+    "set-quick-entry",
+    "set-import-draft",
+    "dismiss-notice",
+    "mark-exported",
+    "set-recovery",
+    "set-document-transition",
+    "expect-transport",
+    "settle-transport-expectation",
+    "acknowledge-focus"
+  ],
+  "statusPresentation": [
+    {
+      "status": "unavailable",
+      "failureCode": null,
+      "badgeLabel": "Audio unavailable",
+      "detailKind": "recovery-actionable"
+    },
+    {
+      "status": "ready",
+      "failureCode": null,
+      "badgeLabel": "Ready",
+      "detailKind": "bound-plan-or-empty"
+    },
+    {
+      "status": "starting",
+      "failureCode": null,
+      "badgeLabel": "Starting…",
+      "detailKind": "none"
+    },
+    {
+      "status": "playing",
+      "failureCode": null,
+      "badgeLabel": "Playing",
+      "detailKind": "now-chord-and-exact-beat"
+    },
+    {
+      "status": "paused",
+      "failureCode": null,
+      "badgeLabel": "Paused",
+      "detailKind": "paused-at-exact-beat"
+    },
+    {
+      "status": "paused",
+      "failureCode": "transport.interrupted",
+      "badgeLabel": "Interrupted",
+      "detailKind": "trusted-gesture-resume"
+    },
+    {
+      "status": "stopping",
+      "failureCode": null,
+      "badgeLabel": "Stopping…",
+      "detailKind": "none"
+    },
+    {
+      "status": "failed",
+      "failureCode": null,
+      "badgeLabel": "Audio fault",
+      "detailKind": "fault-code-and-recovery"
+    }
+  ],
+  "boundaryStatements": {
+    "whilePlaying": "Takes effect at the next unstarted note",
+    "whileStopped": "Applies to the next Play."
+  },
+  "disabledReasons": [
+    "untrusted-gesture",
+    "no-playable-chord",
+    "no-bound-plan",
+    "audio-unavailable",
+    "not-running",
+    "no-active-run",
+    "seek-out-of-range",
+    "status-settling"
+  ],
+  "globalTransportKeys": [
+    {
+      "key": "Space",
+      "shift": false,
+      "resolvesTo": [
+        "pause-run",
+        "play-run"
+      ],
+      "guard": "global-transport-guard"
+    },
+    {
+      "key": "Space",
+      "shift": true,
+      "resolvesTo": [
+        "section-play"
+      ],
+      "guard": "global-transport-guard"
+    }
+  ],
+  "globalKeyGuardConditions": [
+    "default-prevented",
+    "modifier-held",
+    "target-input",
+    "target-textarea",
+    "target-select",
+    "target-content-editable",
+    "target-inside-button-or-link",
+    "slider-focus"
+  ],
+  "sliderKeyLaw": {
+    "ArrowLeft": "-1 beat",
+    "ArrowRight": "+1 beat",
+    "Shift+ArrowLeft": "-1 bar",
+    "Shift+ArrowRight": "+1 bar",
+    "PageDown": "-4 beats",
+    "PageUp": "+4 beats",
+    "Home": "beat 0",
+    "End": "total beats"
+  },
+  "trustedGestureSources": [
+    "trusted-pointer",
+    "trusted-keyboard"
+  ],
+  "lawIds": [
+    "U4-LAW-TRUTHFUL-STATUS",
+    "U4-LAW-STALE-IMMUNITY",
+    "U4-LAW-DISPLAY-ONLY-SWEEP",
+    "U4-LAW-EXACT-SEEK",
+    "U4-LAW-SCRUBBER-ACCESSIBLE",
+    "U4-LAW-KEYBOARD-GUARDS",
+    "U4-LAW-SINGLE-INTENT",
+    "U4-LAW-STOP-WHILE-PAUSED",
+    "U4-LAW-STOP-RETURNS-TO-START",
+    "U4-LAW-INTERRUPTED-ACTIONABLE",
+    "U4-LAW-FAULT-NONBLOCKING",
+    "U4-LAW-INSTRUMENT-BOUNDARY",
+    "U4-LAW-CLICK-TRUTHFULNESS",
+    "U4-LAW-LOOP-SCOPE-PAIRED",
+    "U4-LAW-ID-UNIQUENESS"
+  ],
+  "statesTheProductCannotEnter": [
+    "badge playing before any accepted playing notification",
+    "scrub thumb from the display sweep rather than an accepted playhead",
+    "Stop unreachable while paused or Restart disabled while Stop is enabled",
+    "count-in/metronome toggles rendered from optimism after a refusal",
+    "two armed section loop scopes or a loop overlay with no engaged loop",
+    "a status detail naming an instrument boundary after document replacement",
+    "a duplicated element ID between the bar cluster and the Sound sheet",
+    "a transport control occluded by a toast, sheet, or unsafe-area inset"
+  ],
+  "forbiddenShortcuts": [
+    "a UI timer, wall clock, or animation frame that advances state",
+    "a badge or control state invented outside the accepted projection",
+    "two controller intents composed in one U4 gesture",
+    "a count-in/metronome toggle rendered from optimism after a refusal",
+    "a scrubber without the slider role, keyboard law, and exact labels",
+    "Restart as stop without awaiting the no-future-attack receipt before play",
+    "a loop scope beyond the two frozen v1 scopes",
+    "weakening the Space/Shift+Space guards or the edit-field exclusions",
+    "a specified-not-implemented claim flag flipped without recorded human acceptance"
+  ],
+  "companions": [
+    "control-operation-matrix.json",
+    "status-projection-cases.json",
+    "keyboard-guard-cases.json",
+    "layout-cells.json",
+    "provenance-ledger.json",
+    "trace-ledger.json",
+    "mutation-controls.json"
+  ],
+  "companionSha256": {
+    "control-operation-matrix.json": "216bdfb86c4a9440b29a692b6960f94dc2f2d8bcd0b6c5f16fd49ffac73366a7",
+    "status-projection-cases.json": "fd69ad6099e7de934ba58286d3e40bfb8e49b257c8806e36794a40e0e5a21a83",
+    "keyboard-guard-cases.json": "4ddb2559497a3c2c67f7097fa09bc8ff2aa0991531ce0056c59f6122aad2e3e5",
+    "layout-cells.json": "55ccfe57ecde386b8eca781af44934e34a1aaf77b1e931708f37db019e7c7d95",
+    "provenance-ledger.json": "b11fc06de427b90e4fe34343b66dbf5dce335f263c4bb36df15a692f0635efdd",
+    "trace-ledger.json": "3c6cb6896ee2ffe88f70ac8f14f659b8d4bc9d940b82c9386f1e0c1e8de5d148",
+    "mutation-controls.json": "18207e4ab4de72f36a2c61d963e7a4a179352363d4ec41dd920b7cc00e6241f7"
+  },
+  "handoff": "An implementer needs the contract document, the contract module, and this fixture package — not the markdown plan. The two new controller intents (restartProgression, setCountInEnabled, setMetronomeEnabled) plus stepChordOrSeek, seekToBeat, resumeProgression, reinitializeAudio, openSoundSheet, and playSectionRun are specified here at the UI boundary and owned by the U4 build leg's application work."
+}

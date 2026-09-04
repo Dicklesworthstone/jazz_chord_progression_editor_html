@@ -1,0 +1,85 @@
+{
+  "schema": "changes.fixtures.u4-trace-ledger.v1",
+  "reviewState": "proposed-independent-spec",
+  "pinState": "pinned",
+  "expectedValuesGenerated": false,
+  "productionOutputUsedAsOracle": false,
+  "tracePolicy": "Every parent requirement, invariant, success criterion, and named legacy regression maps to at least one fixture case; every fixture case carries at least one trace.",
+  "traces": [
+    {
+      "id": "TR-U4-CONTROLS",
+      "requirement": "Previous/next, play/pause, global Stop, and separate Restart controls with exact state-machine matching on every input modality.",
+      "parentSource": "U4 required implementation",
+      "caseIds": ["U4-STATUS-005", "U4-STATUS-006", "U4-STATUS-015"],
+      "matrixOperationIds": ["play-run", "pause-run", "stop-run", "restart-run", "previous-chord", "next-chord"]
+    },
+    {
+      "id": "TR-U4-SCRUBBER",
+      "requirement": "Accessible exact scrubber: slider role, keyboard seek law, exact rational labels, pointer scrub preserved.",
+      "parentSource": "U4 required implementation and success criteria",
+      "caseIds": ["U4-KEY-010", "U4-KEY-011", "U4-KEY-012", "U4-KEY-013", "U4-KEY-014"]
+    },
+    {
+      "id": "TR-U4-STATUS-PROJECTION",
+      "requirement": "Truthful locked/ready/playing/paused/interrupted/unavailable/fault presentation from the accepted projection only.",
+      "parentSource": "U4 required implementation and invariants",
+      "caseIds": ["U4-STATUS-001", "U4-STATUS-002", "U4-STATUS-003", "U4-STATUS-004", "U4-STATUS-005", "U4-STATUS-006", "U4-STATUS-007", "U4-STATUS-008", "U4-STATUS-009", "U4-STATUS-015", "U4-STATUS-020", "U4-STATUS-021", "U4-STATUS-022", "U4-STATUS-024"]
+    },
+    {
+      "id": "TR-U4-STALE-IMMUNITY",
+      "requirement": "Stale generation/sequence/request notifications cannot repaint controls; the display sweep writes nothing back.",
+      "parentSource": "U4 invariants and risks",
+      "caseIds": ["U4-STATUS-010", "U4-STATUS-011", "U4-STATUS-012", "U4-STATUS-013", "U4-STATUS-014", "U4-STATUS-019", "U4-STATUS-020", "U4-STATUS-022"]
+    },
+    {
+      "id": "TR-U4-KEYBOARD-GUARDS",
+      "requirement": "Space/Shift+Space with the frozen edit-field and modifier guards; every control reachable by keyboard.",
+      "parentSource": "U4 required implementation and invariants",
+      "caseIds": ["U4-KEY-001", "U4-KEY-002", "U4-KEY-003", "U4-KEY-004", "U4-KEY-005", "U4-KEY-006", "U4-KEY-007", "U4-KEY-008", "U4-KEY-009"]
+    },
+    {
+      "id": "TR-U4-CLICKS",
+      "requirement": "Count-in and metronome toggles bound to X1 set-count-in/set-metronome with selector-truthful rendering.",
+      "parentSource": "U4 required implementation",
+      "caseIds": ["U4-STATUS-023"],
+      "matrixOperationIds": ["count-in-toggle", "metronome-toggle"]
+    },
+    {
+      "id": "TR-U4-BOUNDARY",
+      "requirement": "Instrument and groove changes expose their effective boundary.",
+      "parentSource": "U4 required implementation",
+      "caseIds": ["U4-STATUS-016", "U4-STATUS-017", "U4-STATUS-018", "U4-STATUS-019"]
+    },
+    {
+      "id": "TR-U4-LOOP-SCOPE",
+      "requirement": "Loop scope: whole chart or exactly one armed section; ephemeral, pause-surviving, replacement-cleared.",
+      "parentSource": "U4 required implementation",
+      "caseIds": ["U4-KEY-003"],
+      "matrixOperationIds": ["loop-toggle-chart", "loop-arm-section", "section-play"]
+    },
+    {
+      "id": "TR-U4-LAYOUT",
+      "requirement": "Mobile bottom bar remains visible and safe-area correct across the required viewport and pointer cells.",
+      "parentSource": "U4 success criteria",
+      "caseIds": ["U4-LAYOUT-001", "U4-LAYOUT-002", "U4-LAYOUT-003", "U4-LAYOUT-004", "U4-LAYOUT-005", "U4-LAYOUT-006", "U4-LAYOUT-007", "U4-LAYOUT-008", "U4-LAYOUT-009", "U4-LAYOUT-010"]
+    },
+    {
+      "id": "TR-LEGACY-STATE-02",
+      "requirement": "The initial UI never falsely reports playing.",
+      "parentSource": "REBUILD_PLAN legacy regression L-STATE-02",
+      "caseIds": ["U4-STATUS-001"]
+    },
+    {
+      "id": "TR-LEGACY-AUDIO-01-UI",
+      "requirement": "Stop settles with zero post-stop attacks and the playhead returns to run start; the UI frame follows the accepted stop notification.",
+      "parentSource": "REBUILD_PLAN L-AUDIO-01 as it presents in UI",
+      "caseIds": ["U4-STATUS-015"]
+    },
+    {
+      "id": "TR-LEGACY-AUDIO-04-UI",
+      "requirement": "Init/rapid-instrument races surface as truthful boundary state, never as stuck or lying controls.",
+      "parentSource": "REBUILD_PLAN L-AUDIO-04 as it presents in UI",
+      "caseIds": ["U4-STATUS-016", "U4-STATUS-018"]
+    }
+  ]
+}
