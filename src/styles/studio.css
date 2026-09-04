@@ -6717,17 +6717,17 @@ li[data-resize-preview]::after {
   background: color-mix(in srgb, var(--accent) 8%, var(--surface-header));
   color: var(--text-primary);
   font-size: var(--text-sm);
-  box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
+  box-shadow: var(--shadow-3);
 }
 
 .studio-recovery-notice__text h2 {
   margin: 0 0 var(--space-1);
-  font-size: var(--text-base);
+  font-size: var(--text-md);
 }
 
 .studio-recovery-notice__text p {
   margin: 0;
-  color: var(--text-secondary);
+  color: var(--text-muted);
 }
 
 .studio-recovery-notice__actions {
@@ -6745,9 +6745,9 @@ li[data-resize-preview]::after {
   border: var(--border-width) solid var(--border-default);
   border-radius: var(--radius-md);
   background: var(--surface-header);
-  color: var(--text-secondary);
+  color: var(--text-muted);
   font-size: var(--text-sm);
-  box-shadow: 0 4px 16px rgb(0 0 0 / 0.12);
+  box-shadow: var(--shadow-2);
 }
 
 /* A wrapped header plus recovery used to consume the entire short-phone

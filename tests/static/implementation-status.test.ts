@@ -161,11 +161,20 @@ describe("implementation-status constants versus production reachability", () =>
         owner: "consistent — no action",
       },
       {
+        /* KNOWN DIVERGENCE, review-gated (the U7 row's shape): the E0 v2
+         * state-free chain is wired in production (studio-recovery,
+         * e0-transaction-driver, e0-interchange, e0-v2-port-normalization)
+         * and its spec-amendment (l3a.8.4) and verify (l3a.8.3) legs are
+         * closed, while the packet still reads specified-unimplemented.
+         * Amending the packet flags is the recorded acceptance work; delete
+         * this note and flip expectedDeclared in that change. Reachability
+         * flipped 2026-09-04 (jcpe-mjba): the v2 chain's production imports
+         * landed with those closed legs. */
         constant: "E0_V2_IMPLEMENTATION_STATUS",
         declared: E0_V2_IMPLEMENTATION_STATUS,
         expectedDeclared: "specified-unimplemented",
         witness: "src/application/e0-interchange-v2-contract.ts",
-        expectedReachable: false,
+        expectedReachable: true,
         owner: "jcpe-milestone-reliable-studio-l3a.8.4",
       },
       {
