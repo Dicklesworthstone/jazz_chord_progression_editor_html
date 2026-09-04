@@ -5,6 +5,7 @@ import type {
   PathRefusal,
 } from "../domain";
 import {
+  MAX_VOICE_ASSIGNMENT_ALIGNMENT_COST,
   MAX_VOICE_ASSIGNMENT_CROWDED_LOW_INTERVALS,
   MAX_VOICE_ASSIGNMENT_DOUBLED_GUIDE_TONES,
   MAX_VOICE_ASSIGNMENT_MAXIMUM_ABSOLUTE_LEAP,
@@ -55,6 +56,8 @@ export const PROGRESSION_OPTIMIZER_ENGINE_VERSION_TAG =
 export const PROGRESSION_COST_POLICY_ID =
   "changes.progression-optimizer.aggregate-cost";
 export const PROGRESSION_COST_POLICY_VERSION = 1;
+/** Additive policy; callers explicitly opt in, legacy requests retain v1. */
+export const PROGRESSION_CONTINUITY_COST_POLICY_VERSION = 2;
 export const PROGRESSION_SEARCH_POLICY_ID =
   "changes.progression-optimizer.bounded-beam";
 export const PROGRESSION_SEARCH_POLICY_VERSION = 1;
@@ -131,7 +134,29 @@ export const PROGRESSION_COST_AGGREGATIONS = Object.freeze({
   totalSpan: "max",
 } as const satisfies Readonly<Record<ProgressionCostAxis, "sum" | "max">>);
 
-export type ProgressionCost = Readonly<Record<ProgressionCostAxis, number>>;
+export const PROGRESSION_CONTINUITY_COST_AXES = Object.freeze([
+  "alignmentCost",
+  "gapCount",
+  "totalSpan",
+  "maximumAbsoluteLeap",
+  "totalAbsoluteMotion",
+  "commonTonesLost",
+  "crowdedLowIntervals",
+  "doubledGuideTones",
+  "omittedColors",
+] as const);
+export type ProgressionContinuityCostAxis =
+  (typeof PROGRESSION_CONTINUITY_COST_AXES)[number];
+export const PROGRESSION_CONTINUITY_COST_AGGREGATIONS = Object.freeze({
+  ...PROGRESSION_COST_AGGREGATIONS,
+  alignmentCost: "sum",
+  gapCount: "sum",
+} as const satisfies Readonly<Record<ProgressionContinuityCostAxis, "sum" | "max">>);
+export type ProgressionContinuityCost =
+  Readonly<Record<ProgressionContinuityCostAxis, number>>;
+export type ProgressionCost =
+  | Readonly<Record<ProgressionCostAxis, number>>
+  | ProgressionContinuityCost;
 
 /**
  * Aggregate axis value caps: sum axes multiply the V1 per-transition cap by
@@ -157,6 +182,14 @@ export const PROGRESSION_COST_VALUE_LIMITS = Object.freeze({
     MAX_PROGRESSION_COST_TRANSITIONS * MAX_VOICE_ASSIGNMENT_OMITTED_COLORS,
   totalSpan: MAX_VOICE_ASSIGNMENT_TOTAL_SPAN,
 } as const satisfies Readonly<Record<ProgressionCostAxis, number>>);
+
+export const PROGRESSION_CONTINUITY_COST_VALUE_LIMITS = Object.freeze({
+  ...PROGRESSION_COST_VALUE_LIMITS,
+  alignmentCost:
+    MAX_PROGRESSION_COST_TRANSITIONS * MAX_VOICE_ASSIGNMENT_ALIGNMENT_COST,
+  gapCount:
+    MAX_PROGRESSION_COST_TRANSITIONS * 2 * MAX_VOICE_ASSIGNMENT_VOICE_FACT_COUNT,
+} as const satisfies Readonly<Record<ProgressionContinuityCostAxis, number>>);
 
 /**
  * Deterministic total order over chains sharing a span: first the aggregate
@@ -403,7 +436,9 @@ export type ProgressionOptimizationIdentity = Readonly<{
   engineId: typeof PROGRESSION_OPTIMIZER_ENGINE_ID;
   engineVersion: typeof PROGRESSION_OPTIMIZER_ENGINE_VERSION;
   costPolicyId: typeof PROGRESSION_COST_POLICY_ID;
-  costPolicyVersion: typeof PROGRESSION_COST_POLICY_VERSION;
+  costPolicyVersion:
+    | typeof PROGRESSION_COST_POLICY_VERSION
+    | typeof PROGRESSION_CONTINUITY_COST_POLICY_VERSION;
   searchPolicyId: typeof PROGRESSION_SEARCH_POLICY_ID;
   searchPolicyVersion: typeof PROGRESSION_SEARCH_POLICY_VERSION;
   tieBreakPolicyId: typeof PROGRESSION_TIE_BREAK_POLICY_ID;

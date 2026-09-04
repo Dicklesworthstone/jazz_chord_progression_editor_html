@@ -24,7 +24,10 @@ import {
   PROGRESSION_BEAM_WIDTH,
   PROGRESSION_CONFLICT_SCHEMA,
   PROGRESSION_COST_AXES,
-  PROGRESSION_COST_AGGREGATIONS,
+  PROGRESSION_CONTINUITY_COST_AGGREGATIONS,
+  PROGRESSION_CONTINUITY_COST_AXES,
+  PROGRESSION_CONTINUITY_COST_POLICY_VERSION,
+  type ProgressionContinuityCostAxis,
   PROGRESSION_COST_POLICY_ID,
   PROGRESSION_COST_POLICY_VERSION,
   PROGRESSION_DEGRADATION_CODE,
@@ -167,6 +170,7 @@ const IDENTITY_PIN_VALUES: Readonly<Record<string, unknown>> = Object.freeze({
 });
 
 type CostTuple = readonly number[];
+type CostAxes = readonly ProgressionContinuityCostAxis[];
 
 type Chain = Readonly<{
   path: readonly VoicingCandidateId[];
@@ -289,13 +293,13 @@ function zeroMemory(): ProgressionMemoryCounters {
   ) as Record<(typeof PROGRESSION_MEMORY_COUNTER_NAMES)[number], number>;
 }
 
-function zeroCost(): CostTuple {
-  return PROGRESSION_COST_AXES.map(() => 0);
+function zeroCost(axes: CostAxes): CostTuple {
+  return axes.map(() => 0);
 }
 
-function foldCost(base: CostTuple, transition: CostTuple): CostTuple {
-  return PROGRESSION_COST_AXES.map((axis, i) =>
-    PROGRESSION_COST_AGGREGATIONS[axis] === "sum"
+function foldCost(base: CostTuple, transition: CostTuple, axes: CostAxes): CostTuple {
+  return axes.map((axis, i) =>
+    PROGRESSION_CONTINUITY_COST_AGGREGATIONS[axis] === "sum"
       ? (base[i] ?? 0) + (transition[i] ?? 0)
       : Math.max(base[i] ?? 0, transition[i] ?? 0),
   );
@@ -303,7 +307,7 @@ function foldCost(base: CostTuple, transition: CostTuple): CostTuple {
 
 function dominates(a: CostTuple, b: CostTuple): boolean {
   let strict = false;
-  for (let i = 0; i < PROGRESSION_COST_AXES.length; i += 1) {
+  for (let i = 0; i < a.length; i += 1) {
     const left = a[i] ?? 0;
     const right = b[i] ?? 0;
     if (left > right) return false;
@@ -313,7 +317,7 @@ function dominates(a: CostTuple, b: CostTuple): boolean {
 }
 
 function compareChains(a: Chain, b: Chain): number {
-  for (let i = 0; i < PROGRESSION_COST_AXES.length; i += 1) {
+  for (let i = 0; i < a.cost.length; i += 1) {
     const delta = (a.cost[i] ?? 0) - (b.cost[i] ?? 0);
     if (delta !== 0) return delta;
   }
@@ -325,10 +329,10 @@ function compareChains(a: Chain, b: Chain): number {
   return 0;
 }
 
-function namedCost(tuple: CostTuple): ProgressionCost {
+function namedCost(tuple: CostTuple, axes: CostAxes): ProgressionCost {
   return Object.fromEntries(
-    PROGRESSION_COST_AXES.map((axis, i) => [axis, tuple[i] ?? 0]),
-  ) as Record<(typeof PROGRESSION_COST_AXES)[number], number>;
+    axes.map((axis, i) => [axis, tuple[i] ?? 0]),
+  ) as ProgressionCost;
 }
 
 function candidatesOf(event: ProgressionEvent): readonly UnassignedVoiceFrame[] {
@@ -358,7 +362,9 @@ function validateRequest(
     return refuse("progression.schema_invalid", ["schema"]);
   }
   for (const field of IDENTITY_PIN_FIELDS) {
-    if (request.identity[field] !== IDENTITY_PIN_VALUES[field]) {
+    const continuityVersion = field === "costPolicyVersion" &&
+      request.identity[field] === PROGRESSION_CONTINUITY_COST_POLICY_VERSION;
+    if (!continuityVersion && request.identity[field] !== IDENTITY_PIN_VALUES[field]) {
       return refuse("progression.policy_invalid", ["identity", field]);
     }
   }
@@ -628,6 +634,7 @@ function freeze(working: Working): Snapshot {
 /* ------------------------------------------------------------------ */
 
 class Engine {
+  private readonly axes: CostAxes;
   private readonly segments: readonly SegmentPlan[];
 
   constructor(
@@ -635,6 +642,8 @@ class Engine {
     private readonly operations: VoiceAssignmentOperations,
     private readonly contentCache: Map<string, MemoOutcome>,
   ) {
+    this.axes = request.identity.costPolicyVersion === PROGRESSION_CONTINUITY_COST_POLICY_VERSION
+      ? PROGRESSION_CONTINUITY_COST_AXES : PROGRESSION_COST_AXES;
     const segments: { start: number; length: number }[] = [];
     request.events.forEach((event, index) => {
       if (event.chainBoundary === "reset" || segments.length === 0) {
@@ -877,15 +886,7 @@ class Engine {
     const cost = transition.value.cost;
     const outcome: MemoOutcome = {
       kind: "cost",
-      cost: Object.freeze([
-        cost.totalAbsoluteMotion,
-        cost.maximumAbsoluteLeap,
-        cost.commonTonesLost,
-        cost.crowdedLowIntervals,
-        cost.doubledGuideTones,
-        cost.omittedColors,
-        cost.totalSpan,
-      ]),
+      cost: Object.freeze(this.axes.map((axis) => cost[axis])),
     };
     this.contentCache.set(contentKey, outcome);
     return outcome;
@@ -1004,7 +1005,7 @@ class Engine {
           w.counters.seededStates += 1;
           w.counters.generatedStates += 1;
           this.trackGenerated(w);
-          w.seedChains = [Object.freeze({ path: [], cost: zeroCost() })];
+          w.seedChains = [Object.freeze({ path: [], cost: zeroCost(this.axes) })];
           w.phase = "boundary-retain";
           return "unit";
         }
@@ -1032,7 +1033,7 @@ class Engine {
             w.seedChains.push(
               Object.freeze({
                 path: Object.freeze([frame.roles.candidateId]),
-                cost: zeroCost(),
+                cost: zeroCost(this.axes),
               }),
             );
           }
@@ -1137,7 +1138,7 @@ class Engine {
             this.trackGenerated(w);
             const next: Chain = Object.freeze({
               path: Object.freeze([...state.path, toId]),
-              cost: foldCost(state.cost, outcome.cost),
+              cost: foldCost(state.cost, outcome.cost, this.axes),
             });
             const bucketKey = w.loopEligible
               ? `${next.path[0] ?? ""}|${toId}`
@@ -1241,7 +1242,7 @@ class Engine {
             w.loopChains.push(
               Object.freeze({
                 path: chain.path,
-                cost: foldCost(chain.cost, outcome.cost),
+                cost: foldCost(chain.cost, outcome.cost, this.axes),
               }),
             );
           }
@@ -1314,7 +1315,7 @@ class Engine {
               realizationOrdinal: ordinal,
               eventIds: events.map((event) => event.eventId),
               candidateIds: chain.path,
-              cost: namedCost(chain.cost),
+              cost: namedCost(chain.cost, this.axes),
               loopClosureApplied: w.loopApplied,
             }),
           );
@@ -1385,13 +1386,23 @@ class Engine {
         explanation: EXPLANATION,
       };
     }
-    let aggregate = zeroCost();
+    let aggregate = zeroCost(this.axes);
     for (const window of w.windows) {
       const selected = window.realizations[0];
       if (selected) {
         aggregate = foldCost(
           aggregate,
-          PROGRESSION_COST_AXES.map((axis) => selected.cost[axis]),
+          this.axes.map((axis) => {
+            const cost = selected.cost;
+            if (axis === "alignmentCost" || axis === "gapCount") {
+              if (!("alignmentCost" in cost)) {
+                throw new Error("progression.cost_policy_mismatch");
+              }
+              return cost[axis];
+            }
+            return cost[axis];
+          }),
+          this.axes,
         );
       }
     }
@@ -1401,7 +1412,7 @@ class Engine {
       identity,
       termination,
       segments: Object.freeze([...w.windows]),
-      aggregateSelectedCost: namedCost(aggregate),
+      aggregateSelectedCost: namedCost(aggregate, this.axes),
       degradations: Object.freeze([...w.degradations]),
       conflicts: Object.freeze([...w.conflicts]),
       stats,
@@ -1507,7 +1518,9 @@ export const initializeProgressionOptimization = (
   if (refusal) return { ok: false, refusal };
   return {
     ok: true,
-    value: makeState(request, initialSnapshot(), 0, null, new Map()),
+    value: makeState(Object.freeze({
+      ...request, identity: Object.freeze({ ...request.identity }),
+    }), initialSnapshot(), 0, null, new Map()),
   };
 };
 
@@ -1541,6 +1554,16 @@ export const advanceProgressionOptimization = (
     };
   }
   const payload = continuation.payload as ContinuationPayload;
+  for (const field of [
+    ...IDENTITY_PIN_FIELDS, "requestId", "documentId", "sourceRevision",
+  ] as const) {
+    if (state.identity[field] !== payload.request.identity[field]) {
+      return {
+        ok: false,
+        refusal: resumeRefusal("progression.resume_stale", ["identity", field]),
+      };
+    }
+  }
   const engine = new Engine(
     payload.request,
     operations,

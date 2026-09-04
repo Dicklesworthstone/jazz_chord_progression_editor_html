@@ -1,0 +1,23 @@
+{
+  "policyVersion": 2,
+  "provenance": "Hand arithmetic and comparative counterexamples; no optimizer output used as expected data.",
+  "axes": ["alignmentCost", "gapCount", "totalSpan", "maximumAbsoluteLeap", "totalAbsoluteMotion", "commonTonesLost", "crowdedLowIntervals", "doubledGuideTones", "omittedColors"],
+  "aggregations": ["sum", "sum", "max", "max", "sum", "sum", "sum", "sum", "sum"],
+  "caps": [7282688, 114688, 127, 127, 7282688, 57344, 49152, 49152, 131072],
+  "comparisons": [
+    {"id": "dropped-voices-are-not-free", "costs": [[50,4,35,1,2,0,0,0,0],[24,0,16,7,24,0,0,0,0]], "paths": [["candidate-000"],["candidate-001"]], "winner": 1},
+    {"id": "compactness-before-leap", "costs": [[8,0,31,2,8,0,0,0,0],[8,0,12,3,8,0,0,0,0]], "paths": [["candidate-000"],["candidate-001"]], "winner": 1},
+    {"id": "fewer-gaps-at-equal-alignment", "costs": [[24,2,12,0,0,0,0,0,0],[24,0,12,6,24,0,0,0,0]], "paths": [["candidate-000"],["candidate-001"]], "winner": 1},
+    {"id": "alignment-before-compactness", "costs": [[7,0,24,3,7,0,0,0,0],[8,0,12,2,8,0,0,0,0]], "paths": [["candidate-000"],["candidate-001"]], "winner": 0},
+    {"id": "equal-cost-id-tie", "costs": [[4,0,12,1,4,0,0,0,0],[4,0,12,1,4,0,0,0,0]], "paths": [["candidate-001"],["candidate-000"]], "winner": 1}
+  ],
+  "transitions": [
+    {"id": "ordinary-semitone", "from": [60,64,67], "to": [61,65,68], "alignmentCost": 3, "gapCount": 0, "totalAbsoluteMotion": 3, "totalSpan": 7},
+    {"id": "necessary-entering-voice", "from": [60,64,67], "to": [60,64,67,72], "alignmentCost": 12, "gapCount": 1, "totalAbsoluteMotion": 0, "totalSpan": 12},
+    {"id": "necessary-leaving-voice", "from": [60,64,67,72], "to": [60,64,67], "alignmentCost": 12, "gapCount": 1, "totalAbsoluteMotion": 0, "totalSpan": 7},
+    {"id": "extreme-register-turnover", "from": [36,40,43], "to": [84,88,91], "alignmentCost": 72, "gapCount": 6, "totalAbsoluteMotion": 0, "totalSpan": 7},
+    {"id": "issue-dm7-g7", "from": [74,77,81,84], "to": [55,74,77,83], "alignmentCost": 25, "gapCount": 2, "totalAbsoluteMotion": 1, "totalSpan": 28},
+    {"id": "issue-g7-cmaj7", "from": [55,74,77,83], "to": [48,55,76,83], "alignmentCost": 25, "gapCount": 2, "totalAbsoluteMotion": 1, "totalSpan": 35}
+  ],
+  "fold": {"edges": [[15,0,16,7,15,0,0,0,0],[9,0,11,5,9,0,0,0,0]], "expected": [24,0,16,7,24,0,0,0,0]}
+}

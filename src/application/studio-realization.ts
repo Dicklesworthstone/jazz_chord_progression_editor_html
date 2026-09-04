@@ -24,7 +24,7 @@ import {
 } from "../playback";
 import {
   PROGRESSION_COST_POLICY_ID,
-  PROGRESSION_COST_POLICY_VERSION,
+  PROGRESSION_CONTINUITY_COST_POLICY_VERSION,
   PROGRESSION_EVENT_SCHEMA,
   PROGRESSION_OPTIMIZER_ENGINE_ID,
   PROGRESSION_OPTIMIZER_ENGINE_VERSION,
@@ -129,7 +129,7 @@ function optimizeSelections(
       engineId: PROGRESSION_OPTIMIZER_ENGINE_ID,
       engineVersion: PROGRESSION_OPTIMIZER_ENGINE_VERSION,
       costPolicyId: PROGRESSION_COST_POLICY_ID,
-      costPolicyVersion: PROGRESSION_COST_POLICY_VERSION,
+      costPolicyVersion: PROGRESSION_CONTINUITY_COST_POLICY_VERSION,
       searchPolicyId: PROGRESSION_SEARCH_POLICY_ID,
       searchPolicyVersion: PROGRESSION_SEARCH_POLICY_VERSION,
       tieBreakPolicyId: PROGRESSION_TIE_BREAK_POLICY_ID,
@@ -189,7 +189,7 @@ function optimizeSelections(
  *
  * 2. Auto voicing over a parsed chord — resolved through T1, realized through
  *    V0, then selected by the V2 progression optimizer, which minimizes the
- *    frozen seven-axis voice-leading cost across the whole chain (chains
+ *    explicit continuity voice-leading cost across the whole chain (chains
  *    reset at section boundaries marked "reset"). When optimization cannot
  *    produce a complete selection — a refused request, an unfinished or
  *    no-realization outcome — every auto event falls back to V0's first

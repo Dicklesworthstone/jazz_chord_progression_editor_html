@@ -164,6 +164,7 @@ export function performStudioPlaybackPlan(
   const performed = compilePerformancePlan({
     plan,
     styleId,
+    compContinuityVersion: 2,
   });
   if (!performed.ok) return plan;
   /*

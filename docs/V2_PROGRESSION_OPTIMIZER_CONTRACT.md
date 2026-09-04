@@ -405,3 +405,87 @@ integration coverage against real V0 candidates and the real V1 oracle, and
 records the 100 ms / 500 ms performance observations without letting either
 clock touch semantics. No production shortcut or feature reduction is
 authorized by anything in this document.
+
+## 13. Continuity cost policy 2 (GitHub #2)
+
+The user authorized this additive correction on 2026-09-04. Policy 1 and its
+reviewed fixtures remain unchanged. Requests explicitly select cost policy 2
+under the same aggregate-cost ID; other engine, search and tie-break identities
+retain their existing versions. The studio opts into 2. Unknown versions refuse.
+
+Policy 1 can prefer dropping and replacing voices because matched motion does
+not charge entering/leaving voices. Policy 2 compares these exact V1 facts,
+lexicographically, lowest first:
+
+| Order | Axis | Aggregation | Maximum |
+| --- | --- | --- | --- |
+| 1 | alignmentCost | sum | 7,282,688 |
+| 2 | gapCount | sum | 114,688 |
+| 3 | totalSpan | max | 127 |
+| 4 | maximumAbsoluteLeap | max | 127 |
+| 5 | totalAbsoluteMotion | sum | 7,282,688 |
+| 6 | commonTonesLost | sum | 57,344 |
+| 7 | crowdedLowIntervals | sum | 49,152 |
+| 8 | doubledGuideTones | sum | 49,152 |
+| 9 | omittedColors | sum | 131,072 |
+
+V1 alignment is matched semitones plus 12 for each entering or leaving voice.
+Thus a necessary change of voice count is allowed and charged, never disguised
+as zero movement. Alignment wins before compactness; compactness cannot buy a
+worse alignment. Equal alignment prefers fewer births/deaths, then a smaller
+maximum target-frame span before leap and the remaining reported facts. As in
+policy 1, span is V1's target span; a chain with no transitions has zero cost.
+All nine facts remain visible. There is no weighted blend or style claim.
+
+Sum caps use 8,192 transitions (including closure); a transition has at most
+14 gaps and alignment at most 889. Max caps are inherited directly from V1.
+The remaining rules, candidate set, per-ending-candidate Pareto retention,
+candidate-ID tie break, beam/window/work/memory bounds, fixed anchors, section
+resets and loop closure are unchanged. Optimality is claimed only for exhaustive
+small cases; a bounded beam can evict a globally better chain and still reports
+its existing degradation. No clock controls selection.
+
+Results contain the seven legacy cost fields for policy 1 and all nine fields
+for policy 2. Every selection, fold, dominance comparison and named result uses
+the request's policy. Continuation identity must match its retained request,
+including cost version and source revision; a changed identity refuses as stale.
+The memo belongs to that continuation/request and cannot cross policy versions.
+The studio document cache is process-local and identity-keyed; a fresh document
+gets a fresh request. No persisted policy-1 cache is interpreted as policy 2.
+
+`continuity-policy-cases.json` contains hand-authored comparison and arithmetic
+cases, including a gap exploit, necessary changed count, ordinary near miss,
+compactness and equal-cost ties. Static proof pins the public policy to those
+inputs. Build/proof must exercise real V1, exhaustive finite chains, both
+policies, transposition/inverse, fixed anchors, resume/cancel/limits and the
+actual studio audio arrangement and MIDI export. The issue's Deacon Blues
+sequence must report all nine edges. Old expectations must not be repinned.
+Human listening remains an explicit separate acceptance obligation.
+
+Downstream amendment from the build's failing Autumn Leaves experiment:
+`compilePerformancePlan` accepts optional `compContinuityVersion: 2`; absence
+preserves its existing greedy register policy. The studio opts in. After the
+existing style has chosen its top slices, a deterministic two-state dynamic
+program chooses between each comp's admissible whole-octave placements across
+the performed plan. It minimizes summed order-preserving alignment (12 per
+birth/death), then summed gaps, then summed bottom-note movement. Equal costs
+choose lower placements from latest event backwards. All three axes are
+additive, so one best prefix per ending placement is sufficient; there is no
+beam approximation in this pass. The separation floor covers every bass note
+overlapping a comp's sounding gate, including a later attack. If that floor
+leaves no admissible placement, apply the existing lowest-voice fallback until
+one is possible. No voice is removed while a placement exists. Bass notes, style rhythm,
+spellings modulo octave, range, ceiling and bass separation remain fixed.
+This is register placement in the explicitly arranged audio part; it never
+rewrites stored voicings or the literal MIDI plan.
+
+There are at most two placements per comp, four transitions per comp and
+65,536 emitted events. Each alignment uses at most 17 by 17 cells for P0's
+16-voice bound. Retained traceback states are at most 131,072; live alignment
+rows at most 34 cells. The result reports comp events, candidate transitions,
+alignment cells, traceback states, placement checks (at most 32 per comp),
+bass overlap checks and exact objective totals. Bass and comp gates are each
+non-overlapping, so their interval intersection scan is linear in emitted
+events and uses a single monotonically advancing cursor. These limits
+are deterministic; wall time is only an observation. The independent proof
+must enumerate small register chains and exercise the actual sounded plan.

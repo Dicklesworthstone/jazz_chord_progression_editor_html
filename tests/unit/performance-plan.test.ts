@@ -52,7 +52,6 @@ import type {
 import { STARTER_CHART } from "../../src/application/studio-starter-chart";
 import {
   STUDIO_PERFORMANCE_STYLE,
-  compileStudioPlaybackPlan,
   performStudioPlaybackPlan,
 } from "../../src/application/studio-playback";
 import {
@@ -80,6 +79,7 @@ import {
 } from "../../src/playback";
 import { parseChartText } from "../../src/theory";
 import { createFakeAudioPlatform } from "../../src/test-support/fake-audio-platform";
+import { legacyStudioPlan } from "../support/studio-voice-leading";
 
 const PLAY_GESTURE = Object.freeze({
   kind: "trusted-pointer",
@@ -286,11 +286,9 @@ function publishChart(
 }
 
 function literalPlanOf(document: ValidatedDocument): PlaybackPlan {
-  const compiled = compileStudioPlaybackPlan(document);
-  if (!compiled.ok) {
-    throw new Error(`PERFORMANCE_TEST_P0:${compiled.refusal.code}`);
-  }
-  return compiled.plan;
+  // These reviewed register-policy-1 goldens require their original V2 cost-1
+  // inputs. Keep every assertion; policy-2 real studio has separate coverage.
+  return legacyStudioPlan(document);
 }
 
 /**

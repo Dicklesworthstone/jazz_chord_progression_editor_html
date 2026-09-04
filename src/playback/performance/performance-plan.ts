@@ -76,6 +76,7 @@ import {
   type NonEmptySpelledPitches,
   type SpelledPitch,
 } from "../../domain";
+import { leadCompRegisters } from "./comp-continuity";
 import {
   PLAYBACK_EVENT_SCHEMA,
   type PLAYBACK_PLAN_FIXED_VELOCITY,
@@ -101,6 +102,7 @@ import {
   type CompilePerformancePlanFailure,
   type CompilePerformancePlanRequest,
   type CompilePerformancePlanResult,
+  type CompContinuityEvidence,
   type ExactBeats,
   type PerformanceBassPlacement,
   type PerformanceBassTone,
@@ -831,6 +833,11 @@ export function compilePerformancePlan(
     eventsProduced: 0,
   };
   const styleId = request.styleId;
+  const continuityVersion: number | undefined = request.compContinuityVersion;
+  if (continuityVersion !== undefined && continuityVersion !== 2) {
+    return refuse(styleId, "performance.continuity_policy_invalid", null,
+      String(continuityVersion), counters, "style-invalid");
+  }
   const style = STYLE_INDEX.get(styleId);
   if (style === undefined) {
     return refuse(
@@ -1491,6 +1498,25 @@ export function compilePerformancePlan(
     seenIds.add(event.eventId);
   }
 
+  let compContinuity: CompContinuityEvidence | undefined;
+  if (request.compContinuityVersion === 2 && compRegister !== null) {
+    const led = leadCompRegisters(emitted, emittedRoles, compRegister);
+    compContinuity = led.evidence;
+    for (const [index, { shift, dropCount }] of led.placements) {
+      const event = emitted[index];
+      if (event === undefined || (shift === 0 && dropCount === 0)) continue;
+      const voices = event.pitches.map((spelled, i) => ({ spelled, midi: event.midiPitches[i] ?? -1 }));
+      const moved = transposeOctaves(voices.slice(dropCount), shift);
+      const pitches = moved === null ? null : nonEmptySpelled(moved);
+      const midiPitches = moved === null ? null : nonEmptyMidi(moved);
+      if (pitches === null || midiPitches === null) {
+        return refuse(styleId, "performance.emitted_event_invalid", event.eventId,
+          "continuity-register-unreachable", counters, "emission-invalid");
+      }
+      emitted[index] = Object.freeze({ ...event, pitches, midiPitches });
+    }
+  }
+
   const performance: PlaybackPlan = Object.freeze({
     schema: plan.schema,
     compilerId: plan.compilerId,
@@ -1518,5 +1544,6 @@ export function compilePerformancePlan(
     ok: true,
     plan: performance,
     evidence: evidence(counters, "complete"),
+    ...(compContinuity === undefined ? {} : { compContinuity }),
   });
 }

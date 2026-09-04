@@ -1608,6 +1608,7 @@ export const PERFORMANCE_STYLES: Readonly<
 
 export const PERFORMANCE_PLAN_REFUSAL_CODES = Object.freeze([
   "performance.style_unknown",
+  "performance.continuity_policy_invalid",
   "performance.style_table_invalid",
   "performance.meter_unsupported",
   "performance.loop_unsupported",
@@ -1673,12 +1674,28 @@ export type CompilePerformancePlanRequest = Readonly<{
   /** A compiled, structurally valid P0 plan. */
   plan: PlaybackPlan;
   styleId: PerformanceStyleId;
+  /** Explicit opt-in; absence preserves greedy whole-octave placement. */
+  compContinuityVersion?: 2;
+}>;
+
+export type CompContinuityEvidence = Readonly<{
+  policyVersion: 2;
+  compEvents: number;
+  bassOverlapChecks: number;
+  placementChecks: number;
+  candidateTransitions: number;
+  alignmentCells: number;
+  tracebackStates: number;
+  alignmentCost: number;
+  gapCount: number;
+  bottomMotion: number;
 }>;
 
 export type CompilePerformancePlanSuccess = Readonly<{
   ok: true;
   plan: PlaybackPlan;
   evidence: PerformancePlanWorkEvidence;
+  compContinuity?: CompContinuityEvidence;
 }>;
 
 export type CompilePerformancePlanFailure = Readonly<{
