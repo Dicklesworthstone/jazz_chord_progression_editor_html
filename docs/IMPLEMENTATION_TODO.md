@@ -27,6 +27,18 @@ Consumer: the user and Codex executing the 2026-09-04 request to implement the r
 - [x] Run actual browser playback/Stop and MIDI notes; verify artifact reproducibility.
 - [x] Fresh acceptance review; attach exact results and close only satisfied phases.
 
+## H0 active subtasks
+
+- [x] Claim `jcpe-milestone-musical-intelligence-qqy.2.2`; read the complete H0 contract, public types, and inherited Bead context.
+- [x] Inspect the independent corpus before using it as implementation authority. Found identical context inputs with contradictory expected dispositions, reversed tier ordering, and scale evidence absent from the public request.
+- [x] Implement the `deriveLiteralFacts` production operation and public export, preserving selected T1 identity, spelling, roles, exact weights, Custom duplicates, immutable snapshots, and typed refusals. This alone does not complete H0/build.
+- [x] Exercise literal fixtures, all altered selections, twelve written roots, input mutation, and version/selection precedence against the production callable: 50 pass, 2 fail. Both failures expose H0's omission of degree 11 from C13/C13sus4 despite their cited T1 formula requiring it. Keep those comparisons failing until the authority is reconciled.
+- [x] Preserve executable context/scale contract witnesses in `scripts/audit-h0-contract-consistency.ts`: five findings. Reopen H0/spec and mark H0/build blocked by that dependency; retain all fixture assertions and valid T1 laws.
+- [x] Run the literal-only honest control and four actual source mutants: all four killed (weights, selection, spelling, mutable alias). Recheck the generated artifact with 6/0 voice-leading browser cases, 36/0 standalone cases, and distinct-root/mtime reproducibility. These checks do not certify the missing context or scale algorithms.
+- [ ] Reconcile contradictory H0 authority and publish the missing semantic context-evidence boundary. Independently agree the exact accounting recipe, then prove every reachable valid cap and source mutant.
+- [ ] Implement all contextual rules and plural scale mappings after the authority is consistent.
+- [ ] Replay all independent H0 corpora, execute production mutants, and record complete package gates; close only satisfied phases.
+
 ## Complete unresolved tracker inventory
 
 Statuses below are the campaign-start snapshot. Use br show and br ready before claiming; an existing assignee is not an invitation to take over.
@@ -58,7 +70,8 @@ Statuses below are the campaign-start snapshot. Use br show and br ready before 
 - [ ] `jcpe-milestone-advanced-craft-ulj` — Epic: Advanced Craft — routes, constraints, reharmonization, and practice (open; P1; unassigned)
 - [ ] `jcpe-milestone-musical-intelligence-qqy` — Epic: Musical Intelligence — explainable continuation and Harmonic Atlas (open; P1; unassigned)
 - [ ] `jcpe-milestone-musical-intelligence-qqy.2` — H0: Implement evidence-tier context readings and chord-scale tables (open; P1; unassigned)
-- [ ] `jcpe-milestone-musical-intelligence-qqy.2.2` — H0/build: Implement the complete production package (open; P1; unassigned)
+- [ ] `jcpe-milestone-musical-intelligence-qqy.2.1` — H0/spec: repair five executable authority conflicts (reopened; P1; unassigned)
+- [ ] `jcpe-milestone-musical-intelligence-qqy.2.2` — H0/build: Implement the complete production package (blocked by H0/spec; P1; CodexImplementation; literal projection implemented, full package incomplete)
 - [ ] `jcpe-milestone-musical-intelligence-qqy.2.3` — H0/verify: Prove conformance, integration, and evidence (open; P1; unassigned)
 - [ ] `jcpe-milestone-musical-intelligence-qqy.3` — H1: Build proof-carrying transformation laws and spelled transposition (open; P1; unassigned)
 - [ ] `jcpe-milestone-musical-intelligence-qqy.3.1` — H1/spec: Specify interfaces, limits, and independent fixtures (open; P1; unassigned)
