@@ -72,6 +72,33 @@ struct FrankenJazzApp: App {
                 Button("Show Chord Inspector") { store.isInspectorPresented = true }
                     .keyboardShortcut("i", modifiers: [.command, .option])
             }
+            JazzTextSizeCommands()
+        }
+    }
+}
+
+private struct JazzTextSizeCommands: Commands {
+    @AppStorage(JazzTheme.textScaleStorageKey) private var textScale = JazzTheme.defaultTextScale
+
+    var body: some Commands {
+        CommandMenu("Text Size") {
+            Button("Larger Text") {
+                textScale = JazzTheme.adjustedTextScale(from: textScale, steps: 1)
+            }
+            .keyboardShortcut("+", modifiers: .command)
+            .disabled(JazzTheme.normalizedTextScale(textScale) >= JazzTheme.maximumTextScale)
+
+            Button("Smaller Text") {
+                textScale = JazzTheme.adjustedTextScale(from: textScale, steps: -1)
+            }
+            .keyboardShortcut("-", modifiers: .command)
+            .disabled(JazzTheme.normalizedTextScale(textScale) <= JazzTheme.minimumTextScale)
+
+            Button("Actual Size") {
+                textScale = JazzTheme.defaultTextScale
+            }
+            .keyboardShortcut("0", modifiers: .command)
+            .disabled(JazzTheme.normalizedTextScale(textScale) == JazzTheme.defaultTextScale)
         }
     }
 }

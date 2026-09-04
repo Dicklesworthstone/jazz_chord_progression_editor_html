@@ -11,6 +11,12 @@ enum JazzAppearance: String {
 }
 
 enum JazzTheme {
+    static let textScaleStorageKey = "frankenjazz.textScale"
+    static let defaultTextScale = 1.0
+    static let minimumTextScale = 0.8
+    static let maximumTextScale = 1.5
+    static let textScaleStep = 0.1
+
     static let background = adaptive(
         dark: UIColor(red: 0.010, green: 0.022, blue: 0.030, alpha: 1),
         light: UIColor(red: 0.965, green: 0.945, blue: 0.885, alpha: 1)
@@ -69,11 +75,38 @@ enum JazzTheme {
     }
 
     static func size(_ base: CGFloat) -> CGFloat {
+        let textScale = CGFloat(storedTextScale)
 #if targetEnvironment(macCatalyst)
-        base * 1.18
+        return base * 1.18 * textScale
 #else
-        UIFontMetrics(forTextStyle: .body).scaledValue(for: base)
+        return UIFontMetrics(forTextStyle: .body).scaledValue(for: base) * textScale
 #endif
+    }
+
+    static var storedTextScale: Double {
+        let defaults = UserDefaults.standard
+        guard defaults.object(forKey: textScaleStorageKey) != nil else { return defaultTextScale }
+        return normalizedTextScale(defaults.double(forKey: textScaleStorageKey))
+    }
+
+    static func normalizedTextScale(_ candidate: Double) -> Double {
+        guard candidate.isFinite else { return defaultTextScale }
+        let clamped = min(max(candidate, minimumTextScale), maximumTextScale)
+        return (clamped / textScaleStep).rounded() * textScaleStep
+    }
+
+    static func adjustedTextScale(from current: Double, steps: Int) -> Double {
+        normalizedTextScale(current + Double(steps) * textScaleStep)
+    }
+
+    static func dynamicTypeSize(from systemSize: DynamicTypeSize, for scale: Double) -> DynamicTypeSize {
+        let sizes: [DynamicTypeSize] = [
+            .xSmall, .small, .medium, .large, .xLarge, .xxLarge, .xxxLarge,
+            .accessibility1, .accessibility2, .accessibility3, .accessibility4, .accessibility5,
+        ]
+        guard let systemIndex = sizes.firstIndex(of: systemSize) else { return systemSize }
+        let steps = Int(((normalizedTextScale(scale) - defaultTextScale) / textScaleStep).rounded())
+        return sizes[min(max(systemIndex + steps, 0), sizes.count - 1)]
     }
 }
 

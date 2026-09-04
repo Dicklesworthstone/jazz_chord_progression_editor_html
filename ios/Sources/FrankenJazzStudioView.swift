@@ -3,7 +3,9 @@ import UniformTypeIdentifiers
 
 struct FrankenJazzStudioView: View {
     @ObservedObject var store: JazzStudioStore
+    @Environment(\.dynamicTypeSize) private var systemDynamicTypeSize
     @AppStorage(JazzAppearance.storageKey) private var appearance = JazzAppearance.dark.rawValue
+    @AppStorage(JazzTheme.textScaleStorageKey) private var textScale = JazzTheme.defaultTextScale
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -23,6 +25,7 @@ struct FrankenJazzStudioView: View {
             }
         }
         .preferredColorScheme((JazzAppearance(rawValue: appearance) ?? .dark).colorScheme)
+        .environment(\.dynamicTypeSize, JazzTheme.dynamicTypeSize(from: systemDynamicTypeSize, for: textScale))
         .tint(JazzTheme.brass)
         .sheet(isPresented: $store.isInspectorPresented) { NavigationStack { ChordInspectorView(store: store, sheetMode: true) } }
         .sheet(isPresented: $store.isLibraryPresented) { NavigationStack { LibraryView(store: store, sheetMode: true) } }
@@ -1057,7 +1060,7 @@ private struct TransportBar: View {
                     ProgressView().tint(JazzTheme.background)
                 } else {
                     Image(systemName: store.audio.isPlaying ? "pause.fill" : "play.fill")
-                        .font(.system(size: 18, weight: .bold)).foregroundStyle(JazzTheme.background)
+                        .font(.system(size: JazzTheme.size(18), weight: .bold)).foregroundStyle(JazzTheme.background)
                 }
             }
         }
@@ -1066,7 +1069,7 @@ private struct TransportBar: View {
 
         Button { store.audio.stop() } label: {
             Image(systemName: "stop.fill")
-                .font(.system(size: 14, weight: .bold))
+                .font(.system(size: JazzTheme.size(14), weight: .bold))
                 .frame(width: 42, height: 42)
                 .background(JazzTheme.coral.opacity(0.10), in: Circle())
                 .overlay(Circle().stroke(JazzTheme.coral.opacity(0.34)))
