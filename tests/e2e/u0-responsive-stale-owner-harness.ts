@@ -205,6 +205,10 @@ const BASE_VIEW: Omit<StudioShellView, "layout"> = Object.freeze({
     canStepNext: false,
     canTempoDown: false,
     canTempoUp: false,
+    /* U4 (l3a.12.2) slider numerics: inert for these layout proofs. */
+    playheadBeats: null,
+    totalBeats: null,
+    beatsPerBar: 4,
   }),
   playback: Object.freeze({
     tempoBpm: 120,
@@ -373,6 +377,16 @@ function ResponsiveStaleOwnerHarness() {
           sectionId: null,
         }),
         readLoopRegion: () => null,
+        onRestart: () => undefined,
+        onSeekBeat: () => undefined,
+        onCountInToggle: () => undefined,
+        onMetronomeToggle: () => undefined,
+        readClickToggles: () => ({
+          countInEnabled: false,
+          metronomeEnabled: false,
+        }),
+        readInstrumentBoundaryNotice: () => null,
+        readPendingRunStartBeats: () => null,
       },
       view,
     }),
