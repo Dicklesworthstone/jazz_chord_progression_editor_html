@@ -12,6 +12,9 @@
 # WAL certification sidecars (`*.db-wal` does not match these)
 *.db-wal-cert
 *.db-wal-cert-head
+# Schema migration scratch databases retain these local support files.
+*.vacuum-wal-cert*
+*.fsqlite-migration-state
 
 # Lock files
 *.lock
