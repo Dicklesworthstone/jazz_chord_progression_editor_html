@@ -58,11 +58,13 @@ describe("the playback pointer", () => {
       chordId: null,
       chordLabel: null,
       progressPercent: null,
+      totalBeats: 12,
     });
     expect(playbackPointer(snapshotWith("paused", "5/1"))).toEqual({
       chordId: null,
       chordLabel: null,
       progressPercent: null,
+      totalBeats: 12,
     });
   });
 

@@ -138,9 +138,9 @@ test("a refused leading preparation settles Play without submitting instrument o
       instrumentCalls += 1;
       return inner.setInstrument(commandRequestId, instrumentId);
     },
-    play: (commandRequestId, binding, startBeat) => {
+    play: (commandRequestId, binding, startBeat, countIn) => {
       playCalls += 1;
-      return inner.play(commandRequestId, binding, startBeat);
+      return inner.play(commandRequestId, binding, startBeat, countIn);
     },
   });
   const created = createStudioController({ audio: port });
