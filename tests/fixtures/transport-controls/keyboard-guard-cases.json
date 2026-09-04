@@ -1,0 +1,288 @@
+{
+  "schema": "changes.fixtures.u4-keyboard-guard-cases.v1",
+  "reviewState": "proposed-independent-spec",
+  "pinState": "pinned",
+  "expectedValuesGenerated": false,
+  "productionOutputUsedAsOracle": false,
+  "guardConditions": [
+    "default-prevented",
+    "modifier-held",
+    "target-input",
+    "target-textarea",
+    "target-select",
+    "target-content-editable",
+    "target-inside-button-or-link",
+    "slider-focus"
+  ],
+  "cases": [
+    {
+      "id": "U4-KEY-001",
+      "kind": "positive",
+      "family": "global-space",
+      "subject": "Space toggles play from the chart",
+      "given": "focus on the chart region, status ready, a playable chart, no modifiers, event not prevented",
+      "expected": "exactly one play-run intent with a trusted-keyboard gesture receipt",
+      "lawIds": [
+        "U4-LAW-KEYBOARD-GUARDS"
+      ],
+      "traceIds": [
+        "TR-U4-KEYBOARD-GUARDS"
+      ],
+      "authorityIds": [
+        "U4-AUTH-BEAD",
+        "U4-AUTH-DOC"
+      ]
+    },
+    {
+      "id": "U4-KEY-002",
+      "kind": "positive",
+      "family": "global-space",
+      "subject": "Space pauses while playing",
+      "given": "status playing, focus outside any control",
+      "expected": "exactly one pause-run intent",
+      "lawIds": [
+        "U4-LAW-KEYBOARD-GUARDS"
+      ],
+      "traceIds": [
+        "TR-U4-KEYBOARD-GUARDS"
+      ],
+      "authorityIds": [
+        "U4-AUTH-DOC"
+      ]
+    },
+    {
+      "id": "U4-KEY-003",
+      "kind": "positive",
+      "family": "global-shift-space",
+      "subject": "Shift+Space plays the section",
+      "given": "a selection inside a section, status ready, playable chart",
+      "expected": "exactly one section-play intent (controller arms the section loop and plays atomically) with a trusted-keyboard gesture",
+      "lawIds": [
+        "U4-LAW-KEYBOARD-GUARDS",
+        "U4-LAW-SINGLE-INTENT"
+      ],
+      "traceIds": [
+        "TR-U4-KEYBOARD-GUARDS",
+        "TR-U4-LOOP-SCOPE"
+      ],
+      "authorityIds": [
+        "U4-AUTH-DOC"
+      ]
+    },
+    {
+      "id": "U4-KEY-004",
+      "kind": "negative",
+      "family": "guard",
+      "subject": "prevented default is honored",
+      "given": "a Space keydown already defaultPrevented",
+      "expected": "no intent; the guard ignores the event",
+      "lawIds": [
+        "U4-LAW-KEYBOARD-GUARDS"
+      ],
+      "traceIds": [
+        "TR-U4-KEYBOARD-GUARDS"
+      ],
+      "authorityIds": [
+        "U4-AUTH-DOC"
+      ],
+      "coversConditions": [
+        "default-prevented"
+      ]
+    },
+    {
+      "id": "U4-KEY-005",
+      "kind": "negative",
+      "family": "guard",
+      "subject": "modifier held",
+      "given": "Space with Ctrl, Meta, or Alt held",
+      "expected": "no intent",
+      "lawIds": [
+        "U4-LAW-KEYBOARD-GUARDS"
+      ],
+      "traceIds": [
+        "TR-U4-KEYBOARD-GUARDS"
+      ],
+      "authorityIds": [
+        "U4-AUTH-DOC"
+      ],
+      "coversConditions": [
+        "modifier-held"
+      ]
+    },
+    {
+      "id": "U4-KEY-006",
+      "kind": "negative",
+      "family": "guard",
+      "subject": "edit fields are sacred",
+      "given": "Space targeted at an INPUT, TEXTAREA, or SELECT (including the tempo field)",
+      "expected": "no intent; the field receives the character or selection change",
+      "lawIds": [
+        "U4-LAW-KEYBOARD-GUARDS"
+      ],
+      "traceIds": [
+        "TR-U4-KEYBOARD-GUARDS"
+      ],
+      "authorityIds": [
+        "U4-AUTH-BEAD"
+      ],
+      "coversConditions": [
+        "target-input",
+        "target-textarea",
+        "target-select"
+      ]
+    },
+    {
+      "id": "U4-KEY-007",
+      "kind": "negative",
+      "family": "guard",
+      "subject": "contenteditable is sacred",
+      "given": "Space targeted at an isContentEditable node",
+      "expected": "no intent",
+      "lawIds": [
+        "U4-LAW-KEYBOARD-GUARDS"
+      ],
+      "traceIds": [
+        "TR-U4-KEYBOARD-GUARDS"
+      ],
+      "authorityIds": [
+        "U4-AUTH-DOC"
+      ],
+      "coversConditions": [
+        "target-content-editable"
+      ]
+    },
+    {
+      "id": "U4-KEY-008",
+      "kind": "negative",
+      "family": "guard",
+      "subject": "buttons and links keep their activation",
+      "given": "Space targeted inside a button, a[href], or [role=button]",
+      "expected": "no global intent; the focused control activates natively",
+      "lawIds": [
+        "U4-LAW-KEYBOARD-GUARDS"
+      ],
+      "traceIds": [
+        "TR-U4-KEYBOARD-GUARDS"
+      ],
+      "authorityIds": [
+        "U4-AUTH-DOC"
+      ],
+      "coversConditions": [
+        "target-inside-button-or-link"
+      ]
+    },
+    {
+      "id": "U4-KEY-009",
+      "kind": "negative",
+      "family": "guard",
+      "subject": "slider focus keeps arrow keys local",
+      "given": "focus on the scrub slider",
+      "expected": "Arrow/ Page/ Home/ End keys move the slider only; the global Space handler is unaffected but Space on the slider does not toggle play",
+      "lawIds": [
+        "U4-LAW-KEYBOARD-GUARDS",
+        "U4-LAW-SCRUBBER-ACCESSIBLE"
+      ],
+      "traceIds": [
+        "TR-U4-KEYBOARD-GUARDS",
+        "TR-U4-SCRUBBER"
+      ],
+      "authorityIds": [
+        "U4-AUTH-DOC"
+      ],
+      "coversConditions": [
+        "slider-focus"
+      ]
+    },
+    {
+      "id": "U4-KEY-010",
+      "kind": "positive",
+      "family": "slider-keys",
+      "subject": "arrow step",
+      "given": "slider focused during a paused run at beat 3",
+      "expected": "ArrowRight dispatches one seek to exact beat 4; ArrowLeft to beat 2",
+      "lawIds": [
+        "U4-LAW-SCRUBBER-ACCESSIBLE",
+        "U4-LAW-EXACT-SEEK"
+      ],
+      "traceIds": [
+        "TR-U4-SCRUBBER"
+      ],
+      "authorityIds": [
+        "U4-AUTH-DOC",
+        "U4-AUTH-X1"
+      ]
+    },
+    {
+      "id": "U4-KEY-011",
+      "kind": "positive",
+      "family": "slider-keys",
+      "subject": "bar step",
+      "given": "slider focused, plan meter 4/4, paused at beat 6",
+      "expected": "Shift+ArrowRight seeks to exact beat 10; Shift+ArrowLeft to beat 2",
+      "lawIds": [
+        "U4-LAW-SCRUBBER-ACCESSIBLE",
+        "U4-LAW-EXACT-SEEK"
+      ],
+      "traceIds": [
+        "TR-U4-SCRUBBER"
+      ],
+      "authorityIds": [
+        "U4-AUTH-DOC"
+      ]
+    },
+    {
+      "id": "U4-KEY-012",
+      "kind": "positive",
+      "family": "slider-keys",
+      "subject": "page step and bounds",
+      "given": "slider focused at beat 5 of a 16-beat plan",
+      "expected": "PageUp seeks to beat 9; PageDown to beat 1; Home to beat 0; End to beat 16",
+      "lawIds": [
+        "U4-LAW-SCRUBBER-ACCESSIBLE",
+        "U4-LAW-EXACT-SEEK"
+      ],
+      "traceIds": [
+        "TR-U4-SCRUBBER"
+      ],
+      "authorityIds": [
+        "U4-AUTH-DOC"
+      ]
+    },
+    {
+      "id": "U4-KEY-013",
+      "kind": "negative",
+      "family": "slider-keys",
+      "subject": "keys clamp at plan bounds",
+      "given": "slider focused at beat 1 of a 16-beat plan",
+      "expected": "PageDown clamps to beat 0; no seek-out-of-range intent is ever dispatched",
+      "lawIds": [
+        "U4-LAW-EXACT-SEEK"
+      ],
+      "traceIds": [
+        "TR-U4-SCRUBBER"
+      ],
+      "authorityIds": [
+        "U4-AUTH-DOC"
+      ]
+    },
+    {
+      "id": "U4-KEY-014",
+      "kind": "negative",
+      "family": "slider-keys",
+      "subject": "display sweep never feeds a seek",
+      "given": "a slider key press while the rAF sweep shows an interpolated position ahead of the committed playhead",
+      "expected": "the seek computes from the committed accepted playhead, never the interpolated display value",
+      "lawIds": [
+        "U4-LAW-DISPLAY-ONLY-SWEEP",
+        "U4-LAW-EXACT-SEEK"
+      ],
+      "traceIds": [
+        "TR-U4-SCRUBBER"
+      ],
+      "authorityIds": [
+        "U4-AUTH-X1",
+        "U4-AUTH-DOC"
+      ]
+    }
+  ]
+}

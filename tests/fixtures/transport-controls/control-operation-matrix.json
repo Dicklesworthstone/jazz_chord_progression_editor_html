@@ -1,0 +1,3034 @@
+{
+  "schema": "changes.fixtures.u4-control-operation-matrix.v1",
+  "reviewState": "proposed-independent-spec",
+  "pinState": "pinned",
+  "expectedValuesGenerated": false,
+  "productionOutputUsedAsOracle": false,
+  "statuses": [
+    "unavailable",
+    "ready",
+    "starting",
+    "playing",
+    "paused",
+    "stopping",
+    "failed"
+  ],
+  "disabledReasons": [
+    "untrusted-gesture",
+    "no-playable-chord",
+    "no-bound-plan",
+    "audio-unavailable",
+    "not-running",
+    "no-active-run",
+    "seek-out-of-range",
+    "status-settling"
+  ],
+  "operations": [
+    {
+      "id": "play-run",
+      "label": "Play",
+      "component": "U4-CMP-002",
+      "channel": "controller-intent",
+      "controllerIntent": "playProgression",
+      "x1CommandKinds": [
+        "initialize-transport",
+        "play"
+      ],
+      "requiresTrustedGesture": true,
+      "keyboardAccess": "global-space",
+      "pointerAlternative": "button-activation",
+      "enablement": {
+        "enabledStatuses": [
+          "ready",
+          "paused"
+        ],
+        "needsCanPlay": true,
+        "disabledReasonByStatus": {
+          "unavailable": "audio-unavailable",
+          "starting": "status-settling",
+          "playing": "not-running",
+          "stopping": "status-settling",
+          "failed": "audio-unavailable"
+        }
+      }
+    },
+    {
+      "id": "pause-run",
+      "label": "Pause",
+      "component": "U4-CMP-003",
+      "channel": "controller-intent",
+      "controllerIntent": "pauseProgression",
+      "x1CommandKinds": [
+        "pause"
+      ],
+      "requiresTrustedGesture": false,
+      "keyboardAccess": "global-space",
+      "pointerAlternative": "button-activation",
+      "enablement": {
+        "enabledStatuses": [
+          "playing"
+        ],
+        "needsCanPlay": false,
+        "disabledReasonByStatus": {
+          "unavailable": "audio-unavailable",
+          "ready": "not-running",
+          "starting": "status-settling",
+          "paused": "not-running",
+          "stopping": "status-settling",
+          "failed": "audio-unavailable"
+        }
+      }
+    },
+    {
+      "id": "stop-run",
+      "label": "Stop",
+      "component": "U4-CMP-004",
+      "channel": "controller-intent",
+      "controllerIntent": "stopProgression",
+      "x1CommandKinds": [
+        "stop"
+      ],
+      "requiresTrustedGesture": false,
+      "keyboardAccess": "button-focus-enter",
+      "pointerAlternative": "button-activation",
+      "enablement": {
+        "enabledStatuses": [
+          "playing",
+          "paused"
+        ],
+        "needsCanPlay": false,
+        "disabledReasonByStatus": {
+          "unavailable": "audio-unavailable",
+          "ready": "no-active-run",
+          "starting": "status-settling",
+          "stopping": "status-settling",
+          "failed": "audio-unavailable"
+        }
+      }
+    },
+    {
+      "id": "restart-run",
+      "label": "Restart",
+      "component": "U4-CMP-005",
+      "channel": "controller-intent",
+      "controllerIntent": "restartProgression",
+      "x1CommandKinds": [
+        "stop",
+        "play"
+      ],
+      "requiresTrustedGesture": true,
+      "keyboardAccess": "button-focus-enter",
+      "pointerAlternative": "button-activation",
+      "enablement": {
+        "enabledStatuses": [
+          "ready",
+          "playing",
+          "paused"
+        ],
+        "needsCanPlay": true,
+        "disabledReasonByStatus": {
+          "unavailable": "audio-unavailable",
+          "starting": "status-settling",
+          "stopping": "status-settling",
+          "failed": "audio-unavailable"
+        }
+      }
+    },
+    {
+      "id": "resume-from-interruption",
+      "label": "Resume",
+      "component": "U4-CMP-013",
+      "channel": "controller-intent",
+      "controllerIntent": "resumeProgression",
+      "x1CommandKinds": [
+        "resume"
+      ],
+      "requiresTrustedGesture": true,
+      "keyboardAccess": "global-space",
+      "pointerAlternative": "status-action-activation",
+      "enablement": {
+        "enabledStatuses": [
+          "paused"
+        ],
+        "needsCanPlay": false,
+        "onlyWhenFailureCode": "transport.interrupted",
+        "disabledReasonByStatus": {
+          "unavailable": "audio-unavailable",
+          "ready": "no-active-run",
+          "starting": "status-settling",
+          "playing": "not-running",
+          "paused": "no-active-run",
+          "stopping": "status-settling",
+          "failed": "audio-unavailable"
+        }
+      }
+    },
+    {
+      "id": "reinitialize-audio",
+      "label": "Restart audio",
+      "component": "U4-CMP-014",
+      "channel": "controller-intent",
+      "controllerIntent": "reinitializeAudio",
+      "x1CommandKinds": [
+        "initialize-transport"
+      ],
+      "requiresTrustedGesture": true,
+      "keyboardAccess": "status-action-focus-enter",
+      "pointerAlternative": "status-action-activation",
+      "enablement": {
+        "enabledStatuses": [
+          "unavailable",
+          "failed"
+        ],
+        "needsCanPlay": false,
+        "disabledReasonByStatus": {
+          "ready": "status-settling",
+          "starting": "status-settling",
+          "playing": "status-settling",
+          "paused": "status-settling",
+          "stopping": "status-settling"
+        }
+      }
+    },
+    {
+      "id": "previous-chord",
+      "label": "Previous chord",
+      "component": "U4-CMP-006",
+      "channel": "controller-intent",
+      "controllerIntent": "stepChordOrSeek",
+      "x1CommandKinds": [
+        "seek"
+      ],
+      "requiresTrustedGesture": false,
+      "keyboardAccess": "button-focus-enter",
+      "pointerAlternative": "button-activation",
+      "enablement": {
+        "enabledStatuses": [
+          "ready",
+          "playing",
+          "paused"
+        ],
+        "needsCanPlay": true,
+        "disabledReasonByStatus": {
+          "unavailable": "audio-unavailable",
+          "starting": "status-settling",
+          "stopping": "status-settling",
+          "failed": "audio-unavailable"
+        }
+      }
+    },
+    {
+      "id": "next-chord",
+      "label": "Next chord",
+      "component": "U4-CMP-007",
+      "channel": "controller-intent",
+      "controllerIntent": "stepChordOrSeek",
+      "x1CommandKinds": [
+        "seek"
+      ],
+      "requiresTrustedGesture": false,
+      "keyboardAccess": "button-focus-enter",
+      "pointerAlternative": "button-activation",
+      "enablement": {
+        "enabledStatuses": [
+          "ready",
+          "playing",
+          "paused"
+        ],
+        "needsCanPlay": true,
+        "disabledReasonByStatus": {
+          "unavailable": "audio-unavailable",
+          "starting": "status-settling",
+          "stopping": "status-settling",
+          "failed": "audio-unavailable"
+        }
+      }
+    },
+    {
+      "id": "scrub-pointer-seek",
+      "label": "Seek",
+      "component": "U4-CMP-008",
+      "channel": "controller-intent",
+      "controllerIntent": "seekToBeat",
+      "x1CommandKinds": [
+        "seek"
+      ],
+      "requiresTrustedGesture": false,
+      "keyboardAccess": "slider-keys",
+      "pointerAlternative": "slider-drag",
+      "enablement": {
+        "enabledStatuses": [
+          "ready",
+          "playing",
+          "paused"
+        ],
+        "needsCanPlay": true,
+        "disabledReasonByStatus": {
+          "unavailable": "audio-unavailable",
+          "starting": "status-settling",
+          "stopping": "status-settling",
+          "failed": "audio-unavailable"
+        }
+      }
+    },
+    {
+      "id": "scrub-keyboard-seek",
+      "label": "Seek by key",
+      "component": "U4-CMP-008",
+      "channel": "controller-intent",
+      "controllerIntent": "seekToBeat",
+      "x1CommandKinds": [
+        "seek"
+      ],
+      "requiresTrustedGesture": false,
+      "keyboardAccess": "slider-keys",
+      "pointerAlternative": "slider-drag",
+      "enablement": {
+        "enabledStatuses": [
+          "ready",
+          "playing",
+          "paused"
+        ],
+        "needsCanPlay": true,
+        "disabledReasonByStatus": {
+          "unavailable": "audio-unavailable",
+          "starting": "status-settling",
+          "stopping": "status-settling",
+          "failed": "audio-unavailable"
+        }
+      }
+    },
+    {
+      "id": "tempo-step-down",
+      "label": "Slow down",
+      "component": "U4-CMP-016",
+      "channel": "controller-intent",
+      "controllerIntent": "setTempo",
+      "x1CommandKinds": [
+        "set-tempo"
+      ],
+      "requiresTrustedGesture": false,
+      "keyboardAccess": "button-focus-enter",
+      "pointerAlternative": "button-activation",
+      "enablement": {
+        "enabledStatuses": [
+          "unavailable",
+          "ready",
+          "playing",
+          "paused",
+          "failed"
+        ],
+        "needsCanPlay": false,
+        "disabledReasonByStatus": {
+          "starting": "status-settling",
+          "stopping": "status-settling"
+        }
+      }
+    },
+    {
+      "id": "tempo-step-up",
+      "label": "Speed up",
+      "component": "U4-CMP-016",
+      "channel": "controller-intent",
+      "controllerIntent": "setTempo",
+      "x1CommandKinds": [
+        "set-tempo"
+      ],
+      "requiresTrustedGesture": false,
+      "keyboardAccess": "button-focus-enter",
+      "pointerAlternative": "button-activation",
+      "enablement": {
+        "enabledStatuses": [
+          "unavailable",
+          "ready",
+          "playing",
+          "paused",
+          "failed"
+        ],
+        "needsCanPlay": false,
+        "disabledReasonByStatus": {
+          "starting": "status-settling",
+          "stopping": "status-settling"
+        }
+      }
+    },
+    {
+      "id": "tempo-exact-commit",
+      "label": "Set tempo",
+      "component": "U4-CMP-017",
+      "channel": "controller-intent",
+      "controllerIntent": "setTempo",
+      "x1CommandKinds": [
+        "set-tempo"
+      ],
+      "requiresTrustedGesture": false,
+      "keyboardAccess": "text-entry-commit",
+      "pointerAlternative": "text-entry-commit",
+      "enablement": {
+        "enabledStatuses": [
+          "unavailable",
+          "ready",
+          "playing",
+          "paused",
+          "failed"
+        ],
+        "needsCanPlay": false,
+        "disabledReasonByStatus": {
+          "starting": "status-settling",
+          "stopping": "status-settling"
+        }
+      }
+    },
+    {
+      "id": "groove-change",
+      "label": "Groove",
+      "component": "U4-CMP-018",
+      "channel": "controller-intent",
+      "controllerIntent": "setPerformanceStyle",
+      "x1CommandKinds": [
+        "set-performance"
+      ],
+      "requiresTrustedGesture": false,
+      "keyboardAccess": "select-keys",
+      "pointerAlternative": "select-activation",
+      "enablement": {
+        "enabledStatuses": [
+          "ready",
+          "playing",
+          "paused"
+        ],
+        "needsCanPlay": false,
+        "disabledReasonByStatus": {
+          "unavailable": "audio-unavailable",
+          "starting": "status-settling",
+          "stopping": "status-settling",
+          "failed": "audio-unavailable"
+        }
+      }
+    },
+    {
+      "id": "instrument-change",
+      "label": "Instrument",
+      "component": "U4-CMP-019",
+      "channel": "controller-intent",
+      "controllerIntent": "setInstrument",
+      "x1CommandKinds": [
+        "set-instrument"
+      ],
+      "requiresTrustedGesture": false,
+      "keyboardAccess": "select-keys",
+      "pointerAlternative": "select-activation",
+      "enablement": {
+        "enabledStatuses": [
+          "ready",
+          "playing",
+          "paused"
+        ],
+        "needsCanPlay": false,
+        "disabledReasonByStatus": {
+          "unavailable": "audio-unavailable",
+          "starting": "status-settling",
+          "stopping": "status-settling",
+          "failed": "audio-unavailable"
+        }
+      }
+    },
+    {
+      "id": "volume-preview",
+      "label": "Preview volume",
+      "component": "U4-CMP-016",
+      "channel": "controller-intent",
+      "controllerIntent": "previewMasterVolume",
+      "x1CommandKinds": [
+        "set-mix"
+      ],
+      "requiresTrustedGesture": false,
+      "keyboardAccess": "slider-keys",
+      "pointerAlternative": "slider-drag",
+      "enablement": {
+        "enabledStatuses": [
+          "ready",
+          "playing",
+          "paused"
+        ],
+        "needsCanPlay": false,
+        "disabledReasonByStatus": {
+          "unavailable": "audio-unavailable",
+          "starting": "status-settling",
+          "stopping": "status-settling",
+          "failed": "audio-unavailable"
+        }
+      }
+    },
+    {
+      "id": "volume-commit",
+      "label": "Set volume",
+      "component": "U4-CMP-016",
+      "channel": "controller-intent",
+      "controllerIntent": "setMasterVolume",
+      "x1CommandKinds": [
+        "set-mix"
+      ],
+      "requiresTrustedGesture": false,
+      "keyboardAccess": "slider-keys",
+      "pointerAlternative": "slider-drag",
+      "enablement": {
+        "enabledStatuses": [
+          "ready",
+          "playing",
+          "paused"
+        ],
+        "needsCanPlay": false,
+        "disabledReasonByStatus": {
+          "unavailable": "audio-unavailable",
+          "starting": "status-settling",
+          "stopping": "status-settling",
+          "failed": "audio-unavailable"
+        }
+      }
+    },
+    {
+      "id": "mute-toggle",
+      "label": "Mute",
+      "component": "U4-CMP-016",
+      "channel": "controller-intent",
+      "controllerIntent": "toggleMute",
+      "x1CommandKinds": [
+        "set-mix"
+      ],
+      "requiresTrustedGesture": false,
+      "keyboardAccess": "button-focus-enter",
+      "pointerAlternative": "button-activation",
+      "enablement": {
+        "enabledStatuses": [
+          "ready",
+          "playing",
+          "paused"
+        ],
+        "needsCanPlay": false,
+        "disabledReasonByStatus": {
+          "unavailable": "audio-unavailable",
+          "starting": "status-settling",
+          "stopping": "status-settling",
+          "failed": "audio-unavailable"
+        }
+      }
+    },
+    {
+      "id": "loop-toggle-chart",
+      "label": "Loop chart",
+      "component": "U4-CMP-009",
+      "channel": "controller-intent",
+      "controllerIntent": "toggleLoop",
+      "x1CommandKinds": [
+        "set-loop"
+      ],
+      "requiresTrustedGesture": false,
+      "keyboardAccess": "button-focus-enter",
+      "pointerAlternative": "button-activation",
+      "enablement": {
+        "enabledStatuses": [
+          "ready",
+          "playing",
+          "paused"
+        ],
+        "needsCanPlay": true,
+        "disabledReasonByStatus": {
+          "unavailable": "audio-unavailable",
+          "starting": "status-settling",
+          "stopping": "status-settling",
+          "failed": "audio-unavailable"
+        }
+      }
+    },
+    {
+      "id": "loop-arm-section",
+      "label": "Loop section",
+      "component": "U4-CMP-021",
+      "channel": "controller-intent",
+      "controllerIntent": "armSectionLoop",
+      "x1CommandKinds": [
+        "set-loop"
+      ],
+      "requiresTrustedGesture": false,
+      "keyboardAccess": "button-focus-enter",
+      "pointerAlternative": "button-activation",
+      "enablement": {
+        "enabledStatuses": [
+          "ready",
+          "playing",
+          "paused"
+        ],
+        "needsCanPlay": true,
+        "disabledReasonByStatus": {
+          "unavailable": "audio-unavailable",
+          "starting": "status-settling",
+          "stopping": "status-settling",
+          "failed": "audio-unavailable"
+        }
+      }
+    },
+    {
+      "id": "count-in-toggle",
+      "label": "Count-in",
+      "component": "U4-CMP-020",
+      "channel": "controller-intent",
+      "controllerIntent": "setCountInEnabled",
+      "x1CommandKinds": [
+        "set-count-in"
+      ],
+      "requiresTrustedGesture": false,
+      "keyboardAccess": "button-focus-enter",
+      "pointerAlternative": "button-activation",
+      "enablement": {
+        "enabledStatuses": [
+          "ready",
+          "playing",
+          "paused"
+        ],
+        "needsCanPlay": false,
+        "disabledReasonByStatus": {
+          "unavailable": "audio-unavailable",
+          "starting": "status-settling",
+          "stopping": "status-settling",
+          "failed": "audio-unavailable"
+        }
+      }
+    },
+    {
+      "id": "metronome-toggle",
+      "label": "Metronome",
+      "component": "U4-CMP-020",
+      "channel": "controller-intent",
+      "controllerIntent": "setMetronomeEnabled",
+      "x1CommandKinds": [
+        "set-metronome"
+      ],
+      "requiresTrustedGesture": false,
+      "keyboardAccess": "button-focus-enter",
+      "pointerAlternative": "button-activation",
+      "enablement": {
+        "enabledStatuses": [
+          "ready",
+          "playing",
+          "paused"
+        ],
+        "needsCanPlay": false,
+        "disabledReasonByStatus": {
+          "unavailable": "audio-unavailable",
+          "starting": "status-settling",
+          "stopping": "status-settling",
+          "failed": "audio-unavailable"
+        }
+      }
+    },
+    {
+      "id": "open-sound-sheet",
+      "label": "Sound",
+      "component": "U4-CMP-022",
+      "channel": "controller-intent",
+      "controllerIntent": "openSoundSheet",
+      "x1CommandKinds": [],
+      "requiresTrustedGesture": false,
+      "keyboardAccess": "button-focus-enter",
+      "pointerAlternative": "button-activation",
+      "enablement": {
+        "enabledStatuses": [
+          "unavailable",
+          "ready",
+          "starting",
+          "playing",
+          "paused",
+          "stopping",
+          "failed"
+        ],
+        "needsCanPlay": false,
+        "disabledReasonByStatus": {}
+      }
+    },
+    {
+      "id": "section-play",
+      "label": "Play section",
+      "component": "U4-CMP-021",
+      "channel": "controller-intent",
+      "controllerIntent": "playSectionRun",
+      "x1CommandKinds": [
+        "set-loop",
+        "play"
+      ],
+      "requiresTrustedGesture": true,
+      "keyboardAccess": "global-shift-space",
+      "pointerAlternative": "none-provided-by-loop-arm-then-play",
+      "enablement": {
+        "enabledStatuses": [
+          "ready",
+          "playing",
+          "paused"
+        ],
+        "needsCanPlay": true,
+        "disabledReasonByStatus": {
+          "unavailable": "audio-unavailable",
+          "starting": "status-settling",
+          "stopping": "status-settling",
+          "failed": "audio-unavailable"
+        }
+      }
+    }
+  ],
+  "cells": [
+    {
+      "operationId": "play-run",
+      "status": "unavailable",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "play-run",
+      "status": "ready",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "play-run",
+      "status": "starting",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "play-run",
+      "status": "playing",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "not-running"
+    },
+    {
+      "operationId": "play-run",
+      "status": "paused",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "play-run",
+      "status": "stopping",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "play-run",
+      "status": "failed",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "play-run",
+      "status": "unavailable",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "play-run",
+      "status": "ready",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "no-playable-chord"
+    },
+    {
+      "operationId": "play-run",
+      "status": "starting",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "play-run",
+      "status": "playing",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "not-running"
+    },
+    {
+      "operationId": "play-run",
+      "status": "paused",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "no-playable-chord"
+    },
+    {
+      "operationId": "play-run",
+      "status": "stopping",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "play-run",
+      "status": "failed",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "pause-run",
+      "status": "unavailable",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "pause-run",
+      "status": "ready",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "not-running"
+    },
+    {
+      "operationId": "pause-run",
+      "status": "starting",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "pause-run",
+      "status": "playing",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "pause-run",
+      "status": "paused",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "not-running"
+    },
+    {
+      "operationId": "pause-run",
+      "status": "stopping",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "pause-run",
+      "status": "failed",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "pause-run",
+      "status": "unavailable",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "pause-run",
+      "status": "ready",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "not-running"
+    },
+    {
+      "operationId": "pause-run",
+      "status": "starting",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "pause-run",
+      "status": "playing",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "pause-run",
+      "status": "paused",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "not-running"
+    },
+    {
+      "operationId": "pause-run",
+      "status": "stopping",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "pause-run",
+      "status": "failed",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "stop-run",
+      "status": "unavailable",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "stop-run",
+      "status": "ready",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "no-active-run"
+    },
+    {
+      "operationId": "stop-run",
+      "status": "starting",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "stop-run",
+      "status": "playing",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "stop-run",
+      "status": "paused",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "stop-run",
+      "status": "stopping",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "stop-run",
+      "status": "failed",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "stop-run",
+      "status": "unavailable",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "stop-run",
+      "status": "ready",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "no-active-run"
+    },
+    {
+      "operationId": "stop-run",
+      "status": "starting",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "stop-run",
+      "status": "playing",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "stop-run",
+      "status": "paused",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "stop-run",
+      "status": "stopping",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "stop-run",
+      "status": "failed",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "restart-run",
+      "status": "unavailable",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "restart-run",
+      "status": "ready",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "restart-run",
+      "status": "starting",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "restart-run",
+      "status": "playing",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "restart-run",
+      "status": "paused",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "restart-run",
+      "status": "stopping",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "restart-run",
+      "status": "failed",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "restart-run",
+      "status": "unavailable",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "restart-run",
+      "status": "ready",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "no-playable-chord"
+    },
+    {
+      "operationId": "restart-run",
+      "status": "starting",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "restart-run",
+      "status": "playing",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "no-playable-chord"
+    },
+    {
+      "operationId": "restart-run",
+      "status": "paused",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "no-playable-chord"
+    },
+    {
+      "operationId": "restart-run",
+      "status": "stopping",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "restart-run",
+      "status": "failed",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "resume-from-interruption",
+      "status": "unavailable",
+      "canPlay": true,
+      "failureCode": "transport.interrupted",
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "resume-from-interruption",
+      "status": "unavailable",
+      "canPlay": true,
+      "failureCode": null,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "resume-from-interruption",
+      "status": "ready",
+      "canPlay": true,
+      "failureCode": "transport.interrupted",
+      "enabled": false,
+      "disabledReason": "no-active-run"
+    },
+    {
+      "operationId": "resume-from-interruption",
+      "status": "ready",
+      "canPlay": true,
+      "failureCode": null,
+      "enabled": false,
+      "disabledReason": "no-active-run"
+    },
+    {
+      "operationId": "resume-from-interruption",
+      "status": "starting",
+      "canPlay": true,
+      "failureCode": "transport.interrupted",
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "resume-from-interruption",
+      "status": "starting",
+      "canPlay": true,
+      "failureCode": null,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "resume-from-interruption",
+      "status": "playing",
+      "canPlay": true,
+      "failureCode": "transport.interrupted",
+      "enabled": false,
+      "disabledReason": "not-running"
+    },
+    {
+      "operationId": "resume-from-interruption",
+      "status": "playing",
+      "canPlay": true,
+      "failureCode": null,
+      "enabled": false,
+      "disabledReason": "not-running"
+    },
+    {
+      "operationId": "resume-from-interruption",
+      "status": "paused",
+      "canPlay": true,
+      "failureCode": "transport.interrupted",
+      "enabled": true
+    },
+    {
+      "operationId": "resume-from-interruption",
+      "status": "paused",
+      "canPlay": true,
+      "failureCode": null,
+      "enabled": false,
+      "disabledReason": "no-active-run"
+    },
+    {
+      "operationId": "resume-from-interruption",
+      "status": "stopping",
+      "canPlay": true,
+      "failureCode": "transport.interrupted",
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "resume-from-interruption",
+      "status": "stopping",
+      "canPlay": true,
+      "failureCode": null,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "resume-from-interruption",
+      "status": "failed",
+      "canPlay": true,
+      "failureCode": "transport.interrupted",
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "resume-from-interruption",
+      "status": "failed",
+      "canPlay": true,
+      "failureCode": null,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "resume-from-interruption",
+      "status": "unavailable",
+      "canPlay": false,
+      "failureCode": "transport.interrupted",
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "resume-from-interruption",
+      "status": "unavailable",
+      "canPlay": false,
+      "failureCode": null,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "resume-from-interruption",
+      "status": "ready",
+      "canPlay": false,
+      "failureCode": "transport.interrupted",
+      "enabled": false,
+      "disabledReason": "no-active-run"
+    },
+    {
+      "operationId": "resume-from-interruption",
+      "status": "ready",
+      "canPlay": false,
+      "failureCode": null,
+      "enabled": false,
+      "disabledReason": "no-active-run"
+    },
+    {
+      "operationId": "resume-from-interruption",
+      "status": "starting",
+      "canPlay": false,
+      "failureCode": "transport.interrupted",
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "resume-from-interruption",
+      "status": "starting",
+      "canPlay": false,
+      "failureCode": null,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "resume-from-interruption",
+      "status": "playing",
+      "canPlay": false,
+      "failureCode": "transport.interrupted",
+      "enabled": false,
+      "disabledReason": "not-running"
+    },
+    {
+      "operationId": "resume-from-interruption",
+      "status": "playing",
+      "canPlay": false,
+      "failureCode": null,
+      "enabled": false,
+      "disabledReason": "not-running"
+    },
+    {
+      "operationId": "resume-from-interruption",
+      "status": "paused",
+      "canPlay": false,
+      "failureCode": "transport.interrupted",
+      "enabled": true
+    },
+    {
+      "operationId": "resume-from-interruption",
+      "status": "paused",
+      "canPlay": false,
+      "failureCode": null,
+      "enabled": false,
+      "disabledReason": "no-active-run"
+    },
+    {
+      "operationId": "resume-from-interruption",
+      "status": "stopping",
+      "canPlay": false,
+      "failureCode": "transport.interrupted",
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "resume-from-interruption",
+      "status": "stopping",
+      "canPlay": false,
+      "failureCode": null,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "resume-from-interruption",
+      "status": "failed",
+      "canPlay": false,
+      "failureCode": "transport.interrupted",
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "resume-from-interruption",
+      "status": "failed",
+      "canPlay": false,
+      "failureCode": null,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "reinitialize-audio",
+      "status": "unavailable",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "reinitialize-audio",
+      "status": "ready",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "reinitialize-audio",
+      "status": "starting",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "reinitialize-audio",
+      "status": "playing",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "reinitialize-audio",
+      "status": "paused",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "reinitialize-audio",
+      "status": "stopping",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "reinitialize-audio",
+      "status": "failed",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "reinitialize-audio",
+      "status": "unavailable",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "reinitialize-audio",
+      "status": "ready",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "reinitialize-audio",
+      "status": "starting",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "reinitialize-audio",
+      "status": "playing",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "reinitialize-audio",
+      "status": "paused",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "reinitialize-audio",
+      "status": "stopping",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "reinitialize-audio",
+      "status": "failed",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "previous-chord",
+      "status": "unavailable",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "previous-chord",
+      "status": "ready",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "previous-chord",
+      "status": "starting",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "previous-chord",
+      "status": "playing",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "previous-chord",
+      "status": "paused",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "previous-chord",
+      "status": "stopping",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "previous-chord",
+      "status": "failed",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "previous-chord",
+      "status": "unavailable",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "previous-chord",
+      "status": "ready",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "no-playable-chord"
+    },
+    {
+      "operationId": "previous-chord",
+      "status": "starting",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "previous-chord",
+      "status": "playing",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "no-playable-chord"
+    },
+    {
+      "operationId": "previous-chord",
+      "status": "paused",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "no-playable-chord"
+    },
+    {
+      "operationId": "previous-chord",
+      "status": "stopping",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "previous-chord",
+      "status": "failed",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "next-chord",
+      "status": "unavailable",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "next-chord",
+      "status": "ready",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "next-chord",
+      "status": "starting",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "next-chord",
+      "status": "playing",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "next-chord",
+      "status": "paused",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "next-chord",
+      "status": "stopping",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "next-chord",
+      "status": "failed",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "next-chord",
+      "status": "unavailable",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "next-chord",
+      "status": "ready",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "no-playable-chord"
+    },
+    {
+      "operationId": "next-chord",
+      "status": "starting",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "next-chord",
+      "status": "playing",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "no-playable-chord"
+    },
+    {
+      "operationId": "next-chord",
+      "status": "paused",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "no-playable-chord"
+    },
+    {
+      "operationId": "next-chord",
+      "status": "stopping",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "next-chord",
+      "status": "failed",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "scrub-pointer-seek",
+      "status": "unavailable",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "scrub-pointer-seek",
+      "status": "ready",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "scrub-pointer-seek",
+      "status": "starting",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "scrub-pointer-seek",
+      "status": "playing",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "scrub-pointer-seek",
+      "status": "paused",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "scrub-pointer-seek",
+      "status": "stopping",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "scrub-pointer-seek",
+      "status": "failed",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "scrub-pointer-seek",
+      "status": "unavailable",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "scrub-pointer-seek",
+      "status": "ready",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "no-playable-chord"
+    },
+    {
+      "operationId": "scrub-pointer-seek",
+      "status": "starting",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "scrub-pointer-seek",
+      "status": "playing",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "no-playable-chord"
+    },
+    {
+      "operationId": "scrub-pointer-seek",
+      "status": "paused",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "no-playable-chord"
+    },
+    {
+      "operationId": "scrub-pointer-seek",
+      "status": "stopping",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "scrub-pointer-seek",
+      "status": "failed",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "scrub-keyboard-seek",
+      "status": "unavailable",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "scrub-keyboard-seek",
+      "status": "ready",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "scrub-keyboard-seek",
+      "status": "starting",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "scrub-keyboard-seek",
+      "status": "playing",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "scrub-keyboard-seek",
+      "status": "paused",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "scrub-keyboard-seek",
+      "status": "stopping",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "scrub-keyboard-seek",
+      "status": "failed",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "scrub-keyboard-seek",
+      "status": "unavailable",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "scrub-keyboard-seek",
+      "status": "ready",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "no-playable-chord"
+    },
+    {
+      "operationId": "scrub-keyboard-seek",
+      "status": "starting",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "scrub-keyboard-seek",
+      "status": "playing",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "no-playable-chord"
+    },
+    {
+      "operationId": "scrub-keyboard-seek",
+      "status": "paused",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "no-playable-chord"
+    },
+    {
+      "operationId": "scrub-keyboard-seek",
+      "status": "stopping",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "scrub-keyboard-seek",
+      "status": "failed",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "tempo-step-down",
+      "status": "unavailable",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "tempo-step-down",
+      "status": "ready",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "tempo-step-down",
+      "status": "starting",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "tempo-step-down",
+      "status": "playing",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "tempo-step-down",
+      "status": "paused",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "tempo-step-down",
+      "status": "stopping",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "tempo-step-down",
+      "status": "failed",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "tempo-step-down",
+      "status": "unavailable",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "tempo-step-down",
+      "status": "ready",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "tempo-step-down",
+      "status": "starting",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "tempo-step-down",
+      "status": "playing",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "tempo-step-down",
+      "status": "paused",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "tempo-step-down",
+      "status": "stopping",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "tempo-step-down",
+      "status": "failed",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "tempo-step-up",
+      "status": "unavailable",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "tempo-step-up",
+      "status": "ready",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "tempo-step-up",
+      "status": "starting",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "tempo-step-up",
+      "status": "playing",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "tempo-step-up",
+      "status": "paused",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "tempo-step-up",
+      "status": "stopping",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "tempo-step-up",
+      "status": "failed",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "tempo-step-up",
+      "status": "unavailable",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "tempo-step-up",
+      "status": "ready",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "tempo-step-up",
+      "status": "starting",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "tempo-step-up",
+      "status": "playing",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "tempo-step-up",
+      "status": "paused",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "tempo-step-up",
+      "status": "stopping",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "tempo-step-up",
+      "status": "failed",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "tempo-exact-commit",
+      "status": "unavailable",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "tempo-exact-commit",
+      "status": "ready",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "tempo-exact-commit",
+      "status": "starting",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "tempo-exact-commit",
+      "status": "playing",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "tempo-exact-commit",
+      "status": "paused",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "tempo-exact-commit",
+      "status": "stopping",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "tempo-exact-commit",
+      "status": "failed",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "tempo-exact-commit",
+      "status": "unavailable",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "tempo-exact-commit",
+      "status": "ready",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "tempo-exact-commit",
+      "status": "starting",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "tempo-exact-commit",
+      "status": "playing",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "tempo-exact-commit",
+      "status": "paused",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "tempo-exact-commit",
+      "status": "stopping",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "tempo-exact-commit",
+      "status": "failed",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "groove-change",
+      "status": "unavailable",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "groove-change",
+      "status": "ready",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "groove-change",
+      "status": "starting",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "groove-change",
+      "status": "playing",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "groove-change",
+      "status": "paused",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "groove-change",
+      "status": "stopping",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "groove-change",
+      "status": "failed",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "groove-change",
+      "status": "unavailable",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "groove-change",
+      "status": "ready",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "groove-change",
+      "status": "starting",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "groove-change",
+      "status": "playing",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "groove-change",
+      "status": "paused",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "groove-change",
+      "status": "stopping",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "groove-change",
+      "status": "failed",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "instrument-change",
+      "status": "unavailable",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "instrument-change",
+      "status": "ready",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "instrument-change",
+      "status": "starting",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "instrument-change",
+      "status": "playing",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "instrument-change",
+      "status": "paused",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "instrument-change",
+      "status": "stopping",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "instrument-change",
+      "status": "failed",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "instrument-change",
+      "status": "unavailable",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "instrument-change",
+      "status": "ready",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "instrument-change",
+      "status": "starting",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "instrument-change",
+      "status": "playing",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "instrument-change",
+      "status": "paused",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "instrument-change",
+      "status": "stopping",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "instrument-change",
+      "status": "failed",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "volume-preview",
+      "status": "unavailable",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "volume-preview",
+      "status": "ready",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "volume-preview",
+      "status": "starting",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "volume-preview",
+      "status": "playing",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "volume-preview",
+      "status": "paused",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "volume-preview",
+      "status": "stopping",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "volume-preview",
+      "status": "failed",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "volume-preview",
+      "status": "unavailable",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "volume-preview",
+      "status": "ready",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "volume-preview",
+      "status": "starting",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "volume-preview",
+      "status": "playing",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "volume-preview",
+      "status": "paused",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "volume-preview",
+      "status": "stopping",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "volume-preview",
+      "status": "failed",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "volume-commit",
+      "status": "unavailable",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "volume-commit",
+      "status": "ready",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "volume-commit",
+      "status": "starting",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "volume-commit",
+      "status": "playing",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "volume-commit",
+      "status": "paused",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "volume-commit",
+      "status": "stopping",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "volume-commit",
+      "status": "failed",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "volume-commit",
+      "status": "unavailable",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "volume-commit",
+      "status": "ready",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "volume-commit",
+      "status": "starting",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "volume-commit",
+      "status": "playing",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "volume-commit",
+      "status": "paused",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "volume-commit",
+      "status": "stopping",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "volume-commit",
+      "status": "failed",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "mute-toggle",
+      "status": "unavailable",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "mute-toggle",
+      "status": "ready",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "mute-toggle",
+      "status": "starting",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "mute-toggle",
+      "status": "playing",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "mute-toggle",
+      "status": "paused",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "mute-toggle",
+      "status": "stopping",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "mute-toggle",
+      "status": "failed",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "mute-toggle",
+      "status": "unavailable",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "mute-toggle",
+      "status": "ready",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "mute-toggle",
+      "status": "starting",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "mute-toggle",
+      "status": "playing",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "mute-toggle",
+      "status": "paused",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "mute-toggle",
+      "status": "stopping",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "mute-toggle",
+      "status": "failed",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "loop-toggle-chart",
+      "status": "unavailable",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "loop-toggle-chart",
+      "status": "ready",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "loop-toggle-chart",
+      "status": "starting",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "loop-toggle-chart",
+      "status": "playing",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "loop-toggle-chart",
+      "status": "paused",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "loop-toggle-chart",
+      "status": "stopping",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "loop-toggle-chart",
+      "status": "failed",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "loop-toggle-chart",
+      "status": "unavailable",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "loop-toggle-chart",
+      "status": "ready",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "no-playable-chord"
+    },
+    {
+      "operationId": "loop-toggle-chart",
+      "status": "starting",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "loop-toggle-chart",
+      "status": "playing",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "no-playable-chord"
+    },
+    {
+      "operationId": "loop-toggle-chart",
+      "status": "paused",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "no-playable-chord"
+    },
+    {
+      "operationId": "loop-toggle-chart",
+      "status": "stopping",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "loop-toggle-chart",
+      "status": "failed",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "loop-arm-section",
+      "status": "unavailable",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "loop-arm-section",
+      "status": "ready",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "loop-arm-section",
+      "status": "starting",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "loop-arm-section",
+      "status": "playing",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "loop-arm-section",
+      "status": "paused",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "loop-arm-section",
+      "status": "stopping",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "loop-arm-section",
+      "status": "failed",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "loop-arm-section",
+      "status": "unavailable",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "loop-arm-section",
+      "status": "ready",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "no-playable-chord"
+    },
+    {
+      "operationId": "loop-arm-section",
+      "status": "starting",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "loop-arm-section",
+      "status": "playing",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "no-playable-chord"
+    },
+    {
+      "operationId": "loop-arm-section",
+      "status": "paused",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "no-playable-chord"
+    },
+    {
+      "operationId": "loop-arm-section",
+      "status": "stopping",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "loop-arm-section",
+      "status": "failed",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "count-in-toggle",
+      "status": "unavailable",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "count-in-toggle",
+      "status": "ready",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "count-in-toggle",
+      "status": "starting",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "count-in-toggle",
+      "status": "playing",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "count-in-toggle",
+      "status": "paused",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "count-in-toggle",
+      "status": "stopping",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "count-in-toggle",
+      "status": "failed",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "count-in-toggle",
+      "status": "unavailable",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "count-in-toggle",
+      "status": "ready",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "count-in-toggle",
+      "status": "starting",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "count-in-toggle",
+      "status": "playing",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "count-in-toggle",
+      "status": "paused",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "count-in-toggle",
+      "status": "stopping",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "count-in-toggle",
+      "status": "failed",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "metronome-toggle",
+      "status": "unavailable",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "metronome-toggle",
+      "status": "ready",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "metronome-toggle",
+      "status": "starting",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "metronome-toggle",
+      "status": "playing",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "metronome-toggle",
+      "status": "paused",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "metronome-toggle",
+      "status": "stopping",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "metronome-toggle",
+      "status": "failed",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "metronome-toggle",
+      "status": "unavailable",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "metronome-toggle",
+      "status": "ready",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "metronome-toggle",
+      "status": "starting",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "metronome-toggle",
+      "status": "playing",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "metronome-toggle",
+      "status": "paused",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "metronome-toggle",
+      "status": "stopping",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "metronome-toggle",
+      "status": "failed",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "open-sound-sheet",
+      "status": "unavailable",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "open-sound-sheet",
+      "status": "ready",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "open-sound-sheet",
+      "status": "starting",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "open-sound-sheet",
+      "status": "playing",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "open-sound-sheet",
+      "status": "paused",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "open-sound-sheet",
+      "status": "stopping",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "open-sound-sheet",
+      "status": "failed",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "open-sound-sheet",
+      "status": "unavailable",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "open-sound-sheet",
+      "status": "ready",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "open-sound-sheet",
+      "status": "starting",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "open-sound-sheet",
+      "status": "playing",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "open-sound-sheet",
+      "status": "paused",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "open-sound-sheet",
+      "status": "stopping",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "open-sound-sheet",
+      "status": "failed",
+      "canPlay": false,
+      "enabled": true
+    },
+    {
+      "operationId": "section-play",
+      "status": "unavailable",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "section-play",
+      "status": "ready",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "section-play",
+      "status": "starting",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "section-play",
+      "status": "playing",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "section-play",
+      "status": "paused",
+      "canPlay": true,
+      "enabled": true
+    },
+    {
+      "operationId": "section-play",
+      "status": "stopping",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "section-play",
+      "status": "failed",
+      "canPlay": true,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "section-play",
+      "status": "unavailable",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    },
+    {
+      "operationId": "section-play",
+      "status": "ready",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "no-playable-chord"
+    },
+    {
+      "operationId": "section-play",
+      "status": "starting",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "section-play",
+      "status": "playing",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "no-playable-chord"
+    },
+    {
+      "operationId": "section-play",
+      "status": "paused",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "no-playable-chord"
+    },
+    {
+      "operationId": "section-play",
+      "status": "stopping",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "status-settling"
+    },
+    {
+      "operationId": "section-play",
+      "status": "failed",
+      "canPlay": false,
+      "enabled": false,
+      "disabledReason": "audio-unavailable"
+    }
+  ]
+}

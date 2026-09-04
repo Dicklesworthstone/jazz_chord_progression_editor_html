@@ -213,6 +213,7 @@ The manifest exposes these stable commands:
 | `bun run validate:a0-u1-edit-plan-contract` | validate the proposed additive A0/U1 five-variant atomic-edit contract, independently materialized state transitions, exact-time/identity laws, traces, provenance, and mutations without claiming production implementation or UI completion |
 | `bun run validate:u0-contract` | validate the source-owned UI inventory, exact limits, 714-cell state gallery authority, responsive/overlay matrices, topology and contrast cases, trace links, provenance, and release-gallery exclusion contract |
 | `bun run validate:u1-contract` | validate the proposed independent U1 quick-entry classification, operation-to-channel binding, interaction states, bounds, traces, provenance, and replayed mutation controls without claiming any U1 implementation |
+| `bun run validate:u4-contract` | validate the proposed independent U4 transport-controls inventory, total status-enablement matrix, status-projection/keyboard-guard/layout cells, traces, provenance, and mutation controls without claiming any U4 implementation |
 | `bun run validate:c0-contract` | validate the independent legacy corpus, precedence, hostile-input, report, work-bound, trace, provenance, and mutation authority package |
 | `bun run validate:e0-contract` | validate the independent E0 JSON/text interchange, transactional import, exact limits, reciprocal traces, provenance, accepted byte goldens, and mutation authority package |
 | `bun run validate:e1-contract` | validate the independent E1 MIDI-export byte goldens (independent SMF parser and derivation), refusal precedence, limits, filename law, trace, provenance, and mutation authority |
@@ -249,6 +250,7 @@ The manifest exposes these stable commands:
 | `bun run verify:a0-evidence` | run the exact A0 application suite and emit a hash-bound state-case, stale-token, named-sequence, 1,000-sequence reference-model, mutation-link, trace, termination, and resource ledger |
 | `bun run verify:c0-evidence` | run the exact C0 compatibility suite and emit a hash-bound 70-case, 80-preset, hostile-input, boundary-counter, trace, semantic-counterfactual, termination, and resource ledger |
 | `bun run verify:x0-evidence` | run the exact X0 native-browser, contract, and trace-owner package proof; keep the result incomplete until the separate physical listening matrix is complete |
+| `bun run verify:x1-evidence` | run the exact X1 transport browser-matrix, contract, owner-suite, and trace-owner package proof; keep the result incomplete until the shared human listening matrix (X0-deferred scenes 003–005) is complete |
 | `bun run verify` | aggregate type, lint, tests, build, artifact, and E2E gates |
 
 ## Module ownership

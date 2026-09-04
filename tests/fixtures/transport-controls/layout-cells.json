@@ -1,0 +1,165 @@
+{
+  "schema": "changes.fixtures.u4-layout-cells.v1",
+  "reviewState": "proposed-independent-spec",
+  "pinState": "pinned",
+  "expectedValuesGenerated": false,
+  "productionOutputUsedAsOracle": false,
+  "viewports": [
+    { "name": "320x568", "width": 320, "height": 568 },
+    { "name": "390x844", "width": 390, "height": 844 },
+    { "name": "768x1024", "width": 768, "height": 1024 },
+    { "name": "1280x800", "width": 1280, "height": 800 },
+    { "name": "1440x900", "width": 1440, "height": 900 }
+  ],
+  "pointerVariants": ["fine", "coarse"],
+  "cells": [
+    {
+      "id": "U4-LAYOUT-001",
+      "viewport": "320x568",
+      "pointer": "coarse",
+      "expected": {
+        "transportBarVisible": true,
+        "safeAreaPadding": true,
+        "settingsClusterInline": false,
+        "soundSheetTriggerVisible": true,
+        "coarseMinTargetCssPx": 44,
+        "noDuplicateElementIds": true,
+        "toastNeverCoversBar": true
+      },
+      "traceIds": ["TR-U4-LAYOUT"]
+    },
+    {
+      "id": "U4-LAYOUT-002",
+      "viewport": "390x844",
+      "pointer": "coarse",
+      "expected": {
+        "transportBarVisible": true,
+        "safeAreaPadding": true,
+        "settingsClusterInline": false,
+        "soundSheetTriggerVisible": true,
+        "coarseMinTargetCssPx": 44,
+        "noDuplicateElementIds": true,
+        "toastNeverCoversBar": true
+      },
+      "traceIds": ["TR-U4-LAYOUT"]
+    },
+    {
+      "id": "U4-LAYOUT-003",
+      "viewport": "768x1024",
+      "pointer": "coarse",
+      "expected": {
+        "transportBarVisible": true,
+        "safeAreaPadding": true,
+        "settingsClusterInline": false,
+        "soundSheetTriggerVisible": true,
+        "coarseMinTargetCssPx": 44,
+        "noDuplicateElementIds": true,
+        "toastNeverCoversBar": true
+      },
+      "traceIds": ["TR-U4-LAYOUT"]
+    },
+    {
+      "id": "U4-LAYOUT-004",
+      "viewport": "768x1024",
+      "pointer": "fine",
+      "expected": {
+        "transportBarVisible": true,
+        "safeAreaPadding": true,
+        "settingsClusterInline": false,
+        "soundSheetTriggerVisible": true,
+        "coarseMinTargetCssPx": 44,
+        "noDuplicateElementIds": true,
+        "toastNeverCoversBar": true
+      },
+      "traceIds": ["TR-U4-LAYOUT"]
+    },
+    {
+      "id": "U4-LAYOUT-005",
+      "viewport": "1280x800",
+      "pointer": "fine",
+      "expected": {
+        "transportBarVisible": true,
+        "safeAreaPadding": true,
+        "settingsClusterInline": true,
+        "soundSheetTriggerVisible": false,
+        "noDuplicateElementIds": true,
+        "toastNeverCoversBar": true
+      },
+      "traceIds": ["TR-U4-LAYOUT"]
+    },
+    {
+      "id": "U4-LAYOUT-006",
+      "viewport": "1440x900",
+      "pointer": "fine",
+      "expected": {
+        "transportBarVisible": true,
+        "safeAreaPadding": true,
+        "settingsClusterInline": true,
+        "soundSheetTriggerVisible": false,
+        "noDuplicateElementIds": true,
+        "toastNeverCoversBar": true
+      },
+      "traceIds": ["TR-U4-LAYOUT"]
+    },
+    {
+      "id": "U4-LAYOUT-007",
+      "viewport": "320x568",
+      "pointer": "fine",
+      "expected": {
+        "transportBarVisible": true,
+        "safeAreaPadding": true,
+        "settingsClusterInline": false,
+        "soundSheetTriggerVisible": true,
+        "noDuplicateElementIds": true,
+        "toastNeverCoversBar": true
+      },
+      "traceIds": ["TR-U4-LAYOUT"]
+    },
+    {
+      "id": "U4-LAYOUT-008",
+      "viewport": "390x844",
+      "pointer": "fine",
+      "expected": {
+        "transportBarVisible": true,
+        "safeAreaPadding": true,
+        "settingsClusterInline": false,
+        "soundSheetTriggerVisible": true,
+        "noDuplicateElementIds": true,
+        "toastNeverCoversBar": true
+      },
+      "traceIds": ["TR-U4-LAYOUT"]
+    },
+    {
+      "id": "U4-LAYOUT-009",
+      "viewport": "1280x800",
+      "pointer": "coarse",
+      "expected": {
+        "transportBarVisible": true,
+        "safeAreaPadding": true,
+        "settingsClusterInline": true,
+        "soundSheetTriggerVisible": false,
+        "coarseMinTargetCssPx": 44,
+        "noDuplicateElementIds": true,
+        "toastNeverCoversBar": true
+      },
+      "traceIds": ["TR-U4-LAYOUT"]
+    },
+    {
+      "id": "U4-LAYOUT-010",
+      "viewport": "1440x900",
+      "pointer": "coarse",
+      "expected": {
+        "transportBarVisible": true,
+        "safeAreaPadding": true,
+        "settingsClusterInline": true,
+        "soundSheetTriggerVisible": false,
+        "coarseMinTargetCssPx": 44,
+        "noDuplicateElementIds": true,
+        "toastNeverCoversBar": true
+      },
+      "traceIds": ["TR-U4-LAYOUT"]
+    }
+  ],
+  "sheetLaw": "The Sound sheet anchors above the transport bar including the safe-area inset; the bar and sheet render the same settings cluster through one component with a disambiguating idSuffix; an element ID is never duplicated.",
+  "breakpointLaw": "The settings cluster is inline at and above 71.875rem and below that width it is reachable only through the Sound sheet trigger."
+}

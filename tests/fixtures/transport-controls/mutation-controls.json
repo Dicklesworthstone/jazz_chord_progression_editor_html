@@ -1,0 +1,127 @@
+{
+  "schema": "changes.fixtures.u4-mutation-controls.v1",
+  "reviewState": "proposed-independent-spec",
+  "pinState": "pinned",
+  "expectedValuesGenerated": false,
+  "productionOutputUsedAsOracle": false,
+  "controlPolicy": "Each control names a semantic counterfactual implementation defect and the fixture case whose expectation kills it. The U4 verify leg must demonstrate every kill against the production build; a control that no test kills blocks closure.",
+  "controls": [
+    {
+      "id": "U4-MUT-001",
+      "lawId": "U4-LAW-STOP-WHILE-PAUSED",
+      "counterfactual": "Stop is disabled unless status is playing",
+      "killedBy": [
+        "U4-STATUS-006"
+      ],
+      "matrixWitness": "stop-run x paused = enabled"
+    },
+    {
+      "id": "U4-MUT-002",
+      "lawId": "U4-LAW-TRUTHFUL-STATUS",
+      "counterfactual": "The badge renders a locally predicted status instead of the accepted projection",
+      "killedBy": [
+        "U4-STATUS-004",
+        "U4-STATUS-021",
+        "U4-STATUS-022"
+      ]
+    },
+    {
+      "id": "U4-MUT-003",
+      "lawId": "U4-LAW-STALE-IMMUNITY",
+      "counterfactual": "A same-generation notification with an equal sequence repaints the badge",
+      "killedBy": [
+        "U4-STATUS-011"
+      ]
+    },
+    {
+      "id": "U4-MUT-004",
+      "lawId": "U4-LAW-STALE-IMMUNITY",
+      "counterfactual": "A notification with a stale plan revision repaints the now block",
+      "killedBy": [
+        "U4-STATUS-013"
+      ]
+    },
+    {
+      "id": "U4-MUT-005",
+      "lawId": "U4-LAW-SINGLE-INTENT",
+      "counterfactual": "Restart or section-play dispatches two controller intents from the UI",
+      "killedBy": [
+        "U4-KEY-003"
+      ],
+      "matrixWitness": "restart-run x paused = enabled"
+    },
+    {
+      "id": "U4-MUT-006",
+      "lawId": "U4-LAW-SCRUBBER-ACCESSIBLE",
+      "counterfactual": "The scrubber loses role=slider, its keyboard law, or its exact labels",
+      "killedBy": [
+        "U4-KEY-010",
+        "U4-KEY-012"
+      ]
+    },
+    {
+      "id": "U4-MUT-007",
+      "lawId": "U4-LAW-EXACT-SEEK",
+      "counterfactual": "A keyboard seek reads the interpolated display playhead instead of the committed one",
+      "killedBy": [
+        "U4-KEY-014"
+      ]
+    },
+    {
+      "id": "U4-MUT-008",
+      "lawId": "U4-LAW-KEYBOARD-GUARDS",
+      "counterfactual": "Space toggles playback while a text field is focused",
+      "killedBy": [
+        "U4-KEY-006"
+      ]
+    },
+    {
+      "id": "U4-MUT-009",
+      "lawId": "U4-LAW-INSTRUMENT-BOUNDARY",
+      "counterfactual": "An instrument change while playing claims immediate effect",
+      "killedBy": [
+        "U4-STATUS-016"
+      ]
+    },
+    {
+      "id": "U4-MUT-010",
+      "lawId": "U4-LAW-CLICK-TRUTHFULNESS",
+      "counterfactual": "A refused count-in toggle still shows enabled",
+      "killedBy": [
+        "U4-STATUS-023"
+      ]
+    },
+    {
+      "id": "U4-MUT-011",
+      "lawId": "U4-LAW-TRUTHFUL-STATUS",
+      "counterfactual": "Interrupted presents as ordinary Paused with no trusted-gesture resume affordance",
+      "killedBy": [
+        "U4-STATUS-007"
+      ]
+    },
+    {
+      "id": "U4-MUT-012",
+      "lawId": "U4-LAW-FAULT-NONBLOCKING",
+      "counterfactual": "An audio fault disables chart editing or export",
+      "killedBy": [
+        "U4-STATUS-009"
+      ]
+    },
+    {
+      "id": "U4-MUT-013",
+      "lawId": "U4-LAW-STOP-RETURNS-TO-START",
+      "counterfactual": "After Stop settles, the UI shows the playhead anywhere but the run startBeat",
+      "killedBy": [
+        "U4-STATUS-015"
+      ]
+    },
+    {
+      "id": "U4-MUT-014",
+      "lawId": "U4-LAW-DISPLAY-ONLY-SWEEP",
+      "counterfactual": "The rAF sweep writes application state or dispatches a command",
+      "killedBy": [
+        "U4-STATUS-020"
+      ]
+    }
+  ]
+}
