@@ -1,0 +1,629 @@
+{
+  "schema": "changes.fixtures.u5-lifecycle-contract.v1",
+  "reviewState": "proposed-independent-spec",
+  "pinState": "pinned",
+  "expectedValuesGenerated": false,
+  "productionOutputUsedAsOracle": false,
+  "package": "U5",
+  "contractVersion": 1,
+  "policyId": "changes.ui.lifecycle-dialogs",
+  "policyVersion": 1,
+  "beadId": "jcpe-milestone-reliable-studio-l3a.13.1",
+  "contractModule": "src/ui/studio/u5-lifecycle-contract.ts",
+  "contractDocument": "docs/U5_LIFECYCLE_DIALOGS_CONTRACT.md",
+  "implementationStatus": "specified-not-implemented",
+  "productionImplementationClaim": false,
+  "uiCompletionClaim": false,
+  "humanAcceptanceClaim": false,
+  "expertReviewClaim": false,
+  "surfaces": [
+    "startup",
+    "lifecycle-dialogs",
+    "import-export",
+    "status-strip"
+  ],
+  "components": [
+    {
+      "id": "U5-CMP-001",
+      "name": "StartupRecoveryOffer",
+      "surface": "startup"
+    },
+    {
+      "id": "U5-CMP-002",
+      "name": "StartupRecoveryFallbackOffer",
+      "surface": "startup"
+    },
+    {
+      "id": "U5-CMP-003",
+      "name": "StartupRecoveryUnrecoverableNotice",
+      "surface": "startup"
+    },
+    {
+      "id": "U5-CMP-004",
+      "name": "StartupRecoveryStatusLine",
+      "surface": "startup"
+    },
+    {
+      "id": "U5-CMP-005",
+      "name": "LifecycleDialogHost",
+      "surface": "lifecycle-dialogs"
+    },
+    {
+      "id": "U5-CMP-006",
+      "name": "NewDocumentDialog",
+      "surface": "lifecycle-dialogs"
+    },
+    {
+      "id": "U5-CMP-007",
+      "name": "LessonLoadDialog",
+      "surface": "lifecycle-dialogs"
+    },
+    {
+      "id": "U5-CMP-008",
+      "name": "ImportConfirmDialog",
+      "surface": "lifecycle-dialogs"
+    },
+    {
+      "id": "U5-CMP-009",
+      "name": "DiscardChangesDialog",
+      "surface": "lifecycle-dialogs"
+    },
+    {
+      "id": "U5-CMP-010",
+      "name": "HistoryLimitDialog",
+      "surface": "lifecycle-dialogs"
+    },
+    {
+      "id": "U5-CMP-011",
+      "name": "ErrorDetailsDialog",
+      "surface": "lifecycle-dialogs"
+    },
+    {
+      "id": "U5-CMP-012",
+      "name": "ReplacementPreservedWorkSummary",
+      "surface": "lifecycle-dialogs"
+    },
+    {
+      "id": "U5-CMP-013",
+      "name": "ImportPreviewDialog",
+      "surface": "import-export"
+    },
+    {
+      "id": "U5-CMP-014",
+      "name": "ImportFormatHintPicker",
+      "surface": "import-export"
+    },
+    {
+      "id": "U5-CMP-015",
+      "name": "ImportReportGroupList",
+      "surface": "import-export"
+    },
+    {
+      "id": "U5-CMP-016",
+      "name": "ImportReportRow",
+      "surface": "import-export"
+    },
+    {
+      "id": "U5-CMP-017",
+      "name": "ExportDialog",
+      "surface": "import-export"
+    },
+    {
+      "id": "U5-CMP-018",
+      "name": "ExportResultSurface",
+      "surface": "import-export"
+    },
+    {
+      "id": "U5-CMP-019",
+      "name": "LifecycleStatusStrip",
+      "surface": "status-strip"
+    },
+    {
+      "id": "U5-CMP-020",
+      "name": "RecoveryStatusLine",
+      "surface": "status-strip"
+    },
+    {
+      "id": "U5-CMP-021",
+      "name": "ExportMarkerLine",
+      "surface": "status-strip"
+    },
+    {
+      "id": "U5-CMP-022",
+      "name": "StorageStatusNotice",
+      "surface": "status-strip"
+    }
+  ],
+  "componentCount": 22,
+  "operationCount": 24,
+  "operations": [
+    {
+      "id": "open-new-document",
+      "label": "New chart",
+      "component": "U5-CMP-006",
+      "channel": "composition-method",
+      "compositionMethod": "openLifecycleDialog",
+      "intentKind": null,
+      "keyboardAccess": "button-focus-enter",
+      "pointerAlternative": "button-activation"
+    },
+    {
+      "id": "confirm-new-document",
+      "label": "Replace with new chart",
+      "component": "U5-CMP-006",
+      "channel": "composition-method",
+      "compositionMethod": "confirmReplacement",
+      "intentKind": null,
+      "keyboardAccess": "button-focus-enter",
+      "pointerAlternative": "button-activation"
+    },
+    {
+      "id": "open-lesson-load",
+      "label": "Load lesson",
+      "component": "U5-CMP-007",
+      "channel": "composition-method",
+      "compositionMethod": "openLifecycleDialog",
+      "intentKind": null,
+      "keyboardAccess": "list-item-keys",
+      "pointerAlternative": "list-item-activation"
+    },
+    {
+      "id": "confirm-lesson-load",
+      "label": "Replace with lesson",
+      "component": "U5-CMP-007",
+      "channel": "composition-method",
+      "compositionMethod": "confirmReplacement",
+      "intentKind": null,
+      "keyboardAccess": "button-focus-enter",
+      "pointerAlternative": "button-activation"
+    },
+    {
+      "id": "open-import-preview",
+      "label": "Import chart",
+      "component": "U5-CMP-013",
+      "channel": "composition-method",
+      "compositionMethod": "openLifecycleDialog",
+      "intentKind": null,
+      "keyboardAccess": "button-focus-enter",
+      "pointerAlternative": "button-activation"
+    },
+    {
+      "id": "pick-import-file",
+      "label": "Choose file",
+      "component": "U5-CMP-013",
+      "channel": "composition-method",
+      "compositionMethod": "readImportCandidate",
+      "intentKind": null,
+      "keyboardAccess": "file-input-keys",
+      "pointerAlternative": "file-input-activation"
+    },
+    {
+      "id": "paste-import-text",
+      "label": "Paste chart text",
+      "component": "U5-CMP-013",
+      "channel": "composition-method",
+      "compositionMethod": "readImportCandidate",
+      "intentKind": null,
+      "keyboardAccess": "text-entry",
+      "pointerAlternative": "text-entry"
+    },
+    {
+      "id": "set-import-format-hint",
+      "label": "Format hint",
+      "component": "U5-CMP-014",
+      "channel": "presentation-only",
+      "compositionMethod": null,
+      "intentKind": null,
+      "keyboardAccess": "select-keys",
+      "pointerAlternative": "select-activation"
+    },
+    {
+      "id": "commit-import-preview",
+      "label": "Commit import",
+      "component": "U5-CMP-013",
+      "channel": "composition-method",
+      "compositionMethod": "commitImportPreview",
+      "intentKind": null,
+      "keyboardAccess": "button-focus-enter",
+      "pointerAlternative": "button-activation"
+    },
+    {
+      "id": "discard-import-preview",
+      "label": "Discard import",
+      "component": "U5-CMP-013",
+      "channel": "ephemeral-intent",
+      "compositionMethod": null,
+      "intentKind": "set-import-draft",
+      "keyboardAccess": "button-focus-enter",
+      "pointerAlternative": "button-activation"
+    },
+    {
+      "id": "open-discard-changes",
+      "label": "Discard changes",
+      "component": "U5-CMP-009",
+      "channel": "composition-method",
+      "compositionMethod": "openLifecycleDialog",
+      "intentKind": null,
+      "keyboardAccess": "button-focus-enter",
+      "pointerAlternative": "button-activation"
+    },
+    {
+      "id": "confirm-discard-changes",
+      "label": "Discard changes",
+      "component": "U5-CMP-009",
+      "channel": "composition-method",
+      "compositionMethod": "confirmReplacement",
+      "intentKind": null,
+      "keyboardAccess": "button-focus-enter",
+      "pointerAlternative": "button-activation"
+    },
+    {
+      "id": "acknowledge-history-limit",
+      "label": "Acknowledge history limit",
+      "component": "U5-CMP-010",
+      "channel": "ephemeral-intent",
+      "compositionMethod": null,
+      "intentKind": "pop-dialog",
+      "keyboardAccess": "button-focus-enter",
+      "pointerAlternative": "button-activation"
+    },
+    {
+      "id": "open-error-details",
+      "label": "Error details",
+      "component": "U5-CMP-011",
+      "channel": "ephemeral-intent",
+      "compositionMethod": null,
+      "intentKind": "push-dialog",
+      "keyboardAccess": "button-focus-enter",
+      "pointerAlternative": "button-activation"
+    },
+    {
+      "id": "open-export-dialog",
+      "label": "Export",
+      "component": "U5-CMP-017",
+      "channel": "composition-method",
+      "compositionMethod": "openLifecycleDialog",
+      "intentKind": null,
+      "keyboardAccess": "button-focus-enter",
+      "pointerAlternative": "button-activation"
+    },
+    {
+      "id": "export-canonical-json",
+      "label": "Export JSON",
+      "component": "U5-CMP-017",
+      "channel": "composition-method",
+      "compositionMethod": "deliverCanonicalExport",
+      "intentKind": null,
+      "keyboardAccess": "button-focus-enter",
+      "pointerAlternative": "button-activation"
+    },
+    {
+      "id": "export-lead-sheet-text",
+      "label": "Export text",
+      "component": "U5-CMP-017",
+      "channel": "composition-method",
+      "compositionMethod": "deliverCanonicalExport",
+      "intentKind": null,
+      "keyboardAccess": "button-focus-enter",
+      "pointerAlternative": "button-activation"
+    },
+    {
+      "id": "dismiss-export-result",
+      "label": "Dismiss export result",
+      "component": "U5-CMP-018",
+      "channel": "ephemeral-intent",
+      "compositionMethod": null,
+      "intentKind": "pop-dialog",
+      "keyboardAccess": "escape-or-button",
+      "pointerAlternative": "button-activation"
+    },
+    {
+      "id": "keep-recovered-current",
+      "label": "Keep recovered chart",
+      "component": "U5-CMP-001",
+      "channel": "composition-method",
+      "compositionMethod": "keepRecovered",
+      "intentKind": null,
+      "keyboardAccess": "button-focus-enter",
+      "pointerAlternative": "button-activation"
+    },
+    {
+      "id": "discard-recovered",
+      "label": "Discard",
+      "component": "U5-CMP-001",
+      "channel": "composition-method",
+      "compositionMethod": "discardRecovered",
+      "intentKind": null,
+      "keyboardAccess": "button-focus-enter",
+      "pointerAlternative": "button-activation"
+    },
+    {
+      "id": "keep-recovered-previous",
+      "label": "Keep previous copy",
+      "component": "U5-CMP-002",
+      "channel": "composition-method",
+      "compositionMethod": "keepRecovered",
+      "intentKind": null,
+      "keyboardAccess": "button-focus-enter",
+      "pointerAlternative": "button-activation"
+    },
+    {
+      "id": "dismiss-unrecoverable-notice",
+      "label": "Dismiss recovery notice",
+      "component": "U5-CMP-003",
+      "channel": "ephemeral-intent",
+      "compositionMethod": null,
+      "intentKind": "dismiss-notice",
+      "keyboardAccess": "button-focus-enter",
+      "pointerAlternative": "button-activation"
+    },
+    {
+      "id": "cancel-lifecycle-dialog",
+      "label": "Cancel",
+      "component": "U5-CMP-005",
+      "channel": "composition-method",
+      "compositionMethod": "cancelLifecycleDialog",
+      "intentKind": null,
+      "keyboardAccess": "escape-or-button",
+      "pointerAlternative": "button-activation"
+    },
+    {
+      "id": "dismiss-status-notice",
+      "label": "Dismiss status notice",
+      "component": "U5-CMP-022",
+      "channel": "ephemeral-intent",
+      "compositionMethod": null,
+      "intentKind": "dismiss-notice",
+      "keyboardAccess": "button-focus-enter",
+      "pointerAlternative": "button-activation"
+    }
+  ],
+  "limits": {
+    "maxDialogStackDepth": 8,
+    "maxNotices": 32,
+    "maxPendingRequests": 8,
+    "maxModalScopes": 1,
+    "maxNonmodalSurfaces": 4,
+    "maxDismissAncestors": 8,
+    "maxReportItemsPerGroup": 256,
+    "maxDialogCopyCodePoints": 2000,
+    "maxDialogTitleCodePoints": 128,
+    "maxRefusalDetailCodePoints": 512,
+    "maxOperations": 24,
+    "maxComponents": 22
+  },
+  "a0DialogKinds": [
+    "new-document",
+    "lesson-load",
+    "import-confirm",
+    "discard-changes",
+    "history-limit",
+    "error-details"
+  ],
+  "proposedDialogKinds": [
+    "import-preview",
+    "lifecycle-export"
+  ],
+  "dialogPhases": [
+    "open",
+    "committing",
+    "failed"
+  ],
+  "documentTransitionStates": [
+    "idle",
+    "awaiting-confirmation",
+    "retiring-transport",
+    "committing"
+  ],
+  "replacementOrigins": [
+    "new",
+    "lesson",
+    "canonical-import",
+    "legacy-import"
+  ],
+  "recoveryStatusKinds": [
+    "unavailable",
+    "clean",
+    "pending",
+    "failed"
+  ],
+  "importDraftStatuses": [
+    "reading",
+    "invalid",
+    "ready",
+    "cancelled"
+  ],
+  "startupDispositions": [
+    "open-current-automatically",
+    "offer-keep-discard",
+    "offer-previous",
+    "report-unrecoverable",
+    "none-available"
+  ],
+  "recoveryRefusalCodes": [
+    "recovery.unavailable",
+    "recovery.probe_failed",
+    "recovery.quota_exceeded",
+    "recovery.write_denied",
+    "recovery.envelope_too_large",
+    "recovery.corrupt_envelope",
+    "recovery.checksum_mismatch",
+    "recovery.schema_unknown",
+    "recovery.revision_invalid",
+    "recovery.stale_completion",
+    "recovery.export_marker_stale",
+    "recovery.export_binding_invalid",
+    "recovery.document_id_mismatch",
+    "recovery.disposed"
+  ],
+  "recoveryVocabularyKeys": [
+    "recoveredLocally",
+    "changesPending",
+    "unavailable",
+    "exportedAtRevision",
+    "changedSinceExport"
+  ],
+  "importSourceChannels": [
+    "file",
+    "paste"
+  ],
+  "importFormatHints": [
+    "auto",
+    "canonical-json",
+    "legacy-json",
+    "chart-text"
+  ],
+  "importSourceFormats": [
+    "canonical-json-v2",
+    "unversioned-legacy-json",
+    "chart-text-v1"
+  ],
+  "importReportRetentionPolicy": "group-source-path-code-target-path-first-256",
+  "legacyReportGroups": [
+    "preserved",
+    "canonicalized",
+    "custom",
+    "ignored",
+    "rejected"
+  ],
+  "lifecycleWorkflowCodes": [
+    "import.replacement_workflow_busy",
+    "import.replacement_workflow_begin_failed",
+    "history.nonundoable_confirmation_required",
+    "history.replacement_not_undoable",
+    "dialog.stack_limit"
+  ],
+  "overlayLimits": {
+    "maxModalScopes": 1,
+    "maxNonmodalSurfaces": 4,
+    "maxDismissAncestors": 8
+  },
+  "authorizedEphemeralIntentKinds": [
+    "push-dialog",
+    "pop-dialog",
+    "set-import-draft",
+    "dismiss-notice"
+  ],
+  "forbiddenEphemeralIntentKinds": [
+    "set-bookmarks",
+    "set-panels",
+    "set-quick-entry",
+    "mark-exported",
+    "set-recovery",
+    "set-document-transition",
+    "expect-transport",
+    "settle-transport-expectation",
+    "acknowledge-focus"
+  ],
+  "startupPresentation": [
+    {
+      "disposition": "open-current-automatically",
+      "component": "U5-CMP-001",
+      "surfaceKind": "alertdialog-region",
+      "offers": [
+        "discard",
+        "new"
+      ]
+    },
+    {
+      "disposition": "offer-keep-discard",
+      "component": "U5-CMP-001",
+      "surfaceKind": "alertdialog-region",
+      "offers": [
+        "keep",
+        "discard"
+      ]
+    },
+    {
+      "disposition": "offer-previous",
+      "component": "U5-CMP-002",
+      "surfaceKind": "alertdialog-region",
+      "offers": [
+        "keep-previous",
+        "discard"
+      ]
+    },
+    {
+      "disposition": "report-unrecoverable",
+      "component": "U5-CMP-003",
+      "surfaceKind": "nonblocking-notice",
+      "offers": [
+        "dismiss"
+      ]
+    },
+    {
+      "disposition": "none-available",
+      "component": null,
+      "surfaceKind": "none",
+      "offers": []
+    }
+  ],
+  "runActiveStatuses": [
+    "starting",
+    "playing",
+    "paused",
+    "stopping"
+  ],
+  "confirmationRequirementLaw": {
+    "requiresWhen": "document-nonempty-and-(dirty-or-run-active)",
+    "pristineIdleReplaces": "without-dialog"
+  },
+  "lawIds": [
+    "U5-LAW-STACK-HOSTING",
+    "U5-LAW-CONFIRMATION-GATE",
+    "U5-LAW-STOP-AND-SWAP",
+    "U5-LAW-CANCEL-INERT",
+    "U5-LAW-STARTUP-MATRIX",
+    "U5-LAW-FALLBACK-VISIBLE",
+    "U5-LAW-NEVER-SAVE",
+    "U5-LAW-NO-AUTO-APPLY",
+    "U5-LAW-IMPORT-VOCABULARY",
+    "U5-LAW-REPORT-COMPLETE",
+    "U5-LAW-EXPORT-HONESTY",
+    "U5-LAW-MARKER-TRUTH",
+    "U5-LAW-STORAGE-NONBLOCKING",
+    "U5-LAW-UNDO-HONESTY",
+    "U5-LAW-FOCUS-RESTORATION"
+  ],
+  "statesTheProductCannotEnter": [
+    "a document replaced while audio still owns scheduled attacks",
+    "a replacement dialog confirm that begins two transitions",
+    "a recovery string outside the frozen vocabulary or Save applied to recovery",
+    "a file selection that applies without a separate Commit gesture",
+    "an export marker advanced by a cancelled or failed download",
+    "a dirty current document replaced with no confirmation",
+    "a lifecycle dialog outside the A0 stack or two modal scopes at once",
+    "focus lost after any dialog outcome or a chart selection disturbed by a lifecycle dialog",
+    "a silent offer-previous or report-unrecoverable startup"
+  ],
+  "forbiddenShortcuts": [
+    "replacing the document without the serialized stop-and-swap receipt chain or publishing before retirement settles",
+    "a Cancel that installs, retires, marks, or moves anything",
+    "the word Save applied to recovery or any recovery string outside the frozen vocabulary",
+    "auto-applying a picked file or a preview whose groups drop refusals",
+    "an export marker advanced by anything but exact bound-delivery success",
+    "hiding Undo unavailability or a lifecycle dialog hosted outside the A0 stack",
+    "a startup fallback state that renders nothing",
+    "a storage failure that blocks editing, transport, or export",
+    "a specified-not-implemented claim flag flipped without recorded human acceptance"
+  ],
+  "companions": [
+    "dialog-state-matrix.json",
+    "lifecycle-cases.json",
+    "import-export-cases.json",
+    "focus-restoration-cases.json",
+    "provenance-ledger.json",
+    "trace-ledger.json",
+    "mutation-controls.json"
+  ],
+  "handoff": "An implementer needs the contract document, the contract module, and this fixture package — not the markdown plan. The composition methods this packet names but does not ship (openLifecycleDialog, confirmReplacement, cancelLifecycleDialog, readImportCandidate, commitImportPreview, deliverCanonicalExport, keepRecovered, discardRecovered) are owned by the U5 build leg's application work. The two additive dialog kinds follow the U7 append precedent.",
+  "companionSha256": {
+    "dialog-state-matrix.json": "9bc1f641cde91044db08eb096009ed2583e6db576005e4d3e6a1c94956fe98de",
+    "lifecycle-cases.json": "d06280b574fde8f5a7990c17698229cfb10e3c2e5594a321019bbd84c6911df2",
+    "import-export-cases.json": "4a424c1a64df72773c3d059803b49348288cbb7e127087cce7ca5da3a04ac40a",
+    "focus-restoration-cases.json": "a7ce87731ea9fc2012b02fe765ffec328810f0c91a32f3be7f56c2f7c1e60fea",
+    "provenance-ledger.json": "49f2537059b9e0129685c6ecff799715d19adff35e67ed86bc05d37f5c677e52",
+    "trace-ledger.json": "0e5efc81630bba09278e9aadfcc7fa0ef9bc149a6f698c54c9086f439fc27b6f",
+    "mutation-controls.json": "514575964e3fbb4c778ad51ff9b833a18d4734ee3f5e278a61e52e2051c2169d"
+  }
+}

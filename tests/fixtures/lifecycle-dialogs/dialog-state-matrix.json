@@ -1,0 +1,1013 @@
+{
+  "schema": "changes.fixtures.u5-dialog-state-matrix.v1",
+  "reviewState": "proposed-independent-spec",
+  "pinState": "pinned",
+  "expectedValuesGenerated": false,
+  "productionOutputUsedAsOracle": false,
+  "dialogKinds": [
+    "new-document",
+    "lesson-load",
+    "import-confirm",
+    "discard-changes",
+    "history-limit",
+    "error-details",
+    "import-preview",
+    "lifecycle-export"
+  ],
+  "proposedDialogKinds": [
+    "import-preview",
+    "lifecycle-export"
+  ],
+  "phases": [
+    "open",
+    "committing",
+    "failed"
+  ],
+  "transitionStates": [
+    "idle",
+    "awaiting-confirmation",
+    "retiring-transport",
+    "committing"
+  ],
+  "runActiveStatuses": [
+    "starting",
+    "playing",
+    "paused",
+    "stopping"
+  ],
+  "confirmationLaw": {
+    "requiresWhen": "document-nonempty-and-(dirty-or-run-active)",
+    "pristineIdleReplaces": "without-dialog"
+  },
+  "confirmationCells": [
+    {
+      "origin": "new",
+      "documentNonempty": true,
+      "dirty": true,
+      "transportStatus": "unavailable",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "new",
+      "documentNonempty": true,
+      "dirty": true,
+      "transportStatus": "ready",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "new",
+      "documentNonempty": true,
+      "dirty": true,
+      "transportStatus": "starting",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "new",
+      "documentNonempty": true,
+      "dirty": true,
+      "transportStatus": "playing",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "new",
+      "documentNonempty": true,
+      "dirty": true,
+      "transportStatus": "paused",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "new",
+      "documentNonempty": true,
+      "dirty": true,
+      "transportStatus": "stopping",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "new",
+      "documentNonempty": true,
+      "dirty": true,
+      "transportStatus": "failed",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "new",
+      "documentNonempty": true,
+      "dirty": false,
+      "transportStatus": "unavailable",
+      "requiresConfirmation": false,
+      "bypassReason": "pristine-idle"
+    },
+    {
+      "origin": "new",
+      "documentNonempty": true,
+      "dirty": false,
+      "transportStatus": "ready",
+      "requiresConfirmation": false,
+      "bypassReason": "pristine-idle"
+    },
+    {
+      "origin": "new",
+      "documentNonempty": true,
+      "dirty": false,
+      "transportStatus": "starting",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "new",
+      "documentNonempty": true,
+      "dirty": false,
+      "transportStatus": "playing",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "new",
+      "documentNonempty": true,
+      "dirty": false,
+      "transportStatus": "paused",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "new",
+      "documentNonempty": true,
+      "dirty": false,
+      "transportStatus": "stopping",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "new",
+      "documentNonempty": true,
+      "dirty": false,
+      "transportStatus": "failed",
+      "requiresConfirmation": false,
+      "bypassReason": "pristine-idle"
+    },
+    {
+      "origin": "new",
+      "documentNonempty": false,
+      "dirty": true,
+      "transportStatus": "unavailable",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "new",
+      "documentNonempty": false,
+      "dirty": true,
+      "transportStatus": "ready",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "new",
+      "documentNonempty": false,
+      "dirty": true,
+      "transportStatus": "starting",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "new",
+      "documentNonempty": false,
+      "dirty": true,
+      "transportStatus": "playing",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "new",
+      "documentNonempty": false,
+      "dirty": true,
+      "transportStatus": "paused",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "new",
+      "documentNonempty": false,
+      "dirty": true,
+      "transportStatus": "stopping",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "new",
+      "documentNonempty": false,
+      "dirty": true,
+      "transportStatus": "failed",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "new",
+      "documentNonempty": false,
+      "dirty": false,
+      "transportStatus": "unavailable",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "new",
+      "documentNonempty": false,
+      "dirty": false,
+      "transportStatus": "ready",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "new",
+      "documentNonempty": false,
+      "dirty": false,
+      "transportStatus": "starting",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "new",
+      "documentNonempty": false,
+      "dirty": false,
+      "transportStatus": "playing",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "new",
+      "documentNonempty": false,
+      "dirty": false,
+      "transportStatus": "paused",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "new",
+      "documentNonempty": false,
+      "dirty": false,
+      "transportStatus": "stopping",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "new",
+      "documentNonempty": false,
+      "dirty": false,
+      "transportStatus": "failed",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "lesson",
+      "documentNonempty": true,
+      "dirty": true,
+      "transportStatus": "unavailable",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "lesson",
+      "documentNonempty": true,
+      "dirty": true,
+      "transportStatus": "ready",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "lesson",
+      "documentNonempty": true,
+      "dirty": true,
+      "transportStatus": "starting",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "lesson",
+      "documentNonempty": true,
+      "dirty": true,
+      "transportStatus": "playing",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "lesson",
+      "documentNonempty": true,
+      "dirty": true,
+      "transportStatus": "paused",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "lesson",
+      "documentNonempty": true,
+      "dirty": true,
+      "transportStatus": "stopping",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "lesson",
+      "documentNonempty": true,
+      "dirty": true,
+      "transportStatus": "failed",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "lesson",
+      "documentNonempty": true,
+      "dirty": false,
+      "transportStatus": "unavailable",
+      "requiresConfirmation": false,
+      "bypassReason": "pristine-idle"
+    },
+    {
+      "origin": "lesson",
+      "documentNonempty": true,
+      "dirty": false,
+      "transportStatus": "ready",
+      "requiresConfirmation": false,
+      "bypassReason": "pristine-idle"
+    },
+    {
+      "origin": "lesson",
+      "documentNonempty": true,
+      "dirty": false,
+      "transportStatus": "starting",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "lesson",
+      "documentNonempty": true,
+      "dirty": false,
+      "transportStatus": "playing",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "lesson",
+      "documentNonempty": true,
+      "dirty": false,
+      "transportStatus": "paused",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "lesson",
+      "documentNonempty": true,
+      "dirty": false,
+      "transportStatus": "stopping",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "lesson",
+      "documentNonempty": true,
+      "dirty": false,
+      "transportStatus": "failed",
+      "requiresConfirmation": false,
+      "bypassReason": "pristine-idle"
+    },
+    {
+      "origin": "lesson",
+      "documentNonempty": false,
+      "dirty": true,
+      "transportStatus": "unavailable",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "lesson",
+      "documentNonempty": false,
+      "dirty": true,
+      "transportStatus": "ready",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "lesson",
+      "documentNonempty": false,
+      "dirty": true,
+      "transportStatus": "starting",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "lesson",
+      "documentNonempty": false,
+      "dirty": true,
+      "transportStatus": "playing",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "lesson",
+      "documentNonempty": false,
+      "dirty": true,
+      "transportStatus": "paused",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "lesson",
+      "documentNonempty": false,
+      "dirty": true,
+      "transportStatus": "stopping",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "lesson",
+      "documentNonempty": false,
+      "dirty": true,
+      "transportStatus": "failed",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "lesson",
+      "documentNonempty": false,
+      "dirty": false,
+      "transportStatus": "unavailable",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "lesson",
+      "documentNonempty": false,
+      "dirty": false,
+      "transportStatus": "ready",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "lesson",
+      "documentNonempty": false,
+      "dirty": false,
+      "transportStatus": "starting",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "lesson",
+      "documentNonempty": false,
+      "dirty": false,
+      "transportStatus": "playing",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "lesson",
+      "documentNonempty": false,
+      "dirty": false,
+      "transportStatus": "paused",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "lesson",
+      "documentNonempty": false,
+      "dirty": false,
+      "transportStatus": "stopping",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "lesson",
+      "documentNonempty": false,
+      "dirty": false,
+      "transportStatus": "failed",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "canonical-import",
+      "documentNonempty": true,
+      "dirty": true,
+      "transportStatus": "unavailable",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "canonical-import",
+      "documentNonempty": true,
+      "dirty": true,
+      "transportStatus": "ready",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "canonical-import",
+      "documentNonempty": true,
+      "dirty": true,
+      "transportStatus": "starting",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "canonical-import",
+      "documentNonempty": true,
+      "dirty": true,
+      "transportStatus": "playing",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "canonical-import",
+      "documentNonempty": true,
+      "dirty": true,
+      "transportStatus": "paused",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "canonical-import",
+      "documentNonempty": true,
+      "dirty": true,
+      "transportStatus": "stopping",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "canonical-import",
+      "documentNonempty": true,
+      "dirty": true,
+      "transportStatus": "failed",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "canonical-import",
+      "documentNonempty": true,
+      "dirty": false,
+      "transportStatus": "unavailable",
+      "requiresConfirmation": false,
+      "bypassReason": "pristine-idle"
+    },
+    {
+      "origin": "canonical-import",
+      "documentNonempty": true,
+      "dirty": false,
+      "transportStatus": "ready",
+      "requiresConfirmation": false,
+      "bypassReason": "pristine-idle"
+    },
+    {
+      "origin": "canonical-import",
+      "documentNonempty": true,
+      "dirty": false,
+      "transportStatus": "starting",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "canonical-import",
+      "documentNonempty": true,
+      "dirty": false,
+      "transportStatus": "playing",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "canonical-import",
+      "documentNonempty": true,
+      "dirty": false,
+      "transportStatus": "paused",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "canonical-import",
+      "documentNonempty": true,
+      "dirty": false,
+      "transportStatus": "stopping",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "canonical-import",
+      "documentNonempty": true,
+      "dirty": false,
+      "transportStatus": "failed",
+      "requiresConfirmation": false,
+      "bypassReason": "pristine-idle"
+    },
+    {
+      "origin": "canonical-import",
+      "documentNonempty": false,
+      "dirty": true,
+      "transportStatus": "unavailable",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "canonical-import",
+      "documentNonempty": false,
+      "dirty": true,
+      "transportStatus": "ready",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "canonical-import",
+      "documentNonempty": false,
+      "dirty": true,
+      "transportStatus": "starting",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "canonical-import",
+      "documentNonempty": false,
+      "dirty": true,
+      "transportStatus": "playing",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "canonical-import",
+      "documentNonempty": false,
+      "dirty": true,
+      "transportStatus": "paused",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "canonical-import",
+      "documentNonempty": false,
+      "dirty": true,
+      "transportStatus": "stopping",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "canonical-import",
+      "documentNonempty": false,
+      "dirty": true,
+      "transportStatus": "failed",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "canonical-import",
+      "documentNonempty": false,
+      "dirty": false,
+      "transportStatus": "unavailable",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "canonical-import",
+      "documentNonempty": false,
+      "dirty": false,
+      "transportStatus": "ready",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "canonical-import",
+      "documentNonempty": false,
+      "dirty": false,
+      "transportStatus": "starting",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "canonical-import",
+      "documentNonempty": false,
+      "dirty": false,
+      "transportStatus": "playing",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "canonical-import",
+      "documentNonempty": false,
+      "dirty": false,
+      "transportStatus": "paused",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "canonical-import",
+      "documentNonempty": false,
+      "dirty": false,
+      "transportStatus": "stopping",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "canonical-import",
+      "documentNonempty": false,
+      "dirty": false,
+      "transportStatus": "failed",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "legacy-import",
+      "documentNonempty": true,
+      "dirty": true,
+      "transportStatus": "unavailable",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "legacy-import",
+      "documentNonempty": true,
+      "dirty": true,
+      "transportStatus": "ready",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "legacy-import",
+      "documentNonempty": true,
+      "dirty": true,
+      "transportStatus": "starting",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "legacy-import",
+      "documentNonempty": true,
+      "dirty": true,
+      "transportStatus": "playing",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "legacy-import",
+      "documentNonempty": true,
+      "dirty": true,
+      "transportStatus": "paused",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "legacy-import",
+      "documentNonempty": true,
+      "dirty": true,
+      "transportStatus": "stopping",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "legacy-import",
+      "documentNonempty": true,
+      "dirty": true,
+      "transportStatus": "failed",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "legacy-import",
+      "documentNonempty": true,
+      "dirty": false,
+      "transportStatus": "unavailable",
+      "requiresConfirmation": false,
+      "bypassReason": "pristine-idle"
+    },
+    {
+      "origin": "legacy-import",
+      "documentNonempty": true,
+      "dirty": false,
+      "transportStatus": "ready",
+      "requiresConfirmation": false,
+      "bypassReason": "pristine-idle"
+    },
+    {
+      "origin": "legacy-import",
+      "documentNonempty": true,
+      "dirty": false,
+      "transportStatus": "starting",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "legacy-import",
+      "documentNonempty": true,
+      "dirty": false,
+      "transportStatus": "playing",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "legacy-import",
+      "documentNonempty": true,
+      "dirty": false,
+      "transportStatus": "paused",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "legacy-import",
+      "documentNonempty": true,
+      "dirty": false,
+      "transportStatus": "stopping",
+      "requiresConfirmation": true
+    },
+    {
+      "origin": "legacy-import",
+      "documentNonempty": true,
+      "dirty": false,
+      "transportStatus": "failed",
+      "requiresConfirmation": false,
+      "bypassReason": "pristine-idle"
+    },
+    {
+      "origin": "legacy-import",
+      "documentNonempty": false,
+      "dirty": true,
+      "transportStatus": "unavailable",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "legacy-import",
+      "documentNonempty": false,
+      "dirty": true,
+      "transportStatus": "ready",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "legacy-import",
+      "documentNonempty": false,
+      "dirty": true,
+      "transportStatus": "starting",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "legacy-import",
+      "documentNonempty": false,
+      "dirty": true,
+      "transportStatus": "playing",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "legacy-import",
+      "documentNonempty": false,
+      "dirty": true,
+      "transportStatus": "paused",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "legacy-import",
+      "documentNonempty": false,
+      "dirty": true,
+      "transportStatus": "stopping",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "legacy-import",
+      "documentNonempty": false,
+      "dirty": true,
+      "transportStatus": "failed",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "legacy-import",
+      "documentNonempty": false,
+      "dirty": false,
+      "transportStatus": "unavailable",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "legacy-import",
+      "documentNonempty": false,
+      "dirty": false,
+      "transportStatus": "ready",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "legacy-import",
+      "documentNonempty": false,
+      "dirty": false,
+      "transportStatus": "starting",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "legacy-import",
+      "documentNonempty": false,
+      "dirty": false,
+      "transportStatus": "playing",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "legacy-import",
+      "documentNonempty": false,
+      "dirty": false,
+      "transportStatus": "paused",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "legacy-import",
+      "documentNonempty": false,
+      "dirty": false,
+      "transportStatus": "stopping",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    },
+    {
+      "origin": "legacy-import",
+      "documentNonempty": false,
+      "dirty": false,
+      "transportStatus": "failed",
+      "requiresConfirmation": false,
+      "bypassReason": "empty-document"
+    }
+  ],
+  "stackCases": [
+    {
+      "id": "U5-STACK-001",
+      "kind": "positive",
+      "subject": "lifecycle dialog pushes onto the A0 stack",
+      "given": "a New gesture with dirty state",
+      "expected": "one DialogDescriptor with kind new-document phase open; blocksHistory per kind; announce once",
+      "lawIds": [
+        "U5-LAW-STACK-HOSTING"
+      ],
+      "traceIds": [
+        "TR-U5-DIALOG-STACK"
+      ],
+      "authorityIds": [
+        "U5-AUTH-A0"
+      ]
+    },
+    {
+      "id": "U5-STACK-002",
+      "kind": "limit",
+      "subject": "stack overflow refuses",
+      "given": "eight open dialogs and a ninth push",
+      "expected": "refusal dialog.stack_limit; nothing changes",
+      "lawIds": [
+        "U5-LAW-STACK-HOSTING"
+      ],
+      "traceIds": [
+        "TR-U5-DIALOG-STACK"
+      ],
+      "authorityIds": [
+        "U5-AUTH-A0"
+      ]
+    },
+    {
+      "id": "U5-STACK-003",
+      "kind": "negative",
+      "subject": "pop removes only the top",
+      "given": "a pop-dialog intent naming a non-top dialog id",
+      "expected": "refusal; the stack is unchanged",
+      "lawIds": [
+        "U5-LAW-STACK-HOSTING"
+      ],
+      "traceIds": [
+        "TR-U5-DIALOG-STACK"
+      ],
+      "authorityIds": [
+        "U5-AUTH-A0"
+      ]
+    },
+    {
+      "id": "U5-STACK-004",
+      "kind": "negative",
+      "subject": "duplicate dialog id refuses",
+      "given": "a push with an id already on the stack",
+      "expected": "refusal; the stack is unchanged",
+      "lawIds": [
+        "U5-LAW-STACK-HOSTING"
+      ],
+      "traceIds": [
+        "TR-U5-DIALOG-STACK"
+      ],
+      "authorityIds": [
+        "U5-AUTH-A0"
+      ]
+    },
+    {
+      "id": "U5-STACK-005",
+      "kind": "positive",
+      "subject": "committing dialog locks history visibly",
+      "given": "a replacement dialog in phase committing",
+      "expected": "Undo renders disabled with the named reason; the lock lifts on settle",
+      "lawIds": [
+        "U5-LAW-UNDO-HONESTY"
+      ],
+      "traceIds": [
+        "TR-U5-DIALOG-STACK"
+      ],
+      "authorityIds": [
+        "U5-AUTH-A0",
+        "U5-AUTH-BEAD"
+      ]
+    },
+    {
+      "id": "U5-STACK-006",
+      "kind": "negative",
+      "subject": "no two modal scopes",
+      "given": "a dialog open and a sheet requesting modal",
+      "expected": "the kernel refuses ui.modal_scope_limit; the studio renders one modal root",
+      "lawIds": [
+        "U5-LAW-STACK-HOSTING"
+      ],
+      "traceIds": [
+        "TR-U5-DIALOG-STACK",
+        "TR-U5-FOCUS"
+      ],
+      "authorityIds": [
+        "U5-AUTH-U0"
+      ]
+    },
+    {
+      "id": "U5-STACK-007",
+      "kind": "negative",
+      "subject": "cancel is inert",
+      "given": "a replacement confirmation cancelled after opening",
+      "expected": "no request began, no marker moved, no document or transport change; the transition state is idle",
+      "lawIds": [
+        "U5-LAW-CANCEL-INERT"
+      ],
+      "traceIds": [
+        "TR-U5-REPLACEMENT"
+      ],
+      "authorityIds": [
+        "U5-AUTH-BEAD",
+        "U5-AUTH-A0"
+      ]
+    }
+  ]
+}

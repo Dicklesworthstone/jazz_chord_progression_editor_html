@@ -1,0 +1,229 @@
+{
+  "schema": "changes.fixtures.u5-lifecycle-cases.v1",
+  "reviewState": "proposed-independent-spec",
+  "pinState": "pinned",
+  "expectedValuesGenerated": false,
+  "productionOutputUsedAsOracle": false,
+  "cases": [
+    {
+      "id": "U5-LIFE-001",
+      "kind": "positive",
+      "family": "startup",
+      "subject": "valid current envelope opens automatically with explanation",
+      "given": "startup probe finds a valid current envelope with no conflict and no export disagreement",
+      "expected": "the chart opens with the visible explanation and Discard/New actions; audio is never initialized by recovery",
+      "lawIds": ["U5-LAW-STARTUP-MATRIX"],
+      "traceIds": ["TR-U5-STARTUP-RECOVERY"],
+      "authorityIds": ["U5-AUTH-A1"]
+    },
+    {
+      "id": "U5-LIFE-002",
+      "kind": "positive",
+      "family": "startup",
+      "subject": "stale or export-disagreeing envelope offers Keep/Discard",
+      "given": "a valid current envelope stale against the stored export binding",
+      "expected": "the Keep/Discard alertdialog offer renders with the frozen vocabulary and the recovered-at time",
+      "lawIds": ["U5-LAW-STARTUP-MATRIX", "U5-LAW-NEVER-SAVE"],
+      "traceIds": ["TR-U5-STARTUP-RECOVERY"],
+      "authorityIds": ["U5-AUTH-A1"]
+    },
+    {
+      "id": "U5-LIFE-003",
+      "kind": "positive",
+      "family": "startup-fallback",
+      "subject": "corrupt current offers the previous copy",
+      "given": "a corrupt current envelope with a valid previous envelope",
+      "expected": "the fallback offer renders: the current copy is unreadable, Keep previous / Discard are offered",
+      "lawIds": ["U5-LAW-STARTUP-MATRIX", "U5-LAW-FALLBACK-VISIBLE"],
+      "traceIds": ["TR-U5-STARTUP-RECOVERY"],
+      "authorityIds": ["U5-AUTH-A1", "U5-AUTH-BEAD"]
+    },
+    {
+      "id": "U5-LIFE-004",
+      "kind": "positive",
+      "family": "startup-fallback",
+      "subject": "unrecoverable reports one nonblocking diagnostic",
+      "given": "neither envelope decodes",
+      "expected": "one nonblocking notice: recovery data could not be read, editing and export work, export recommended; the blank workspace stands",
+      "lawIds": ["U5-LAW-FALLBACK-VISIBLE"],
+      "traceIds": ["TR-U5-STARTUP-RECOVERY"],
+      "authorityIds": ["U5-AUTH-A1", "U5-AUTH-BEAD"]
+    },
+    {
+      "id": "U5-LIFE-005",
+      "kind": "positive",
+      "family": "startup",
+      "subject": "no envelopes renders nothing",
+      "given": "startup probe finds no envelopes",
+      "expected": "none-available: no dialog, no notice, blank workspace",
+      "lawIds": ["U5-LAW-STARTUP-MATRIX"],
+      "traceIds": ["TR-U5-STARTUP-RECOVERY"],
+      "authorityIds": ["U5-AUTH-A1"]
+    },
+    {
+      "id": "U5-LIFE-006",
+      "kind": "negative",
+      "family": "startup",
+      "subject": "editing before probe settlement downgrades auto-open",
+      "given": "the user edited the blank document before the recovery probe settled",
+      "expected": "automatic opening downgrades to the Keep/Discard offer; the in-memory document is never silently overwritten",
+      "lawIds": ["U5-LAW-STARTUP-MATRIX"],
+      "traceIds": ["TR-U5-STARTUP-RECOVERY"],
+      "authorityIds": ["U5-AUTH-A1"]
+    },
+    {
+      "id": "U5-LIFE-007",
+      "kind": "positive",
+      "family": "replacement",
+      "subject": "confirmed replacement rides stop-and-swap while playing",
+      "given": "a dirty chart mid-playback; New confirmed",
+      "expected": "one workflow begin: transport retires with receipts awaited, then the document publishes; no intermediate frame; the new document stands at ready",
+      "lawIds": ["U5-LAW-STOP-AND-SWAP", "U5-LAW-CONFIRMATION-GATE"],
+      "traceIds": ["TR-U5-REPLACEMENT"],
+      "authorityIds": ["U5-AUTH-A0", "U5-AUTH-BEAD"]
+    },
+    {
+      "id": "U5-LIFE-008",
+      "kind": "positive",
+      "family": "replacement",
+      "subject": "replacement while paused is atomic",
+      "given": "a dirty chart paused mid-run; lesson load confirmed",
+      "expected": "the same serialized retirement-then-publish chain; the paused run cannot attack after the swap",
+      "lawIds": ["U5-LAW-STOP-AND-SWAP"],
+      "traceIds": ["TR-U5-REPLACEMENT"],
+      "authorityIds": ["U5-AUTH-A0", "U5-AUTH-X1"]
+    },
+    {
+      "id": "U5-LIFE-009",
+      "kind": "positive",
+      "family": "replacement",
+      "subject": "replacement while previewing is atomic",
+      "given": "a chord preview sounding while an import commit is confirmed",
+      "expected": "the preview retires with the progression before publish; no preview voice survives the swap",
+      "lawIds": ["U5-LAW-STOP-AND-SWAP"],
+      "traceIds": ["TR-U5-REPLACEMENT"],
+      "authorityIds": ["U5-AUTH-X1"]
+    },
+    {
+      "id": "U5-LIFE-010",
+      "kind": "negative",
+      "family": "replacement",
+      "subject": "precommit validation failure preserves the current chart",
+      "given": "an import commit whose candidate fails validation after confirmation",
+      "expected": "the transition settles back to idle through the workflow cancel path; the current document is byte-for-byte intact; the dialog reports the refusal code verbatim",
+      "lawIds": ["U5-LAW-STOP-AND-SWAP", "U5-LAW-CANCEL-INERT"],
+      "traceIds": ["TR-U5-REPLACEMENT"],
+      "authorityIds": ["U5-AUTH-A0", "U5-AUTH-E0"]
+    },
+    {
+      "id": "U5-LIFE-011",
+      "kind": "negative",
+      "family": "replacement",
+      "subject": "audio failure during replacement preserves current state",
+      "given": "the transport retirement faults mid-transition",
+      "expected": "the document is not published; the current state remains authoritative; the dialog shows the failure with its stable code",
+      "lawIds": ["U5-LAW-STOP-AND-SWAP"],
+      "traceIds": ["TR-U5-REPLACEMENT"],
+      "authorityIds": ["U5-AUTH-A0", "U5-AUTH-BEAD"]
+    },
+    {
+      "id": "U5-LIFE-012",
+      "kind": "negative",
+      "family": "replacement",
+      "subject": "busy workflow refuses a second replacement",
+      "given": "a replacement transition in flight and a second confirm gesture",
+      "expected": "import.replacement_workflow_busy; one transition exists at any time; the dialog shows busy, never two commits",
+      "lawIds": ["U5-LAW-STOP-AND-SWAP"],
+      "traceIds": ["TR-U5-REPLACEMENT"],
+      "authorityIds": ["U5-AUTH-A0"]
+    },
+    {
+      "id": "U5-LIFE-013",
+      "kind": "positive",
+      "family": "storage",
+      "subject": "storage unavailable renders the frozen string",
+      "given": "both persistence adapters unusable at startup",
+      "expected": "the status strip shows 'Recovery unavailable — export recommended' with an actionable path; editing, transport, and export are untouched",
+      "lawIds": ["U5-LAW-STORAGE-NONBLOCKING", "U5-LAW-NEVER-SAVE"],
+      "traceIds": ["TR-U5-STORAGE-STATES"],
+      "authorityIds": ["U5-AUTH-A1", "U5-AUTH-BEAD"]
+    },
+    {
+      "id": "U5-LIFE-014",
+      "kind": "positive",
+      "family": "storage",
+      "subject": "quota presents pending truthfully",
+      "given": "a background write answered quota",
+      "expected": "recovery state reports pending/failed with the code recovery.quota_exceeded and the pending wording; never a saved claim",
+      "lawIds": ["U5-LAW-STORAGE-NONBLOCKING", "U5-LAW-MARKER-TRUTH"],
+      "traceIds": ["TR-U5-STORAGE-STATES"],
+      "authorityIds": ["U5-AUTH-A1"]
+    },
+    {
+      "id": "U5-LIFE-015",
+      "kind": "positive",
+      "family": "storage",
+      "subject": "write denied surfaces the code and next action",
+      "given": "a write answered denied",
+      "expected": "the storage notice names recovery.write_denied and recommends export; the notice is dismissible and the strip keeps the truthful state",
+      "lawIds": ["U5-LAW-STORAGE-NONBLOCKING"],
+      "traceIds": ["TR-U5-STORAGE-STATES"],
+      "authorityIds": ["U5-AUTH-A1"]
+    },
+    {
+      "id": "U5-LIFE-016",
+      "kind": "positive",
+      "family": "markers",
+      "subject": "exact export success advances the marker",
+      "given": "a canonical JSON export delivered and published",
+      "expected": "mark-exported at the export revision; the strip shows 'Exported at revision {n}'; A1 records the binding",
+      "lawIds": ["U5-LAW-MARKER-TRUTH"],
+      "traceIds": ["TR-U5-MARKERS"],
+      "authorityIds": ["U5-AUTH-A0", "U5-AUTH-A1", "U5-AUTH-E0"]
+    },
+    {
+      "id": "U5-LIFE-017",
+      "kind": "negative",
+      "family": "markers",
+      "subject": "cancelled or failed download advances nothing",
+      "given": "an export whose browser delivery is cancelled or fails",
+      "expected": "the marker and the A1 binding do not move; the strip still shows 'Changed since export' when that is true",
+      "lawIds": ["U5-LAW-MARKER-TRUTH"],
+      "traceIds": ["TR-U5-MARKERS"],
+      "authorityIds": ["U5-AUTH-A1", "U5-AUTH-E0"]
+    },
+    {
+      "id": "U5-LIFE-018",
+      "kind": "negative",
+      "family": "markers",
+      "subject": "MIDI export never advances the canonical marker",
+      "given": "a successful MIDI export",
+      "expected": "exportRevision is unchanged; the strip's export row does not move",
+      "lawIds": ["U5-LAW-MARKER-TRUTH"],
+      "traceIds": ["TR-U5-MARKERS"],
+      "authorityIds": ["U5-AUTH-A0"]
+    },
+    {
+      "id": "U5-LIFE-019",
+      "kind": "negative",
+      "family": "vocabulary",
+      "subject": "no string calls recovery a save",
+      "given": "every startup, strip, dialog, notice, tooltip, and announcement U5 renders",
+      "expected": "only the five frozen vocabulary strings carry {time}/{revision}; the word Save never appears on a recovery surface",
+      "lawIds": ["U5-LAW-NEVER-SAVE"],
+      "traceIds": ["TR-U5-VOCABULARY"],
+      "authorityIds": ["U5-AUTH-A1", "U5-AUTH-BEAD"]
+    },
+    {
+      "id": "U5-LIFE-020",
+      "kind": "positive",
+      "family": "history-boundary",
+      "subject": "oversized non-undoable replacement discloses before confirm",
+      "given": "a replacement whose history retention would exceed the cap",
+      "expected": "the history-limit dialog states history is at its boundary, the replacement cannot be undone, recommends export, and requires explicit confirmation; without it the refusal history.nonundoable_confirmation_required stands",
+      "lawIds": ["U5-LAW-UNDO-HONESTY"],
+      "traceIds": ["TR-U5-HISTORY-BOUNDARY"],
+      "authorityIds": ["U5-AUTH-A0", "U5-AUTH-BEAD"]
+    }
+  ]
+}

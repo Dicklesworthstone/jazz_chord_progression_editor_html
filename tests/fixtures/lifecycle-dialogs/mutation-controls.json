@@ -1,0 +1,128 @@
+{
+  "schema": "changes.fixtures.u5-mutation-controls.v1",
+  "reviewState": "proposed-independent-spec",
+  "pinState": "pinned",
+  "expectedValuesGenerated": false,
+  "productionOutputUsedAsOracle": false,
+  "controlPolicy": "Each control names a semantic counterfactual implementation defect and the fixture case whose expectation kills it. The U5 verify leg must demonstrate every kill against the production build; a control that no test kills blocks closure.",
+  "controls": [
+    {
+      "id": "U5-MUT-001",
+      "lawId": "U5-LAW-STOP-AND-SWAP",
+      "counterfactual": "Replacement publishes the document before transport retirement settles",
+      "killedBy": [
+        "U5-LIFE-007",
+        "U5-LIFE-009"
+      ]
+    },
+    {
+      "id": "U5-MUT-002",
+      "lawId": "U5-LAW-CANCEL-INERT",
+      "counterfactual": "Cancel installs a request, clears a marker, or disturbs the document",
+      "killedBy": [
+        "U5-STACK-007"
+      ]
+    },
+    {
+      "id": "U5-MUT-003",
+      "lawId": "U5-LAW-CONFIRMATION-GATE",
+      "counterfactual": "A dirty chart is replaced by a lesson pick with no confirmation",
+      "killedBy": [],
+      "matrixWitness": "confirmationCells: lesson|nonempty|dirty|playing => requiresConfirmation"
+    },
+    {
+      "id": "U5-MUT-004",
+      "lawId": "U5-LAW-NEVER-SAVE",
+      "counterfactual": "A recovery surface says Save",
+      "killedBy": [
+        "U5-LIFE-019"
+      ]
+    },
+    {
+      "id": "U5-MUT-005",
+      "lawId": "U5-LAW-FALLBACK-VISIBLE",
+      "counterfactual": "offer-previous or report-unrecoverable renders nothing",
+      "killedBy": [
+        "U5-LIFE-003",
+        "U5-LIFE-004"
+      ]
+    },
+    {
+      "id": "U5-MUT-006",
+      "lawId": "U5-LAW-NO-AUTO-APPLY",
+      "counterfactual": "Picking a file applies it without a Commit gesture",
+      "killedBy": [
+        "U5-IMEX-001"
+      ]
+    },
+    {
+      "id": "U5-MUT-007",
+      "lawId": "U5-LAW-REPORT-COMPLETE",
+      "counterfactual": "The import report drops refused items",
+      "killedBy": [
+        "U5-IMEX-005"
+      ]
+    },
+    {
+      "id": "U5-MUT-008",
+      "lawId": "U5-LAW-MARKER-TRUTH",
+      "counterfactual": "A cancelled or failed download advances the export marker",
+      "killedBy": [
+        "U5-LIFE-017",
+        "U5-IMEX-013"
+      ]
+    },
+    {
+      "id": "U5-MUT-009",
+      "lawId": "U5-LAW-MARKER-TRUTH",
+      "counterfactual": "A MIDI export advances the canonical export marker",
+      "killedBy": [
+        "U5-LIFE-018"
+      ]
+    },
+    {
+      "id": "U5-MUT-010",
+      "lawId": "U5-LAW-STORAGE-NONBLOCKING",
+      "counterfactual": "A quota or denied write disables editing or export",
+      "killedBy": [
+        "U5-LIFE-014",
+        "U5-LIFE-015"
+      ]
+    },
+    {
+      "id": "U5-MUT-011",
+      "lawId": "U5-LAW-UNDO-HONESTY",
+      "counterfactual": "Undo looks available while a blocking dialog commits",
+      "killedBy": [
+        "U5-STACK-005",
+        "U5-LIFE-020"
+      ]
+    },
+    {
+      "id": "U5-MUT-012",
+      "lawId": "U5-LAW-STACK-HOSTING",
+      "counterfactual": "A lifecycle dialog renders outside the A0 stack as a local boolean",
+      "killedBy": [
+        "U5-STACK-001"
+      ]
+    },
+    {
+      "id": "U5-MUT-013",
+      "lawId": "U5-LAW-FOCUS-RESTORATION",
+      "counterfactual": "A closed dialog strands focus or restores to document.body",
+      "killedBy": [
+        "U5-FOCUS-002",
+        "U5-FOCUS-004",
+        "U5-FOCUS-008"
+      ]
+    },
+    {
+      "id": "U5-MUT-014",
+      "lawId": "U5-LAW-STARTUP-MATRIX",
+      "counterfactual": "Recovery auto-open overwrites a document the user already edited",
+      "killedBy": [
+        "U5-LIFE-006"
+      ]
+    }
+  ]
+}

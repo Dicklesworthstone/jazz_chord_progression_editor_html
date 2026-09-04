@@ -1,0 +1,71 @@
+{
+  "schema": "changes.fixtures.u5-trace-ledger.v1",
+  "reviewState": "proposed-independent-spec",
+  "pinState": "pinned",
+  "expectedValuesGenerated": false,
+  "productionOutputUsedAsOracle": false,
+  "tracePolicy": "Every parent requirement, invariant, and success criterion maps to at least one fixture case or matrix region; every fixture case carries at least one trace.",
+  "traces": [
+    {
+      "id": "TR-U5-DIALOG-STACK",
+      "requirement": "Dialog stack hosting and focus restoration discipline: A0 stack, LIFO pop, caps, history locking, one modal root.",
+      "parentSource": "U5 required implementation and invariants",
+      "caseIds": ["U5-STACK-001", "U5-STACK-002", "U5-STACK-003", "U5-STACK-004", "U5-STACK-005", "U5-STACK-006", "U5-FOCUS-006"]
+    },
+    {
+      "id": "TR-U5-REPLACEMENT",
+      "requirement": "New/lesson/import replacement confirmation; confirm rides the serialized stop-and-swap; cancel is inert; failures preserve the authoritative state.",
+      "parentSource": "U5 required implementation",
+      "caseIds": ["U5-LIFE-007", "U5-LIFE-008", "U5-LIFE-009", "U5-LIFE-010", "U5-LIFE-011", "U5-LIFE-012", "U5-STACK-007", "U5-IMEX-007"],
+      "matrixRegions": ["confirmationCells"]
+    },
+    {
+      "id": "TR-U5-STARTUP-RECOVERY",
+      "requirement": "Startup recovery Keep/Discard with fallback: all five A1 dispositions have designed accessible UI.",
+      "parentSource": "U5 required implementation and success criteria",
+      "caseIds": ["U5-LIFE-001", "U5-LIFE-002", "U5-LIFE-003", "U5-LIFE-004", "U5-LIFE-005", "U5-LIFE-006"]
+    },
+    {
+      "id": "TR-U5-IMPORT",
+      "requirement": "Canonical/legacy import file/paste preview with grouped report; no auto-apply; commit via confirmation; chart text insert-only.",
+      "parentSource": "U5 required implementation",
+      "caseIds": ["U5-IMEX-001", "U5-IMEX-002", "U5-IMEX-003", "U5-IMEX-004", "U5-IMEX-005", "U5-IMEX-006", "U5-IMEX-007", "U5-IMEX-008", "U5-IMEX-009"]
+    },
+    {
+      "id": "TR-U5-EXPORT",
+      "requirement": "JSON/text export success/failure surfaces with browser-handoff honesty.",
+      "parentSource": "U5 required implementation",
+      "caseIds": ["U5-IMEX-010", "U5-IMEX-011", "U5-IMEX-012", "U5-IMEX-013", "U5-IMEX-014"]
+    },
+    {
+      "id": "TR-U5-MARKERS",
+      "requirement": "Dirty/export/recovery markers remain truthful; only exact export success advances the canonical marker.",
+      "parentSource": "U5 required implementation and invariants",
+      "caseIds": ["U5-LIFE-016", "U5-LIFE-017", "U5-LIFE-018", "U5-IMEX-010", "U5-IMEX-013"]
+    },
+    {
+      "id": "TR-U5-STORAGE-STATES",
+      "requirement": "Storage unavailable/quota/corrupt states are visible, actionable, and never block editing or export.",
+      "parentSource": "U5 required implementation and invariants",
+      "caseIds": ["U5-LIFE-004", "U5-LIFE-013", "U5-LIFE-014", "U5-LIFE-015"]
+    },
+    {
+      "id": "TR-U5-VOCABULARY",
+      "requirement": "Recovery is never called Save; the status strip speaks only the frozen vocabulary.",
+      "parentSource": "U5 invariants and risks",
+      "caseIds": ["U5-LIFE-013", "U5-LIFE-019"]
+    },
+    {
+      "id": "TR-U5-HISTORY-BOUNDARY",
+      "requirement": "Oversized history-boundary disclosure; Undo unavailability is never hidden.",
+      "parentSource": "U5 required implementation and invariants",
+      "caseIds": ["U5-LIFE-020", "U5-STACK-005"]
+    },
+    {
+      "id": "TR-U5-FOCUS",
+      "requirement": "Dialog stack/focus restoration: exact trigger, workflow target, workspace; cancel/failure/success symmetry; selection preserved.",
+      "parentSource": "U5 required implementation and test plan",
+      "caseIds": ["U5-FOCUS-001", "U5-FOCUS-002", "U5-FOCUS-003", "U5-FOCUS-004", "U5-FOCUS-005", "U5-FOCUS-006", "U5-FOCUS-007", "U5-FOCUS-008", "U5-IMEX-008", "U5-IMEX-014"]
+    }
+  ]
+}

@@ -1,0 +1,163 @@
+{
+  "schema": "changes.fixtures.u5-import-export-cases.v1",
+  "reviewState": "proposed-independent-spec",
+  "pinState": "pinned",
+  "expectedValuesGenerated": false,
+  "productionOutputUsedAsOracle": false,
+  "cases": [
+    {
+      "id": "U5-IMEX-001",
+      "kind": "positive",
+      "family": "import-preview",
+      "subject": "file pick previews without applying",
+      "given": "a .json file picked in the import dialog",
+      "expected": "the E0 preview reads and classifies it; the current document is unchanged; Commit is a separate gesture",
+      "lawIds": ["U5-LAW-NO-AUTO-APPLY"],
+      "traceIds": ["TR-U5-IMPORT"],
+      "authorityIds": ["U5-AUTH-E0", "U5-AUTH-BEAD"]
+    },
+    {
+      "id": "U5-IMEX-002",
+      "kind": "positive",
+      "family": "import-preview",
+      "subject": "paste channel previews pasted text",
+      "given": "chart text pasted into the import dialog",
+      "expected": "the same preview pipeline with channel paste; the classification row names the detected format",
+      "lawIds": ["U5-LAW-NO-AUTO-APPLY"],
+      "traceIds": ["TR-U5-IMPORT"],
+      "authorityIds": ["U5-AUTH-E0"]
+    },
+    {
+      "id": "U5-IMEX-003",
+      "kind": "positive",
+      "family": "import-preview",
+      "subject": "format hints follow the frozen vocabulary",
+      "given": "the hint picker",
+      "expected": "exactly auto, canonical-json, legacy-json, chart-text; auto is the default; an unknown hint refuses before dispatch",
+      "lawIds": ["U5-LAW-IMPORT-VOCABULARY"],
+      "traceIds": ["TR-U5-IMPORT"],
+      "authorityIds": ["U5-AUTH-E0"]
+    },
+    {
+      "id": "U5-IMEX-004",
+      "kind": "positive",
+      "family": "grouped-report",
+      "subject": "legacy import report groups in frozen order",
+      "given": "a legacy JSON payload with preserved, canonicalized, custom, ignored, and rejected items",
+      "expected": "the report renders groups in the order preserved, canonicalized, custom, ignored, rejected with per-group counts and the first-256 retention policy",
+      "lawIds": ["U5-LAW-REPORT-COMPLETE"],
+      "traceIds": ["TR-U5-IMPORT"],
+      "authorityIds": ["U5-AUTH-C0", "U5-AUTH-E0"]
+    },
+    {
+      "id": "U5-IMEX-005",
+      "kind": "negative",
+      "family": "grouped-report",
+      "subject": "the report never drops refusals",
+      "given": "a payload with refused items",
+      "expected": "every refusal appears with its code verbatim; a preview that hides refusals is a contract violation",
+      "lawIds": ["U5-LAW-REPORT-COMPLETE"],
+      "traceIds": ["TR-U5-IMPORT"],
+      "authorityIds": ["U5-AUTH-E0", "U5-AUTH-C0"]
+    },
+    {
+      "id": "U5-IMEX-006",
+      "kind": "positive",
+      "family": "import-preview",
+      "subject": "chart text routes to insert-only quick entry",
+      "given": "input classified as chart text",
+      "expected": "the dialog routes to quick entry insertion and says so; replacement is not offered for text",
+      "lawIds": ["U5-LAW-IMPORT-VOCABULARY"],
+      "traceIds": ["TR-U5-IMPORT"],
+      "authorityIds": ["U5-AUTH-E0"]
+    },
+    {
+      "id": "U5-IMEX-007",
+      "kind": "positive",
+      "family": "import-commit",
+      "subject": "commit rides the replacement confirmation",
+      "given": "a ready canonical-json preview over a dirty current chart",
+      "expected": "Commit opens the replacement confirmation with origin canonical-import; confirming rides the stop-and-swap; the import never bypasses §4",
+      "lawIds": ["U5-LAW-CONFIRMATION-GATE", "U5-LAW-STOP-AND-SWAP"],
+      "traceIds": ["TR-U5-IMPORT", "TR-U5-REPLACEMENT"],
+      "authorityIds": ["U5-AUTH-E0", "U5-AUTH-A0"]
+    },
+    {
+      "id": "U5-IMEX-008",
+      "kind": "negative",
+      "family": "import-preview",
+      "subject": "discard abandons the preview",
+      "given": "a ready preview discarded",
+      "expected": "the draft clears via set-import-draft null; nothing applies; focus restores",
+      "lawIds": ["U5-LAW-CANCEL-INERT"],
+      "traceIds": ["TR-U5-IMPORT", "TR-U5-FOCUS"],
+      "authorityIds": ["U5-AUTH-A0"]
+    },
+    {
+      "id": "U5-IMEX-009",
+      "kind": "negative",
+      "family": "import-preview",
+      "subject": "refused input preserves the current chart",
+      "given": "a malformed payload that fails decoding",
+      "expected": "the preview shows the refusal with its code; the document is byte-for-byte unchanged; the draft status is invalid",
+      "lawIds": ["U5-LAW-REPORT-COMPLETE", "U5-LAW-CANCEL-INERT"],
+      "traceIds": ["TR-U5-IMPORT"],
+      "authorityIds": ["U5-AUTH-E0"]
+    },
+    {
+      "id": "U5-IMEX-010",
+      "kind": "positive",
+      "family": "export",
+      "subject": "canonical JSON export success",
+      "given": "Export JSON on a valid chart",
+      "expected": "the dialog shows byte count and the deterministic filename; on bound delivery success the result says the file was handed to the browser's downloads and the marker advances",
+      "lawIds": ["U5-LAW-EXPORT-HONESTY", "U5-LAW-MARKER-TRUTH"],
+      "traceIds": ["TR-U5-EXPORT", "TR-U5-MARKERS"],
+      "authorityIds": ["U5-AUTH-E0", "U5-AUTH-A0"]
+    },
+    {
+      "id": "U5-IMEX-011",
+      "kind": "positive",
+      "family": "export",
+      "subject": "lead-sheet text export success",
+      "given": "Export text on a valid chart",
+      "expected": "the same delivery honesty and marker settlement for the text format",
+      "lawIds": ["U5-LAW-EXPORT-HONESTY"],
+      "traceIds": ["TR-U5-EXPORT"],
+      "authorityIds": ["U5-AUTH-E0"]
+    },
+    {
+      "id": "U5-IMEX-012",
+      "kind": "negative",
+      "family": "export",
+      "subject": "export refusal shows the code verbatim",
+      "given": "an export that refuses (for example an over-limit document)",
+      "expected": "the result surface shows the refusal code verbatim and the next action; no file is pretended",
+      "lawIds": ["U5-LAW-EXPORT-HONESTY"],
+      "traceIds": ["TR-U5-EXPORT"],
+      "authorityIds": ["U5-AUTH-E0"]
+    },
+    {
+      "id": "U5-IMEX-013",
+      "kind": "negative",
+      "family": "export",
+      "subject": "browser rejection never claims disk",
+      "given": "the browser declines the download",
+      "expected": "the surface says the browser did not take the file and offers retry; the marker does not advance",
+      "lawIds": ["U5-LAW-EXPORT-HONESTY", "U5-LAW-MARKER-TRUTH"],
+      "traceIds": ["TR-U5-EXPORT", "TR-U5-MARKERS"],
+      "authorityIds": ["U5-AUTH-E0", "U5-AUTH-U7P"]
+    },
+    {
+      "id": "U5-IMEX-014",
+      "kind": "positive",
+      "family": "export",
+      "subject": "dismiss restores focus and keeps state",
+      "given": "the export result dismissed after success",
+      "expected": "focus restores to the Export trigger; the marker and strip stay settled",
+      "lawIds": ["U5-LAW-FOCUS-RESTORATION"],
+      "traceIds": ["TR-U5-EXPORT", "TR-U5-FOCUS"],
+      "authorityIds": ["U5-AUTH-U0"]
+    }
+  ]
+}

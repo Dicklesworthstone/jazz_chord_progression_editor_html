@@ -1,0 +1,98 @@
+{
+  "schema": "changes.fixtures.u5-focus-restoration-cases.v1",
+  "reviewState": "proposed-independent-spec",
+  "pinState": "pinned",
+  "expectedValuesGenerated": false,
+  "productionOutputUsedAsOracle": false,
+  "restorationLaw": "exact trigger, then the stable workflow target, then the workspace; a non-exact restore reports ui.stale_owner",
+  "cases": [
+    {
+      "id": "U5-FOCUS-001",
+      "kind": "positive",
+      "family": "restore-order",
+      "subject": "cancel restores to the exact trigger",
+      "given": "the New chart dialog opened from the header Clear button and cancelled",
+      "expected": "focus returns to the Clear button; no other state changes",
+      "lawIds": ["U5-LAW-FOCUS-RESTORATION"],
+      "traceIds": ["TR-U5-FOCUS"],
+      "authorityIds": ["U5-AUTH-U0"]
+    },
+    {
+      "id": "U5-FOCUS-002",
+      "kind": "positive",
+      "family": "restore-order",
+      "subject": "workflow target when the trigger is gone",
+      "given": "a dialog whose trigger unmounted while open",
+      "expected": "focus falls to the dialog's stable workflow target, then the workspace; the fallback is exact, never document.body",
+      "lawIds": ["U5-LAW-FOCUS-RESTORATION"],
+      "traceIds": ["TR-U5-FOCUS"],
+      "authorityIds": ["U5-AUTH-U0"]
+    },
+    {
+      "id": "U5-FOCUS-003",
+      "kind": "negative",
+      "family": "stale-owner",
+      "subject": "non-exact restore reports the refusal",
+      "given": "a restore whose recorded owner token is stale",
+      "expected": "the refusal ui.stale_owner reaches the contract-refusal channel; focus still lands on the lawful fallback",
+      "lawIds": ["U5-LAW-FOCUS-RESTORATION"],
+      "traceIds": ["TR-U5-FOCUS"],
+      "authorityIds": ["U5-AUTH-U0"]
+    },
+    {
+      "id": "U5-FOCUS-004",
+      "kind": "positive",
+      "family": "outcome-symmetry",
+      "subject": "cancel, failure, and success restore identically",
+      "given": "the import dialog closed by cancel, by a failed commit, and by a successful commit",
+      "expected": "all three restore focus by the same law; failure and success never strand focus in a closing dialog",
+      "lawIds": ["U5-LAW-FOCUS-RESTORATION"],
+      "traceIds": ["TR-U5-FOCUS"],
+      "authorityIds": ["U5-AUTH-U0", "U5-AUTH-BEAD"]
+    },
+    {
+      "id": "U5-FOCUS-005",
+      "kind": "positive",
+      "family": "selection-preservation",
+      "subject": "lifecycle dialogs never disturb chart selection",
+      "given": "a selection and range in the chart when any lifecycle dialog opens and closes",
+      "expected": "bookmarks.selection and bookmarks.range are byte-for-byte equal afterwards; roving focus resumes at the same identity",
+      "lawIds": ["U5-LAW-FOCUS-RESTORATION"],
+      "traceIds": ["TR-U5-FOCUS"],
+      "authorityIds": ["U5-AUTH-A0"]
+    },
+    {
+      "id": "U5-FOCUS-006",
+      "kind": "positive",
+      "family": "sheet-nesting",
+      "subject": "mobile sheet nests under the one modal root",
+      "given": "the export sheet open on a narrow viewport",
+      "expected": "the sheet is the single modal scope; a second modal refuses; closing the sheet restores its trigger",
+      "lawIds": ["U5-LAW-FOCUS-RESTORATION", "U5-LAW-STACK-HOSTING"],
+      "traceIds": ["TR-U5-FOCUS", "TR-U5-DIALOG-STACK"],
+      "authorityIds": ["U5-AUTH-U0"]
+    },
+    {
+      "id": "U5-FOCUS-007",
+      "kind": "positive",
+      "family": "announcements",
+      "subject": "exactly one announcement per transition",
+      "given": "dialog open, refusal, and settlement transitions",
+      "expected": "each transition announces exactly once through the live region; the status strip uses role=status and never interrupts",
+      "lawIds": ["U5-LAW-FOCUS-RESTORATION"],
+      "traceIds": ["TR-U5-FOCUS"],
+      "authorityIds": ["U5-AUTH-U0", "U5-AUTH-BEAD"]
+    },
+    {
+      "id": "U5-FOCUS-008",
+      "kind": "negative",
+      "family": "restore-order",
+      "subject": "focus never lands in inert background",
+      "given": "a modal dialog with the document made inert outside the surface",
+      "expected": "Tab cycles inside the dialog; background is unreachable by keyboard and pointer until dismissal",
+      "lawIds": ["U5-LAW-FOCUS-RESTORATION"],
+      "traceIds": ["TR-U5-FOCUS"],
+      "authorityIds": ["U5-AUTH-U0"]
+    }
+  ]
+}

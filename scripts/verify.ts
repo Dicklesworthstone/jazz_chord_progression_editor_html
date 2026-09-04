@@ -81,6 +81,10 @@ const gates: Gate[] = [
     command: [process.execPath, "scripts/validate-u4-contract.ts"],
   },
   {
+    id: "u5-lifecycle-contract",
+    command: [process.execPath, "scripts/validate-u5-contract.ts"],
+  },
+  {
     id: "c0-legacy-migration-contract",
     command: [process.execPath, "scripts/validate-c0-contract.ts"],
   },
