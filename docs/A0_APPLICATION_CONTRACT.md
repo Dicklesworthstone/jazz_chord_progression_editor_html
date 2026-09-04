@@ -427,3 +427,16 @@ superseded while the expectation's dispatch-time identity still equals the
 current document and revision. Notifications remain the only path that may
 advance generation/sequence, and fabricating a `TransportNotification`
 remains forbidden.
+
+### 13.2 Failure-code admission on paused (additive amendment, 2026-09-04)
+
+X1's notification law (X1 §9) carries a stable `failureCode` on `failed`
+(engine/transport fault codes) always; on `paused` it carries
+`transport.interrupted` for an interruption and null for an ordinary pause;
+every other status carries null. The reducer's validation previously
+admitted a code only on `failed`, so the lawful interruption notification
+refused as `transport.notification_invalid` and a suspended run presented
+as still playing with no resume affordance. The admission now mirrors X1
+exactly. Found by U4/build
+(`jcpe-milestone-reliable-studio-l3a.12.2`) with the studio-level
+interruption regression test in `tests/unit/studio-transport-controls-u4.test.ts`.

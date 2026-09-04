@@ -435,6 +435,17 @@ export type StudioTransportView = Readonly<{
   /** Tempo stepper enablement at the reviewed 20–300 window's edges. */
   canTempoDown: boolean;
   canTempoUp: boolean;
+  /**
+   * U4 (l3a.12.2) slider scrubber numerics. `playheadBeats` is the committed
+   * accepted playhead as a decimal for the slider's aria-valuenow — the
+   * exact rational label remains positionExactLabel; the sweep's display
+   * interpolation never feeds this value. `totalBeats` is the chart's exact
+   * total as a decimal for aria-valuemax; `beatsPerBar` is the document
+   * meter for the slider's bar-step key law.
+   */
+  playheadBeats: number | null;
+  totalBeats: number | null;
+  beatsPerBar: number;
 }>;
 
 /**
@@ -870,6 +881,34 @@ export type StudioTransportCallbacks = Readonly<{
     startFraction: number;
     endFraction: number;
   }> | null;
+  /**
+   * U4 Restart (l3a.12.2): one intent — serialized Stop with the awaited
+   * no-future-attack receipt, then Play from the run start. The source
+   * flows into the gesture receipt exactly like Play.
+   */
+  onRestart: (source: "pointer" | "keyboard") => void;
+  /**
+   * U4 exact seek from the slider's keyboard law: an exact rational beat
+   * (integers and half steps only — never a float approximation). Playing/
+   * paused seeks the run; ready positions the next run's start.
+   */
+  onSeekBeat: (numerator: number, denominator: number) => void;
+  /** U4 click toggles: ephemeral transport-session state, receipt-truth. */
+  onCountInToggle: (enabled: boolean) => void;
+  onMetronomeToggle: (enabled: boolean) => void;
+  /** Display-only settled click toggles; the receipt is the only writer. */
+  readClickToggles: () => Readonly<{
+    countInEnabled: boolean;
+    metronomeEnabled: boolean;
+  }>;
+  /**
+   * Display-only instrument/groove boundary notice: `next-unstarted-note`
+   * while playing, `next-play` while stopped. Cleared by the next accepted
+   * notification or replacement.
+   */
+  readInstrumentBoundaryNotice: () => "next-unstarted-note" | "next-play" | null;
+  /** Display-only ready-state scrub position in exact beats; null when unset. */
+  readPendingRunStartBeats: () => number | null;
   /**
    * Live fader ride (jcpe-v2r-live-mix-btb4): audible during the drag, no
    * document write — the one undoable commit still lands on release.

@@ -27,7 +27,7 @@
       "family": "status-badge",
       "subject": "unavailable badge",
       "given": "accepted TransportViewState with status unavailable and no failureCode",
-      "expected": "badge 'Audio unavailable', detail carries the actionable locked/engine-unavailable reason, Play disabled with audio-unavailable",
+      "expected": "badge 'Audio off', detail carries the actionable locked/engine-unavailable reason, Play disabled with audio-unavailable",
       "lawIds": ["U4-LAW-TRUTHFUL-STATUS"],
       "traceIds": ["TR-U4-STATUS-PROJECTION"],
       "authorityIds": ["U4-AUTH-A0"]
@@ -38,7 +38,7 @@
       "family": "status-badge",
       "subject": "ready badge",
       "given": "accepted status ready with a bound plan",
-      "expected": "badge 'Ready', detail names the bound plan or the empty-transport hint; Play and Restart enabled",
+      "expected": "badge 'Audio ready', detail names the bound plan or the empty-transport hint; Play and Restart enabled",
       "lawIds": ["U4-LAW-TRUTHFUL-STATUS"],
       "traceIds": ["TR-U4-STATUS-PROJECTION"],
       "authorityIds": ["U4-AUTH-A0"]
@@ -49,7 +49,7 @@
       "family": "status-badge",
       "subject": "starting badge",
       "given": "expect-transport optimism installed status starting",
-      "expected": "badge 'Starting…' with no detail; all transport controls disabled with status-settling",
+      "expected": "badge 'Starting playback' with no detail; all transport controls disabled with status-settling",
       "lawIds": ["U4-LAW-TRUTHFUL-STATUS"],
       "traceIds": ["TR-U4-STATUS-PROJECTION"],
       "authorityIds": ["U4-AUTH-A0"]
@@ -93,7 +93,7 @@
       "family": "status-badge",
       "subject": "stopping badge",
       "given": "expect-transport optimism installed status stopping",
-      "expected": "badge 'Stopping…' with no detail; controls disabled with status-settling",
+      "expected": "badge 'Stopping playback' with no detail; controls disabled with status-settling",
       "lawIds": ["U4-LAW-TRUTHFUL-STATUS"],
       "traceIds": ["TR-U4-STATUS-PROJECTION"],
       "authorityIds": ["U4-AUTH-A0"]
@@ -104,7 +104,7 @@
       "family": "status-badge",
       "subject": "fault badge with recovery",
       "given": "accepted status failed with a stable failure code",
-      "expected": "badge 'Audio fault', detail carries the stable code and offers reinitialize-audio; chart editing and export remain fully interactive",
+      "expected": "badge 'Audio failed', detail carries the stable code and offers reinitialize-audio; chart editing and export remain fully interactive",
       "lawIds": ["U4-LAW-TRUTHFUL-STATUS", "U4-LAW-FAULT-NONBLOCKING"],
       "traceIds": ["TR-U4-STATUS-PROJECTION"],
       "authorityIds": ["U4-AUTH-BEAD", "U4-AUTH-A0"]
@@ -170,7 +170,7 @@
       "family": "acceptance-sequence",
       "subject": "the eight-step run projects in order",
       "given": "the X1 browser-matrix run: initialize, play, natural end replay, pause, resume, preview, release, stop",
-      "expected": "the badge sequence is Ready, Playing, Ready, Playing, Paused, Playing, Ready with strictly increasing notificationSequence; stop's last frame shows the playhead at the run startBeat",
+      "expected": "the badge sequence is Audio ready, Playing, Audio ready, Playing, Paused, Playing, Audio ready with strictly increasing notificationSequence; stop's last frame shows the playhead at the run startBeat",
       "lawIds": ["U4-LAW-TRUTHFUL-STATUS", "U4-LAW-STOP-RETURNS-TO-START"],
       "traceIds": ["TR-U4-STATUS-PROJECTION", "TR-U4-CONTROLS"],
       "authorityIds": ["U4-AUTH-X1"]

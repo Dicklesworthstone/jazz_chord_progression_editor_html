@@ -971,10 +971,20 @@ export const acceptTransportNotification: AcceptTransportNotification = ({
     !isPositiveSafeInteger(notification.commandRequestId) ||
     !isNonnegativeSafeInteger(notification.notificationSequence) ||
     !isNonnegativeSafeInteger(notification.planRevision) ||
+    /* X1 §9: a notification carries a stable failureCode exactly on
+     * `paused` (transport.interrupted) and `failed` (fault codes); every
+     * other status must carry null. The previous law accepted codes only on
+     * `failed`, so the lawful interruption notification was refused as
+     * malformed and the studio never presented an interrupted run (found by
+     * U4/build, l3a.12.2). */
     (runtimeStatus === "failed"
       ? typeof runtimeFailureCode !== "string" ||
         !isBoundedToken(runtimeFailureCode, MAX_COMMAND_ID_CODE_POINTS)
-      : runtimeFailureCode !== null)
+      : runtimeStatus === "paused"
+        ? runtimeFailureCode !== null &&
+          (typeof runtimeFailureCode !== "string" ||
+            !isBoundedToken(runtimeFailureCode, MAX_COMMAND_ID_CODE_POINTS))
+        : runtimeFailureCode !== null)
   ) {
     return failureResult(
       state,

@@ -205,19 +205,19 @@
     {
       "status": "unavailable",
       "failureCode": null,
-      "badgeLabel": "Audio unavailable",
+      "badgeLabel": "Audio off",
       "detailKind": "recovery-actionable"
     },
     {
       "status": "ready",
       "failureCode": null,
-      "badgeLabel": "Ready",
+      "badgeLabel": "Audio ready",
       "detailKind": "bound-plan-or-empty"
     },
     {
       "status": "starting",
       "failureCode": null,
-      "badgeLabel": "Starting…",
+      "badgeLabel": "Starting playback",
       "detailKind": "none"
     },
     {
@@ -241,13 +241,13 @@
     {
       "status": "stopping",
       "failureCode": null,
-      "badgeLabel": "Stopping…",
+      "badgeLabel": "Stopping playback",
       "detailKind": "none"
     },
     {
       "status": "failed",
       "failureCode": null,
-      "badgeLabel": "Audio fault",
+      "badgeLabel": "Audio failed",
       "detailKind": "fault-code-and-recovery"
     }
   ],
@@ -356,8 +356,8 @@
     "mutation-controls.json"
   ],
   "companionSha256": {
-    "control-operation-matrix.json": "216bdfb86c4a9440b29a692b6960f94dc2f2d8bcd0b6c5f16fd49ffac73366a7",
-    "status-projection-cases.json": "fd69ad6099e7de934ba58286d3e40bfb8e49b257c8806e36794a40e0e5a21a83",
+    "control-operation-matrix.json": "ad50f84341168746185f1597d2254121aa3afa1c860c81c4569300b12cc646d5",
+    "status-projection-cases.json": "c84b8c04a539fc47f2449235936c1aa6593afa7ddfc7e137fae9cad7adea42bc",
     "keyboard-guard-cases.json": "4ddb2559497a3c2c67f7097fa09bc8ff2aa0991531ce0056c59f6122aad2e3e5",
     "layout-cells.json": "55ccfe57ecde386b8eca781af44934e34a1aaf77b1e931708f37db019e7c7d95",
     "provenance-ledger.json": "b11fc06de427b90e4fe34343b66dbf5dce335f263c4bb36df15a692f0635efdd",

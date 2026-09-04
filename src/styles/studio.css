@@ -3540,6 +3540,60 @@
   outline-offset: var(--focus-offset);
 }
 
+/* U4 (l3a.12.2): the count-in/metronome toggles share the loop toggle's
+ * geometry and pressed-state honesty (armed intent vs engaged truth is not
+ * applicable here — the receipt IS the state, so pressed is enough). */
+.studio-transport__clicks {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-inline-start: var(--space-1);
+}
+
+.studio-transport__click-toggle {
+  display: grid;
+  place-items: center;
+  min-block-size: var(--control-min-block);
+  padding-inline: var(--space-2);
+  border: var(--border-width) solid var(--rule-2);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink-3);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+@media (pointer: coarse) {
+  .studio-transport__click-toggle {
+    min-inline-size: 44px;
+    min-block-size: 44px;
+  }
+}
+
+.studio-transport__click-toggle[aria-pressed="true"] {
+  border-color: var(--blue);
+  color: var(--blue);
+  background: var(--blue-wash);
+}
+
+.studio-transport__click-toggle:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.studio-transport__click-toggle:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+/* U4 §7: the instrument/groove boundary notice under the status detail. */
+.studio-transport__boundary {
+  margin: 0;
+  padding: 0 var(--space-2);
+  color: var(--ink-3);
+  font-size: var(--text-sm);
+}
+
 .studio-transport__sweep-fill {
   display: block;
   block-size: 100%;

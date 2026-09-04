@@ -301,10 +301,20 @@ function bootHarness(): StudioAudibleEvidenceApi {
             initialMix,
           ),
         ),
-      play: async (commandRequestId, binding, startBeat) =>
+      play: async (commandRequestId, binding, startBeat, countIn) =>
         journalCommand(
           "play",
-          await realPort.play(commandRequestId, binding, startBeat),
+          await realPort.play(commandRequestId, binding, startBeat, countIn),
+        ),
+      setCountIn: async (commandRequestId, enabled) =>
+        journalCommand(
+          "set-count-in",
+          await realPort.setCountIn(commandRequestId, enabled),
+        ),
+      setMetronome: async (commandRequestId, enabled) =>
+        journalCommand(
+          "set-metronome",
+          await realPort.setMetronome(commandRequestId, enabled),
         ),
       pause: async (commandRequestId) =>
         journalCommand("pause", await realPort.pause(commandRequestId)),

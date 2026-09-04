@@ -146,6 +146,14 @@ function iconPaths(iconId: UiOwnedIconId): JSX.Element {
           <path d="M3 19v-3a8 8 0 0 1 8-8h10" />
         </>
       );
+    case "restart":
+      /* Return-to-start stem plus the play triangle (U4, l3a.12.2). */
+      return (
+        <>
+          <path d="M6 4v16" />
+          <path d="m10 4 10 8-10 8V4Z" />
+        </>
+      );
     case "split":
       return (
         <>

@@ -102,7 +102,76 @@ export type TransportSettingsCallbacks = Pick<
   | "onVolumePreview"
   | "onMuteToggle"
   | "readMixState"
+  | "onCountInToggle"
+  | "onMetronomeToggle"
+  | "readClickToggles"
 >;
+
+/**
+ * U4 (l3a.12.2): the count-in and metronome toggles. The pressed state is
+ * the settled transport receipt's truth (never local optimism); a refusal
+ * leaves the prior value standing. Rendered in both the footer cluster and
+ * the Sound sheet through the same component with the id suffix law.
+ */
+function TransportClickToggles({
+  callbacks,
+  idSuffix,
+  view,
+}: Readonly<{
+  callbacks: TransportSettingsCallbacks;
+  idSuffix: "" | "-sheet";
+  view: StudioTransportView;
+}>) {
+  const toggles = callbacks.readClickToggles();
+  const enabled =
+    view.audioState === "ready" ||
+    view.audioState === "playing" ||
+    view.audioState === "paused";
+  return (
+    <div
+      class="studio-transport__clicks"
+      role="group"
+      aria-label="Count-in and metronome"
+    >
+      <button
+        aria-label="Count-in: one bar of clicks before playback"
+        aria-pressed={toggles.countInEnabled}
+        class="studio-transport__click-toggle"
+        disabled={!enabled}
+        id={`studio-transport-count-in${idSuffix}`}
+        onClick={() => {
+          callbacks.onCountInToggle(!toggles.countInEnabled);
+        }}
+        title={
+          toggles.countInEnabled
+            ? "Count-in on: one bar of clicks before the next Play"
+            : "Count-in off"
+        }
+        type="button"
+      >
+        Count-in
+      </button>
+      <button
+        aria-label="Metronome: a click on every beat while playing"
+        aria-pressed={toggles.metronomeEnabled}
+        class="studio-transport__click-toggle"
+        disabled={!enabled}
+        id={`studio-transport-metronome${idSuffix}`}
+        onClick={() => {
+          callbacks.onMetronomeToggle(!toggles.metronomeEnabled);
+        }}
+        title={
+          toggles.metronomeEnabled
+            ? "Metronome on: a click on every beat"
+            : "Metronome off"
+        }
+        type="button"
+      >
+        Metronome
+      </button>
+    </div>
+  );
+}
 
 /**
  * The playback-settings cluster: tempo stepper, groove picker, instrument
@@ -167,6 +236,12 @@ export function TransportSettings({
           +
         </button>
       </div>
+
+      <TransportClickToggles
+        callbacks={callbacks}
+        idSuffix={idSuffix}
+        view={view}
+      />
 
       <label class="studio-transport__select">
         <span class="studio-visually-hidden">Groove</span>
@@ -252,6 +327,13 @@ export type TransportBarProps = Readonly<{
     | "onVolumePreview"
     | "onMuteToggle"
     | "readMixState"
+    | "onRestart"
+    | "onSeekBeat"
+    | "onCountInToggle"
+    | "onMetronomeToggle"
+    | "readClickToggles"
+    | "readInstrumentBoundaryNotice"
+    | "readPendingRunStartBeats"
   >;
 }>;
 
@@ -383,61 +465,142 @@ export function TransportBar({
         surface says so and dispatches nothing — a scrubber that silently
         restarted playback would be a lie about what it did.
       */}
-      <button
-        aria-label={
-          running || view.audioState === "paused"
-            ? "Seek within the chart"
-            : "Seek (available while playing)"
-        }
-        aria-disabled={!(running || view.audioState === "paused")}
-        class="studio-transport__sweep"
-        data-testid="transport-scrub"
-        id="studio-transport-scrub"
-        onClick={(event) => {
-          if (!(running || view.audioState === "paused")) return;
-          const bounds = event.currentTarget.getBoundingClientRect();
-          if (bounds.width <= 0) return;
-          callbacks.onSeekFraction(
-            (event.clientX - bounds.left) / bounds.width,
+      {(() => {
+        /*
+         * U4 (l3a.12.2): the scrub line is one accessible slider. Pointer
+         * keeps the shipped click-fraction seek; the keyboard law is exact:
+         * arrows step one beat, Shift+arrows one bar, PageUp/Down four
+         * beats, Home/End the plan bounds — always dispatched as exact
+         * rational beats, never from the display sweep. Ready with a
+         * playable chart positions the next run's start; everything else
+         * disables with the honest label.
+         */
+        const canSeekRun = running || view.audioState === "paused";
+        const canPositionNextRun =
+          view.audioState === "ready" && canPlay && view.totalBeats !== null;
+        const sliderEnabled = canSeekRun || canPositionNextRun;
+        const totalBeats = view.totalBeats ?? 0;
+        const pendingStart = callbacks.readPendingRunStartBeats();
+        const currentBeat =
+          view.audioState === "ready" && pendingStart !== null
+            ? pendingStart
+            : (view.playheadBeats ?? 0);
+        const seekToBeatNumber = (target: number): void => {
+          const clamped = Math.min(totalBeats, Math.max(0, target));
+          /* Steps are whole or half beats, always exactly representable. */
+          const doubled = Math.round(clamped * 2);
+          callbacks.onSeekBeat(
+            doubled % 2 === 0 ? doubled / 2 : doubled,
+            doubled % 2 === 0 ? 1 : 2,
           );
-        }}
-        title={
-          running || view.audioState === "paused"
-            ? "Click to seek"
-            : "Seeks while playing"
-        }
-        type="button"
-      >
-        {(() => {
-          /*
-           * V2R-18: the engaged loop's span, drawn under the sweep so the
-           * scrub line shows WHAT will repeat. Only the transport's own
-           * engaged loop draws — an armed-but-idle intent renders nothing,
-           * the same honesty split the toggle keeps.
-           */
-          const region = callbacks.readLoopRegion();
-          if (region === null || region.endFraction <= region.startFraction) {
-            return null;
+        };
+        const onSliderKeyDown = (event: {
+          key: string;
+          shiftKey: boolean;
+          preventDefault: () => void;
+        }): void => {
+          if (!sliderEnabled) return;
+          const bar = view.beatsPerBar;
+          let target: number | null = null;
+          if (event.key === "ArrowLeft") {
+            target = currentBeat - (event.shiftKey ? bar : 1);
+          } else if (event.key === "ArrowRight") {
+            target = currentBeat + (event.shiftKey ? bar : 1);
+          } else if (event.key === "PageDown") {
+            target = currentBeat - 4;
+          } else if (event.key === "PageUp") {
+            target = currentBeat + 4;
+          } else if (event.key === "Home") {
+            target = 0;
+          } else if (event.key === "End") {
+            target = totalBeats;
           }
-          return (
+          if (target === null) return;
+          event.preventDefault();
+          seekToBeatNumber(target);
+        };
+        return (
+          <div
+            aria-label={
+              canSeekRun
+                ? "Seek within the chart"
+                : canPositionNextRun
+                  ? "Choose where the next Play starts"
+                  : "Seek (available while playing)"
+            }
+            aria-disabled={!sliderEnabled}
+            aria-valuemax={totalBeats}
+            aria-valuemin={0}
+            aria-valuenow={Math.round(currentBeat * 2) / 2}
+            aria-valuetext={
+              view.audioState === "ready" && pendingStart !== null
+                ? `Next run starts at beat ${String(pendingStart)}`
+                : `${view.positionLabel} (${view.positionExactLabel})`
+            }
+            class="studio-transport__sweep"
+            data-testid="transport-scrub"
+            id="studio-transport-scrub"
+            onClick={(event) => {
+              if (!sliderEnabled) return;
+              const bounds = event.currentTarget.getBoundingClientRect();
+              if (bounds.width <= 0) return;
+              if (canSeekRun) {
+                callbacks.onSeekFraction(
+                  (event.clientX - bounds.left) / bounds.width,
+                );
+                return;
+              }
+              /* Ready: the click positions the next run's start exactly. */
+              const fraction = (event.clientX - bounds.left) / bounds.width;
+              seekToBeatNumber(fraction * totalBeats);
+            }}
+            onKeyDown={onSliderKeyDown}
+            role="slider"
+            tabIndex={sliderEnabled ? 0 : -1}
+            title={
+              canSeekRun
+                ? "Click or use arrow keys to seek"
+                : canPositionNextRun
+                  ? "Click or use arrow keys to choose the next run's start"
+                  : "Seeks while playing"
+            }
+          >
+            {(() => {
+              /*
+               * V2R-18: the engaged loop's span, drawn under the sweep so the
+               * scrub line shows WHAT will repeat. Only the transport's own
+               * engaged loop draws — an armed-but-idle intent renders nothing,
+               * the same honesty split the toggle keeps. The overlay never
+               * intercepts the slider's pointer events (U4 §5.4).
+               */
+              const region = callbacks.readLoopRegion();
+              if (
+                region === null ||
+                region.endFraction <= region.startFraction
+              ) {
+                return null;
+              }
+              return (
+                <span
+                  aria-hidden="true"
+                  class="studio-transport__loop-region"
+                  data-testid="transport-loop-region"
+                  style={`inset-inline-start: ${String(region.startFraction * 100)}%; inline-size: ${String((region.endFraction - region.startFraction) * 100)}%; pointer-events: none;`}
+                />
+              );
+            })()}
             <span
-              aria-hidden="true"
-              class="studio-transport__loop-region"
-              data-testid="transport-loop-region"
-              style={`inset-inline-start: ${String(region.startFraction * 100)}%; inline-size: ${String((region.endFraction - region.startFraction) * 100)}%`}
+              class="studio-transport__sweep-fill"
+              style={
+                view.progressPercent === null
+                  ? undefined
+                  : `inline-size: ${String(view.progressPercent)}%`
+              }
+              data-active={String(view.progressPercent !== null)}
             />
-          );
-        })()}
-        <span
-          class="studio-transport__sweep-fill"
-          style={
-            view.progressPercent === null
-              ? undefined
-              : `inline-size: ${String(view.progressPercent)}%`
-          }
-          data-active={String(view.progressPercent !== null)}
-        />
-      </button>
+          </div>
+        );
+      })()}
 
       <div class="studio-transport__row">
         <div
@@ -466,7 +629,17 @@ export function TransportBar({
             busy={false}
             density="comfortable"
             describedBy={["studio-transport-status-detail"]}
-            disabled={!canPlay}
+            /* U4 §3.1 (l3a.12.2): Play is enabled in unavailable (the first
+             * trusted press performs the gesture-gated initialization),
+             * ready, and paused (resumes); disabled while starting, playing,
+             * stopping, or failed — those presses could only refuse. */
+            disabled={
+              !canPlay ||
+              view.audioState === "starting" ||
+              view.audioState === "playing" ||
+              view.audioState === "stopping" ||
+              view.audioState === "failed"
+            }
             id="studio-transport-play"
             iconId="play"
             invalid={false}
@@ -503,12 +676,42 @@ export function TransportBar({
             busy={false}
             density="comfortable"
             describedBy={["studio-transport-status-detail"]}
-            disabled={!running}
+            /* U4 (l3a.12.2): X1 admits stop from playing AND paused — the
+             * paused-state Stop returns the playhead to the run start. */
+            disabled={!(running || view.audioState === "paused")}
             id="studio-transport-stop"
             iconId="stop"
             invalid={false}
             onAction={() => {
               onStop();
+            }}
+            type="button"
+            variant="outline"
+          />
+          <IconButton
+            accessibleName="Restart from the beginning"
+            busy={false}
+            density="comfortable"
+            describedBy={["studio-transport-status-detail"]}
+            /* U4: restart is one intent — serialized Stop receipt, then
+             * Play from the run start. Enabled when a chart can play and a
+             * run exists or the transport is ready. */
+            disabled={
+              !canPlay ||
+              !(
+                running ||
+                view.audioState === "paused" ||
+                view.audioState === "ready" ||
+                view.audioState === "unavailable"
+              )
+            }
+            id="studio-transport-restart"
+            iconId="restart"
+            invalid={false}
+            onAction={(event) => {
+              callbacks.onRestart(
+                event.source === "pointer" ? "pointer" : "keyboard",
+              );
             }}
             type="button"
             variant="outline"
@@ -590,6 +793,28 @@ export function TransportBar({
             </span>
           </p>
         </div>
+
+        {(() => {
+          /*
+           * U4 §7 (l3a.12.2): the instrument/groove change boundary, told
+           * truthfully — transient while a run sounds, persistent while
+           * stopped. The controller clears it on the next accepted
+           * notification or replacement; the UI never invents it.
+           */
+          const notice = callbacks.readInstrumentBoundaryNotice();
+          if (notice === null) return null;
+          return (
+            <p
+              class="studio-transport__boundary"
+              data-testid="transport-boundary-notice"
+              role="status"
+            >
+              {notice === "next-unstarted-note"
+                ? "Takes effect at the next unstarted note"
+                : "Applies to the next Play."}
+            </p>
+          );
+        })()}
 
         <MeterStrip readFrame={callbacks.readMeterFrame} />
 

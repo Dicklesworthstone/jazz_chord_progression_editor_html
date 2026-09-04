@@ -194,19 +194,19 @@ export const U4_STATUS_PRESENTATION = /* @__PURE__ */ Object.freeze([
   {
     status: "unavailable",
     failureCode: null,
-    badgeLabel: "Audio unavailable",
+    badgeLabel: "Audio off",
     detailKind: "recovery-actionable",
   },
   {
     status: "ready",
     failureCode: null,
-    badgeLabel: "Ready",
+    badgeLabel: "Audio ready",
     detailKind: "bound-plan-or-empty",
   },
   {
     status: "starting",
     failureCode: null,
-    badgeLabel: "Starting…",
+    badgeLabel: "Starting playback",
     detailKind: "none",
   },
   {
@@ -230,13 +230,13 @@ export const U4_STATUS_PRESENTATION = /* @__PURE__ */ Object.freeze([
   {
     status: "stopping",
     failureCode: null,
-    badgeLabel: "Stopping…",
+    badgeLabel: "Stopping playback",
     detailKind: "none",
   },
   {
     status: "failed",
     failureCode: null,
-    badgeLabel: "Audio fault",
+    badgeLabel: "Audio failed",
     detailKind: "fault-code-and-recovery",
   },
 ] as const);
@@ -575,10 +575,9 @@ export const U4_OPERATION_COUNT = 24;
  */
 export const U4_ENABLEMENT_LAWS = /* @__PURE__ */ Object.freeze({
   "play-run": {
-    enabledStatuses: ["ready", "paused"],
+    enabledStatuses: ["unavailable", "ready", "paused"],
     needsCanPlay: true,
     disabledReasonByStatus: {
-      unavailable: "audio-unavailable",
       starting: "status-settling",
       playing: "not-running",
       stopping: "status-settling",
@@ -609,10 +608,9 @@ export const U4_ENABLEMENT_LAWS = /* @__PURE__ */ Object.freeze({
     },
   },
   "restart-run": {
-    enabledStatuses: ["ready", "playing", "paused"],
+    enabledStatuses: ["unavailable", "ready", "playing", "paused"],
     needsCanPlay: true,
     disabledReasonByStatus: {
-      unavailable: "audio-unavailable",
       starting: "status-settling",
       stopping: "status-settling",
       failed: "audio-unavailable",
@@ -812,10 +810,9 @@ export const U4_ENABLEMENT_LAWS = /* @__PURE__ */ Object.freeze({
     disabledReasonByStatus: {},
   },
   "section-play": {
-    enabledStatuses: ["ready", "playing", "paused"],
+    enabledStatuses: ["unavailable", "ready", "playing", "paused"],
     needsCanPlay: true,
     disabledReasonByStatus: {
-      unavailable: "audio-unavailable",
       starting: "status-settling",
       stopping: "status-settling",
       failed: "audio-unavailable",

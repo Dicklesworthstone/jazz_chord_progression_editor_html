@@ -733,6 +733,7 @@ export const UI_OWNED_ICON_IDS = Object.freeze([
   "play",
   "previous",
   "redo",
+  "restart",
   "split",
   "status",
   "stop",

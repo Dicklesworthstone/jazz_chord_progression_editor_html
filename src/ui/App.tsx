@@ -51,7 +51,11 @@ import {
   type StudioMidiExportPreviewResult,
   type StudioMidiExportService,
 } from "../application/runtime";
-import { GROOVE_STYLE_IDS, MAX_SHORT_TEXT_CODE_POINTS } from "../domain";
+import {
+  GROOVE_STYLE_IDS,
+  MAX_SHORT_TEXT_CODE_POINTS,
+  makeBeatPosition,
+} from "../domain";
 
 /** The reviewed tempo window the controller enforces (20–300 BPM). */
 const MIN_STUDIO_TEMPO_BPM = 20;
@@ -216,6 +220,20 @@ export type AppActions = Readonly<{
   ) => StudioControllerActionResult;
   pauseProgression: () => StudioControllerActionResult;
   stopProgression: () => StudioControllerActionResult;
+  resumeProgression: (
+    gesture: StudioAudioGesture,
+  ) => StudioControllerActionResult;
+  restartProgression: (
+    gesture: StudioAudioGesture,
+  ) => StudioControllerActionResult;
+  setCountInEnabled: (enabled: boolean) => StudioControllerActionResult;
+  setMetronomeEnabled: (enabled: boolean) => StudioControllerActionResult;
+  readClickToggles: StudioController["readClickToggles"];
+  stepChordOrSeek: StudioController["stepChordOrSeek"];
+  seekToBeat: StudioController["seekToBeat"];
+  playSectionRun: StudioController["playSectionRun"];
+  readInstrumentBoundaryNotice: StudioController["readInstrumentBoundaryNotice"];
+  readPendingRunStartBeats: StudioController["readPendingRunStartBeats"];
   /** Seek the active run to a fraction of the chart (jcpe-v2r-loop-seek-ukk6). */
   seekToFraction: (fraction: number) => StudioControllerActionResult;
   /** Toggle whole-chart looping; armed intent applies at the next Play. */
@@ -369,31 +387,31 @@ export type PlaybackPointer = Readonly<{
   chordId: string | null;
   chordLabel: string | null;
   progressPercent: number | null;
+  /** The chart's exact total beats as a decimal; null for an empty chart. */
+  totalBeats: number | null;
 }>;
 
 export function playbackPointer(
   snapshot: StudioViewModel,
   livePlayheadLabel: string | null = null,
 ): PlaybackPointer {
-  const none: PlaybackPointer = Object.freeze({
-    chordId: null,
-    chordLabel: null,
-    progressPercent: null,
-  });
-  const status = snapshot.transport.status;
   /*
-   * `starting` is the gap between the Play press and the transport's first
-   * `playing` notification; the run start beat is already committed, so the
-   * first sounding chord highlights immediately instead of blinking off.
+   * The chart's exact total is status-independent (U4's slider needs it in
+   * every state); the chord highlight and progress stay gated to an active
+   * run. `starting` is the gap between the Play press and the transport's
+   * first `playing` notification; the run start beat is already committed,
+   * so the first sounding chord highlights immediately instead of blinking
+   * off.
    */
-  if (status !== "playing" && status !== "starting") return none;
-  const label =
-    status === "playing" && livePlayheadLabel !== null
+  const status = snapshot.transport.status;
+  const active = status === "playing" || status === "starting";
+  const label = active
+    ? status === "playing" && livePlayheadLabel !== null
       ? livePlayheadLabel
-      : snapshot.transport.playheadBeatLabel;
-  const playhead = parseExactLabel(label);
-  if (playhead === null) return none;
-  const [pn, pd] = playhead;
+      : snapshot.transport.playheadBeatLabel
+    : null;
+  const playhead = label === null ? null : parseExactLabel(label);
+  const [pn, pd] = playhead ?? [0n, 1n];
   let chordId: string | null = null;
   let chordLabel: string | null = null;
   let endN = 0n;
@@ -414,18 +432,26 @@ export function playbackPointer(
           endD = eD;
         }
         /* start <= playhead < end, cross-multiplied. */
-        if (sn * pd <= pn * sd && pn * eD < eN * pd) {
+        if (
+          playhead !== null &&
+          sn * pd <= pn * sd &&
+          pn * eD < eN * pd
+        ) {
           chordId = event.id;
           chordLabel = event.symbolText;
         }
       }
     }
   }
+  const totalBeats = endN === 0n ? null : Number(endN) / Number(endD);
   const progressPercent =
-    endN === 0n
+    playhead === null || endN === 0n
       ? null
-      : Math.min(100, (Number(pn) / Number(pd)) / (Number(endN) / Number(endD)) * 100);
-  return Object.freeze({ chordId, chordLabel, progressPercent });
+      : Math.min(
+          100,
+          (Number(pn) / Number(pd)) / (Number(endN) / Number(endD)) * 100,
+        );
+  return Object.freeze({ chordId, chordLabel, progressPercent, totalBeats });
 }
 
 function countLabel(count: number, singular: string, plural = `${singular}s`): string {
@@ -1638,6 +1664,17 @@ function viewFromSnapshot(
       canStepNext: chordCount > 0,
       canTempoDown: snapshot.tempoBpm > MIN_STUDIO_TEMPO_BPM,
       canTempoUp: snapshot.tempoBpm < MAX_STUDIO_TEMPO_BPM,
+      /*
+       * U4 slider numerics: the committed playhead decimal (never the sweep)
+       * from the accepted-state pair, the chart total from the pointer's
+       * exact sum, and the document meter for the bar-step key law.
+       */
+      playheadBeats: (() => {
+        const parsed = parseExactLabel(snapshot.transport.playheadBeatLabel);
+        return parsed === null ? null : Number(parsed[0]) / Number(parsed[1]);
+      })(),
+      totalBeats: pointer.totalBeats,
+      beatsPerBar: snapshot.transport.meterBeatsPerBar,
     }),
     playback: Object.freeze({
       tempoBpm: snapshot.tempoBpm,
@@ -2445,50 +2482,30 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
         const tag = target.tagName;
         if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
         if (target.isContentEditable) return;
-        if (target.closest('button, a[href], [role="button"]')) return;
+        if (
+          target.closest(
+            'button, a[href], [role="button"], [role="slider"]',
+          )
+        ) {
+          return;
+        }
       }
       event.preventDefault();
       if (event.shiftKey) {
         /*
-         * Shift+Space plays the selected section (REBUILD_PLAN 6.8) through
-         * the V2R-18 section loop: arm the section that owns the selection
-         * (or the first section), then start playback if it is not already
-         * running. An armed section presses through to a live run via the
-         * same serialized re-bind the Loop buttons use.
+         * Shift+Space plays the selection-owning (or first) section through
+         * ONE controller intent (U4's single-intent law, l3a.12.2): the
+         * section is resolved from the live bookmarks inside the
+         * application, and the loop arm + play are serialized there. An
+         * armed section presses through to a live run via the same
+         * serialized set-loop re-bind the Loop buttons use.
          */
         if (chordCountForKeys === 0) return;
-        const snapshotNow = actions.getSnapshot();
-        const selectedEventId =
-          snapshotNow.bookmarks.selectedEventIds[0] ?? null;
-        let selectedSectionId: string | null = null;
-        if (selectedEventId !== null) {
-          outer: for (const section of snapshotNow.sections) {
-            for (const measure of section.measures) {
-              for (const chordEvent of measure.events) {
-                if (chordEvent.id === selectedEventId) {
-                  selectedSectionId = chordEvent.sectionId;
-                  break outer;
-                }
-              }
-            }
-          }
-        }
-        const sectionId =
-          selectedSectionId ?? snapshotNow.sections[0]?.id ?? null;
-        if (sectionId === null) return;
-        const loopNow = actions.readLoopView();
-        if (loopNow.sectionId !== sectionId) {
-          recordEditResult(actions.armSectionLoop(sectionId), {
-            kind: "delete",
-          });
-          bumpLoopIntent();
-        }
-        if (transportStatus !== "playing") {
-          recordEditResult(
-            actions.playProgression(nextAudioGesture("trusted-keyboard")),
-            { kind: "delete" },
-          );
-        }
+        recordEditResult(
+          actions.playSectionRun(null, nextAudioGesture("trusted-keyboard")),
+          { kind: "delete" },
+        );
+        bumpLoopIntent();
         return;
       }
       if (transportStatus === "playing") {
@@ -2595,6 +2612,16 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
           recordEditResult(actions.stopProgression(), { kind: "delete" });
         },
         onStepChord: (direction) => {
+          /*
+           * U4 context law (l3a.12.2): with an active run (playing/paused)
+           * the step buttons seek the playhead through the controller;
+           * without one they step the selection exactly as shipped.
+           */
+          const stepped = actions.stepChordOrSeek(direction);
+          if (stepped !== "selection-step") {
+            recordEditResult(stepped);
+            return;
+          }
           /* Chart order from the live snapshot; selection previews (jcpe-gnyy). */
           const live = actions.getSnapshot();
           const ordered = live.sections.flatMap((section) =>
@@ -2675,6 +2702,32 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
           setMuteTick((tick) => tick + 1);
         },
         readMixState: actions.readMixView,
+        onRestart: (source) => {
+          /* U4 Restart: one intent — the serialized Stop receipt then Play
+           * from the run start happen inside the controller. */
+          recordEditResult(
+            actions.restartProgression(
+              nextAudioGesture(
+                source === "pointer" ? "trusted-pointer" : "trusted-keyboard",
+              ),
+            ),
+            { kind: "delete" },
+          );
+        },
+        onSeekBeat: (numerator, denominator) => {
+          const beat = makeBeatPosition({ numerator, denominator });
+          if (!beat.ok) return;
+          recordEditResult(actions.seekToBeat(beat.value));
+        },
+        onCountInToggle: (enabled) => {
+          recordEditResult(actions.setCountInEnabled(enabled));
+        },
+        onMetronomeToggle: (enabled) => {
+          recordEditResult(actions.setMetronomeEnabled(enabled));
+        },
+        readClickToggles: actions.readClickToggles,
+        readInstrumentBoundaryNotice: actions.readInstrumentBoundaryNotice,
+        readPendingRunStartBeats: actions.readPendingRunStartBeats,
       }}
       callbacks={{
         onCopyShareLink: () => {
@@ -3846,6 +3899,16 @@ export function StudioRoot({
         splitEventDuration: controller.splitEventDuration,
         splitSection: controller.splitSection,
         stopProgression: controller.stopProgression,
+        resumeProgression: controller.resumeProgression,
+        restartProgression: controller.restartProgression,
+        setCountInEnabled: controller.setCountInEnabled,
+        setMetronomeEnabled: controller.setMetronomeEnabled,
+        readClickToggles: controller.readClickToggles,
+        stepChordOrSeek: controller.stepChordOrSeek,
+        seekToBeat: controller.seekToBeat,
+        playSectionRun: controller.playSectionRun,
+        readInstrumentBoundaryNotice: controller.readInstrumentBoundaryNotice,
+        readPendingRunStartBeats: controller.readPendingRunStartBeats,
         seekToFraction: controller.seekToFraction,
         toggleLoop: controller.toggleLoop,
         armSectionLoop: controller.armSectionLoop,

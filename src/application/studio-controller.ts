@@ -255,6 +255,13 @@ export type StudioControllerAction =
   | "preview-chord"
   | "pause-progression"
   | "stop-progression"
+  | "resume-progression"
+  | "restart-progression"
+  | "set-count-in"
+  | "set-metronome"
+  | "seek-to-beat"
+  | "step-chord-or-seek"
+  | "play-section-run"
   | "seek-progression"
   | "toggle-loop"
   | "preview-master-volume"
@@ -708,6 +715,81 @@ export interface StudioController {
   ) => StudioControllerActionResult;
   readonly pauseProgression: () => StudioControllerActionResult;
   readonly stopProgression: () => StudioControllerActionResult;
+  /**
+   * Resume a paused run, or recover an interrupted run with a trusted
+   * gesture (U4; X1 `resume` law). From `paused` the gesture may be null;
+   * from `interrupted` X1 refuses without a valid receipt. Play delegates
+   * here whenever the accepted status is not `ready`.
+   */
+  readonly resumeProgression: (
+    gesture: StudioAudioGesture,
+  ) => StudioControllerActionResult;
+  /**
+   * U4 Restart: one intent that settles a serialized Stop (awaiting the
+   * no-future-attack receipt) and then plays from the run's startBeat.
+   * From `ready` a restart IS the next Play. The pair never paints a stale
+   * frame: the A0 expectation window moves stopping → starting while any
+   * intermediate `ready` notification is settled truth beneath it.
+   */
+  readonly restartProgression: (
+    gesture: StudioAudioGesture,
+  ) => StudioControllerActionResult;
+  /**
+   * Toggle the transport-session count-in or metronome (U4). The rendered
+   * flag updates only after the X1 receipt; a refusal leaves the prior
+   * truth. These are ephemeral transport state — no history, no document.
+   */
+  readonly setCountInEnabled: (
+    enabled: boolean,
+  ) => StudioControllerActionResult;
+  readonly setMetronomeEnabled: (
+    enabled: boolean,
+  ) => StudioControllerActionResult;
+  /** Display-only read of the settled click toggles (receipt-truth only). */
+  readonly readClickToggles: () => Readonly<{
+    countInEnabled: boolean;
+    metronomeEnabled: boolean;
+  }>;
+  /**
+   * U4 previous/next context law: with an active run (playing/paused) seek
+   * the playhead to the adjacent event boundary; without one, step the
+   * selection exactly as shipped. Returns `selection-step` when the caller
+   * must perform the selection step itself.
+   */
+  readonly stepChordOrSeek: (
+    direction: "previous" | "next",
+  ) => StudioControllerActionResult | "selection-step";
+  /**
+   * U4 exact seek: playing/paused dispatches the X1 `seek` at the exact
+   * beat; ready with a playable chart positions the next run's start as
+   * presentation intent (consumed by the next Play, cleared by Stop,
+   * replacement, or any accepted notification). Other statuses refuse with
+   * the named reason.
+   */
+  readonly seekToBeat: (
+    beat: BeatPosition,
+  ) => StudioControllerActionResult;
+  /**
+   * U4 Shift+Space: arm the section loop (selection-owning or first section)
+   * and play — one intent, one expectation window; the arm and the play are
+   * serialized inside the application, never composed by the UI.
+   */
+  readonly playSectionRun: (
+    sectionId: string | null,
+    gesture: StudioAudioGesture,
+  ) => StudioControllerActionResult;
+  /**
+   * Display-only instrument/groove boundary notice (U4 §7): the transient
+   * `next-unstarted-note` after a mid-run change, or the persistent
+   * `next-play` hint while stopped. Cleared by the next accepted
+   * notification or by replacement.
+   */
+  readonly readInstrumentBoundaryNotice: () =>
+    | "next-unstarted-note"
+    | "next-play"
+    | null;
+  /** Display-only read of the ready-state scrub position, when set. */
+  readonly readPendingRunStartBeats: () => number | null;
   /**
    * Move an active run's playhead to a fraction of the chart
    * (jcpe-v2r-loop-seek-ukk6). Only playing/paused runs seek — the X1
@@ -2026,7 +2108,20 @@ function makeStudioComposition(
       runDocumentCommand({ command, dependencies, state: current }),
     );
     /* jcpe-7ftl: a committed groove reaches a live run immediately. */
-    if (result.ok) rideLivePerformance(styleId as PerformanceStyleId);
+    if (result.ok) {
+      const run = activeRun;
+      const status = state.transport.status;
+      const liveRide =
+        audioPort !== null &&
+        audioPort.isInitialized() &&
+        run !== null &&
+        (status === "playing" || status === "paused");
+      if (!liveRide) {
+        /* U4 §7: no live run — the change applies to the next Play. */
+        instrumentBoundaryNotice = "next-play";
+      }
+      rideLivePerformance(styleId as PerformanceStyleId);
+    }
     return result;
   };
 
@@ -2157,7 +2252,20 @@ function makeStudioComposition(
       runDocumentCommand({ command, dependencies, state: current }),
     );
     /* jcpe-pd7g: a committed instrument reaches a live run immediately. */
-    if (result.ok) rideLiveInstrument(made.value);
+    if (result.ok) {
+      const run = activeRun;
+      const status = state.transport.status;
+      const liveRide =
+        audioPort !== null &&
+        audioPort.isInitialized() &&
+        run !== null &&
+        (status === "playing" || status === "paused");
+      if (!liveRide) {
+        /* U4 §7: no live run — the change applies to the next Play. */
+        instrumentBoundaryNotice = "next-play";
+      }
+      rideLiveInstrument(made.value);
+    }
     return result;
   };
 
@@ -4495,16 +4603,9 @@ function makeStudioComposition(
    * chart edit) that identity is superseded, A0's acceptance law rightly
    * drops the notification as stale, and the receipt was the only settlement
    * that could ever fire — before this fix a successful Stop after a mid-play
-   * library load left "Stopping playback" on screen forever. Receipts
-   * therefore settle here too, with the receipt's own echoed post-command
-   * state and the stable plan-superseded cause. Nothing is invented: status
-   * comes from the transport's echo, and when the genuine notification WAS
-   * accepted the slot is no longer optimistic, so this settlement lands as
-   * ignored-stale and the notification wins, exactly as A0 pins.
-   *
-   * The identity travels from dispatch time so a settlement that outlives a
-   * further document replacement lands as ignored-stale instead of matching
-   * fresh state.
+   * library load left "Stopping playback" on screen forever. Receipts settle
+   * through the identical intent with the stable `transport.plan_superseded`
+   * cause minted by the controller (A0 §13.1).
    */
   const settleTransportOutcome = (
     action: StudioControllerAction,
@@ -4522,7 +4623,7 @@ function makeStudioComposition(
             failureCode: TRANSPORT_PLAN_SUPERSEDED_FAILURE_CODE,
             status: SETTLED_TRANSPORT_STATUS[outcome.stateAfter],
           };
-    apply(action, (current) =>
+    const applied = apply(action, (current) =>
       reduceEphemeralIntent({
         state: current,
         intent: {
@@ -4535,6 +4636,20 @@ function makeStudioComposition(
         },
       }),
     );
+    /*
+     * U4 §7: the boundary notice also clears when a post-change command's
+     * settlement is ACCEPTED — the jcpe-my0j law means a superseded-identity
+     * notification never lands, and the receipt settlement is then the only
+     * truthful acknowledgement that the new epoch owns the transport.
+     */
+    if (
+      instrumentBoundaryNotice !== null &&
+      applied.ok &&
+      applied.outcome === "ephemeral-updated"
+    ) {
+      instrumentBoundaryNotice = null;
+      notify();
+    }
   };
 
   /**
@@ -4603,6 +4718,35 @@ function makeStudioComposition(
   let renderAheadRunToken = 0;
   let resumeRenderAheadAfterPreview: (() => void) | null = null;
   let previewOrdinal = 0;
+
+  /*
+   * U4 transport-session state (l3a.12.2). The click toggles are X1
+   * ephemeral transport state: never document data, never history. They
+   * update ONLY from settled set-count-in/set-metronome receipts, so the UI
+   * never renders click optimism; a refusal leaves the prior truth standing.
+   */
+  let clickToggles: Readonly<{
+    countInEnabled: boolean;
+    metronomeEnabled: boolean;
+  }> = Object.freeze({
+    countInEnabled: false,
+    metronomeEnabled: false,
+  });
+  /*
+   * The instrument/groove boundary notice (U4 §7): set from settled
+   * set-instrument/set-performance receipts, cleared by the next accepted
+   * transport notification or by document replacement. Pure presentation.
+   */
+  let instrumentBoundaryNotice: "next-unstarted-note" | "next-play" | null =
+    null;
+  /*
+   * U4 ready-state scrub: an exact beat chosen while no run exists. The next
+   * Play consumes it as its startBeat; any accepted notification, Stop, or
+   * replacement clears it. It never enters A0 state — X1 admits `seek` only
+   * for playing/paused runs, so ready-state positioning is presentation
+   * intent applied at the next play dispatch, nothing more.
+   */
+  let pendingRunStartBeat: BeatPosition | null = null;
   let previewInitialization: ReturnType<StudioAudioPort["initialize"]> | null =
     null;
 
@@ -4983,7 +5127,14 @@ function makeStudioComposition(
         documentId: run.documentId,
         planRevision: state.revision,
       }),
-    );
+    ).then((outcome) => {
+      /* U4 boundary truth: a groove change takes effect at the next
+       * unstarted event (playing) or the next epoch (paused) — say so. */
+      if (outcome.termination !== "receipt") return;
+      instrumentBoundaryNotice =
+        status === "playing" ? "next-unstarted-note" : "next-play";
+      notify();
+    });
     activeRun = Object.freeze({ ...run, planRevision: state.revision });
   };
 
@@ -5091,6 +5242,11 @@ function makeStudioComposition(
       ) {
         return;
       }
+      /* U4 boundary truth: the swap lands at the next unstarted note while
+       * playing, or at the next epoch while paused — say so. */
+      instrumentBoundaryNotice =
+        status === "playing" ? "next-unstarted-note" : "next-play";
+      notify();
       resumeRenderAheadAfterPreview = (): void => {
         const pending = renderAheadPromise;
         void (async () => {
@@ -5181,6 +5337,19 @@ function makeStudioComposition(
         "u1.playback_unavailable",
         "This build has no audio output wired.",
       );
+    }
+    /*
+     * U4 state-machine truth (l3a.12.2): X1 admits `play` only from `ready`.
+     * From `paused` the Play gesture is a resume — the A0 projection folds
+     * X1 `interrupted` into `paused` with the failure code, and the resume
+     * path passes the trusted gesture through so interruption recovery stays
+     * lawful. Before this branch the studio submitted `play` here and X1
+     * refused `transport.state_invalid`, leaving a run the user could not
+     * resume.
+     */
+    const acceptedStatus = state.transport.status;
+    if (acceptedStatus === "paused") {
+      return resumeProgression(gesture);
     }
     /*
      * jcpe-v2r-loop-seek-ukk6: with looping armed the plan compiles WITH the
@@ -5301,8 +5470,12 @@ function makeStudioComposition(
         )} simultaneous notes.`,
       );
     }
+    /* U4 ready-state scrub: an exact chosen start position rides this Play
+     * and is consumed by it (presentation intent, never A0 state). */
+    const pendingStart = pendingRunStartBeat;
+    pendingRunStartBeat = null;
     const commandRequestId = nextTransportRequestId();
-    const startBeat = state.transport.startBeat;
+    const startBeat = pendingStart ?? state.transport.startBeat;
     const expectation = expectTransport(
       "play-progression",
       commandRequestId,
@@ -5469,7 +5642,7 @@ function makeStudioComposition(
           );
           return;
         }
-        const playOutcome = await port.play(playRequestId, binding, startBeat);
+        const playOutcome = await port.play(playRequestId, binding, startBeat, clickToggles.countInEnabled);
         settleTransportOutcome(
           "play-progression",
           binding.documentId,
@@ -5541,7 +5714,7 @@ function makeStudioComposition(
         );
         return;
       }
-      const playOutcome = await port.play(playRequestId, binding, startBeat);
+      const playOutcome = await port.play(playRequestId, binding, startBeat, clickToggles.countInEnabled);
       settleTransportOutcome(
         "play-progression",
         binding.documentId,
@@ -5614,6 +5787,8 @@ function makeStudioComposition(
       "stopping",
       state.transport.startBeat,
     );
+    pendingRunStartBeat = null;
+    instrumentBoundaryNotice = null;
     if (!expectation.ok) return expectation;
     const documentId = state.document.id;
     const planRevision = state.revision;
@@ -5626,6 +5801,388 @@ function makeStudioComposition(
       );
     });
     return expectation;
+  };
+
+  /**
+   * U4 resume (l3a.12.2): X1 admits `play` only from `ready`; a paused or
+   * interrupted run resumes through the dedicated command. The gesture
+   * receipt is always real here (Play/Space/Resume affordance), satisfying
+   * the interrupted-recovery gesture law; X1 ignores it from paused.
+   */
+  const resumeProgression = (
+    gesture: StudioAudioGesture,
+  ): StudioControllerActionResult => {
+    if (audioPort === null) {
+      return editRefusal(
+        "resume-progression",
+        "u1.playback_unavailable",
+        "This build has no audio output wired.",
+      );
+    }
+    const status = state.transport.status;
+    const failureCode = state.transport.failureCode;
+    if (status !== "paused" && status !== "playing") {
+      return editRefusal(
+        "resume-progression",
+        "u1.playback_refused",
+        "There is no paused or interrupted run to resume.",
+      );
+    }
+    const commandRequestId = nextTransportRequestId();
+    const expectation = expectTransport(
+      "resume-progression",
+      commandRequestId,
+      "starting",
+      state.transport.playhead,
+    );
+    if (!expectation.ok) return expectation;
+    const documentId = state.document.id;
+    const planRevision = state.revision;
+    void audioPort
+      .resume(
+        commandRequestId,
+        failureCode === "transport.interrupted" ? gesture : null,
+      )
+      .then((outcome) => {
+        settleTransportOutcome(
+          "resume-progression",
+          documentId,
+          planRevision,
+          outcome,
+        );
+      });
+    return expectation;
+  };
+
+  /**
+   * U4 Restart (l3a.12.2): one intent, one expectation window. Playing or
+   * paused: submit Stop, await its receipt (the X1 no-future-attack
+   * postcondition), then begin the new run from the run's startBeat. Ready:
+   * a restart IS the next Play. A refused or faulted Stop settles truthfully
+   * and no Play follows — Restart never begins over unretired voices.
+   */
+  const restartProgression = (
+    gesture: StudioAudioGesture,
+  ): StudioControllerActionResult => {
+    if (audioPort === null) {
+      return editRefusal(
+        "restart-progression",
+        "u1.playback_unavailable",
+        "This build has no audio output wired.",
+      );
+    }
+    pendingRunStartBeat = null;
+    instrumentBoundaryNotice = null;
+    const status = state.transport.status;
+    if (status === "ready" || status === "unavailable" || status === "failed") {
+      return playProgression(gesture);
+    }
+    if (status !== "playing" && status !== "paused") {
+      return editRefusal(
+        "restart-progression",
+        "u1.playback_refused",
+        "The transport is settling; Restart is available again in a moment.",
+      );
+    }
+    previewOrdinal += 1;
+    renderAheadRunToken += 1;
+    resumeRenderAheadAfterPreview = null;
+    const commandRequestId = nextTransportRequestId();
+    const expectation = expectTransport(
+      "restart-progression",
+      commandRequestId,
+      "stopping",
+      state.transport.startBeat,
+    );
+    if (!expectation.ok) return expectation;
+    const documentId = state.document.id;
+    const planRevision = state.revision;
+    void audioPort
+      .stop(commandRequestId)
+      .then((stopOutcome) => {
+        settleTransportOutcome(
+          "restart-progression",
+          documentId,
+          planRevision,
+          stopOutcome,
+        );
+        if (stopOutcome.termination !== "receipt") return;
+        if (
+          stopOutcome.stateAfter !== "ready" ||
+          !stopOutcome.noFutureAttackPostcondition
+        ) {
+          return;
+        }
+        /*
+         * The accepted Stop notification has installed the run start as the
+         * transport view's startBeat, so the delegated Play begins there.
+         */
+        playProgression(gesture);
+      });
+    return expectation;
+  };
+
+  /**
+   * U4 click toggles (l3a.12.2): ephemeral transport-session state. The
+   * session flag updates only from the settled receipt; a refusal leaves the
+   * prior truth and reports the refusal. No expectation window exists — X1
+   * publishes no status change for these commands — so the re-render comes
+   * from the receipt path's explicit notify.
+   */
+  const setClickToggle = (
+    label: "count-in" | "metronome",
+    enabled: boolean,
+    submitToggle: (
+      port: StudioAudioPort,
+      commandRequestId: number,
+    ) => Promise<TransportCommandOutcome>,
+  ): StudioControllerActionResult => {
+    if (audioPort === null) {
+      return editRefusal(
+        `set-${label}`,
+        "u1.playback_unavailable",
+        "This build has no audio output wired.",
+      );
+    }
+    const port = audioPort;
+    const commandRequestId = nextTransportRequestId();
+    void submitToggle(port, commandRequestId).then((outcome) => {
+      if (outcome.termination !== "receipt") return;
+      clickToggles = Object.freeze({
+        countInEnabled:
+          label === "count-in" ? enabled : clickToggles.countInEnabled,
+        metronomeEnabled:
+          label === "metronome" ? enabled : clickToggles.metronomeEnabled,
+      });
+      notify();
+    });
+    return apply(`set-${label}`, (current) =>
+      Object.freeze({
+        ok: true as const,
+        state: current,
+        outcome: "ephemeral-updated" as const,
+        effects: Object.freeze([]),
+        counters: createWorkCounters(),
+      }),
+    );
+  };
+
+  const setCountInEnabled = (
+    enabled: boolean,
+  ): StudioControllerActionResult =>
+    setClickToggle("count-in", enabled, (port, commandRequestId) =>
+      port.setCountIn(commandRequestId, enabled),
+    );
+
+  const setMetronomeEnabled = (
+    enabled: boolean,
+  ): StudioControllerActionResult =>
+    setClickToggle("metronome", enabled, (port, commandRequestId) =>
+      port.setMetronome(commandRequestId, enabled),
+    );
+
+  const readClickToggles = (): Readonly<{
+    countInEnabled: boolean;
+    metronomeEnabled: boolean;
+  }> => clickToggles;
+
+  const readInstrumentBoundaryNotice = ():
+    | "next-unstarted-note"
+    | "next-play"
+    | null => instrumentBoundaryNotice;
+
+  const readPendingRunStartBeats = (): number | null =>
+    pendingRunStartBeat === null
+      ? null
+      : pendingRunStartBeat.numerator / pendingRunStartBeat.denominator;
+
+  /**
+   * U4 exact seek (l3a.12.2). Playing/paused dispatches the X1 seek; ready
+   * with a playable chart records the next run's start as presentation
+   * intent; everything else refuses with the named reason. No optimistic
+   * expectation in any path — the accepted notification moves the playhead.
+   */
+  const seekToBeat = (beat: BeatPosition): StudioControllerActionResult => {
+    if (audioPort === null) {
+      return editRefusal(
+        "seek-to-beat",
+        "u1.playback_unavailable",
+        "This build has no audio output wired.",
+      );
+    }
+    const status = state.transport.status;
+    const run = activeRun;
+    if (run !== null && (status === "playing" || status === "paused")) {
+      const clamped =
+        compareBeatValues(beat, run.totalBeats) > 0 ? run.totalBeats : beat;
+      const port = audioPort;
+      void port.seek(nextTransportRequestId(), clamped);
+      return apply("seek-to-beat", (current) =>
+        Object.freeze({
+          ok: true as const,
+          state: current,
+          outcome: "ephemeral-updated" as const,
+          effects: Object.freeze([]),
+          counters: createWorkCounters(),
+        }),
+      );
+    }
+    if (status === "ready") {
+      const hasChord = state.document.sections.some((section) =>
+        section.measures.some((measure) => measure.events.length > 0),
+      );
+      if (!hasChord) {
+        return editRefusal(
+          "seek-to-beat",
+          "u1.playback_requires_a_chord",
+          "Write at least one chord before seeking.",
+        );
+      }
+      pendingRunStartBeat = beat;
+      notify();
+      return apply("seek-to-beat", (current) =>
+        Object.freeze({
+          ok: true as const,
+          state: current,
+          outcome: "ephemeral-updated" as const,
+          effects: Object.freeze([]),
+          counters: createWorkCounters(),
+        }),
+      );
+    }
+    return editRefusal(
+      "seek-to-beat",
+      "u1.playback_refused",
+      "The transport is settling; seek is available again in a moment.",
+    );
+  };
+
+  /**
+   * U4 previous/next context law (l3a.12.2). A run exists: seek the playhead
+   * to the adjacent event boundary (clamped at plan bounds, never wrapping).
+   * No run: report `selection-step` so the caller performs the shipped
+   * selection-plus-preview step unchanged.
+   */
+  const stepChordOrSeek = (
+    direction: "previous" | "next",
+  ): StudioControllerActionResult | "selection-step" => {
+    const run = activeRun;
+    const status = state.transport.status;
+    if (
+      audioPort === null ||
+      run === null ||
+      (status !== "playing" && status !== "paused")
+    ) {
+      return "selection-step";
+    }
+    const compiled = compileStudioPlaybackPlan(state.document);
+    if (!compiled.ok) return "selection-step";
+    const playhead = state.transport.playhead;
+    const starts = compiled.plan.events
+      .map((event) => event.startBeat)
+      .sort((left, right) => compareBeatValues(left, right));
+    if (starts.length === 0) return "selection-step";
+    const zero = starts[0];
+    const last = starts[starts.length - 1];
+    let target: BeatPosition | null = null;
+    if (direction === "next") {
+      for (const start of starts) {
+        if (compareBeatValues(start, playhead) > 0) {
+          target = start;
+          break;
+        }
+      }
+      target ??= last ?? null;
+    } else {
+      const currentStart =
+        starts.find(
+          (start) => compareBeatValues(start, playhead) > 0,
+        ) ?? null;
+      const before = starts.filter(
+        (start) => compareBeatValues(start, playhead) <= 0,
+      );
+      const current = before[before.length - 1] ?? null;
+      /*
+       * Past the current event's first half-beat, Previous returns to the
+       * current event's start; earlier, it goes to the previous event.
+       */
+      const halfBeat = makeBeatPosition({ numerator: 1, denominator: 2 });
+      const boundaryAfterCurrent =
+        current !== null && halfBeat.ok
+          ? addBeatValues(current, halfBeat.value)
+          : null;
+      const pastFirstHalf =
+        current !== null &&
+        boundaryAfterCurrent !== null &&
+        boundaryAfterCurrent.ok &&
+        compareBeatValues(playhead, boundaryAfterCurrent.value) > 0;
+      if (pastFirstHalf) {
+        target = current;
+      } else {
+        const earlier = starts.filter(
+          (start) =>
+            current !== null && compareBeatValues(start, current) < 0,
+        );
+        target = earlier[earlier.length - 1] ?? zero ?? null;
+      }
+      if (currentStart !== null && target === null) target = zero ?? null;
+    }
+    if (target === null) return "selection-step";
+    return seekToBeat(target);
+  };
+
+  /**
+   * U4 Shift+Space (l3a.12.2): section play as ONE intent. The loop arm and
+   * the play are serialized inside the application; the UI never composes
+   * two intents for one gesture.
+   */
+  const playSectionRun = (
+    sectionId: string | null,
+    gesture: StudioAudioGesture,
+  ): StudioControllerActionResult => {
+    /*
+     * The selection-owning section, else the first: resolved here in the
+     * application, never by pointer geometry in the UI.
+     */
+    let resolvedSectionId = sectionId;
+    if (resolvedSectionId === null) {
+      const selection = state.bookmarks.selection;
+      const selectedEventId =
+        selection.kind === "events" ? selection.eventIds[0] : null;
+      if (selectedEventId !== null) {
+        outer: for (const section of state.document.sections) {
+          for (const measure of section.measures) {
+            for (const chordEvent of measure.events) {
+              if (chordEvent.id === selectedEventId) {
+                resolvedSectionId = section.id;
+                break outer;
+              }
+            }
+          }
+        }
+      }
+    }
+    const targetSection =
+      resolvedSectionId ?? state.document.sections[0]?.id ?? null;
+    if (targetSection === null) {
+      return editRefusal(
+        "play-section-run",
+        "u1.playback_requires_a_chord",
+        "Write at least one chord before playing a section.",
+      );
+    }
+    const armed = armSectionLoop(targetSection);
+    if (!armed.ok) return armed;
+    /*
+     * Already playing: the arm's serialized set-loop re-bind is the whole
+     * effect — a second Play would refuse (X1 admits play only from ready)
+     * and would dishonestly suggest the run restarted. Paused resumes
+     * through the Play delegation's resume branch; ready plays.
+     */
+    if (state.transport.status === "playing") {
+      return armed;
+    }
+    return playProgression(gesture);
   };
 
   /**
@@ -6113,6 +6670,7 @@ function makeStudioComposition(
    */
   if (audioPort !== null) {
     audioPort.subscribe((notification) => {
+      const sequenceBefore = state.transport.notificationSequence;
       apply("transport-notification", (current) =>
         acceptTransportNotification({
           state: current,
@@ -6129,6 +6687,15 @@ function makeStudioComposition(
           }),
         }),
       );
+      /* U4 §7: the boundary notice lives until the next ACCEPTED
+       * notification — the acceptance law itself defines staleness. */
+      if (
+        instrumentBoundaryNotice !== null &&
+        state.transport.notificationSequence !== sequenceBefore
+      ) {
+        instrumentBoundaryNotice = null;
+        notify();
+      }
     });
   }
 
@@ -6585,6 +7152,16 @@ function makeStudioComposition(
     splitEventDuration,
     splitSection,
     stopProgression,
+    resumeProgression,
+    restartProgression,
+    setCountInEnabled,
+    setMetronomeEnabled,
+    readClickToggles,
+    stepChordOrSeek,
+    seekToBeat,
+    playSectionRun,
+    readPendingRunStartBeats,
+    readInstrumentBoundaryNotice,
     seekToFraction,
     toggleLoop,
     armSectionLoop,

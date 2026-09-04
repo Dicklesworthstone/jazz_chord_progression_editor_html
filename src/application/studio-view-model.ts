@@ -2,6 +2,7 @@ import {
   INSTRUMENT_IDS,
   MIDI_PPQ,
   measureCapacity,
+  type BeatPosition,
   type BeatValue,
   type InstrumentId,
   type KeyContext,
@@ -123,6 +124,10 @@ export type StudioTransportViewModel = Readonly<{
   startBeatLabel: string;
   failureCode: string | null;
   failureDetail: string | null;
+  /** U4: exact committed playhead/start and meter for the slider law. */
+  playheadValue: BeatPosition;
+  startBeatValue: BeatPosition;
+  meterBeatsPerBar: number;
 }>;
 
 export type StudioPanelViewModel = Readonly<{
@@ -350,7 +355,15 @@ function instrumentLabel(instrumentId: InstrumentId): string {
   }
 }
 
-function transportStatusLabel(status: ApplicationTransportStatus): string {
+function transportStatusLabel(
+  status: ApplicationTransportStatus,
+  failureCode: string | null = null,
+): string {
+  /* U4 (l3a.12.2): X1 folds `interrupted` into `paused` + the stable code;
+   * the badge presents it distinctly so the trusted-gesture resume shows. */
+  if (status === "paused" && failureCode === "transport.interrupted") {
+    return "Interrupted";
+  }
   switch (status) {
     /*
      * One status covers "not started yet" (every load before the first Play,
@@ -727,7 +740,19 @@ export function selectStudioViewModel(
     quickEntry: quickEntryView(state),
     transport: Object.freeze({
       status: state.transport.status,
-      statusLabel: transportStatusLabel(state.transport.status),
+      statusLabel: transportStatusLabel(
+        state.transport.status,
+        state.transport.failureCode,
+      ),
+      /**
+       * U4 (l3a.12.2) slider numerics: the committed playhead as an exact
+       * pair plus the document meter for the bar-step key law. These are
+       * the same accepted-state values the labels format — never the
+       * display sweep.
+       */
+      playheadValue: state.transport.playhead,
+      startBeatValue: state.transport.startBeat,
+      meterBeatsPerBar: state.document.meter.beatsPerBar,
       isAvailable: state.transport.status !== "unavailable",
       playheadBeatLabel: formatExactBeatLabel(state.transport.playhead),
       startBeatLabel: formatExactBeatLabel(state.transport.startBeat),

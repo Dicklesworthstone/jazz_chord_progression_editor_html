@@ -90,6 +90,7 @@ export function StudioIcon({ name }: StudioIconProps) {
     );
   }
 
+
   if (name === "undo") {
     return (
       <svg class="studio-icon" viewBox="0 0 24 24" aria-hidden="true">

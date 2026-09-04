@@ -84,6 +84,12 @@ export type StudioAudioPort = Readonly<{
     commandRequestId: number,
     binding: TransportPlanBinding,
     startBeat: BeatPosition,
+    /**
+     * Whether the run prepends the one-bar count-in. The value is the
+     * transport-session count-in toggle the user last settled, never an
+     * optimistic read (U4 truthful-click law).
+     */
+    countIn: boolean,
   ) => Promise<TransportCommandOutcome>;
   pause: (commandRequestId: number) => Promise<TransportCommandOutcome>;
   resume: (
@@ -139,6 +145,24 @@ export type StudioAudioPort = Readonly<{
   setInstrument: (
     commandRequestId: number,
     instrumentId: InstrumentId,
+  ) => Promise<TransportCommandOutcome>;
+  /**
+   * Toggle the transport-session count-in (U4). X1 law: `set-count-in` is
+   * ephemeral transport state — never document data, never history; the
+   * command is legal in ready/playing/paused and applies to the next run's
+   * one-bar count-in. The receipt is the only truth the UI may render.
+   */
+  setCountIn: (
+    commandRequestId: number,
+    enabled: boolean,
+  ) => Promise<TransportCommandOutcome>;
+  /**
+   * Toggle the transport-session metronome (U4). Same ephemeral law as
+   * setCountIn; while playing the X1 epoch law decides when clicks start.
+   */
+  setMetronome: (
+    commandRequestId: number,
+    enabled: boolean,
   ) => Promise<TransportCommandOutcome>;
   /**
    * Sound one chord immediately as a preview voice batch (jcpe-gnyy). The
@@ -560,15 +584,25 @@ export function createStudioAudio(
       }
       return outcome;
     },
-    play: async (commandRequestId, binding, startBeat) =>
+    play: async (commandRequestId, binding, startBeat, countIn) =>
       submit(
         commandRequestId,
         Object.freeze({
           kind: "play" as const,
           binding,
           startBeat,
-          countIn: false,
+          countIn,
         }),
+      ),
+    setCountIn: async (commandRequestId, enabled) =>
+      submit(
+        commandRequestId,
+        Object.freeze({ kind: "set-count-in" as const, enabled }),
+      ),
+    setMetronome: async (commandRequestId, enabled) =>
+      submit(
+        commandRequestId,
+        Object.freeze({ kind: "set-metronome" as const, enabled }),
       ),
     pause: async (commandRequestId) =>
       submit(commandRequestId, Object.freeze({ kind: "pause" as const })),

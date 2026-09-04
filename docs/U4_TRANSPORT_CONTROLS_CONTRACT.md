@@ -1,5 +1,12 @@
 # U4 Transport Controls and Truthful Audio Status Contract
 
+Amendment (2026-09-04, l3a.12.2 build): §7's clearance law reads "the next
+accepted notification or document replacement"; because the A0 §13.1
+supersession law means a mid-run document edit's subsequent notifications
+are dropped as stale, clearance also fires on an ACCEPTED receipt
+settlement of a later command — the truthful acknowledgement that remains
+when no notification can land.
+
 Status: proposed independent specification packet  
 Package: `U4`  
 Contract schema: `changes.fixtures.u4-transport-controls-contract.v1`  
@@ -154,14 +161,17 @@ state:
 
 | A0 status (+ failureCode) | Badge label | Detail line |
 |---|---|---|
-| `unavailable` | `Audio unavailable` | the locked/engine-unavailable reason, actionable |
-| `ready` | `Ready` | bound plan identity or the empty-transport hint |
-| `starting` | `Starting…` | none; never settles to a stale value |
+| `unavailable` | `Audio off` | the locked/engine-unavailable reason, actionable |
+| `ready` | `Audio ready` | bound plan identity or the empty-transport hint |
+| `starting` | `Starting playback` | none; never settles to a stale value |
 | `playing` | `Playing` | current chord label and exact Bar·beat |
 | `paused` (no failureCode) | `Paused` | paused-at exact beat |
 | `paused` + `transport.interrupted` | `Interrupted` | resume requires a trusted gesture; says so |
-| `stopping` | `Stopping…` | none |
-| `failed` (+ stable code) | `Audio fault` | the stable refusal/fault detail and the recovery action |
+| `stopping` | `Stopping playback` | none |
+| `failed` (+ stable code) | `Audio failed` | the stable refusal/fault detail and the recovery action |
+
+The badge strings are the shipped, e2e-pinned copy; U4 adds exactly one new
+label, `Interrupted`, for the paused-plus-`transport.interrupted` row.
 
 The projection's invariants:
 

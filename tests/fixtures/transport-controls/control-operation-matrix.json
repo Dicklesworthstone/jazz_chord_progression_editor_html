@@ -39,12 +39,12 @@
       "pointerAlternative": "button-activation",
       "enablement": {
         "enabledStatuses": [
+          "unavailable",
           "ready",
           "paused"
         ],
         "needsCanPlay": true,
         "disabledReasonByStatus": {
-          "unavailable": "audio-unavailable",
           "starting": "status-settling",
           "playing": "not-running",
           "stopping": "status-settling",
@@ -121,13 +121,13 @@
       "pointerAlternative": "button-activation",
       "enablement": {
         "enabledStatuses": [
+          "unavailable",
           "ready",
           "playing",
           "paused"
         ],
         "needsCanPlay": true,
         "disabledReasonByStatus": {
-          "unavailable": "audio-unavailable",
           "starting": "status-settling",
           "stopping": "status-settling",
           "failed": "audio-unavailable"
@@ -661,13 +661,13 @@
       "pointerAlternative": "none-provided-by-loop-arm-then-play",
       "enablement": {
         "enabledStatuses": [
+          "unavailable",
           "ready",
           "playing",
           "paused"
         ],
         "needsCanPlay": true,
         "disabledReasonByStatus": {
-          "unavailable": "audio-unavailable",
           "starting": "status-settling",
           "stopping": "status-settling",
           "failed": "audio-unavailable"
@@ -680,8 +680,7 @@
       "operationId": "play-run",
       "status": "unavailable",
       "canPlay": true,
-      "enabled": false,
-      "disabledReason": "audio-unavailable"
+      "enabled": true
     },
     {
       "operationId": "play-run",
@@ -728,7 +727,7 @@
       "status": "unavailable",
       "canPlay": false,
       "enabled": false,
-      "disabledReason": "audio-unavailable"
+      "disabledReason": "no-playable-chord"
     },
     {
       "operationId": "play-run",
@@ -966,8 +965,7 @@
       "operationId": "restart-run",
       "status": "unavailable",
       "canPlay": true,
-      "enabled": false,
-      "disabledReason": "audio-unavailable"
+      "enabled": true
     },
     {
       "operationId": "restart-run",
@@ -1013,7 +1011,7 @@
       "status": "unavailable",
       "canPlay": false,
       "enabled": false,
-      "disabledReason": "audio-unavailable"
+      "disabledReason": "no-playable-chord"
     },
     {
       "operationId": "restart-run",
@@ -2939,8 +2937,7 @@
       "operationId": "section-play",
       "status": "unavailable",
       "canPlay": true,
-      "enabled": false,
-      "disabledReason": "audio-unavailable"
+      "enabled": true
     },
     {
       "operationId": "section-play",
@@ -2986,7 +2983,7 @@
       "status": "unavailable",
       "canPlay": false,
       "enabled": false,
-      "disabledReason": "audio-unavailable"
+      "disabledReason": "no-playable-chord"
     },
     {
       "operationId": "section-play",
