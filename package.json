@@ -78,6 +78,7 @@
     "verify:u0-evidence": "bun scripts/verify-u0-evidence.ts",
     "verify:c0-evidence": "bun scripts/verify-c0-evidence.ts",
     "verify:x0-evidence": "bun scripts/verify-x0-evidence.ts",
+    "verify:x1-evidence": "bun scripts/verify-x1-evidence.ts",
     "verify": "bun scripts/verify.ts"
   },
   "dependencies": {

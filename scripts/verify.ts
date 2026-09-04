@@ -180,6 +180,10 @@ const gates: Gate[] = [
     id: "x1-transport-contract",
     command: [process.execPath, "scripts/validate-x1-contract.ts"],
   },
+  {
+    id: "x1-evidence",
+    command: [process.execPath, "scripts/verify-x1-evidence.ts"],
+  },
   { id: "typecheck", command: [process.execPath, "scripts/typecheck.ts"] },
   { id: "lint", command: [process.execPath, "scripts/lint.ts"] },
   { id: "bun-tests", command: [process.execPath, "test"] },
