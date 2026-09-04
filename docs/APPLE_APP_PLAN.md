@@ -106,3 +106,8 @@ motif. Motion follows musical time and respects Reduce Motion.
   and hostile/oversized import refusal.
 - Fresh-eyes source review, `git diff --check`, changed-file bug scan, and clean
   generated-project rebuild before the tracked task closes.
+
+The repository-owned `scripts/dsr-apple-quality.sh` lane executes all
+non-audio iPhone interaction tests plus a focused iPad expanded-workspace and
+inspector test. Playback and listening remain separate human/device gates;
+automated Simulator proof must not create audible output.

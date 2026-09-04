@@ -51,12 +51,15 @@ xcodebuild -project FrankenJazz.xcodeproj \
   -destination 'platform=macOS,variant=Mac Catalyst' \
   CODE_SIGNING_ALLOWED=NO build
 
-# Focused unit and real UI paths
-xcodebuild -project FrankenJazz.xcodeproj \
-  -scheme FrankenJazz \
-  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
-  CODE_SIGNING_ALLOWED=NO test
+# Repository-owned DSR lane: generated-project drift, Swift/property-list
+# checks, generic iOS build, Catalyst units, nine non-audio iPhone interaction
+# tests, and a focused iPad expanded-workspace plus inspector test.
+cd ..
+dsr quality --tool jazz_chord_progression_editor_html -w "$PWD"
 ```
+
+The DSR UI lane deliberately excludes the separate playback-starting test.
+Simulator audio is never played as automated evidence.
 
 The project file is generated from `project.yml`; edit that specification, not
 the generated `project.pbxproj`. Before committing a project-setting change,

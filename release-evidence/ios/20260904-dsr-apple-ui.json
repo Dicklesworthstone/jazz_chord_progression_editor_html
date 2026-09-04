@@ -1,0 +1,83 @@
+{
+  "schema": "frankenjazz.ios-test-evidence.v1",
+  "recordedAt": "2026-09-04T06:47:40Z",
+  "sourceBaseCommit": "5e5d53dce08e4b25032d95cdbed0d1f91f69e880",
+  "sourceCommitWasPublishedBeforeRun": false,
+  "dsr": {
+    "command": "FJAZZ_IPHONE_SIMULATOR_ID=B103280A-378C-4697-97F1-538274C7A849 FJAZZ_IPAD_SIMULATOR_ID=A885FB5B-955F-4CE8-9DB2-6F20261F198B dsr quality --tool jazz_chord_progression_editor_html -w /Users/jemanuel/projects/jazz_chord_progression_editor_html",
+    "receipt": "/Users/jemanuel/.local/state/dsr/quality-logs/jazz_chord_progression_editor_html/20260904T024325-19860/receipt.json",
+    "receiptStatus": "passed",
+    "checksPassed": 1,
+    "checksFailed": 0,
+    "sourceFingerprintBefore": "5e5d53dce08e4b25032d95cdbed0d1f91f69e880|4b5a57d7e3586261071f5bbd925fa85c9e54ae44fe230933bd59ceb573bb5bb2|no-lockfile",
+    "sourceFingerprintAfter": "5e5d53dce08e4b25032d95cdbed0d1f91f69e880|4b5a57d7e3586261071f5bbd925fa85c9e54ae44fe230933bd59ceb573bb5bb2|no-lockfile",
+    "checkLogSha256": "b08aac3b372d7043977a83773c5b2eaee24a7d7d1dd820fc47d344f2a13ab9c4"
+  },
+  "environment": {
+    "host": "Apple silicon Mac mini",
+    "hostOS": "macOS 26.2 (25C56)",
+    "xcode": "26.1.1 (17B100)",
+    "xcodegen": "2.46.0",
+    "networkRequiredByApp": false
+  },
+  "runs": [
+    {
+      "id": "generic-ios-build",
+      "result": "Passed"
+    },
+    {
+      "id": "catalyst-unit",
+      "resultBundle": "/Users/jemanuel/.local/state/dsr/quality-logs/jazz_chord_progression_editor_html/20260904T024325-19860/derived-data/Logs/Test/Test-FrankenJazz-2026.09.04_02-43-35--0400.xcresult",
+      "result": "Passed",
+      "passed": 57,
+      "failed": 0,
+      "skipped": 0,
+      "device": "Mac Catalyst on Mac mini arm64 / macOS 26.2"
+    },
+    {
+      "id": "iphone-ui-non-audio",
+      "resultBundle": "/Users/jemanuel/.local/state/dsr/quality-logs/jazz_chord_progression_editor_html/20260904T024325-19860/derived-data/Logs/Test/Test-FrankenJazz-2026.09.04_02-43-52--0400.xcresult",
+      "result": "Passed",
+      "passed": 9,
+      "failed": 0,
+      "skipped": 0,
+      "device": "iPhone 17 Pro arm64 simulator / iOS 26.1 (23B86)"
+    },
+    {
+      "id": "ipad-expanded-ui-non-audio",
+      "resultBundle": "/Users/jemanuel/.local/state/dsr/quality-logs/jazz_chord_progression_editor_html/20260904T024325-19860/derived-data/Logs/Test/Test-FrankenJazz-2026.09.04_02-45-59--0400.xcresult",
+      "result": "Passed",
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "device": "iPad Pro 13-inch arm64 simulator / iOS 26.1 (23B86)"
+    },
+    {
+      "id": "generated-project-and-static-contracts",
+      "result": "Passed",
+      "checks": [
+        "XcodeGen generated-project drift",
+        "Swift parser over every tracked Swift source",
+        "Info.plist, PrivacyInfo.xcprivacy, and Catalyst entitlements",
+        "Simulator audio safety before build and each UI lane"
+      ]
+    }
+  ],
+  "retainedScreenshots": {
+    "iphoneLightAppearance": "/Users/jemanuel/Documents/Codex/2026-09-01/us/artifacts/ui-audit-20260904/frankenjazz-dsr-final/iphone/A40BF03E-76A7-4CDA-87ED-6A9BF74EA726.png",
+    "iphoneContinuationEngine": "/Users/jemanuel/Documents/Codex/2026-09-01/us/artifacts/ui-audit-20260904/frankenjazz-dsr-final/iphone/30094BA0-D25F-44B1-8A88-F9DE52BFC7B2.png",
+    "ipadExpandedWorkspace": "/Users/jemanuel/Documents/Codex/2026-09-01/us/artifacts/ui-audit-20260904/frankenjazz-dsr-final/ipad/3B8935B1-8A91-4C07-A953-E7563A6F17B0.png",
+    "ipadHarmonyInspector": "/Users/jemanuel/Documents/Codex/2026-09-01/us/artifacts/ui-audit-20260904/frankenjazz-dsr-final/ipad/F5C88D28-0A2C-4F4E-B8DE-74F54798E113.png"
+  },
+  "sourceHashes": {
+    "scripts/dsr-apple-quality.sh": "893902b656fa9a946be32786558f545733bfa7ae45d42c36e817e34843c50861",
+    "ios/UITests/FrankenJazzUITests.swift": "65895d94cff536bc86c349097d5d317560ddf67183e086d0df16f6463cecc527",
+    "ios/README.md": "accba74764156c2e31a40a61fcd86a5743a86e31fd1e8809a2012fa11540b7a4",
+    "docs/APPLE_APP_PLAN.md": "b8739fdbad719594e09f9ac5ea22eba8b05c2d611576f55fdc3e45662789b47f"
+  },
+  "honestBoundaries": {
+    "audio": "The playback-starting UI test is deliberately excluded. This record does not claim listening quality or audible Simulator playback.",
+    "physicalDevice": "This record does not claim a signed physical-device run or App Store distribution proof.",
+    "visualReview": "The retained iPhone light-mode, iPad expanded-workspace, and iPad inspector screenshots were inspected for clipping, contrast, reachability, and composition. This is not a complete accessibility or localization matrix."
+  }
+}

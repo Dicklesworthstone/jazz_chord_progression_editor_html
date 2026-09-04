@@ -57,12 +57,58 @@ final class FrankenJazzUITests: XCTestCase {
         toggle.tap()
         XCTAssertEqual(toggle.label, "Switch to dark mode")
 
+        let lightProof = XCTAttachment(screenshot: app.screenshot())
+        lightProof.name = "FrankenJazz light appearance"
+        lightProof.lifetime = .keepAlways
+        add(lightProof)
+
         app.terminate()
         app.launch()
 
         let relaunchedToggle = app.buttons["appearance-toggle"]
         XCTAssertTrue(relaunchedToggle.waitForExistence(timeout: 3))
         XCTAssertEqual(relaunchedToggle.label, "Switch to dark mode")
+    }
+
+    func testIPadExpandedWorkspaceExposesLibraryChartInspectorAndTransport() throws {
+        let window = app.windows.firstMatch
+        XCTAssertTrue(window.waitForExistence(timeout: 5))
+
+        let libraryAction = app.buttons["New blank chart"]
+        let title = app.textFields["Chart title"]
+        let play = app.buttons["Play"]
+        let documents = app.buttons["Document actions"]
+        let harmony = app.buttons["Harmony"]
+
+        for element in [libraryAction, title, play, documents] {
+            XCTAssertTrue(element.waitForExistence(timeout: 5))
+            XCTAssertTrue(element.isHittable, "Every primary expanded-workspace control must be visibly reachable.")
+            XCTAssertTrue(window.frame.contains(element.frame), "No primary expanded-workspace control may be clipped outside the actual app window.")
+        }
+
+        let workspaceProof = XCTAttachment(screenshot: app.screenshot())
+        workspaceProof.name = "FrankenJazz iPad expanded workspace"
+        workspaceProof.lifetime = .keepAlways
+        add(workspaceProof)
+
+        let inspectorHeading = app.staticTexts["04 · HARMONY LENS"]
+        let inspectorEditor = app.textFields["Selected chord symbol"]
+        if harmony.waitForExistence(timeout: 2) {
+            XCTAssertTrue(harmony.isHittable)
+            XCTAssertTrue(window.frame.contains(harmony.frame))
+            harmony.tap()
+        }
+        XCTAssertTrue(inspectorHeading.waitForExistence(timeout: 5))
+        XCTAssertTrue(inspectorEditor.waitForExistence(timeout: 5))
+        XCTAssertTrue(inspectorEditor.isHittable)
+        XCTAssertTrue(window.frame.contains(inspectorEditor.frame), "The presented inspector must remain inside the actual app window.")
+        XCTAssertGreaterThan(inspectorEditor.frame.width, 140, "The inspector editor must not survive as a clipped sliver.")
+        XCTAssertLessThanOrEqual(inspectorEditor.frame.maxX, window.frame.maxX - 16, "The inspector needs visible trailing breathing room.")
+
+        let inspectorProof = XCTAttachment(screenshot: app.screenshot())
+        inspectorProof.name = "FrankenJazz iPad harmony inspector"
+        inspectorProof.lifetime = .keepAlways
+        add(inspectorProof)
     }
 
     func testLibraryLoadsThroughTheRealDocumentPath() throws {
