@@ -18,6 +18,7 @@ import { createPracticeSession } from "../src/theory/practice-laboratory";
 import { detectCadence } from "../src/theory/phrase-cadence";
 import { buildReharmonizationTree } from "../src/theory/reharmonization-tree";
 import * as theory from "../src/theory";
+import { inferAutomationKey } from "../src/export/midi-import-automation";
 
 function beat(numerator: number, denominator = 1) {
   const result = normalizeBeatValue({ numerator, denominator });
@@ -51,6 +52,13 @@ const rows: { id: string; law: string; expected: unknown; actual: unknown; pass:
 function check(id: string, law: string, expected: unknown, actual: unknown) {
   rows.push({ id, law, expected, actual, pass: JSON.stringify(expected) === JSON.stringify(actual) });
 }
+
+check("m1-empty-key-control", "Zero eligible mass has no inferred key", null, inferAutomationKey(Array.from({ length: 12 }, () => 0)));
+const symmetricMass = Array.from({ length: 12 }, () => 1);
+const symmetricKey = inferAutomationKey(symmetricMass);
+const shiftedSymmetricKey = inferAutomationKey(symmetricMass.map((_, pc) => symmetricMass[(pc + 11) % 12] ?? 0));
+if (symmetricKey === null || shiftedSymmetricKey === null) throw new Error("Nonzero audit mass must have a ranked key under M1 v1");
+check("m1-tied-equivariance-contract", "M1's unqualified winner-equivariance promise conflicts with absolute tonic tie-breaking on a rotation-invariant histogram", (symmetricKey.tonicPitchClass + 1) % 12, shiftedSymmetricKey.tonicPitchClass);
 
 for (const operation of ["deriveLiteralFacts", "analyzeChordInContext", "enumerateChordScaleOptions"]) {
   check(`h0-${operation}`, "The reviewed H0 callable exists at the public theory boundary", "function", typeof Reflect.get(theory, operation));
