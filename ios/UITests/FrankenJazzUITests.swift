@@ -38,6 +38,11 @@ final class FrankenJazzUITests: XCTestCase {
         XCTAssertTrue(lab.waitForExistence(timeout: 3))
         XCTAssertTrue(app.staticTexts["G2 · BOUNDED"].exists)
         XCTAssertTrue(app.buttons["Use for next change"].firstMatch.exists)
+
+        let proof = XCTAttachment(screenshot: app.screenshot())
+        proof.name = "FrankenJazz G2 continuation engine"
+        proof.lifetime = .keepAlways
+        add(proof)
     }
 
     func testAppearanceTogglePersistsLightModeAcrossLaunches() throws {
