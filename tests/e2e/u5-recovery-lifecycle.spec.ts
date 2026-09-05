@@ -90,6 +90,47 @@ async function downloadJson(page: Page): Promise<unknown> {
   return parsed;
 }
 
+async function invalidateRecoveredChordSemantics(page: Page, slots: readonly string[]): Promise<void> {
+  const rows = (await recoveryEntries(page)).filter(([key]) => key.startsWith("changes.recovery.v1:") &&
+    slots.some(slot => key.endsWith(`:${slot}`)));
+  expect(rows).toHaveLength(slots.length);
+  await page.evaluate(async entries => {
+    // Independent checksum implementation from A1's sorted-key JSON law.
+    function canonical(value: unknown): string {
+      if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
+      if (typeof value === "object" && value !== null) return `{${Object.keys(value).sort().map(key =>
+        `${JSON.stringify(key)}:${canonical(Reflect.get(value, key))}`).join(",")}}`;
+      return JSON.stringify(value);
+    }
+    const replacements: [string, string][] = [];
+    for (const [key, bytes] of entries) {
+      // Fixture boundary only: preserve every field except the deliberately
+      // contradicted chord root and the correctly recomputed envelope checksum.
+      const envelope = JSON.parse(bytes) as { checksum?: string; document: {
+        sections: { measures: { events: { chord: { root: { step: string } } }[] }[] }[];
+      } };
+      const chord = envelope.document.sections[0]?.measures[0]?.events[0]?.chord;
+      if (chord === undefined) throw new Error("RECOVERY_CHORD_MISSING");
+      chord.root.step = chord.root.step === "D" ? "E" : "D";
+      delete envelope.checksum;
+      const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(canonical(envelope)));
+      envelope.checksum = [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, "0")).join("");
+      replacements.push([key, JSON.stringify(envelope)]);
+    }
+    await new Promise<void>((resolve, reject) => {
+      const request = indexedDB.open("changes-recovery", 1);
+      request.onerror = () => { reject(request.error ?? new Error("OPEN_FAILED")); };
+      request.onsuccess = () => {
+        const db = request.result;
+        const tx = db.transaction("recovery-envelopes", "readwrite");
+        for (const [key, bytes] of replacements) tx.objectStore("recovery-envelopes").put(bytes, key);
+        tx.oncomplete = () => { db.close(); resolve(); };
+        tx.onerror = () => { db.close(); reject(tx.error ?? new Error("WRITE_FAILED")); };
+      };
+    });
+  }, rows);
+}
+
 for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) {
   test.describe(`U5 real recovery ${String(viewport.width)}px`, () => {
     test.use({ viewport });
@@ -141,6 +182,42 @@ for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 
       await expect(page.locator("#studio-recovery-notice-body")).toContainText("latest recovery copy could not be read");
       await page.locator("#studio-recovery-keep").click();
       await expect(page.locator("#studio-document-title")).toHaveValue("Previous valid chart");
+    });
+
+    test("checksum-valid semantic corruption offers the exact previous chart without overwriting either stored copy", async ({ page }, info) => {
+      await retitle(page, "Previous semantic control");
+      await retitle(page, "Invalid current semantic control");
+      const previous = (await recoveryEntries(page)).find(([key]) => key.startsWith("changes.recovery.v1:") && key.endsWith(":previous"));
+      if (previous === undefined) throw new Error("PREVIOUS_MISSING");
+      const previousEnvelope = JSON.parse(previous[1]) as { document: unknown };
+      await invalidateRecoveredChordSemantics(page, ["current"]);
+      const before = await recoveryEntries(page);
+      await page.reload();
+      await expect(page.locator("#studio-recovery-notice-title")).toHaveText("Previous recovery copy found");
+      await expect(page.getByText(/current recovery copy did not pass document validation/u)).toContainText("import.candidate_semantic_invalid");
+      await page.waitForTimeout(2_500);
+      expect(await recoveryEntries(page)).toEqual(before);
+      await page.reload();
+      await expect(page.locator("#studio-recovery-notice-title")).toHaveText("Previous recovery copy found");
+      await page.locator("#studio-recovery-keep").click();
+      await expect(page.locator("#studio-document-title")).toHaveValue("Previous semantic control");
+      expect(await downloadJson(page)).toEqual(previousEnvelope.document);
+      await info.attach("semantic-recovery-storage.json", { contentType: "application/json",
+        body: JSON.stringify({ beforeKeep: before, afterKeep: await recoveryEntries(page) }, null, 2) });
+    });
+
+    test("two checksum-valid but semantically invalid copies produce a nonblocking diagnostic and preserve editing/export", async ({ page }) => {
+      await retitle(page, "Invalid previous");
+      await retitle(page, "Invalid current");
+      await invalidateRecoveredChordSemantics(page, ["current", "previous"]);
+      const before = await recoveryEntries(page);
+      await page.reload();
+      await expect(page.getByText(/Neither local recovery copy could be opened/u)).toContainText("import.candidate_semantic_invalid");
+      await expect(page.locator("#studio-recovery-keep")).toHaveCount(0);
+      await page.waitForTimeout(2_500);
+      expect(await recoveryEntries(page)).toEqual(before);
+      await retitle(page, "Editing after invalid recovery");
+      expect(await downloadJson(page)).toMatchObject({ title: "Editing after invalid recovery" });
     });
 
     test("a real quota refusal keeps edits pending and leaves JSON export available", async ({ page }) => {

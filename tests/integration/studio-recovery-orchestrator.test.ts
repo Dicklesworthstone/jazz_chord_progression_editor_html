@@ -55,6 +55,13 @@ const RECOVERED_RAW = Object.freeze({
   }),
 });
 
+// Independently authored near-miss: structurally legal, but a complete 4/4
+// measure cannot contain zero events. No checksum or syntax damage is involved.
+const SEMANTICALLY_INVALID = { ...RECOVERED_RAW, title: "Unusable current copy", sections: [{
+  id: "section-recovery-invalid", name: "A", annotation: "", keyOverride: null, voiceLeadingBoundary: "reset",
+  measures: [{ id: "measure-recovery-invalid", events: [], completion: { kind: "complete" } }],
+}] };
+
 async function checksummedEnvelope(fields: Readonly<{
   revision: number;
   document: unknown;
@@ -96,6 +103,7 @@ async function createHarness(writeOutcome: "written" | "quota" | "denied" = "wri
   const recoveryStatus = createStudioRecoveryStatusFeed();
   const recoveryHarness = createRecoveryHarness([{ kind: "indexeddb", writeOutcome }], recoveryStatus.observe);
   let seedOrdinal = 0;
+  let validationCalls = 0;
   const orchestrator = createStudioRecoveryOrchestrator({
     composition,
     recovery: recoveryHarness.service,
@@ -104,7 +112,7 @@ async function createHarness(writeOutcome: "written" | "quota" | "denied" = "wri
       transport.nextRequestId,
     ),
     decodeDocumentShape,
-    validateDocumentSemantics,
+    validateDocumentSemantics: candidate => { validationCalls++; return validateDocumentSemantics(candidate); },
     readState: composition.readApplicationState,
     estimateHistoryRetainedBytes: () => ESTIMATE,
     nowMs: () => 9_000,
@@ -113,8 +121,128 @@ async function createHarness(writeOutcome: "written" | "quota" | "denied" = "wri
       return `recovery-keep-${String(seedOrdinal)}`;
     },
   });
-  return { composition, transport, recoveryHarness, orchestrator, recoveryStatus };
+  return { composition, transport, recoveryHarness, orchestrator, recoveryStatus, validationCalls: () => validationCalls };
 }
+
+describe("U5 checksum-valid recovery candidates must also pass F2/F3", () => {
+  for (const [label, document, code] of [
+    ["structural", { schema: "unrecognized" }, "import.candidate_structural_invalid"],
+    ["semantic", SEMANTICALLY_INVALID, "import.candidate_semantic_invalid"],
+  ] as const) {
+    test(`${label} current falls back to the independently validated previous copy without a write or retirement`, async () => {
+      const h = await createHarness();
+      const store = h.recoveryHarness.adapters[0]?.store;
+      if (store === undefined) throw new Error("NO_STORE");
+      const before = h.composition.readApplicationState();
+      const generation = h.transport.service.inspectTransport().generation;
+      store.set(recoveryStorageKey(before.document.id, "current"), await checksummedEnvelope({
+        revision: 8, document, savedAt: "2026-09-01T12:01:00.000Z" }));
+      store.set(recoveryStorageKey(before.document.id, "previous"), await checksummedEnvelope({
+        revision: 7, document: RECOVERED_RAW, savedAt: "2026-09-01T12:00:00.000Z" }));
+      const bytes = [...store];
+      const view = await h.orchestrator.startup({ sessionEdited: false });
+      expect(view.kind).toBe("offer");
+      if (view.kind !== "offer") throw new Error("PREVIOUS_NOT_OFFERED");
+      expect(view.disposition).toBe("offer-previous");
+      expect(view.report.current.outcome).toBe("valid"); // checksum really did pass
+      expect(view.report.previous.outcome).toBe("valid");
+      expect(view.envelope.document).toEqual(RECOVERED_RAW);
+      expect(view.rejectedCandidates).toHaveLength(1);
+      expect(view.rejectedCandidates[0]?.code).toBe(code);
+      expect(view.rejectedCandidates[0]?.slot).toBe("current");
+      expect(view.rejectedCandidates[0]?.issues.length).toBeGreaterThan(0);
+      expect(h.validationCalls()).toBe(label === "semantic" ? 2 : 1);
+      if (label === "semantic") expect(view.rejectedCandidates[0]?.issues.map(issue => issue.code)).toContain("measure.nonempty_has_no_events");
+      await h.recoveryHarness.clock.advance(20_000);
+      expect([...store]).toEqual(bytes);
+      expect(h.composition.readApplicationState()).toBe(before);
+      expect(h.transport.service.inspectTransport().generation).toBe(generation);
+      expect(h.recoveryHarness.service.inspectRecovery().work.writesScheduled).toBe(0);
+      const result = await h.orchestrator.keep(view.envelope);
+      expect(result.ok).toBe(true);
+      const recoveredDocument: unknown = h.composition.readApplicationState().document;
+      expect(recoveredDocument).toEqual(RECOVERED_RAW);
+      expect(h.transport.service.inspectTransport().generation).toBe(generation + 1);
+      expect(h.validationCalls()).toBe(label === "semantic" ? 3 : 2);
+    });
+  }
+
+  for (const previous of ["absent", "invalid", "checksum-corrupt"] as const) {
+    test(`invalid current with ${previous} previous reports unrecoverable without offering bad data`, async () => {
+      const h = await createHarness();
+      const store = h.recoveryHarness.adapters[0]?.store;
+      if (store === undefined) throw new Error("NO_STORE");
+      const before = h.composition.readApplicationState();
+      store.set(recoveryStorageKey(before.document.id, "current"), await checksummedEnvelope({
+        revision: 8, document: SEMANTICALLY_INVALID, savedAt: "2026-09-01T12:01:00.000Z" }));
+      if (previous !== "absent") store.set(recoveryStorageKey(before.document.id, "previous"), previous === "invalid"
+        ? await checksummedEnvelope({ revision: 7, document: SEMANTICALLY_INVALID, savedAt: "2026-09-01T12:00:00.000Z" }) : "{broken");
+      const bytes = [...store];
+      const view = await h.orchestrator.startup({ sessionEdited: false });
+      expect(view.kind).toBe("report-unrecoverable");
+      if (view.kind !== "report-unrecoverable") throw new Error("BAD_DATA_OFFERED");
+      expect(view.rejectedCandidates.map(r => r.slot)).toEqual(previous === "invalid" ? ["current", "previous"] : ["current"]);
+      expect(h.validationCalls()).toBe(previous === "invalid" ? 2 : 1);
+      expect(h.composition.readApplicationState()).toBe(before);
+      expect([...store]).toEqual(bytes);
+    });
+  }
+
+  test("valid current keeps its matrix precedence and does not validate an unused invalid previous copy", async () => {
+    const h = await createHarness();
+    const id = h.composition.readApplicationState().document.id;
+    const store = h.recoveryHarness.adapters[0]?.store;
+    if (store === undefined) throw new Error("NO_STORE");
+    store.set(recoveryStorageKey(id, "current"), await checksummedEnvelope({ revision: 8,
+      document: RECOVERED_RAW, savedAt: "2026-09-01T12:01:00.000Z" }));
+    store.set(recoveryStorageKey(id, "previous"), await checksummedEnvelope({ revision: 7,
+      document: SEMANTICALLY_INVALID, savedAt: "2026-09-01T12:00:00.000Z" }));
+    const view = await h.orchestrator.startup({ sessionEdited: false });
+    expect(view.kind).toBe("offer");
+    if (view.kind !== "offer") throw new Error("CURRENT_NOT_OFFERED");
+    expect(view.disposition).toBe("open-current-automatically");
+    expect(view.rejectedCandidates).toEqual([]);
+    expect(view.revision).toBe(8);
+    expect(h.validationCalls()).toBe(1);
+  });
+
+  test("a checksum-corrupt current cannot cause an invalid previous document to be offered", async () => {
+    const h = await createHarness();
+    const id = h.composition.readApplicationState().document.id;
+    h.recoveryHarness.adapters[0]?.store.set(recoveryStorageKey(id, "current"), "{corrupt");
+    h.recoveryHarness.adapters[0]?.store.set(recoveryStorageKey(id, "previous"), await checksummedEnvelope({
+      revision: 7, document: SEMANTICALLY_INVALID, savedAt: "2026-09-01T12:00:00.000Z" }));
+    const view = await h.orchestrator.startup({ sessionEdited: true });
+    expect(view.kind).toBe("report-unrecoverable");
+    if (view.kind !== "report-unrecoverable") throw new Error("INVALID_PREVIOUS_OFFERED");
+    expect(view.rejectedCandidates.map(r => r.slot)).toEqual(["previous"]);
+    expect(h.validationCalls()).toBe(1);
+  });
+
+  test("a previous offer stays explicit even in an unedited session, preserves both copies and refuses stale Keep", async () => {
+    const h = await createHarness();
+    const store = h.recoveryHarness.adapters[0]?.store;
+    if (store === undefined) throw new Error("NO_STORE");
+    const id = h.composition.readApplicationState().document.id;
+    store.set(recoveryStorageKey(id, "current"), await checksummedEnvelope({ revision: 8,
+      document: SEMANTICALLY_INVALID, savedAt: "2026-09-01T12:01:00.000Z" }));
+    store.set(recoveryStorageKey(id, "previous"), await checksummedEnvelope({ revision: 7,
+      document: RECOVERED_RAW, savedAt: "2026-09-01T12:00:00.000Z" }));
+    const bytes = [...store];
+    const session = createStudioRecoverySession({ composition: h.composition, subscribeRecovery: h.recoveryStatus.subscribe,
+      orchestrator: h.orchestrator, sessionEdited: false, formatTimestamp: value => value });
+    await session.start();
+    expect(session.getSnapshot().offer?.previous).toBe(true);
+    expect(session.getSnapshot().diagnosticCode).toBe("import.candidate_semantic_invalid");
+    expect(h.composition.readApplicationState().document.id).toBe(id);
+    expect(h.composition.controller.setTitle("Keep the edit").ok).toBe(true);
+    await h.recoveryHarness.clock.advance(20_000);
+    await session.keep();
+    expect(session.getSnapshot().failureMessage).toContain("command.stale_revision");
+    expect([...store]).toEqual(bytes);
+    expect(h.composition.readApplicationState().document.title).toBe("Keep the edit");
+  });
+});
 
 describe("A1 recovery orchestrator (real service, real replacement channel)", () => {
   test("the mutation feed notes the current state and a scheduled write persists it", async () => {
