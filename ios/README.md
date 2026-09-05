@@ -21,6 +21,10 @@ Support directory.
 - direct selected-chord symbol editing with parser-backed refusal, one-step
   undo, and an explicit choice to clear stored pitches or keep them as Manual;
 - transposition, key, tempo, groove, and generated instrument controls;
+- all 15 original instrument identities, with the original pitch-verified
+  CC0 Upright Bass and Concert Vibes sample engines shared by chart playback
+  and the tappable inspector keyboard; remaining physical-engine ports are
+  identified honestly in the inspector while they are completed;
 - a persistent transport with background preparation, play/pause, Stop, loop,
   playhead highlighting, and interactive waveform-style seeking;
 - atomic local recovery with a previous valid fallback;
@@ -36,6 +40,9 @@ Support directory.
 Requirements: Xcode 26 or newer and XcodeGen 2.46 or newer.
 
 ```bash
+# Regenerate the compact native PCM resources only when their already-reviewed
+# checked-in web payloads change.
+bun run build:ios-instrument-samples
 cd ios
 xcodegen generate
 

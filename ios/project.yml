@@ -45,6 +45,8 @@ targets:
       - path: Assets.xcassets
       - path: TheoryBridge/frankenjazz-theory-bridge.js
         buildPhase: resources
+      - path: Resources/InstrumentSamples
+        buildPhase: resources
     info:
       path: Sources/Info.plist
       properties:

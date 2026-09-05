@@ -70,6 +70,118 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertNil(JazzAudioRenderer.renderPreview(midi: 109, tone: .concertGrand))
     }
 
+    func testOriginalPlayableWindowsFoldWithoutMutatingInstrumentIdentity() throws {
+        let expected: [InstrumentTone: ClosedRange<Int>] = [
+            .mellowKeys: 21...108,
+            .electricPiano: 21...108,
+            .vibraphone: 53...89,
+            .warmPad: 21...108,
+            .analogPoly: 21...108,
+            .concertGrand: 21...108,
+            .flute: 60...72,
+            .organ: 21...108,
+            .guitar: 40...88,
+            .uprightBass: 28...67,
+            .concertVibes: 53...89,
+            .bluesGuitar: 40...88,
+            .clarinet: 50...82,
+            .dreadnoughtGuitar: 40...88,
+            .ukulele: 60...93
+        ]
+        XCTAssertEqual(Set(expected.keys), Set(InstrumentTone.allCases))
+        for tone in InstrumentTone.allCases {
+            let range = try XCTUnwrap(expected[tone])
+            XCTAssertEqual(tone.originalPlayableMIDIRange, range, tone.displayName)
+            for midi in 21...108 {
+                let rendered = tone.renderedMIDIPitch(for: midi)
+                XCTAssertTrue(range.contains(rendered), "\(tone.displayName) failed to fold MIDI \(midi)")
+                XCTAssertEqual(abs(rendered - midi) % 12, 0, tone.displayName)
+            }
+        }
+    }
+
+    func testSampledInstrumentMetadataAndNearestKeyLawMatchOriginal() throws {
+        let bass = JazzSampledInstrumentRenderer.uprightBassMetadata
+        XCTAssertEqual(bass.algorithmID, "changes.dsp.sampled-upright-bass@1")
+        XCTAssertEqual(bass.payloadSHA256, "d39c685343bd49c4c424f74eabdca501161ae94a9a14d8acdba6e604f496f5a9")
+        XCTAssertEqual(bass.payloadByteLength, 815_638)
+        XCTAssertEqual(bass.payloadRate, 22_050)
+        XCTAssertEqual(bass.bufferCacheLimit, 64)
+        XCTAssertEqual(bass.slices.count, 12)
+
+        let vibes = JazzSampledInstrumentRenderer.concertVibesMetadata
+        XCTAssertEqual(vibes.algorithmID, "changes.dsp.sampled-vibraphone@1")
+        XCTAssertEqual(vibes.payloadSHA256, "a7f01856ffcf58271613fd2ee42b342877f0cfb7d30595137724fa2fa1b752cc")
+        XCTAssertEqual(vibes.payloadByteLength, 1_267_200)
+        XCTAssertEqual(vibes.payloadRate, 32_000)
+        XCTAssertEqual(vibes.bufferCacheLimit, 64)
+        XCTAssertEqual(vibes.slices.count, 11)
+
+        XCTAssertEqual(
+            JazzSampledInstrumentRenderer.sourceSlice(for: .uprightBass, midi: 35)?.midiPitch,
+            36,
+            "An equidistant request must choose the higher recorded key."
+        )
+        XCTAssertEqual(JazzSampledInstrumentRenderer.sourceSlice(for: .uprightBass, midi: 24)?.midiPitch, 36)
+        XCTAssertEqual(JazzSampledInstrumentRenderer.sourceSlice(for: .concertVibes, midi: 96)?.midiPitch, 84)
+    }
+
+    func testSampledInstrumentPCMMatchesIndependentWebOracleWithoutAudioOutput() throws {
+        struct Oracle {
+            var tone: InstrumentTone
+            var algorithmID: String
+            var sourceMIDIPitch: Int
+            var peak: Double
+            var rms: Double
+            var checkpoints: [(Int, Float)]
+        }
+        let oracles = [
+            Oracle(
+                tone: .uprightBass,
+                algorithmID: "changes.dsp.sampled-upright-bass@1",
+                sourceMIDIPitch: 59,
+                peak: 0.9850844144821167,
+                rms: 0.38609690634633415,
+                checkpoints: [(17, 0.00007105961), (101, -0.042112716), (511, -0.045711324), (1023, 0.33253255), (2047, -0.33121836), (3839, 0)]
+            ),
+            Oracle(
+                tone: .concertVibes,
+                algorithmID: "changes.dsp.sampled-vibraphone@1",
+                sourceMIDIPitch: 60,
+                peak: 0.9946050643920898,
+                rms: 0.38129253434478094,
+                checkpoints: [(17, -0.00011248945), (101, -0.0029222681), (511, 0.047904827), (1023, 0.04242526), (2047, 0.11046351), (3839, 0)]
+            )
+        ]
+
+        for oracle in oracles {
+            let rendered = try XCTUnwrap(
+                JazzSampledInstrumentRenderer.render(
+                    tone: oracle.tone,
+                    midi: 60,
+                    velocity: 96,
+                    sampleRate: 24_000,
+                    maximumSeconds: 0.16
+                ),
+                oracle.tone.displayName
+            )
+            XCTAssertEqual(rendered.algorithmID, oracle.algorithmID)
+            XCTAssertEqual(rendered.requestedMIDIPitch, 60)
+            XCTAssertEqual(rendered.renderedMIDIPitch, 60)
+            XCTAssertEqual(rendered.sourceMIDIPitch, oracle.sourceMIDIPitch)
+            XCTAssertEqual(rendered.samples.count, 3_840)
+            XCTAssertTrue(rendered.samples.allSatisfy(\.isFinite))
+            let peak = rendered.samples.map { abs(Double($0)) }.max() ?? 0
+            let rms = sqrt(rendered.samples.reduce(0) { $0 + Double($1) * Double($1) } / Double(rendered.samples.count))
+            XCTAssertEqual(peak, oracle.peak, accuracy: 0.000_01)
+            XCTAssertEqual(rms, oracle.rms, accuracy: 0.000_01)
+            for (index, expected) in oracle.checkpoints {
+                XCTAssertEqual(rendered.samples[index], expected, accuracy: 0.000_01, "\(oracle.tone.displayName) frame \(index)")
+            }
+            XCTAssertEqual(rendered.samples.last, 0, "The raised-cosine truncation guard must end at zero.")
+        }
+    }
+
     func testMIDIExportUsesTheSelectedInstrumentProgram() throws {
         let parsed = try JazzTheory.parseChart("| Cmaj7 |")
         var chart = JazzChart(title: "Programs", measures: parsed.measures)

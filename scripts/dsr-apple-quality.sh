@@ -7,6 +7,7 @@ cd "$repo_root/ios"
 build_root="${FRANKEN_APPLE_BUILD_ROOT:-${DSR_QUALITY_RUN_DIR:-$repo_root/ios/build/dsr-apple-quality}}"
 mkdir -p "$build_root/tmp"
 sbh check --need 20G "$build_root"
+(cd "$repo_root" && bun run check:ios-instrument-samples)
 command -v xcodegen >/dev/null
 xcodegen generate --spec project.yml
 git diff --exit-code -- FrankenJazz.xcodeproj Sources/Info.plist

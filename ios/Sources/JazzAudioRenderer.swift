@@ -271,7 +271,19 @@ enum JazzAudioRenderer {
     private static func mixNote(_ request: NoteRequest, into stereo: inout StereoBuffer) {
         let frames = min(Int(request.duration * sampleRate), stereo.left.count - request.start)
         guard request.start >= 0, frames > 0 else { return }
-        let frequency = 440 * pow(2, Double(request.midi - 69) / 12)
+        if let rendered = JazzSampledInstrumentRenderer.render(
+            tone: request.tone,
+            midi: request.midi,
+            velocity: 96,
+            sampleRate: sampleRate,
+            maximumSeconds: request.duration
+        ) {
+            mixSampledNote(rendered, request: request, into: &stereo)
+            return
+        }
+
+        let renderedMidi = request.tone.renderedMIDIPitch(for: request.midi)
+        let frequency = 440 * pow(2, Double(renderedMidi - 69) / 12)
         let recipe = recipe(for: request.tone)
         let leftGain = sqrt((1 - request.pan) * 0.5)
         let rightGain = sqrt((1 + request.pan) * 0.5)
@@ -315,6 +327,25 @@ enum JazzAudioRenderer {
             stereo.left[request.start + frame] += Float(value * leftGain)
             stereo.right[request.start + frame] += Float(value * rightGain)
             decayLevel *= decayStep
+        }
+    }
+
+    private static func mixSampledNote(
+        _ rendered: JazzSampledRender,
+        request: NoteRequest,
+        into stereo: inout StereoBuffer
+    ) {
+        let frames = min(rendered.samples.count, stereo.left.count - request.start)
+        guard request.start >= 0, frames > 0 else { return }
+        let leftGain = sqrt((1 - request.pan) * 0.5)
+        let rightGain = sqrt((1 + request.pan) * 0.5)
+        let recipeLevel = request.tone == .uprightBass ? 0.17 : 0.10
+        let attackFrames = max(1, Int(0.002 * sampleRate))
+        for frame in 0..<frames {
+            let attack = min(1, Double(frame) / Double(attackFrames))
+            let value = Double(rendered.samples[frame]) * request.velocity * recipeLevel * attack
+            stereo.left[request.start + frame] += Float(value * leftGain)
+            stereo.right[request.start + frame] += Float(value * rightGain)
         }
     }
 

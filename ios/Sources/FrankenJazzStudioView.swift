@@ -784,6 +784,9 @@ private struct ChordInspectorView: View {
                 }
                 .font(.system(size: JazzTheme.size(9.5), weight: .semibold, design: .rounded))
                 .foregroundStyle(JazzTheme.secondary)
+                Text(store.chart.instrument.nativeAudioSourceNote)
+                    .font(.system(size: JazzTheme.size(8.5), weight: .medium, design: .rounded))
+                    .foregroundStyle(JazzTheme.secondary)
                 MiniPiano(
                     highlightedMIDIPitches: exactPitches,
                     accent: JazzTheme.cyan,

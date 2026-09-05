@@ -41,6 +41,7 @@ enum GrooveStyle: String, CaseIterable, Codable, Identifiable, Sendable {
         case .syncopatedSixteenths: "waveform.path.ecg"
         }
     }
+
 }
 
 enum InstrumentTone: String, CaseIterable, Codable, Identifiable, Sendable {
@@ -161,6 +162,50 @@ enum InstrumentTone: String, CaseIterable, Codable, Identifiable, Sendable {
         case .clarinet: "music.note.list"
         case .dreadnoughtGuitar: "guitars"
         case .ukulele: "music.quarternote.3"
+        }
+    }
+
+    /// The original studio's reviewed playable window. The native renderer
+    /// folds by whole octaves at note intake without rewriting the chart or
+    /// MIDI export, matching the web engine's realization policy.
+    var originalPlayableMIDIRange: ClosedRange<Int> {
+        switch self {
+        case .mellowKeys, .electricPiano, .warmPad, .analogPoly, .concertGrand, .organ:
+            21...108
+        case .vibraphone, .concertVibes:
+            53...89
+        case .flute:
+            60...72
+        case .guitar, .bluesGuitar, .dreadnoughtGuitar:
+            40...88
+        case .uprightBass:
+            28...67
+        case .clarinet:
+            50...82
+        case .ukulele:
+            60...93
+        }
+    }
+
+    func renderedMIDIPitch(for requested: Int) -> Int {
+        let range = originalPlayableMIDIRange
+        if range.contains(requested) { return requested }
+        if requested < range.lowerBound {
+            return requested + Int(ceil(Double(range.lowerBound - requested) / 12)) * 12
+        }
+        return requested - Int(ceil(Double(requested - range.upperBound) / 12)) * 12
+    }
+
+    var nativeAudioSourceNote: String {
+        switch self {
+        case .uprightBass:
+            "Original VSCO 2 CC0 sampled engine"
+        case .concertVibes:
+            "Original VCSL CC0 sampled engine"
+        case .concertGrand, .flute, .guitar, .bluesGuitar, .clarinet, .dreadnoughtGuitar, .ukulele:
+            "Native voice; original physical engine port in progress"
+        default:
+            "Native synthesis"
         }
     }
 }

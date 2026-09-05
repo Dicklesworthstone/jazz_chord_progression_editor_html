@@ -58,6 +58,8 @@
     "build": "bun scripts/build.ts",
     "build:ios-theory-bridge": "bun scripts/build-ios-theory-bridge.ts",
     "check:ios-theory-bridge": "bun scripts/build-ios-theory-bridge.ts --check",
+    "build:ios-instrument-samples": "bun scripts/build-ios-instrument-samples.ts",
+    "check:ios-instrument-samples": "bun scripts/build-ios-instrument-samples.ts --check",
     "predeploy:check": "bun scripts/check-predeploy.ts && bun scripts/run-instrument-quality-gate.ts",
     "predeploy:playback": "node scripts/check-predeploy-playback.ts",
     "deploy": "bun scripts/deploy.ts",
