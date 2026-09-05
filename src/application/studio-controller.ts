@@ -90,7 +90,6 @@ import {
 import type {
   TransportCommandOutcome,
   TransportPlanBinding,
-  TransportState,
 } from "../audio";
 import type { StudioAudioGesture, StudioAudioPort } from "./studio-audio";
 import { buildPlaybackPreparationPlan } from "./playback-preparation-plan";
