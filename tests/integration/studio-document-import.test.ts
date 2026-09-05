@@ -3,14 +3,14 @@ import { describe, expect, test } from "bun:test";
 import { createStudioBootstrap, createStudioCompositionOverState, createStudioDocumentImport,
   createX1SerializedTransportRetirementAdapter } from "../../src/application";
 import { seedStarterChart } from "../../src/application/runtime";
-import type { X1ReplacementRetirementAdapter } from "../../src/application/e0-interchange-contract";
+import type { StudioImportRetirementAdapter } from "../../src/application/studio-import-replacement";
 import { createRecoveryHarness } from "../support/recovery-test-kit";
 import { compiledPlan, createTransportHarness, initializePayload } from "../support/transport-test-kit";
 
 const minimal = await readFile(new URL("../fixtures/interchange/goldens/minimal.changes.json", import.meta.url), "utf8");
 const nested = await readFile(new URL("../fixtures/interchange/goldens/nested.changes.json", import.meta.url), "utf8");
 
-async function harness(options: { seed?: boolean; estimate?: number; retirement?: X1ReplacementRetirementAdapter } = {}) {
+async function harness(options: { seed?: boolean; estimate?: number; retirement?: StudioImportRetirementAdapter } = {}) {
   const bootstrap = createStudioBootstrap();
   if (!bootstrap.ok) throw new Error("BOOTSTRAP_REFUSED");
   const transport = createTransportHarness();
@@ -23,15 +23,15 @@ async function harness(options: { seed?: boolean; estimate?: number; retirement?
   const recovery = createRecoveryHarness();
   let retirements = 0;
   let exports = 0;
-  const real = options.retirement ?? createX1SerializedTransportRetirementAdapter(transport.service, transport.nextRequestId, {
+  const real = createX1SerializedTransportRetirementAdapter(transport.service, transport.nextRequestId, {
     beforeSubmit: composition.replacementWorkflow.expectTransportRetirement,
     settled: composition.replacementWorkflow.settleTransportRetirement,
   });
   const service = createStudioDocumentImport({ composition, recovery: recovery.service,
     estimateHistoryRetainedBytes: estimate, exportCurrent: () => { exports++; },
-    retirement: { retireImportReplacement: (request) => { retirements++; return real.retireImportReplacement(request); } },
+    retirement: { ...(options.retirement ?? real), retireImportReplacement: (request) => { retirements++; return (options.retirement ?? real).retireImportReplacement(request); } },
   });
-  return { composition, recovery, transport, service, retirements: () => retirements, exports: () => exports };
+  return { composition, recovery, transport, service, real, retirements: () => retirements, exports: () => exports };
 }
 
 describe("U5 production import workflow", () => {
@@ -235,3 +235,68 @@ describe("U5 production import workflow", () => {
     expect(h.transport.service.inspectTransport().generation).toBe(generation + 2);
   });
 });
+
+for (const defect of ["unknown-effect", "throwing-reader"] as const) {
+test(`import discards ${defect}, awaits one real reconciliation, and requires a fresh preview`, async () => {
+  let corrupt = true; let reconciliations = 0;
+  let release: (() => void) | undefined;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  let entered: (() => void) | undefined;
+  const started = new Promise<void>(resolve => { entered = resolve; });
+  const h = await harness({ retirement: {
+    retireImportReplacement: async request => {
+      const evidence = await h.real.retireImportReplacement(request);
+      return !corrupt ? evidence : defect === "unknown-effect" ? { ok: false, retirementEffect: "unknown" }
+        : Object.defineProperty({}, "ok", { get() { throw new Error("BAD_READER"); } });
+    },
+    reconcileImportReplacement: async request => { reconciliations++; entered?.(); await gate; return h.real.reconcileImportReplacement(request); },
+  } });
+  const before = h.composition.readApplicationState();
+  const generation = h.transport.service.inspectTransport().generation;
+  h.service.open(); await h.service.previewPaste(nested, "auto"); await h.service.requestCommit();
+  const pending = h.service.confirm(false); await started;
+  expect(h.composition.controller.setTitle("Forbidden").ok).toBe(false);
+  h.service.cancel(); await h.service.confirm(false); expect(h.retirements()).toBe(1);
+  release?.(); await pending;
+  const after = h.composition.readApplicationState();
+  expect(after.document).toBe(before.document); expect(after.history).toBe(before.history);
+  expect(after.bookmarks).toEqual(before.bookmarks); expect(after.exportRevision).toBe(before.exportRevision);
+  expect(after.recovery).toEqual(before.recovery); expect(after.pendingRequests).toEqual(before.pendingRequests);
+  expect(after.documentTransition.kind).toBe("idle");
+  expect(h.service.getSnapshot()).toMatchObject({ phase: "failed", reconciliationRequired: false });
+  expect(h.service.getSnapshot().message).toContain("Playback was safely stopped");
+  expect(h.transport.service.inspectTransport().generation).toBe(generation + 2);
+  expect(h.transport.timer.activeHandleCount()).toBe(0);
+  expect(h.transport.engine.inspectAudioEngine().nonreleasingVoiceCount).toBe(0);
+  await h.service.confirm(true); expect(h.retirements()).toBe(1);
+  corrupt = false; await h.service.previewPaste(nested, "auto"); await h.service.requestCommit(); await h.service.confirm(false);
+  const expected: unknown = JSON.parse(nested);
+  const observed: unknown = h.composition.readApplicationState().document;
+  expect(observed).toEqual(expected);
+  expect(h.transport.service.inspectTransport().generation).toBe(generation + 3);
+  expect(reconciliations).toBe(1);
+  expect(h.composition.controller.undo().ok).toBe(true);
+  expect(h.composition.readApplicationState().document).toEqual(before.document);
+});
+}
+for (const defect of ["request", "generation", "postcondition", "extra", "throw"] as const) {
+  test(`import rejects invalid reconciliation (${defect})`, async () => {
+    let calls = 0;
+    const h = await harness({ retirement: {
+      retireImportReplacement: () => Promise.resolve({ ok: true, value: {} }),
+      reconcileImportReplacement: request => {
+        calls++;
+        if (defect === "throw") throw new Error("UNPROVEN_STOP");
+        return Promise.resolve({ ok: true, authority: "x1-serialized-transport",
+          request: defect === "request" ? { ...request, candidateDocumentId: "wrong" } : request,
+          commandRequestId: 2, observedGeneration: 1, resultingGeneration: defect === "generation" ? 3 : 2,
+          state: "ready", noFutureAttack: defect !== "postcondition", ...(defect === "extra" ? { extra: true } : {}) });
+      },
+    } });
+    h.service.open(); await h.service.previewPaste(minimal, "auto"); await h.service.requestCommit(); await h.service.confirm(false);
+    expect(h.service.getSnapshot().reconciliationRequired).toBe(true);
+    expect(h.composition.controller.setTitle("Forbidden").ok).toBe(false); expect(calls).toBe(1);
+    h.service.invalidatePreview(); h.service.exportCurrentFirst(); h.service.cancel();
+    expect(h.service.getSnapshot().reconciliationRequired).toBe(true); expect(h.exports()).toBe(0);
+  });
+}

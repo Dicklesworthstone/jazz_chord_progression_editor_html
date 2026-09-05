@@ -26,7 +26,7 @@ export async function runStudioImportReplacement(
     },
   });
   let code = "import.replacement_request_invalid";
-  let needsReconciliation = false;
+  let needsReconciliation: boolean;
   try {
     const result = await driver(request);
     if (result.ok) return Object.freeze({ ok: true, result });

@@ -1,3 +1,4 @@
+import { observeNativeSources, failNextRetirementClockRead } from "../support/u5-native-audio";
 import { expect, test, type Page } from "@playwright/test";
 import { join } from "node:path";
 import { readFile } from "node:fs/promises";
@@ -141,6 +142,37 @@ for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 
       });
       await page.goto(artifact);
       await expect(page.locator('[data-app-ready="true"]')).toBeVisible();
+    });
+
+    test("a refused native audio-clock read preserves recovery bytes until a fresh Keep", async ({ page }, info) => {
+      await retitle(page, "Native recovery reconciliation");
+      const saved = await recoveryEntries(page);
+      const current = saved.find(([key]) => key.endsWith(":current"));
+      if (current === undefined) throw new Error("RECOVERY_COPY_MISSING");
+      const recovered = JSON.parse(current[1]) as { document: unknown };
+      await page.reload(); await expect(page.locator("#studio-recovery-keep")).toBeVisible();
+      const original = await downloadJson(page);
+      const before = await recoveryEntries(page);
+      await observeNativeSources(page);
+      await page.locator("#studio-transport-play").click();
+      await expect(page.locator("#studio-transport-pause")).toBeEnabled();
+      await failNextRetirementClockRead(page, "studio-recovery-keep");
+      await expect(page.getByRole("alert").filter({ hasText: "Playback was safely stopped" })).toBeVisible();
+      await expect.poll(() => page.evaluate(() => window.u5NativeSourceCounts?.())).toMatchObject({ sounding: 0, futureAttacks: 0 });
+      const sources = await page.evaluate(() => window.u5NativeSourceCounts?.());
+      expect(sources?.started).toBeGreaterThan(0);
+      expect(await recoveryEntries(page)).toEqual(before);
+      expect(await downloadJson(page)).toEqual(original);
+      await expect(page.locator("#studio-recovery-keep")).toBeEnabled();
+      await page.locator("#studio-recovery-keep").click();
+      await expect(page.locator("#studio-document-title")).toHaveValue("Native recovery reconciliation");
+      expect(await downloadJson(page)).toEqual(recovered.document);
+      await page.locator("#studio-transport-play").click();
+      await expect(page.locator("#studio-transport-pause")).toBeEnabled();
+      await page.locator("#studio-transport-stop").click();
+      await expect(page.locator("#studio-transport-pause")).toBeDisabled();
+      await page.locator("#studio-undo").click(); expect(await downloadJson(page)).toEqual(original);
+      await info.attach("native-recovery-reconciliation.json", { contentType: "application/json", body: JSON.stringify({ sources, before }) });
     });
 
     test("an unanswered recovery offer survives two reloads and multiple write windows", async ({ page }) => {

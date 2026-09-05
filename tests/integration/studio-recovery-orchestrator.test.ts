@@ -21,10 +21,11 @@ import {
   createX1SerializedTransportRetirementAdapter,
   validateDocumentSemantics,
 } from "../../src/application";
-import type { X1ReplacementRetirementAdapter } from "../../src/application/e0-interchange-contract";
+import type { StudioImportRetirementAdapter } from "../../src/application/studio-import-replacement";
 import type { ApplicationCommandDependencies } from "../../src/application/application-state-contract";
 import { decodeDocumentShape } from "../../src/domain";
 import {
+  type RecoveryEnvelope,
   computeEnvelopeChecksum,
   recoveryStorageKey,
 } from "../../src/persistence";
@@ -78,7 +79,7 @@ async function checksummedEnvelope(fields: Readonly<{
   return JSON.stringify({ ...body, checksum });
 }
 
-async function createHarness(writeOutcome: "written" | "quota" | "denied" = "written", retirement?: X1ReplacementRetirementAdapter) {
+async function createHarness(writeOutcome: "written" | "quota" | "denied" = "written", retirement?: StudioImportRetirementAdapter) {
   const bootstrap = createStudioBootstrap();
   if (!bootstrap.ok) throw new Error("RECOVERY_TEST_BOOTSTRAP");
   const dependencies: ApplicationCommandDependencies = Object.freeze({
@@ -105,13 +106,14 @@ async function createHarness(writeOutcome: "written" | "quota" | "denied" = "wri
   const recoveryHarness = createRecoveryHarness([{ kind: "indexeddb", writeOutcome }], recoveryStatus.observe);
   let seedOrdinal = 0;
   let validationCalls = 0;
+  const real = createX1SerializedTransportRetirementAdapter(transport.service, transport.nextRequestId, {
+    beforeSubmit: composition.replacementWorkflow.expectTransportRetirement,
+    settled: composition.replacementWorkflow.settleTransportRetirement,
+  });
   const orchestrator = createStudioRecoveryOrchestrator({
     composition,
     recovery: recoveryHarness.service,
-    retirement: retirement ?? createX1SerializedTransportRetirementAdapter(
-      transport.service,
-      transport.nextRequestId,
-    ),
+    retirement: retirement ?? real,
     decodeDocumentShape,
     validateDocumentSemantics: candidate => { validationCalls++; return validateDocumentSemantics(candidate); },
     readState: composition.readApplicationState,
@@ -122,7 +124,7 @@ async function createHarness(writeOutcome: "written" | "quota" | "denied" = "wri
       return `recovery-keep-${String(seedOrdinal)}`;
     },
   });
-  return { composition, transport, recoveryHarness, orchestrator, recoveryStatus, validationCalls: () => validationCalls };
+  return { composition, transport, recoveryHarness, orchestrator, real, recoveryStatus, validationCalls: () => validationCalls };
 }
 
 describe("U5 checksum-valid recovery candidates must also pass F2/F3", () => {
@@ -457,7 +459,7 @@ for (const [label, retire] of [
   test(`recovery ${label} retains the transition lock and the stored copy`, async () => {
     const h = await createHarness("written", { retireImportReplacement: retire });
     const before = h.composition.readApplicationState();
-    const envelope = JSON.parse(await checksummedEnvelope({ revision: 7, document: RECOVERED_RAW, savedAt: "2026-09-01T12:00:00.000Z" }));
+    const envelope = JSON.parse(await checksummedEnvelope({ revision: 7, document: RECOVERED_RAW, savedAt: "2026-09-01T12:00:00.000Z" })) as RecoveryEnvelope;
     const result = await h.orchestrator.keep(envelope);
     expect(result.ok).toBe(false);
     expect(h.composition.readApplicationState().document).toBe(before.document);
@@ -467,3 +469,57 @@ for (const [label, retire] of [
     expect(h.recoveryHarness.service.inspectRecovery().work.writesScheduled).toBe(0);
   });
 }
+
+test("recovery safely reconciles before unlocking Keep and preserves the envelope until a fresh gesture", async () => {
+  let corrupt = true; let reconciliations = 0;
+  const h = await createHarness("written", {
+    retireImportReplacement: async request => {
+      const evidence = await h.real.retireImportReplacement(request);
+      return corrupt ? { ok: false, retirementEffect: "unknown" } : evidence;
+    },
+    reconcileImportReplacement: request => { reconciliations++; return h.real.reconcileImportReplacement(request); },
+  });
+  const before = h.composition.readApplicationState();
+  const store = h.recoveryHarness.adapters[0]?.store;
+  if (store === undefined) throw new Error("NO_STORE");
+  store.set(recoveryStorageKey(before.document.id, "current"), await checksummedEnvelope({
+    revision: 7, document: RECOVERED_RAW, savedAt: "2026-09-01T12:00:00.000Z" }));
+  const stored = [...store];
+  const session = createStudioRecoverySession({ composition: h.composition, orchestrator: h.orchestrator,
+    subscribeRecovery: h.recoveryStatus.subscribe, sessionEdited: true, formatTimestamp: value => value });
+  await session.start(); await session.keep();
+  expect(session.getSnapshot()).toMatchObject({ busy: false, reconciliationRequired: false });
+  expect(session.getSnapshot().failureMessage).toContain("Playback was safely stopped");
+  expect(session.getSnapshot().offer).not.toBeNull();
+  expect(h.composition.readApplicationState().document).toBe(before.document);
+  expect(h.composition.readApplicationState().history).toBe(before.history);
+  expect(h.composition.readApplicationState().documentTransition.kind).toBe("idle");
+  expect([...store]).toEqual(stored); expect(reconciliations).toBe(1);
+  expect(h.transport.timer.activeHandleCount()).toBe(0);
+  corrupt = false; await session.keep();
+  expect(session.getSnapshot().offer).toBeNull();
+  const observed: unknown = h.composition.readApplicationState().document;
+  expect(observed).toEqual(RECOVERED_RAW);
+  expect(h.composition.controller.undo().ok).toBe(true);
+  expect(h.composition.readApplicationState().document).toEqual(before.document);
+});
+
+test("uncertain recovery disables Keep and Discard without erasing the stored copy", async () => {
+  let attempts = 0;
+  const h = await createHarness("written", { retireImportReplacement: () => { attempts++; return Promise.resolve({ ok: true, value: {} }); } });
+  const store = h.recoveryHarness.adapters[0]?.store;
+  if (store === undefined) throw new Error("NO_STORE");
+  const before = h.composition.readApplicationState();
+  store.set(recoveryStorageKey(before.document.id, "current"), await checksummedEnvelope({
+    revision: 7, document: RECOVERED_RAW, savedAt: "2026-09-01T12:00:00.000Z" }));
+  const bytes = [...store];
+  const session = createStudioRecoverySession({ composition: h.composition, orchestrator: h.orchestrator,
+    subscribeRecovery: h.recoveryStatus.subscribe, sessionEdited: true, formatTimestamp: value => value });
+  await session.start(); await session.keep();
+  expect(session.getSnapshot().reconciliationRequired).toBe(true);
+  expect(session.getSnapshot().failureMessage).toContain("Reload");
+  await session.keep(); await session.discard();
+  expect(attempts).toBe(1); expect([...store]).toEqual(bytes);
+  expect(h.composition.controller.setTitle("Forbidden").ok).toBe(false);
+  expect(session.getSnapshot().offer).not.toBeNull();
+});

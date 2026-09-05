@@ -1,3 +1,4 @@
+import { observeNativeSources, failNextRetirementClockRead } from "../support/u5-native-audio";
 import { expect, test, type Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
@@ -66,6 +67,35 @@ async function replacePreview(page: Page): Promise<void> {
 for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) {
   test.describe(`U5 document import ${String(viewport.width)}px`, () => {
     test.use({ viewport });
+    test("a refused native audio-clock read preserves import state and a fresh preview succeeds", async ({ page }, info) => {
+      const original = await exportDocument(page);
+      await observeNativeSources(page);
+      await page.locator("#studio-transport-play").click();
+      await expect(page.locator("#studio-transport-pause")).toBeEnabled();
+      await previewFile(page); await page.locator("#studio-import-commit").click();
+      await expect(page.locator("#studio-import-confirm")).toBeEnabled();
+      await failNextRetirementClockRead(page, "studio-import-confirm");
+      await expect(page.getByRole("alert").filter({ hasText: "Playback was safely stopped" })).toBeVisible();
+      await expect.poll(() => page.evaluate(() => window.u5NativeSourceCounts?.())).toMatchObject({ sounding: 0, futureAttacks: 0 });
+      const sources = await page.evaluate(() => window.u5NativeSourceCounts?.());
+      expect(sources?.started).toBeGreaterThan(0);
+      await info.attach("native-import-reconciliation.json", { contentType: "application/json", body: JSON.stringify(sources) });
+      await page.keyboard.press("Escape");
+      await expect(page.locator("#studio-import-chart")).toBeFocused();
+      expect(await exportDocument(page)).toEqual(original);
+      await page.locator("#studio-document-title").fill("Fresh import consent");
+      await page.locator("#studio-document-title").press("Enter");
+      await previewFile(page); await replacePreview(page);
+      expect(await exportDocument(page)).toEqual(expectedDocument);
+      await page.locator("#studio-transport-play").click();
+      await expect(page.locator("#studio-transport-pause")).toBeEnabled();
+      await page.locator("#studio-transport-stop").click();
+      await expect(page.locator("#studio-transport-pause")).toBeDisabled();
+      await page.locator("#studio-undo").click();
+      if (typeof original !== "object" || original === null) throw new Error("ORIGINAL_MISSING");
+      expect(await exportDocument(page)).toEqual({ ...original, title: "Fresh import consent" });
+    });
+
     test("local file preview and Cancel are inert; confirmed import exports exactly and Undo restores the chart", async ({ page }) => {
       const original = await exportDocument(page);
       if (typeof original !== "object" || original === null) throw new Error("EXPORT_DOCUMENT_MISSING");
