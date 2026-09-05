@@ -255,6 +255,10 @@ final class JazzStudioStore: ObservableObject {
         mutate { $0.instrument = instrument }
     }
 
+    func previewKey(_ midi: Int) {
+        audio.preview(midi: midi, tone: chart.instrument)
+    }
+
     func updateVoicing(_ family: VoicingFamily) {
         guard family != chart.voicingFamily else { return }
         audio.stop()

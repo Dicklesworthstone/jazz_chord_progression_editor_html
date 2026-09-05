@@ -3,6 +3,82 @@ import UIKit
 @testable import FrankenJazz
 
 final class FrankenJazzCoreTests: XCTestCase {
+    func testNativeInstrumentCatalogMatchesEveryOriginalInstrument() throws {
+        let expected: [(String, String)] = [
+            ("mellow-keys", "Mellow Keys"),
+            ("fm-electric-piano", "FM Electric Piano"),
+            ("vibraphone", "Vibraphone"),
+            ("warm-pad", "Warm Pad"),
+            ("analog-poly", "Analog Poly"),
+            ("concert-grand", "Concert Grand"),
+            ("flute", "Flute"),
+            ("organ", "Organ"),
+            ("guitar", "Guitar"),
+            ("upright-bass", "Upright Bass"),
+            ("concert-vibes", "Concert Vibes"),
+            ("blues-guitar", "Blues Guitar"),
+            ("clarinet", "Clarinet"),
+            ("dreadnought-guitar", "Steel Dreadnought"),
+            ("ukulele", "Re-entrant Ukulele")
+        ]
+        XCTAssertEqual(InstrumentTone.allCases.map(\.originalID), expected.map { $0.0 })
+        XCTAssertEqual(InstrumentTone.allCases.map(\.displayName), expected.map { $0.1 })
+        XCTAssertEqual(Set(InstrumentTone.allCases.map(\.midiProgram)).count, 13)
+        for tone in InstrumentTone.allCases {
+            XCTAssertNotNil(UIImage(systemName: tone.symbol), "\(tone.displayName) needs a real SF Symbol.")
+        }
+
+        let decoder = JSONDecoder()
+        XCTAssertEqual(
+            try decoder.decode(InstrumentTone.self, from: Data("\"Electric piano\"".utf8)),
+            .electricPiano,
+            "The original native persisted spelling must remain readable."
+        )
+        XCTAssertEqual(
+            try decoder.decode(InstrumentTone.self, from: Data("\"Warm pad\"".utf8)),
+            .warmPad
+        )
+        XCTAssertEqual(
+            try decoder.decode(InstrumentTone.self, from: Data("\"concert-grand\"".utf8)),
+            .concertGrand
+        )
+        for tone in InstrumentTone.allCases {
+            let encoded = try JSONEncoder().encode(tone)
+            XCTAssertEqual(String(decoding: encoded, as: UTF8.self), "\"\(tone.originalID)\"")
+            XCTAssertEqual(try decoder.decode(InstrumentTone.self, from: encoded), tone)
+        }
+    }
+
+    func testEveryInstrumentRendersFiniteDistinctNonSilentPreviewWithoutAudioOutput() throws {
+        var fingerprints = Set<[UInt32]>()
+        for tone in InstrumentTone.allCases {
+            let rendered = try XCTUnwrap(
+                JazzAudioRenderer.renderPreview(midi: 60, tone: tone, duration: 0.16),
+                tone.displayName
+            )
+            XCTAssertEqual(rendered.left.count, rendered.right.count, tone.displayName)
+            XCTAssertGreaterThan(rendered.left.count, 3_000, tone.displayName)
+            XCTAssertTrue(rendered.left.allSatisfy(\.isFinite), tone.displayName)
+            XCTAssertTrue(rendered.right.allSatisfy(\.isFinite), tone.displayName)
+            XCTAssertTrue(rendered.left.contains { abs($0) > 0.0001 }, tone.displayName)
+            let fingerprint = stride(from: 101, to: min(3_000, rendered.left.count), by: 137)
+                .map { rendered.left[$0].bitPattern }
+            XCTAssertTrue(fingerprints.insert(fingerprint).inserted, "\(tone.displayName) needs its own audible recipe.")
+        }
+
+        XCTAssertNil(JazzAudioRenderer.renderPreview(midi: 20, tone: .concertGrand))
+        XCTAssertNil(JazzAudioRenderer.renderPreview(midi: 109, tone: .concertGrand))
+    }
+
+    func testMIDIExportUsesTheSelectedInstrumentProgram() throws {
+        let parsed = try JazzTheory.parseChart("| Cmaj7 |")
+        var chart = JazzChart(title: "Programs", measures: parsed.measures)
+        for tone in InstrumentTone.allCases {
+            chart.instrument = tone
+            XCTAssertEqual(programChange(in: MIDIFileWriter.makeFile(chart: chart)), tone.midiProgram, tone.displayName)
+        }
+    }
+
     func testEditorSurfaceAdaptsAndMaintainsReadableContrast() throws {
         let darkTraits = UITraitCollection(userInterfaceStyle: .dark)
         let lightTraits = UITraitCollection(userInterfaceStyle: .light)
@@ -1288,6 +1364,45 @@ final class FrankenJazzCoreTests: XCTestCase {
             }
         }
         return pitches
+    }
+
+    private func programChange(in data: Data) -> UInt8? {
+        let bytes = [UInt8](data)
+        guard bytes.count >= 22 else { return nil }
+        var index = 22
+
+        func skipVariableLength() -> Bool {
+            for _ in 0..<4 {
+                guard index < bytes.count else { return false }
+                let byte = bytes[index]
+                index += 1
+                if byte & 0x80 == 0 { return true }
+            }
+            return false
+        }
+
+        while index < bytes.count {
+            guard skipVariableLength(), index < bytes.count else { return nil }
+            let status = bytes[index]
+            index += 1
+            switch status {
+            case 0xC0:
+                guard index < bytes.count else { return nil }
+                return bytes[index]
+            case 0x90, 0x80:
+                index += min(2, bytes.count - index)
+            case 0xFF:
+                guard index < bytes.count else { return nil }
+                index += 1
+                guard skipVariableLength() else { return nil }
+                // MIDIFileWriter emits only the fixed three-byte tempo meta
+                // before its program change, so this helper can skip it.
+                index += min(3, bytes.count - index)
+            default:
+                return nil
+            }
+        }
+        return nil
     }
 
     private func rgba(_ color: UIColor) throws -> [CGFloat] {

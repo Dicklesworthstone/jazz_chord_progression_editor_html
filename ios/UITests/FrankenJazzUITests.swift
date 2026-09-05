@@ -116,6 +116,31 @@ final class FrankenJazzUITests: XCTestCase {
         add(proof)
     }
 
+    func testInspectorPianoExposesRealHittableKeysWithoutPlayingAudio() throws {
+        let firstChord = app.buttons.matching(
+            NSPredicate(format: "label BEGINSWITH 'Measure 1, Cmaj9'")
+        ).firstMatch
+        XCTAssertTrue(firstChord.waitForExistence(timeout: 3))
+        firstChord.tap()
+
+        let instruction = app.staticTexts["Tap any key to hear it"]
+        let middleC = app.buttons["piano-key-60"]
+        for _ in 0..<8 where !middleC.isHittable { app.swipeUp() }
+        XCTAssertTrue(instruction.waitForExistence(timeout: 3))
+        XCTAssertTrue(middleC.waitForExistence(timeout: 3))
+        XCTAssertTrue(middleC.isHittable)
+        XCTAssertGreaterThanOrEqual(middleC.frame.width, 44)
+        XCTAssertGreaterThanOrEqual(middleC.frame.height, 44)
+        XCTAssertTrue(middleC.label.contains("C4"))
+        XCTAssertTrue(app.staticTexts["FM Electric Piano"].exists)
+
+        // Do not tap: automated validation must never emit audible output.
+        let proof = XCTAttachment(screenshot: app.screenshot())
+        proof.name = "FrankenJazz playable inspector piano"
+        proof.lifetime = .keepAlways
+        add(proof)
+    }
+
     func testIPadExpandedWorkspaceExposesLibraryChartInspectorAndTransport() throws {
         let window = app.windows.firstMatch
         XCTAssertTrue(window.waitForExistence(timeout: 5))

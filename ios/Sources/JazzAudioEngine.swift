@@ -15,12 +15,18 @@ final class JazzAudioEngine: ObservableObject {
     @Published private(set) var playheadBeat = 0.0
     @Published private(set) var totalBeats = 0.0
     @Published private(set) var activeChordID: UUID?
+    @Published private(set) var previewIssue: String?
     @Published var loops = false
 
     private let engine = AVAudioEngine()
     private let player = AVAudioPlayerNode()
+    /// Preview owns a separate node and generation fence. Inspector notes can
+    /// therefore coexist with progression playback without seeking, pausing,
+    /// replacing, or completing the main transport's scheduled buffer.
+    private let previewPlayer = AVAudioPlayerNode()
     private var buffer: AVAudioPCMBuffer?
     private var scheduledBuffer: AVAudioPCMBuffer?
+    private var scheduledPreviewBuffer: AVAudioPCMBuffer?
     private var events: [PlaybackEvent] = []
     private var tempo = 120.0
     private var timer: Timer?
@@ -28,17 +34,22 @@ final class JazzAudioEngine: ObservableObject {
     private var startingBeat = 0.0
     private var generation = 0
     private var renderRequest = 0
+    private var previewGeneration = 0
     private var cacheSignature = ""
 
     init() {
         engine.attach(player)
+        engine.attach(previewPlayer)
         engine.connect(player, to: engine.mainMixerNode, format: nil)
+        engine.connect(previewPlayer, to: engine.mainMixerNode, format: nil)
         engine.mainMixerNode.outputVolume = 0.78
+        previewPlayer.volume = 0.82
     }
 
     deinit {
         timer?.invalidate()
         player.stop()
+        previewPlayer.stop()
         engine.stop()
     }
 
@@ -125,9 +136,53 @@ final class JazzAudioEngine: ObservableObject {
         renderRequest += 1
         timer?.invalidate()
         player.stop()
+        stopPreview()
         playheadBeat = 0
         activeChordID = nil
         state = .ready
+    }
+
+    /// Plays one bounded inspector note without touching any main-transport
+    /// field. Rendering remains off the main actor; rapid taps retire stale
+    /// results before they can schedule themselves.
+    func preview(midi: Int, tone: InstrumentTone) {
+        guard (21...108).contains(midi) else {
+            previewIssue = "That key is outside the supported A0–C8 range."
+            return
+        }
+        previewGeneration += 1
+        let request = previewGeneration
+        previewPlayer.stop()
+        scheduledPreviewBuffer = nil
+        previewIssue = nil
+        Task { [weak self] in
+            let rendered = await Task.detached(priority: .userInitiated) {
+                JazzAudioRenderer.renderPreview(midi: midi, tone: tone)
+            }.value
+            guard let self, self.previewGeneration == request,
+                  let rendered, let pcm = self.makePCM(rendered) else { return }
+            do {
+                try self.configureSession()
+                guard self.previewGeneration == request else { return }
+                self.scheduledPreviewBuffer = pcm
+                self.previewPlayer.scheduleBuffer(pcm, at: nil) { [weak self] in
+                    Task { @MainActor in
+                        guard let self, self.previewGeneration == request else { return }
+                        self.scheduledPreviewBuffer = nil
+                    }
+                }
+                self.previewPlayer.play()
+            } catch {
+                self.previewIssue = "Note preview is unavailable: \(error.localizedDescription)"
+            }
+        }
+    }
+
+    func stopPreview() {
+        previewGeneration += 1
+        previewPlayer.stop()
+        scheduledPreviewBuffer = nil
+        previewIssue = nil
     }
 
     private func makePCM(_ rendered: JazzRenderedAudio) -> AVAudioPCMBuffer? {

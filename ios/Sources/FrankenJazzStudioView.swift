@@ -38,7 +38,12 @@ struct FrankenJazzStudioView: View {
             onCompletion: store.finishSaveCopy
         )
         .overlay(alignment: .top) { noticeBanner }
-        .onChange(of: scenePhase) { _, phase in if phase != .active { store.audio.pause() } }
+        .onChange(of: scenePhase) { _, phase in
+            if phase != .active {
+                store.audio.pause()
+                store.audio.stopPreview()
+            }
+        }
 #if DEBUG
         .task { applyDebugLaunchIfNeeded() }
 #endif
@@ -255,13 +260,13 @@ private struct ChartEditorView: View {
         Menu {
             ForEach(InstrumentTone.allCases) { instrument in
                 Button { store.updateInstrument(instrument) } label: {
-                    Label(instrument.rawValue, systemImage: instrument.symbol)
+                    Label(instrument.displayName, systemImage: instrument.symbol)
                 }
             }
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: store.chart.instrument.symbol)
-                Text(store.chart.instrument.rawValue).lineLimit(1).minimumScaleFactor(0.68)
+                Text(store.chart.instrument.displayName).lineLimit(1).minimumScaleFactor(0.68)
                 Image(systemName: "chevron.up.chevron.down").font(.caption2)
             }
             .font(.system(size: JazzTheme.size(12.5), weight: .semibold, design: .rounded))
@@ -762,8 +767,9 @@ private struct ChordInspectorView: View {
     }
 
     private func pianoCard(_ description: ChordDescription) -> some View {
-        JazzPanel(accent: JazzTheme.cyan) {
-            VStack(alignment: .leading, spacing: 12) {
+        let exactPitches = Set(store.selectedMIDIPitches)
+        return JazzPanel(accent: JazzTheme.cyan) {
+            VStack(alignment: .leading, spacing: 10) {
                 HStack {
                     JazzSectionLabel(number: "06", title: "Literal tones", tint: JazzTheme.cyan)
                     Spacer()
@@ -771,9 +777,25 @@ private struct ChordInspectorView: View {
                         .font(.system(size: JazzTheme.size(10), weight: .semibold, design: .monospaced))
                         .foregroundStyle(JazzTheme.text)
                 }
-                MiniPiano(highlights: Set(description.pitchClasses), accent: JazzTheme.cyan)
-                    .frame(height: 82)
-                    .accessibilityLabel("Chord tones: \(description.toneNames.joined(separator: ", "))")
+                HStack(spacing: 6) {
+                    Label("Tap any key to hear it", systemImage: "hand.tap")
+                    Spacer(minLength: 8)
+                    Text(store.chart.instrument.displayName)
+                }
+                .font(.system(size: JazzTheme.size(9.5), weight: .semibold, design: .rounded))
+                .foregroundStyle(JazzTheme.secondary)
+                MiniPiano(
+                    highlightedMIDIPitches: exactPitches,
+                    accent: JazzTheme.cyan,
+                    instrumentName: store.chart.instrument.displayName,
+                    onKeyPress: store.previewKey
+                )
+                .frame(height: 96)
+                if let issue = store.audio.previewIssue {
+                    Label(issue, systemImage: "exclamationmark.triangle")
+                        .font(.system(size: JazzTheme.size(9.5), weight: .semibold, design: .rounded))
+                        .foregroundStyle(JazzTheme.coral)
+                }
             }
         }
     }
@@ -1042,30 +1064,107 @@ private struct SelectedChordSymbolEditor: View {
 }
 
 private struct MiniPiano: View {
-    let highlights: Set<Int>
+    let highlightedMIDIPitches: Set<Int>
     let accent: Color
+    let instrumentName: String
+    let onKeyPress: (Int) -> Void
+
+    private let whiteWidth: CGFloat = 46
+    private let whiteSpacing: CGFloat = 1
+    private let blackTouchWidth: CGFloat = 44
+    private let blackVisualWidth: CGFloat = 30
+
+    private var bounds: (start: Int, end: Int) {
+        let valid = highlightedMIDIPitches.filter { (21...108).contains($0) }
+        let lowest = valid.min() ?? 60
+        let highest = valid.max() ?? 72
+        let start = max(24, min(84, (lowest / 12) * 12))
+        let end = min(108, max(start + 24, ((highest + 11) / 12) * 12))
+        return (start, end)
+    }
+
+    private var whitePitches: [Int] {
+        (bounds.start...bounds.end).filter { [0, 2, 4, 5, 7, 9, 11].contains($0 % 12) }
+    }
+
+    private var blackPitches: [Int] {
+        guard bounds.end > bounds.start else { return [] }
+        return (bounds.start..<bounds.end).filter { [1, 3, 6, 8, 10].contains($0 % 12) }
+    }
 
     var body: some View {
-        GeometryReader { proxy in
-            let whitePitches = [0, 2, 4, 5, 7, 9, 11, 12]
-            let whiteWidth = proxy.size.width / CGFloat(whitePitches.count)
+        ScrollView(.horizontal, showsIndicators: false) {
             ZStack(alignment: .topLeading) {
-                HStack(spacing: 1) {
-                    ForEach(whitePitches, id: \.self) { pitch in
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(highlights.contains(pitch % 12) ? accent.opacity(0.88) : JazzTheme.paper)
+                HStack(spacing: whiteSpacing) {
+                    ForEach(whitePitches, id: \.self) { midi in
+                        Button { onKeyPress(midi) } label: {
+                            ZStack(alignment: .bottom) {
+                                RoundedRectangle(cornerRadius: 5)
+                                    .fill(highlightedMIDIPitches.contains(midi) ? accent.opacity(0.88) : JazzTheme.paper)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 5)
+                                            .stroke(JazzTheme.background.opacity(0.45), lineWidth: 1)
+                                    )
+                                Text(noteName(midi))
+                                    .font(.system(size: 8, weight: .bold, design: .monospaced))
+                                    .foregroundStyle(Color.black.opacity(0.70))
+                                    .padding(.bottom, 5)
+                            }
+                            .frame(width: whiteWidth, height: 96)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("piano-key-\(midi)")
+                        .accessibilityLabel(accessibilityLabel(for: midi))
+                        .accessibilityHint("Plays this note using \(instrumentName).")
                     }
                 }
-                ForEach(0..<5, id: \.self) { index in
-                    let keys: [(pitch: Int, offset: CGFloat)] = [(1, 0.70), (3, 1.70), (6, 3.70), (8, 4.70), (10, 5.70)]
-                    let key = keys[index]
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(highlights.contains(key.pitch) ? JazzTheme.brass : JazzTheme.background)
-                        .frame(width: whiteWidth * 0.62, height: proxy.size.height * 0.61)
-                        .offset(x: whiteWidth * key.offset)
+                ForEach(blackPitches, id: \.self) { midi in
+                    let precedingWhiteKeys = whitePitches.lazy.filter { $0 < midi }.count
+                    Button { onKeyPress(midi) } label: {
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(
+                                highlightedMIDIPitches.contains(midi)
+                                    ? JazzTheme.brass
+                                    : Color(red: 0.055, green: 0.05, blue: 0.07)
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 4)
+                                    .stroke(JazzTheme.paper.opacity(0.18), lineWidth: 1)
+                            )
+                            .frame(width: blackVisualWidth, height: 60)
+                            .shadow(color: .black.opacity(0.24), radius: 2, y: 2)
+                    }
+                    .buttonStyle(.plain)
+                    .frame(width: blackTouchWidth, height: 60)
+                    .position(
+                        x: CGFloat(precedingWhiteKeys) * (whiteWidth + whiteSpacing) - whiteSpacing / 2,
+                        y: 30
+                    )
+                    .accessibilityIdentifier("piano-key-\(midi)")
+                    .accessibilityLabel(accessibilityLabel(for: midi))
+                    .accessibilityHint("Plays this note using \(instrumentName).")
                 }
             }
+            .frame(width: keyboardWidth, height: 96, alignment: .leading)
         }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Playable chord keyboard")
+    }
+
+    private var keyboardWidth: CGFloat {
+        CGFloat(whitePitches.count) * whiteWidth
+            + CGFloat(max(0, whitePitches.count - 1)) * whiteSpacing
+    }
+
+    private func accessibilityLabel(for midi: Int) -> String {
+        highlightedMIDIPitches.contains(midi)
+            ? "\(noteName(midi)), selected chord voice"
+            : noteName(midi)
+    }
+
+    private func noteName(_ midi: Int) -> String {
+        let names = ["C", "C♯", "D", "E♭", "E", "F", "F♯", "G", "A♭", "A", "B♭", "B"]
+        return "\(names[(midi % 12 + 12) % 12])\(midi / 12 - 1)"
     }
 }
 

@@ -12,7 +12,7 @@ enum MIDIFileWriter {
         var messages: [Message] = []
         let microseconds = Int(60_000_000 / max(30, min(320, chart.tempoBPM)))
         messages.append(Message(tick: 0, priority: 0, bytes: [0xFF, 0x51, 0x03, UInt8((microseconds >> 16) & 0xFF), UInt8((microseconds >> 8) & 0xFF), UInt8(microseconds & 0xFF)]))
-        messages.append(Message(tick: 0, priority: 1, bytes: [0xC0, 4]))
+        messages.append(Message(tick: 0, priority: 1, bytes: [0xC0, chart.instrument.midiProgram]))
         for event in JazzTheory.compilePlayback(chart) {
             let start = Int((event.startBeat * Double(ppq)).rounded())
             let end = Int(((event.startBeat + max(0.05, event.durationBeats - 0.05)) * Double(ppq)).rounded())

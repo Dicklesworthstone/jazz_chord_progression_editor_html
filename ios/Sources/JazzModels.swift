@@ -44,18 +44,123 @@ enum GrooveStyle: String, CaseIterable, Codable, Identifiable, Sendable {
 }
 
 enum InstrumentTone: String, CaseIterable, Codable, Identifiable, Sendable {
-    case electricPiano = "Electric piano"
     case mellowKeys = "Mellow keys"
+    case electricPiano = "Electric piano"
     case vibraphone = "Vibraphone"
     case warmPad = "Warm pad"
+    case analogPoly = "Analog poly"
+    case concertGrand = "Concert grand"
+    case flute = "Flute"
+    case organ = "Organ"
+    case guitar = "Guitar"
+    case uprightBass = "Upright bass"
+    case concertVibes = "Concert vibes"
+    case bluesGuitar = "Blues guitar"
+    case clarinet = "Clarinet"
+    case dreadnoughtGuitar = "Steel dreadnought"
+    case ukulele = "Re-entrant ukulele"
 
-    var id: String { rawValue }
+    /// Stable parity identity from the original web document contract.
+    /// Raw values intentionally remain the native v1 persisted spellings so
+    /// charts saved before the complete instrument catalog still decode.
+    var originalID: String {
+        switch self {
+        case .mellowKeys: "mellow-keys"
+        case .electricPiano: "fm-electric-piano"
+        case .vibraphone: "vibraphone"
+        case .warmPad: "warm-pad"
+        case .analogPoly: "analog-poly"
+        case .concertGrand: "concert-grand"
+        case .flute: "flute"
+        case .organ: "organ"
+        case .guitar: "guitar"
+        case .uprightBass: "upright-bass"
+        case .concertVibes: "concert-vibes"
+        case .bluesGuitar: "blues-guitar"
+        case .clarinet: "clarinet"
+        case .dreadnoughtGuitar: "dreadnought-guitar"
+        case .ukulele: "ukulele"
+        }
+    }
+
+    var displayName: String {
+        switch self {
+        case .mellowKeys: "Mellow Keys"
+        case .electricPiano: "FM Electric Piano"
+        case .vibraphone: "Vibraphone"
+        case .warmPad: "Warm Pad"
+        case .analogPoly: "Analog Poly"
+        case .concertGrand: "Concert Grand"
+        case .flute: "Flute"
+        case .organ: "Organ"
+        case .guitar: "Guitar"
+        case .uprightBass: "Upright Bass"
+        case .concertVibes: "Concert Vibes"
+        case .bluesGuitar: "Blues Guitar"
+        case .clarinet: "Clarinet"
+        case .dreadnoughtGuitar: "Steel Dreadnought"
+        case .ukulele: "Re-entrant Ukulele"
+        }
+    }
+
+    /// Zero-based General MIDI program used when the native document is
+    /// exported. Synthesis-only colors use the nearest honest GM family.
+    var midiProgram: UInt8 {
+        switch self {
+        case .mellowKeys: 4
+        case .electricPiano: 5
+        case .vibraphone, .concertVibes: 11
+        case .warmPad: 89
+        case .analogPoly: 81
+        case .concertGrand: 0
+        case .flute: 73
+        case .organ: 16
+        case .guitar, .ukulele: 24
+        case .uprightBass: 32
+        case .bluesGuitar: 27
+        case .clarinet: 71
+        case .dreadnoughtGuitar: 25
+        }
+    }
+
+    var id: String { originalID }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let value = try container.decode(String.self)
+        guard let decoded = Self.allCases.first(where: {
+            $0.originalID == value || $0.rawValue == value
+        }) else {
+            throw DecodingError.dataCorruptedError(
+                in: container,
+                debugDescription: "Unknown FrankenJazz instrument ID: \(value)"
+            )
+        }
+        self = decoded
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(originalID)
+    }
+
     var symbol: String {
         switch self {
         case .electricPiano: "pianokeys"
         case .mellowKeys: "music.quarternote.3"
         case .vibraphone: "bell"
         case .warmPad: "waveform.path"
+        case .analogPoly: "waveform"
+        case .concertGrand: "pianokeys.inverse"
+        case .flute: "wind"
+        case .organ: "building.columns"
+        case .guitar: "guitars"
+        case .uprightBass: "music.note"
+        case .concertVibes: "bell.and.waves.left.and.right"
+        case .bluesGuitar: "guitars.fill"
+        case .clarinet: "music.note.list"
+        case .dreadnoughtGuitar: "guitars"
+        case .ukulele: "music.quarternote.3"
         }
     }
 }

@@ -48,7 +48,7 @@ enum JazzAudioRenderer {
         return [
             String(chart.tempoBPM),
             chart.groove.rawValue,
-            chart.instrument.rawValue,
+            chart.instrument.originalID,
             chart.voicingFamily.rawValue,
             changes
         ].joined(separator: "-")
@@ -66,6 +66,28 @@ enum JazzAudioRenderer {
         )
         mixChanges(chart, into: &stereo)
         mixGroove(chart, into: &stereo)
+        normalize(&stereo)
+        return JazzRenderedAudio(left: stereo.left, right: stereo.right, sampleRate: sampleRate)
+    }
+
+    /// Renders one short, bounded note for the inspector piano. This function
+    /// is deliberately pure: tests can verify every instrument without
+    /// starting AVAudioEngine or sending samples to an output device.
+    nonisolated static func renderPreview(
+        midi: Int,
+        tone: InstrumentTone,
+        duration: Double = 0.82
+    ) -> JazzRenderedAudio? {
+        guard (21...108).contains(midi), duration.isFinite, (0.08...3).contains(duration) else { return nil }
+        let frameCount = Int((duration + 0.04) * sampleRate)
+        var stereo = StereoBuffer(
+            left: [Float](repeating: 0, count: frameCount),
+            right: [Float](repeating: 0, count: frameCount)
+        )
+        mixNote(
+            NoteRequest(midi: midi, velocity: 0.62, start: 0, duration: duration, tone: tone, pan: 0),
+            into: &stereo
+        )
         normalize(&stereo)
         return JazzRenderedAudio(left: stereo.left, right: stereo.right, sampleRate: sampleRate)
     }
@@ -258,7 +280,8 @@ enum JazzAudioRenderer {
         let angles = recipe.partials.map { 2 * Double.pi * frequency * $0.ratio / sampleRate }
         let sineSteps = angles.map(sin)
         let cosineSteps = angles.map(cos)
-        let tremoloAngle = 2 * Double.pi * 5.2 / sampleRate
+        let tremolo = tremolo(for: request.tone)
+        let tremoloAngle = 2 * Double.pi * (tremolo?.rate ?? 1) / sampleRate
         let tremoloSineStep = sin(tremoloAngle)
         let tremoloCosineStep = cos(tremoloAngle)
         var tremoloSine = 0.0
@@ -281,8 +304,8 @@ enum JazzAudioRenderer {
                 cosine[index] = cosine[index] * cosineSteps[index] - sine[index] * sineSteps[index]
                 sine[index] = nextSine
             }
-            if request.tone == .vibraphone {
-                sample *= 0.82 + 0.18 * tremoloSine
+            if let tremolo {
+                sample *= (1 - tremolo.depth) + tremolo.depth * tremoloSine
                 let nextSine = tremoloSine * tremoloCosineStep + tremoloCosine * tremoloSineStep
                 tremoloCosine = tremoloCosine * tremoloCosineStep - tremoloSine * tremoloSineStep
                 tremoloSine = nextSine
@@ -304,6 +327,15 @@ enum JazzAudioRenderer {
         var partials: [Partial]
         var attack: Double
         var decay: Double
+    }
+
+    private static func tremolo(for tone: InstrumentTone) -> (rate: Double, depth: Double)? {
+        switch tone {
+        case .vibraphone: (5.8, 0.16)
+        case .concertVibes: (5.6, 0.20)
+        case .organ: (6, 0.07)
+        default: nil
+        }
     }
 
     private static func recipe(for tone: InstrumentTone) -> InstrumentRecipe {
@@ -348,6 +380,137 @@ enum JazzAudioRenderer {
                 ],
                 attack: 0.11,
                 decay: 2.2
+            )
+        case .analogPoly:
+            InstrumentRecipe(
+                partials: [
+                    Partial(ratio: 0.5, level: 0.14),
+                    Partial(ratio: 0.997, level: 0.48),
+                    Partial(ratio: 1.003, level: 0.38),
+                    Partial(ratio: 2, level: 0.22),
+                    Partial(ratio: 3, level: 0.14),
+                    Partial(ratio: 4, level: 0.08)
+                ],
+                attack: 0.012,
+                decay: 1.1
+            )
+        case .concertGrand:
+            InstrumentRecipe(
+                partials: [
+                    Partial(ratio: 1, level: 1),
+                    Partial(ratio: 2.01, level: 0.38),
+                    Partial(ratio: 3.03, level: 0.20),
+                    Partial(ratio: 4.07, level: 0.12),
+                    Partial(ratio: 7.4, level: 0.04)
+                ],
+                attack: 0.002,
+                decay: 1.75
+            )
+        case .flute:
+            InstrumentRecipe(
+                partials: [
+                    Partial(ratio: 1, level: 1),
+                    Partial(ratio: 2, level: 0.11),
+                    Partial(ratio: 3, level: 0.05)
+                ],
+                attack: 0.04,
+                decay: 3
+            )
+        case .organ:
+            InstrumentRecipe(
+                partials: [
+                    Partial(ratio: 1, level: 0.36),
+                    Partial(ratio: 2, level: 0.24),
+                    Partial(ratio: 3, level: 0.18),
+                    Partial(ratio: 4, level: 0.13),
+                    Partial(ratio: 6, level: 0.09)
+                ],
+                attack: 0.012,
+                decay: 8
+            )
+        case .guitar:
+            InstrumentRecipe(
+                partials: [
+                    Partial(ratio: 1, level: 1),
+                    Partial(ratio: 2, level: 0.38),
+                    Partial(ratio: 3, level: 0.22),
+                    Partial(ratio: 4, level: 0.12),
+                    Partial(ratio: 5, level: 0.08),
+                    Partial(ratio: 7.1, level: 0.04)
+                ],
+                attack: 0.002,
+                decay: 0.72
+            )
+        case .uprightBass:
+            InstrumentRecipe(
+                partials: [
+                    Partial(ratio: 1, level: 1),
+                    Partial(ratio: 2, level: 0.32),
+                    Partial(ratio: 3, level: 0.17),
+                    Partial(ratio: 4, level: 0.08)
+                ],
+                attack: 0.012,
+                decay: 0.85
+            )
+        case .concertVibes:
+            InstrumentRecipe(
+                partials: [
+                    Partial(ratio: 1, level: 1),
+                    Partial(ratio: 3.01, level: 0.29),
+                    Partial(ratio: 4.18, level: 0.17),
+                    Partial(ratio: 6.8, level: 0.08)
+                ],
+                attack: 0.002,
+                decay: 2.8
+            )
+        case .bluesGuitar:
+            InstrumentRecipe(
+                partials: [
+                    Partial(ratio: 1, level: 1),
+                    Partial(ratio: 2, level: 0.48),
+                    Partial(ratio: 3, level: 0.31),
+                    Partial(ratio: 4, level: 0.18),
+                    Partial(ratio: 5, level: 0.13),
+                    Partial(ratio: 6, level: 0.08)
+                ],
+                attack: 0.002,
+                decay: 0.82
+            )
+        case .clarinet:
+            InstrumentRecipe(
+                partials: [
+                    Partial(ratio: 1, level: 1),
+                    Partial(ratio: 3, level: 0.38),
+                    Partial(ratio: 5, level: 0.19),
+                    Partial(ratio: 7, level: 0.09)
+                ],
+                attack: 0.025,
+                decay: 2.4
+            )
+        case .dreadnoughtGuitar:
+            InstrumentRecipe(
+                partials: [
+                    Partial(ratio: 1, level: 1),
+                    Partial(ratio: 2, level: 0.42),
+                    Partial(ratio: 3, level: 0.28),
+                    Partial(ratio: 4, level: 0.18),
+                    Partial(ratio: 5, level: 0.11),
+                    Partial(ratio: 7, level: 0.06)
+                ],
+                attack: 0.0015,
+                decay: 0.78
+            )
+        case .ukulele:
+            InstrumentRecipe(
+                partials: [
+                    Partial(ratio: 1, level: 1),
+                    Partial(ratio: 2, level: 0.52),
+                    Partial(ratio: 3, level: 0.31),
+                    Partial(ratio: 4, level: 0.17),
+                    Partial(ratio: 5, level: 0.09)
+                ],
+                attack: 0.0015,
+                decay: 0.55
             )
         }
     }
