@@ -16,6 +16,7 @@ export type StudioRecoverySessionView = Readonly<{
     previous: boolean;
   }> | null;
   busy: boolean;
+  reconciliationRequired: boolean;
   failureMessage: string | null;
   statusText: string | null;
   diagnosticCode: string | null;
@@ -62,6 +63,7 @@ export function createStudioRecoverySession(options: Readonly<{
   let snapshot: StudioRecoverySessionView = Object.freeze({
     offer: null,
     busy: false,
+    reconciliationRequired: false,
     failureMessage: null,
     statusText: null,
     diagnosticCode: null,
@@ -113,7 +115,7 @@ export function createStudioRecoverySession(options: Readonly<{
   });
 
   const keep = async (): Promise<void> => {
-    if (snapshot.busy || offered === null || offeredAt === null) return;
+    if (snapshot.busy || snapshot.reconciliationRequired || offered === null || offeredAt === null) return;
     const state = composition.readApplicationState();
     if (state.document.id !== offeredAt.documentId || state.revision !== offeredAt.revision) {
       publish({ failureMessage: "The chart changed after recovery was offered (command.stale_revision). Your edits are unchanged; discard the offered copy to continue with this chart." });
@@ -123,7 +125,10 @@ export function createStudioRecoverySession(options: Readonly<{
     try {
       const result = await orchestrator.keep(offered.envelope);
       if (!result.ok) {
-        publish({ failureMessage: `The recovered chart could not be opened (${result.code}). The current chart is unchanged.` });
+        publish({ reconciliationRequired: result.reconciliationRequired === true,
+          failureMessage: result.reconciliationRequired === true
+            ? `The recovered chart could not be opened (${result.code}). The current chart and recovery copy are preserved. Playback could not prove a safe stop. Reload the studio before further editing or playback.`
+            : `The recovered chart could not be opened (${result.code}). The current chart and recovery copy are unchanged.${result.safelyStopped === true ? " Playback was safely stopped. Choose Keep again to retry." : ""}` });
         return;
       }
       offered = null;
@@ -196,7 +201,7 @@ export function createStudioRecoverySession(options: Readonly<{
     start,
     keep,
     discard: async () => {
-      if (snapshot.busy || offered === null || storageDocumentId === null) return;
+      if (snapshot.busy || snapshot.reconciliationRequired || offered === null || storageDocumentId === null) return;
       publish({ busy: true, failureMessage: null });
       try {
         await orchestrator.discard(storageDocumentId);

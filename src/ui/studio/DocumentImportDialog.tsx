@@ -27,7 +27,7 @@ export function DocumentImportDialog({ service, view }: Readonly<{ service: Stud
   }, [service]);
   if (!view.open) return refusal === null && view.message === null ? null
     : <p role={refusal === null ? "status" : "alert"}>{refusal ?? view.message}</p>;
-  const busy = view.phase === "committing";
+  const busy = view.phase === "committing" || view.reconciliationRequired;
   const confirm = view.phase === "confirm" || busy;
   return <Dialog backgroundRootId="studio-shell-background" id="studio-document-import-dialog"
     title={confirm ? "Replace the current chart?" : "Import a chart"}

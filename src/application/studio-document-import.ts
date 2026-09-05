@@ -1,3 +1,4 @@
+import { runStudioImportReplacement, type StudioImportRetirementAdapter } from "./studio-import-replacement";
 import { selectReplacementConfirmation } from "./studio-replacement-confirmation";
 import { createProductionStableIdFactory, decodeDocumentShape, preflightDocumentImportBytes } from "../domain";
 import { migrateLegacyJson } from "../compatibility";
@@ -10,8 +11,8 @@ import { buildChartDocumentCandidate, classifyJsonLexically, createPrepareImport
   decodeUtf8Fatal, parseJsonData, readImportSource } from "./e0-interchange";
 import { IMPORT_FORMAT_HINTS, MAX_E0_IMPORT_UTF8_BYTES, type ImportFormatHint,
   type ImportPreview, type ImportPreviewReportItem, type ImportPreviewSummary,
-  type ImportSourceHandle, type X1ReplacementRetirementAdapter } from "./e0-interchange-contract";
-import { createE0V2TransactionDriver, projectPreviewToCommitRequestV2 } from "./e0-transaction-driver";
+  type ImportSourceHandle } from "./e0-interchange-contract";
+import { projectPreviewToCommitRequestV2 } from "./e0-transaction-driver";
 import { assessReplacementImpactOverState } from "./studio-interchange-owner";
 import type { StudioComposition } from "./studio-controller";
 import type { ApplicationCommandDependencies } from "./application-state-contract";
@@ -31,6 +32,7 @@ export type StudioImportView = Readonly<{
   confirmationRequired: boolean;
   nonUndoable: boolean;
   exportRecommended: boolean;
+  reconciliationRequired: boolean;
 }>;
 export type StudioDocumentImport = Readonly<{
   getSnapshot: () => StudioImportView;
@@ -52,14 +54,13 @@ export type StudioDocumentImport = Readonly<{
 /** The decoded candidate, identity and acknowledgement remain composition-owned. */
 export function createStudioDocumentImport(options: Readonly<{
   composition: StudioComposition;
-  retirement: X1ReplacementRetirementAdapter;
+  retirement: StudioImportRetirementAdapter;
   recovery: RecoveryService;
   exportCurrent: () => void;
   estimateHistoryRetainedBytes?: ApplicationCommandDependencies["estimateHistoryRetainedBytes"];
 }>): StudioDocumentImport {
   const { composition } = options;
   const workflow = composition.replacementWorkflow;
-  const driver = createE0V2TransactionDriver(composition.interchangeOwner, options.retirement);
   const estimate = options.estimateHistoryRetainedBytes ?? applicationHistoryRetainedByteEstimator;
   const idFactory = createProductionStableIdFactory();
   const prepare = createPrepareImportPreviewCoordinator({ preflightDocumentImportBytes, decodeUtf8Fatal,
@@ -73,7 +74,7 @@ export function createStudioDocumentImport(options: Readonly<{
   });
   let view: StudioImportView = Object.freeze({ open: false, phase: "input", title: null, sourceFormat: null,
     summary: null, groups: [], omittedItems: 0, issueCodes: [], message: null,
-    confirmationRequired: false, nonUndoable: false, exportRecommended: false });
+    confirmationRequired: false, nonUndoable: false, exportRecommended: false, reconciliationRequired: false });
   let preview: ImportPreview | null = null;
   let chartText: string | null = null;
   let readAbort: AbortController | null = null;
@@ -91,7 +92,7 @@ export function createStudioDocumentImport(options: Readonly<{
     publish({ phase: "failed", issueCodes: [code], message: `${code}: ${message}` });
   }
   function cancel(): void {
-    if (view.phase === "committing") return;
+    if ((view.phase === "committing" || view.reconciliationRequired)) return;
     if (hosted()) {
       const popped = workflow.applyLifecycleIntent({ kind: "pop-dialog", dialogId: DIALOG_ID });
       if (!popped.ok) { failure(popped.code, "Close the topmost dialog first."); return; }
@@ -111,7 +112,7 @@ export function createStudioDocumentImport(options: Readonly<{
     return selectReplacementConfirmation(composition.readApplicationState(), options.recovery.inspectRecovery());
   }
   async function previewSource(source: ImportSourceHandle, hint: ImportFormatHint): Promise<void> {
-    if (!view.open || !hosted() || view.phase === "committing") return;
+    if (!view.open || !hosted() || (view.phase === "committing" || view.reconciliationRequired)) return;
     readAbort?.abort();
     readAbort = new AbortController();
     const attempt = readAbort;
@@ -210,10 +211,15 @@ export function createStudioDocumentImport(options: Readonly<{
     const projected = projectPreviewToCommitRequestV2(chosen, begun.transition, acknowledgement);
     if (!projected.ok) { workflow.cancel(begun.identity); failure(projected.code); return; }
     try {
-      const result = await driver(projected.value);
+      const result = await runStudioImportReplacement(composition, options.retirement, projected.value);
       if (!result.ok) {
-        workflow.cancel(begun.identity);
-        failure(result.outcome === "refused" ? result.code : "import.replacement_retirement_evidence_invalid"); return;
+        publish({ reconciliationRequired: result.reconciliationRequired });
+        failure(result.code, result.reconciliationRequired
+          ? "The current chart is preserved. Playback could not prove a safe stop. Reload the studio before further editing or playback."
+          : result.safelyStopped
+            ? "Playback was safely stopped. The current chart is unchanged. Choose the source again to retry."
+            : undefined);
+        return;
       }
       preview = null;
       chartText = null;
@@ -224,15 +230,15 @@ export function createStudioDocumentImport(options: Readonly<{
         ? "Imported chart. Undo is unavailable because this replacement exceeded the history boundary."
         : "Imported chart. Undo restores the previous chart." });
     } catch {
-      workflow.cancel(begun.identity);
-      failure("import.replacement_request_invalid");
+      publish({ reconciliationRequired: true });
+      failure("import.replacement_request_invalid", "Replacement could not be verified. Reload the studio before further editing or playback.");
     }
   }
   return Object.freeze({
     getSnapshot: () => hosted() ? view : Object.freeze({ ...view, open: false }),
     subscribe: (listener) => { listeners.add(listener); return () => { listeners.delete(listener); }; },
     open: () => {
-      if (view.open && hosted()) return;
+      if (view.reconciliationRequired || (view.open && hosted())) return;
       readAbort?.abort(); readAbort = null; preview = null; chartText = null;
       const pushed = workflow.applyLifecycleIntent({ kind: "push-dialog", dialog: {
         id: DIALOG_ID, kind: "import-preview", phase: "open", blocksHistory: false, requestId: null,
@@ -251,7 +257,7 @@ export function createStudioDocumentImport(options: Readonly<{
       },
     }, hint),
     previewPaste: async (text, hint) => {
-      if (!view.open || !hosted() || view.phase === "committing") return;
+      if (!view.open || !hosted() || (view.phase === "committing" || view.reconciliationRequired)) return;
       if (text.length > MAX_E0_IMPORT_UTF8_BYTES) {
         readAbort?.abort(); readAbort = null;
         failure("limit.import_bytes_exceeded"); return;
@@ -266,13 +272,13 @@ export function createStudioDocumentImport(options: Readonly<{
     requestCommit: () => commit(false), confirm: commit,
     backToPreview: () => { if (view.phase === "confirm") publish({ phase: "preview", message: null }); },
     invalidatePreview: () => {
-      if (!view.open || view.phase === "committing") return;
+      if (!view.open || (view.phase === "committing" || view.reconciliationRequired)) return;
       readAbort?.abort(); readAbort = null; preview = null; chartText = null;
       workflow.applyLifecycleIntent({ kind: "set-import-draft", draft: null });
       workflow.updateLifecycleDialogPhase(DIALOG_ID, "open");
       publish({ phase: "input", title: null, sourceFormat: null, summary: null, groups: [], omittedItems: 0, issueCodes: [], message: null });
     },
-    exportCurrentFirst: () => { if (view.phase === "committing") return; cancel(); if (!view.open) options.exportCurrent(); },
+    exportCurrentFirst: () => { if ((view.phase === "committing" || view.reconciliationRequired)) return; cancel(); if (!view.open) options.exportCurrent(); },
     stageChartText: () => {
       if (view.phase !== "chart-text" || chartText === null) return;
       const checked = composition.controller.previewChartText(chartText);

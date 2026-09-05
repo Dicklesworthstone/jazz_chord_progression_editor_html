@@ -18,9 +18,9 @@
  *   begins the retiring-transport transition, the impact projection is
  *   computed by the owner's own extracted assessor (never duplicated
  *   math), and the v2 transaction driver commits over the sealed owner
- *   ports and the injected X1 retirement adapter. Any refusal cancels
- *   the workflow so the studio returns to idle — a failed Keep changes
- *   nothing.
+ *   ports and the injected X1 retirement adapter. Uncertain retirement
+ *   discards the candidate and keeps the transition locked until a separate
+ *   real stop proves the transport safe. A fresh Keep is a new transaction.
  * - Discard is the service's own idempotent discard.
  *
  * Browser recovery is never called Save, and no auto-Keep exists here:
@@ -39,11 +39,7 @@ import type {
   DomainPath,
   ValidatedDocument,
 } from "../domain";
-import { createE0V2TransactionDriver } from "./e0-transaction-driver";
-import type {
-  CommitImportReplacementResultV2,
-} from "./e0-interchange-v2-contract";
-import type { X1ReplacementRetirementAdapter } from "./e0-interchange-contract";
+import { runStudioImportReplacement, type StudioImportRetirementAdapter } from "./studio-import-replacement";
 import type { StudioComposition } from "./studio-controller";
 import { assessReplacementImpactOverState } from "./studio-interchange-owner";
 import type { AppState, ApplicationCommandDependencies } from "./application-state-contract";
@@ -56,6 +52,8 @@ export type StudioRecoveryKeepResult =
       ok: false;
       outcome: "refused";
       code: string;
+      reconciliationRequired?: boolean;
+      safelyStopped?: boolean;
     }>;
 
 export type StudioRecoveryStartupView =
@@ -96,7 +94,7 @@ export type StudioRecoveryOrchestrator = Readonly<{
 export type StudioRecoveryDependencies = Readonly<{
   composition: StudioComposition;
   recovery: RecoveryService;
-  retirement: X1ReplacementRetirementAdapter;
+  retirement: StudioImportRetirementAdapter;
   decodeDocumentShape: (input: unknown) => DocumentShapeDecodeResult;
   validateDocumentSemantics: ValidateDocumentSemantics;
   /** The controller closure's state cell, read-only (composition root
@@ -124,10 +122,6 @@ export function createStudioRecoveryOrchestrator(
     nowMs,
     allocateCommandSeedId,
   } = dependencies;
-  const driver = createE0V2TransactionDriver(
-    composition.interchangeOwner,
-    retirement,
-  );
 
   let lastNotedRevision: number | null = null;
   let lastNotedDocumentId: string | null = null;
@@ -226,9 +220,7 @@ export function createStudioRecoveryOrchestrator(
       });
     }
 
-    let result: CommitImportReplacementResultV2;
-    try {
-      result = await driver({
+    const result = await runStudioImportReplacement(composition, retirement, {
         schema: "changes.import-commit-request.v2",
         ownerRequest: Object.freeze({
           identity: begun.identity,
@@ -246,34 +238,13 @@ export function createStudioRecoveryOrchestrator(
           byteMatchProvedBeforeOwnerCall: true as const,
         }),
       });
-    } catch {
-      composition.replacementWorkflow.cancel(begun.identity);
-      return Object.freeze({
-        ok: false as const,
-        outcome: "refused" as const,
-        code: "import.replacement_request_invalid",
-      });
-    }
-
-    if (!result.ok) {
-      /* a failed Keep changes nothing: return the studio to idle */
-      composition.replacementWorkflow.cancel(begun.identity);
-      return Object.freeze({
-        ok: false as const,
-        outcome: "refused" as const,
-        code:
-          result.outcome === "refused"
-            ? result.code
-            : result.diagnostic.reason === "threw-or-rejected"
-              ? "import.replacement_preparation_result_invalid"
-              : "import.replacement_preparation_result_invalid",
-      });
-    }
+    if (!result.ok) return Object.freeze({ ok: false, outcome: "refused", code: result.code,
+      reconciliationRequired: result.reconciliationRequired, safelyStopped: result.safelyStopped });
     return Object.freeze({
       ok: true as const,
       outcome: "committed" as const,
-      documentId: String(result.documentId),
-      revision: result.revision,
+      documentId: String(result.result.documentId),
+      revision: result.result.revision,
     });
   };
 
