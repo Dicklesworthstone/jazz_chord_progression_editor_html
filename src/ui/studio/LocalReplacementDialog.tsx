@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
 import type { StudioLocalReplacementService, StudioLocalReplacementView } from "../../application/runtime";
+import type { UiDiagnostic } from "../ui-contract";
 import { Button, Checkbox } from "../primitives";
 import { Dialog } from "../overlays";
 
@@ -9,11 +10,21 @@ const BLOCKED = Object.freeze({ kind: "blocked", reason: "Wait for chart replace
 export function LocalReplacementDialog({ service, view }: Readonly<{
   service: StudioLocalReplacementService; view: StudioLocalReplacementView;
 }>) {
+  const [refusal, setRefusal] = useState<string | null>(null);
   const [acknowledged, setAcknowledged] = useState(false);
-  useEffect(() => { if (!view.open) setAcknowledged(false); }, [view.open]);
+  useEffect(() => {
+    if (view.open) setRefusal(null);
+    else setAcknowledged(false);
+  }, [view.open]);
   const focus = useMemo(() => ({ triggerId: view.triggerId, workflowTargetId: "studio-document-title", workspaceId: "workspace" }), [view.triggerId]);
-  const onContractRefusal = useCallback(() => { service.cancel(); }, [service]);
-  if (!view.open) return view.message === null ? null : <p role={view.phase === "failed" ? "alert" : "status"}>{view.message}</p>;
+  const onContractRefusal = useCallback((diagnostic: UiDiagnostic) => {
+    setRefusal(`${diagnostic.code}: ${diagnostic.message}`);
+    service.cancel();
+  }, [service]);
+  if (!view.open) {
+    const message = refusal ?? view.message;
+    return message === null ? null : <p role={refusal !== null || view.phase === "failed" ? "alert" : "status"}>{message}</p>;
+  }
   const busy = view.phase === "committing";
   return <Dialog {...COMMON} id="studio-local-replacement-dialog" backgroundRootId="studio-shell-background"
     title={view.origin === "new" ? "Start a new chart?" : "Load this lesson?"}
@@ -28,8 +39,9 @@ export function LocalReplacementDialog({ service, view }: Readonly<{
         <Checkbox {...COMMON} id="studio-replacement-nonundoable" label="I understand this replacement cannot be undone"
           checked={acknowledged} busy={busy} disabled={busy} onCheckedChange={event => { setAcknowledged(event.value); }} />
       </> : <p>Undo restores the previous chart and selection.</p>}
-      {view.exportRecommended ? <Button {...COMMON} id="studio-replacement-export-first" label="Export current chart first"
-        variant="secondary" type="button" busy={false} disabled={busy || view.reconciliationRequired} onAction={service.exportCurrentFirst} /> : null}
+      {view.exportRecommended ? <p>Export a portable JSON copy before replacing this chart.</p> : null}
+      <Button {...COMMON} id="studio-replacement-export-first" label="Export current chart first"
+        variant="secondary" type="button" busy={false} disabled={busy || view.reconciliationRequired} onAction={service.exportCurrentFirst} />
       <Button {...COMMON} id="studio-replacement-confirm" label={busy ? "Replacing chart…" : "Confirm replacement"}
         variant="destructive" type="button" busy={busy} disabled={view.phase !== "confirm" || (view.nonUndoable && !acknowledged)}
         onAction={() => { void service.confirm(acknowledged); }} />

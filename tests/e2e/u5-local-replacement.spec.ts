@@ -73,12 +73,25 @@ for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 
       expect(blank).toMatchObject({ title: "Untitled Chart", sections: [{ measures: [{ events: [] }] }] });
       await page.locator("#studio-undo").click(); expect(await exportDocument(page)).toEqual(original);
       await page.locator("#studio-redo").click(); expect(await exportDocument(page)).toEqual(blank);
+      const rail = page.locator("#studio-progression-two-five-one");
+      if (await rail.isVisible()) await rail.click();
+      else {
+        await page.locator("#studio-open-standards").click();
+        await page.locator("#studio-progression-two-five-one-modal").click();
+      }
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+      await expect(page.locator("#studio-document-title")).toHaveValue("ii–V–I in C");
+      await expect(page.locator("#chart-workspace")).toBeFocused();
     });
     test("lesson pick keeps the current chart until Confirm and installs its exact title, tempo, groove and changes", async ({ page }) => {
       const original = await exportDocument(page);
       await chooseLesson(page);
-      await page.locator("#studio-replacement-cancel").click(); expect(await exportDocument(page)).toEqual(original);
+      const owner = page.locator(viewport.width >= 1280 ? "#studio-progression-two-five-one" : "#studio-open-standards");
+      await page.locator("#studio-replacement-cancel").click();
+      await expect(owner).toBeFocused();
+      expect(await exportDocument(page)).toEqual(original);
       await chooseLesson(page); await confirm(page);
+      await expect(owner).toBeFocused();
       const lesson = await exportDocument(page);
       expect(lesson).toMatchObject({ title: "ii–V–I in C", tempoBpm: 132, playback: { grooveStyleId: "medium-swing@1" },
         sections: [{ measures: [
@@ -106,9 +119,25 @@ for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 
         await page.locator("#studio-undo").click(); expect(await exportDocument(page)).toEqual(original);
       });
     }
-    test("export-first hands off the current chart and does not execute the pending replacement", async ({ page }) => {
+    test("a disappearing lesson owner preserves the chart and exposes the focus refusal", async ({ page }) => {
+      const original = await exportDocument(page);
+      await chooseLesson(page);
+      const ownerId = viewport.width >= 1280 ? "studio-progression-two-five-one" : "studio-open-standards";
+      await page.evaluate(id => {
+        const owner = document.getElementById(id);
+        if (owner === null) throw new Error("LESSON_OWNER_MISSING");
+        owner.hidden = true;
+      }, ownerId);
+      // U0 dismisses an unavailable owner before another user gesture.
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+      await expect(page.getByRole("alert").filter({ hasText: "ui.stale_owner" })).toBeVisible();
+      await expect(page.locator("#studio-document-title")).toBeFocused();
+      expect(await exportDocument(page)).toEqual(original);
+    });
+    test("export-first remains available after recovery and does not execute the pending replacement", async ({ page }) => {
       await page.locator("#studio-document-title").fill("Keep before replacement");
       await page.locator("#studio-document-title").press("Enter");
+      await expect(page.locator("#studio-recovery-status")).toContainText("Recovered locally at");
       await page.locator("#studio-new-chart").click();
       await page.locator("#studio-replacement-export-first").click();
       await expect(page.getByRole("dialog", { name: "Export chart as JSON" })).toBeVisible();

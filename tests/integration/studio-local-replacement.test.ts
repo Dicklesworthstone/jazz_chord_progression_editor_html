@@ -77,6 +77,7 @@ describe("U5 New and lesson replacement through real A0/X1", () => {
   test("an empty chart replaces on the gesture and an oversized boundary requires actual acknowledgement", async () => {
     const h = await harness({ seed: false }); await h.service.requestLesson("two-five-one");
     expect(h.service.getSnapshot().open).toBe(false); expect(h.requests).toHaveLength(1);
+    expect(h.composition.readApplicationState().focusRequest?.reason).toBe("replacement");
     const large = await harness({ seed: false, estimate: 50_000_000 }); await large.service.requestNew();
     expect(large.service.getSnapshot()).toMatchObject({ open: true, nonUndoable: true, exportRecommended: true });
     await large.service.confirm(false); expect(large.requests).toHaveLength(0);

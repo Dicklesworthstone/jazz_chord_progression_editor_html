@@ -270,7 +270,7 @@ export type AppActions = Readonly<{
    * groove and tempo, and STOP a live run explicitly. The surface only
    * renders the returned step results.
    */
-  loadLibraryEntry: (entryId: string) => LoadProgressionLibraryEntryResult | null;
+  loadLibraryEntry: (entryId: string, focusOwnerId?: string) => LoadProgressionLibraryEntryResult | null;
   /**
    * The MIDI import gesture, composed at the root. False here is honest —
    * a session whose composition wired no decoder hides the surface rather
@@ -2858,7 +2858,7 @@ export function App({ snapshot, actions, startupNotice, documentActions }: AppPr
               : `${result.refusal.message} ${result.refusal.recoveryAction}`,
           );
         },
-        onLoadLibraryEntry: (entryId) => {
+        onLoadLibraryEntry: (entryId, focusOwnerId) => {
           /*
            * Loading a library entry is ONE document gesture — replace the
            * chart, retitle it, set its groove and its tempo, and STOP a
@@ -2873,7 +2873,7 @@ export function App({ snapshot, actions, startupNotice, documentActions }: AppPr
            * playback" forever (jcpe-my0j). This handler only renders the
            * gesture's results; no component state feeds it.
            */
-          const result = actions.loadLibraryEntry(entryId);
+          const result = actions.loadLibraryEntry(entryId, focusOwnerId);
           if (result === null || result.entry === null) return;
           if (result.cleared !== null) {
             recordEditResult(result.cleared, { kind: "delete" });
@@ -3833,8 +3833,8 @@ export function StudioRoot({
         setRangeEdge: controller.setRangeEdge,
         setRangeEdgeBeat: controller.setRangeEdgeBeat,
         clearRange: controller.clearRange,
-        loadLibraryEntry: (entryId) => {
-          if (localReplacement != null) { void localReplacement.requestLesson(entryId); return null; }
+        loadLibraryEntry: (entryId, focusOwnerId) => {
+          if (localReplacement != null) { void localReplacement.requestLesson(entryId, focusOwnerId); return null; }
           return loadProgressionLibraryEntry(controller, entryId);
         },
         midiImportAvailable: midiImportService !== null,

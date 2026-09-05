@@ -170,7 +170,7 @@ export type LibraryPanelContentProps = Readonly<{
   onTempoDraftChange: (value: string) => void;
   onTempoCommit: () => void;
   onGrooveStyleChange: (styleId: string) => void;
-  onLoadLibraryEntry: (entryId: string) => void;
+  onLoadLibraryEntry: (entryId: string, focusOwnerId?: string) => void;
   onRecoveryAcknowledgeChange: (acknowledged: boolean) => void;
   onRecoveryDurationDraftChange: (value: string) => void;
   onInsertRecoveredChord: (globalOrdinal: number) => void;
@@ -698,7 +698,7 @@ export function StandardProgressionList({
 }: Readonly<{
   variant: "rail" | "modal";
   grooveOptions: readonly Readonly<{ id: string; label: string }>[];
-  onLoadLibraryEntry: (entryId: string) => void;
+  onLoadLibraryEntry: (entryId: string, focusOwnerId?: string) => void;
 }>) {
   const grooveLabels = new Map(
     grooveOptions.map((option) => [option.id, option.label]),
@@ -720,7 +720,8 @@ export function StandardProgressionList({
                 : `studio-progression-${entry.id}-modal`
             }
             onClick={() => {
-              onLoadLibraryEntry(entry.id);
+              onLoadLibraryEntry(entry.id, variant === "rail"
+                ? `studio-progression-${entry.id}` : "studio-open-standards");
             }}
             type="button"
           >
@@ -979,7 +980,7 @@ export type LibraryPanelProps = Readonly<{
   onTempoDraftChange: (value: string) => void;
   onTempoCommit: () => void;
   onGrooveStyleChange: (styleId: string) => void;
-  onLoadLibraryEntry: (entryId: string) => void;
+  onLoadLibraryEntry: (entryId: string, focusOwnerId?: string) => void;
   onRecoveryAcknowledgeChange: (acknowledged: boolean) => void;
   onRecoveryDurationDraftChange: (value: string) => void;
   onInsertRecoveredChord: (globalOrdinal: number) => void;
