@@ -948,6 +948,7 @@ export type StudioChartAnnotationPorts = Readonly<{
 
 export type StudioShellProps = Readonly<{
   documentActions?: ComponentChildren;
+  recoveryRegion?: ComponentChildren;
   view: StudioShellView;
   callbacks: StudioShellCallbacks;
   transport: StudioTransportCallbacks;

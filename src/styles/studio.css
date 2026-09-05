@@ -6625,21 +6625,29 @@ li[data-resize-preview]::after {
   }
 }
 
-/* A1 recovery surfaces (l3a.2 step 4): the Keep/Discard offer banner and
- * the frozen-vocabulary status line. Rendered by StudioRoot above the
- * shell so a recovery decision is visible before any panel work. */
+/* Recovery participates in the shell layout. A bounded scroll region keeps
+ * long offers and diagnostics clear of header and transport controls. */
+.studio-recovery-region {
+  display: flex;
+  flex-wrap: wrap;
+  flex: 0 1 auto;
+  gap: var(--space-2);
+  min-block-size: 0;
+  max-block-size: 35dvh;
+  overflow: auto;
+  padding: var(--space-2) var(--space-4);
+}
+
+.studio-recovery-region:empty { display: none; }
+
 .studio-recovery-notice {
-  position: fixed;
-  /* Clear of the wrapping header's action row at every width the
-   * checkpoint matrix pins (the header is tallest on phones). */
-  inset-block-start: calc(env(safe-area-inset-top, 0px) + 4.5rem);
-  inset-inline-end: var(--space-4);
-  z-index: 40;
   display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: var(--space-3);
-  max-inline-size: min(26rem, calc(100vw - 2 * var(--space-4)));
+  max-inline-size: 100%;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
   padding: var(--space-3) var(--space-4);
   border: var(--border-width) solid var(--accent);
   border-radius: var(--radius-md);
@@ -6666,12 +6674,10 @@ li[data-resize-preview]::after {
 }
 
 .studio-recovery-status {
-  position: fixed;
-  inset-block-start: calc(env(safe-area-inset-top, 0px) + 4.5rem);
-  inset-inline-end: var(--space-4);
-  z-index: 40;
   margin: 0;
-  max-inline-size: min(26rem, calc(100vw - 2 * var(--space-4)));
+  max-inline-size: 100%;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
   padding: var(--space-2) var(--space-3);
   border: var(--border-width) solid var(--border-default);
   border-radius: var(--radius-md);

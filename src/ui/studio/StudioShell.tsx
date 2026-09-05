@@ -107,6 +107,7 @@ const DISMISSIBLE = Object.freeze({ kind: "dismissible" } as const);
 
 export function StudioShell({
   documentActions,
+  recoveryRegion,
   view,
   callbacks,
   transport,
@@ -527,6 +528,8 @@ export function StudioShell({
               setStandardsOpen(true);
             }}
           />
+
+          <div class="studio-recovery-region">{recoveryRegion}</div>
 
           <main id="workspace" class="studio-workspace" tabIndex={-1}>
             <LibraryPanel

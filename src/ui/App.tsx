@@ -378,6 +378,7 @@ import { DocumentImportDialog } from "./studio/DocumentImportDialog";
 
 export type AppProps = Readonly<{
   documentActions?: ComponentChildren;
+  recoveryRegion?: ComponentChildren;
   snapshot: StudioViewModel;
   actions: AppActions;
   /** A boot-time refusal to surface once in the shell notice. */
@@ -1719,7 +1720,7 @@ function feedbackFromRefusal(
   });
 }
 
-export function App({ snapshot, actions, startupNotice, documentActions }: AppProps) {
+export function App({ snapshot, actions, startupNotice, documentActions, recoveryRegion }: AppProps) {
   const [titleDraft, setTitleDraft] = useState(snapshot.title);
   const previousCommittedTitle = useRef(snapshot.title);
   const audioGestureSequence = useRef(0);
@@ -2580,6 +2581,7 @@ export function App({ snapshot, actions, startupNotice, documentActions }: AppPr
     <>
     <StudioShell
       documentActions={documentActions}
+      recoveryRegion={recoveryRegion}
       midiExportAvailable={actions.midiExportAvailable}
       view={view}
       annotations={{
@@ -3757,7 +3759,7 @@ export function StudioRoot({
       {recoveryUi.offer === null ? null : (
         <RecoveryNotice
           offer={recoveryUi.offer}
-          busy={recoveryUi.busy}
+          busy={recoveryUi.busy || recoveryUi.reconciliationRequired}
           onKeep={() => { void recoveryBinding?.keep(); }}
           onDiscard={() => { void recoveryBinding?.discard(); }}
         />
@@ -3777,13 +3779,12 @@ export function StudioRoot({
     </>
   );
 
-  /* The recovery region renders AFTER the app in DOM order so the shell's
-   * skip link keeps the document's first tab stop (the 2026-09-03 e2e
-   * matrix caught the banner stealing it); the stylesheet floats the
-   * region visually as a top card, and role=alertdialog announces it. */
+  // Recovery follows the header in flow: keep the skip link first, reserve
+  // actual space for the offer, and include it in the modal background lease.
   return (
     <>
       <App
+      recoveryRegion={recoveryRegion}
       documentActions={<>
       {localReplacement == null ? null : <Button
         id="studio-new-chart" label="New chart" type="button" variant="secondary" density="comfortable"
@@ -3928,7 +3929,6 @@ export function StudioRoot({
         undo: controller.undo,
       }}
     />
-    {recoveryRegion}
     {lifecycle == null || lifecycleView === null ? null : <LifecycleExportDialog service={lifecycle} view={lifecycleView} />}
     {documentImport == null || importView === null ? null : <DocumentImportDialog service={documentImport} view={importView} />}
     {localReplacement == null || replacementView === null ? null : <LocalReplacementDialog service={localReplacement} view={replacementView} />}
