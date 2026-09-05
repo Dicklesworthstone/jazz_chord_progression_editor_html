@@ -27,14 +27,54 @@ export type StudioLocalReplacementService = Readonly<{
   subscribe: (listener: () => void) => () => void;
   requestNew: () => Promise<void>;
   requestLesson: (id: string, focusOwnerId?: string) => Promise<void>;
-  confirm: (acknowledged: boolean) => Promise<void>;
+  confirm: (acknowledged: boolean, hostIsCurrent?: () => unknown) => Promise<void>;
   cancel: () => void;
+  invalidateHost: () => void;
   exportCurrentFirst: () => void;
 }>;
 
+/** A refusal unlocks only when the adapter certifies the exact no-effect envelope. */
+function judgeRetirement(raw: unknown, request: LocalReplacementRetirementRequest): "retired" | "refused" | "invalid" {
+  try {
+    if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return "invalid";
+    if (runtimeField(raw, "ok") === false) {
+      const code = runtimeField(raw, "code");
+      return Object.keys(raw).length === 3 && runtimeField(raw, "retirementEffect") === "none" &&
+        (code === "transport.replacement_retirement_failed" || code === "transport.replacement_retirement_stale" ||
+          code === "transport.replacement_retirement_unavailable") ? "refused" : "invalid";
+    }
+    const value = runtimeField(raw, "value");
+    return Object.keys(raw).length === 2 && runtimeField(raw, "ok") === true &&
+      runtimeField(value, "schema") === X1_REPLACEMENT_RETIREMENT_EVIDENCE_SCHEMA &&
+      runtimeField(value, "authority") === "x1-serialized-transport" && deepStructuralEqual(runtimeField(value, "request"), request) &&
+      deepStructuralEqual(runtimeField(value, "receipt"), { requestId: request.identity.requestId,
+        retiredTransportGeneration: request.expectedTransportGeneration, progressionRetired: true, previewRetired: true,
+        noFutureAttack: true }) ? "retired" : "invalid";
+  } catch {
+    return "invalid";
+  }
+}
+
+function provesSafeReconciliation(raw: unknown, request: LocalReplacementRetirementRequest): boolean {
+  try {
+    const observed = runtimeField(raw, "observedGeneration");
+    const resulting = runtimeField(raw, "resultingGeneration");
+    const commandId = runtimeField(raw, "commandRequestId");
+    return typeof raw === "object" && raw !== null && !Array.isArray(raw) && Object.keys(raw).length === 8 &&
+      runtimeField(raw, "ok") === true && runtimeField(raw, "authority") === "x1-serialized-transport" &&
+      deepStructuralEqual(runtimeField(raw, "request"), request) && typeof commandId === "number" &&
+      Number.isSafeInteger(commandId) && commandId > 0 && typeof observed === "number" && Number.isSafeInteger(observed) && observed >= 0 &&
+      typeof resulting === "number" && Number.isSafeInteger(resulting) && resulting === observed + 1 &&
+      runtimeField(raw, "state") === "ready" && runtimeField(raw, "noFutureAttack") === true;
+  } catch {
+    return false;
+  }
+}
+
 /** Complete candidates are prepared without borrowing the live controller's edit channel. */
 export function createStudioLocalReplacement(options: Readonly<{
-  composition: StudioComposition; retirement: Pick<StudioReplacementRetirementAdapter, "retireLocalReplacement">;
+  composition: StudioComposition; retirement: Pick<StudioReplacementRetirementAdapter, "retireLocalReplacement"> &
+    Partial<Pick<StudioReplacementRetirementAdapter, "reconcileLocalReplacement">>;
   recovery: RecoveryService; exportCurrent: () => void;
   estimateHistoryRetainedBytes?: ApplicationCommandDependencies["estimateHistoryRetainedBytes"];
 }>): StudioLocalReplacementService {
@@ -44,6 +84,7 @@ export function createStudioLocalReplacement(options: Readonly<{
   const estimate = options.estimateHistoryRetainedBytes ?? applicationHistoryRetainedByteEstimator;
   let chosen: Omit<LocalReplacementRequest, "acknowledgedNonUndoable"> | null = null;
   let confirmationRequired = false;
+  let hostInvalidated = false;
   let view: StudioLocalReplacementView = Object.freeze({ open: false, phase: "confirm", origin: "new",
     title: "Untitled Chart", nonUndoable: false, exportRecommended: false, message: null,
     triggerId: "studio-new-chart", reconciliationRequired: false });
@@ -66,7 +107,7 @@ export function createStudioLocalReplacement(options: Readonly<{
     chosen = null;
     publish({ open: false, message: null });
   }
-  async function confirm(acknowledged: boolean): Promise<void> {
+  async function confirm(acknowledged: boolean, hostIsCurrent?: () => unknown): Promise<void> {
     if (!hosted() || chosen === null || view.phase !== "confirm") return;
     const selected = chosen;
     const state = composition.readApplicationState();
@@ -78,6 +119,7 @@ export function createStudioLocalReplacement(options: Readonly<{
     }
     if (!workflow.updateLifecycleDialogPhase(DIALOG_ID, "committing").ok) { failure("ephemeral.intent_invalid"); return; }
     publish({ phase: "committing", message: null });
+    const confirmationHost = composition.readApplicationState().dialogs.at(-1);
     const begun = workflow.begin({ candidateDocumentId: selected.candidate.id, origin: selected.origin,
       undoDisposition: selected.disclosedImpact.undoDisposition, previewIdentity: selected.identity });
     if (!begun.ok) { failure(begun.code); return; }
@@ -88,18 +130,41 @@ export function createStudioLocalReplacement(options: Readonly<{
     let raw: unknown;
     try { raw = await options.retirement.retireLocalReplacement(request); }
     catch { raw = null; }
-    const value = runtimeField(raw, "value");
-    const receipt = runtimeField(value, "receipt");
-    const valid = runtimeField(raw, "ok") === true && runtimeField(value, "schema") === X1_REPLACEMENT_RETIREMENT_EVIDENCE_SCHEMA &&
-      runtimeField(value, "authority") === "x1-serialized-transport" && deepStructuralEqual(runtimeField(value, "request"), request) &&
-      deepStructuralEqual(receipt, { requestId: request.identity.requestId, retiredTransportGeneration: request.expectedTransportGeneration,
-        progressionRetired: true, previewRetired: true, noFutureAttack: true });
-    if (!valid) {
+    const judgement = judgeRetirement(raw, request);
+    if (judgement !== "retired") {
       workflow.localPublication.discard(begun.identity);
-      const noEffect = runtimeField(raw, "ok") === false && runtimeField(raw, "retirementEffect") === "none" &&
-        ["transport.replacement_retirement_failed", "transport.replacement_retirement_stale", "transport.replacement_retirement_unavailable"].includes(String(runtimeField(raw, "code")));
-      if (noEffect) workflow.cancel(begun.identity);
-      failure(noEffect ? "transport.replacement_retirement_failed" : "transport.replacement_retirement_evidence_invalid", !noEffect);
+      if (judgement === "refused") {
+        workflow.cancel(begun.identity);
+        failure("transport.replacement_retirement_failed");
+        return;
+      }
+      // Keep the transition locked, with no live publication capability, while
+      // one real serialized stop tries to reconcile the uncertain retirement.
+      // No automatic retry loop and no candidate publication after this breach.
+      publish({ reconciliationRequired: true, message: "Playback could not prove a safe stop. Stopping again; the current chart is preserved." });
+      let reconciled: unknown;
+      try { reconciled = await options.retirement.reconcileLocalReplacement?.(request); }
+      catch { reconciled = null; }
+      if (provesSafeReconciliation(reconciled, request)) {
+        workflow.cancel(begun.identity);
+        failure("transport.replacement_retirement_evidence_invalid");
+        publish({ message: "transport.replacement_retirement_evidence_invalid: Playback was safely stopped. The current chart is unchanged. Cancel and choose New or a lesson again to retry." });
+      } else failure("transport.replacement_retirement_evidence_invalid", true);
+      return;
+    }
+    // The permission to publish belongs to this exact confirmation host,
+    // not a later dialog reusing its ID. Retirement may already have stopped
+    // audio, but removing its host must never replace the user's chart.
+    let uiHostCurrent: boolean;
+    try { uiHostCurrent = hostIsCurrent === undefined || hostIsCurrent() === true; } catch { uiHostCurrent = false; }
+    if (confirmationHost === undefined || hostInvalidated || !uiHostCurrent || confirmationHost !== composition.readApplicationState().dialogs.at(-1)) {
+      workflow.cancel(begun.identity);
+      if (confirmationHost === composition.readApplicationState().dialogs.at(-1)) {
+        workflow.applyLifecycleIntent({ kind: "pop-dialog", dialogId: DIALOG_ID });
+      }
+      chosen = null;
+      publish({ open: false, phase: "failed", reconciliationRequired: false,
+        message: "ui.stale_owner: The confirmation owner is unavailable. The current chart is unchanged. Choose New or a lesson again to retry." });
       return;
     }
     const result = workflow.localPublication.publish(prepared.preparation, {
@@ -117,7 +182,8 @@ export function createStudioLocalReplacement(options: Readonly<{
       ? "Chart replaced. Undo is unavailable at this history boundary." : "Chart replaced. Undo restores the previous chart." });
   }
   async function request(origin: LocalReplacementOrigin, entryId?: string, focusOwnerId?: string): Promise<void> {
-    if (view.open || view.reconciliationRequired) return;
+    if ((view.open && hosted()) || view.phase === "committing" || view.reconciliationRequired) return;
+    hostInvalidated = false;
     const before = composition.readApplicationState();
     if (before.dialogs.length > 0 || before.documentTransition.kind !== "idle") { failure("import.replacement_workflow_busy"); return; }
     const entry = origin === "lesson" ? PROGRESSION_LIBRARY.find(e => e.id === entryId) : null;
@@ -170,6 +236,7 @@ export function createStudioLocalReplacement(options: Readonly<{
   return Object.freeze({ getSnapshot: () => hosted() ? view : Object.freeze({ ...view, open: false }),
     subscribe: listener => { listeners.add(listener); return () => { listeners.delete(listener); }; },
     requestNew: () => request("new"), requestLesson: (id, focusOwnerId) => request("lesson", id, focusOwnerId), confirm, cancel,
+    invalidateHost: () => { hostInvalidated = true; cancel(); },
     exportCurrentFirst: () => { if (view.phase === "committing") return; cancel(); if (!view.open) options.exportCurrent(); },
   });
 }

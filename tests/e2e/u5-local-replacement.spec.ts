@@ -44,6 +44,48 @@ async function exportDocument(page: Page): Promise<unknown> {
   const parsed: unknown = JSON.parse(bytes);
   return parsed;
 }
+type NativeSourceCounts = Readonly<{ started: number; sounding: number; futureAttacks: number }>;
+declare global { interface Window { u5NativeSourceCounts?: () => NativeSourceCounts } }
+async function observeNativeSources(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const sources = new Map<AudioScheduledSourceNode, { start: number; stop: number | null; ended: boolean }>();
+    const record = (source: AudioScheduledSourceNode, when: number) => {
+      const row = { start: when, stop: null, ended: false };
+      sources.set(source, row);
+      source.addEventListener("ended", () => { row.ended = true; }, { once: true });
+    };
+    const captureMethod = (prototype: object, name: string) => {
+      const method: unknown = Reflect.get(prototype, name);
+      if (typeof method !== "function") throw new Error(`NATIVE_AUDIO_METHOD_MISSING:${name}`);
+      return (receiver: AudioScheduledSourceNode, args: readonly number[]) => { Reflect.apply(method, receiver, args); };
+    };
+    const bufferStart = captureMethod(AudioBufferSourceNode.prototype, "start");
+    AudioBufferSourceNode.prototype.start = function (when = 0, offset = 0, duration?: number) {
+      bufferStart(this, duration === undefined ? [when, offset] : [when, offset, duration]);
+      record(this, when);
+    };
+    const oscillatorStart = captureMethod(OscillatorNode.prototype, "start");
+    OscillatorNode.prototype.start = function (when = 0) { oscillatorStart(this, [when]); record(this, when); };
+    for (const prototype of [AudioBufferSourceNode.prototype, OscillatorNode.prototype]) {
+      const stop = captureMethod(prototype, "stop");
+      prototype.stop = function (when = 0) {
+        stop(this, [when]);
+        const row = sources.get(this);
+        if (row !== undefined) row.stop = when;
+      };
+    }
+    window.u5NativeSourceCounts = () => {
+      let sounding = 0; let futureAttacks = 0;
+      for (const [source, row] of sources) {
+        if (row.ended) continue;
+        const now = source.context.currentTime;
+        if (row.start <= now && (row.stop === null || row.stop > now)) sounding++;
+        if (row.start > now && (row.stop === null || row.stop > row.start)) futureAttacks++;
+      }
+      return { started: sources.size, sounding, futureAttacks };
+    };
+  });
+}
 async function chooseLesson(page: Page): Promise<void> {
   const rail = page.locator("#studio-progression-two-five-one");
   if (await rail.isVisible()) await rail.click();
@@ -133,6 +175,69 @@ for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 
       await expect(page.getByRole("alert").filter({ hasText: "ui.stale_owner" })).toBeVisible();
       await expect(page.locator("#studio-document-title")).toBeFocused();
       expect(await exportDocument(page)).toEqual(original);
+    });
+    test("losing the lesson owner during Confirm preserves the chart and a new lesson request works", async ({ page }) => {
+      const original = await exportDocument(page);
+      await page.locator("#studio-transport-play").click();
+      await expect(page.locator("#studio-transport-pause")).toBeEnabled();
+      await chooseLesson(page);
+      const ownerId = viewport.width >= 1280 ? "studio-progression-two-five-one" : "studio-open-standards";
+      await page.evaluate(id => {
+        const owner = document.getElementById(id);
+        const confirm = document.getElementById("studio-replacement-confirm");
+        if (owner === null || !(confirm instanceof HTMLButtonElement)) throw new Error("CONFIRMATION_CONTROL_MISSING");
+        // Remove the owner in the same event task that starts real retirement.
+        confirm.click();
+        owner.hidden = true;
+      }, ownerId);
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+      await expect(page.getByRole("alert").filter({ hasText: "ui.stale_owner" })).toBeVisible();
+      expect(await exportDocument(page)).toEqual(original);
+      await page.evaluate(id => { const owner = document.getElementById(id); if (owner !== null) owner.hidden = false; }, ownerId);
+      await chooseLesson(page); await confirm(page);
+      expect(await exportDocument(page)).toMatchObject({ title: "ii–V–I in C" });
+      await page.locator("#studio-undo").click(); expect(await exportDocument(page)).toEqual(original);
+    });
+    test("a refused native audio-clock read reconciles safely and permits a fresh lesson replacement", async ({ page }, info) => {
+      const original = await exportDocument(page);
+      await observeNativeSources(page);
+      await page.locator("#studio-transport-play").click();
+      await expect(page.locator("#studio-transport-pause")).toBeEnabled();
+      await chooseLesson(page);
+      await page.evaluate(() => {
+        const originalClock = Object.getOwnPropertyDescriptor(BaseAudioContext.prototype, "currentTime");
+        const confirm = document.getElementById("studio-replacement-confirm");
+        if (originalClock?.get === undefined || !(confirm instanceof HTMLButtonElement)) throw new Error("NATIVE_CLOCK_OR_CONFIRM_MISSING");
+        // Arm on the real scheduler's timer cancellation, immediately before
+        // X1 reads its retirement time. Earlier display-clock reads stay real.
+        const originalClear = window.clearInterval;
+        window.clearInterval = id => {
+          originalClear.call(window, id);
+          window.clearInterval = originalClear;
+          Object.defineProperty(BaseAudioContext.prototype, "currentTime", { ...originalClock, get() {
+            Object.defineProperty(BaseAudioContext.prototype, "currentTime", originalClock);
+            return Number.NaN;
+          } });
+        };
+        confirm.click();
+      });
+      await expect(page.getByRole("alert").filter({ hasText: "Playback was safely stopped" })).toBeVisible();
+      await expect.poll(() => page.evaluate(() => window.u5NativeSourceCounts?.())).toMatchObject({ sounding: 0, futureAttacks: 0 });
+      const sourceCounts = await page.evaluate(() => window.u5NativeSourceCounts?.());
+      if (sourceCounts === undefined) throw new Error("NATIVE_SOURCE_OBSERVATION_MISSING");
+      expect(sourceCounts.started).toBeGreaterThan(0);
+      await info.attach("native-reconciliation-sources.json", { contentType: "application/json", body: JSON.stringify(sourceCounts) });
+      await expect(page.locator("#studio-replacement-cancel")).toBeEnabled();
+      await page.locator("#studio-replacement-cancel").click();
+      await expect(page.locator("#studio-transport-pause")).toBeDisabled();
+      expect(await exportDocument(page)).toEqual(original);
+      await chooseLesson(page); await confirm(page);
+      expect(await exportDocument(page)).toMatchObject({ title: "ii–V–I in C" });
+      await page.locator("#studio-transport-play").click();
+      await expect(page.locator("#studio-transport-pause")).toBeEnabled();
+      await page.locator("#studio-transport-stop").click();
+      await expect(page.locator("#studio-transport-pause")).toBeDisabled();
+      await page.locator("#studio-undo").click(); expect(await exportDocument(page)).toEqual(original);
     });
     test("export-first remains available after recovery and does not execute the pending replacement", async ({ page }) => {
       await page.locator("#studio-document-title").fill("Keep before replacement");

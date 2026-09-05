@@ -38,6 +38,7 @@ import {
 export type LocalReplacementRetirementRequest = Readonly<Omit<RetireImportReplacementRequest, "sourceFormat"> & { origin: "new" | "lesson" }>;
 export type StudioReplacementRetirementAdapter = X1ReplacementRetirementAdapter & Readonly<{
   retireLocalReplacement: (request: LocalReplacementRetirementRequest) => Promise<unknown>;
+  reconcileLocalReplacement: (request: LocalReplacementRetirementRequest) => Promise<unknown>;
 }>;
 
 export function createX1SerializedTransportRetirementAdapter(
@@ -152,5 +153,21 @@ export function createX1SerializedTransportRetirementAdapter(
         }),
       });
   };
-  return Object.freeze({ retireImportReplacement: retire, retireLocalReplacement: retire });
+  async function reconcileLocalReplacement(request: LocalReplacementRetirementRequest): Promise<unknown> {
+    // This is a new all-notes-off transaction over the CURRENT physical epoch.
+    // It never claims that the earlier retirement or publication succeeded.
+    const before = transport.inspectTransport();
+    const commandRequestId = allocateCommandRequestId();
+    if (observation !== undefined && !observation.beforeSubmit(commandRequestId)) return Object.freeze({ ok: false });
+    const outcome = await transport.submitTransportCommand({ commandRequestId, payload: { kind: "replace-plan", binding: null } });
+    observation?.settled(outcome);
+    const after = transport.inspectTransport();
+    if (outcome.termination !== "receipt" || outcome.commandRequestId !== commandRequestId || outcome.kind !== "replace-plan" ||
+        outcome.stateAfter !== "ready" || !outcome.noFutureAttackPostcondition || outcome.generation !== before.generation + 1 ||
+        after.state !== "ready" || after.generation !== outcome.generation) return Object.freeze({ ok: false });
+    covered = Object.freeze({ requested: request.expectedTransportGeneration, physical: outcome.generation });
+    return Object.freeze({ ok: true, authority: "x1-serialized-transport", request, commandRequestId,
+      observedGeneration: before.generation, resultingGeneration: outcome.generation, state: "ready", noFutureAttack: true });
+  }
+  return Object.freeze({ retireImportReplacement: retire, retireLocalReplacement: retire, reconcileLocalReplacement });
 }

@@ -10,7 +10,8 @@ import { createRecoveryHarness } from "../support/recovery-test-kit";
 import { compiledPlan, createTransportHarness, initializePayload } from "../support/transport-test-kit";
 
 async function harness(options: { seed?: boolean; estimate?: number;
-  retirement?: Pick<StudioReplacementRetirementAdapter, "retireLocalReplacement"> } = {}) {
+  retirement?: Pick<StudioReplacementRetirementAdapter, "retireLocalReplacement"> &
+    Partial<Pick<StudioReplacementRetirementAdapter, "reconcileLocalReplacement">> } = {}) {
   const boot = createStudioBootstrap(); if (!boot.ok) throw new Error("BOOTSTRAP");
   const transport = createTransportHarness(); await transport.submit(initializePayload(compiledPlan()));
   const estimate = () => options.estimate ?? 4_000;
@@ -25,7 +26,7 @@ async function harness(options: { seed?: boolean; estimate?: number;
     settled: composition.replacementWorkflow.settleTransportRetirement,
   });
   const service = createStudioLocalReplacement({ composition, recovery: recovery.service, estimateHistoryRetainedBytes: estimate,
-    exportCurrent: () => { exports++; }, retirement: { retireLocalReplacement: request => {
+    exportCurrent: () => { exports++; }, retirement: { ...(options.retirement ?? real), retireLocalReplacement: request => {
       requests.push(request); return (options.retirement ?? real).retireLocalReplacement(request);
     } } });
   return { composition, service, transport, recovery, requests, real, exports: () => exports, estimate };
@@ -116,6 +117,162 @@ describe("U5 New and lesson replacement through real A0/X1", () => {
     expect(h.composition.controller.setTitle("Forbidden").ok).toBe(false);
     h.service.cancel(); expect(h.service.getSnapshot().open).toBe(true);
   });
+  for (const origin of ["new", "lesson"] as const) for (const rehost of [false, true]) {
+    test(`${origin} does not publish into a removed or replaced confirmation host (rehost=${String(rehost)})`, async () => {
+      let release: (() => void) | undefined;
+      const gate = new Promise<void>(resolve => { release = resolve; });
+      const h = await harness({ retirement: { retireLocalReplacement: async request => {
+        await gate; return h.real.retireLocalReplacement(request);
+      } } });
+      const before = h.composition.readApplicationState();
+      if (origin === "new") await h.service.requestNew(); else await h.service.requestLesson("two-five-one");
+      const pending = h.service.confirm(false);
+      const host = h.composition.readApplicationState().dialogs.at(-1);
+      if (host === undefined) throw new Error("CONFIRMATION_HOST_MISSING");
+      expect(h.composition.replacementWorkflow.applyLifecycleIntent({ kind: "pop-dialog", dialogId: host.id }).ok).toBe(true);
+      if (rehost) expect(h.composition.replacementWorkflow.applyLifecycleIntent({ kind: "push-dialog", dialog: { ...host } }).ok).toBe(true);
+      release?.(); await pending;
+      const after = h.composition.readApplicationState();
+      expect(after.document).toBe(before.document);
+      expect(after.revision).toBe(before.revision);
+      expect(after.history).toBe(before.history);
+      expect(after.bookmarks).toEqual(before.bookmarks);
+      expect(after.exportRevision).toBe(before.exportRevision);
+      expect(after.recovery).toEqual(before.recovery);
+      expect(after.documentTransition.kind).toBe("idle");
+      expect(after.pendingRequests).toEqual(before.pendingRequests);
+      expect(h.transport.service.inspectTransport().state).toBe("ready");
+      expect(h.service.getSnapshot().message).toContain("ui.stale_owner");
+      h.service.cancel();
+      await h.service.requestLesson("two-five-one"); await h.service.confirm(false);
+      expect(h.composition.readApplicationState().document.title).toBe("ii–V–I in C");
+      expect(h.composition.readApplicationState().revision).toBe(before.revision + 1);
+    });
+  }
+  test("a confirmation host removed before Confirm leaves the next gesture usable", async () => {
+    const h = await harness(); const before = h.composition.readApplicationState();
+    await h.service.requestNew();
+    expect(h.composition.replacementWorkflow.applyLifecycleIntent({ kind: "pop-dialog", dialogId: "studio-local-replacement" }).ok).toBe(true);
+    await h.service.confirm(false); expect(h.requests).toHaveLength(0);
+    await h.service.requestLesson("two-five-one");
+    expect(h.service.getSnapshot()).toMatchObject({ open: true, title: "ii–V–I in C" });
+    await h.service.confirm(false);
+    expect(h.composition.readApplicationState().revision).toBe(before.revision + 1);
+  });
+  for (const extra of ["value", "unexpected"] as const) {
+    test(`an augmented no-effect refusal cannot unlock the studio (${extra})`, async () => {
+      const h = await harness({ retirement: { retireLocalReplacement: () => Promise.resolve({ ok: false,
+        code: "transport.replacement_retirement_failed", retirementEffect: "none", [extra]: {} }) } });
+      const before = h.composition.readApplicationState();
+      await h.service.requestNew(); await h.service.confirm(false);
+      expect(h.service.getSnapshot().reconciliationRequired).toBe(true);
+      expect(h.composition.readApplicationState().document).toBe(before.document);
+      expect(h.composition.readApplicationState().history).toBe(before.history);
+      expect(h.composition.controller.setTitle("Forbidden").ok).toBe(false);
+    });
+  }
+  test("a throwing retirement evidence reader fails closed without rejecting the confirmation promise", async () => {
+    const h = await harness({ retirement: { retireLocalReplacement: () => Promise.resolve({
+      get ok() { throw new Error("EVIDENCE_READER_FAILED"); },
+    }) } });
+    const before = h.composition.readApplicationState();
+    await h.service.requestNew(); await h.service.confirm(false);
+    expect(h.service.getSnapshot().reconciliationRequired).toBe(true);
+    expect(h.composition.readApplicationState().document).toBe(before.document);
+    expect(h.composition.controller.setTitle("Forbidden").ok).toBe(false);
+  });
+  test("an unavailable UI owner during retirement preserves the chart and permits a fresh replacement", async () => {
+    let release: (() => void) | undefined;
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    const h = await harness({ retirement: { retireLocalReplacement: async request => {
+      await gate; return h.real.retireLocalReplacement(request);
+    } } });
+    const before = h.composition.readApplicationState();
+    await h.service.requestNew(); const pending = h.service.confirm(false);
+    h.service.invalidateHost();
+    expect(h.composition.controller.setTitle("Forbidden").ok).toBe(false);
+    release?.(); await pending;
+    expect(h.composition.readApplicationState().document).toBe(before.document);
+    expect(h.composition.readApplicationState().history).toBe(before.history);
+    expect(h.service.getSnapshot().message).toContain("ui.stale_owner");
+    h.service.cancel(); await h.service.requestLesson("two-five-one"); await h.service.confirm(false);
+    expect(h.composition.readApplicationState().document.title).toBe("ii–V–I in C");
+  });
+  test("uncertain retirement reconciles through real X1 without publishing, then a fresh request succeeds", async () => {
+    let corrupt = true; let reconciliations = 0;
+    let release: (() => void) | undefined;
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    let entered: (() => void) | undefined;
+    const reconciliationStarted = new Promise<void>(resolve => { entered = resolve; });
+    const h = await harness({ retirement: {
+      retireLocalReplacement: async request => {
+        const result = await h.real.retireLocalReplacement(request);
+        return corrupt ? { ok: false, code: "transport.replacement_retirement_failed", retirementEffect: "unknown" } : result;
+      },
+      reconcileLocalReplacement: async request => { reconciliations++; entered?.(); await gate; return h.real.reconcileLocalReplacement(request); },
+    } });
+    const before = h.composition.readApplicationState();
+    const generation = h.transport.service.inspectTransport().generation;
+    await h.service.requestNew(); const pending = h.service.confirm(false);
+    await reconciliationStarted;
+    expect(reconciliations).toBe(1);
+    expect(h.service.getSnapshot()).toMatchObject({ phase: "committing", reconciliationRequired: true });
+    expect(h.composition.controller.setTitle("Forbidden").ok).toBe(false);
+    h.service.cancel(); await h.service.confirm(false);
+    expect(h.requests).toHaveLength(1);
+    release?.(); await pending;
+    const after = h.composition.readApplicationState();
+    expect(after.document).toBe(before.document); expect(after.history).toBe(before.history);
+    expect(after.bookmarks).toEqual(before.bookmarks); expect(after.exportRevision).toBe(before.exportRevision);
+    expect(after.recovery).toEqual(before.recovery); expect(after.documentTransition.kind).toBe("idle");
+    expect(after.pendingRequests).toEqual(before.pendingRequests);
+    expect(h.service.getSnapshot()).toMatchObject({ phase: "failed", reconciliationRequired: false });
+    expect(h.service.getSnapshot().message).toContain("Playback was safely stopped");
+    expect(h.transport.service.inspectTransport().generation).toBe(generation + 2);
+    expect(h.transport.timer.activeHandleCount()).toBe(0);
+    expect(h.transport.engine.inspectAudioEngine().nonreleasingVoiceCount).toBe(0);
+    corrupt = false; h.service.cancel(); await h.service.requestLesson("two-five-one"); await h.service.confirm(false);
+    expect(h.composition.readApplicationState().document.title).toBe("ii–V–I in C");
+    expect(h.composition.readApplicationState().revision).toBe(before.revision + 1);
+    expect(h.transport.service.inspectTransport().generation).toBe(generation + 3);
+    expect(reconciliations).toBe(1);
+  });
+  for (const defect of ["request", "generation", "postcondition", "extra", "throw"] as const) {
+    test(`invalid reconciliation evidence retains the original chart and lock (${defect})`, async () => {
+      let reconciliations = 0;
+      const h = await harness({ retirement: {
+        retireLocalReplacement: () => Promise.resolve({ ok: true, value: {} }),
+        reconcileLocalReplacement: request => {
+          reconciliations++;
+          if (defect === "throw") throw new Error("RECONCILIATION_FAILED");
+          return Promise.resolve({ ok: true, authority: "x1-serialized-transport",
+            request: defect === "request" ? { ...request, origin: "wrong" } : request, commandRequestId: 2,
+            observedGeneration: 1, resultingGeneration: defect === "generation" ? 3 : 2,
+            state: "ready", noFutureAttack: defect !== "postcondition", ...(defect === "extra" ? { extra: true } : {}) });
+        },
+      } });
+      const before = h.composition.readApplicationState(); await h.service.requestNew(); await h.service.confirm(false);
+      expect(h.service.getSnapshot().reconciliationRequired).toBe(true);
+      expect(h.composition.readApplicationState().document).toBe(before.document);
+      expect(h.composition.readApplicationState().history).toBe(before.history);
+      expect(h.composition.controller.setTitle("Forbidden").ok).toBe(false);
+      expect(reconciliations).toBe(1);
+    });
+  }
+  for (const throws of [false, true]) {
+    test(`the UI owner check refuses stale publication (throws=${String(throws)})`, async () => {
+      const h = await harness(); const before = h.composition.readApplicationState();
+      await h.service.requestLesson("two-five-one");
+      await h.service.confirm(false, () => { if (throws) throw new Error("HOST_READER_FAILED"); return false; });
+      expect(h.composition.readApplicationState().document).toBe(before.document);
+      expect(h.composition.readApplicationState().history).toBe(before.history);
+      expect(h.composition.readApplicationState().documentTransition.kind).toBe("idle");
+      expect(h.service.getSnapshot().message).toContain("ui.stale_owner");
+      h.service.cancel(); await h.service.requestLesson("two-five-one");
+      await h.service.confirm(false, () => true);
+      expect(h.composition.readApplicationState().document.title).toBe("ii–V–I in C");
+    });
+  }
   test("local and import replacements share the proven empty-epoch chain", async () => {
     const h = await harness(); await h.service.requestNew(); await h.service.confirm(false);
     const importer = createStudioDocumentImport({ composition: h.composition, recovery: h.recovery.service,

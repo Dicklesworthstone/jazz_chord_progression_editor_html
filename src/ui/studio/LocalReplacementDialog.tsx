@@ -19,7 +19,7 @@ export function LocalReplacementDialog({ service, view }: Readonly<{
   const focus = useMemo(() => ({ triggerId: view.triggerId, workflowTargetId: "studio-document-title", workspaceId: "workspace" }), [view.triggerId]);
   const onContractRefusal = useCallback((diagnostic: UiDiagnostic) => {
     setRefusal(`${diagnostic.code}: ${diagnostic.message}`);
-    service.cancel();
+    service.invalidateHost();
   }, [service]);
   if (!view.open) {
     const message = refusal ?? view.message;
@@ -44,7 +44,13 @@ export function LocalReplacementDialog({ service, view }: Readonly<{
         variant="secondary" type="button" busy={false} disabled={busy || view.reconciliationRequired} onAction={service.exportCurrentFirst} />
       <Button {...COMMON} id="studio-replacement-confirm" label={busy ? "Replacing chart…" : "Confirm replacement"}
         variant="destructive" type="button" busy={busy} disabled={view.phase !== "confirm" || (view.nonUndoable && !acknowledged)}
-        onAction={() => { void service.confirm(acknowledged); }} />
+        onAction={() => {
+          const owner = document.getElementById(view.triggerId);
+          const host = document.getElementById("studio-local-replacement-dialog");
+          void service.confirm(acknowledged, () => owner !== null && host !== null &&
+            document.getElementById(view.triggerId) === owner && host.isConnected && owner.isConnected &&
+            owner.getClientRects().length > 0 && getComputedStyle(owner).visibility !== "hidden");
+        }} />
       <Button {...COMMON} id="studio-replacement-cancel" label="Cancel" variant="secondary" type="button" busy={false}
         disabled={busy || view.reconciliationRequired} onAction={service.cancel} />
       {view.message === null ? null : <p role={view.phase === "failed" ? "alert" : "status"}>{view.message}</p>}
