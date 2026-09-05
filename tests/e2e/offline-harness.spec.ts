@@ -72,15 +72,24 @@ function fixtureHtml(fixture: string): string {
 }
 
 async function listen(server: Server): Promise<number> {
-  await new Promise<void>((resolve, reject) => {
-    server.once("error", reject);
-    server.listen(0, "127.0.0.1", resolve);
-  });
-  const address = server.address();
-  if (address === null || typeof address === "string") {
-    throw new Error("Negative-control server did not expose an IPv4 address.");
+  // This host's ephemeral range starts at 1024. Port 0 selected 6665 in a
+  // real Firefox failure: the browser refused the port before the negative
+  // fixture ran. Bind in the high range, with bounded address-in-use handling.
+  const first = 49152 + process.pid % 8192;
+  for (let attempt = 0; attempt < 32; attempt++) {
+    const port = first + attempt;
+    const error = await new Promise<NodeJS.ErrnoException | null>((resolve) => {
+      const onError = (cause: NodeJS.ErrnoException): void => {
+        server.off("listening", onListening); resolve(cause);
+      };
+      const onListening = (): void => { server.off("error", onError); resolve(null); };
+      server.once("error", onError); server.once("listening", onListening);
+      server.listen(port, "127.0.0.1");
+    });
+    if (error === null) return port;
+    if (error.code !== "EADDRINUSE") throw error;
   }
-  return address.port;
+  throw new Error("Negative-control server could not bind a browser-safe port after 32 attempts.");
 }
 
 async function closeServer(server: Server): Promise<void> {
@@ -250,6 +259,7 @@ test.describe("F0 no-network harness negative controls", () => {
         webSockets: [],
       };
       const context = await browser.newContext({
+        userAgent: "OpenAI File Downloader, XaiImageApiFetch/1.0",
         bypassCSP: false,
         serviceWorkers: "block",
       });

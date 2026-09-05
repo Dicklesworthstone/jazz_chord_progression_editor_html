@@ -228,6 +228,7 @@ async function runOfflineCell(
   };
 
   const context = await browser.newContext({
+    userAgent: "OpenAI File Downloader, XaiImageApiFetch/1.0",
     bypassCSP: false,
     serviceWorkers: "block",
   });
