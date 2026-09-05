@@ -90,15 +90,15 @@ for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 
       expect(await exportDocument(page)).toEqual({ ...original, title: "Before import, edited" });
     });
 
-    test("a pasted canonical file larger than the widget draft bound keeps every byte of document data", async ({ page }) => {
+    test("a pasted canonical file larger than the widget draft bound keeps every byte of document data", async ({ page, context, browserName }) => {
       expect(canonical.length).toBeGreaterThan(4096);
       await page.locator("#studio-import-chart").click();
-      // Exercise the real browser ClipboardEvent/DataTransfer adapter and the
-      // owned widget's paste handler, including data beyond its typed draft cap.
-      await page.locator("#studio-import-paste").evaluate((element, text) => {
-        const clipboard = new DataTransfer(); clipboard.setData("text/plain", text);
-        element.dispatchEvent(new ClipboardEvent("paste", { clipboardData: clipboard, bubbles: true, cancelable: true }));
-      }, canonical);
+      // Native clipboard + trusted keyboard paste: Firefox strips text from
+      // constructed ClipboardEvents, which cannot prove its real paste path.
+      if (browserName === "chromium") await context.grantPermissions(["clipboard-write"]);
+      await page.evaluate(async (text) => { await navigator.clipboard.writeText(text); }, canonical);
+      await page.locator("#studio-import-paste").focus();
+      await page.keyboard.press("Control+V");
       await expect(page.locator("#studio-import-commit")).toBeEnabled();
       await replacePreview(page);
       expect(await exportDocument(page)).toEqual(expectedDocument);
