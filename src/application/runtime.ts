@@ -26,6 +26,9 @@ export { createStudioRecoverySession, createStudioRecoveryStatusFeed } from "./s
 export type { StudioRecoverySession, StudioRecoverySessionView } from "./studio-recovery-session";
 export { createStudioLifecycle } from "./studio-lifecycle";
 export type { StudioLifecycleService, StudioLifecycleView } from "./studio-lifecycle";
+export { createStudioDocumentImport } from "./studio-document-import";
+export type { StudioDocumentImport, StudioImportView } from "./studio-document-import";
+export type { ImportFormatHint as StudioImportFormatHint } from "./e0-interchange-contract";
 
 export type {
   StudioBoundaryInput,

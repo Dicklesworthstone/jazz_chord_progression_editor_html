@@ -13,3 +13,4 @@ export {
   type RecoveryService,
   type RecoveryStartupInput,
 } from "./recovery-service";
+export { createStudioRecoveryStorage } from "./studio-recovery-storage";

@@ -9,6 +9,7 @@ import {
   createStudioRecoverySession,
   createStudioRecoveryStatusFeed,
   createStudioLifecycle,
+  createStudioDocumentImport,
   createX1SerializedTransportRetirementAdapter,
   applicationHistoryRetainedByteEstimator,
   validateDocumentSemantics,
@@ -21,6 +22,7 @@ import {
   createIndexedDbRecoveryAdapter,
   createLocalStorageRecoveryAdapter,
   createRecoveryService,
+  createStudioRecoveryStorage,
 } from "./persistence";
 import {
   createBrowserAudioPlatform,
@@ -153,11 +155,11 @@ if (creation.ok) {
    * refused Keep changes nothing. Browser recovery is never called Save.
    */
   const recoveryStatus = createStudioRecoveryStatusFeed();
+  const recoveryStorage = createStudioRecoveryStorage([
+    createIndexedDbRecoveryAdapter(), createLocalStorageRecoveryAdapter(),
+  ]);
   const recoveryService = createRecoveryService({
-    adapters: [
-      createIndexedDbRecoveryAdapter(),
-      createLocalStorageRecoveryAdapter(),
-    ],
+    adapters: recoveryStorage.adapters,
     clock: {
       nowMs: () => performance.now(),
       nowIso: () => new Date().toISOString(),
@@ -172,6 +174,7 @@ if (creation.ok) {
   const recoveryOrchestrator = createStudioRecoveryOrchestrator({
     composition,
     recovery: recoveryService,
+    resolveStartupDocumentId: recoveryStorage.resolveStartupDocumentId,
     retirement: createX1SerializedTransportRetirementAdapter(
       audio.transportService,
       composition.allocateTransportCommandRequestId,
@@ -213,6 +216,13 @@ if (creation.ok) {
     },
   });
 
+  const documentImport = createStudioDocumentImport({
+    composition,
+    recovery: recoveryService,
+    retirement: createX1SerializedTransportRetirementAdapter(audio.transportService, composition.allocateTransportCommandRequestId),
+    exportCurrent: () => { void lifecycle.openExport(); },
+  });
+
   render(
     <StudioRoot
       controller={controller}
@@ -221,6 +231,7 @@ if (creation.ok) {
       startupNotice={startupNotice}
       recovery={recoveryBinding}
       lifecycle={lifecycle}
+      documentImport={documentImport}
     />,
     mountPoint,
   );

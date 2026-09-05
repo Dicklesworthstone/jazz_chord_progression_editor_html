@@ -151,6 +151,7 @@ export function createStudioRecoverySession(options: Readonly<{
         const view = await orchestrator.startup({ sessionEdited: options.sessionEdited });
         if (view.kind === "offer") {
           offered = view;
+          storageDocumentId = view.storageDocumentId;
           const current = composition.readApplicationState();
           offeredAt = { documentId: current.document.id, revision: current.revision };
           publish({ offer: Object.freeze({

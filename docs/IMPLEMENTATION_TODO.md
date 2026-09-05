@@ -54,10 +54,16 @@ Consumer: the user and Codex executing the 2026-09-04 request to implement the r
 - [x] Cover Blob/URL/anchor/append/click failures with exact cleanup accounting, including cleanup refusal. Preserve synchronous gesture activation and the existing CSP.
 - [x] Keep the U0 modal/focus lease across dismissibility/committing changes, with A0 history locking and exact focus return.
 - [ ] Connect bounded canonical/legacy file and paste preview, grouped reports, inert cancel and revision-bound commit through E0/A0/X1.
-- [ ] Allocate the import preview identity in the composition-owned replacement workflow; do not start retirement on preview or silently rebind a displayed confirmation to a later request identity.
+- [x] Allocate the import preview identity in the composition-owned replacement workflow; do not start retirement on preview or silently rebind a displayed confirmation to a later request identity. Restore the frozen six-member composition return; the unchanged A0/E0 static policy caught the widened boundary.
+- [x] Implement bounded File/clipboard reading, independently decoded canonical data, legacy migration with grouped diagnostics, exact non-Undoable acknowledgement and single-use candidate authority. Focused integration proof passes; browser acceptance is still being completed.
+- [x] Refuse stale previews, late cancelled reads, removed dialog hosts and oversized input without reusing an earlier candidate; clear import draft authority on failure.
+- [x] Fix import command logical time against the existing history. The first real-browser run caught a backwards-time refusal missed by the initial zero-clock harness; the harness now uses prior timed edits.
+- [ ] Prove exact imported document equality through actual browser JSON download, Cancel/Undo, file and clipboard paths, Manual/Frozen/Custom values and different-ID cold recovery on desktop/phone in all three browsers.
+- [ ] Prove serialized confirmed replacement during real playing and paused audio, with no publication from file selection or preview.
 - [ ] Connect lossy chart-text export, independently verify its supported projection, render loss disclosures, and preserve the canonical marker law.
 - [ ] Confirm New/lesson/import replacement; offer export first for unexported/unrecovered work, disclose oversized history, restore focus and prevent concurrent commits. JSON export's A0/U0 hosting alone does not complete this row.
 - [ ] Verify cold startup discovery after replacing with a different document ID; the current startup lookup starts from the boot document's ID. Do not claim arbitrary imported-document recovery until this is implemented and proved.
+- [x] Connect a bounded durable location to the actual recovery adapter, preserving imported IDs. Location-write failure must not certify clean recovery; Discard retains location without chart payloads so an older document is not resurrected. Real A1 service integration tests pass; browser proof pending.
 - [ ] Complete the auto-open recovery explanation and Discard/New surface; handle a checksummed but semantically invalid current candidate with an independently validated previous candidate.
 - [ ] Keep chart-text import on the insertion lane; preserve MIDI's separate workflows.
 - [x] Exercise recovery write/discard races and native browser recovery/JSON downloads at desktop and phone widths across Chromium, Firefox and WebKit, including allocation failure and focus restoration.

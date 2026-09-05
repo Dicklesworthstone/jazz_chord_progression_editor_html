@@ -56,6 +56,8 @@ import {
   type StudioRecoverySessionView,
   type StudioLifecycleService,
   type StudioLifecycleView,
+  type StudioDocumentImport,
+  type StudioImportView,
 } from "../application/runtime";
 import {
   GROOVE_STYLE_IDS,
@@ -369,6 +371,7 @@ type PendingEdit =
   | null;
 
 import { LifecycleExportDialog } from "./studio/LifecycleExportDialog";
+import { DocumentImportDialog } from "./studio/DocumentImportDialog";
 
 export type AppProps = Readonly<{
   documentActions?: ComponentChildren;
@@ -3682,6 +3685,7 @@ export type StudioRootProps = Readonly<{
   /** Absent means the recovery surface is not offered at all. */
   recovery?: StudioRecoverySession | null;
   lifecycle?: StudioLifecycleService | null;
+  documentImport?: StudioDocumentImport | null;
 }>;
 
 export function StudioRoot({
@@ -3691,7 +3695,16 @@ export function StudioRoot({
   midiExport,
   recovery,
   lifecycle,
+  documentImport,
 }: StudioRootProps) {
+  const [importView, setImportView] = useState<StudioImportView | null>(documentImport?.getSnapshot() ?? null);
+  useEffect(() => {
+    if (documentImport == null) return;
+    const publish = (): void => { setImportView(documentImport.getSnapshot()); };
+    const unsubscribe = documentImport.subscribe(publish);
+    publish();
+    return unsubscribe;
+  }, [documentImport]);
   const midiImportService = midiImport ?? null;
   const midiExportService = midiExport ?? null;
   const recoveryBinding = recovery ?? null;
@@ -3758,10 +3771,16 @@ export function StudioRoot({
   return (
     <>
       <App
-      documentActions={lifecycle == null ? null : <Button
+      documentActions={<>
+      {documentImport == null ? null : <Button
+        id="studio-import-chart" type="button" label="Import chart" variant="secondary"
+        busy={false} disabled={false} density="comfortable" describedBy={[]} invalid={false}
+        onAction={documentImport.open} />}
+      {lifecycle == null ? null : <Button
         id="studio-export-json" type="button" label="Export JSON" variant="secondary"
         busy={false} disabled={false} density="comfortable" describedBy={[]} invalid={false}
         onAction={() => { void lifecycle.openExport(); }} />}
+      </>}
       snapshot={snapshot}
       startupNotice={startupNotice ?? null}
       actions={{
@@ -3888,6 +3907,7 @@ export function StudioRoot({
     />
     {recoveryRegion}
     {lifecycle == null || lifecycleView === null ? null : <LifecycleExportDialog service={lifecycle} view={lifecycleView} />}
+    {documentImport == null || importView === null ? null : <DocumentImportDialog service={documentImport} view={importView} />}
     </>
   );
 }

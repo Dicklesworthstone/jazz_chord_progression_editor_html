@@ -42,6 +42,7 @@ async function retitle(page: Page, title: string): Promise<void> {
   await input.press("Enter");
   await expect.poll(async () => (await recoveryEntries(page)).some(([key, value]) =>
     key.endsWith(":current") && value.includes(JSON.stringify(title)))).toBe(true);
+  await expect(page.getByRole("status").filter({ hasText: /^Recovered locally at /u })).toBeVisible();
 }
 
 async function recoveryEntries(page: Page): Promise<[string, string][]> {
@@ -161,7 +162,10 @@ for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 
       expect(await recoveryEntries(page)).toEqual(before);
       await page.locator("#studio-recovery-discard").click();
       await expect(page.locator("#studio-recovery-keep")).toHaveCount(0);
-      expect(await recoveryEntries(page)).toEqual([]);
+      // The workspace location deliberately survives without chart payloads;
+      // removing it would revive a different, older document on the next boot.
+      expect(await recoveryEntries(page)).toEqual([["changes.studio-recovery-location.v1:current",
+        JSON.stringify({ schema: "changes.studio-recovery-location.v1", documentId: "studio-document-1" })]]);
       await page.reload();
       await page.waitForTimeout(600);
       await expect(page.locator("#studio-recovery-keep")).toHaveCount(0);

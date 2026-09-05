@@ -6,6 +6,7 @@ export * from "./x1-retirement-adapter";
 export * from "./studio-recovery";
 export * from "./studio-recovery-session";
 export * from "./studio-lifecycle";
+export * from "./studio-document-import";
 export * from "./e0-v2-port-normalization";
 export * from "./e0-interchange";
 export * from "./u2-chord-inspector-contract";

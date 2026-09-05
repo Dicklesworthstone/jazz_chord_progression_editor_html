@@ -66,6 +66,7 @@ export type StudioRecoveryStartupView =
       savedAt: string;
       revision: number;
       envelope: RecoveryEnvelope;
+      storageDocumentId: DocumentId;
       report: RecoveryStartupReport;
     }>;
 
@@ -98,6 +99,7 @@ export type StudioRecoveryDependencies = Readonly<{
   nowMs: () => number;
   /** Bounded unique seed for command IDs (composition-allocated). */
   allocateCommandSeedId: () => string;
+  resolveStartupDocumentId?: (adapter: import("../persistence").RecoveryAdapterKind, fallback: DocumentId) => Promise<DocumentId>;
 }>;
 
 export function createStudioRecoveryOrchestrator(
@@ -285,10 +287,11 @@ export function createStudioRecoveryOrchestrator(
     },
 
     startup: async ({ sessionEdited }) => {
-      await recovery.probeRecoveryCapability();
       const state = readState();
+      const probe = await recovery.probeRecoveryCapability();
+      const storageDocumentId = await dependencies.resolveStartupDocumentId?.(probe.adapter, state.document.id) ?? state.document.id;
       const report = await recovery.readRecoveryCandidates({
-        documentId: state.document.id,
+        documentId: storageDocumentId,
         sessionEdited,
       });
       if (report.disposition === "none-available") {
@@ -310,6 +313,7 @@ export function createStudioRecoveryOrchestrator(
         savedAt: candidate.envelope.savedAt,
         revision: candidate.envelope.revision,
         envelope: candidate.envelope,
+        storageDocumentId,
         report,
       });
     },
