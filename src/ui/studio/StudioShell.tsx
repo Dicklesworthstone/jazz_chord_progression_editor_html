@@ -736,8 +736,8 @@ export function StudioShell({
               <div class="studio-standards-modal">
                 <StandardProgressionList
                   grooveOptions={view.playback.groove.options}
-                  onLoadLibraryEntry={(entryId) => {
-                    callbacks.onLoadLibraryEntry(entryId);
+                  onLoadLibraryEntry={(entryId, focusOwnerId) => {
+                    callbacks.onLoadLibraryEntry(entryId, focusOwnerId);
                     setStandardsOpen(false);
                   }}
                   variant="modal"

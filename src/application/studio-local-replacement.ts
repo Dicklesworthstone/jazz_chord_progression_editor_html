@@ -26,7 +26,7 @@ export type StudioLocalReplacementService = Readonly<{
   getSnapshot: () => StudioLocalReplacementView;
   subscribe: (listener: () => void) => () => void;
   requestNew: () => Promise<void>;
-  requestLesson: (id: string) => Promise<void>;
+  requestLesson: (id: string, focusOwnerId?: string) => Promise<void>;
   confirm: (acknowledged: boolean) => Promise<void>;
   cancel: () => void;
   exportCurrentFirst: () => void;
@@ -43,6 +43,7 @@ export function createStudioLocalReplacement(options: Readonly<{
   const ids = createProductionStableIdFactory();
   const estimate = options.estimateHistoryRetainedBytes ?? applicationHistoryRetainedByteEstimator;
   let chosen: Omit<LocalReplacementRequest, "acknowledgedNonUndoable"> | null = null;
+  let confirmationRequired = false;
   let view: StudioLocalReplacementView = Object.freeze({ open: false, phase: "confirm", origin: "new",
     title: "Untitled Chart", nonUndoable: false, exportRecommended: false, message: null,
     triggerId: "studio-new-chart", reconciliationRequired: false });
@@ -107,11 +108,15 @@ export function createStudioLocalReplacement(options: Readonly<{
     });
     if (!result.ok) { workflow.cancel(begun.identity); failure(result.code); return; }
     chosen = null;
+    // U0 restores this dialog's owner. Consume the generic chart-focus request
+    // before closing the host so the chart render cannot override that restore.
+    const focus = composition.readApplicationState().focusRequest;
+    if (confirmationRequired && focus?.reason === "replacement") composition.controller.acknowledgeFocus(focus.sequence);
     workflow.applyLifecycleIntent({ kind: "pop-dialog", dialogId: DIALOG_ID });
     publish({ open: false, phase: "confirm", message: view.nonUndoable
       ? "Chart replaced. Undo is unavailable at this history boundary." : "Chart replaced. Undo restores the previous chart." });
   }
-  async function request(origin: LocalReplacementOrigin, entryId?: string): Promise<void> {
+  async function request(origin: LocalReplacementOrigin, entryId?: string, focusOwnerId?: string): Promise<void> {
     if (view.open || view.reconciliationRequired) return;
     const before = composition.readApplicationState();
     if (before.dialogs.length > 0 || before.documentTransition.kind !== "idle") { failure("import.replacement_workflow_busy"); return; }
@@ -153,17 +158,18 @@ export function createStudioLocalReplacement(options: Readonly<{
     if (!assessed.ok) { failure(assessed.code); return; }
     chosen = Object.freeze({ identity, origin, candidate, command, disclosedImpact: assessed.impact });
     const facts = selectReplacementConfirmation(before, options.recovery.inspectRecovery());
+    confirmationRequired = facts.confirmationRequired || assessed.oversized;
     const pushed = workflow.applyLifecycleIntent({ kind: "push-dialog", dialog: {
       id: DIALOG_ID, kind: origin === "new" ? "new-document" : "lesson-load", phase: "open", blocksHistory: false, requestId: identity.requestId } });
     if (!pushed.ok) { failure(pushed.code); return; }
     publish({ open: true, phase: "confirm", origin, title: candidate.title,
       nonUndoable: assessed.oversized, exportRecommended: facts.exportRecommended || assessed.oversized,
-      message: null, triggerId: origin === "new" ? "studio-new-chart" : `studio-progression-${entryId ?? ""}` });
+      message: null, triggerId: origin === "new" ? "studio-new-chart" : focusOwnerId ?? `studio-progression-${entryId ?? ""}` });
     if (!facts.confirmationRequired && !assessed.oversized) await confirm(false);
   }
   return Object.freeze({ getSnapshot: () => hosted() ? view : Object.freeze({ ...view, open: false }),
     subscribe: listener => { listeners.add(listener); return () => { listeners.delete(listener); }; },
-    requestNew: () => request("new"), requestLesson: id => request("lesson", id), confirm, cancel,
+    requestNew: () => request("new"), requestLesson: (id, focusOwnerId) => request("lesson", id, focusOwnerId), confirm, cancel,
     exportCurrentFirst: () => { if (view.phase === "committing") return; cancel(); if (!view.open) options.exportCurrent(); },
   });
 }

@@ -643,14 +643,17 @@ function validateRetirement(
   if (
     typeof atTimeSeconds !== "number" ||
     !Number.isFinite(atTimeSeconds) ||
-    atTimeSeconds < currentTimeSeconds ||
+    atTimeSeconds < 0 ||
     atTimeSeconds >
       currentTimeSeconds + MAX_AUDIO_SCHEDULE_LOOKAHEAD_SECONDS
   ) {
     return invalid("audio.retirement_time_invalid", ["atTimeSeconds"]);
   }
   return valid(
-    Object.freeze({ selector: selector.value, reason, atTimeSeconds }),
+    // The audio clock may advance between the caller reading "now" and this
+    // operation. An elapsed retirement is immediate, never a reason to leave
+    // voices sounding. Future retirements retain their exact scheduled time.
+    Object.freeze({ selector: selector.value, reason, atTimeSeconds: Math.max(currentTimeSeconds, atTimeSeconds) }),
   );
 }
 

@@ -501,6 +501,13 @@ voice ID then instance token before mutation and receipts. Unknown selectors
 complete as an empty idempotent retirement. A second retirement reports an
 already-releasing voice without scheduling a second stop or disconnect.
 
+Retirement timestamps must be finite, nonnegative, and no later than the
+captured engine time plus the 0.25-second horizon. A timestamp already elapsed
+at engine entry retires immediately at that captured time: the caller's clock
+read and the engine's clock read can straddle a native audio render quantum.
+Future retirement times retain their exact value. This rule applies to
+retirement only; attack admission still refuses past scheduled starts.
+
 Each scheduled source has a named token-checked `onended` callback. When all
 sources for that exact instance have ended, cleanup removes its six references
 and disconnects owned nodes once. A duplicate callback is inert. A late callback

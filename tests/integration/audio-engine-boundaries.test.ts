@@ -504,6 +504,33 @@ describe("TR-X0-BOUNDS-OFFLINE exact executable boundaries", () => {
     expectVoiceAndGraphStateUnchanged(before, engine.inspectAudioEngine());
   });
 
+  test("an immediate retirement remains valid when the audio clock advances after the caller reads it", async () => {
+    const { engine, context } = await readyEngine();
+    requireSuccess(engine.attackAudioVoices(attackRequest([voice("clock-race")], {
+      eventId: "clock-race-event", startTimeSeconds: 0.05, releaseTimeSeconds: 1,
+    })));
+    const requestedAt = context.port.currentTime;
+    context.setCurrentTime(0.01);
+    const receipt = requireSuccess(engine.retireAudioVoices({
+      selector: { kind: "all" }, reason: "all-notes-off", atTimeSeconds: requestedAt,
+    }));
+    expect(receipt.noFutureAttackPostcondition).toBe(true);
+    expect(receipt.newlyRetiredVoiceIds).toEqual(["clock-race"]);
+    expect(receipt.snapshot.activeVoices[0]?.effectiveReleaseTimeSeconds).toBe(0.01);
+    expect(engine.inspectAudioEngine().nonreleasingVoiceCount).toBe(0);
+  });
+
+  test("retirement still refuses negative and nonfinite timestamps without changing voices", async () => {
+    const { engine } = await readyEngine();
+    requireSuccess(engine.attackAudioVoices(attackRequest([voice("invalid-retirement-time")])));
+    const before = engine.inspectAudioEngine();
+    for (const atTimeSeconds of [-0.001, Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
+      requireFailure(engine.retireAudioVoices({ selector: { kind: "all" }, reason: "all-notes-off", atTimeSeconds }),
+        "audio.retirement_time_invalid");
+      expectVoiceAndGraphStateUnchanged(before, engine.inspectAudioEngine());
+    }
+  });
+
   test("X0-LIFE-044 keeps closed terminal for a later otherwise valid attack", async () => {
     const { engine, fake, context } = await readyEngine();
     requireSuccess(

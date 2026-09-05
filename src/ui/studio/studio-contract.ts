@@ -723,7 +723,7 @@ export type StudioShellCallbacks = Readonly<{
    * retitle, set the entry's groove and (when declared) its tempo — all
    * through controller actions, never through chained field callbacks.
    */
-  onLoadLibraryEntry: (entryId: string) => void;
+  onLoadLibraryEntry: (entryId: string, focusOwnerId?: string) => void;
   onQuickEntryClear: () => void;
   /** Read a local file the caller picked. No network, ever. */
   onMidiImportChooseFile: (file: File) => void;
