@@ -40,7 +40,7 @@ acceptance gates, and [`ios/README.md`](ios/README.md) for build instructions.
 
 ## What works today
 
-This table describes the repository build. Recovery and **Export JSON** are connected here; the latest lifecycle changes have not been deployed as part of this implementation.
+This table describes the repository build. Recovery, **Import chart**, and **Export JSON** are connected here; the latest lifecycle changes have not been deployed as part of this implementation.
 
 | Capability | Current state |
 |---|---|
@@ -52,6 +52,7 @@ This table describes the repository build. Recovery and **Export JSON** are conn
 | Progression library | 28 reviewed entries with a machine-checked provenance law |
 | MIDI import | One-gesture `.mid` import with a Rust SMF parser in WASM, salvage ledger, per-track preview/overrides, and automated groove matching (M0 shipped; M1 owner-listening gate open) |
 | Recovery | Best-effort IndexedDB with localStorage fallback, revision-bound writes, Keep/Discard on reload, previous-copy fallback, and visible storage failures |
+| Chart import | Local Changes/legacy JSON files and pasted data get a bounded preview before replacement; migration reports disclose retained data, confirmation retires playback, and imported document IDs survive recovery |
 | JSON export | **Export JSON** prepares and validates a portable chart, then **Download JSON** hands it to the browser; only exact successful delivery advances the export marker |
 | MIDI export | Deterministic Standard MIDI files with preview, blocker cards, and real downloads (E1 + U7) |
 | Share links | Copy link encodes the chart into a local `#zdoc=` fragment; opening one crosses the same refusing decoders as typed text |
@@ -230,7 +231,7 @@ hold for its named packages, and mixed rows say what remains.
 | Gate | Status | State |
 |---|---|---|
 | Foundation (F0–F3, T0–T1) | Complete | Pinned toolchain, standalone artifact, total decoder, chord parser/resolver, semantic publication, independent theory corpus — all package epics closed with evidence gates in `verify` |
-| Reliable studio | Largely current | Chart editing, commands/history, deterministic transport/audio, voicing engines, and MIDI import/export ship today. Recovery and JSON export are connected. Still open: JSON/legacy import and chart-text export UI, manual/frozen voicing editing (U2), X1 verify leg, and the remaining lifecycle dialogs (U5) |
+| Reliable studio | Largely current | Chart editing, commands/history, deterministic transport/audio, voicing engines, and MIDI import/export ship today. Recovery, JSON/legacy import and JSON export are connected in the repository build. Still open: chart-text export UI, manual/frozen voicing editing (U2), X1 verify leg, and the remaining lifecycle dialogs (U5) |
 | Musical intelligence | Reduced subset shipped | The live Harmony Lens/roman numerals/next options are an honest narrower substitute; the H0/H1 evidence-tier engines, transposition, tonal journeys, Atlas, fingerprints, and the Continuation Engine remain planned |
 | Advanced craft | Early pieces shipped | V2 progression optimizer, E1 MIDI export, and the U7 export workflow landed ahead of schedule; route/constraint search, reharmonization, guide-tone/color/rhythm/tension/sequence tools, and practice workflows remain planned |
 | Physical instruments | In progress | Clarinet v2, flute v2, and four plucked models ship behind the model-acceptance ledger; trumpet and physical vibes/bass remain dark pending performance and owner listening |
@@ -294,12 +295,12 @@ Local recovery is not cloud backup. Keep JSON copies of important charts; browse
 - You cannot choose, edit, or freeze a voicing; the V0/V1/V2 engines pick
   voicings automatically (the exact manual/frozen editor is the open U2
   package).
-- JSON/legacy import and chart-text export still need their UI connections.
+- Chart-text export still needs its UI connection. JSON/legacy import,
   JSON export, share links, and MIDI export are available in the repository build.
 - Recovery is best-effort browser storage. Keep/Discard and fallback work,
   but the complete U5 lifecycle/confirmation package is still in progress.
 - Legacy application behavior was deliberately removed rather than copied
-  forward; the bounded legacy importer (C0) has an engine but no UI yet.
+  forward; the bounded legacy importer reports every supported migration and refuses unsupported data.
 - The Harmonic Discovery systems (continuation engine, Atlas, route
   planner, reharmonization, practice tools) are planned, not shipped; the
   live analysis panel is a deliberately narrower substitute.
@@ -399,7 +400,7 @@ Edits queue best-effort local recovery. On reload, choose **Keep recovered chart
 
 ### Can I import a chart from the legacy app?
 
-Not through the page yet. The bounded legacy decoder and itemized migration report exist, but their preview and confirmation UI remain part of U5. Unsupported data must produce a diagnostic or refusal, never a silently substituted chord.
+Choose **Import chart**, then select a local JSON file or paste its contents. Review the chart summary and migration report, then review and confirm replacement when requested. Selecting a file never replaces the current chart. Manual notes remain exact; unsupported data produces a diagnostic or refusal. Chart text goes to **Quick entry** for insertion instead of replacing the document.
 
 ### Is a local web server required?
 
