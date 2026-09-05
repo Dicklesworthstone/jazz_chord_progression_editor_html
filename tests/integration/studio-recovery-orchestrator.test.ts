@@ -21,6 +21,7 @@ import {
   createX1SerializedTransportRetirementAdapter,
   validateDocumentSemantics,
 } from "../../src/application";
+import type { X1ReplacementRetirementAdapter } from "../../src/application/e0-interchange-contract";
 import type { ApplicationCommandDependencies } from "../../src/application/application-state-contract";
 import { decodeDocumentShape } from "../../src/domain";
 import {
@@ -77,7 +78,7 @@ async function checksummedEnvelope(fields: Readonly<{
   return JSON.stringify({ ...body, checksum });
 }
 
-async function createHarness(writeOutcome: "written" | "quota" | "denied" = "written") {
+async function createHarness(writeOutcome: "written" | "quota" | "denied" = "written", retirement?: X1ReplacementRetirementAdapter) {
   const bootstrap = createStudioBootstrap();
   if (!bootstrap.ok) throw new Error("RECOVERY_TEST_BOOTSTRAP");
   const dependencies: ApplicationCommandDependencies = Object.freeze({
@@ -107,7 +108,7 @@ async function createHarness(writeOutcome: "written" | "quota" | "denied" = "wri
   const orchestrator = createStudioRecoveryOrchestrator({
     composition,
     recovery: recoveryHarness.service,
-    retirement: createX1SerializedTransportRetirementAdapter(
+    retirement: retirement ?? createX1SerializedTransportRetirementAdapter(
       transport.service,
       transport.nextRequestId,
     ),
@@ -446,5 +447,23 @@ for (const outcome of ["quota", "denied"] as const) {
     expect(session.getSnapshot().diagnosticText).toContain("Use Export JSON");
     expect(h.composition.readApplicationState().document).toBe(document);
     expect(h.recoveryHarness.service.inspectRecovery().cleanRevision).toBeNull();
+  });
+}
+
+for (const [label, retire] of [
+  ["ambiguous effect", () => Promise.resolve({ ok: false, retirementEffect: "unknown" })],
+  ["throwing evidence reader", () => Promise.resolve(Object.defineProperty({}, "ok", { get() { throw new Error("BAD_READER"); } }))],
+] as const) {
+  test(`recovery ${label} retains the transition lock and the stored copy`, async () => {
+    const h = await createHarness("written", { retireImportReplacement: retire });
+    const before = h.composition.readApplicationState();
+    const envelope = JSON.parse(await checksummedEnvelope({ revision: 7, document: RECOVERED_RAW, savedAt: "2026-09-01T12:00:00.000Z" }));
+    const result = await h.orchestrator.keep(envelope);
+    expect(result.ok).toBe(false);
+    expect(h.composition.readApplicationState().document).toBe(before.document);
+    expect(h.composition.readApplicationState().history).toBe(before.history);
+    expect(h.composition.readApplicationState().documentTransition.kind).toBe("retiring-transport");
+    expect(h.composition.controller.setTitle("Unsafe edit").ok).toBe(false);
+    expect(h.recoveryHarness.service.inspectRecovery().work.writesScheduled).toBe(0);
   });
 }

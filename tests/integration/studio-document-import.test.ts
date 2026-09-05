@@ -132,6 +132,24 @@ describe("U5 production import workflow", () => {
     expect(h.composition.readApplicationState().documentTransition.kind).toBe("idle");
   });
 
+  for (const [label, retire] of [
+    ["ambiguous effect", () => Promise.resolve({ ok: false, code: "transport.replacement_retirement_failed", retirementEffect: "unknown" })],
+    ["throwing evidence reader", () => Promise.resolve(Object.defineProperty({}, "ok", { get() { throw new Error("BAD_READER"); } }))],
+    ["rejected retirement", () => Promise.reject(new Error("UNKNOWN_EFFECT"))],
+  ] as const) {
+    test(`${label} cannot unlock import without a proven safe stop`, async () => {
+      const h = await harness({ retirement: { retireImportReplacement: retire } });
+      const before = h.composition.readApplicationState();
+      h.service.open(); await h.service.previewPaste(minimal, "auto"); await h.service.requestCommit(); await h.service.confirm(false);
+      expect(h.composition.readApplicationState().document).toBe(before.document);
+      expect(h.composition.readApplicationState().history).toBe(before.history);
+      expect(h.composition.readApplicationState().documentTransition.kind).toBe("retiring-transport");
+      expect(h.composition.controller.setTitle("Unsafe edit").ok).toBe(false);
+      expect(h.service.getSnapshot().message).toContain("Reload");
+      h.service.cancel(); expect(h.service.getSnapshot().open).toBe(true);
+    });
+  }
+
   test("JSON validation refuses future/duplicate/oversized inputs and a later valid input succeeds", async () => {
     const h = await harness({ seed: false }); h.service.open();
     const before = h.composition.readApplicationState().document;
