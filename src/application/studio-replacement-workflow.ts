@@ -27,6 +27,7 @@ import {
 import type {
   AppState,
   ApplicationReplacementOrigin,
+  EphemeralIntent,
 } from "./application-state-contract";
 import type {
   ImportRequestIdentity,
@@ -47,9 +48,17 @@ export type BeginReplacementWorkflowResult =
     }>;
 
 export type StudioReplacementWorkflow = Readonly<{
+  /** Reserves identity only: preview never installs a request or retires audio. */
+  allocatePreviewIdentity: () => ImportRequestIdentity | null;
+  applyLifecycleIntent: (intent: Extract<EphemeralIntent,
+    { kind: "push-dialog" | "pop-dialog" | "set-import-draft" | "dismiss-notice" }>) =>
+      Readonly<{ ok: true }> | Readonly<{ ok: false; code: string }>;
+  updateLifecycleDialogPhase: (dialogId: string, phase: "open" | "committing" | "failed") =>
+      Readonly<{ ok: true }> | Readonly<{ ok: false; code: string }>;
   begin: (
     input: Readonly<{
       candidateDocumentId: string;
+      previewIdentity?: ImportRequestIdentity;
       undoDisposition: "retained" | "explicitly-unavailable";
       origin: Extract<
         ApplicationReplacementOrigin,
@@ -72,8 +81,43 @@ export function createStudioReplacementWorkflow(
   /* Session-scoped monotonic request IDs; the kernel's slot law makes a
    * second live document-transition request impossible regardless. */
   let nextRequestId = 1;
+  let reservedIdentity: ImportRequestIdentity | null = null;
+
+  function allocateIdentity(): ImportRequestIdentity | null {
+    if (nextRequestId >= Number.MAX_SAFE_INTEGER) return null;
+    const state = access.readState();
+    const identity = Object.freeze({ requestId: nextRequestId++, documentId: state.document.id, baseRevision: state.revision });
+    return identity;
+  }
 
   return Object.freeze({
+    allocatePreviewIdentity: () => {
+      if (access.readState().documentTransition.kind !== "idle") return null;
+      reservedIdentity = allocateIdentity();
+      return reservedIdentity;
+    },
+    applyLifecycleIntent: (intent) => {
+      const result = reduceEphemeralIntent({ state: access.readState(), intent });
+      if (!result.ok) return Object.freeze({ ok: false as const, code: result.refusal.code });
+      access.installState(result.state);
+      access.notifyListeners();
+      return Object.freeze({ ok: true as const });
+    },
+    updateLifecycleDialogPhase: (dialogId, phase) => {
+      const state = access.readState();
+      const dialog = state.dialogs[state.dialogs.length - 1];
+      if (dialog?.id !== dialogId) return Object.freeze({ ok: false as const, code: "ephemeral.intent_invalid" });
+      const popped = reduceEphemeralIntent({ state, intent: { kind: "pop-dialog", dialogId } });
+      if (!popped.ok) return Object.freeze({ ok: false as const, code: popped.refusal.code });
+      const pushed = reduceEphemeralIntent({ state: popped.state, intent: { kind: "push-dialog",
+        dialog: { ...dialog, phase, blocksHistory: phase === "committing" },
+      } });
+      if (!pushed.ok) return Object.freeze({ ok: false as const, code: pushed.refusal.code });
+      // Publish once: observers never see history unlocked between reducers.
+      access.installState(pushed.state);
+      access.notifyListeners();
+      return Object.freeze({ ok: true as const });
+    },
     begin: (input) => {
       const state = access.readState();
       if (state.documentTransition.kind !== "idle") {
@@ -82,13 +126,14 @@ export function createStudioReplacementWorkflow(
           code: "import.replacement_workflow_busy" as const,
         });
       }
-      const requestId = nextRequestId;
-      nextRequestId += 1;
-      const identity: ImportRequestIdentity = Object.freeze({
-        requestId,
-        documentId: state.document.id,
-        baseRevision: state.revision,
-      });
+      const identity = input.previewIdentity ?? allocateIdentity();
+      if (identity === null ||
+          (input.previewIdentity !== undefined && identity !== reservedIdentity) ||
+          identity.documentId !== state.document.id || identity.baseRevision !== state.revision) {
+        return Object.freeze({ ok: false as const, code: "import.replacement_workflow_begin_failed" as const });
+      }
+      reservedIdentity = null;
+      const requestId = identity.requestId;
       const begun = beginApplicationRequest({
         state,
         request: Object.freeze({

@@ -291,10 +291,10 @@ test("U5 renders corrupt/unavailable status and does not schedule a boot-only sa
   await session.start();
   expect(session.getSnapshot().failureMessage).toContain("Neither local recovery copy");
   expect(session.getSnapshot().offer).toBeNull();
-  expect(h.composition.applyLifecycleIntent({ kind: "push-dialog", dialog: {
+  expect(h.composition.replacementWorkflow.applyLifecycleIntent({ kind: "push-dialog", dialog: {
     id: "boot-export-preview", kind: "lifecycle-export", phase: "open", blocksHistory: false, requestId: null,
   } }).ok).toBe(true);
-  expect(h.composition.applyLifecycleIntent({ kind: "pop-dialog", dialogId: "boot-export-preview" }).ok).toBe(true);
+  expect(h.composition.replacementWorkflow.applyLifecycleIntent({ kind: "pop-dialog", dialogId: "boot-export-preview" }).ok).toBe(true);
   await h.recoveryHarness.clock.advance(5_000);
   expect(h.recoveryHarness.service.inspectRecovery().work.writesScheduled).toBe(0);
   expect(h.recoveryHarness.adapters[0]?.store.get(recoveryStorageKey(state.document.id, "current"))).toBe("{corrupt");

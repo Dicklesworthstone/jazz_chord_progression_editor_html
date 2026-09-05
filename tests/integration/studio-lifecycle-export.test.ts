@@ -104,7 +104,7 @@ describe("U5 canonical export through production encoder, registry, A0 CAS and A
     expect(h.composition.controller.setTitle("Blocked edit")).toMatchObject({
       ok: false, refusal: { code: "history.locked" },
     });
-    expect(h.composition.applyLifecycleIntent({ kind: "pop-dialog", dialogId: "studio-lifecycle-export" }).ok).toBe(true);
+    expect(h.composition.replacementWorkflow.applyLifecycleIntent({ kind: "pop-dialog", dialogId: "studio-lifecycle-export" }).ok).toBe(true);
     expect(h.composition.controller.setTitle("Changed during browser delivery")).toMatchObject({ ok: true });
     release();
     await pending;

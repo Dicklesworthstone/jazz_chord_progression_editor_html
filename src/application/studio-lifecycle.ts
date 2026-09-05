@@ -82,7 +82,7 @@ export function createStudioLifecycle(options: Readonly<{
   }
 
   function phase(value: "open" | "committing" | "failed"): boolean {
-    return composition.updateLifecycleDialogPhase(DIALOG_ID, value).ok;
+    return composition.replacementWorkflow.updateLifecycleDialogPhase(DIALOG_ID, value).ok;
   }
 
   return Object.freeze({
@@ -95,7 +95,7 @@ export function createStudioLifecycle(options: Readonly<{
     openExport: async () => {
       if (preparing || view.phase === "delivering" || composition.readApplicationState().dialogs.some((dialog) => dialog.id === DIALOG_ID)) return;
       if (sequence >= Number.MAX_SAFE_INTEGER - 1) { fail("export.preparation_sequence_exhausted", "The export request sequence is exhausted"); return; }
-      const pushed = composition.applyLifecycleIntent({ kind: "push-dialog", dialog: {
+      const pushed = composition.replacementWorkflow.applyLifecycleIntent({ kind: "push-dialog", dialog: {
         id: DIALOG_ID, kind: "lifecycle-export", phase: "open", blocksHistory: false, requestId: null,
       } });
       if (!pushed.ok) { fail(pushed.code, "The export dialog could not be opened"); return; }
@@ -151,7 +151,7 @@ export function createStudioLifecycle(options: Readonly<{
     },
     cancelLifecycleDialog: () => {
       if (view.dialog === null || view.phase === "delivering") return;
-      const popped = composition.applyLifecycleIntent({ kind: "pop-dialog", dialogId: DIALOG_ID });
+      const popped = composition.replacementWorkflow.applyLifecycleIntent({ kind: "pop-dialog", dialogId: DIALOG_ID });
       if (!popped.ok) { fail(popped.code, "Close the topmost dialog first"); return; }
       sequence += 1;
       if (preparationId !== null) registry.abandonPreparation(preparationId);
