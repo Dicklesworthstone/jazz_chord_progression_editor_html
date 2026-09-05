@@ -110,6 +110,23 @@ describe("X1 serialized-transport retirement adapter (real transport)", () => {
     expect(after.lastCommandRequestId).toBe(before.lastCommandRequestId);
   });
 
+  test("only this adapter's proven epoch chain covers a repeated retirement; unrelated advances stay stale", async () => {
+    const h = await makeReadyTransport();
+    const generation = h.service.inspectTransport().generation;
+    const adapter = createX1SerializedTransportRetirementAdapter(h.service, h.nextRequestId);
+    expect(await adapter.retireImportReplacement(makeRequest(generation))).toMatchObject({ ok: true });
+    expect(await adapter.retireImportReplacement(makeRequest(generation))).toMatchObject({ ok: true });
+    expect(h.service.inspectTransport().generation).toBe(generation + 2);
+    // The actual service now advances outside the adapter. A previous success
+    // cannot authorize killing a new, unobserved generation.
+    await h.submit({ kind: "replace-plan", binding: null });
+    const before = h.service.inspectTransport();
+    expect(await adapter.retireImportReplacement(makeRequest(generation))).toEqual({
+      ok: false, code: "transport.replacement_retirement_stale", retirementEffect: "none",
+    });
+    expect(h.service.inspectTransport()).toEqual(before);
+  });
+
   test("a locked transport retires vacuously: no epoch exists and no attack can start", async () => {
     const h = createTransportHarness();
     const before = h.service.inspectTransport();

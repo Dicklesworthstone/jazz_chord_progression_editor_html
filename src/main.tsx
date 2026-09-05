@@ -171,14 +171,17 @@ if (creation.ok) {
     },
   }, recoveryStatus.observe);
   let recoverySeedOrdinal = 0;
+  const replacementRetirement = createX1SerializedTransportRetirementAdapter(
+    audio.transportService, composition.allocateTransportCommandRequestId, {
+      beforeSubmit: composition.replacementWorkflow.expectTransportRetirement,
+      settled: composition.replacementWorkflow.settleTransportRetirement,
+    },
+  );
   const recoveryOrchestrator = createStudioRecoveryOrchestrator({
     composition,
     recovery: recoveryService,
     resolveStartupDocumentId: recoveryStorage.resolveStartupDocumentId,
-    retirement: createX1SerializedTransportRetirementAdapter(
-      audio.transportService,
-      composition.allocateTransportCommandRequestId,
-    ),
+    retirement: replacementRetirement,
     decodeDocumentShape,
     validateDocumentSemantics,
     readState: composition.readApplicationState,
@@ -219,7 +222,7 @@ if (creation.ok) {
   const documentImport = createStudioDocumentImport({
     composition,
     recovery: recoveryService,
-    retirement: createX1SerializedTransportRetirementAdapter(audio.transportService, composition.allocateTransportCommandRequestId),
+    retirement: replacementRetirement,
     exportCurrent: () => { void lifecycle.openExport(); },
   });
 

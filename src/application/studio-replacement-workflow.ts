@@ -33,6 +33,8 @@ import type {
   ImportRequestIdentity,
   RetiringTransportDocumentTransition,
 } from "./application-interchange-owner-contract";
+import type { TransportCommandOutcome } from "../audio";
+import { SETTLED_TRANSPORT_STATUS } from "./studio-transport-status";
 
 export type BeginReplacementWorkflowResult =
   | Readonly<{
@@ -48,6 +50,8 @@ export type BeginReplacementWorkflowResult =
     }>;
 
 export type StudioReplacementWorkflow = Readonly<{
+  expectTransportRetirement: (commandRequestId: number) => boolean;
+  settleTransportRetirement: (outcome: TransportCommandOutcome) => void;
   /** Reserves identity only: preview never installs a request or retires audio. */
   allocatePreviewIdentity: () => ImportRequestIdentity | null;
   applyLifecycleIntent: (intent: Extract<EphemeralIntent,
@@ -82,6 +86,7 @@ export function createStudioReplacementWorkflow(
    * second live document-transition request impossible regardless. */
   let nextRequestId = 1;
   let reservedIdentity: ImportRequestIdentity | null = null;
+  let retirementExpectation: Readonly<{ commandRequestId: number; documentId: AppState["document"]["id"]; planRevision: number }> | null = null;
 
   function allocateIdentity(): ImportRequestIdentity | null {
     if (nextRequestId >= Number.MAX_SAFE_INTEGER) return null;
@@ -91,6 +96,29 @@ export function createStudioReplacementWorkflow(
   }
 
   return Object.freeze({
+    expectTransportRetirement: (commandRequestId) => {
+      const state = access.readState();
+      if (state.documentTransition.kind !== "retiring-transport") return false;
+      const identity = { commandRequestId, documentId: state.document.id, planRevision: state.revision };
+      const result = reduceEphemeralIntent({ state, intent: { kind: "expect-transport", ...identity,
+        status: "stopping", startBeat: state.transport.startBeat, playhead: state.transport.playhead,
+      } });
+      if (!result.ok) return false;
+      retirementExpectation = identity;
+      access.installState(result.state); access.notifyListeners();
+      return true;
+    },
+    settleTransportRetirement: (outcome) => {
+      const identity = retirementExpectation;
+      if (identity?.commandRequestId !== outcome.commandRequestId) return;
+      retirementExpectation = null;
+      const result = reduceEphemeralIntent({ state: access.readState(), intent: {
+        kind: "settle-transport-expectation", ...identity,
+        status: SETTLED_TRANSPORT_STATUS[outcome.termination === "receipt" ? outcome.stateAfter : outcome.state],
+        failureCode: outcome.termination === "receipt" ? "transport.plan_superseded" : outcome.engineRefusalCode ?? outcome.code,
+      } });
+      if (result.ok) { access.installState(result.state); access.notifyListeners(); }
+    },
     allocatePreviewIdentity: () => {
       if (access.readState().documentTransition.kind !== "idle") return null;
       reservedIdentity = allocateIdentity();

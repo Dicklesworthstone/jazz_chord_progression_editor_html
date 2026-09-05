@@ -42,7 +42,9 @@ async function exportDocument(page: Page): Promise<unknown> {
   await page.locator("#studio-lifecycle-download").click();
   const download = await delivered;
   const bytes = await readFile(await download.path(), "utf8");
+  await expect(page.getByRole("dialog").getByRole("status")).toContainText("Handed off to your browser");
   await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   const parsed: unknown = JSON.parse(bytes);
   return parsed;
 }

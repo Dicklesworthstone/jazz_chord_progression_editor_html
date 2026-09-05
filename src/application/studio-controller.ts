@@ -1,3 +1,4 @@
+import { SETTLED_TRANSPORT_STATUS } from "./studio-transport-status";
 import {
   addBeatValues,
   compareBeatValues,
@@ -4544,20 +4545,7 @@ function makeStudioComposition(
    * locked and disposed publish nothing there, so the application maps them
    * to its honest "unavailable".
    */
-  const SETTLED_TRANSPORT_STATUS: Readonly<
-    Record<
-      TransportState,
-      "unavailable" | "ready" | "playing" | "paused" | "failed"
-    >
-  > = Object.freeze({
-    locked: "unavailable",
-    ready: "ready",
-    playing: "playing",
-    paused: "paused",
-    interrupted: "paused",
-    fault: "failed",
-    disposed: "unavailable",
-  });
+
 
   /**
    * A0 installs its expectation before every transport command and matches the

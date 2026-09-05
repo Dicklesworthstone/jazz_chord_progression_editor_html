@@ -23,7 +23,10 @@ async function harness(options: { seed?: boolean; estimate?: number; retirement?
   const recovery = createRecoveryHarness();
   let retirements = 0;
   let exports = 0;
-  const real = options.retirement ?? createX1SerializedTransportRetirementAdapter(transport.service, transport.nextRequestId);
+  const real = options.retirement ?? createX1SerializedTransportRetirementAdapter(transport.service, transport.nextRequestId, {
+    beforeSubmit: composition.replacementWorkflow.expectTransportRetirement,
+    settled: composition.replacementWorkflow.settleTransportRetirement,
+  });
   const service = createStudioDocumentImport({ composition, recovery: recovery.service,
     estimateHistoryRetainedBytes: estimate, exportCurrent: () => { exports++; },
     retirement: { retireImportReplacement: (request) => { retirements++; return real.retireImportReplacement(request); } },
@@ -62,6 +65,7 @@ describe("U5 production import workflow", () => {
     await h.service.confirm(false);
     expect(h.service.getSnapshot().open).toBe(false);
     expect(h.retirements()).toBe(1);
+    expect(h.composition.readApplicationState().transport.status).toBe("ready");
     const expected: unknown = JSON.parse(nested);
     const observed: unknown = h.composition.readApplicationState().document;
     expect(observed).toEqual(expected);
@@ -190,5 +194,26 @@ describe("U5 production import workflow", () => {
     await h.service.requestCommit(); expect(h.retirements()).toBe(0);
     h.service.open(); expect(h.service.getSnapshot().phase).toBe("input");
     await h.service.requestCommit(); expect(h.retirements()).toBe(0);
+  });
+
+  test("receipt settlement precedes document publication and repeated replacement retires the actual next epoch", async () => {
+    const h = await harness();
+    const observations: { title: string; status: string; generation: number }[] = [];
+    h.composition.controller.subscribe(() => { const state = h.composition.readApplicationState();
+      observations.push({ title: state.document.title, status: state.transport.status, generation: state.transport.generation });
+    });
+    const generation = h.transport.service.inspectTransport().generation;
+    const before = h.composition.readApplicationState().document.title;
+    h.service.open(); await h.service.previewPaste(nested, "auto"); await h.service.requestCommit(); await h.service.confirm(false);
+    expect(observations.some((entry) => entry.title === before && entry.status === "stopping")).toBe(true);
+    expect(observations.some((entry) => entry.title === before && entry.status === "ready")).toBe(true);
+    expect(observations.filter((entry) => entry.title === "Nested Canonical Order").every((entry) => entry.status === "ready")).toBe(true);
+    // A0's frozen law advances generation only from genuine notifications.
+    expect(h.composition.readApplicationState().transport.generation).toBe(generation);
+    expect(h.transport.service.inspectTransport().generation).toBe(generation + 1);
+    h.service.open(); await h.service.previewPaste(minimal, "auto"); await h.service.requestCommit(); await h.service.confirm(false);
+    expect(h.service.getSnapshot().open).toBe(false);
+    expect(h.composition.readApplicationState().document.title).toBe("Changes");
+    expect(h.transport.service.inspectTransport().generation).toBe(generation + 2);
   });
 });

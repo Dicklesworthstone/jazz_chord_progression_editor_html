@@ -28,7 +28,7 @@
  *   refusal (claiming "none" happened) or full evidence (claiming the
  *   exact retirement happened) would be a lie in both directions.
  */
-import type { TransportService } from "../audio";
+import type { TransportCommandOutcome, TransportService } from "../audio";
 import {
   X1_REPLACEMENT_RETIREMENT_EVIDENCE_SCHEMA,
   type RetireImportReplacementRequest,
@@ -41,7 +41,16 @@ export function createX1SerializedTransportRetirementAdapter(
    * counter every other transport caller draws from, so the serialized
    * FIFO's ID law holds across the whole app. */
   allocateCommandRequestId: () => number,
+  observation?: Readonly<{
+    beforeSubmit: (commandRequestId: number) => boolean;
+    settled: (outcome: TransportCommandOutcome) => void;
+  }>,
 ): X1ReplacementRetirementAdapter {
+  // replace-plan(null) emits no notification. A0 correctly retains its last
+  // accepted generation. Remember ONLY this adapter's proven retirement chain
+  // so another replacement can retire the next empty epoch without inventing
+  // a notification or accepting an unrelated generation advance.
+  let covered: Readonly<{ requested: number; physical: number }> | null = null;
   return Object.freeze({
     /* The adapter contract's return is `unknown` by design: the driver
      * judges every envelope. */
@@ -73,7 +82,8 @@ export function createX1SerializedTransportRetirementAdapter(
           }),
         });
       }
-      if (before.generation !== request.expectedTransportGeneration) {
+      if (before.generation !== request.expectedTransportGeneration &&
+          !(covered?.requested === request.expectedTransportGeneration && covered.physical === before.generation)) {
         /* Nothing submitted; the world already moved past the prepared
          * echo. The exact no-effect refusal is honest. */
         return Object.freeze({
@@ -83,15 +93,20 @@ export function createX1SerializedTransportRetirementAdapter(
         });
       }
 
+      const commandRequestId = allocateCommandRequestId();
+      if (observation !== undefined && !observation.beforeSubmit(commandRequestId)) {
+        return Object.freeze({ ok: false, code: "transport.replacement_retirement_failed", retirementEffect: "none" });
+      }
       const outcome = await transport.submitTransportCommand(
         Object.freeze({
-          commandRequestId: allocateCommandRequestId(),
+          commandRequestId,
           payload: Object.freeze({
             kind: "replace-plan" as const,
             binding: null,
           }),
         }),
       );
+      observation?.settled(outcome);
 
       if (outcome.termination === "refusal") {
         /* replace-plan(null) refuses only from an illegal state, before
@@ -105,7 +120,7 @@ export function createX1SerializedTransportRetirementAdapter(
 
       if (
         !outcome.noFutureAttackPostcondition ||
-        outcome.generation !== request.expectedTransportGeneration + 1
+        outcome.generation !== before.generation + 1
       ) {
         /* A retirement ran but the evidence cannot claim the requested
          * one. Deliberately nonconforming: the driver judges this
@@ -118,6 +133,8 @@ export function createX1SerializedTransportRetirementAdapter(
             : "no-future-attack-unproven",
         });
       }
+
+      covered = Object.freeze({ requested: request.expectedTransportGeneration, physical: outcome.generation });
 
       return Object.freeze({
         ok: true as const,
