@@ -1,3 +1,4 @@
+import { provesSafeReconciliation } from "./studio-replacement-reconciliation";
 import { selectReplacementConfirmation } from "./studio-replacement-confirmation";
 import { DEFAULT_GROOVE_STYLE_ID, createProductionStableIdFactory, decodeDocumentShape, type ValidatedDocument } from "../domain";
 import { parseChartText } from "../theory";
@@ -52,22 +53,6 @@ function judgeRetirement(raw: unknown, request: LocalReplacementRetirementReques
         noFutureAttack: true }) ? "retired" : "invalid";
   } catch {
     return "invalid";
-  }
-}
-
-function provesSafeReconciliation(raw: unknown, request: LocalReplacementRetirementRequest): boolean {
-  try {
-    const observed = runtimeField(raw, "observedGeneration");
-    const resulting = runtimeField(raw, "resultingGeneration");
-    const commandId = runtimeField(raw, "commandRequestId");
-    return typeof raw === "object" && raw !== null && !Array.isArray(raw) && Object.keys(raw).length === 8 &&
-      runtimeField(raw, "ok") === true && runtimeField(raw, "authority") === "x1-serialized-transport" &&
-      deepStructuralEqual(runtimeField(raw, "request"), request) && typeof commandId === "number" &&
-      Number.isSafeInteger(commandId) && commandId > 0 && typeof observed === "number" && Number.isSafeInteger(observed) && observed >= 0 &&
-      typeof resulting === "number" && Number.isSafeInteger(resulting) && resulting === observed + 1 &&
-      runtimeField(raw, "state") === "ready" && runtimeField(raw, "noFutureAttack") === true;
-  } catch {
-    return false;
   }
 }
 

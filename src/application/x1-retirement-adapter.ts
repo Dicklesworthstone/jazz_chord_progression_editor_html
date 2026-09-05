@@ -39,6 +39,7 @@ export type LocalReplacementRetirementRequest = Readonly<Omit<RetireImportReplac
 export type StudioReplacementRetirementAdapter = X1ReplacementRetirementAdapter & Readonly<{
   retireLocalReplacement: (request: LocalReplacementRetirementRequest) => Promise<unknown>;
   reconcileLocalReplacement: (request: LocalReplacementRetirementRequest) => Promise<unknown>;
+  reconcileImportReplacement: (request: RetireImportReplacementRequest) => Promise<unknown>;
 }>;
 
 export function createX1SerializedTransportRetirementAdapter(
@@ -153,7 +154,7 @@ export function createX1SerializedTransportRetirementAdapter(
         }),
       });
   };
-  async function reconcileLocalReplacement(request: LocalReplacementRetirementRequest): Promise<unknown> {
+  async function reconcileReplacement(request: LocalReplacementRetirementRequest | RetireImportReplacementRequest): Promise<unknown> {
     // This is a new all-notes-off transaction over the CURRENT physical epoch.
     // It never claims that the earlier retirement or publication succeeded.
     const before = transport.inspectTransport();
@@ -169,5 +170,6 @@ export function createX1SerializedTransportRetirementAdapter(
     return Object.freeze({ ok: true, authority: "x1-serialized-transport", request, commandRequestId,
       observedGeneration: before.generation, resultingGeneration: outcome.generation, state: "ready", noFutureAttack: true });
   }
-  return Object.freeze({ retireImportReplacement: retire, retireLocalReplacement: retire, reconcileLocalReplacement });
+  return Object.freeze({ retireImportReplacement: retire, retireLocalReplacement: retire, reconcileLocalReplacement: reconcileReplacement,
+    reconcileImportReplacement: reconcileReplacement });
 }
