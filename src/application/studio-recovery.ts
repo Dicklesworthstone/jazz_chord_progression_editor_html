@@ -34,6 +34,7 @@ import type {
   RecoveryStartupReport,
 } from "../persistence";
 import type {
+  DocumentId,
   DocumentShapeDecodeResult,
   ValidatedDocument,
 } from "../domain";
@@ -70,7 +71,7 @@ export type StudioRecoveryStartupView =
 
 export type StudioRecoveryOrchestrator = Readonly<{
   /** Steps 2: attach the controller mutation feed; returns detach. */
-  attachMutationFeed: () => () => void;
+  attachMutationFeed: (options?: Readonly<{ noteInitial?: boolean }>) => () => void;
   /** Best-effort flush for visibilitychange; never throws. */
   flush: () => Promise<void>;
   /** Step 3: probe + candidates after share handling. */
@@ -80,7 +81,7 @@ export type StudioRecoveryOrchestrator = Readonly<{
   /** Step 4 Keep channel: F2/F3 -> workflow -> driver -> committed. */
   keep: (envelope: RecoveryEnvelope) => Promise<StudioRecoveryKeepResult>;
   /** Step 4 Discard: the service's idempotent discard. */
-  discard: () => Promise<void>;
+  discard: (documentId?: DocumentId) => Promise<void>;
 }>;
 
 export type StudioRecoveryDependencies = Readonly<{
@@ -260,10 +261,18 @@ export function createStudioRecoveryOrchestrator(
   };
 
   return Object.freeze({
-    attachMutationFeed: () => {
+    attachMutationFeed: (options) => {
       /* Note the current state once so a restore/seed that predates the
        * subscription is not lost, then follow the controller. */
-      noteCurrent();
+      if (options?.noteInitial !== false) {
+        noteCurrent();
+      } else {
+        /* Controller notifications also include focus/dialog changes. Seed
+         * the dedupe identity without scheduling an unedited startup save. */
+        const state = readState();
+        lastNotedRevision = state.revision;
+        lastNotedDocumentId = String(state.document.id);
+      }
       return composition.controller.subscribe(noteCurrent);
     },
 
@@ -307,9 +316,8 @@ export function createStudioRecoveryOrchestrator(
 
     keep,
 
-    discard: async () => {
-      const state = readState();
-      await recovery.discardRecovery(state.document.id);
+    discard: async (documentId) => {
+      await recovery.discardRecovery(documentId ?? readState().document.id);
     },
   });
 }

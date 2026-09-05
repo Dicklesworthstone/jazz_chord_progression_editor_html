@@ -7,6 +7,7 @@ import {
   type RecoveryCapabilityProbe,
   type RecoveryClockPort,
   type RecoveryService,
+  type RecoverySnapshot,
 } from "../../src/persistence";
 
 /**
@@ -155,6 +156,7 @@ export type RecoveryHarness = Readonly<{
 
 export function createRecoveryHarness(
   adapterOptions: readonly FakeAdapterOptions[] = [{ kind: "indexeddb" }],
+  onStatusChange?: (snapshot: RecoverySnapshot, savedAt: string | null) => void,
 ): RecoveryHarness {
   const adapters = adapterOptions.map((options) =>
     createFakeRecoveryAdapter(options),
@@ -163,7 +165,7 @@ export function createRecoveryHarness(
   const service = createRecoveryService({
     adapters: adapters.map((adapter) => adapter.port),
     clock: clock.port,
-  });
+  }, onStatusChange);
   return Object.freeze({ service, clock, adapters });
 }
 

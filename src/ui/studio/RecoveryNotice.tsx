@@ -13,6 +13,7 @@ export type RecoveryOfferView = Readonly<{
   /** Locale-rendered wall-clock time of the recovered snapshot. */
   savedAtLabel: string;
   revision: number;
+  previous?: boolean;
 }>;
 
 export type RecoveryNoticeProps = Readonly<{
@@ -36,11 +37,14 @@ export function RecoveryNotice({
       aria-describedby="studio-recovery-notice-body"
     >
       <div class="studio-recovery-notice__text">
-        <h2 id="studio-recovery-notice-title">Recovered chart found</h2>
+        <h2 id="studio-recovery-notice-title">
+          {offer.previous === true ? "Previous recovery copy found" : "Recovered chart found"}
+        </h2>
         <p id="studio-recovery-notice-body">
+          {offer.previous === true ? "The latest recovery copy could not be read. The previous copy is still available. " : ""}
           A locally recovered chart from {offer.savedAtLabel} (revision{" "}
           {offer.revision}) is available. Keep it to replace the current
-          chart, or discard it.
+          chart, or discard it. Local recovery resumes after you choose.
         </p>
       </div>
       <div class="studio-recovery-notice__actions">

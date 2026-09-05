@@ -6,6 +6,9 @@ import {
   createStudioComposition,
   createStudioMidiImport,
   createStudioRecoveryOrchestrator,
+  createStudioRecoverySession,
+  createStudioRecoveryStatusFeed,
+  createStudioLifecycle,
   createX1SerializedTransportRetirementAdapter,
   applicationHistoryRetainedByteEstimator,
   validateDocumentSemantics,
@@ -13,8 +16,8 @@ import {
   seedStarterChart,
 } from "./application/runtime";
 import { decodeDocumentShape } from "./domain";
+import { startPreparedExportDelivery } from "./export";
 import {
-  RECOVERY_STATUS_VOCABULARY,
   createIndexedDbRecoveryAdapter,
   createLocalStorageRecoveryAdapter,
   createRecoveryService,
@@ -71,8 +74,8 @@ const midiImport = createStudioMidiImport(loadSmfWasmDecoder);
 /*
  * The composition root also owns the A0/E0 interchange owner aggregate the
  * controller closure constructs beside itself (`composition.interchangeOwner`).
- * No accepted E0 v2 consumer exists yet, so the aggregate stays sealed here:
- * only `controller` is distributed, and nothing else may mint that authority.
+ * The recovery and lifecycle services receive that authority here; UI receives
+ * only their typed views and gestures, never the owner aggregate.
  */
 const creation = createStudioComposition({
   audio,
@@ -149,6 +152,7 @@ if (creation.ok) {
    * owner ports and the REAL serialized-transport X1 retirement; a
    * refused Keep changes nothing. Browser recovery is never called Save.
    */
+  const recoveryStatus = createStudioRecoveryStatusFeed();
   const recoveryService = createRecoveryService({
     adapters: [
       createIndexedDbRecoveryAdapter(),
@@ -163,7 +167,7 @@ if (creation.ok) {
         window.clearTimeout(handle);
       },
     },
-  });
+  }, recoveryStatus.observe);
   let recoverySeedOrdinal = 0;
   const recoveryOrchestrator = createStudioRecoveryOrchestrator({
     composition,
@@ -182,50 +186,32 @@ if (creation.ok) {
       return `recovery-keep-${String(recoverySeedOrdinal)}`;
     },
   });
-  recoveryOrchestrator.attachMutationFeed();
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden") {
       void recoveryOrchestrator.flush();
     }
   });
-  const recoveryBinding = {
-    startup: async () => {
-      const view = await recoveryOrchestrator.startup({
-        sessionEdited: true,
-      });
-      if (view.kind !== "offer") {
-        return Object.freeze({ kind: "none" as const });
-      }
-      const savedAtMs = Date.parse(view.savedAt);
-      return Object.freeze({
-        kind: "offer" as const,
-        savedAtLabel: Number.isNaN(savedAtMs)
-          ? view.savedAt
-          : new Date(savedAtMs).toLocaleString(),
-        revision: view.revision,
-        token: view.envelope,
-      });
+  const recoveryBinding = createStudioRecoverySession({
+    subscribeRecovery: recoveryStatus.subscribe,
+    composition,
+    orchestrator: recoveryOrchestrator,
+    sessionEdited: true,
+    formatTimestamp: (timestamp) => {
+      const parsed = Date.parse(timestamp);
+      return Number.isNaN(parsed) ? timestamp : new Date(parsed).toLocaleString();
     },
-    keep: async (token: unknown) => {
-      const kept = await recoveryOrchestrator.keep(token as never);
-      if (kept.ok) {
-        return Object.freeze({
-          ok: true as const,
-          recoveredAtLabel: RECOVERY_STATUS_VOCABULARY.recoveredLocally.replace(
-            "{time}",
-            new Date().toLocaleTimeString(),
-          ),
-        });
-      }
-      return Object.freeze({
-        ok: false as const,
-        message: `The recovered chart could not be opened (${kept.code}). The current chart is unchanged.`,
-      });
+  });
+
+  const lifecycle = createStudioLifecycle({
+    composition,
+    recovery: recoveryService,
+    startDelivery: startPreparedExportDelivery,
+    nowIso: () => new Date().toISOString(),
+    hashBytes: async (bytes) => {
+      const digest = await crypto.subtle.digest("SHA-256", new Uint8Array(bytes));
+      return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
     },
-    discard: async () => {
-      await recoveryOrchestrator.discard();
-    },
-  };
+  });
 
   render(
     <StudioRoot
@@ -234,6 +220,7 @@ if (creation.ok) {
       midiImport={midiImport}
       startupNotice={startupNotice}
       recovery={recoveryBinding}
+      lifecycle={lifecycle}
     />,
     mountPoint,
   );

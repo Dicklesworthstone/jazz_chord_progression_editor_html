@@ -106,6 +106,7 @@ function MeasureCompletionDialogContent({
 const DISMISSIBLE = Object.freeze({ kind: "dismissible" } as const);
 
 export function StudioShell({
+  documentActions,
   view,
   callbacks,
   transport,
@@ -510,6 +511,7 @@ export function StudioShell({
           </a>
 
           <StudioHeader
+            documentActions={documentActions}
             view={view.document}
             callbacks={shellCallbacks}
             chartLayout={view.chart.layout}

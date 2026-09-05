@@ -16,6 +16,8 @@ import {
   createStudioBootstrap,
   createStudioCompositionOverState,
   createStudioRecoveryOrchestrator,
+  createStudioRecoverySession,
+  createStudioRecoveryStatusFeed,
   createX1SerializedTransportRetirementAdapter,
   validateDocumentSemantics,
 } from "../../src/application";
@@ -68,7 +70,7 @@ async function checksummedEnvelope(fields: Readonly<{
   return JSON.stringify({ ...body, checksum });
 }
 
-async function createHarness() {
+async function createHarness(writeOutcome: "written" | "quota" | "denied" = "written") {
   const bootstrap = createStudioBootstrap();
   if (!bootstrap.ok) throw new Error("RECOVERY_TEST_BOOTSTRAP");
   const dependencies: ApplicationCommandDependencies = Object.freeze({
@@ -91,7 +93,8 @@ async function createHarness() {
     dependencies,
     {},
   );
-  const recoveryHarness = createRecoveryHarness([{ kind: "indexeddb" }]);
+  const recoveryStatus = createStudioRecoveryStatusFeed();
+  const recoveryHarness = createRecoveryHarness([{ kind: "indexeddb", writeOutcome }], recoveryStatus.observe);
   let seedOrdinal = 0;
   const orchestrator = createStudioRecoveryOrchestrator({
     composition,
@@ -110,7 +113,7 @@ async function createHarness() {
       return `recovery-keep-${String(seedOrdinal)}`;
     },
   });
-  return { composition, transport, recoveryHarness, orchestrator };
+  return { composition, transport, recoveryHarness, orchestrator, recoveryStatus };
 }
 
 describe("A1 recovery orchestrator (real service, real replacement channel)", () => {
@@ -226,3 +229,94 @@ describe("A1 recovery orchestrator (real service, real replacement channel)", ()
     expect(h.recoveryHarness.adapters[0]?.store.get(currentKey)).toBeUndefined();
   });
 });
+
+for (const slot of ["current", "previous"] as const) {
+  test(`U5 recovery decision preserves the ${slot} copy across idle windows and refuses stale Keep`, async () => {
+    const h = await createHarness();
+    const state = h.composition.readApplicationState();
+    const store = h.recoveryHarness.adapters[0]?.store;
+    if (store === undefined) throw new Error("NO_RECOVERY_STORE");
+    const bytes = await checksummedEnvelope({ revision: 7, document: RECOVERED_RAW,
+      savedAt: "2026-09-01T12:00:00.000Z" });
+    store.set(recoveryStorageKey(state.document.id, slot), bytes);
+    if (slot === "previous") store.set(recoveryStorageKey(state.document.id, "current"), "{corrupt");
+    const session = createStudioRecoverySession({ composition: h.composition, subscribeRecovery: h.recoveryStatus.subscribe,
+      orchestrator: h.orchestrator,
+      sessionEdited: true, formatTimestamp: (value) => value });
+    await session.start();
+    expect(session.getSnapshot().offer?.previous).toBe(slot === "previous");
+    await h.recoveryHarness.clock.advance(20_000);
+    expect(store.get(recoveryStorageKey(state.document.id, slot))).toBe(bytes);
+    expect(h.recoveryHarness.service.inspectRecovery().work.writesScheduled).toBe(0);
+    expect(h.composition.controller.setTitle("Edited after offer").ok).toBe(true);
+    await h.recoveryHarness.clock.advance(20_000);
+    const before = h.composition.readApplicationState();
+    await session.keep();
+    expect(session.getSnapshot().failureMessage).toContain("command.stale_revision");
+    expect(h.composition.readApplicationState()).toBe(before);
+    expect(store.get(recoveryStorageKey(state.document.id, slot))).toBe(bytes);
+    await session.discard();
+    expect(session.getSnapshot().offer).toBeNull();
+    expect(store.size).toBe(0);
+    expect(h.composition.controller.setTitle("Edit after discard").ok).toBe(true);
+    await h.recoveryHarness.clock.advance(400);
+    expect(h.recoveryHarness.service.inspectRecovery().cleanRevision).toBe(h.composition.readApplicationState().revision);
+  });
+}
+
+test("U5 recovery session keeps through the real transaction and reports pending/completed writes", async () => {
+  const h = await createHarness();
+  const state = h.composition.readApplicationState();
+  h.recoveryHarness.adapters[0]?.store.set(recoveryStorageKey(state.document.id, "current"),
+    await checksummedEnvelope({ revision: 7, document: RECOVERED_RAW, savedAt: "2026-09-01T12:00:00.000Z" }));
+  const session = createStudioRecoverySession({ composition: h.composition, subscribeRecovery: h.recoveryStatus.subscribe,
+    orchestrator: h.orchestrator,
+    sessionEdited: true, formatTimestamp: (value) => value });
+  await session.start();
+  await session.keep();
+  expect(session.getSnapshot().offer).toBeNull();
+  expect(h.composition.controller.getSnapshot().title).toBe("Recovered Chart");
+  expect(session.getSnapshot().statusText).toBe("Changes pending recovery");
+  await h.recoveryHarness.clock.advance(400);
+  expect(session.getSnapshot().statusText).toContain("Recovered locally at");
+});
+
+test("U5 renders corrupt/unavailable status and does not schedule a boot-only save", async () => {
+  const h = await createHarness();
+  const state = h.composition.readApplicationState();
+  h.recoveryHarness.adapters[0]?.store.set(recoveryStorageKey(state.document.id, "current"), "{corrupt");
+  const session = createStudioRecoverySession({ composition: h.composition, subscribeRecovery: h.recoveryStatus.subscribe,
+    orchestrator: h.orchestrator,
+    sessionEdited: true, formatTimestamp: (value) => value });
+  await session.start();
+  expect(session.getSnapshot().failureMessage).toContain("Neither local recovery copy");
+  expect(session.getSnapshot().offer).toBeNull();
+  expect(h.composition.applyLifecycleIntent({ kind: "push-dialog", dialog: {
+    id: "boot-export-preview", kind: "lifecycle-export", phase: "open", blocksHistory: false, requestId: null,
+  } }).ok).toBe(true);
+  expect(h.composition.applyLifecycleIntent({ kind: "pop-dialog", dialogId: "boot-export-preview" }).ok).toBe(true);
+  await h.recoveryHarness.clock.advance(5_000);
+  expect(h.recoveryHarness.service.inspectRecovery().work.writesScheduled).toBe(0);
+  expect(h.recoveryHarness.adapters[0]?.store.get(recoveryStorageKey(state.document.id, "current"))).toBe("{corrupt");
+  expect(h.composition.controller.setTitle("First real edit").ok).toBe(true);
+  await h.recoveryHarness.clock.advance(400);
+  expect(h.recoveryHarness.service.inspectRecovery().cleanRevision).toBe(h.composition.readApplicationState().revision);
+});
+
+for (const outcome of ["quota", "denied"] as const) {
+  test(`U5 ${outcome} failure keeps recovery pending and gives an export action`, async () => {
+    const h = await createHarness(outcome);
+    const session = createStudioRecoverySession({ composition: h.composition, subscribeRecovery: h.recoveryStatus.subscribe,
+      orchestrator: h.orchestrator, sessionEdited: true, formatTimestamp: (value) => value });
+    await session.start();
+    expect(h.composition.controller.setTitle("Unsaved recovery proof").ok).toBe(true);
+    const document = h.composition.readApplicationState().document;
+    await h.recoveryHarness.clock.advance(400);
+    expect(session.getSnapshot().statusText).toBe("Changes pending recovery");
+    expect(session.getSnapshot().diagnosticText).toContain("Recovery unavailable — export recommended");
+    expect(session.getSnapshot().diagnosticText).toContain(outcome === "quota" ? "recovery.quota_exceeded" : "recovery.write_denied");
+    expect(session.getSnapshot().diagnosticText).toContain("Use Export JSON");
+    expect(h.composition.readApplicationState().document).toBe(document);
+    expect(h.recoveryHarness.service.inspectRecovery().cleanRevision).toBeNull();
+  });
+}

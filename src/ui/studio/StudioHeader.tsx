@@ -1,3 +1,4 @@
+import type { ComponentChildren } from "preact";
 import { useState } from "preact/hooks";
 
 import { Button, VisuallyHidden } from "../primitives";
@@ -51,6 +52,7 @@ function ThemeToggle() {
 }
 
 export type StudioHeaderProps = Readonly<{
+  documentActions?: ComponentChildren;
   view: StudioDocumentView;
   callbacks: Pick<
     StudioShellCallbacks,
@@ -71,6 +73,7 @@ export type StudioHeaderProps = Readonly<{
 }>;
 
 export function StudioHeader({
+  documentActions,
   view,
   callbacks,
   chartLayout,
@@ -178,6 +181,7 @@ export function StudioHeader({
       </button>
 
       <div class="studio-document-actions">
+        {documentActions}
         {/*
           The revision counter alone: the retired "Not exported" pill named
           an export feature this build does not have, which read as jargon

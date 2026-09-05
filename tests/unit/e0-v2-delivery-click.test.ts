@@ -70,14 +70,18 @@ function scriptBlobGlobals(overrides: Readonly<{
   removeThrows?: boolean;
   revokeThrows?: boolean;
   active?: boolean;
+  failAt?: "blob" | "url" | "anchor" | "append" | "click";
 }> = {}) {
   const log: string[] = [];
   const anchors: Array<{ href: string; download: string }> = [];
   g.navigator = { userActivation: { isActive: overrides.active ?? true } };
-  g.Blob = Blob;
+  g.Blob = overrides.failAt === "blob" ? class extends Blob {
+    constructor() { super(); throw new Error("BLOB_FAILED"); }
+  } : saved.Blob;
   g.URL = {
     createObjectURL: () => {
       log.push("create-url");
+      if (overrides.failAt === "url") throw new Error("CREATE_URL_FAILED");
       return "blob:mock-url-1";
     },
     revokeObjectURL: () => {
@@ -87,12 +91,14 @@ function scriptBlobGlobals(overrides: Readonly<{
   };
   g.document = {
     createElement: () => {
+      if (overrides.failAt === "anchor") throw new Error("CREATE_ANCHOR_FAILED");
       const anchor = {
         href: "",
         download: "",
-        style: { display: "" },
+        hidden: false,
         click: () => {
           log.push("click");
+          if (overrides.failAt === "click") throw new Error("CLICK_FAILED");
         },
       };
       anchors.push(anchor);
@@ -101,6 +107,7 @@ function scriptBlobGlobals(overrides: Readonly<{
     body: {
       appendChild: () => {
         log.push("append");
+        if (overrides.failAt === "append") throw new Error("APPEND_FAILED");
       },
       removeChild: () => {
         log.push("remove");
@@ -120,7 +127,44 @@ function makeRequest(): PreparedExportDeliveryRequest {
   }) as never;
 }
 
+function readCompletion(envelope: unknown): Promise<unknown> {
+  if (typeof envelope !== "object" || envelope === null || !("completion" in envelope) ||
+      !(envelope.completion instanceof Promise)) throw new Error("INVALID_DELIVERY_ENVELOPE");
+  return envelope.completion;
+}
+
 describe("section-10 start primitive (scripted browser globals)", () => {
+  for (const row of [
+    { failAt: "blob", log: [], urls: 0 },
+    { failAt: "url", log: ["create-url"], urls: 0 },
+    { failAt: "anchor", log: ["create-url", "revoke-url"], urls: 1 },
+    { failAt: "append", log: ["create-url", "append", "revoke-url"], urls: 1 },
+    { failAt: "click", log: ["create-url", "append", "click", "remove", "revoke-url"], urls: 1 },
+  ] as const) {
+    test(`a ${row.failAt} failure reports and releases exactly the admitted resources`, async () => {
+      const { log } = scriptBlobGlobals({ failAt: row.failAt });
+      const envelope = startPreparedExportDelivery(makeRequest());
+      expect(log).toEqual([...row.log]);
+      expect(await readCompletion(envelope)).toEqual({
+        ok: false, outcome: "failed", code: "export.delivery_activation_failed",
+        channel: "object-url-download", artifact: BINDING, cleanup: "complete",
+        objectUrlsCreated: row.urls, objectUrlsRevoked: row.urls, outstandingOwnedResources: 0,
+      });
+    });
+  }
+
+  test("failure before activation still reports a refused URL cleanup honestly", async () => {
+    const { log } = scriptBlobGlobals({ failAt: "anchor", revokeThrows: true });
+    const envelope = startPreparedExportDelivery(makeRequest());
+    expect(log).toEqual(["create-url", "revoke-url"]);
+    expect(await readCompletion(envelope)).toEqual({
+      ok: false, outcome: "cleanup-failed", code: "export.delivery_cleanup_failed",
+      channel: "object-url-download", artifact: null, cleanup: "reconciliation-required",
+      cleanupFailureKinds: ["object-url-revoke"], objectUrlsCreated: 1,
+      objectUrlsRevoked: 0, outstandingOwnedResources: 1,
+    });
+  });
+
   test("the anchor path activates synchronously and hands off with exact cleanup counts", async () => {
     const { log, anchors } = scriptBlobGlobals();
     const envelope = startPreparedExportDelivery(makeRequest()) as Readonly<{

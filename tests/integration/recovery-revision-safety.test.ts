@@ -1,14 +1,84 @@
 import { describe, expect, setDefaultTimeout, test } from "bun:test";
 
-import { decodeRecoveryEnvelope, recoveryStorageKey } from "../../src/persistence";
+import { createRecoveryService, decodeRecoveryEnvelope, recoveryStorageKey } from "../../src/persistence";
 import {
   createRecoveryHarness,
+  createFakeRecoveryAdapter,
+  createFakeRecoveryClock,
   testDocumentId,
 } from "../support/recovery-test-kit";
 
 setDefaultTimeout(120_000);
 
 describe("TR-A1-REVISION-SAFETY revision-safe completion and rotation", () => {
+  test("Discard waits for the admitted write, then removes both copies without resurrection", async () => {
+    const adapter = createFakeRecoveryAdapter({ kind: "indexeddb" });
+    const clock = createFakeRecoveryClock();
+    let releaseWrite: () => void = () => { throw new Error("write not started"); };
+    let observeWrite: () => void = () => { throw new Error("no observer"); };
+    const enteredWrite = new Promise<void>((resolve) => { observeWrite = resolve; });
+    const writeBarrier = new Promise<void>((resolve) => { releaseWrite = resolve; });
+    const service = createRecoveryService({
+      clock: clock.port,
+      adapters: [{ ...adapter.port, writeCurrentWithRotation: async (...args) => {
+        observeWrite();
+        await writeBarrier;
+        return await adapter.port.writeCurrentWithRotation(...args);
+      } }],
+    });
+    const documentId = testDocumentId("doc-discard-in-flight");
+    service.noteMutation({ documentId, revision: 1, document: { title: "Discard this" } });
+    const writing = service.flushRecoveryWrites("visibility-change");
+    await enteredWrite;
+    let discarded = false;
+    const discarding = service.discardRecovery(documentId).then(() => { discarded = true; });
+    await Promise.resolve();
+    expect(discarded).toBe(false);
+    releaseWrite();
+    expect((await writing)?.outcome).toBe("superseded");
+    await discarding;
+    await clock.advance(5_000);
+    expect(adapter.store.size).toBe(0);
+    expect(service.inspectRecovery().cleanRevision).toBeNull();
+    // Honest success twin: a later edit still schedules a new recovery copy.
+    service.noteMutation({ documentId, revision: 2, document: { title: "Keep this" } });
+    await clock.advance(400);
+    const stored = await decodeRecoveryEnvelope(adapter.store.get(recoveryStorageKey(documentId, "current")) ?? "");
+    expect(stored.envelope?.document).toEqual({ title: "Keep this" });
+    expect(service.inspectRecovery().cleanRevision).toBe(2);
+  });
+
+  test("equal revision numbers in different documents cannot certify a stale write", async () => {
+    const harness = createRecoveryHarness();
+    harness.service.noteMutation({ documentId: testDocumentId("doc-before"), revision: 4, document: {} });
+    const writing = harness.service.flushRecoveryWrites("visibility-change");
+    harness.service.noteMutation({ documentId: testDocumentId("doc-after"), revision: 4, document: {} });
+    expect((await writing)?.outcome).toBe("superseded");
+    expect(harness.service.inspectRecovery().cleanRevision).toBeNull();
+    await harness.clock.advance(400);
+    expect(harness.service.inspectRecovery().cleanRevision).toBe(4);
+  });
+
+  test("a refused remove remains visible and can be retried", async () => {
+    const adapter = createFakeRecoveryAdapter({ kind: "indexeddb" });
+    let deny = true;
+    const service = createRecoveryService({ clock: createFakeRecoveryClock().port,
+      adapters: [{ ...adapter.port, remove: async (key) => {
+        if (deny) throw new Error("denied");
+        await adapter.port.remove(key);
+      } }],
+    });
+    const documentId = testDocumentId("doc-discard-denied");
+    adapter.store.set(recoveryStorageKey(documentId, "current"), "retained");
+    const failure = await service.discardRecovery(documentId).catch((error: unknown) => error);
+    expect(failure).toBeInstanceOf(Error);
+    expect(adapter.store.get(recoveryStorageKey(documentId, "current"))).toBe("retained");
+    expect(service.inspectRecovery().lastRefusal).toBe("recovery.write_denied");
+    deny = false;
+    await service.discardRecovery(documentId);
+    expect(adapter.store.size).toBe(0);
+  });
+
   test("A1-SCHED-005 an older completion reports superseded and cannot mark newer state", async () => {
     const harness = createRecoveryHarness();
     const documentId = testDocumentId("doc-a1-rev-005");

@@ -5,6 +5,7 @@ Consumer: the user and Codex executing the 2026-09-04 request to implement the r
 ## Current order
 
 - [x] Voice-leading: reproduce raw and actually sounded discontinuities; specify a compatible versioned policy; implement; prove small-oracle, real chart, fixed-voicing, browser audio and MIDI behavior.
+- [ ] U5: connect the ready lifecycle package; fix observed recovery ordering defects before adding import/export and replacement workflows.
 - [ ] H0: implement all three accepted operations, full scale/readings evidence and independent proof; then close the parent.
 - [ ] U2: reconcile exact note/annotation/Auto-policy authority; finish inspector with existing owner and required proof.
 - [ ] Shared discovery execution: accepted types/fixtures, actual bounded execution and atomic Apply, then proof.
@@ -38,6 +39,30 @@ Consumer: the user and Codex executing the 2026-09-04 request to implement the r
 - [ ] Reconcile contradictory H0 authority and publish the missing semantic context-evidence boundary. Independently agree the exact accounting recipe, then prove every reachable valid cap and source mutant.
 - [ ] Implement all contextual rules and plural scale mappings after the authority is consistent.
 - [ ] Replay all independent H0 corpora, execute production mutants, and record complete package gates; close only satisfied phases.
+
+## U5 active subtasks
+
+- [x] Claim `jcpe-milestone-reliable-studio-l3a.13.2`; read the accepted U5 contract and inherited context. Basic recovery is already wired; the README's broader disconnected claim is stale.
+- [x] Preserve existing recovery bytes throughout startup and the Keep/Discard decision; serialize admitted writes with Discard so recovery cannot resurrect after successful removal.
+- [x] Seed recovery's document/revision dedupe without a boot write; focus, export-preview, and other ephemeral notifications must not overwrite stored copies. A subsequent document edit still persists.
+- [x] Bind write completion to document ID, revision, and write generation; an older document with the same numeric revision cannot become clean.
+- [x] Replace the UI's unknown recovery token and unchecked cast with an application-owned choice; refuse stale Keep after edits and retain actionable failures.
+- [x] Render previous-envelope fallback and corrupt startup diagnostics. Await actual Discard, retaining the offer and bytes when removal fails, with a working retry.
+- [x] Render pending/current recovery and exact export status; show quota/denied diagnostics with the pending state and Export JSON action. Keep storage failure independent from chart editing.
+- [x] Connect canonical JSON preparation, immutable preview, exact browser handoff and A0 marker settlement. Cancellation, malformed/wrong-byte receipts, allocation failure, and stale completion advance no marker.
+- [x] Persist A1's complete export binding through the actual storage adapter, including the delivered file hash/length; verify a fresh service reads it. Quota after handoff must not claim durable marker persistence.
+- [x] Cover Blob/URL/anchor/append/click failures with exact cleanup accounting, including cleanup refusal. Preserve synchronous gesture activation and the existing CSP.
+- [x] Keep the U0 modal/focus lease across dismissibility/committing changes, with A0 history locking and exact focus return.
+- [ ] Connect bounded canonical/legacy file and paste preview, grouped reports, inert cancel and revision-bound commit through E0/A0/X1.
+- [ ] Allocate the import preview identity in the composition-owned replacement workflow; do not start retirement on preview or silently rebind a displayed confirmation to a later request identity.
+- [ ] Connect lossy chart-text export, independently verify its supported projection, render loss disclosures, and preserve the canonical marker law.
+- [ ] Confirm New/lesson/import replacement; offer export first for unexported/unrecovered work, disclose oversized history, restore focus and prevent concurrent commits. JSON export's A0/U0 hosting alone does not complete this row.
+- [ ] Verify cold startup discovery after replacing with a different document ID; the current startup lookup starts from the boot document's ID. Do not claim arbitrary imported-document recovery until this is implemented and proved.
+- [ ] Complete the auto-open recovery explanation and Discard/New surface; handle a checksummed but semantically invalid current candidate with an independently validated previous candidate.
+- [ ] Keep chart-text import on the insertion lane; preserve MIDI's separate workflows.
+- [x] Exercise recovery write/discard races and native browser recovery/JSON downloads at desktop and phone widths across Chromium, Firefox and WebKit, including allocation failure and focus restoration.
+- [ ] Exercise the remaining file/paste, New/lesson/import, oversized consent, replacement-while-playing, and complete lifecycle fixture matrix after implementation.
+- [ ] Run named build gates, update evidence and tracker, then perform the separate verification phase. Do not close U5 or flip human acceptance flags based on partial wiring.
 
 ## Complete unresolved tracker inventory
 
@@ -113,7 +138,7 @@ Statuses below are the campaign-start snapshot. Use br show and br ready before 
 - [ ] `jcpe-milestone-reliable-studio-l3a.12.2` — U4/build: Implement the complete production package (in_progress; P1; IvoryBluff)
 - [ ] `jcpe-milestone-reliable-studio-l3a.12.3` — U4/verify: Prove conformance, integration, and evidence (open; P1; unassigned)
 - [ ] `jcpe-milestone-reliable-studio-l3a.13` — U5: Build document, recovery, and import/export lifecycle dialogs (open; P1; unassigned)
-- [ ] `jcpe-milestone-reliable-studio-l3a.13.2` — U5/build: Implement the complete production package (open; P1; unassigned)
+- [ ] `jcpe-milestone-reliable-studio-l3a.13.2` — U5/build: Implement the complete production package (in_progress; P1; CodexImplementation)
 - [ ] `jcpe-milestone-reliable-studio-l3a.13.3` — U5/verify: Prove conformance, integration, and evidence (open; P1; unassigned)
 - [ ] `jcpe-mnsc` — Epic: Gesture-driven physical instrument realism (open; P1; unassigned)
 - [ ] `jcpe-mnsc.4` — PHS2: Clarinet v2 dynamic reed, tongue, tone holes, and continuous bore (open; P1; unassigned)

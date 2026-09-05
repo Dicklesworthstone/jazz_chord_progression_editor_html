@@ -16,6 +16,7 @@ import {
   type ExportDeliveryArtifactBinding,
   type ExportDeliveryRequest,
   type ExportDeliveryResult,
+  type ObjectUrlCleanupFailure,
   type InterchangeExportOperations,
   type LeadSheetTextArtifact,
   type LeadSheetTextExportDependencies,
@@ -648,7 +649,7 @@ type BrowserDeliveryGlobals = Readonly<{
     createElement: (tag: string) => {
       href: string;
       download: string;
-      style: { display: string };
+      hidden: boolean;
       click: () => void;
     };
     body: Readonly<{
@@ -871,24 +872,45 @@ export const startPreparedExportDelivery: StartPreparedExportDelivery = (
       ),
     });
   }
-  const blob = new g.Blob([bytes as never], { type: mediaType });
-  const url = g.URL.createObjectURL(blob);
-  const anchor = g.document.createElement("a");
-  anchor.href = url;
-  anchor.download = binding.filename;
-  anchor.style.display = "none";
-  g.document.body.appendChild(anchor);
-  let clickFailed = false;
+  let url: string;
   try {
+    const blob = new g.Blob([bytes as never], { type: mediaType });
+    url = g.URL.createObjectURL(blob);
+  } catch {
+    return Object.freeze({
+      completion: Promise.resolve(Object.freeze({
+        ok: false as const,
+        outcome: "failed" as const,
+        code: "export.delivery_activation_failed" as const,
+        channel: "object-url-download" as const,
+        artifact: binding,
+        ...cleanZero,
+      })),
+    });
+  }
+  let anchor: ReturnType<NonNullable<BrowserDeliveryGlobals["document"]>["createElement"]> | undefined;
+  let appended = false;
+  let activationFailed = false;
+  try {
+    anchor = g.document.createElement("a");
+    anchor.href = url;
+    anchor.download = binding.filename;
+    /* The HTML attribute works under the standalone hash-only CSP; a
+     * style property produces a WebKit CSP violation during download. */
+    anchor.hidden = true;
+    g.document.body.appendChild(anchor);
+    appended = true;
     anchor.click();
   } catch {
-    clickFailed = true;
+    activationFailed = true;
   }
   let removeFailed = false;
-  try {
-    g.document.body.removeChild(anchor);
-  } catch {
-    removeFailed = true;
+  if (appended) {
+    try {
+      g.document.body.removeChild(anchor);
+    } catch {
+      removeFailed = true;
+    }
   }
   let revokeFailed = false;
   try {
@@ -898,12 +920,15 @@ export const startPreparedExportDelivery: StartPreparedExportDelivery = (
   }
 
   if (removeFailed || revokeFailed) {
-    const kinds =
+    const cleanup: ObjectUrlCleanupFailure =
       removeFailed && revokeFailed
-        ? (Object.freeze(["anchor-remove", "object-url-revoke"] as const))
+        ? Object.freeze({ channel: "object-url-download", cleanupFailureKinds: Object.freeze(["anchor-remove", "object-url-revoke"] as const),
+          objectUrlsCreated: 1, objectUrlsRevoked: 0, outstandingOwnedResources: 2 })
         : removeFailed
-          ? (Object.freeze(["anchor-remove"] as const))
-          : (Object.freeze(["object-url-revoke"] as const));
+          ? Object.freeze({ channel: "object-url-download", cleanupFailureKinds: Object.freeze(["anchor-remove"] as const),
+            objectUrlsCreated: 1, objectUrlsRevoked: 1, outstandingOwnedResources: 1 })
+          : Object.freeze({ channel: "object-url-download", cleanupFailureKinds: Object.freeze(["object-url-revoke"] as const),
+            objectUrlsCreated: 1, objectUrlsRevoked: 0, outstandingOwnedResources: 1 });
     return Object.freeze({
       completion: Promise.resolve(
         Object.freeze({
@@ -912,17 +937,12 @@ export const startPreparedExportDelivery: StartPreparedExportDelivery = (
           code: "export.delivery_cleanup_failed" as const,
           artifact: null,
           cleanup: "reconciliation-required" as const,
-          channel: "object-url-download" as const,
-          cleanupFailureKinds: kinds,
-          objectUrlsCreated: 1 as const,
-          objectUrlsRevoked: revokeFailed ? (0 as const) : (1 as const),
-          outstandingOwnedResources:
-            removeFailed && revokeFailed ? (2 as const) : (1 as const),
-        }) as never,
+          ...cleanup,
+        }),
       ),
     });
   }
-  if (clickFailed) {
+  if (activationFailed) {
     return Object.freeze({
       completion: Promise.resolve(
         Object.freeze({

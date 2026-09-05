@@ -1,3 +1,5 @@
+import type { ComponentChildren } from "preact";
+import { Button } from "./primitives";
 import {
   useCallback,
   useEffect,
@@ -50,6 +52,10 @@ import {
   type StudioMidiExportPreview,
   type StudioMidiExportPreviewResult,
   type StudioMidiExportService,
+  type StudioRecoverySession,
+  type StudioRecoverySessionView,
+  type StudioLifecycleService,
+  type StudioLifecycleView,
 } from "../application/runtime";
 import {
   GROOVE_STYLE_IDS,
@@ -362,7 +368,10 @@ type PendingEdit =
     }>
   | null;
 
+import { LifecycleExportDialog } from "./studio/LifecycleExportDialog";
+
 export type AppProps = Readonly<{
+  documentActions?: ComponentChildren;
   snapshot: StudioViewModel;
   actions: AppActions;
   /** A boot-time refusal to surface once in the shell notice. */
@@ -1704,7 +1713,7 @@ function feedbackFromRefusal(
   });
 }
 
-export function App({ snapshot, actions, startupNotice }: AppProps) {
+export function App({ snapshot, actions, startupNotice, documentActions }: AppProps) {
   const [titleDraft, setTitleDraft] = useState(snapshot.title);
   const previousCommittedTitle = useRef(snapshot.title);
   const audioGestureSequence = useRef(0);
@@ -2564,6 +2573,7 @@ export function App({ snapshot, actions, startupNotice }: AppProps) {
   return (
     <>
     <StudioShell
+      documentActions={documentActions}
       midiExportAvailable={actions.midiExportAvailable}
       view={view}
       annotations={{
@@ -3653,32 +3663,6 @@ export function StudioStartupFailure({
  * module — `ui/runtime` is pinned to re-export from `./App` alone so the test
  * gallery inventory can never enter the release graph through a new entry.
  */
-/**
- * The composition-bound A1 recovery surface (l3a.2 step 4). Every method
- * is orchestrator-backed: `startup` runs the reviewed matrix after share
- * handling, `keep` rides the transactional replacement channel, and
- * `discard` is the service's idempotent discard. The envelope token is
- * opaque to the UI layer.
- */
-export type StudioRecoveryUiBinding = Readonly<{
-  startup: () => Promise<
-    | Readonly<{ kind: "none" }>
-    | Readonly<{
-        kind: "offer";
-        savedAtLabel: string;
-        revision: number;
-        token: unknown;
-      }>
-  >;
-  keep: (
-    token: unknown,
-  ) => Promise<
-    | Readonly<{ ok: true; recoveredAtLabel: string }>
-    | Readonly<{ ok: false; message: string }>
-  >;
-  discard: () => Promise<void>;
-}>;
-
 export type StudioRootProps = Readonly<{
   controller: StudioController;
   /** A boot-time refusal (for example, an unreadable share link). */
@@ -3696,20 +3680,9 @@ export type StudioRootProps = Readonly<{
    */
   midiExport?: StudioMidiExportService | null;
   /** Absent means the recovery surface is not offered at all. */
-  recovery?: StudioRecoveryUiBinding | null;
+  recovery?: StudioRecoverySession | null;
+  lifecycle?: StudioLifecycleService | null;
 }>;
-
-type RecoveryUiState =
-  | Readonly<{ kind: "idle" }>
-  | Readonly<{
-      kind: "offer";
-      savedAtLabel: string;
-      revision: number;
-      token: unknown;
-      busy: boolean;
-      failureMessage: string | null;
-    }>
-  | Readonly<{ kind: "status"; text: string }>;
 
 export function StudioRoot({
   controller,
@@ -3717,13 +3690,22 @@ export function StudioRoot({
   midiImport,
   midiExport,
   recovery,
+  lifecycle,
 }: StudioRootProps) {
   const midiImportService = midiImport ?? null;
   const midiExportService = midiExport ?? null;
   const recoveryBinding = recovery ?? null;
+  const [lifecycleView, setLifecycleView] = useState<StudioLifecycleView | null>(lifecycle?.getSnapshot() ?? null);
+  useEffect(() => {
+    if (lifecycle === undefined || lifecycle === null) return;
+    const publish = (): void => { setLifecycleView(lifecycle.getSnapshot()); };
+    const unsubscribe = lifecycle.subscribe(publish);
+    publish();
+    return unsubscribe;
+  }, [lifecycle]);
   const [snapshot, setSnapshot] = useState(controller.getSnapshot());
-  const [recoveryUi, setRecoveryUi] = useState<RecoveryUiState>(
-    Object.freeze({ kind: "idle" as const }),
+  const [recoveryUi, setRecoveryUi] = useState<StudioRecoverySessionView | null>(
+    recoveryBinding?.getSnapshot() ?? null,
   );
 
   useEffect(() => {
@@ -3737,71 +3719,37 @@ export function StudioRoot({
 
   useEffect(() => {
     if (recoveryBinding === null) return;
-    let live = true;
-    void recoveryBinding.startup().then((view) => {
-      if (!live || view.kind !== "offer") return;
-      setRecoveryUi(
-        Object.freeze({
-          kind: "offer" as const,
-          savedAtLabel: view.savedAtLabel,
-          revision: view.revision,
-          token: view.token,
-          busy: false,
-          failureMessage: null,
-        }),
-      );
-    });
-    return () => {
-      live = false;
-    };
+    const publish = (): void => { setRecoveryUi(recoveryBinding.getSnapshot()); };
+    const unsubscribe = recoveryBinding.subscribe(publish);
+    publish();
+    void recoveryBinding.start();
+    return unsubscribe;
   }, [recoveryBinding]);
 
-  const recoveryRegion =
-    recoveryUi.kind === "offer" ? (
-      <>
+  const recoveryRegion = recoveryUi === null ? null : (
+    <>
+      {recoveryUi.offer === null ? null : (
         <RecoveryNotice
-          offer={{
-            savedAtLabel: recoveryUi.savedAtLabel,
-            revision: recoveryUi.revision,
-          }}
+          offer={recoveryUi.offer}
           busy={recoveryUi.busy}
-          onKeep={() => {
-            if (recoveryBinding === null || recoveryUi.busy) return;
-            setRecoveryUi(Object.freeze({ ...recoveryUi, busy: true }));
-            void recoveryBinding.keep(recoveryUi.token).then((kept) => {
-              if (kept.ok) {
-                setRecoveryUi(
-                  Object.freeze({
-                    kind: "status" as const,
-                    text: kept.recoveredAtLabel,
-                  }),
-                );
-              } else {
-                setRecoveryUi(
-                  Object.freeze({
-                    ...recoveryUi,
-                    busy: false,
-                    failureMessage: kept.message,
-                  }),
-                );
-              }
-            });
-          }}
-          onDiscard={() => {
-            if (recoveryBinding === null || recoveryUi.busy) return;
-            void recoveryBinding.discard();
-            setRecoveryUi(Object.freeze({ kind: "idle" as const }));
-          }}
+          onKeep={() => { void recoveryBinding?.keep(); }}
+          onDiscard={() => { void recoveryBinding?.discard(); }}
         />
-        {recoveryUi.failureMessage === null ? null : (
-          <p class="studio-recovery-status" role="alert">
-            {recoveryUi.failureMessage}
-          </p>
-        )}
-      </>
-    ) : recoveryUi.kind === "status" ? (
-      <RecoveryStatusLine text={recoveryUi.text} />
-    ) : null;
+      )}
+      {recoveryUi.failureMessage === null ? null : (
+        <p class="studio-recovery-status" role="alert">{recoveryUi.failureMessage}</p>
+      )}
+      {recoveryUi.statusText === null ? null : (
+        <RecoveryStatusLine text={recoveryUi.statusText} />
+      )}
+      {recoveryUi.diagnosticText === null ? null : (
+        <p class="studio-recovery-status">{recoveryUi.diagnosticText}</p>
+      )}
+      {recoveryUi.exportText === null ? null : (
+        <p class="studio-recovery-status" role="status">{recoveryUi.exportText}</p>
+      )}
+    </>
+  );
 
   /* The recovery region renders AFTER the app in DOM order so the shell's
    * skip link keeps the document's first tab stop (the 2026-09-03 e2e
@@ -3810,6 +3758,10 @@ export function StudioRoot({
   return (
     <>
       <App
+      documentActions={lifecycle == null ? null : <Button
+        id="studio-export-json" type="button" label="Export JSON" variant="secondary"
+        busy={false} disabled={false} density="comfortable" describedBy={[]} invalid={false}
+        onAction={() => { void lifecycle.openExport(); }} />}
       snapshot={snapshot}
       startupNotice={startupNotice ?? null}
       actions={{
@@ -3935,6 +3887,7 @@ export function StudioRoot({
       }}
     />
     {recoveryRegion}
+    {lifecycle == null || lifecycleView === null ? null : <LifecycleExportDialog service={lifecycle} view={lifecycleView} />}
     </>
   );
 }

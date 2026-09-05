@@ -1266,6 +1266,15 @@ export type StudioControllerOptions = Readonly<{
  */
 export type StudioComposition = Readonly<{
   controller: StudioController;
+  /** Composition-owned lifecycle service; UI never receives the state cell. */
+  applyLifecycleIntent: (
+    intent: Extract<import("./application-state-contract").EphemeralIntent,
+      { kind: "push-dialog" | "pop-dialog" | "set-import-draft" | "dismiss-notice" }>,
+  ) => Readonly<{ ok: true }> | Readonly<{ ok: false; code: string }>;
+  updateLifecycleDialogPhase: (
+    dialogId: string,
+    phase: "open" | "committing" | "failed",
+  ) => Readonly<{ ok: true }> | Readonly<{ ok: false; code: string }>;
   interchangeOwner: A0E0InterchangeOwnerOperations;
   /**
    * Composition-private producer of the retiring-transport workflow the
@@ -7244,6 +7253,28 @@ function makeStudioComposition(
 
   return Object.freeze({
     controller,
+    applyLifecycleIntent: (intent) => {
+      const result = reduceEphemeralIntent({ state, intent });
+      if (!result.ok) return Object.freeze({ ok: false as const, code: result.refusal.code });
+      installOwnerState(result.state);
+      notify();
+      return Object.freeze({ ok: true as const });
+    },
+    updateLifecycleDialogPhase: (dialogId, phase) => {
+      const dialog = state.dialogs[state.dialogs.length - 1];
+      if (dialog?.id !== dialogId) return Object.freeze({ ok: false as const, code: "ephemeral.intent_invalid" });
+      // Use the existing LIFO kernel operations, publishing once so observers
+      // never see history unlocked between the pop and the replacement push.
+      const popped = reduceEphemeralIntent({ state, intent: { kind: "pop-dialog", dialogId } });
+      if (!popped.ok) return Object.freeze({ ok: false as const, code: popped.refusal.code });
+      const pushed = reduceEphemeralIntent({ state: popped.state, intent: { kind: "push-dialog",
+        dialog: { ...dialog, phase, blocksHistory: phase === "committing" },
+      } });
+      if (!pushed.ok) return Object.freeze({ ok: false as const, code: pushed.refusal.code });
+      installOwnerState(pushed.state);
+      notify();
+      return Object.freeze({ ok: true as const });
+    },
     interchangeOwner,
     replacementWorkflow,
     readApplicationState: () => state,

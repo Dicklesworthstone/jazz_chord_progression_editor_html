@@ -348,7 +348,7 @@ export type PanelState = Readonly<{
 
 export type DialogDescriptor = Readonly<{
   id: string;
-  kind: ApplicationDialogKind;
+  kind: ApplicationDialogKind | "import-preview" | "lifecycle-export";
   phase: "open" | "committing" | "failed";
   blocksHistory: boolean;
   requestId: ApplicationRequestId | null;

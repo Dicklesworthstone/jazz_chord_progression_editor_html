@@ -22,6 +22,10 @@ export {
   type StudioRecoveryStartupView,
 } from "./studio-recovery";
 export { createX1SerializedTransportRetirementAdapter } from "./x1-retirement-adapter";
+export { createStudioRecoverySession, createStudioRecoveryStatusFeed } from "./studio-recovery-session";
+export type { StudioRecoverySession, StudioRecoverySessionView } from "./studio-recovery-session";
+export { createStudioLifecycle } from "./studio-lifecycle";
+export type { StudioLifecycleService, StudioLifecycleView } from "./studio-lifecycle";
 
 export type {
   StudioBoundaryInput,

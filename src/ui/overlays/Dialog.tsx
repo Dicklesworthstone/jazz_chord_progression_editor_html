@@ -420,7 +420,7 @@ function ModalDialog(props: ModalDialogProps) {
       backgroundRootId: props.backgroundRootId,
       descriptor: {
         descriptionId,
-        dismissibility: props.dismissibility,
+        dismissibility: dismissibility.current,
         id: props.id,
         initialFocusId: props.initialFocusId,
         kind: props.role === "alertdialog" ? "alert-dialog" : "dialog",
@@ -471,7 +471,9 @@ function ModalDialog(props: ModalDialogProps) {
   }, [
     props.backgroundRootId,
     descriptionId,
-    props.dismissibility,
+    // Dismissibility is live through the ref above. Changing it must not
+    // reacquire the modal: its own inert background makes the trigger look
+    // stale before the separate focus/inert lease can be released.
     props.focusTargets.triggerId,
     props.id,
     props.initialFocusId,

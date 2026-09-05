@@ -40,15 +40,19 @@ acceptance gates, and [`ios/README.md`](ios/README.md) for build instructions.
 
 ## What works today
 
+This table describes the repository build. Recovery and **Export JSON** are connected here; the latest lifecycle changes have not been deployed as part of this implementation.
+
 | Capability | Current state |
 |---|---|
-| Standalone page | `jazz_chord_progression_editor.html` opens directly from disk; the same bytes serve <https://jazzchords.org> and its byte-identical Vercel mirror |
+| Standalone page | `jazz_chord_progression_editor.html` opens directly from disk; the deployment command stages committed bytes for Cloudflare Pages and its Vercel mirror |
 | Offline runtime | Every script, style, font, sample, and WASM payload is embedded; the hash-based CSP denies all network destinations |
 | Chart authoring | Engraved sheet view and grid edit view over the demo chart; quick entry (`⌘K` / Type changes) for whole charts; per-chord inline editing, exact beat durations, measure/section structure edits, drag moves, range selection, and single-step undo/redo (U1 acceptance E2E) |
 | Analysis | Literal-first Harmony Lens: chord tones with degrees, chord scale, guide tones, guide-tone motion into the next chord, and plural next-chord options with one-line reasons ("Options, not answers"); roman numerals and phrase brackets on the sheet. Deliberately narrower than the planned H0 evidence-tier engine and says so in source |
 | Playback | One persistent Web Audio graph, serialized transport with loop/seek/pause/live mix, 7 grooves, and 15 instruments spanning physical models (clarinet, flute, four plucked strings), the hybrid concert grand, and CC0-sampled bass/vibes — every shipping model gated by the model-acceptance ledger |
 | Progression library | 28 reviewed entries with a machine-checked provenance law |
 | MIDI import | One-gesture `.mid` import with a Rust SMF parser in WASM, salvage ledger, per-track preview/overrides, and automated groove matching (M0 shipped; M1 owner-listening gate open) |
+| Recovery | Best-effort IndexedDB with localStorage fallback, revision-bound writes, Keep/Discard on reload, previous-copy fallback, and visible storage failures |
+| JSON export | **Export JSON** prepares and validates a portable chart, then **Download JSON** hands it to the browser; only exact successful delivery advances the export marker |
 | MIDI export | Deterministic Standard MIDI files with preview, blocker cards, and real downloads (E1 + U7) |
 | Share links | Copy link encodes the chart into a local `#zdoc=` fragment; opening one crosses the same refusing decoders as typed text |
 | Reproducible build contract | Source-driven build, generated-file banner, byte-equality checks, size budget, CSP hashes, license inventory |
@@ -226,7 +230,7 @@ hold for its named packages, and mixed rows say what remains.
 | Gate | Status | State |
 |---|---|---|
 | Foundation (F0–F3, T0–T1) | Complete | Pinned toolchain, standalone artifact, total decoder, chord parser/resolver, semantic publication, independent theory corpus — all package epics closed with evidence gates in `verify` |
-| Reliable studio | Largely current | Chart editing, commands/history, deterministic transport/audio, voicing engines, and MIDI import/export ship today. Still open: recovery wiring (A1 verify), JSON/text import-export UI (E0 build), manual/frozen voicing editing (U2), X1 verify leg, and lifecycle dialogs (U5) |
+| Reliable studio | Largely current | Chart editing, commands/history, deterministic transport/audio, voicing engines, and MIDI import/export ship today. Recovery and JSON export are connected. Still open: JSON/legacy import and chart-text export UI, manual/frozen voicing editing (U2), X1 verify leg, and the remaining lifecycle dialogs (U5) |
 | Musical intelligence | Reduced subset shipped | The live Harmony Lens/roman numerals/next options are an honest narrower substitute; the H0/H1 evidence-tier engines, transposition, tonal journeys, Atlas, fingerprints, and the Continuation Engine remain planned |
 | Advanced craft | Early pieces shipped | V2 progression optimizer, E1 MIDI export, and the U7 export workflow landed ahead of schedule; route/constraint search, reharmonization, guide-tone/color/rhythm/tension/sequence tools, and practice workflows remain planned |
 | Physical instruments | In progress | Clarinet v2, flute v2, and four plucked models ship behind the model-acceptance ledger; trumpet and physical vibes/bass remain dark pending performance and owner listening |
@@ -277,9 +281,11 @@ The runtime boundary is intentionally small:
 - static capability inspection plus real-browser request interception, including a malicious negative-control fixture;
 - deterministic license and embedded-asset inventory.
 
-The studio holds the chart in memory only: nothing is persisted to the browser today (local best-effort recovery is built and remains dark behind its verify gate), and every export — the share link and the MIDI file — happens only on an explicit user gesture. Imported text and JSON will cross bounded decoders and will never be evaluated, inserted as HTML, or turned into a URL. The one deliberate exception is the explicit **Copy link** action: on a user gesture the studio encodes the current chart, title, tempo, and groove into a local `#zdoc=` URL fragment. No request is made in either direction — the fragment never leaves the page except by the user sharing the link — and an opened fragment crosses the same bounded, refusing decoders as typed text; any diagnostic falls back to the starter chart with the refusal stated.
+The studio keeps edits in browser-local, best-effort **Recovery** using IndexedDB or a localStorage fallback. Reload offers Keep/Discard; an unreadable current copy can fall back to the previous copy. An unanswered offer preserves the stored copies until a decision is made. Storage failure stays visible and does not block editing. **Export JSON** makes a portable versioned file; preparing or cancelling an export changes no marker. “Handed off” means the browser received the file, so check its downloads for the actual file.
 
-A single local file is portable, but it is not cloud backup. When authoring and export arrive, users will remain responsible for keeping copies of important charts.
+All exports require an explicit gesture. **Copy link** encodes the chart, title, tempo, and groove into a local `#zdoc=` URL fragment. No request is made: the fragment leaves the page only when you share the link. Opening it crosses bounded decoders, and a refusal leaves the starter chart with a diagnostic. Imported data is never evaluated or inserted as HTML.
+
+Local recovery is not cloud backup. Keep JSON copies of important charts; browser storage can be unavailable, cleared, or limited by quota.
 
 ## Current limitations
 
@@ -288,12 +294,10 @@ A single local file is portable, but it is not cloud backup. When authoring and 
 - You cannot choose, edit, or freeze a voicing; the V0/V1/V2 engines pick
   voicings automatically (the exact manual/frozen editor is the open U2
   package).
-- There is no JSON or chart-text import/export UI yet (E0's production
-  package is open); the share link and MIDI export are the current ways a
-  chart leaves the page.
-- Crash/reload recovery is not wired into the page yet (the A1 service
-  exists behind its verify gate); an unshared, unexported chart is lost on
-  reload.
+- JSON/legacy import and chart-text export still need their UI connections.
+  JSON export, share links, and MIDI export are available in the repository build.
+- Recovery is best-effort browser storage. Keep/Discard and fallback work,
+  but the complete U5 lifecycle/confirmation package is still in progress.
 - Legacy application behavior was deliberately removed rather than copied
   forward; the bounded legacy importer (C0) has an engine but no UI yet.
 - The Harmonic Discovery systems (continuation engine, Atlas, route
@@ -391,11 +395,11 @@ The release must remain one small offline file with Preact as its only productio
 
 ### Where will charts be saved?
 
-They are not saved anywhere automatically today: a reload loses an unshared chart, so use **Share** (a `#zdoc=` link holds the whole chart) or **Export MIDI** to keep work. The planned studio adds best-effort local recovery and explicit versioned JSON export, and will not label browser recovery as a durable “Save.”
+Edits queue best-effort local recovery. On reload, choose **Keep recovered chart** or **Discard**; resolve that choice before relying on further local recovery. For a portable copy, choose **Export JSON**, review the filename and revision, then **Download JSON** and check your browser’s downloads. Browser recovery is never a durable “Save.”
 
 ### Can I import a chart from the legacy app?
 
-Not yet. A bounded legacy decoder and itemized migration report are planned. Unsupported data will be preserved as a diagnostic or refused, never silently changed into a different chord.
+Not through the page yet. The bounded legacy decoder and itemized migration report exist, but their preview and confirmation UI remain part of U5. Unsupported data must produce a diagnostic or refusal, never a silently substituted chord.
 
 ### Is a local web server required?
 

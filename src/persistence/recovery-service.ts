@@ -1,4 +1,4 @@
-import type { DocumentId } from "../domain";
+import { parseStableId, type DocumentId } from "../domain";
 import {
   MAX_RECOVERY_ENVELOPE_BYTES_INDEXEDDB,
   MAX_RECOVERY_ENVELOPE_BYTES_LOCALSTORAGE,
@@ -63,6 +63,26 @@ function isPositiveSafeInteger(value: unknown): value is number {
 }
 
 const SHA256_HEX = /^[a-f0-9]{64}$/u;
+
+function decodeExportBinding(value: unknown): RecoveryExportBinding | null {
+  if (!isRecord(value)) return null;
+  const { schema, documentId, exportRevision, exportedAt, semanticDocumentHash,
+    artifactByteLength, artifactSha256 } = value;
+  if (schema !== RECOVERY_EXPORT_BINDING_SCHEMA || typeof documentId !== "string" ||
+      !isNonnegativeSafeInteger(exportRevision) || typeof exportedAt !== "string" ||
+      exportedAt.length === 0 || exportedAt.length > 64 ||
+      typeof semanticDocumentHash !== "string" || !SHA256_HEX.test(semanticDocumentHash) ||
+      !isPositiveSafeInteger(artifactByteLength) || typeof artifactSha256 !== "string" ||
+      !SHA256_HEX.test(artifactSha256)) return null;
+  const id = parseStableId("document", documentId);
+  if (!id.ok) return null;
+  return Object.freeze({ schema, documentId: id.value, exportRevision, exportedAt,
+    semanticDocumentHash, artifactByteLength, artifactSha256 });
+}
+
+function exportBindingKey(documentId: DocumentId, previous = false): string {
+  return `${RECOVERY_EXPORT_BINDING_SCHEMA}:${documentId}:${previous ? "previous" : "current"}`;
+}
 
 /** Canonical JSON: sorted keys at every depth, no insignificant whitespace. */
 export function canonicalRecoveryJson(value: unknown): string {
@@ -261,6 +281,8 @@ export type RecoveryService = Readonly<{
 
 export function createRecoveryService(
   platform: RecoveryPlatformPort,
+  /** Composition observer; keeps the frozen seven-operation service surface. */
+  onStatusChange?: (snapshot: RecoverySnapshot, savedAt: string | null) => void,
 ): RecoveryService {
   const work = zeroCounters();
   let selected: RecoveryAdapterPort | null = null;
@@ -278,6 +300,24 @@ export function createRecoveryService(
   let idleHandle: number | null = null;
   let maxDelayHandle: number | null = null;
   let writeInFlight = false;
+  let storageTail: Promise<void> = Promise.resolve();
+  let writeGeneration = 0;
+  let savedAt: string | null = null;
+
+  function notify(): void {
+    try {
+      onStatusChange?.(inspectRecovery(), savedAt);
+    } catch {
+      // A composition observer cannot interrupt persistence.
+    }
+  }
+
+  /** Writes and Discard share one lane, including writes already in flight. */
+  function serializeStorage<T>(operation: () => Promise<T>): Promise<T> {
+    const result = storageTail.then(operation);
+    storageTail = result.then(() => undefined, () => undefined);
+    return result;
+  }
 
   function clearTimers(): void {
     if (idleHandle !== null) {
@@ -307,6 +347,7 @@ export function createRecoveryService(
         selected = adapter;
         selectedKind = adapter.kind;
         probed = true;
+        notify();
         return Object.freeze({
           adapter: adapter.kind,
           usable: true,
@@ -318,6 +359,7 @@ export function createRecoveryService(
     selectedKind = "none";
     probed = true;
     lastRefusal = "recovery.unavailable";
+    notify();
     return Object.freeze({
       adapter: "none",
       usable: false,
@@ -414,6 +456,18 @@ export function createRecoveryService(
   ): Promise<RecoveryStartupReport> {
     await ensureProbed();
     boundDocumentId = input.documentId;
+    if (selected !== null) {
+      try {
+        const stored = await selected.read(exportBindingKey(input.documentId));
+        if (stored !== null) {
+          const binding = stored.length > 2_048 ? null : decodeExportBinding(JSON.parse(stored));
+          if (binding !== null && binding.documentId === input.documentId) exportBinding = binding;
+          else lastRefusal = "recovery.export_binding_invalid";
+        }
+      } catch {
+        lastRefusal = "recovery.export_binding_invalid";
+      }
+    }
     const current = await readCandidate(input.documentId, "current");
     const previous = await readCandidate(input.documentId, "previous");
     const conflictsWithExportMarker =
@@ -431,6 +485,7 @@ export function createRecoveryService(
       conflictsWithExportMarker,
     );
     work.startupReportsProduced += 1;
+    notify();
     return Object.freeze({
       adapter: selectedKind,
       disposition,
@@ -469,6 +524,7 @@ export function createRecoveryService(
 
   async function performWrite(
     input: RecoveryMutationInput,
+    generation: number,
   ): Promise<RecoveryWriteReceipt> {
     const envelope = await buildEnvelope(input);
     const payload = JSON.stringify(envelope);
@@ -531,8 +587,13 @@ export function createRecoveryService(
         rotatedPreviousRevision: null,
       });
     }
-    if (input.revision === currentRevision) {
+    if (
+      input.documentId === boundDocumentId &&
+      input.revision === currentRevision &&
+      generation === writeGeneration
+    ) {
       cleanRevision = input.revision;
+      savedAt = envelope.savedAt;
       if (pendingRevision === input.revision) pendingRevision = null;
       work.writesCompleted += 1;
       lastRefusal = null;
@@ -567,12 +628,27 @@ export function createRecoveryService(
     queue.input = null;
     clearTimers();
     writeInFlight = true;
+    const generation = writeGeneration;
     try {
-      await ensureProbed();
-      return await performWrite(input);
+      return await serializeStorage(async () => {
+        await ensureProbed();
+        return await performWrite(input, generation);
+      });
+    } catch {
+      work.writesRefused += 1;
+      lastRefusal = "recovery.write_denied";
+      return Object.freeze({
+        outcome: "refused",
+        adapter: selectedKind,
+        revision: input.revision,
+        currentRevisionAtCompletion: currentRevision,
+        reasonCode: "recovery.write_denied",
+        rotatedPreviousRevision: null,
+      });
     } finally {
       writeInFlight = false;
       if (queuedNow() !== null) scheduleTimers();
+      notify();
     }
   }
 
@@ -591,12 +667,19 @@ export function createRecoveryService(
   }
 
   function noteMutation(input: RecoveryMutationInput): void {
+    if (boundDocumentId !== input.documentId) {
+      writeGeneration += 1;
+      cleanRevision = null;
+      savedAt = null;
+      if (exportBinding?.documentId !== input.documentId) exportBinding = null;
+    }
     boundDocumentId = input.documentId;
     currentRevision = input.revision;
     pendingRevision = input.revision;
     if (queue.input === null) work.writesScheduled += 1;
     queue.input = input;
     if (!writeInFlight) scheduleTimers();
+    notify();
   }
 
   async function flushRecoveryWrites(
@@ -607,24 +690,7 @@ export function createRecoveryService(
   }
 
   function exportBindingValid(binding: RecoveryExportBinding): boolean {
-    const raw: Readonly<Record<string, unknown>> = { ...binding };
-    const documentId = raw["documentId"];
-    const exportedAt = raw["exportedAt"];
-    const semanticHash = raw["semanticDocumentHash"];
-    const artifactSha = raw["artifactSha256"];
-    return (
-      raw["schema"] === RECOVERY_EXPORT_BINDING_SCHEMA &&
-      typeof documentId === "string" &&
-      documentId.length > 0 &&
-      isNonnegativeSafeInteger(raw["exportRevision"]) &&
-      typeof exportedAt === "string" &&
-      exportedAt.length > 0 &&
-      typeof semanticHash === "string" &&
-      SHA256_HEX.test(semanticHash) &&
-      isPositiveSafeInteger(raw["artifactByteLength"]) &&
-      typeof artifactSha === "string" &&
-      SHA256_HEX.test(artifactSha)
-    );
+    return decodeExportBinding(binding) !== null;
   }
 
   async function recordExportBinding(
@@ -663,13 +729,28 @@ export function createRecoveryService(
         reasonCode: "recovery.write_denied",
       });
     }
-    exportBinding = binding;
+    const adapter = selected;
+    let written: "written" | "quota" | "denied";
+    try {
+      written = await serializeStorage(async () => await adapter.writeCurrentWithRotation(
+        exportBindingKey(binding.documentId), exportBindingKey(binding.documentId, true), JSON.stringify(binding),
+      ));
+    } catch {
+      written = "denied";
+    }
+    if (written !== "written") {
+      work.exportBindingsRefused += 1;
+      lastRefusal = written === "quota" ? "recovery.quota_exceeded" : "recovery.write_denied";
+      notify();
+      return Object.freeze({ outcome: "refused", reasonCode: lastRefusal });
+    }
+    if (boundDocumentId === null || boundDocumentId === binding.documentId) exportBinding = binding;
     work.exportBindingsRecorded += 1;
+    notify();
     return Object.freeze({ outcome: "recorded" });
   }
 
   async function discardRecovery(documentId: DocumentId): Promise<void> {
-    await ensureProbed();
     /* A discard supersedes any write scheduled before it: without this, a
      * snapshot queued moments earlier fires after the user chose Discard
      * and resurrects the envelope on the next load (caught 2026-09-03 by
@@ -681,9 +762,25 @@ export function createRecoveryService(
       clearTimers();
       pendingRevision = null;
     }
-    if (selected === null) return;
-    await selected.remove(recoveryStorageKey(documentId, "current"));
-    await selected.remove(recoveryStorageKey(documentId, "previous"));
+    writeGeneration += 1;
+    try {
+      await serializeStorage(async () => {
+        await ensureProbed();
+        if (selected === null) throw new Error("recovery.unavailable");
+        await selected.remove(recoveryStorageKey(documentId, "current"));
+        await selected.remove(recoveryStorageKey(documentId, "previous"));
+        if (boundDocumentId === documentId) {
+          cleanRevision = null;
+          savedAt = null;
+          lastRefusal = null;
+        }
+      });
+    } catch (error) {
+      lastRefusal = selected === null ? "recovery.unavailable" : "recovery.write_denied";
+      throw error;
+    } finally {
+      notify();
+    }
   }
 
   function inspectRecovery(): RecoverySnapshot {

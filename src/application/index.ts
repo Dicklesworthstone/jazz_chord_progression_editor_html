@@ -4,6 +4,8 @@ export * from "./e0-interchange-v2-contract";
 export * from "./e0-transaction-driver";
 export * from "./x1-retirement-adapter";
 export * from "./studio-recovery";
+export * from "./studio-recovery-session";
+export * from "./studio-lifecycle";
 export * from "./e0-v2-port-normalization";
 export * from "./e0-interchange";
 export * from "./u2-chord-inspector-contract";

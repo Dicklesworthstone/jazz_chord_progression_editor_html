@@ -1,3 +1,4 @@
+import type { ComponentChildren } from "preact";
 import type { UiDiagnostic } from "../ui-contract";
 
 export type StudioPanelSide = "library" | "harmony";
@@ -946,6 +947,7 @@ export type StudioChartAnnotationPorts = Readonly<{
 }>;
 
 export type StudioShellProps = Readonly<{
+  documentActions?: ComponentChildren;
   view: StudioShellView;
   callbacks: StudioShellCallbacks;
   transport: StudioTransportCallbacks;
