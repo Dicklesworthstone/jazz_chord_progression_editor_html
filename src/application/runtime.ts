@@ -161,3 +161,5 @@ export type {
   StudioMidiExportRefusal,
   StudioMidiExportService,
 } from "./studio-midi-export";
+
+export { createStudioLocalReplacement, type StudioLocalReplacementService, type StudioLocalReplacementView } from "./studio-local-replacement";

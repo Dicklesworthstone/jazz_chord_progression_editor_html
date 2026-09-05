@@ -19,6 +19,8 @@
  * itself (the owner's published state carries no pending requests and
  * the idle transition).
  */
+import { parseStableId } from "../domain";
+import { createStudioLocalReplacementOwner, type StudioLocalReplacementOwner } from "./studio-local-replacement-owner";
 import {
   beginApplicationRequest,
   reduceEphemeralIntent,
@@ -26,21 +28,22 @@ import {
 } from "./application-state";
 import type {
   AppState,
+  ApplicationCommandDependencies,
+  DocumentTransitionState,
   ApplicationReplacementOrigin,
   EphemeralIntent,
 } from "./application-state-contract";
 import type {
   ImportRequestIdentity,
-  RetiringTransportDocumentTransition,
 } from "./application-interchange-owner-contract";
 import type { TransportCommandOutcome } from "../audio";
 import { SETTLED_TRANSPORT_STATUS } from "./studio-transport-status";
 
-export type BeginReplacementWorkflowResult =
+export type BeginReplacementWorkflowResult<Origin extends ApplicationReplacementOrigin = "canonical-import" | "legacy-import"> =
   | Readonly<{
       ok: true;
       identity: ImportRequestIdentity;
-      transition: RetiringTransportDocumentTransition;
+      transition: Omit<Exclude<DocumentTransitionState, { kind: "idle" }>, "kind" | "origin"> & Readonly<{ kind: "retiring-transport"; origin: Origin }>;
     }>
   | Readonly<{
       ok: false;
@@ -50,6 +53,7 @@ export type BeginReplacementWorkflowResult =
     }>;
 
 export type StudioReplacementWorkflow = Readonly<{
+  localPublication: StudioLocalReplacementOwner;
   expectTransportRetirement: (commandRequestId: number) => boolean;
   settleTransportRetirement: (outcome: TransportCommandOutcome) => void;
   /** Reserves identity only: preview never installs a request or retires audio. */
@@ -59,21 +63,19 @@ export type StudioReplacementWorkflow = Readonly<{
       Readonly<{ ok: true }> | Readonly<{ ok: false; code: string }>;
   updateLifecycleDialogPhase: (dialogId: string, phase: "open" | "committing" | "failed") =>
       Readonly<{ ok: true }> | Readonly<{ ok: false; code: string }>;
-  begin: (
+  begin: <Origin extends ApplicationReplacementOrigin>(
     input: Readonly<{
       candidateDocumentId: string;
       previewIdentity?: ImportRequestIdentity;
       undoDisposition: "retained" | "explicitly-unavailable";
-      origin: Extract<
-        ApplicationReplacementOrigin,
-        "canonical-import" | "legacy-import"
-      >;
+      origin: Origin;
     }>,
-  ) => BeginReplacementWorkflowResult;
+  ) => BeginReplacementWorkflowResult<Origin>;
   cancel: (identity: ImportRequestIdentity) => void;
 }>;
 
 export type StudioReplacementWorkflowAccess = Readonly<{
+  dependencies: ApplicationCommandDependencies;
   readState: () => AppState;
   installState: (next: AppState) => void;
   notifyListeners: () => void;
@@ -95,7 +97,9 @@ export function createStudioReplacementWorkflow(
     return identity;
   }
 
+  const localPublication = createStudioLocalReplacementOwner(access);
   return Object.freeze({
+    localPublication,
     expectTransportRetirement: (commandRequestId) => {
       const state = access.readState();
       if (state.documentTransition.kind !== "retiring-transport") return false;
@@ -154,6 +158,8 @@ export function createStudioReplacementWorkflow(
           code: "import.replacement_workflow_busy" as const,
         });
       }
+      const candidateId = parseStableId("document", input.candidateDocumentId);
+      if (!candidateId.ok) return Object.freeze({ ok: false as const, code: "import.replacement_workflow_begin_failed" as const });
       const identity = input.previewIdentity ?? allocateIdentity();
       if (identity === null ||
           (input.previewIdentity !== undefined && identity !== reservedIdentity) ||
@@ -166,7 +172,7 @@ export function createStudioReplacementWorkflow(
         state,
         request: Object.freeze({
           kind: "document-transition" as const,
-          id: requestId as never,
+          id: requestId,
           documentId: state.document.id,
           baseRevision: state.revision,
           status: "running" as const,
@@ -180,10 +186,10 @@ export function createStudioReplacementWorkflow(
       }
       const transition = Object.freeze({
         kind: "retiring-transport" as const,
-        requestId: requestId as never,
+        requestId: requestId,
         origin: input.origin,
         baseRevision: state.revision,
-        candidateDocumentId: input.candidateDocumentId as never,
+        candidateDocumentId: candidateId.value,
         undoDisposition: input.undoDisposition,
       });
       const transitioned = reduceEphemeralIntent({
@@ -204,11 +210,12 @@ export function createStudioReplacementWorkflow(
       return Object.freeze({
         ok: true as const,
         identity,
-        transition: transition as never,
+        transition,
       });
     },
 
     cancel: (identity) => {
+      localPublication.discard(identity);
       const state = access.readState();
       const settled = settleApplicationRequest({
         state,

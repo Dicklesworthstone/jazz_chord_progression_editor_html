@@ -189,3 +189,5 @@ export type {
   StudioTransportViewModel,
   StudioViewModel,
 } from "./studio-view-model";
+
+export { createStudioLocalReplacement, type StudioLocalReplacementService, type StudioLocalReplacementView } from "./studio-local-replacement";

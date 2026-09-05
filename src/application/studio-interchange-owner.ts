@@ -238,7 +238,8 @@ export function createExportRevisionMarkedState(
  */
 export function applyPreparedImportReplacementToLatestState(
   latest: AppState,
-  material: StudioPreparedImportReplacementMaterial,
+  material: Pick<StudioPreparedImportReplacementMaterial,
+    "document" | "newRevision" | "history" | "bookmarks" | "quickEntry" | "warningNotice">,
 ): AppState {
   const focusSequence = latest.nextSequence;
   let nextSequence = focusSequence + 1;

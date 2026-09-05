@@ -58,6 +58,8 @@ import {
   type StudioLifecycleView,
   type StudioDocumentImport,
   type StudioImportView,
+  type StudioLocalReplacementService,
+  type StudioLocalReplacementView,
 } from "../application/runtime";
 import {
   GROOVE_STYLE_IDS,
@@ -268,7 +270,7 @@ export type AppActions = Readonly<{
    * groove and tempo, and STOP a live run explicitly. The surface only
    * renders the returned step results.
    */
-  loadLibraryEntry: (entryId: string) => LoadProgressionLibraryEntryResult;
+  loadLibraryEntry: (entryId: string) => LoadProgressionLibraryEntryResult | null;
   /**
    * The MIDI import gesture, composed at the root. False here is honest —
    * a session whose composition wired no decoder hides the surface rather
@@ -371,6 +373,7 @@ type PendingEdit =
   | null;
 
 import { LifecycleExportDialog } from "./studio/LifecycleExportDialog";
+import { LocalReplacementDialog } from "./studio/LocalReplacementDialog";
 import { DocumentImportDialog } from "./studio/DocumentImportDialog";
 
 export type AppProps = Readonly<{
@@ -2871,7 +2874,7 @@ export function App({ snapshot, actions, startupNotice, documentActions }: AppPr
            * gesture's results; no component state feeds it.
            */
           const result = actions.loadLibraryEntry(entryId);
-          if (result.entry === null) return;
+          if (result === null || result.entry === null) return;
           if (result.cleared !== null) {
             recordEditResult(result.cleared, { kind: "delete" });
           }
@@ -3686,6 +3689,7 @@ export type StudioRootProps = Readonly<{
   recovery?: StudioRecoverySession | null;
   lifecycle?: StudioLifecycleService | null;
   documentImport?: StudioDocumentImport | null;
+  localReplacement?: StudioLocalReplacementService | null;
 }>;
 
 export function StudioRoot({
@@ -3696,7 +3700,16 @@ export function StudioRoot({
   recovery,
   lifecycle,
   documentImport,
+  localReplacement,
 }: StudioRootProps) {
+  const [replacementView, setReplacementView] = useState<StudioLocalReplacementView | null>(localReplacement?.getSnapshot() ?? null);
+  useEffect(() => {
+    if (localReplacement == null) return;
+    const publish = (): void => { setReplacementView(localReplacement.getSnapshot()); };
+    const unsubscribe = localReplacement.subscribe(publish);
+    publish();
+    return unsubscribe;
+  }, [localReplacement]);
   const [importView, setImportView] = useState<StudioImportView | null>(documentImport?.getSnapshot() ?? null);
   useEffect(() => {
     if (documentImport == null) return;
@@ -3772,6 +3785,10 @@ export function StudioRoot({
     <>
       <App
       documentActions={<>
+      {localReplacement == null ? null : <Button
+        id="studio-new-chart" label="New chart" type="button" variant="secondary" density="comfortable"
+        disabled={false} busy={false} describedBy={[]} invalid={false}
+        onAction={() => { void localReplacement.requestNew(); }} />}
       {documentImport == null ? null : <Button
         id="studio-import-chart" type="button" label="Import chart" variant="secondary"
         busy={false} disabled={false} density="comfortable" describedBy={[]} invalid={false}
@@ -3816,8 +3833,10 @@ export function StudioRoot({
         setRangeEdge: controller.setRangeEdge,
         setRangeEdgeBeat: controller.setRangeEdgeBeat,
         clearRange: controller.clearRange,
-        loadLibraryEntry: (entryId) =>
-          loadProgressionLibraryEntry(controller, entryId),
+        loadLibraryEntry: (entryId) => {
+          if (localReplacement != null) { void localReplacement.requestLesson(entryId); return null; }
+          return loadProgressionLibraryEntry(controller, entryId);
+        },
         midiImportAvailable: midiImportService !== null,
         readMidiFile: (fileName, bytes) =>
           midiImportService === null
@@ -3912,6 +3931,7 @@ export function StudioRoot({
     {recoveryRegion}
     {lifecycle == null || lifecycleView === null ? null : <LifecycleExportDialog service={lifecycle} view={lifecycleView} />}
     {documentImport == null || importView === null ? null : <DocumentImportDialog service={documentImport} view={importView} />}
+    {localReplacement == null || replacementView === null ? null : <LocalReplacementDialog service={localReplacement} view={replacementView} />}
     </>
   );
 }

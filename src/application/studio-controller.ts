@@ -7103,6 +7103,7 @@ function makeStudioComposition(
    * pending document-transition request + retiring-transport transition
    * the prepare port validates. */
   const replacementWorkflow = createStudioReplacementWorkflow({
+    dependencies,
     readState: () => state,
     installState: installOwnerState,
     notifyListeners: notify,

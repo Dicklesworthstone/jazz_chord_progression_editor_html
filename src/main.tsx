@@ -10,6 +10,7 @@ import {
   createStudioRecoveryStatusFeed,
   createStudioLifecycle,
   createStudioDocumentImport,
+  createStudioLocalReplacement,
   createX1SerializedTransportRetirementAdapter,
   applicationHistoryRetainedByteEstimator,
   validateDocumentSemantics,
@@ -226,6 +227,11 @@ if (creation.ok) {
     exportCurrent: () => { void lifecycle.openExport(); },
   });
 
+  const localReplacement = createStudioLocalReplacement({
+    composition, recovery: recoveryService, retirement: replacementRetirement,
+    exportCurrent: () => { void lifecycle.openExport(); },
+  });
+
   render(
     <StudioRoot
       controller={controller}
@@ -235,6 +241,7 @@ if (creation.ok) {
       recovery={recoveryBinding}
       lifecycle={lifecycle}
       documentImport={documentImport}
+      localReplacement={localReplacement}
     />,
     mountPoint,
   );

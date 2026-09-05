@@ -1,3 +1,4 @@
+import { selectReplacementConfirmation } from "./studio-replacement-confirmation";
 import { createProductionStableIdFactory, decodeDocumentShape, preflightDocumentImportBytes } from "../domain";
 import { migrateLegacyJson } from "../compatibility";
 import { parseChartText, parseChordSymbol, resolveChord } from "../theory";
@@ -107,13 +108,7 @@ export function createStudioDocumentImport(options: Readonly<{
     return state.document.id === prepared.identity.documentId && state.revision === prepared.identity.baseRevision;
   }
   function confirmationFacts(): Pick<StudioImportView, "confirmationRequired" | "exportRecommended"> {
-    const state = composition.readApplicationState();
-    const status = options.recovery.inspectRecovery();
-    const unexported = state.exportRevision !== state.revision;
-    const unrecovered = status.documentId !== state.document.id || status.cleanRevision !== state.revision;
-    const nonempty = state.document.sections.some((section) => section.measures.some((measure) => measure.events.length > 0));
-    const active = ["starting", "playing", "paused", "stopping"].includes(state.transport.status);
-    return { confirmationRequired: nonempty && (unexported || unrecovered || active), exportRecommended: unexported && unrecovered };
+    return selectReplacementConfirmation(composition.readApplicationState(), options.recovery.inspectRecovery());
   }
   async function previewSource(source: ImportSourceHandle, hint: ImportFormatHint): Promise<void> {
     if (!view.open || !hosted() || view.phase === "committing") return;

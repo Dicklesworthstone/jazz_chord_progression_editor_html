@@ -35,6 +35,11 @@ import {
   type X1ReplacementRetirementAdapter,
 } from "./e0-interchange-contract";
 
+export type LocalReplacementRetirementRequest = Readonly<Omit<RetireImportReplacementRequest, "sourceFormat"> & { origin: "new" | "lesson" }>;
+export type StudioReplacementRetirementAdapter = X1ReplacementRetirementAdapter & Readonly<{
+  retireLocalReplacement: (request: LocalReplacementRetirementRequest) => Promise<unknown>;
+}>;
+
 export function createX1SerializedTransportRetirementAdapter(
   transport: TransportService,
   /** The composition's single monotonic command-ID source — the same
@@ -45,18 +50,13 @@ export function createX1SerializedTransportRetirementAdapter(
     beforeSubmit: (commandRequestId: number) => boolean;
     settled: (outcome: TransportCommandOutcome) => void;
   }>,
-): X1ReplacementRetirementAdapter {
+): StudioReplacementRetirementAdapter {
   // replace-plan(null) emits no notification. A0 correctly retains its last
   // accepted generation. Remember ONLY this adapter's proven retirement chain
   // so another replacement can retire the next empty epoch without inventing
   // a notification or accepting an unrelated generation advance.
   let covered: Readonly<{ requested: number; physical: number }> | null = null;
-  return Object.freeze({
-    /* The adapter contract's return is `unknown` by design: the driver
-     * judges every envelope. */
-    retireImportReplacement: async (
-      request: RetireImportReplacementRequest,
-    ): Promise<unknown> => {
+  const retire = async (request: RetireImportReplacementRequest | LocalReplacementRetirementRequest): Promise<unknown> => {
       const before = transport.inspectTransport();
       if (before.state === "locked") {
         /* Vacuous retirement: a locked transport has never opened an
@@ -151,6 +151,6 @@ export function createX1SerializedTransportRetirementAdapter(
           }),
         }),
       });
-    },
-  });
+  };
+  return Object.freeze({ retireImportReplacement: retire, retireLocalReplacement: retire });
 }
