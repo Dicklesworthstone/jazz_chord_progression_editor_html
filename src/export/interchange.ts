@@ -1,9 +1,10 @@
-import { type DomainPath } from "../domain";
+import { compareDomainPaths, type DomainPath } from "../domain";
 import {
   CANONICAL_JSON_FILENAME_EXTENSION,
   LEAD_SHEET_TEXT_ARTIFACT_SCHEMA,
   LEAD_SHEET_TEXT_FILENAME_EXTENSION,
   LEAD_SHEET_TEXT_LOSS_REPORT_SCHEMA,
+  LEAD_SHEET_TEXT_LOSS_CODES,
   LEAD_SHEET_TEXT_MEDIA_TYPE,
   LEAD_SHEET_TEXT_EXPORT_POLICY_ID,
   LEAD_SHEET_TEXT_EXPORT_POLICY_VERSION,
@@ -191,10 +192,11 @@ export function createLeadSheetTextExportCoordinator(
         );
       }
 
+      const escapedName = sec.name.replaceAll("\\", "\\\\").replaceAll("]", "\\]");
       const secHeader =
         sec.annotation.length > 0
-          ? `[${sec.name}] ${JSON.stringify(sec.annotation)}`
-          : `[${sec.name}]`;
+          ? `[${escapedName}] ${JSON.stringify(sec.annotation)}`
+          : `[${escapedName}]`;
       lines.push(secHeader);
       const sectionBars: string[] = [];
 
@@ -282,9 +284,11 @@ export function createLeadSheetTextExportCoordinator(
           }
 
           let chordToken: string;
+          // T0 v1 repeats cannot carry annotations. Preserve annotated repeats
+          // as literal chords instead of emitting syntax T0 must reject.
           if (
             prevCanonicalChordText !== null &&
-            prevCanonicalChordText === formattedChord
+            prevCanonicalChordText === formattedChord && ev.annotation.length === 0
           ) {
             chordToken = "/";
           } else {
@@ -385,6 +389,8 @@ export function createLeadSheetTextExportCoordinator(
       "lead-sheet-text",
     );
 
+    lossItems.sort((left, right) => compareDomainPaths(left.path, right.path) ||
+      LEAD_SHEET_TEXT_LOSS_CODES.indexOf(left.code) - LEAD_SHEET_TEXT_LOSS_CODES.indexOf(right.code));
     const lossReport: LeadSheetTextLossReport = Object.freeze({
       schema: LEAD_SHEET_TEXT_LOSS_REPORT_SCHEMA,
       policyId: LEAD_SHEET_TEXT_EXPORT_POLICY_ID,

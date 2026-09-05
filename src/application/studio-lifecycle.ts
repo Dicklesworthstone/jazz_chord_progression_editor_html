@@ -1,7 +1,10 @@
 import { decodeDocumentShape, documentsSemanticallyEqual } from "../domain";
-import { createCanonicalJsonExportCoordinator, sanitizeExportFilename,
-  type HashBytes, type StartPreparedExportDelivery } from "../export";
+import { createCanonicalJsonExportCoordinator, createLeadSheetTextExportCoordinator,
+  sanitizeExportFilename, supportedDocumentProjectionEquals, LEAD_SHEET_TEXT_LOSS_CODES,
+  type ExportDeliveryArtifactBinding, type HashBytes, type LeadSheetTextLossCode,
+  type PreparedExportDeliveryRequest, type StartPreparedExportDelivery } from "../export";
 import type { RecoveryService } from "../persistence";
+import { formatChordSymbol, parseChartText } from "../theory";
 import { validateDocumentSemantics } from "./document-validation";
 import { createPreparedCanonicalExportDeliveryRegistry } from "./e0-interchange";
 import { createE0V2ExportDeliveryClickDriver, createE0V2ExportDeliveryPrepareDriver,
@@ -11,6 +14,8 @@ import type { StudioComposition } from "./studio-controller";
 
 export type StudioLifecycleView = Readonly<{
   dialog: "export" | null;
+  format: "canonical-json" | "lead-sheet-text";
+  losses: readonly Readonly<{ label: string; count: number }>[];
   phase: "preparing" | "ready" | "delivering" | "complete" | "failed";
   filename: string | null;
   byteLength: number | null;
@@ -21,31 +26,48 @@ export type StudioLifecycleView = Readonly<{
 export type StudioLifecycleService = Readonly<{
   getSnapshot: () => StudioLifecycleView;
   subscribe: (listener: () => void) => () => void;
-  openExport: () => Promise<void>;
+  openExport: (format?: StudioLifecycleView["format"]) => Promise<void>;
   deliverCanonicalExport: () => Promise<void>;
+  deliverTextExport: () => Promise<void>;
   cancelLifecycleDialog: () => void;
 }>;
 
 const DIALOG_ID = "studio-lifecycle-export";
+const LOSS_LABELS: Readonly<Record<LeadSheetTextLossCode, string>> = Object.freeze({
+  "text.loss.stable_identities": "Stable chart, section, measure, and chord identities",
+  "text.loss.playback_settings": "Instruments, groove, volume, reverb, and count-in settings",
+  "text.loss.derived_analysis": "Contextual analysis",
+  "text.loss.section_key_override": "Section key overrides",
+  "text.loss.section_voice_leading_boundary": "Section voice-leading boundaries",
+  "text.loss.source_symbol_alias": "Original chord-symbol aliases (replaced by canonical spellings)",
+  "text.loss.auto_voicing_policy": "Auto voicing policies",
+  "text.loss.manual_voicing": "Exact Manual pitches and octaves",
+  "text.loss.frozen_voicing": "Exact Frozen pitches, octaves, and generator metadata",
+});
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 /** Treat the adapter's completion as untrusted even after the driver's envelope check. */
-function isExactCanonicalDelivery(value: unknown, binding: CanonicalExportPreparationBinding): value is MarkerEligibleCanonicalExportDelivery {
+function isExactDelivery(value: unknown, binding: ExportDeliveryArtifactBinding): boolean {
   if (!isRecord(value) || !isRecord(value["artifact"])) return false;
   const artifact = value["artifact"];
   if (Object.keys(value).length !== 9 || Object.keys(artifact).length !== 5 ||
       value["ok"] !== true || value["bytesOffered"] !== binding.byteLength ||
       value["cleanup"] !== "complete" || value["outstandingOwnedResources"] !== 0 ||
-      artifact["kind"] !== "canonical-json" || artifact["sourceDocumentId"] !== binding.documentId ||
+      artifact["kind"] !== binding.kind || artifact["sourceDocumentId"] !== binding.sourceDocumentId ||
       artifact["filename"] !== binding.filename || artifact["byteLength"] !== binding.byteLength ||
       artifact["semanticDocumentHash"] !== binding.semanticDocumentHash) return false;
   return (value["outcome"] === "handed-off" && value["channel"] === "object-url-download" &&
     value["objectUrlsCreated"] === 1 && value["objectUrlsRevoked"] === 1) ||
     (value["outcome"] === "completed" && value["channel"] === "file-system-access" &&
     value["objectUrlsCreated"] === 0 && value["objectUrlsRevoked"] === 0);
+}
+
+function isExactCanonicalDelivery(value: unknown, binding: CanonicalExportPreparationBinding): value is MarkerEligibleCanonicalExportDelivery {
+  return isExactDelivery(value, { kind: "canonical-json", sourceDocumentId: binding.documentId,
+    filename: binding.filename, byteLength: binding.byteLength, semanticDocumentHash: binding.semanticDocumentHash });
 }
 
 /** Typed, composition-owned workflow; Preact receives no bytes or owner ports. */
@@ -64,13 +86,23 @@ export function createStudioLifecycle(options: Readonly<{
     semanticallyEqualDocuments: documentsSemanticallyEqual,
     hashBytes: async (bytes) => ({ ok: true, digest: await options.hashBytes(bytes) }),
     sanitizeExportFilename });
+  const encodeText = createLeadSheetTextExportCoordinator({ formatChordSymbol, parseChartText,
+    supportedDocumentProjectionEquals, sanitizeExportFilename });
   let view: StudioLifecycleView = Object.freeze({ dialog: null, phase: "ready",
+    format: "canonical-json", losses: Object.freeze([]),
     filename: null, byteLength: null, revision: null, message: null });
   const listeners = new Set<() => void>();
   let sequence = 0;
   let preparing = false;
   let preparationId: CanonicalExportPreparationId | null = null;
   let artifact: Readonly<{ binding: CanonicalExportPreparationBinding; sha256: string }> | null = null;
+  let textArtifact: Readonly<{ request: PreparedExportDeliveryRequest; revision: number }> | null = null;
+
+  function abandonCanonicalPreparation(): void {
+    if (preparationId !== null) registry.abandonPreparation(preparationId);
+    preparationId = null;
+    artifact = null;
+  }
 
   function publish(patch: Partial<StudioLifecycleView>): void {
     view = Object.freeze({ ...view, ...patch });
@@ -92,18 +124,48 @@ export function createStudioLifecycle(options: Readonly<{
       listeners.add(listener);
       return () => { listeners.delete(listener); };
     },
-    openExport: async () => {
+    openExport: async (format = "canonical-json") => {
       if (preparing || view.phase === "delivering" || composition.readApplicationState().dialogs.some((dialog) => dialog.id === DIALOG_ID)) return;
       if (sequence >= Number.MAX_SAFE_INTEGER - 1) { fail("export.preparation_sequence_exhausted", "The export request sequence is exhausted"); return; }
       const pushed = composition.replacementWorkflow.applyLifecycleIntent({ kind: "push-dialog", dialog: {
         id: DIALOG_ID, kind: "lifecycle-export", phase: "open", blocksHistory: false, requestId: null,
       } });
       if (!pushed.ok) { fail(pushed.code, "The export dialog could not be opened"); return; }
+      abandonCanonicalPreparation();
+      textArtifact = null;
       preparing = true;
       const requestId = ++sequence;
       const state = composition.readApplicationState();
-      publish({ dialog: "export", phase: "preparing", filename: null, byteLength: null,
+      publish({ dialog: "export", phase: "preparing", format, losses: Object.freeze([]), filename: null, byteLength: null,
         revision: state.revision, message: null });
+      if (format === "lead-sheet-text") {
+        try {
+          const hasAnalysis = state.document.sections.some((section) => section.measures.some((measure) =>
+            measure.events.some((event) => composition.controller.readEventAnalysis(event.id) !== null)));
+          const encoded = encodeText({ document: state.document, accidentalStyle: "ascii",
+            contextualAnalysis: hasAnalysis ? "present" : "none" });
+          if (!encoded.ok) {
+            fail(encoded.refusal.code, `Chart text could not be prepared at ${JSON.stringify(encoded.refusal.path)}. Export JSON to keep the complete chart`);
+            phase("failed");
+            return;
+          }
+          const value = encoded.value;
+          textArtifact = { revision: state.revision, request: Object.freeze({
+            binding: Object.freeze({ kind: "lead-sheet-text", sourceDocumentId: value.sourceDocumentId,
+              filename: value.filename, byteLength: value.byteLength, semanticDocumentHash: null }),
+            privateBytes: new TextEncoder().encode(value.text), preference: "download-only",
+          }) };
+          publish({ phase: "ready", filename: value.filename, byteLength: value.byteLength,
+            losses: Object.freeze(LEAD_SHEET_TEXT_LOSS_CODES.filter((code) => value.lossReport.countsByCode[code] > 0)
+              .map((code) => Object.freeze({ label: LOSS_LABELS[code], count: value.lossReport.countsByCode[code] }))) });
+        } catch {
+          fail("export.text_preparation_failed", "Chart text could not be prepared. Close and try again, or export JSON");
+          phase("failed");
+        } finally {
+          preparing = false;
+        }
+        return;
+      }
       const preparedDigest: { sha256: string | null } = { sha256: null };
       const prepare = createE0V2ExportDeliveryPrepareDriver(composition.interchangeOwner, {
         ...registry,
@@ -144,7 +206,7 @@ export function createStudioLifecycle(options: Readonly<{
           fail("export.canonical_preparation_failed", "JSON could not be prepared. The chart and export marker are unchanged; close and try again");
           phase("failed");
         }
-        if (preparationId !== null) registry.abandonPreparation(preparationId);
+        abandonCanonicalPreparation();
       } finally {
         preparing = false;
       }
@@ -154,13 +216,53 @@ export function createStudioLifecycle(options: Readonly<{
       const popped = composition.replacementWorkflow.applyLifecycleIntent({ kind: "pop-dialog", dialogId: DIALOG_ID });
       if (!popped.ok) { fail(popped.code, "Close the topmost dialog first"); return; }
       sequence += 1;
-      if (preparationId !== null) registry.abandonPreparation(preparationId);
-      preparationId = null;
-      artifact = null;
+      abandonCanonicalPreparation();
+      textArtifact = null;
       publish({ dialog: null, message: null });
     },
+    deliverTextExport: async () => {
+      if (view.format !== "lead-sheet-text" || view.phase !== "ready" || textArtifact === null) return;
+      const selected = textArtifact;
+      textArtifact = null;
+      const state = composition.readApplicationState();
+      if (state.document.id !== selected.request.binding.sourceDocumentId || state.revision !== selected.revision) {
+        fail("export.prepared_text_stale", "The chart changed after preparation. Close and export again");
+        phase("failed");
+        return;
+      }
+      if (!phase("committing")) {
+        fail("ephemeral.intent_invalid", "The export dialog is no longer current");
+        return;
+      }
+      publish({ phase: "delivering", message: null });
+      try {
+        // The same real E0 adapter consumes these single-use bytes synchronously
+        // within the click. Text never enters the canonical marker registry.
+        const started = options.startDelivery(selected.request);
+        if (!isRecord(started) || Object.keys(started).length !== 1 || !(started["completion"] instanceof Promise)) {
+          throw new Error("export.delivery_result_invalid");
+        }
+        const delivered: unknown = await started["completion"];
+        if (!isExactDelivery(delivered, selected.request.binding)) {
+          const code = isRecord(delivered) && typeof delivered["code"] === "string" && delivered["code"].length <= 128
+            ? delivered["code"] : isRecord(delivered) && delivered["outcome"] === "cancelled"
+              ? "export.delivery_cancelled" : "export.delivery_result_invalid";
+          fail(code, "Delivery could not be verified. Close and try again");
+          phase("failed");
+          return;
+        }
+        if (!phase("open")) {
+          fail("export.dialog_stale", "The browser received the text file, but this export dialog is no longer current");
+          return;
+        }
+        publish({ phase: "complete", message: "Handed off to your browser. Check its downloads for the text file. Export JSON to keep a complete portable copy; the JSON export marker is unchanged." });
+      } catch {
+        fail("export.delivery_result_invalid", "The download could not be verified. Close and try again");
+        phase("failed");
+      }
+    },
     deliverCanonicalExport: async () => {
-      if (view.phase !== "ready" || artifact === null || preparationId === null) return;
+      if (view.format !== "canonical-json" || view.phase !== "ready" || artifact === null || preparationId === null) return;
       const selected = artifact;
       const id = preparationId;
       artifact = null;

@@ -54,6 +54,7 @@ This table describes the repository build. Recovery, **Import chart**, and **Exp
 | Recovery | Best-effort IndexedDB with localStorage fallback, revision-bound writes, Keep/Discard on reload, previous-copy fallback, and visible storage failures |
 | Chart import | Local Changes/legacy JSON files and pasted data get a bounded preview before replacement; migration reports disclose retained data, confirmation retires playback, and imported document IDs survive recovery |
 | JSON export | **Export JSON** prepares and validates a portable chart, then **Download JSON** hands it to the browser; only exact successful delivery advances the export marker |
+| Chart-text export | **Export text** checks the supported chart structure and lists lost voicing, identity, analysis, and playback data before download; it leaves the JSON export marker unchanged |
 | MIDI export | Deterministic Standard MIDI files with preview, blocker cards, and real downloads (E1 + U7) |
 | Share links | Copy link encodes the chart into a local `#zdoc=` fragment; opening one crosses the same refusing decoders as typed text |
 | Reproducible build contract | Source-driven build, generated-file banner, byte-equality checks, size budget, CSP hashes, license inventory |
@@ -231,7 +232,7 @@ hold for its named packages, and mixed rows say what remains.
 | Gate | Status | State |
 |---|---|---|
 | Foundation (F0–F3, T0–T1) | Complete | Pinned toolchain, standalone artifact, total decoder, chord parser/resolver, semantic publication, independent theory corpus — all package epics closed with evidence gates in `verify` |
-| Reliable studio | Largely current | Chart editing, commands/history, deterministic transport/audio, voicing engines, and MIDI import/export ship today. Recovery, JSON/legacy import and JSON export are connected in the repository build. Still open: chart-text export UI, manual/frozen voicing editing (U2), X1 verify leg, and the remaining lifecycle dialogs (U5) |
+| Reliable studio | Largely current | Chart editing, commands/history, deterministic transport/audio, voicing engines, and MIDI import/export ship today. Recovery, JSON/legacy import, JSON export, and chart-text export are connected in the repository build. Still open: manual/frozen voicing editing (U2), X1 verify leg, and the remaining lifecycle dialogs (U5) |
 | Musical intelligence | Reduced subset shipped | The live Harmony Lens/roman numerals/next options are an honest narrower substitute; the H0/H1 evidence-tier engines, transposition, tonal journeys, Atlas, fingerprints, and the Continuation Engine remain planned |
 | Advanced craft | Early pieces shipped | V2 progression optimizer, E1 MIDI export, and the U7 export workflow landed ahead of schedule; route/constraint search, reharmonization, guide-tone/color/rhythm/tension/sequence tools, and practice workflows remain planned |
 | Physical instruments | In progress | Clarinet v2, flute v2, and four plucked models ship behind the model-acceptance ledger; trumpet and physical vibes/bass remain dark pending performance and owner listening |
@@ -284,6 +285,8 @@ The runtime boundary is intentionally small:
 
 The studio keeps edits in browser-local, best-effort **Recovery** using IndexedDB or a localStorage fallback. Reload offers Keep/Discard; an unreadable current copy can fall back to the previous copy. An unanswered offer preserves the stored copies until a decision is made. Storage failure stays visible and does not block editing. **Export JSON** makes a portable versioned file; preparing or cancelling an export changes no marker. “Handed off” means the browser received the file, so check its downloads for the actual file.
 
+**Export text** makes a readable lead sheet with canonical chord symbols, exact durations, sections, annotations, and global key, meter, and tempo. Its preview lists the data text cannot preserve. Custom chords and pickup or incomplete measures require JSON; text export refuses them without changing the chart. Downloading text does not mark the chart as exported to JSON.
+
 All exports require an explicit gesture. **Copy link** encodes the chart, title, tempo, and groove into a local `#zdoc=` URL fragment. No request is made: the fragment leaves the page only when you share the link. Opening it crosses bounded decoders, and a refusal leaves the starter chart with a diagnostic. Imported data is never evaluated or inserted as HTML.
 
 Local recovery is not cloud backup. Keep JSON copies of important charts; browser storage can be unavailable, cleared, or limited by quota.
@@ -295,8 +298,8 @@ Local recovery is not cloud backup. Keep JSON copies of important charts; browse
 - You cannot choose, edit, or freeze a voicing; the V0/V1/V2 engines pick
   voicings automatically (the exact manual/frozen editor is the open U2
   package).
-- Chart-text export still needs its UI connection. JSON/legacy import,
-  JSON export, share links, and MIDI export are available in the repository build.
+- JSON/legacy import, JSON and chart-text export, share links, and MIDI export
+  are available in the repository build; the remaining lifecycle dialogs are open.
 - Recovery is best-effort browser storage. Keep/Discard and fallback work,
   but the complete U5 lifecycle/confirmation package is still in progress.
 - Legacy application behavior was deliberately removed rather than copied

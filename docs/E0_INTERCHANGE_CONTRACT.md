@@ -250,8 +250,10 @@ not drop unsupported structure to obtain output.
 
 E0 emits `/` only when the current canonical chord text is byte-identical to
 the immediately preceding event's canonical chord text in the same section.
-The repeat carries the current event's explicit duration and nonempty
-annotation; it never copies either. Repeat eligibility resets at every section,
+The repeat carries the current event's explicit duration; it never copies the
+previous event's duration or annotation. An event with a nonempty annotation
+uses a literal chord because T0 version 1 does not accept annotated repeats
+(T0 contract §5.6). Repeat eligibility resets at every section,
 and the supported-projection comparison ignores parser-only repeat origin while
 still comparing the resolved chord. No farther-back or cross-section search is
 performed.

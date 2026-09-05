@@ -1,5 +1,6 @@
 export * from "./interchange";
 export * from "./interchange-contract";
+export { supportedDocumentProjectionEquals } from "./chart-text-projection";
 export { prepareCanonicalJsonExport, serializeCanonicalDocument } from "./interchange-json";
 export * from "./midi-export";
 export * from "./midi-export-contract";

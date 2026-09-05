@@ -25,6 +25,7 @@ import {
   createLeadSheetTextExportCoordinator,
   sanitizeExportFilename,
 } from "../../src/export/interchange";
+import { supportedDocumentProjectionEquals } from "../../src/export";
 import {
   formatChordSymbol,
   parseChartText,
@@ -82,7 +83,7 @@ async function roundTrip(goldenFile: string): Promise<{
   const exportText = createLeadSheetTextExportCoordinator({
     formatChordSymbol,
     parseChartText,
-    supportedDocumentProjectionEquals: () => true,
+    supportedDocumentProjectionEquals,
     sanitizeExportFilename,
   });
   const exported = exportText({

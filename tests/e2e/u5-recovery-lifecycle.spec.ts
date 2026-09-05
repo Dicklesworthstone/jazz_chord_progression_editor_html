@@ -67,6 +67,29 @@ async function recoveryEntries(page: Page): Promise<[string, string][]> {
   }));
 }
 
+async function importCanonicalFile(page: Page, file: string): Promise<void> {
+  await page.locator("#studio-import-chart").click();
+  await page.locator("#studio-import-file").setInputFiles(join(process.cwd(), file));
+  await expect(page.locator("#studio-import-commit")).toBeEnabled();
+  await page.locator("#studio-import-commit").click();
+  await page.locator("#studio-import-confirm").click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+}
+
+async function downloadJson(page: Page): Promise<unknown> {
+  await page.locator("#studio-export-json").click();
+  await expect(page.locator("#studio-lifecycle-download")).toBeEnabled();
+  const pending = page.waitForEvent("download");
+  await page.locator("#studio-lifecycle-download").click();
+  const download = await pending;
+  const bytes = await readFile(await download.path(), "utf8");
+  await expect(page.getByRole("dialog").getByRole("status")).toContainText("Handed off to your browser");
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  const parsed: unknown = JSON.parse(bytes);
+  return parsed;
+}
+
 for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) {
   test.describe(`U5 real recovery ${String(viewport.width)}px`, () => {
     test.use({ viewport });
@@ -236,6 +259,87 @@ for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 
       await expect(page.locator("#studio-document-title")).toHaveValue(title);
       await page.keyboard.press("Escape");
       await expect(page.locator("#studio-export-json")).toBeFocused();
+    });
+  });
+
+  test.describe(`U5 text export ${String(viewport.width)}px`, () => {
+    test.use({ viewport });
+    test.beforeEach(async ({ page }) => {
+      await page.route("**/*", async route => {
+        if (route.request().url() === artifact) await route.continue();
+        else await route.abort("blockedbyclient");
+      });
+      await page.goto(artifact);
+      await expect(page.locator('[data-app-ready="true"]')).toBeVisible();
+    });
+
+    test("real text download discloses losses, preserves exact chart values and keeps the older JSON marker", async ({ page }, info) => {
+      await importCanonicalFile(page, "tests/fixtures/lifecycle-dialogs/text-export-document.json");
+      const source = await downloadJson(page);
+      if (typeof source !== "object" || source === null) throw new Error("SOURCE_DOCUMENT_MISSING");
+      await retitle(page, "Text after JSON");
+      await expect(page.getByText("Changed since export", { exact: true })).toBeVisible();
+      const bindings = (await recoveryEntries(page)).filter(([key]) => key.startsWith("changes.recovery-export-binding.v1:"));
+      expect(bindings).toHaveLength(1);
+      await page.locator("#studio-export-text").click();
+      const dialog = page.getByRole("dialog", { name: "Export chart as text" });
+      await expect(dialog).toBeVisible();
+      const losses = dialog.getByRole("region", { name: "Text export losses" });
+      await expect(losses).toContainText("Exact Manual pitches and octaves: 1");
+      await expect(losses).toContainText("Exact Frozen pitches, octaves, and generator metadata: 1");
+      await expect(losses).toContainText("Section key overrides: 1");
+      await expect(losses).toContainText("Original chord-symbol aliases (replaced by canonical spellings): 1");
+      const pending = page.waitForEvent("download");
+      await page.locator("#studio-lifecycle-download").click();
+      const download = await pending;
+      expect(download.suggestedFilename()).toBe("Text after JSON.changes.txt");
+      const bytes = await readFile(await download.path(), "utf8");
+      const literal = await readFile(join(process.cwd(), "tests/fixtures/lifecycle-dialogs/text-export-expected.txt"), "utf8");
+      const expected = literal.slice(literal.indexOf("\n"));
+      expect(bytes).toBe('@title "Text after JSON"' + expected);
+      await info.attach("downloaded-chart.txt", { contentType: "text/plain", body: bytes });
+      await expect(dialog.getByRole("status")).toContainText("Handed off to your browser");
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      expect((await recoveryEntries(page)).filter(([key]) => key.startsWith("changes.recovery-export-binding.v1:"))).toEqual(bindings);
+      await page.keyboard.press("Escape");
+      await expect(dialog).toHaveCount(0);
+      await expect(page.locator("#studio-export-text")).toBeFocused();
+      await expect(page.getByText("Changed since export", { exact: true })).toBeVisible();
+      expect(await downloadJson(page)).toEqual({ ...source, title: "Text after JSON" });
+      await page.locator("#studio-undo").click();
+      await expect(page.locator("#studio-document-title")).toHaveValue('Text "round trip"');
+    });
+
+    test("Cancel and real URL allocation failure leave text undelivered and the marker untouched", async ({ page }) => {
+      const downloads: string[] = [];
+      page.on("download", download => downloads.push(download.suggestedFilename()));
+      await page.locator("#studio-export-text").click();
+      await expect(page.locator("#studio-lifecycle-download")).toBeEnabled();
+      await page.keyboard.press("Escape");
+      await expect(page.locator("#studio-export-text")).toBeFocused();
+      expect(downloads).toEqual([]);
+      await page.evaluate(() => {
+        URL.createObjectURL = () => { throw new DOMException("Resource creation denied", "NotAllowedError"); };
+      });
+      await page.locator("#studio-export-text").click();
+      await page.locator("#studio-lifecycle-download").click();
+      await expect(page.getByRole("dialog").getByRole("alert")).toContainText("export.delivery_activation_failed");
+      await expect(page.getByText(/^Exported at revision /u)).toHaveCount(0);
+      expect(downloads).toEqual([]);
+      expect((await recoveryEntries(page)).filter(([key]) => key.startsWith("changes.recovery-export-binding.v1:"))).toEqual([]);
+      await page.keyboard.press("Escape");
+      await expect(page.locator("#studio-export-text")).toBeFocused();
+    });
+
+    test("unsupported Custom harmony refuses at its exact path and JSON still preserves it", async ({ page }) => {
+      await importCanonicalFile(page, "tests/fixtures/interchange/goldens/nested.changes.json");
+      await page.locator("#studio-export-text").click();
+      await expect(page.getByRole("dialog").getByRole("alert")).toContainText("export.text.custom_chord_unsupported");
+      await expect(page.getByRole("dialog").getByRole("alert")).toContainText('["sections",0,"measures",1,"events",0,"chord"]');
+      await expect(page.locator("#studio-lifecycle-download")).toBeDisabled();
+      await page.keyboard.press("Escape");
+      const expected: unknown = JSON.parse(await readFile(join(process.cwd(), "tests/fixtures/interchange/goldens/nested.changes.json"), "utf8"));
+      expect(await downloadJson(page)).toEqual(expected);
     });
   });
 }
