@@ -144,3 +144,115 @@ describe("U5 canonical export through production encoder, registry, A0 CAS and A
     expect(h.recovery.service.inspectRecovery().lastRefusal).toBe("recovery.quota_exceeded");
   });
 });
+
+describe("U5 text export through the real encoder and application workflow", () => {
+  test("the delivery adapter cannot rewrite the binding used to verify its own receipt", async () => {
+    const mutation: { changed: boolean | null; replaced: boolean | null } = { changed: null, replaced: null };
+    const h = harness(request => {
+      mutation.changed = Reflect.set(request.binding, "filename", "substituted.changes.txt");
+      mutation.replaced = Reflect.set(request, "binding", { ...request.binding, filename: "substituted.changes.txt" });
+      return { completion: Promise.resolve({ ...delivery(request), artifact: {
+        ...request.binding, filename: "substituted.changes.txt",
+      } }) };
+    });
+    await h.service.openExport("lead-sheet-text");
+    await h.service.deliverTextExport();
+    expect(mutation.changed).toBe(false);
+    expect(mutation.replaced).toBe(false);
+    expect(h.service.getSnapshot().phase).toBe("failed");
+    expect(h.service.getSnapshot().message).toContain("export.delivery_result_invalid");
+    expect(h.composition.readApplicationState().exportRevision).toBeNull();
+  });
+
+  test("text handoff keeps an older canonical marker and its exact durable binding", async () => {
+    const h = harness();
+    await h.service.openExport();
+    await h.service.deliverCanonicalExport();
+    h.service.cancelLifecycleDialog();
+    h.composition.controller.setTitle("Text after JSON");
+    const before = h.composition.readApplicationState();
+    const stored = h.recovery.service.inspectRecovery().exportBinding;
+    await h.service.openExport("lead-sheet-text");
+    expect(h.service.getSnapshot()).toMatchObject({ phase: "ready", format: "lead-sheet-text", filename: "Text after JSON.changes.txt" });
+    expect(h.service.getSnapshot().losses).toContainEqual({ label: "Auto voicing policies", count: 10 });
+    await h.service.deliverCanonicalExport();
+    expect(h.calls).toHaveLength(1);
+    const pending = h.service.deliverTextExport();
+    expect(h.calls).toHaveLength(2); // adapter started inside this synchronous call
+    await pending;
+    expect(h.service.getSnapshot().phase).toBe("complete");
+    const request = h.calls[1];
+    if (request === undefined) throw new Error("NO_TEXT_DELIVERY");
+    expect(request.binding).toMatchObject({ kind: "lead-sheet-text", semanticDocumentHash: null });
+    expect(new TextDecoder().decode(request.privateBytes)).toContain('@title "Text after JSON"\n');
+    expect(h.composition.readApplicationState().exportRevision).toBe(before.exportRevision);
+    expect(h.recovery.service.inspectRecovery().exportBinding).toEqual(stored);
+    expect(h.recovery.service.inspectRecovery().work.exportBindingsRecorded).toBe(1);
+    expect(h.composition.readApplicationState().document).toBe(before.document);
+    expect(h.composition.readApplicationState().history).toBe(before.history);
+    await h.service.deliverTextExport();
+    expect(h.calls).toHaveLength(2);
+  });
+
+  for (const scenario of ["cancel", "stale", "host-removed"] as const) {
+    test(`${scenario} preparation starts no browser work or marker settlement`, async () => {
+      const h = harness();
+      await h.service.openExport("lead-sheet-text");
+      if (scenario === "cancel") h.service.cancelLifecycleDialog();
+      if (scenario === "stale") h.composition.controller.setTitle("After text preview");
+      if (scenario === "host-removed") h.composition.replacementWorkflow.applyLifecycleIntent({ kind: "pop-dialog", dialogId: "studio-lifecycle-export" });
+      const before = h.composition.readApplicationState();
+      await h.service.deliverTextExport();
+      expect(h.calls).toHaveLength(0);
+      expect(h.composition.readApplicationState().document).toBe(before.document);
+      expect(h.composition.readApplicationState().history).toBe(before.history);
+      expect(h.composition.readApplicationState().exportRevision).toBeNull();
+      expect(h.recovery.service.inspectRecovery().work.exportBindingsRecorded).toBe(0);
+      if (scenario !== "cancel") expect(h.service.getSnapshot().phase).toBe("failed");
+    });
+  }
+
+  test("single-use pending text delivery locks history and rejects settlement after teardown", async () => {
+    let release: () => void = () => { throw new Error("NOT_STARTED"); };
+    const h = harness(request => ({ completion: new Promise(resolve => {
+      release = () => { resolve(delivery(request)); };
+    }) }));
+    await h.service.openExport("lead-sheet-text");
+    const pending = h.service.deliverTextExport();
+    expect(h.composition.readApplicationState().dialogs.at(-1)?.blocksHistory).toBe(true);
+    expect(h.composition.controller.undo().ok).toBe(false);
+    h.service.cancelLifecycleDialog();
+    await h.service.deliverTextExport();
+    expect(h.calls).toHaveLength(1);
+    h.composition.replacementWorkflow.applyLifecycleIntent({ kind: "pop-dialog", dialogId: "studio-lifecycle-export" });
+    release(); await pending;
+    expect(h.service.getSnapshot().message).toContain("export.dialog_stale");
+    expect(h.composition.readApplicationState().dialogs).toEqual([]);
+    expect(h.composition.readApplicationState().exportRevision).toBeNull();
+  });
+
+  for (const bad of ["wrong-bytes", "wrong-artifact", "cleanup", "malformed", "cancelled", "throw", "reject", "bad-start"] as const) {
+    test(`${bad} text delivery cannot claim success or record canonical recovery`, async () => {
+      const h = harness(request => {
+        if (bad === "throw") throw new Error("ADAPTER_THROW");
+        if (bad === "reject") return { completion: Promise.reject(new Error("ADAPTER_REJECT")) };
+        if (bad === "bad-start") return { completion: "not-a-promise" };
+        const result = delivery(request);
+        const value = bad === "malformed" ? { ok: true, outcome: "handed-off" }
+          : bad === "wrong-bytes" ? { ...result, bytesOffered: request.privateBytes.length - 1 }
+          : bad === "wrong-artifact" ? { ...result, artifact: { ...result.artifact, kind: "canonical-json" } }
+          : bad === "cancelled" ? { ...result, outcome: "cancelled" }
+          : { ...result, objectUrlsRevoked: 0 };
+        return { completion: Promise.resolve(value) };
+      });
+      const before = h.composition.readApplicationState();
+      await h.service.openExport("lead-sheet-text");
+      await h.service.deliverTextExport();
+      expect(h.service.getSnapshot().phase).toBe("failed");
+      expect(h.composition.readApplicationState().exportRevision).toBeNull();
+      expect(h.recovery.service.inspectRecovery().work.exportBindingsRecorded).toBe(0);
+      expect(h.composition.readApplicationState().document).toBe(before.document);
+      expect(h.composition.readApplicationState().history).toBe(before.history);
+    });
+  }
+});

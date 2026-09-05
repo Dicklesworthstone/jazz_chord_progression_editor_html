@@ -1,0 +1,206 @@
+{
+  "schema": "changes.progression.v2",
+  "id": "document-u5-text",
+  "title": "Text \"round trip\"",
+  "description": "Spellings, timing, and annotations\nStay exact.",
+  "meter": {
+    "beatsPerBar": 4,
+    "beatUnit": 4
+  },
+  "tempoBpm": 132,
+  "key": {
+    "tonic": {
+      "step": "B",
+      "alter": -1
+    },
+    "mode": "major"
+  },
+  "sections": [
+    {
+      "id": "section-e0-a",
+      "name": "A]\\B",
+      "annotation": "opening \"line\"",
+      "keyOverride": {
+        "tonic": {
+          "step": "D",
+          "alter": 0
+        },
+        "mode": "natural-minor"
+      },
+      "voiceLeadingBoundary": "continue",
+      "measures": [
+        {
+          "id": "measure-e0-auto",
+          "events": [
+            {
+              "id": "event-e0-auto",
+              "duration": {
+                "numerator": 4,
+                "denominator": 1
+              },
+              "annotation": "altered dominant",
+              "chord": {
+                "kind": "parsed",
+                "sourceText": "C7(#9)",
+                "root": {
+                  "step": "C",
+                  "alter": 0
+                },
+                "triad": "major",
+                "sixth": null,
+                "seventh": "minor",
+                "extensions": [],
+                "additions": [],
+                "alterations": [
+                  {
+                    "number": 9,
+                    "alter": 1
+                  }
+                ],
+                "omissions": [],
+                "bass": null,
+                "colorPolicy": "none"
+              },
+              "voicing": {
+                "mode": "auto",
+                "family": "balanced",
+                "voiceCount": 4,
+                "range": {
+                  "lowMidi": 48,
+                  "highMidi": 72
+                },
+                "bassPolicy": "generated"
+              }
+            }
+          ],
+          "completion": {
+            "kind": "complete"
+          }
+        },
+        {
+          "id": "measure-e0-manual",
+          "events": [
+            {
+              "id": "event-e0-manual",
+              "duration": {
+                "numerator": 4,
+                "denominator": 1
+              },
+              "annotation": "manual exact notes",
+              "chord": {
+                "kind": "parsed",
+                "sourceText": "Cm",
+                "root": {
+                  "step": "C",
+                  "alter": 0
+                },
+                "triad": "minor",
+                "sixth": null,
+                "seventh": null,
+                "extensions": [],
+                "additions": [],
+                "alterations": [],
+                "omissions": [],
+                "bass": null,
+                "colorPolicy": "none"
+              },
+              "voicing": {
+                "mode": "manual",
+                "pitches": [
+                  {
+                    "step": "C",
+                    "alter": 0,
+                    "octave": 4
+                  },
+                  {
+                    "step": "E",
+                    "alter": -1,
+                    "octave": 4
+                  },
+                  {
+                    "step": "G",
+                    "alter": 0,
+                    "octave": 4
+                  }
+                ],
+                "bassPolicy": "included"
+              }
+            }
+          ],
+          "completion": {
+            "kind": "complete"
+          }
+        },
+        {
+          "id": "measure-e0-frozen-partial",
+          "events": [
+            {
+              "id": "event-e0-frozen",
+              "duration": {
+                "numerator": 4,
+                "denominator": 1
+              },
+              "annotation": "frozen exact notes",
+              "chord": {
+                "kind": "parsed",
+                "sourceText": "Cmaj7",
+                "root": {
+                  "step": "C",
+                  "alter": 0
+                },
+                "triad": "major",
+                "sixth": null,
+                "seventh": "major",
+                "extensions": [],
+                "additions": [],
+                "alterations": [],
+                "omissions": [],
+                "bass": null,
+                "colorPolicy": "none"
+              },
+              "voicing": {
+                "mode": "frozen",
+                "pitches": [
+                  {
+                    "step": "C",
+                    "alter": 0,
+                    "octave": 4
+                  },
+                  {
+                    "step": "E",
+                    "alter": 0,
+                    "octave": 4
+                  },
+                  {
+                    "step": "G",
+                    "alter": 0,
+                    "octave": 4
+                  },
+                  {
+                    "step": "B",
+                    "alter": 0,
+                    "octave": 4
+                  }
+                ],
+                "bassPolicy": "included",
+                "generatedBy": {
+                  "engineVersion": "fixture-engine-1",
+                  "family": "balanced"
+                }
+              }
+            }
+          ],
+          "completion": {
+            "kind": "complete"
+          }
+        }
+      ]
+    }
+  ],
+  "playback": {
+    "instrumentId": "mellow-keys",
+    "masterVolume": 0.8,
+    "reverbAmount": 0.2,
+    "countInBars": 1
+  }
+}

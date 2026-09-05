@@ -36,6 +36,7 @@ import type {
 import type {
   DocumentId,
   DocumentShapeDecodeResult,
+  DomainPath,
   ValidatedDocument,
 } from "../domain";
 import { createE0V2TransactionDriver } from "./e0-transaction-driver";
@@ -59,7 +60,7 @@ export type StudioRecoveryKeepResult =
 
 export type StudioRecoveryStartupView =
   | Readonly<{ kind: "none-available" }>
-  | Readonly<{ kind: "report-unrecoverable" }>
+  | Readonly<{ kind: "report-unrecoverable"; rejectedCandidates: readonly RecoveryCandidateRejection[] }>
   | Readonly<{
       kind: "offer";
       disposition: "open-current-automatically" | "offer-keep-discard" | "offer-previous";
@@ -68,7 +69,14 @@ export type StudioRecoveryStartupView =
       envelope: RecoveryEnvelope;
       storageDocumentId: DocumentId;
       report: RecoveryStartupReport;
+      rejectedCandidates: readonly RecoveryCandidateRejection[];
     }>;
+
+type RecoveryCandidateRejection = Readonly<{
+  slot: "current" | "previous";
+  code: "import.candidate_structural_invalid" | "import.candidate_semantic_invalid";
+  issues: readonly Readonly<{ code: string; path: DomainPath }>[];
+}>;
 
 export type StudioRecoveryOrchestrator = Readonly<{
   /** Steps 2: attach the controller mutation feed; returns detach. */
@@ -144,25 +152,32 @@ export function createStudioRecoveryOrchestrator(
     });
   };
 
-  const keep = async (
-    envelope: RecoveryEnvelope,
-  ): Promise<StudioRecoveryKeepResult> => {
+  function validateCandidate(envelope: RecoveryEnvelope) {
     const decoded = decodeDocumentShape(envelope.document);
     if (!decoded.ok) {
       return Object.freeze({
         ok: false as const,
-        outcome: "refused" as const,
-        code: "import.candidate_structural_invalid",
+        code: "import.candidate_structural_invalid" as const,
+        issues: decoded.errors,
       });
     }
     const validated = validateDocumentSemantics(decoded.value);
     if (!validated.ok) {
       return Object.freeze({
         ok: false as const,
-        outcome: "refused" as const,
-        code: "import.candidate_semantic_invalid",
+        code: "import.candidate_semantic_invalid" as const,
+        issues: validated.errors,
       });
     }
+    return validated;
+  }
+
+  const keep = async (
+    envelope: RecoveryEnvelope,
+  ): Promise<StudioRecoveryKeepResult> => {
+    // Revalidate at the gesture as well: a startup offer is not publication authority.
+    const validated = validateCandidate(envelope);
+    if (!validated.ok) return Object.freeze({ ok: false, outcome: "refused", code: validated.code });
     const candidate: ValidatedDocument = validated.value;
 
     const state = readState();
@@ -298,23 +313,33 @@ export function createStudioRecoveryOrchestrator(
         return Object.freeze({ kind: "none-available" as const });
       }
       if (report.disposition === "report-unrecoverable") {
-        return Object.freeze({ kind: "report-unrecoverable" as const });
+        return Object.freeze({ kind: "report-unrecoverable" as const, rejectedCandidates: Object.freeze([]) });
       }
-      const candidate =
-        report.disposition === "offer-previous"
-          ? report.previous
-          : report.current;
-      if (candidate.outcome !== "valid" || candidate.envelope === null) {
-        return Object.freeze({ kind: "report-unrecoverable" as const });
+      // A1 validates envelope integrity; only application may run F2/F3.
+      // Visit at most the two slots, in order. Their independently bounded
+      // validation diagnostics are retained without rewriting the A1 report.
+      const rejectedCandidates: RecoveryCandidateRejection[] = [];
+      for (const candidate of [report.current, report.previous]) {
+        if (candidate.outcome !== "valid" || candidate.envelope === null) continue;
+        const validated = validateCandidate(candidate.envelope);
+        if (!validated.ok) {
+          rejectedCandidates.push(Object.freeze({ slot: candidate.slot, code: validated.code, issues: validated.issues }));
+          continue;
+        }
+        return Object.freeze({
+          kind: "offer" as const,
+          disposition: candidate.slot === "previous" ? "offer-previous" as const : report.disposition,
+          savedAt: candidate.envelope.savedAt,
+          revision: candidate.envelope.revision,
+          envelope: candidate.envelope,
+          storageDocumentId,
+          report,
+          rejectedCandidates: Object.freeze(rejectedCandidates),
+        });
       }
       return Object.freeze({
-        kind: "offer" as const,
-        disposition: report.disposition,
-        savedAt: candidate.envelope.savedAt,
-        revision: candidate.envelope.revision,
-        envelope: candidate.envelope,
-        storageDocumentId,
-        report,
+        kind: "report-unrecoverable" as const,
+        rejectedCandidates: Object.freeze(rejectedCandidates),
       });
     },
 

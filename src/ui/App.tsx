@@ -3780,6 +3780,10 @@ export function StudioRoot({
         id="studio-export-json" type="button" label="Export JSON" variant="secondary"
         busy={false} disabled={false} density="comfortable" describedBy={[]} invalid={false}
         onAction={() => { void lifecycle.openExport(); }} />}
+      {lifecycle == null ? null : <Button
+        id="studio-export-text" type="button" label="Export text" variant="secondary"
+        busy={false} disabled={false} density="comfortable" describedBy={[]} invalid={false}
+        onAction={() => { void lifecycle.openExport("lead-sheet-text"); }} />}
       </>}
       snapshot={snapshot}
       startupNotice={startupNotice ?? null}

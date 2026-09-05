@@ -1,0 +1,7 @@
+@title "Text \"round trip\""
+@description "Spellings, timing, and annotations\nStay exact."
+@meter 4/4
+@tempo 132
+@key Bb major
+[A\]\\B] "opening \"line\""
+| C7#9:4 "altered dominant" | Cm:4 "manual exact notes" | Cmaj7:4 "frozen exact notes" |

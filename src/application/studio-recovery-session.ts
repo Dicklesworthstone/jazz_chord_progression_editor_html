@@ -150,6 +150,10 @@ export function createStudioRecoverySession(options: Readonly<{
         // offered chart is accepted/discarded. A slow probe is never a cutoff.
         const view = await orchestrator.startup({ sessionEdited: options.sessionEdited });
         if (view.kind === "offer") {
+          const rejected = view.rejectedCandidates[0];
+          if (rejected !== undefined) publish({ diagnosticCode: rejected.code,
+            diagnosticText: `The ${rejected.slot} recovery copy did not pass document validation (${rejected.code}). Keep the offered previous copy, or discard local recovery.`,
+          });
           offered = view;
           storageDocumentId = view.storageDocumentId;
           const current = composition.readApplicationState();
@@ -166,7 +170,8 @@ export function createStudioRecoverySession(options: Readonly<{
           return;
         }
         if (view.kind === "report-unrecoverable") {
-          publish({ failureMessage: "Neither local recovery copy could be read (recovery.corrupt_envelope). Your current chart is unchanged. Export JSON to keep a portable copy." });
+          const code = view.rejectedCandidates[0]?.code ?? "recovery.corrupt_envelope";
+          publish({ failureMessage: `Neither local recovery copy could be opened (${code}). Your current chart is unchanged. Export JSON to keep a portable copy.` });
         }
         // Do not save the demonstration chart merely because the page loaded.
         // An edit made while the read was pending must still be recovered.
