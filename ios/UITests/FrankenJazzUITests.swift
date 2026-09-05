@@ -70,6 +70,52 @@ final class FrankenJazzUITests: XCTestCase {
         XCTAssertEqual(relaunchedToggle.label, "Switch to dark mode")
     }
 
+    func testTouchUndoAndRedoRoundTripAChartEdit() throws {
+        let undo = app.buttons["undo-chart-change"]
+        let redo = app.buttons["redo-chart-change"]
+        let transposeUp = app.buttons["transpose-chart-up"]
+        let firstChange = app.buttons.matching(
+            NSPredicate(format: "label BEGINSWITH 'Measure 1,'")
+        ).firstMatch
+
+        for control in [undo, redo, transposeUp, firstChange] {
+            XCTAssertTrue(control.waitForExistence(timeout: 3))
+        }
+        XCTAssertFalse(undo.isEnabled)
+        XCTAssertFalse(redo.isEnabled)
+        XCTAssertTrue(transposeUp.isHittable)
+
+        let originalLabel = firstChange.label
+        transposeUp.tap()
+        expectation(
+            for: NSPredicate(format: "label != %@", originalLabel),
+            evaluatedWith: firstChange
+        )
+        waitForExpectations(timeout: 3)
+        let transposedLabel = firstChange.label
+        XCTAssertTrue(undo.isEnabled)
+
+        undo.tap()
+        expectation(
+            for: NSPredicate(format: "label == %@", originalLabel),
+            evaluatedWith: firstChange
+        )
+        waitForExpectations(timeout: 3)
+        XCTAssertTrue(redo.isEnabled)
+
+        redo.tap()
+        expectation(
+            for: NSPredicate(format: "label == %@", transposedLabel),
+            evaluatedWith: firstChange
+        )
+        waitForExpectations(timeout: 3)
+
+        let proof = XCTAttachment(screenshot: app.screenshot())
+        proof.name = "FrankenJazz touch undo and redo"
+        proof.lifetime = .keepAlways
+        add(proof)
+    }
+
     func testIPadExpandedWorkspaceExposesLibraryChartInspectorAndTransport() throws {
         let window = app.windows.firstMatch
         XCTAssertTrue(window.waitForExistence(timeout: 5))

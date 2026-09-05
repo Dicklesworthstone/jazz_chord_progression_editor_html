@@ -278,12 +278,55 @@ private struct ChartEditorView: View {
                 HStack {
                     JazzSectionLabel(number: "02", title: "Lead sheet", tint: JazzTheme.emerald)
                     Spacer()
-                    Button { store.transpose(-1) } label: { Label("Down", systemImage: "minus") }
-                        .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.cyan))
-                        .accessibilityLabel("Transpose down one semitone")
-                    Button { store.transpose(1) } label: { Label("Up", systemImage: "plus") }
-                        .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.cyan))
-                        .accessibilityLabel("Transpose up one semitone")
+                    if !compact {
+                        Text("TOUCH EDITING")
+                            .font(.system(size: JazzTheme.size(9), weight: .bold, design: .monospaced))
+                            .kerning(1.1)
+                            .foregroundStyle(JazzTheme.secondary)
+                    }
+                }
+                HStack(spacing: 8) {
+                    Button { store.undo() } label: {
+                        Label("Undo", systemImage: "arrow.uturn.backward")
+                    }
+                    .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.brass))
+                    .disabled(!store.canUndo)
+                    .opacity(store.canUndo ? 1 : 0.38)
+                    .accessibilityIdentifier("undo-chart-change")
+                    .accessibilityHint("Restores the chart before its most recent edit")
+
+                    Button { store.redo() } label: {
+                        Label("Redo", systemImage: "arrow.uturn.forward")
+                    }
+                    .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.brass))
+                    .disabled(!store.canRedo)
+                    .opacity(store.canRedo ? 1 : 0.38)
+                    .accessibilityIdentifier("redo-chart-change")
+                    .accessibilityHint("Reapplies the chart edit that was just undone")
+
+                    Spacer(minLength: 4)
+
+                    Button { store.transpose(-1) } label: {
+                        if compact {
+                            Image(systemName: "minus")
+                        } else {
+                            Label("Down", systemImage: "minus")
+                        }
+                    }
+                    .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.cyan))
+                    .accessibilityIdentifier("transpose-chart-down")
+                    .accessibilityLabel("Transpose down one semitone")
+
+                    Button { store.transpose(1) } label: {
+                        if compact {
+                            Image(systemName: "plus")
+                        } else {
+                            Label("Up", systemImage: "plus")
+                        }
+                    }
+                    .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.cyan))
+                    .accessibilityIdentifier("transpose-chart-up")
+                    .accessibilityLabel("Transpose up one semitone")
                 }
                 LazyVGrid(columns: columns, spacing: 10) {
                     ForEach(Array(store.chart.measures.enumerated()), id: \.element.id) { index, measure in
