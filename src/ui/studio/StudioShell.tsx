@@ -509,7 +509,7 @@ export function StudioShell({
       data-harmony-collapsed={view.layout.harmonyCollapsed ? "true" : "false"}
     >
       <div id="studio-shell-background" class="studio-shell__background">
-        <div class="studio-shell__frame">
+        <div class="studio-shell__frame" tabIndex={-1}>
           <a class="studio-skip-link" href="#workspace" id="skip-link" tabIndex={0}>
             Skip to studio workspace
           </a>

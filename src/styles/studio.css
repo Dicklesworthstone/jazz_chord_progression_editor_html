@@ -6686,3 +6686,22 @@ li[data-resize-preview]::after {
   font-size: var(--text-sm);
   box-shadow: 0 4px 16px rgb(0 0 0 / 0.12);
 }
+
+/* A wrapped header plus recovery used to consume the entire short-phone
+ * frame, shrinking the chart scrollport to zero. Let the compact frame
+ * scroll above the persistent transport, with enough chart space for a
+ * whole chord even when its selection toolbar is open. Recovery keeps its
+ * own bounded scroll area, so every explanation and choice stays reachable. */
+@media (max-width: 39.999rem) {
+  .studio-shell__frame {
+    overflow-y: auto;
+  }
+
+  .studio-workspace {
+    flex: 1 0 20rem;
+  }
+
+  .studio-recovery-region {
+    flex-shrink: 0;
+  }
+}
