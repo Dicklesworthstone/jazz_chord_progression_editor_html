@@ -48,11 +48,14 @@ Consumer: the user and Codex executing the 2026-09-04 request to implement the r
 - [x] Read and atomically claim the existing bug; release the U5 claim while preserving all unfinished acceptance.
 - [x] Diagnose against a scratch copy of the real engine: a single 40 ms admission delay produces `audio.start_time_invalid` for both instruments; no-delay controls play. Diagnostic globals exist only in that scratch build.
 - [x] Specify an explicit bounded engine-entry catch-up policy that preserves gates and leaves strict absolute-time requests unchanged.
-- [ ] Author independent positive, strict-negative, malformed, future-boundary, transposition and transport/preview/click regression cases; retain the pre-fix failures.
-- [ ] Implement engine admission and X1 opt-in, preserving every existing refusal, generation, source and Stop law outside the explicit policy.
-- [ ] Fix the independently exposed Stop-in-ready shortcut: an active preview must be retired before Stop promises no future attack. Retain the failing assertion and add a strict-lane regression.
-- [ ] Kill timing-policy mutations and run the focused audio/transport regression suite, types, lint and relevant contract gates.
-- [ ] Prove native delayed admission in all three engines, then rebuild and run the unchanged full playback/deploy gates on committed bytes.
+- [x] Author independent positive, strict-negative, malformed, future-boundary, transposition and transport/preview/click regression cases. Corrected pre-fix control: 14 pass/22 fail; restored implementation: 36 pass/0 fail, 172 assertions. Initial invalid test inputs and phone selectors remain recorded with their corrections.
+- [x] Implement engine admission and X1 opt-in, preserving strict absolute-time admission outside the explicit policy. Source/contracts/tests and guarded artifact are committed in `8caf56e`.
+- [x] Fix the independently exposed Stop-in-ready shortcut: an active preview is retired before Stop promises no future attack. The regression exercises public release-preview refusal and repeated idle Stop behavior.
+- [x] Kill five source mutations (no catch-up, unshifted release, lost strict admission, missing transport opt-in, ready Stop shortcut). Focused matrix: 356 pass/0 fail, 3,533 assertions across 32 files. App/browser types, changed-file lint and X0/X1 contract validators pass; full test types retain exactly the 17 existing U2 errors.
+- [x] Prove a 40 ms injected admission-clock advance in Chromium, Firefox and WebKit on desktop/phone: 12 pass/0 fail/0 skipped/0 flaky. All 12 cases observe started native sources then zero sounding/future sources; all 24 diagnostic attachments are checked. The separate scratch diagnostic uses a real 40 ms delay; the checked-in cross-browser regression injects the clock value. The original artifact fails all four corrected Chromium counterfactual cases.
+- [x] Verify the static standalone envelope and different-root/mtime reproducibility: SHA-256 `7206a79d2c5bc8227311628c058282299c42516d1181845823e93621b2f58010`, 8,318,570 bytes. All 289 source hashes/mtimes remained unchanged through native verification.
+- [ ] Complete the serial 204-case lifecycle matrix. The first attempt was interrupted after an accidental overlapping `verify:standalone` browser launch; preserve both reports under `/tmp/jcpe-0bjj-overlap-retained`. Its initial file-navigation timeout predates that overlap and remains unexplained, not attributed to it. Static-only verification now uses the documented `--static-only` argument.
+- [ ] Rebuild immediately before deployment and run the unchanged full playback/deploy gates on committed bytes.
 - [ ] Upload both hosts, poll their committed-byte hashes, and run real desktop/phone import, recovery, download, Undo and owner-loss checks.
 - [ ] Record exact results, commit/push logical groups, and leave every unsatisfied acceptance obligation open.
 
