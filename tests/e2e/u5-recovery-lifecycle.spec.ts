@@ -5,6 +5,7 @@ import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
+import { reopenWithConflictingChart } from "../support/u5-conflicting-startup";
 
 test.use({ userAgent: "OpenAI File Downloader, XaiImageApiFetch/1.0" });
 const artifact = pathToFileURL(join(process.cwd(), "jazz_chord_progression_editor.html")).href;
@@ -150,7 +151,7 @@ for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 
       const current = saved.find(([key]) => key.endsWith(":current"));
       if (current === undefined) throw new Error("RECOVERY_COPY_MISSING");
       const recovered = JSON.parse(current[1]) as { document: unknown };
-      await page.reload(); await expect(page.locator("#studio-recovery-keep")).toBeVisible();
+      await reopenWithConflictingChart(page, artifact); await expect(page.locator("#studio-recovery-keep")).toBeVisible();
       const original = await downloadJson(page);
       const before = await recoveryEntries(page);
       await observeNativeSources(page);
@@ -180,7 +181,7 @@ for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 
       page.on("pageerror", (error) => errors.push(error.message));
       await retitle(page, "Keep these exact bytes");
       const before = await recoveryEntries(page);
-      await page.reload();
+      await reopenWithConflictingChart(page, artifact);
       await expect(page.locator("#studio-recovery-keep")).toBeVisible();
       await page.waitForTimeout(2_500);
       expect(await recoveryEntries(page)).toEqual(before);
@@ -278,7 +279,7 @@ for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 
     test("failed Discard retains its offer and exact storage bytes, then succeeds on retry", async ({ page }) => {
       await retitle(page, "Cannot discard yet");
       const before = await recoveryEntries(page);
-      await page.reload();
+      await reopenWithConflictingChart(page, artifact);
       await expect(page.locator("#studio-recovery-keep")).toBeVisible();
       await page.evaluate(() => {
         const original = Object.getOwnPropertyDescriptor(IDBObjectStore.prototype, "delete");

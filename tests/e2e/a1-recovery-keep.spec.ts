@@ -2,16 +2,17 @@
  * A1 user-visible recovery proof against the REAL generated artifact
  * (jcpe-milestone-reliable-studio-l3a.2 step 4): a titled edit persists
  * through the production recovery service (real browser storage), a
- * reload of the SAME context surfaces the reviewed Keep/Discard offer,
+ * a reload with an explicit shared chart surfaces the reviewed Keep/Discard offer,
  * Keep restores the edited title through the transactional replacement
  * channel (boot-time X1 retirement is the vacuous locked-transport law),
  * and the frozen-vocabulary status line reports "Recovered locally at".
- * Discard is proven too: the offer clears and the seeded chart stands.
+ * Discard is proven too: the offer clears and the explicit chart stands.
  * A pristine open shows NO recovery surface at all.
  */
 import { expect, test, type Page } from "@playwright/test";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { reopenWithConflictingChart } from "../support/u5-conflicting-startup";
 
 const RECOVERED_TITLE = "Recovery Proof Chart";
 
@@ -47,14 +48,14 @@ test("edit -> reload -> Keep restores the chart through the production channel",
    * the mutation; give it real time plus margin */
   await page.waitForTimeout(3_000);
 
-  await page.reload({ waitUntil: "load" });
+  await reopenWithConflictingChart(page, artifactUrl());
   await expect(page.locator('[data-app-ready="true"]')).toBeVisible();
 
-  /* the reviewed matrix offers Keep/Discard (the boot session has
-   * already edited via the starter seed, so no silent auto-open) */
+  /* The explicit shared chart is a real session conflict. The reviewed
+   * matrix requires a choice instead of automatic replacement. */
   const keep = page.locator("#studio-recovery-keep");
   await expect(keep).toBeVisible();
-  /* the freshly booted session shows the seeded title, not the edit */
+  /* The shared chart remains current until Keep. */
   await expect(page.locator("#studio-document-title")).not.toHaveValue(
     RECOVERED_TITLE,
   );
@@ -72,12 +73,12 @@ test("edit -> reload -> Keep restores the chart through the production channel",
   await expect(page.locator("#studio-recovery-keep")).toHaveCount(0);
 });
 
-test("edit -> reload -> Discard clears the offer and keeps the seeded chart", async ({ page }) => {
+test("edit -> conflicting reload -> Discard clears the offer and keeps the explicit chart", async ({ page }) => {
   await openStudio(page);
   await retitleChart(page, RECOVERED_TITLE);
   await page.waitForTimeout(3_000);
 
-  await page.reload({ waitUntil: "load" });
+  await reopenWithConflictingChart(page, artifactUrl());
   await expect(page.locator('[data-app-ready="true"]')).toBeVisible();
   await expect(page.locator("#studio-recovery-keep")).toBeVisible();
 

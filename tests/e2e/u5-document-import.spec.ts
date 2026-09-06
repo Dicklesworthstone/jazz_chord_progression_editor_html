@@ -5,6 +5,7 @@ import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { reopenWithConflictingChart } from "../support/u5-conflicting-startup";
 
 declare global { interface Window { u5RestoreImportOwner?: () => void } }
 test.use({ userAgent: "OpenAI File Downloader, XaiImageApiFetch/1.0" });
@@ -184,7 +185,7 @@ for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 
       await expect(page.locator("#studio-recovery-status")).toContainText("Recovered locally at");
       await previewFile(page); await replacePreview(page);
       await expect(page.locator("#studio-recovery-status")).toContainText("Recovered locally at");
-      await page.reload();
+      await reopenWithConflictingChart(page, artifact);
       await expect(page.locator("#studio-recovery-keep")).toBeVisible();
       await page.locator("#studio-recovery-keep").click();
       await expect(page.locator("#studio-document-title")).toHaveValue("Nested Canonical Order");
