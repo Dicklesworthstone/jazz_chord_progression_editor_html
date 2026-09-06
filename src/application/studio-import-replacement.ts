@@ -14,12 +14,25 @@ export async function runStudioImportReplacement(
   composition: StudioComposition,
   retirement: StudioImportRetirementAdapter,
   request: CommitImportReplacementRequestV2,
+  mayPublish?: () => unknown,
 ): Promise<Readonly<{ ok: true; result: Extract<CommitImportReplacementResultV2, { ok: true }> }> |
   Readonly<{ ok: false; code: string; reconciliationRequired: boolean; safelyStopped: boolean }>> {
   // Captured from the actual prepared echo sent by E0, never reconstructed
   // from a stale preview or from the current transport generation.
   const attempted: { request: RetireImportReplacementRequest | null } = { request: null };
-  const driver = createE0V2TransactionDriver(composition.interchangeOwner, {
+  const publicationConsent = { refused: false };
+  const driver = createE0V2TransactionDriver({ ...composition.interchangeOwner,
+    publishImportReplacement: (handoff) => {
+      // E0 reaches this port only after proving retirement. Revoke the actual
+      // A0 request if its UI consent disappeared across that await; the real
+      // owner then consumes and refuses the stale capability synchronously.
+      // No synthetic retirement receipt or publication result is introduced.
+      try { publicationConsent.refused = mayPublish !== undefined && mayPublish() !== true; }
+      catch { publicationConsent.refused = true; }
+      if (publicationConsent.refused) composition.replacementWorkflow.cancel(request.ownerRequest.identity);
+      return composition.interchangeOwner.publishImportReplacement(handoff);
+    },
+  }, {
     retireImportReplacement: (sent) => {
       attempted.request = sent;
       return retirement.retireImportReplacement(sent);
@@ -30,7 +43,8 @@ export async function runStudioImportReplacement(
   try {
     const result = await driver(request);
     if (result.ok) return Object.freeze({ ok: true, result });
-    code = result.outcome === "refused" ? result.code : "import.replacement_port_protocol_invalid";
+    code = publicationConsent.refused ? "ui.stale_owner"
+      : result.outcome === "refused" ? result.code : "import.replacement_port_protocol_invalid";
     needsReconciliation = result.outcome === "refused"
       ? result.code === "transport.replacement_retirement_evidence_invalid"
       : result.reconciliation === "application-transport-reconciliation-required";

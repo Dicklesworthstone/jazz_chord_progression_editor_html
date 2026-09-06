@@ -43,8 +43,9 @@ export type StudioDocumentImport = Readonly<{
   previewPaste: (text: string, hint: ImportFormatHint) => Promise<void>;
   /** Also used by composition-owned local sources; never starts replacement. */
   previewSource: (source: ImportSourceHandle, hint: ImportFormatHint) => Promise<void>;
-  requestCommit: () => Promise<void>;
-  confirm: (acknowledgeNonUndoable: boolean) => Promise<void>;
+  requestCommit: (hostIsCurrent?: () => unknown) => Promise<void>;
+  confirm: (acknowledgeNonUndoable: boolean, hostIsCurrent?: () => unknown) => Promise<void>;
+  invalidateHost: () => void;
   backToPreview: () => void;
   invalidatePreview: () => void;
   exportCurrentFirst: () => void;
@@ -78,6 +79,7 @@ export function createStudioDocumentImport(options: Readonly<{
   let preview: ImportPreview | null = null;
   let chartText: string | null = null;
   let readAbort: AbortController | null = null;
+  let hostInvalidated = false;
   const listeners = new Set<() => void>();
   const hosted = (): boolean => composition.readApplicationState().dialogs.some((dialog) => dialog.id === DIALOG_ID);
   function publish(patch: Partial<StudioImportView>): void {
@@ -92,7 +94,7 @@ export function createStudioDocumentImport(options: Readonly<{
     publish({ phase: "failed", issueCodes: [code], message: `${code}: ${message}` });
   }
   function cancel(): void {
-    if ((view.phase === "committing" || view.reconciliationRequired)) return;
+    if (!view.open || view.phase === "committing" || view.reconciliationRequired) return;
     if (hosted()) {
       const popped = workflow.applyLifecycleIntent({ kind: "pop-dialog", dialogId: DIALOG_ID });
       if (!popped.ok) { failure(popped.code, "Close the topmost dialog first."); return; }
@@ -190,8 +192,9 @@ export function createStudioDocumentImport(options: Readonly<{
       if (!attempt.signal.aborted && readAbort === attempt) failure("import.read_failed");
     }
   }
-  async function commit(acknowledgeNonUndoable: boolean): Promise<void> {
-    if (!hosted() || preview === null || (view.phase !== "preview" && view.phase !== "confirm")) return;
+  async function commit(acknowledgeNonUndoable: boolean, hostIsCurrent?: () => unknown): Promise<void> {
+    if (composition.readApplicationState().dialogs.at(-1)?.id !== DIALOG_ID || preview === null ||
+        (view.phase !== "preview" && view.phase !== "confirm")) return;
     const chosen = preview;
     if (!current(chosen)) { failure("command.stale_revision"); return; }
     const facts = confirmationFacts();
@@ -202,6 +205,7 @@ export function createStudioDocumentImport(options: Readonly<{
       publish({ message: "history.nonundoable_confirmation_required: Confirm that this replacement cannot be undone." }); return;
     }
     if (!workflow.updateLifecycleDialogPhase(DIALOG_ID, "committing").ok) { failure("ephemeral.intent_invalid"); return; }
+    const confirmationHost = composition.readApplicationState().dialogs.at(-1);
     publish({ phase: "committing", message: null });
     const begun = workflow.begin({ candidateDocumentId: chosen.candidate.id, origin: chosen.replacementOrigin,
       undoDisposition: chosen.replacementImpact.undoDisposition, previewIdentity: chosen.identity });
@@ -211,8 +215,27 @@ export function createStudioDocumentImport(options: Readonly<{
     const projected = projectPreviewToCommitRequestV2(chosen, begun.transition, acknowledgement);
     if (!projected.ok) { workflow.cancel(begun.identity); failure(projected.code); return; }
     try {
-      const result = await runStudioImportReplacement(composition, options.retirement, projected.value);
+      const result = await runStudioImportReplacement(composition, options.retirement, projected.value, () =>
+        confirmationHost !== undefined && !hostInvalidated &&
+        composition.readApplicationState().dialogs.at(-1) === confirmationHost &&
+        (hostIsCurrent === undefined || hostIsCurrent() === true));
       if (!result.ok) {
+        const state = composition.readApplicationState();
+        const sameHost = state.dialogs.at(-1) === confirmationHost;
+        if (result.code === "ui.stale_owner" || hostInvalidated || !sameHost) {
+          preview = null; chartText = null; readAbort = null;
+          if (state.importDraft?.readRequestId === chosen.identity.requestId) {
+            workflow.applyLifecycleIntent({ kind: "set-import-draft", draft: null });
+          }
+          // Never close or update a later host that happens to reuse this ID.
+          if (sameHost && !result.reconciliationRequired) workflow.applyLifecycleIntent({ kind: "pop-dialog", dialogId: DIALOG_ID });
+          publish({ open: sameHost && result.reconciliationRequired, phase: "failed", issueCodes: [result.code],
+            reconciliationRequired: result.reconciliationRequired,
+            message: `${result.code}: The import confirmation owner is unavailable. The current chart is unchanged. ${result.reconciliationRequired
+              ? "Playback could not prove a safe stop. Reload the studio before further editing or playback."
+              : "Choose Import chart and preview the source again to retry."}` });
+          return;
+        }
         publish({ reconciliationRequired: result.reconciliationRequired });
         failure(result.code, result.reconciliationRequired
           ? "The current chart is preserved. Playback could not prove a safe stop. Reload the studio before further editing or playback."
@@ -238,7 +261,8 @@ export function createStudioDocumentImport(options: Readonly<{
     getSnapshot: () => hosted() ? view : Object.freeze({ ...view, open: false }),
     subscribe: (listener) => { listeners.add(listener); return () => { listeners.delete(listener); }; },
     open: () => {
-      if (view.reconciliationRequired || (view.open && hosted())) return;
+      if (view.phase === "committing" || view.reconciliationRequired || hosted()) return;
+      hostInvalidated = false;
       readAbort?.abort(); readAbort = null; preview = null; chartText = null;
       const pushed = workflow.applyLifecycleIntent({ kind: "push-dialog", dialog: {
         id: DIALOG_ID, kind: "import-preview", phase: "open", blocksHistory: false, requestId: null,
@@ -248,6 +272,7 @@ export function createStudioDocumentImport(options: Readonly<{
         omittedItems: 0, nonUndoable: false, ...confirmationFacts() });
     },
     cancel, previewSource,
+    invalidateHost: () => { hostInvalidated = true; cancel(); },
     previewFile: (file, hint) => previewSource({ channel: "file", displayName: file.name.slice(0, 255),
       mediaType: file.type.slice(0, 255), declaredByteLength: file.size,
       readAtMost: async (maximum, signal) => {
@@ -269,7 +294,7 @@ export function createStudioDocumentImport(options: Readonly<{
         },
       }, hint);
     },
-    requestCommit: () => commit(false), confirm: commit,
+    requestCommit: (hostIsCurrent) => commit(false, hostIsCurrent), confirm: commit,
     backToPreview: () => { if (view.phase === "confirm") publish({ phase: "preview", message: null }); },
     invalidatePreview: () => {
       if (!view.open || (view.phase === "committing" || view.reconciliationRequired)) return;

@@ -300,3 +300,93 @@ for (const defect of ["request", "generation", "postcondition", "extra", "throw"
     expect(h.service.getSnapshot().reconciliationRequired).toBe(true); expect(h.exports()).toBe(0);
   });
 }
+
+for (const rehost of [false, true]) {
+  test(`pending import cannot publish into a removed or replaced A0 host (rehost=${String(rehost)})`, async () => {
+    let release: (() => void) | undefined;
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    const h = await harness({ retirement: { retireImportReplacement: async request => {
+      await gate; return h.real.retireImportReplacement(request);
+    } } });
+    const before = h.composition.readApplicationState();
+    h.service.open(); await h.service.previewPaste(nested, "auto"); await h.service.requestCommit();
+    const pending = h.service.confirm(false);
+    const host = h.composition.readApplicationState().dialogs.at(-1);
+    if (host === undefined) throw new Error("HOST_MISSING");
+    expect(h.composition.replacementWorkflow.applyLifecycleIntent({ kind: "pop-dialog", dialogId: host.id }).ok).toBe(true);
+    if (rehost) expect(h.composition.replacementWorkflow.applyLifecycleIntent({ kind: "push-dialog", dialog: { ...host } }).ok).toBe(true);
+    const replacementHost = h.composition.readApplicationState().dialogs.at(-1);
+    h.service.open(); expect(h.composition.readApplicationState().dialogs.at(-1)).toBe(replacementHost);
+    release?.(); await pending;
+    const after = h.composition.readApplicationState();
+    expect(after.document).toBe(before.document); expect(after.revision).toBe(before.revision);
+    expect(after.history).toBe(before.history); expect(after.bookmarks).toEqual(before.bookmarks);
+    expect(after.exportRevision).toBe(before.exportRevision); expect(after.recovery).toEqual(before.recovery);
+    expect(after.documentTransition.kind).toBe("idle"); expect(after.pendingRequests).toEqual(before.pendingRequests);
+    expect(h.service.getSnapshot().message).toContain("ui.stale_owner");
+    expect(h.service.getSnapshot().open).toBe(false);
+    if (rehost) {
+      h.service.cancel();
+      expect(h.composition.readApplicationState().dialogs.at(-1)).toBe(replacementHost);
+      expect(h.composition.replacementWorkflow.applyLifecycleIntent({ kind: "pop-dialog", dialogId: host.id }).ok).toBe(true);
+    }
+    h.service.open(); await h.service.previewPaste(nested, "auto"); await h.service.requestCommit(); await h.service.confirm(false);
+    const observed: unknown = h.composition.readApplicationState().document;
+    const expected: unknown = JSON.parse(nested); expect(observed).toEqual(expected);
+    expect(h.composition.controller.undo().ok).toBe(true); expect(h.composition.readApplicationState().document).toEqual(before.document);
+  });
+}
+for (const defect of ["false", "non-boolean", "throw"] as const) {
+  test(`import rejects lost UI consent at publication (${defect})`, async () => {
+    const h = await harness(); const before = h.composition.readApplicationState();
+    h.service.open(); await h.service.previewPaste(nested, "auto"); await h.service.requestCommit();
+    let calls = 0;
+    await h.service.confirm(false, () => { calls++; if (defect === "throw") throw new Error("OWNER_GONE"); return defect === "false" ? false : "yes"; });
+    expect(h.composition.readApplicationState().document).toBe(before.document);
+    expect(h.composition.readApplicationState().history).toBe(before.history);
+    expect(h.service.getSnapshot()).toMatchObject({ open: false, phase: "failed" });
+    expect(h.service.getSnapshot().message).toContain("ui.stale_owner"); expect(calls).toBe(1);
+    h.service.open(); await h.service.previewPaste(nested, "auto"); await h.service.requestCommit();
+    await h.service.confirm(false, () => true);
+    expect(h.composition.readApplicationState().document.title).toBe("Nested Canonical Order");
+  });
+}
+
+test("pristine import and invalidation during retirement share the same publication guard", async () => {
+  let release: (() => void) | undefined;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  const h = await harness({ seed: false, retirement: { retireImportReplacement: async request => {
+    await gate; return h.real.retireImportReplacement(request);
+  } } });
+  const before = h.composition.readApplicationState();
+  h.service.open(); await h.service.previewPaste(nested, "auto");
+  const pending = h.service.requestCommit(() => true);
+  expect(h.service.getSnapshot().phase).toBe("committing");
+  h.service.invalidateHost();
+  release?.(); await pending;
+  expect(h.composition.readApplicationState().document).toBe(before.document);
+  expect(h.service.getSnapshot()).toMatchObject({ open: false, phase: "failed" });
+  h.service.open(); await h.service.previewPaste(nested, "auto"); await h.service.requestCommit(() => true);
+  expect(h.composition.readApplicationState().document.title).toBe("Nested Canonical Order");
+});
+for (const uncertain of [false, true]) {
+  test(`retirement failure cannot alter a replacement host (uncertain=${String(uncertain)})`, async () => {
+    let release: (() => void) | undefined;
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    const h = await harness({ retirement: { retireImportReplacement: async () => {
+      await gate; return { ok: false, code: "transport.replacement_retirement_failed", retirementEffect: uncertain ? "unknown" : "none" };
+    } } });
+    h.service.open(); await h.service.previewPaste(nested, "auto"); await h.service.requestCommit();
+    const pending = h.service.confirm(false);
+    const host = h.composition.readApplicationState().dialogs.at(-1);
+    if (host === undefined) throw new Error("HOST_MISSING");
+    h.composition.replacementWorkflow.applyLifecycleIntent({ kind: "pop-dialog", dialogId: host.id });
+    h.composition.replacementWorkflow.applyLifecycleIntent({ kind: "push-dialog", dialog: { ...host } });
+    const replacement = h.composition.readApplicationState().dialogs.at(-1);
+    release?.(); await pending; h.service.cancel(); h.service.open();
+    expect(h.composition.readApplicationState().dialogs.at(-1)).toBe(replacement);
+    expect(h.service.getSnapshot().open).toBe(false);
+    expect(h.service.getSnapshot().reconciliationRequired).toBe(uncertain);
+    expect(h.composition.readApplicationState().documentTransition.kind).toBe(uncertain ? "retiring-transport" : "idle");
+  });
+}
