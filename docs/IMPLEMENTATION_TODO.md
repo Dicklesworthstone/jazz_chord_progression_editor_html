@@ -4,6 +4,7 @@ Consumer: the user and Codex executing the 2026-09-04 request to implement the r
 
 ## Current order
 
+- [ ] `jcpe-0bjj`: resolve the real playback-gate failure blocking the authorized deployment, then resume the unclaimed U5 remainder.
 - [x] Voice-leading: reproduce raw and actually sounded discontinuities; specify a compatible versioned policy; implement; prove small-oracle, real chart, fixed-voicing, browser audio and MIDI behavior.
 - [ ] U5: connect the ready lifecycle package; fix observed recovery ordering defects before adding import/export and replacement workflows.
 - [ ] H0: implement all three accepted operations, full scale/readings evidence and independent proof; then close the parent.
@@ -39,6 +40,21 @@ Consumer: the user and Codex executing the 2026-09-04 request to implement the r
 - [ ] Reconcile contradictory H0 authority and publish the missing semantic context-evidence boundary. Independently agree the exact accounting recipe, then prove every reachable valid cap and source mutant.
 - [ ] Implement all contextual rules and plural scale mappings after the authority is consistent.
 - [ ] Replay all independent H0 corpora, execute production mutants, and record complete package gates; close only satisfied phases.
+
+## Active deployment blocker: jcpe-0bjj
+
+- [x] Confirm restored Vercel/Cloudflare authentication and reproduce the committed `4887a39` artifact with unchanged source hashes/mtimes.
+- [x] Run the unchanged production gate: 13 instruments pass; Organ and Ukulele refuse with `transport.engine_refusal`. Preserve `/tmp/jcpe-u5-production-playback-failure.json`; no upload occurred.
+- [x] Read and atomically claim the existing bug; release the U5 claim while preserving all unfinished acceptance.
+- [x] Diagnose against a scratch copy of the real engine: a single 40 ms admission delay produces `audio.start_time_invalid` for both instruments; no-delay controls play. Diagnostic globals exist only in that scratch build.
+- [x] Specify an explicit bounded engine-entry catch-up policy that preserves gates and leaves strict absolute-time requests unchanged.
+- [ ] Author independent positive, strict-negative, malformed, future-boundary, transposition and transport/preview/click regression cases; retain the pre-fix failures.
+- [ ] Implement engine admission and X1 opt-in, preserving every existing refusal, generation, source and Stop law outside the explicit policy.
+- [ ] Fix the independently exposed Stop-in-ready shortcut: an active preview must be retired before Stop promises no future attack. Retain the failing assertion and add a strict-lane regression.
+- [ ] Kill timing-policy mutations and run the focused audio/transport regression suite, types, lint and relevant contract gates.
+- [ ] Prove native delayed admission in all three engines, then rebuild and run the unchanged full playback/deploy gates on committed bytes.
+- [ ] Upload both hosts, poll their committed-byte hashes, and run real desktop/phone import, recovery, download, Undo and owner-loss checks.
+- [ ] Record exact results, commit/push logical groups, and leave every unsatisfied acceptance obligation open.
 
 ## U5 active subtasks
 
