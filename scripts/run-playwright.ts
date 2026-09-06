@@ -1,9 +1,20 @@
 import { randomUUID } from "node:crypto";
+import { availableParallelism } from "node:os";
 import { mergeBrowserEvidence } from "./merge-browser-evidence";
 import { runNodeTool } from "./run-node-tool";
 
 const args = Bun.argv.slice(2);
 const isTest = args[0] === "test";
+
+// Mesa defaults to the host's core count. On the 128-CPU evidence host,
+// WebKit spawned 32 llvmpipe workers and a full import/Undo scenario ran
+// past its unchanged 30s gate. Four workers reduced the isolated control
+// from 19.4–20.3s to 15.5s. Bound software rendering, preserving explicit
+// operator settings and every browser assertion, trace and timeout.
+if (isTest && process.platform === "linux" && process.env["LP_NUM_THREADS"] === undefined) {
+  process.env["LP_NUM_THREADS"] = String(Math.min(4, availableParallelism()));
+  console.error(`Browser software-renderer worker limit: LP_NUM_THREADS=${process.env["LP_NUM_THREADS"]}`);
+}
 
 /*
  * Headless Firefox needs a real audio backend: on a device-less Linux host
