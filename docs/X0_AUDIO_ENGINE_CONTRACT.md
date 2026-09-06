@@ -468,6 +468,29 @@ discoverable until old cleanup.
 
 ## 8. Voice lifecycle and registry
 
+### Transport catch-up at the engine clock boundary (2026-09-06)
+
+The production playback gate reproduced `audio.start_time_invalid` for Organ
+and Ukulele (`jcpe-0bjj`). A real-browser diagnostic with one 40 ms delay
+between X1's timestamp and X0's clock read reproduces both failures. A fixed
+caller-side 10 ms margin cannot guarantee admission across that boundary.
+
+`AudioAttackBatchRequest.lateStartMarginSeconds` is an optional explicit
+transport catch-up policy, finite and in [0, 0.02]. Without it, past attack
+timestamps still refuse. With it, X0 validates the original nonnegative
+absolute start, release, and gate first; only a start strictly before the
+captured engine clock moves to `engineTime + margin`. Its release moves by
+the same amount, preserving the original gate duration. Future and exactly
+current starts remain exact. Negative/nonfinite starts, starts beyond the
+unchanged 0.25 s horizon, malformed margins, and invalid gates still refuse
+before any voice or graph mutation. This is a caller-selected scheduling
+policy, never a retry or permission to repair musical data.
+
+X1 opts in only when its existing measured-browser immediate-start margin is
+positive. The zero-margin exact-clock fixture lane retains strict absolute
+admission. Progression, click, and preview requests use the same policy;
+generation ownership, event order, Stop, and all registry limits are unchanged.
+
 Every accepted voice receives a positive monotonic instance token and stores:
 
 - voice ID, owner, generation, event, instrument, MIDI pitch, and velocity;
@@ -506,7 +529,8 @@ captured engine time plus the 0.25-second horizon. A timestamp already elapsed
 at engine entry retires immediately at that captured time: the caller's clock
 read and the engine's clock read can straddle a native audio render quantum.
 Future retirement times retain their exact value. This rule applies to
-retirement only; attack admission still refuses past scheduled starts.
+retirement only; ordinary absolute attack admission still refuses past starts.
+The explicit transport catch-up policy in §8 separately governs opted-in attacks.
 
 Each scheduled source has a named token-checked `onended` callback. When all
 sources for that exact instance have ended, cleanup removes its six references

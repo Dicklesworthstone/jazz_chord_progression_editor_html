@@ -28,6 +28,7 @@ import {
   MAX_AUDIO_GESTURE_SEQUENCE,
   MAX_AUDIO_ID_ASCII_LENGTH,
   MAX_AUDIO_INTERNAL_SEQUENCE,
+  MAX_AUDIO_LATE_START_MARGIN_SECONDS,
   MAX_AUDIO_NONRELEASING_VOICES,
   MAX_AUDIO_PREVIEW_VOICES,
   MAX_AUDIO_PROGRESSION_VOICES,
@@ -375,11 +376,19 @@ function validateAttack(
     return invalid("audio.instrument_id_invalid", ["instrumentId"]);
   }
 
+  const lateStartMarginSeconds = value["lateStartMarginSeconds"];
+  if (lateStartMarginSeconds !== undefined &&
+      (typeof lateStartMarginSeconds !== "number" || !Number.isFinite(lateStartMarginSeconds) ||
+       lateStartMarginSeconds < 0 || lateStartMarginSeconds > MAX_AUDIO_LATE_START_MARGIN_SECONDS)) {
+    return invalid("audio.start_time_invalid", ["lateStartMarginSeconds"]);
+  }
   const startTimeSeconds = value["startTimeSeconds"];
   if (
+    !Number.isFinite(currentTimeSeconds) || currentTimeSeconds < 0 ||
     typeof startTimeSeconds !== "number" ||
     !Number.isFinite(startTimeSeconds) ||
-    startTimeSeconds < currentTimeSeconds ||
+    startTimeSeconds < 0 ||
+    (lateStartMarginSeconds === undefined && startTimeSeconds < currentTimeSeconds) ||
     startTimeSeconds >
       currentTimeSeconds + MAX_AUDIO_SCHEDULE_LOOKAHEAD_SECONDS
   ) {
@@ -397,6 +406,16 @@ function validateAttack(
   }
   if (releaseTimeSeconds - startTimeSeconds > MAX_AUDIO_GATE_SECONDS) {
     return invalid("audio.gate_duration_limit", ["releaseTimeSeconds"]);
+  }
+
+  // The caller opts into catch-up explicitly. Validate its original gate
+  // before moving either endpoint; ordinary absolute requests stay strict.
+  const admittedStart = lateStartMarginSeconds !== undefined && startTimeSeconds < currentTimeSeconds
+    ? currentTimeSeconds + lateStartMarginSeconds : startTimeSeconds;
+  const admittedRelease = admittedStart === startTimeSeconds ? releaseTimeSeconds
+    : admittedStart + (releaseTimeSeconds - startTimeSeconds);
+  if (!Number.isFinite(admittedRelease) || admittedRelease - admittedStart < MIN_AUDIO_GATE_SECONDS) {
+    return invalid("audio.release_time_invalid", ["releaseTimeSeconds"]);
   }
 
   const voicesValue = value["voices"];
@@ -510,8 +529,8 @@ function validateAttack(
       owner: owner.value,
       eventId,
       instrumentId: instrument.value,
-      startTimeSeconds,
-      releaseTimeSeconds,
+      startTimeSeconds: admittedStart,
+      releaseTimeSeconds: admittedRelease,
       voices: Object.freeze(voices),
     }),
   );

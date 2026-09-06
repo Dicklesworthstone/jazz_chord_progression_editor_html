@@ -211,6 +211,7 @@ export const MAX_AUDIO_PROGRESSION_VOICES = 48;
 export const MAX_AUDIO_PREVIEW_VOICES = 16;
 export const MAX_AUDIO_VOICES_PER_BATCH = 16;
 export const MAX_AUDIO_SCHEDULE_LOOKAHEAD_SECONDS = 0.25;
+export const MAX_AUDIO_LATE_START_MARGIN_SECONDS = 0.02;
 export const MIN_AUDIO_GATE_SECONDS = 0.005;
 export const MAX_AUDIO_GATE_SECONDS = 600;
 export const MAX_AUDIO_RECIPE_RELEASE_SECONDS = 1.8;
@@ -364,6 +365,8 @@ export type AudioAttackBatchRequest = Readonly<{
   instrumentId: InstrumentId;
   startTimeSeconds: number;
   releaseTimeSeconds: number;
+  /** Opt-in catch-up at engine entry; shift a late start and release together. */
+  lateStartMarginSeconds?: number;
   voices: readonly [AudioVoiceSpec, ...AudioVoiceSpec[]];
 }>;
 

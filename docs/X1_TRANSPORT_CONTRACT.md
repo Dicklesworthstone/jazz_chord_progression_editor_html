@@ -90,6 +90,12 @@ attack whose exact start is at or behind the moving clock is issued at
 `now + margin` instead of being refused as already past. Zero preserves
 exact fake-clock behavior; the margin can only delay an already-due
 attack, never silence or reorder one.
+The 2026-09-06 X0 catch-up amendment binds a positive margin at engine entry
+too: X1 passes `lateStartMarginSeconds` on progression, click, and preview
+attacks. If the clock advances past a requested attack before admission,
+X0 shifts that attack and its release together using its captured clock.
+Future attacks and their gate durations remain exact; no engine refusal is
+retried. A zero margin leaves the existing strict absolute-time lane intact.
 `initialize-transport` additionally carries the complete initial
 `AudioMix`, forwarded to the X0 engine initialization unchanged, and a
 view-identity echo (`documentId`, `planRevision`) matching the
@@ -99,7 +105,8 @@ is refused by X0 and surfaces as `transport.engine_refusal`. Timing policy is
 validated at initialization: tick interval 10–100 ms, lookahead 0.05–0.2 s,
 and lookahead strictly greater than one tick interval. The 0.2 s ceiling
 leaves an explicit 0.05 s margin under X0's 0.25 s attack admission window,
-so a scheduled attack can never be refused for lateness by construction.
+so future horizon attacks fit X0's upper bound. The explicit engine-entry
+catch-up policy handles lower-bound clock drift on the native browser lane.
 
 ## 4. Plan binding and replacement
 

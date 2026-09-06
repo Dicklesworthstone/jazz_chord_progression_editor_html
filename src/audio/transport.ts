@@ -591,6 +591,7 @@ export function createTransportService(
       instrumentId,
       startTimeSeconds: startTime,
       releaseTimeSeconds: startTime + gateSeconds,
+      ...(startMarginSeconds > 0 ? { lateStartMarginSeconds: startMarginSeconds } : {}),
       voices,
     });
     if (!result.ok) return false;
@@ -613,6 +614,7 @@ export function createTransportService(
       instrumentId: TRANSPORT_CLICK_INSTRUMENT_ID,
       startTimeSeconds: startTime,
       releaseTimeSeconds: startTime + TRANSPORT_CLICK_GATE_SECONDS,
+      ...(startMarginSeconds > 0 ? { lateStartMarginSeconds: startMarginSeconds } : {}),
       voices: [
         {
           voiceId: `${eventId}:v0`,
@@ -1168,7 +1170,7 @@ export function createTransportService(
         ) {
           return refuse(commandRequestId, kind, "transport.state_invalid");
         }
-        if (state === "ready") {
+        if (state === "ready" && activePreviewId === null) {
           publish("ready", commandRequestId, runStartBeat, null);
           return receipt(commandRequestId, kind, stateBefore, true);
         }
@@ -1536,6 +1538,7 @@ export function createTransportService(
           instrumentId: payload.instrumentId,
           startTimeSeconds: now + startMarginSeconds,
           releaseTimeSeconds: now + startMarginSeconds + payload.gateSeconds,
+          ...(startMarginSeconds > 0 ? { lateStartMarginSeconds: startMarginSeconds } : {}),
           voices,
         });
         if (!attacked.ok) {

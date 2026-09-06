@@ -30,6 +30,28 @@ function pitch(value: number): MidiPitch {
 }
 
 describe("TR-X1-PREVIEW preview channel isolation", () => {
+  test("Stop from ready retires the active preview before claiming a safe stop", async () => {
+    const harness = createTransportHarness();
+    const plan = customPlan({ documentId: "doc-preview-ready-stop", tempoBpm: 120,
+      durations: [{ numerator: 4, denominator: 1 }] });
+    requireReceipt(await harness.submit(initializePayload(plan)));
+    requireReceipt(await harness.submit({ kind: "start-preview", previewId: "x1:preview:ready-stop",
+      instrumentId: "mellow-keys", midiPitches: [pitch(60)], gateSeconds: 0.5 }));
+    expect(harness.service.inspectTransport().state).toBe("ready");
+    expect(harness.engine.inspectAudioEngine().previewNonreleasingVoiceCount).toBe(1);
+    const generation = harness.service.inspectTransport().generation;
+    const stopped = requireReceipt(await harness.submit({ kind: "stop" }));
+    expect(stopped.noFutureAttackPostcondition).toBe(true);
+    expect(harness.retirements.at(-1)?.selectorKind).toBe("all");
+    expect(harness.engine.inspectAudioEngine().previewNonreleasingVoiceCount).toBe(0);
+    expect(harness.service.inspectTransport().generation).toBe(generation + 1);
+    expect(requireRefusal(await harness.submit({ kind: "release-preview", previewId: "x1:preview:ready-stop" })).code)
+      .toBe("transport.preview_invalid");
+    requireReceipt(await harness.submit({ kind: "stop" }));
+    expect(harness.service.inspectTransport().generation).toBe(generation + 1);
+    expect(harness.fake.contextCreationCount()).toBe(1);
+  });
+
   test("X1-CMD-013 preview envelopes are runtime-validated", async () => {
     const harness = createTransportHarness();
     const plan = customPlan({
