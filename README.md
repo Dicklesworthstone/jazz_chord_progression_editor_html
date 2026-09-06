@@ -40,7 +40,7 @@ acceptance gates, and [`ios/README.md`](ios/README.md) for build instructions.
 
 ## What works today
 
-This table describes the repository build. Automatic startup recovery, **Import chart**, **Export JSON**, and the replacement/playback fixes are deployed to the [Vercel mirror](https://changes-jazz-progression-studio.vercel.app/) and verified in desktop and phone browsers (2026-09-06 UTC). Synchronizing these changes to `jazzchords.org` remains pending because Cloudflare Pages rejects the available credentials; see the [deployment checklist](docs/IMPLEMENTATION_TODO.md#active-deployment-blocker-jcpe-0bjj).
+This table describes the repository build. Automatic startup recovery, **Import chart**, **Export JSON**, the phone layout/title repairs, and the replacement/playback fixes are deployed to [jazzchords.org](https://jazzchords.org/) and its [Vercel mirror](https://changes-jazz-progression-studio.vercel.app/), with the committed build verified in desktop and phone browsers (2026-09-06 UTC). Cloudflare authorization is restored; see the [deployment evidence and remaining acceptance work](docs/IMPLEMENTATION_TODO.md#completed-cloudflare-delivery-jcpe-0bjj).
 
 | Capability | Current state |
 |---|---|
