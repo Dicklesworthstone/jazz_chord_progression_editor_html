@@ -71,6 +71,31 @@ flag that skips a gate, and the script always prints the one obligation
 tooling cannot discharge: a real-browser boot check at desktop and phone
 widths on each host.
 
+Before a production run spends time on those gates, it checks Pages access
+for the exact project and account. A shell API token can be active while
+lacking Pages permissions. If environment credentials fail, the command
+checks the saved Wrangler OAuth login and uses it only if that Pages check
+succeeds. This changes the Cloudflare subprocess environment, not the shell
+or credentials used by other projects. `--check` does not require host access.
+
+If both credential paths fail, restore the account's Cloudflare Pages Edit
+permission on the API token, or sign in through Wrangler's remote-friendly
+device flow (Wrangler versions supporting `--device`):
+
+```bash
+env -u CLOUDFLARE_API_TOKEN -u CF_API_TOKEN \
+  -u CLOUDFLARE_API_KEY -u CF_API_KEY -u CLOUDFLARE_EMAIL -u CF_EMAIL \
+  wrangler login --device --browser=false --scopes account:read user:read pages:write
+bun run deploy
+```
+
+The account owner completes the browser sign-in; no token belongs in source
+control. A successful access check is only a preflight: the upload and live
+verification still have to succeed. The upload directory contains the two
+public assets and a Vercel allowlist; playback diagnostics stay outside it.
+Temporary staging, including any credentials created by `vercel link`, is
+removed on both success and failure.
+
 ## Source-closure drift law
 
 The gate also compares the `dsp/concert-grand` source tree against the

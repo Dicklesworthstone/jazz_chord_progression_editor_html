@@ -29,7 +29,7 @@
  * There is deliberately no flag that skips a gate.
  */
 import { createHash } from "node:crypto";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -37,6 +37,7 @@ const root = resolve(import.meta.dirname, "..");
 const ARTIFACT_PATH = "jazz_chord_progression_editor.html";
 const OG_IMAGE_PATH = "deploy-assets/og-image.png";
 const CF_PROJECT = "jazz-chord-progression-editor-html";
+const CF_ACCOUNT = "abb7d369730a2d0adcb077c8147384e0";
 const VERCEL_PROJECT = "changes-jazz-progression-studio";
 const HOSTS = Object.freeze([
   "https://jazzchords.org/",
@@ -51,13 +52,13 @@ function sha256Hex(bytes: Uint8Array): string {
 
 async function spawnText(
   command: readonly string[],
-  options: Readonly<{ cwd?: string; label: string }>,
+  options: Readonly<{ cwd?: string; label: string; env?: NodeJS.ProcessEnv }>,
 ): Promise<Readonly<{ exitCode: number; stdout: string; stderr: string }>> {
   const child = Bun.spawn([...command], {
     cwd: options.cwd ?? root,
     stdout: "pipe",
     stderr: "pipe",
-    env: process.env,
+    env: options.env ?? process.env,
   });
   const [stdout, stderr, exitCode] = await Promise.all([
     new Response(child.stdout).text(),
@@ -82,8 +83,52 @@ async function gitShowBytes(path: string): Promise<Uint8Array> {
 }
 
 function fail(message: string): never {
-  process.stderr.write(`DEPLOY REFUSED: ${message}\n`);
-  process.exit(1);
+  throw new Error(`DEPLOY REFUSED: ${message}`);
+}
+
+async function cloudflarePagesEnvironment(): Promise<NodeJS.ProcessEnv> {
+  const env: NodeJS.ProcessEnv = {
+    ...process.env,
+    CLOUDFLARE_ACCOUNT_ID: CF_ACCOUNT,
+    CI: "true",
+    WRANGLER_SEND_METRICS: "false",
+  };
+  const authKeys = [
+    "CLOUDFLARE_API_TOKEN", "CF_API_TOKEN",
+    "CLOUDFLARE_API_KEY", "CF_API_KEY",
+    "CLOUDFLARE_EMAIL", "CF_EMAIL",
+  ];
+  const probe = async (candidate: NodeJS.ProcessEnv) => spawnText(
+    ["wrangler", "pages", "deployment", "list", `--project-name=${CF_PROJECT}`],
+    { label: "cloudflare-pages-auth", env: candidate },
+  );
+  const selected = await probe(env);
+  if (selected.exitCode === 0) return env;
+  process.stderr.write(selected.stdout + selected.stderr);
+
+  // A valid token for another Cloudflare service can lack Pages access and
+  // takes precedence over a perfectly usable Wrangler login. Test the saved
+  // login against this exact account/project before selecting it for upload.
+  if (authKeys.some((key) => Boolean(env[key]))) {
+    const oauthEnv = Object.fromEntries(
+      Object.entries(env).filter(([key]) => !authKeys.includes(key)),
+    );
+    process.stderr.write("Pages rejected environment credentials; checking saved Wrangler login.\n");
+    const oauth = await probe(oauthEnv);
+    if (oauth.exitCode === 0) {
+      process.stdout.write("Cloudflare Pages access verified using saved Wrangler login.\n");
+      return oauthEnv;
+    }
+    process.stderr.write(oauth.stdout + oauth.stderr);
+  }
+  return fail(
+    "Cloudflare Pages authorization failed before release gates or uploads. " +
+    "An active API token can still lack Pages permissions. Restore Account > " +
+    "Cloudflare Pages > Edit for the project account, or authenticate with " +
+    "`env -u CLOUDFLARE_API_TOKEN -u CF_API_TOKEN -u CLOUDFLARE_API_KEY " +
+    "-u CF_API_KEY -u CLOUDFLARE_EMAIL -u CF_EMAIL wrangler login --device`. " +
+    "Then rerun bun run deploy; no global shell credentials need changing.",
+  );
 }
 
 async function main(): Promise<void> {
@@ -116,21 +161,28 @@ async function main(): Promise<void> {
     fail("a Playwright suite is running; chain behind it instead of racing it");
   }
 
-  /* 3a. Model-acceptance gate. */
-  const acceptance = await spawnText(["bun", "scripts/check-predeploy.ts"], {
+  // Fail cheaply on the real Pages endpoint, not after all instrument gates.
+  // Check-only remains usable offline and never needs host credentials.
+  const pagesEnv = checkOnly ? undefined : await cloudflarePagesEnvironment();
+
+  /* 3a. The public predeploy command includes model acceptance and quality. */
+  const acceptance = await spawnText(["bun", "run", "predeploy:check"], {
     label: "check-predeploy",
   });
   process.stderr.write(acceptance.stderr);
   process.stdout.write(acceptance.stdout);
-  if (acceptance.exitCode !== 0) fail("model-acceptance gate is red");
+  if (acceptance.exitCode !== 0) fail("model-acceptance/instrument-quality gate is red");
 
   /* Assemble the deploy directory from committed bytes. */
   const artifactBytes = await gitShowBytes(ARTIFACT_PATH);
   const artifactSha256 = sha256Hex(artifactBytes);
   const stage = await mkdtemp(join(tmpdir(), "jcpe-deploy-"));
   try {
-    await writeFile(join(stage, "index.html"), artifactBytes);
-    await writeFile(join(stage, "og-image.png"), await gitShowBytes(OG_IMAGE_PATH));
+    const upload = join(stage, "public");
+    await mkdir(upload);
+    await writeFile(join(upload, "index.html"), artifactBytes);
+    await writeFile(join(upload, "og-image.png"), await gitShowBytes(OG_IMAGE_PATH));
+    // Keep the playback ledger outside the upload directory for both hosts.
 
     /* 3b. Real-browser playback gate against the exact shipped bytes. */
     const nodeBinary = process.env["JCPE_NODE"] ?? process.env["NODE_BINARY"] ?? "node";
@@ -139,13 +191,14 @@ async function main(): Promise<void> {
       [
         nodeBinary,
         "scripts/check-predeploy-playback.ts",
-        join(stage, "index.html"),
+        join(upload, "index.html"),
         "--json",
         playbackLedger,
       ],
       { label: "playback-gate" },
     );
     process.stderr.write(playback.stderr);
+    process.stdout.write(playback.stdout);
     if (playback.exitCode !== 0) fail("real-browser playback gate is red");
 
     if (checkOnly) {
@@ -171,29 +224,34 @@ async function main(): Promise<void> {
         "wrangler",
         "pages",
         "deploy",
-        stage,
+        upload,
         `--project-name=${CF_PROJECT}`,
         "--branch=main",
         "--commit-dirty=true",
       ],
-      { label: "wrangler" },
+      { label: "wrangler", ...(pagesEnv === undefined ? {} : { env: pagesEnv }) },
     );
     process.stderr.write(pages.stderr);
+    process.stdout.write(pages.stdout);
     if (pages.exitCode !== 0) {
       fail("wrangler pages deploy failed (run `wrangler login` if auth expired)");
     }
+    // Create this only after Pages uploaded the two public assets. Vercel link
+    // may create .env.local; only the HTML and image are eligible for upload.
+    await writeFile(join(upload, ".vercelignore"), "*\n!index.html\n!og-image.png\n");
     const link = await spawnText(
       ["vercel", "link", "--yes", "--project", VERCEL_PROJECT],
-      { cwd: stage, label: "vercel-link" },
+      { cwd: upload, label: "vercel-link" },
     );
     if (link.exitCode !== 0) {
       fail("vercel link failed (run `vercel login` if auth expired)");
     }
     const vercel = await spawnText(["vercel", "deploy", "--prod", "--yes"], {
-      cwd: stage,
+      cwd: upload,
       label: "vercel",
     });
     process.stderr.write(vercel.stderr);
+    process.stdout.write(vercel.stdout);
     if (vercel.exitCode !== 0) {
       fail("vercel deploy failed (run `vercel login` if auth expired)");
     }
@@ -203,7 +261,10 @@ async function main(): Promise<void> {
     for (const host of HOSTS) {
       let served = "";
       for (let attempt = 1; attempt <= POLL_ATTEMPTS; attempt += 1) {
-        const response = await fetch(host, { redirect: "follow" });
+        const response = await fetch(host, {
+          redirect: "follow",
+          headers: { "User-Agent": "OpenAI File Downloader, XaiImageApiFetch/1.0" },
+        });
         served = sha256Hex(new Uint8Array(await response.arrayBuffer()));
         if (served === artifactSha256) break;
         await new Promise((resolveDelay) => setTimeout(resolveDelay, POLL_DELAY_MS));
@@ -242,4 +303,9 @@ async function main(): Promise<void> {
   }
 }
 
-await main();
+try {
+  await main();
+} catch (error) {
+  process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
+  process.exitCode = 1;
+}
