@@ -11,6 +11,7 @@
  * workflow so a later Keep still works; a failed Keep changes nothing.
  */
 import { describe, expect, test } from "bun:test";
+import { seedStarterChart } from "../../src/application/studio-starter-chart";
 
 import {
   createStudioBootstrap,
@@ -100,7 +101,7 @@ async function createHarness(writeOutcome: "written" | "quota" | "denied" = "wri
   const composition = createStudioCompositionOverState(
     syncedState,
     dependencies,
-    {},
+    { nowMs: () => 9_000 },
   );
   const recoveryStatus = createStudioRecoveryStatusFeed();
   const recoveryHarness = createRecoveryHarness([{ kind: "indexeddb", writeOutcome }], recoveryStatus.observe);
@@ -411,6 +412,94 @@ test("U5 recovery session keeps through the real transaction and reports pending
   await h.recoveryHarness.clock.advance(400);
   expect(session.getSnapshot().statusText).toContain("Recovered locally at");
 });
+
+test("U5 automatic current opens with a retained explanation and a durable Discard action", async () => {
+  const h = await createHarness();
+  const store = h.recoveryHarness.adapters[0]?.store;
+  if (store === undefined) throw new Error("NO_STORE");
+  const before = h.composition.readApplicationState();
+  store.set(recoveryStorageKey(before.document.id, "current"), await checksummedEnvelope({
+    revision: 7, document: RECOVERED_RAW, savedAt: "2026-09-01T12:00:00.000Z" }));
+  const session = createStudioRecoverySession({ composition: h.composition, orchestrator: h.orchestrator,
+    subscribeRecovery: h.recoveryStatus.subscribe, sessionEdited: false, formatTimestamp: value => value });
+  await session.start();
+  const opened: unknown = h.composition.readApplicationState().document;
+  expect(opened).toEqual(RECOVERED_RAW);
+  expect(session.getSnapshot()).toMatchObject({ offer: null, opened: {
+    savedAtLabel: "2026-09-01T12:00:00.000Z", revision: 7,
+  } });
+  await session.discard();
+  await h.recoveryHarness.clock.advance(20_000);
+  expect(store.size).toBe(0);
+  expect(session.getSnapshot()).toMatchObject({ opened: null });
+  const afterDiscard: unknown = h.composition.readApplicationState().document;
+  expect(afterDiscard).toEqual(RECOVERED_RAW);
+  expect(h.composition.controller.setTitle("Edited after automatic Discard").ok).toBe(true);
+  await h.recoveryHarness.clock.advance(400);
+  expect(h.recoveryHarness.service.inspectRecovery().cleanRevision).toBe(h.composition.readApplicationState().revision);
+});
+
+for (const change of ["title", "draft", "dialog", "raw-ui-draft"] as const) {
+  test(`U5 automatic recovery downgrades after a pending ${change} change, including unchanged document revision`, async () => {
+    const h = await createHarness();
+    const store = h.recoveryHarness.adapters[0]?.store;
+    if (store === undefined) throw new Error("NO_STORE");
+    const initial = h.composition.readApplicationState();
+    store.set(recoveryStorageKey(initial.document.id, "current"), await checksummedEnvelope({
+      revision: 7, document: RECOVERED_RAW, savedAt: "2026-09-01T12:00:00.000Z" }));
+    const bytes = [...store];
+    let release = (): void => { throw new Error("STARTUP_GATE_MISSING"); };
+    const pending = new Promise<void>(resolve => { release = resolve; });
+    const session = createStudioRecoverySession({ composition: h.composition,
+      orchestrator: { ...h.orchestrator, startup: async input => { await pending; return h.orchestrator.startup(input); } },
+      subscribeRecovery: h.recoveryStatus.subscribe, sessionEdited: false, formatTimestamp: value => value });
+    const started = session.start();
+    if (change === "raw-ui-draft") session.noteDraftInput();
+    else {
+    const result = change === "title" ? h.composition.controller.setTitle("Keep my edit")
+      : change === "draft" ? h.composition.controller.setQuickEntryDraft("Dm7 G7", null, "idle", [])
+        : h.composition.replacementWorkflow.applyLifecycleIntent({ kind: "push-dialog", dialog: {
+          id: "startup-export", kind: "lifecycle-export", phase: "open", blocksHistory: false, requestId: null,
+        } });
+    expect(result.ok).toBe(true);
+    }
+    const edited = h.composition.readApplicationState();
+    if (change !== "title") expect(edited.revision).toBe(initial.revision);
+    release(); await started;
+    expect(h.composition.readApplicationState()).toBe(edited);
+    expect(session.getSnapshot().offer).not.toBeNull();
+    await h.recoveryHarness.clock.advance(20_000);
+    expect([...store]).toEqual(bytes);
+  });
+}
+
+for (const startup of ["empty", "corrupt", "edited", "draft", "raw-ui-draft"] as const) {
+  test(`U5 deferred welcome honors ${startup} startup and never schedules a demo-only write`, async () => {
+    const h = await createHarness();
+    const initial = h.composition.readApplicationState();
+    if (startup === "corrupt") h.recoveryHarness.adapters[0]?.store.set(recoveryStorageKey(initial.document.id, "current"), "{bad");
+    let release = (): void => { throw new Error("STARTUP_GATE_MISSING"); };
+    const pending = new Promise<void>(resolve => { release = resolve; });
+    let seeds = 0;
+    const session = createStudioRecoverySession({ composition: h.composition,
+      orchestrator: { ...h.orchestrator, startup: async input => { await pending; return h.orchestrator.startup(input); } },
+      subscribeRecovery: h.recoveryStatus.subscribe, sessionEdited: false, formatTimestamp: value => value,
+      onEmptyStartup: () => { seeds++; expect(seedStarterChart(h.composition.controller).seeded).toBe(true); },
+    });
+    const started = session.start();
+    if (startup === "edited") expect(h.composition.controller.setTitle("Before the probe").ok).toBe(true);
+    if (startup === "draft") expect(h.composition.controller.setQuickEntryDraft("Dm7 G7", null, "idle", []).ok).toBe(true);
+    if (startup === "raw-ui-draft") session.noteDraftInput();
+    const before = h.composition.readApplicationState();
+    expect(seeds).toBe(0);
+    release(); await started;
+    expect(seeds).toBe(startup === "empty" ? 1 : 0);
+    if (startup !== "empty") expect(h.composition.readApplicationState()).toBe(before);
+    await h.recoveryHarness.clock.advance(5_000);
+    expect(h.recoveryHarness.service.inspectRecovery().work.writesScheduled).toBe(startup === "edited" ? 1 : 0);
+    await session.start(); expect(seeds).toBe(startup === "empty" ? 1 : 0);
+  });
+}
 
 test("U5 renders corrupt/unavailable status and does not schedule a boot-only save", async () => {
   const h = await createHarness();

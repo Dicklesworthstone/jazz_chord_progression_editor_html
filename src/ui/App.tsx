@@ -379,6 +379,7 @@ import { DocumentImportDialog } from "./studio/DocumentImportDialog";
 export type AppProps = Readonly<{
   documentActions?: ComponentChildren;
   recoveryRegion?: ComponentChildren;
+  onDraftInput?: (() => void) | undefined;
   snapshot: StudioViewModel;
   actions: AppActions;
   /** A boot-time refusal to surface once in the shell notice. */
@@ -1720,7 +1721,7 @@ function feedbackFromRefusal(
   });
 }
 
-export function App({ snapshot, actions, startupNotice, documentActions, recoveryRegion }: AppProps) {
+export function App({ snapshot, actions, startupNotice, documentActions, recoveryRegion, onDraftInput }: AppProps) {
   const [titleDraft, setTitleDraft] = useState(snapshot.title);
   const previousCommittedTitle = useRef(snapshot.title);
   const audioGestureSequence = useRef(0);
@@ -2582,6 +2583,7 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
     <StudioShell
       documentActions={documentActions}
       recoveryRegion={recoveryRegion}
+      onDraftInput={onDraftInput}
       midiExportAvailable={actions.midiExportAvailable}
       view={view}
       annotations={{
@@ -3754,11 +3756,14 @@ export function StudioRoot({
     return unsubscribe;
   }, [recoveryBinding]);
 
+  const recoveryNotice = recoveryUi?.offer ?? recoveryUi?.opened ?? null;
   const recoveryRegion = recoveryUi === null ? null : (
     <>
-      {recoveryUi.offer === null ? null : (
+      {recoveryNotice === null ? null : (
         <RecoveryNotice
-          offer={recoveryUi.offer}
+          offer={recoveryNotice}
+          automaticallyOpened={recoveryUi.opened !== null}
+          onNew={localReplacement == null ? undefined : () => { void localReplacement.requestNew("studio-recovery-new"); }}
           busy={recoveryUi.busy || recoveryUi.reconciliationRequired}
           onKeep={() => { void recoveryBinding?.keep(); }}
           onDiscard={() => { void recoveryBinding?.discard(); }}
@@ -3785,6 +3790,7 @@ export function StudioRoot({
     <>
       <App
       recoveryRegion={recoveryRegion}
+      onDraftInput={recoveryBinding?.noteDraftInput}
       documentActions={<>
       {localReplacement == null ? null : <Button
         id="studio-new-chart" label="New chart" type="button" variant="secondary" density="comfortable"

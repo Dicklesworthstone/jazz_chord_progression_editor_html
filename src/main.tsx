@@ -124,8 +124,8 @@ if (creation.ok) {
    * travels. A refused share falls back to the reviewed starter chart with
    * the refusal surfaced, never a half-applied document. With no share
    * present, a pristine first open receives the starter chart (jcpe-b20t).
-   * Seeding happens before the first render so the opening paint already
-   * shows a playable progression.
+   * Recovery is checked before seeding. The workspace renders immediately;
+   * an untouched first open without recovery then receives the playable demo.
    */
   const composition = creation.composition;
   const { controller, midiExport } = composition;
@@ -135,22 +135,17 @@ if (creation.ok) {
     const applied = applySharedStartup(controller, shared.value);
     if (!applied.applied) {
       startupNotice = `The shared chart was not opened: ${applied.reason}`;
-      seedStarterChart(controller);
     }
   } else if (shared.code !== "share.fragment_absent") {
     startupNotice = `The share link could not be read: ${shared.message}`;
-    seedStarterChart(controller);
-  } else {
-    seedStarterChart(controller);
   }
   /*
    * A1 recovery wiring (l3a.2): the service over the real browser
    * adapters (IndexedDB primary, localStorage fallback), the mutation
    * feed on the controller, best-effort flush on visibilitychange, and
-   * the Keep/Discard startup surface. Every session that reaches this
-   * point has already edited (the share apply or the starter seed ran
-   * real commands), so the reviewed matrix downgrades auto-open to the
-   * Keep/Discard offer — recovery never silently overwrites work.
+   * the startup surface. Explicit shared charts require Keep/Discard;
+   * otherwise an untouched workspace may open a valid current recovery.
+   * The starter is deferred until the probe finds no recovery at all.
    * Keep rides the transactional replacement channel over the sealed
    * owner ports and the REAL serialized-transport X1 retirement; a
    * refused Keep changes nothing. Browser recovery is never called Save.
@@ -202,7 +197,8 @@ if (creation.ok) {
     subscribeRecovery: recoveryStatus.subscribe,
     composition,
     orchestrator: recoveryOrchestrator,
-    sessionEdited: true,
+    sessionEdited: shared.ok || shared.code !== "share.fragment_absent",
+    onEmptyStartup: () => { seedStarterChart(controller); },
     formatTimestamp: (timestamp) => {
       const parsed = Date.parse(timestamp);
       return Number.isNaN(parsed) ? timestamp : new Date(parsed).toLocaleString();
@@ -232,6 +228,7 @@ if (creation.ok) {
     exportCurrent: () => { void lifecycle.openExport(); },
   });
 
+  void recoveryBinding.start();
   render(
     <StudioRoot
       controller={controller}

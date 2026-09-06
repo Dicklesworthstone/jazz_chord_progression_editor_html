@@ -21,6 +21,8 @@ export type RecoveryNoticeProps = Readonly<{
   busy: boolean;
   onKeep: () => void;
   onDiscard: () => void;
+  automaticallyOpened?: boolean;
+  onNew?: (() => void) | undefined;
 }>;
 
 export function RecoveryNotice({
@@ -28,27 +30,38 @@ export function RecoveryNotice({
   busy,
   onKeep,
   onDiscard,
+  automaticallyOpened = false,
+  onNew,
 }: RecoveryNoticeProps) {
   return (
     <section
       class="studio-recovery-notice"
       aria-labelledby="studio-recovery-notice-title"
-      role="alertdialog"
+      role={automaticallyOpened ? "region" : "alertdialog"}
       aria-describedby="studio-recovery-notice-body"
     >
       <div class="studio-recovery-notice__text">
         <h2 id="studio-recovery-notice-title">
-          {offer.previous === true ? "Previous recovery copy found" : "Recovered chart found"}
+          {automaticallyOpened ? "Recovered chart opened" : offer.previous === true ? "Previous recovery copy found" : "Recovered chart found"}
         </h2>
         <p id="studio-recovery-notice-body">
+          {automaticallyOpened ? <>
+            Opened your local recovery from {offer.savedAtLabel} (revision {offer.revision}).
+            Discard local copy removes the stored recovery and leaves this chart open.
+            New chart lets you start again. Further edits create a new recovery copy.
+          </> : <>
           {offer.previous === true ? "The latest recovery copy could not be read. The previous copy is still available. " : ""}
           A locally recovered chart from {offer.savedAtLabel} (revision{" "}
           {offer.revision}) is available. Keep it to replace the current
           chart, or discard it. Local recovery resumes after you choose.
+          </>}
         </p>
       </div>
       <div class="studio-recovery-notice__actions">
-        <Button
+        {automaticallyOpened ? (onNew === undefined ? null : <Button
+          id="studio-recovery-new" label="New chart" type="button" variant="primary" density="comfortable"
+          busy={false} disabled={busy} invalid={false} describedBy={["studio-recovery-notice-body"]} onAction={onNew}
+        />) : <Button
           busy={busy}
           density="comfortable"
           describedBy={["studio-recovery-notice-body"]}
@@ -59,7 +72,7 @@ export function RecoveryNotice({
           onAction={onKeep}
           type="button"
           variant="primary"
-        />
+        />}
         <Button
           busy={false}
           density="comfortable"
@@ -67,7 +80,7 @@ export function RecoveryNotice({
           disabled={busy}
           id="studio-recovery-discard"
           invalid={false}
-          label="Discard"
+          label={automaticallyOpened ? "Discard local copy" : "Discard"}
           onAction={onDiscard}
           type="button"
           variant="secondary"

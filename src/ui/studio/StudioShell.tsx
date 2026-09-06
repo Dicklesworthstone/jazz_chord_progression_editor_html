@@ -108,6 +108,7 @@ const DISMISSIBLE = Object.freeze({ kind: "dismissible" } as const);
 export function StudioShell({
   documentActions,
   recoveryRegion,
+  onDraftInput,
   view,
   callbacks,
   transport,
@@ -501,6 +502,8 @@ export function StudioShell({
   return (
     <div
       class="studio-shell"
+      onInputCapture={onDraftInput}
+      onChangeCapture={onDraftInput}
       data-app-ready="true"
       data-library-collapsed={view.layout.libraryCollapsed ? "true" : "false"}
       data-harmony-collapsed={view.layout.harmonyCollapsed ? "true" : "false"}

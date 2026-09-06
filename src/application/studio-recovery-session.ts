@@ -15,6 +15,7 @@ export type StudioRecoverySessionView = Readonly<{
     revision: number;
     previous: boolean;
   }> | null;
+  opened: Readonly<{ savedAtLabel: string; revision: number }> | null;
   busy: boolean;
   reconciliationRequired: boolean;
   failureMessage: string | null;
@@ -29,6 +30,7 @@ export type StudioRecoverySession = Readonly<{
   getSnapshot: () => StudioRecoverySessionView;
   subscribe: (listener: () => void) => () => void;
   start: () => Promise<void>;
+  noteDraftInput: () => void;
   keep: () => Promise<void>;
   discard: () => Promise<void>;
 }>;
@@ -57,11 +59,14 @@ export function createStudioRecoverySession(options: Readonly<{
   subscribeRecovery: (listener: RecoveryStatusListener) => () => void;
   orchestrator: StudioRecoveryOrchestrator;
   sessionEdited: boolean;
+  /** Composition-owned welcome, only after an untouched startup finds no copy. */
+  onEmptyStartup?: () => void;
   formatTimestamp: (timestamp: string) => string;
 }>): StudioRecoverySession {
   const { composition, orchestrator } = options;
   let snapshot: StudioRecoverySessionView = Object.freeze({
     offer: null,
+    opened: null,
     busy: false,
     reconciliationRequired: false,
     failureMessage: null,
@@ -74,8 +79,10 @@ export function createStudioRecoverySession(options: Readonly<{
   let offered: Extract<StudioRecoveryStartupView, { kind: "offer" }> | null = null;
   let offeredAt: Readonly<{ documentId: DocumentId; revision: number }> | null = null;
   let storageDocumentId: DocumentId | null = null;
+  let openedDocumentId: DocumentId | null = null;
   let started: Promise<void> | null = null;
   let feedAttached = false;
+  let draftInput = false;
 
   function publish(patch: Partial<StudioRecoverySessionView>): void {
     snapshot = Object.freeze({ ...snapshot, ...patch });
@@ -106,6 +113,10 @@ export function createStudioRecoverySession(options: Readonly<{
   });
   composition.controller.subscribe(() => {
     const state = composition.readApplicationState();
+    if (openedDocumentId !== null && state.document.id !== openedDocumentId) {
+      openedDocumentId = null;
+      publish({ opened: null });
+    }
     publish({
       exportText: state.exportRevision === null ? null
         : state.exportRevision === state.revision
@@ -114,7 +125,7 @@ export function createStudioRecoverySession(options: Readonly<{
     });
   });
 
-  const keep = async (): Promise<void> => {
+  const accept = async (automatically: boolean): Promise<void> => {
     if (snapshot.busy || snapshot.reconciliationRequired || offered === null || offeredAt === null) return;
     const state = composition.readApplicationState();
     if (state.document.id !== offeredAt.documentId || state.revision !== offeredAt.revision) {
@@ -123,6 +134,7 @@ export function createStudioRecoverySession(options: Readonly<{
     }
     publish({ busy: true, failureMessage: null });
     try {
+      const explanation = snapshot.offer;
       const result = await orchestrator.keep(offered.envelope);
       if (!result.ok) {
         publish({ reconciliationRequired: result.reconciliationRequired === true,
@@ -133,7 +145,12 @@ export function createStudioRecoverySession(options: Readonly<{
       }
       offered = null;
       offeredAt = null;
-      publish({ offer: null });
+      openedDocumentId = automatically ? composition.readApplicationState().document.id : null;
+      if (automatically) {
+        const focus = composition.controller.getSnapshot().focusRequest;
+        if (focus?.reason === "replacement") composition.controller.acknowledgeFocus(focus.sequence);
+      }
+      publish({ offer: null, opened: automatically ? explanation : null });
       attachFeed(true);
     } catch {
       publish({ failureMessage: "The recovered chart could not be opened (recovery.keep_failed). The current chart is unchanged. Try again." });
@@ -169,8 +186,10 @@ export function createStudioRecoverySession(options: Readonly<{
             previous: view.disposition === "offer-previous",
           }) });
           if (view.disposition === "open-current-automatically" &&
-              current.document.id === initial.document.id && current.revision === initial.revision) {
-            await keep();
+              !options.sessionEdited && !draftInput && composition.readApplicationState() === initial) {
+            // A draft, dialog or selection may change without advancing the
+            // document revision. Any session change gives the user the choice.
+            await accept(true);
           }
           return;
         }
@@ -181,6 +200,7 @@ export function createStudioRecoverySession(options: Readonly<{
         // Do not save the demonstration chart merely because the page loaded.
         // An edit made while the read was pending must still be recovered.
         const current = composition.readApplicationState();
+        if (view.kind === "none-available" && !draftInput && current === initial) options.onEmptyStartup?.();
         attachFeed(current.document.id !== initial.document.id || current.revision !== initial.revision);
       } catch {
         publish({ statusText: RECOVERY_STATUS_VOCABULARY.unavailable,
@@ -199,15 +219,22 @@ export function createStudioRecoverySession(options: Readonly<{
       return () => { listeners.delete(listener); };
     },
     start,
-    keep,
+    // Raw UI fields have not dispatched a document command yet. Their input
+    // still establishes session intent before the asynchronous probe settles.
+    noteDraftInput: () => { draftInput = true; },
+    keep: () => accept(false),
     discard: async () => {
-      if (snapshot.busy || snapshot.reconciliationRequired || offered === null || storageDocumentId === null) return;
+      if (snapshot.busy || snapshot.reconciliationRequired || (offered === null && snapshot.opened === null) || storageDocumentId === null) return;
       publish({ busy: true, failureMessage: null });
       try {
         await orchestrator.discard(storageDocumentId);
+        // An imported envelope may have a different document identity from its
+        // lookup key. Also cancel the write queued by its successful opening.
+        if (openedDocumentId !== null && openedDocumentId !== storageDocumentId) await orchestrator.discard(openedDocumentId);
         offered = null;
         offeredAt = null;
-        publish({ offer: null });
+        openedDocumentId = null;
+        publish({ offer: null, opened: null });
         attachFeed(false);
       } catch {
         publish({ failureMessage: "The recovery copy could not be discarded (recovery.write_denied). The current chart is unchanged. Try Discard again." });

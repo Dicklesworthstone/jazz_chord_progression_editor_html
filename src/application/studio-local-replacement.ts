@@ -26,7 +26,7 @@ export type StudioLocalReplacementView = Readonly<{
 export type StudioLocalReplacementService = Readonly<{
   getSnapshot: () => StudioLocalReplacementView;
   subscribe: (listener: () => void) => () => void;
-  requestNew: () => Promise<void>;
+  requestNew: (focusOwnerId?: string) => Promise<void>;
   requestLesson: (id: string, focusOwnerId?: string) => Promise<void>;
   confirm: (acknowledged: boolean, hostIsCurrent?: () => unknown) => Promise<void>;
   cancel: () => void;
@@ -215,12 +215,12 @@ export function createStudioLocalReplacement(options: Readonly<{
     if (!pushed.ok) { failure(pushed.code); return; }
     publish({ open: true, phase: "confirm", origin, title: candidate.title,
       nonUndoable: assessed.oversized, exportRecommended: facts.exportRecommended || assessed.oversized,
-      message: null, triggerId: origin === "new" ? "studio-new-chart" : focusOwnerId ?? `studio-progression-${entryId ?? ""}` });
+      message: null, triggerId: focusOwnerId ?? (origin === "new" ? "studio-new-chart" : `studio-progression-${entryId ?? ""}`) });
     if (!facts.confirmationRequired && !assessed.oversized) await confirm(false);
   }
   return Object.freeze({ getSnapshot: () => hosted() ? view : Object.freeze({ ...view, open: false }),
     subscribe: listener => { listeners.add(listener); return () => { listeners.delete(listener); }; },
-    requestNew: () => request("new"), requestLesson: (id, focusOwnerId) => request("lesson", id, focusOwnerId), confirm, cancel,
+    requestNew: focusOwnerId => request("new", undefined, focusOwnerId), requestLesson: (id, focusOwnerId) => request("lesson", id, focusOwnerId), confirm, cancel,
     invalidateHost: () => { hostInvalidated = true; cancel(); },
     exportCurrentFirst: () => { if (view.phase === "committing") return; cancel(); if (!view.open) options.exportCurrent(); },
   });
