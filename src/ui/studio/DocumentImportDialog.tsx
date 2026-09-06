@@ -23,10 +23,19 @@ export function DocumentImportDialog({ service, view }: Readonly<{ service: Stud
   useEffect(() => { if (view.phase !== "confirm") setAcknowledged(false); }, [view.phase]);
   const onContractRefusal = useCallback((diagnostic: UiDiagnostic) => {
     setRefusal(`${diagnostic.code}: ${diagnostic.message}`);
-    service.cancel();
+    service.invalidateHost();
   }, [service]);
+  useEffect(() => { if (view.open) setRefusal(null); }, [view.open]);
+  function captureHost(): () => boolean {
+    const owner = document.getElementById(FOCUS.triggerId);
+    const host = document.getElementById("studio-document-import-dialog");
+    return () => owner !== null && host !== null && document.getElementById(FOCUS.triggerId) === owner &&
+      document.getElementById("studio-document-import-dialog") === host && host.isConnected && owner.isConnected &&
+      owner.getClientRects().length > 0 && getComputedStyle(owner).visibility !== "hidden" &&
+      host.getClientRects().length > 0 && getComputedStyle(host).visibility !== "hidden";
+  }
   if (!view.open) return refusal === null && view.message === null ? null
-    : <p role={refusal === null ? "status" : "alert"}>{refusal ?? view.message}</p>;
+    : <p role={refusal === null && view.phase !== "failed" ? "status" : "alert"}>{refusal ?? view.message}</p>;
   const busy = view.phase === "committing" || view.reconciliationRequired;
   const confirm = view.phase === "confirm" || busy;
   return <Dialog backgroundRootId="studio-shell-background" id="studio-document-import-dialog"
@@ -49,7 +58,7 @@ export function DocumentImportDialog({ service, view }: Readonly<{ service: Stud
           label="Export current chart first" variant="secondary" onAction={service.exportCurrentFirst} /> : null}
         <Button {...COMMON} id="studio-import-confirm" type="button" variant="destructive" busy={busy}
           disabled={busy || (view.nonUndoable && !acknowledged)} label={busy ? "Replacing chart…" : "Confirm replacement"}
-          onAction={() => { void service.confirm(acknowledged); }} />
+          onAction={() => { void service.confirm(acknowledged, captureHost()); }} />
         <Button {...COMMON} id="studio-import-back" type="button" variant="secondary" busy={false} disabled={busy}
           label="Back to preview" onAction={service.backToPreview} />
       </> : <>
@@ -84,7 +93,7 @@ export function DocumentImportDialog({ service, view }: Readonly<{ service: Stud
           {view.omittedItems === 0 ? null : <p>{view.omittedItems} additional report items omitted by the 256-item display bound.</p>}
         </section>}
         {view.phase === "preview" ? <Button {...COMMON} id="studio-import-commit" busy={false} disabled={false} type="button" variant="primary"
-          label={view.confirmationRequired || view.nonUndoable ? "Review replacement" : "Import this chart"} onAction={() => { void service.requestCommit(); }} /> : null}
+          label={view.confirmationRequired || view.nonUndoable ? "Review replacement" : "Import this chart"} onAction={() => { void service.requestCommit(captureHost()); }} /> : null}
         {view.phase === "chart-text" ? <Button {...COMMON} id="studio-import-stage-text" busy={false} disabled={false} type="button" variant="primary"
           label="Send to Quick entry" onAction={service.stageChartText} /> : null}
       </>}

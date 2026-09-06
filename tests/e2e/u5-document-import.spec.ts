@@ -6,6 +6,7 @@ import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
+declare global { interface Window { u5RestoreImportOwner?: () => void } }
 test.use({ userAgent: "OpenAI File Downloader, XaiImageApiFetch/1.0" });
 const artifact = pathToFileURL(join(process.cwd(), "jazz_chord_progression_editor.html")).href;
 const fixture = join(process.cwd(), "tests/fixtures/interchange/goldens/nested.changes.json");
@@ -67,6 +68,49 @@ async function replacePreview(page: Page): Promise<void> {
 for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) {
   test.describe(`U5 document import ${String(viewport.width)}px`, () => {
     test.use({ viewport });
+    for (const loss of ["hidden-trigger", "replaced-trigger", "hidden-dialog"] as const) {
+      test(`import owner loss during retirement preserves the chart (${loss})`, async ({ page }, info) => {
+        const original = await exportDocument(page);
+        await observeNativeSources(page);
+        await page.locator("#studio-transport-play").click();
+        await expect(page.locator("#studio-transport-pause")).toBeEnabled();
+        await previewFile(page); await page.locator("#studio-import-commit").click();
+        await expect(page.locator("#studio-import-confirm")).toBeEnabled();
+        await page.evaluate(mode => {
+          const owner = document.getElementById("studio-import-chart");
+          const host = document.getElementById("studio-document-import-dialog");
+          const confirm = document.getElementById("studio-import-confirm");
+          if (owner === null || host === null || !(confirm instanceof HTMLButtonElement)) throw new Error("IMPORT_HOST_MISSING");
+          // Change ownership in the same event task that starts retirement,
+          // before E0 resumes from the real serialized audio command.
+          confirm.click();
+          if (mode === "hidden-trigger") {
+            owner.hidden = true; window.u5RestoreImportOwner = () => { owner.hidden = false; };
+          } else if (mode === "replaced-trigger") {
+            const impostor = owner.cloneNode(true);
+            if (!(impostor instanceof HTMLElement)) throw new Error("CLONED_OWNER_INVALID");
+            owner.replaceWith(impostor);
+            window.u5RestoreImportOwner = () => { impostor.replaceWith(owner); };
+          } else host.hidden = true;
+        }, loss);
+        await expect(page.getByRole("dialog")).toHaveCount(0);
+        await expect(page.getByRole("alert").filter({ hasText: "ui.stale_owner" })).toBeVisible();
+        await expect.poll(() => page.evaluate(() => window.u5NativeSourceCounts?.())).toMatchObject({ sounding: 0, futureAttacks: 0 });
+        const sources = await page.evaluate(() => window.u5NativeSourceCounts?.());
+        expect(sources?.started).toBeGreaterThan(0);
+        expect(await page.evaluate(() => document.activeElement !== document.body &&
+          document.activeElement instanceof HTMLElement && document.activeElement.getClientRects().length > 0)).toBe(true);
+        await page.evaluate(() => { window.u5RestoreImportOwner?.(); });
+        expect(await exportDocument(page)).toEqual(original);
+        await page.locator("#studio-transport-play").click();
+        await expect(page.locator("#studio-transport-pause")).toBeEnabled();
+        await previewFile(page); await replacePreview(page);
+        expect(await exportDocument(page)).toEqual(expectedDocument);
+        await page.locator("#studio-undo").click(); expect(await exportDocument(page)).toEqual(original);
+        await info.attach("import-owner-retirement.json", { contentType: "application/json", body: JSON.stringify({ loss, sources }) });
+      });
+    }
+
     test("a refused native audio-clock read preserves import state and a fresh preview succeeds", async ({ page }, info) => {
       const original = await exportDocument(page);
       await observeNativeSources(page);
