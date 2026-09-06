@@ -101,7 +101,11 @@ for (const cell of [
         const path = await (await downloadEvent).path();
         const downloaded: unknown = JSON.parse(await readFile(path, "utf8"));
         expect(downloaded).toEqual(expectedDocument);
+        // File arrival precedes export-marker settlement; dismissal stays
+        // blocked until the application finishes that handoff.
+        await expect(page.getByRole("dialog").getByRole("status")).toContainText("Handed off to your browser");
         await page.keyboard.press("Escape");
+        await expect(page.getByRole("dialog")).toHaveCount(0);
         await expectReachable(page, chord);
       } finally {
         await info.attach("recovery-chart-space.json", { contentType: "application/json", body: JSON.stringify({
