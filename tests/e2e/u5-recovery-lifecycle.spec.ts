@@ -351,6 +351,9 @@ for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 
       page.on("download", (download) => downloads.push(download.suggestedFilename()));
       await page.goto(artifact);
       await expect(page.locator('[data-app-ready="true"]')).toBeVisible();
+      // The shell becomes interactive before recovery/default startup settles.
+      // Capture this export-only baseline after the welcome chart is published.
+      await expect(page.locator("#studio-document-title")).toHaveValue("Deacon Blues");
       const title = await page.locator("#studio-document-title").inputValue();
       await page.locator("#studio-export-json").click();
       await expect(page.locator("#studio-lifecycle-download")).toBeEnabled();
