@@ -1724,6 +1724,7 @@ function feedbackFromRefusal(
 export function App({ snapshot, actions, startupNotice, documentActions, recoveryRegion, onDraftInput }: AppProps) {
   const [titleDraft, setTitleDraft] = useState(snapshot.title);
   const previousCommittedTitle = useRef(snapshot.title);
+  const previousTitleDocumentId = useRef(snapshot.documentId);
   const audioGestureSequence = useRef(0);
   const nextAudioGesture = useCallback(
     (kind: StudioAudioGesture["kind"]): StudioAudioGesture => {
@@ -2100,12 +2101,21 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
     actions.acknowledgeFocus(request.sequence);
   }, [actions, snapshot.focusRequest]);
 
-  useEffect(() => {
+  // Reconcile an external title before paint. A passive effect can retain an
+  // untouched draft from its render, then overwrite a newer native input event
+  // while the initial recovery/demo snapshot is being published.
+  useLayoutEffect(() => {
     const previousTitle = previousCommittedTitle.current;
-    if (previousTitle === snapshot.title) return;
+    const documentChanged = previousTitleDocumentId.current !== snapshot.documentId;
+    if (!documentChanged && previousTitle === snapshot.title) return;
     previousCommittedTitle.current = snapshot.title;
+    previousTitleDocumentId.current = snapshot.documentId;
 
-    if (titleDraft === previousTitle) {
+    // Focus can precede the first input event (including selection replacement).
+    // Keep that field stable while the user is preparing an edit, too.
+    // Confirmed replacement starts a different document, including when New
+    // deliberately focuses this input. The previous document's draft is gone.
+    if (documentChanged || (titleDraft === previousTitle && document.activeElement?.id !== "studio-document-title")) {
       setTitleDraft(snapshot.title);
       setTitleFeedback(
         Object.freeze({
@@ -2124,7 +2134,7 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
         }),
       );
     }
-  }, [snapshot.title, titleDraft]);
+  }, [snapshot.documentId, snapshot.title, titleDraft]);
 
   const resetDraft = (): void => {
     setTitleDraft(snapshot.title);
