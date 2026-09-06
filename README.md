@@ -40,7 +40,7 @@ acceptance gates, and [`ios/README.md`](ios/README.md) for build instructions.
 
 ## What works today
 
-This table describes the repository build. Recovery, **Import chart**, **Export JSON**, and the latest replacement/playback fixes are deployed to the [Vercel mirror](https://changes-jazz-progression-studio.vercel.app/) and verified in desktop and phone browsers (2026-09-06 UTC). Synchronizing these changes to `jazzchords.org` remains pending because Cloudflare Pages rejects the available credentials; see the [deployment checklist](docs/IMPLEMENTATION_TODO.md#active-deployment-blocker-jcpe-0bjj).
+This table describes the repository build. Recovery, **Import chart**, **Export JSON**, and the earlier replacement/playback fixes are deployed to the [Vercel mirror](https://changes-jazz-progression-studio.vercel.app/) and verified in desktop and phone browsers (2026-09-06 UTC). Automatic startup recovery is new in this build and is awaiting deployment. Synchronizing these changes to `jazzchords.org` remains pending because Cloudflare Pages rejects the available credentials; see the [deployment checklist](docs/IMPLEMENTATION_TODO.md#active-deployment-blocker-jcpe-0bjj).
 
 | Capability | Current state |
 |---|---|
@@ -51,7 +51,7 @@ This table describes the repository build. Recovery, **Import chart**, **Export 
 | Playback | One persistent Web Audio graph, serialized transport with loop/seek/pause/live mix, 7 grooves, and 15 instruments spanning physical models (clarinet, flute, four plucked strings), the hybrid concert grand, and CC0-sampled bass/vibes — every shipping model gated by the model-acceptance ledger |
 | Progression library | 28 reviewed entries with a machine-checked provenance law |
 | MIDI import | One-gesture `.mid` import with a Rust SMF parser in WASM, salvage ledger, per-track preview/overrides, and automated groove matching (M0 shipped; M1 owner-listening gate open) |
-| Recovery | Best-effort IndexedDB with localStorage fallback, revision-bound writes, Keep/Discard on reload, previous-copy fallback, and visible storage failures |
+| Recovery | Best-effort IndexedDB with localStorage fallback, revision-bound writes, automatic current recovery when startup is untouched, Keep/Discard for conflicts, previous-copy fallback, and visible storage failures |
 | Chart import | Local Changes/legacy JSON files and pasted data get a bounded preview before replacement; migration reports disclose retained data, confirmation retires playback, and imported document IDs survive recovery |
 | JSON export | **Export JSON** prepares and validates a portable chart, then **Download JSON** hands it to the browser; only exact successful delivery advances the export marker |
 | Chart-text export | **Export text** checks the supported chart structure and lists lost voicing, identity, analysis, and playback data before download; it leaves the JSON export marker unchanged |
@@ -143,6 +143,8 @@ The generated artifact begins with:
 If source and artifact disagree, regenerate the artifact; do not copy changes back from generated HTML.
 
 ## Commands
+
+On Linux, the browser test runner defaults Mesa software rendering to at most four workers to avoid excess rendering threads on large hosts. An explicit `LP_NUM_THREADS` setting takes precedence; see [Mesa's rendering-thread setting](https://docs.mesa3d.org/envvars.html#envvar-LP_NUM_THREADS).
 
 | Command | Purpose |
 |---|---|
@@ -283,7 +285,7 @@ The runtime boundary is intentionally small:
 - static capability inspection plus real-browser request interception, including a malicious negative-control fixture;
 - deterministic license and embedded-asset inventory.
 
-The studio keeps edits in browser-local, best-effort **Recovery** using IndexedDB or a localStorage fallback. Reload offers Keep/Discard; an unreadable current copy can fall back to the previous copy. An unanswered offer preserves the stored copies until a decision is made. Storage failure stays visible and does not block editing. **Export JSON** makes a portable versioned file; preparing or cancelling an export changes no marker. “Handed off” means the browser received the file, so check its downloads for the actual file.
+The studio keeps edits in browser-local, best-effort **Recovery** using IndexedDB or a localStorage fallback. An untouched reload automatically opens a valid current copy and explains what opened. **Discard local copy** removes the stored recovery while leaving the chart open; **New chart** uses the usual replacement workflow. Explicit share links, edits or drafts entered while storage is being checked, and disagreement with the last JSON export require a Keep/Discard choice. An unreadable current copy can fall back to an offered previous copy. The demo loads only when there is no recovery and the workspace is still untouched. An unanswered offer preserves the stored copies until a decision is made. Storage failure stays visible and does not block editing. **Export JSON** makes a portable versioned file; preparing or cancelling an export changes no marker. “Handed off” means the browser received the file, so check its downloads for the actual file.
 
 **Export text** makes a readable lead sheet with canonical chord symbols, exact durations, sections, annotations, and global key, meter, and tempo. Its preview lists the data text cannot preserve. Custom chords and pickup or incomplete measures require JSON; text export refuses them without changing the chart. Downloading text does not mark the chart as exported to JSON.
 
@@ -399,7 +401,7 @@ The release must remain one small offline file with Preact as its only productio
 
 ### Where will charts be saved?
 
-Edits queue best-effort local recovery. On reload, choose **Keep recovered chart** or **Discard**; resolve that choice before relying on further local recovery. For a portable copy, choose **Export JSON**, review the filename and revision, then **Download JSON** and check your browser’s downloads. Browser recovery is never a durable “Save.”
+Edits queue best-effort local recovery. An untouched reload can open the current copy automatically. If a recovery choice appears, choose **Keep recovered chart** or **Discard** before relying on further local recovery. Discarding an automatically opened local copy leaves the chart in memory; further edits create another recovery copy. For a portable copy, choose **Export JSON**, review the filename and revision, then **Download JSON** and check your browser’s downloads. Browser recovery is never a durable “Save.”
 
 ### Can I import a chart from the legacy app?
 
