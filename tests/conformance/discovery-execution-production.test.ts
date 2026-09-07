@@ -1,12 +1,13 @@
 import "./discovery-execution.test";
 import { expect, test, setDefaultTimeout } from "bun:test";
-import { mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 
 setDefaultTimeout(60000);
 const root = resolve(import.meta.dirname, "../..");
-const output = await mkdtemp(join(tmpdir(), "jcpe-discovery-source-faults-"));
+const output = process.env["JCPE_DISCOVERY_MUTATION_OUTPUT"] ?? await mkdtemp(join(tmpdir(), "jcpe-discovery-source-faults-"));
+await mkdir(output, { recursive: true });
 const faults = [
   ["WORK-COUNT", "src/theory/discovery-execution.ts", "tests/unit/discovery-execution.test.ts",
     "workUnits += 1; expandedStates += 1;", "workUnits += 2; expandedStates += 1;", "independent DE-TREE"],
