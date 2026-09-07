@@ -395,7 +395,8 @@ export type InsertFragmentIntoSectionPlacement = Readonly<{
   kind: "into-section";
   sectionId: SectionId;
   beforeMeasureId: MeasureId | null;
-  layoutDisposition: "preserve-implicit-measures";
+  /** Explicit pristine fill preserves the sole empty measure's identity. */
+  layoutDisposition: "preserve-implicit-measures" | "fill-empty-first-measure";
   completionDeclarations: readonly [];
 }>;
 

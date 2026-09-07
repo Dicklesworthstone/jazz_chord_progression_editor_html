@@ -123,7 +123,7 @@ describe("pristine-section fill after Clear", () => {
     expect(measureShapes(controller)).toEqual([[1, 1, 1]]);
   });
 
-  test("undo unwinds the two-step fill back to the cleared chart", () => {
+  test("one Undo restores the cleared chart after the atomic fill and append", () => {
     const controller = freshController();
     const seeded = seedStarterChart(controller);
     expect(seeded.seeded).toBe(true);
@@ -134,8 +134,7 @@ describe("pristine-section fill after Clear", () => {
       kind: "after-measure",
       measureId: keptMeasureId,
     });
-    // Two steps, two undos: first the append, then the fill.
-    expect(controller.undo().ok).toBe(true);
+    // One user insertion is one transaction, including the reused first bar.
     expect(controller.undo().ok).toBe(true);
     expect(measureShapes(controller)).toEqual([[0]]);
   });

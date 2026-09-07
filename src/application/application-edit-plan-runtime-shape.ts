@@ -917,7 +917,9 @@ function firstPlacementShapeFailure(
       : kind === "into-section"
         ? "preserve-implicit-measures"
         : "preserve-named-sections";
-  if (scalarAt(placement, "layoutDisposition") !== expectedLayout) {
+  if (scalarAt(placement, "layoutDisposition") !== expectedLayout &&
+      !(kind === "into-section" && sourceKind === "complete-draft" &&
+        scalarAt(placement, "layoutDisposition") === "fill-empty-first-measure")) {
     return immutablePath([...path, "layoutDisposition"]);
   }
   const completionFailure = firstCompletionShapeFailure(

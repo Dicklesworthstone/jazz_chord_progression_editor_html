@@ -304,6 +304,7 @@ function boundaryRewrite(
 function insertedBoundary(
   plan: AtomicEditPlan,
   allocations: readonly AtomicEditPlanAllocatedIdentity[],
+  before: DocumentIndex,
 ): StableBoundary | null {
   if (plan.kind !== "insert-fragment") return null;
   if (plan.placement.kind === "into-measure") {
@@ -318,9 +319,11 @@ function insertedBoundary(
     const measure = [...allocations]
       .reverse()
       .find((identity) => identity.kind === "measure");
-    return measure?.kind === "measure"
-      ? Object.freeze({ kind: "after-measure", measureId: measure.id })
-      : null;
+    const measureId = measure?.kind === "measure" ? measure.id :
+      plan.placement.layoutDisposition === "fill-empty-first-measure"
+        ? before.sections.get(plan.placement.sectionId)?.section.measures[0]?.id
+        : undefined;
+    return measureId === undefined ? null : Object.freeze({ kind: "after-measure", measureId });
   }
   const section = [...allocations]
     .reverse()
@@ -520,7 +523,7 @@ export function mapAtomicEditPlanBookmarks(
     case "insert-fragment": {
       operationPolicy =
         "preserve-selection-and-range-set-insertion-after-last-inserted";
-      const target = insertedBoundary(plan, allocations);
+      const target = insertedBoundary(plan, allocations, before);
       if (target === null) {
         throw new Error("A0_U1_INTERNAL_INSERT_BOOKMARK");
       }

@@ -1523,6 +1523,12 @@ function targetFailure(
           path: ["plan", "placement", "sectionId"],
         };
       }
+      if (placement.layoutDisposition === "fill-empty-first-measure" &&
+          (section.section.measures.length !== 1 ||
+           section.section.measures[0]?.events.length !== 0 ||
+           section.section.measures[0].completion.kind !== "empty")) {
+        return { code: "edit-plan.destination-invalid", path: ["plan", "placement"] };
+      }
       if (placement.beforeMeasureId !== null) {
         const before = index.measures.get(placement.beforeMeasureId);
         if (before === undefined) {
@@ -1978,15 +1984,17 @@ function completeInsertPreparation(
         },
       };
     }
-    for (const measure of section.measures) {
-      specs.push({
-        kind: "measure",
-        source: Object.freeze({
-          kind: "fragment-measure",
-          sourceSectionOrdinal: section.ordinal,
-          sourceMeasureOrdinal: measure.ordinal,
-        }),
-      });
+    for (const [measureIndex, measure] of section.measures.entries()) {
+      if (placement.layoutDisposition !== "fill-empty-first-measure" || measureIndex > 0) {
+        specs.push({
+          kind: "measure",
+          source: Object.freeze({
+            kind: "fragment-measure",
+            sourceSectionOrdinal: section.ordinal,
+            sourceMeasureOrdinal: measure.ordinal,
+          }),
+        });
+      }
       for (const event of measure.events) {
         specs.push({
           kind: "event",
@@ -2708,7 +2716,8 @@ function finalCollectionProjection(
           throw new Error("A0_U1_INTERNAL_SECTION_PROJECTION");
         }
         const insertedMeasures =
-          prepared.parse.draft.sections[0]?.measures.length ?? 0;
+          (prepared.parse.draft.sections[0]?.measures.length ?? 0) -
+          (plan.placement.layoutDisposition === "fill-empty-first-measure" ? 1 : 0);
         perSectionMeasures[target.sectionIndex] =
           (perSectionMeasures[target.sectionIndex] ?? 0) + insertedMeasures;
         totalMeasures += insertedMeasures;
@@ -3350,11 +3359,21 @@ function materializePlan(
         if (target === null || sourceSection === undefined) {
           throw new Error("A0_U1_INTERNAL_SECTION_INSERT_MATERIALIZATION");
         }
-        const measures = sourceSection.measures.map((measure) =>
+        const fillEmpty = placement.layoutDisposition === "fill-empty-first-measure";
+        if (fillEmpty) {
+          const kept = target.section.measures[0];
+          const first = sourceSection.measures[0];
+          if (kept === undefined || first === undefined) throw new Error("A0_U1_INTERNAL_PRISTINE_FILL");
+          // Allocation is in source order: consume first-bar events before
+          // constructing the remainder, while retaining the first measure ID.
+          kept.events = first.events.map(eventFromDraft);
+          kept.completion = first.events.length === 0 ? { kind: "empty" } : { kind: "complete" };
+        }
+        const measures = sourceSection.measures.slice(fillEmpty ? 1 : 0).map((measure) =>
           measureFromDraft(sourceSection.ordinal, measure),
         );
         const insertionIndex =
-          placement.beforeMeasureId === null
+          fillEmpty ? 1 : placement.beforeMeasureId === null
             ? target.section.measures.length
             : target.section.measures.findIndex(
                 (measure) =>

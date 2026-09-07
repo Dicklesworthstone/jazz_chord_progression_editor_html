@@ -29,6 +29,28 @@ The words **must**, **must not**, **exactly**, and **refuse** are normative.
 
 ## 1. Boundary and authority
 
+### Additive pristine-section disposition (2026-09-07, entry-repair/build)
+
+The explicit `into-section` disposition `fill-empty-first-measure` fills the
+destination's sole empty measure from the first T0-parsed implicit measure,
+then appends all remaining parsed measures in the same atomic command. It
+retains the empty measure's ID, section metadata, exact source spelling,
+annotations and durations. Empty source measures remain empty. It refuses a
+populated or multi-measure destination before allocating IDs. The historical
+`preserve-implicit-measures` disposition retains its existing insertion behavior.
+The existing boundary/snapshot, parser, warning, collection, time, publication
+and history guards all still apply; no caller-authored nested command is added.
+
+This replaces the controller's observed `split("|")` workaround, which treated
+comments and quoted barlines as measures, silently trimmed raw source and
+published two history entries. Tests include comments, quoted `|`, Unicode,
+single/multiple/empty bars, exact fractions, stale/invalid input and one Undo.
+Allocate only event IDs for the retained first measure; allocate measure/event
+IDs normally for the remainder. Collection projections subtract the retained
+measure from the added count. Insertion/focus land after the last inserted
+measure, including the retained measure when no new measure ID is allocated.
+This adds one literal disposition, no new fields, limits, parser or dependency.
+
 This amendment is subordinate to the existing F0, T0, F2, F3, and A0 contracts.
 In particular:
 

@@ -27,7 +27,6 @@ import {
   type ParsedChordEvent,
   type MeasureId,
   type PlaybackSettings,
-  type Section,
   type SectionId,
   type StoredGrooveStyleId,
 } from "../domain";
@@ -2726,130 +2725,6 @@ function makeStudioComposition(
         ["quickEntry", "target"],
       );
     }
-    /*
-     * jcpe-73h1: a multi-bar draft appended at the end of a pristine section
-     * (one measure, still empty) used to leave that empty bar sounding four
-     * beats of silence before the user's chart. Take the seeder's proven
-     * two-step shape instead: the first bar fills the empty measure, the
-     * remainder appends. Each step recurses through this same public flow —
-     * step one targets measure-start and step two sees a non-empty section,
-     * so the recursion terminates by construction. If any step refuses,
-     * every applied step is unwound with a real undo before returning.
-     *
-     * Every into-section aim gets this treatment, not just section-end: a
-     * consumed draft keeps an after-measure target, and Clear repoints it at
-     * the surviving empty bar, so a library click after Clear used to append
-     * eight full measures behind a permanently blank bar 1. Measure-start
-     * and measure-end aims are excluded on purpose — a multi-bar draft
-     * against those must keep stating overfill-requires-split (U1-EDIT-004).
-     */
-    {
-      let section: Section | undefined;
-      switch (target.kind) {
-        case "section-end": {
-          const sectionId = target.sectionId;
-          section = state.document.sections.find(
-            (candidate) => candidate.id === sectionId,
-          );
-          break;
-        }
-        case "after-measure":
-        case "before-measure": {
-          const measureId = target.measureId;
-          section = state.document.sections.find((candidate) =>
-            candidate.measures.some((measure) => measure.id === measureId),
-          );
-          break;
-        }
-        case "document-start":
-        case "document-end":
-        case "before-section":
-        case "after-section":
-        case "section-start":
-        case "measure-start":
-        case "measure-end":
-        case "before-event":
-        case "after-event":
-          section = undefined;
-          break;
-      }
-      const onlyMeasure = section?.measures.length === 1
-        ? section.measures[0]
-        : undefined;
-      const bars = draft.text
-        .split("|")
-        .map((bar) => bar.trim())
-        .filter((bar) => bar.length > 0);
-      if (
-        section !== undefined &&
-        onlyMeasure !== undefined &&
-        onlyMeasure.events.length === 0 &&
-        bars.length >= 1
-      ) {
-        const fillStep = Object.freeze({
-          text: `| ${bars[0] ?? ""} |`,
-          target: Object.freeze({
-            kind: "measure-start" as const,
-            measureId: onlyMeasure.id,
-          }),
-        });
-        const steps: readonly Readonly<{
-          text: string;
-          target: StudioBoundaryInput;
-        }>[] =
-          bars.length === 1
-            ? [fillStep]
-            : [
-                fillStep,
-                Object.freeze({
-                  text: `| ${bars.slice(1).join(" | ")} |`,
-                  target: Object.freeze({
-                    kind: "section-end" as const,
-                    sectionId: section.id,
-                  }),
-                }),
-              ];
-        let appliedSteps = 0;
-        const unwind = (): void => {
-          for (let index = 0; index < appliedSteps; index += 1) {
-            void apply("undo", (current) =>
-              undoDocumentCommand({ state: current }),
-            );
-          }
-        };
-        let last: StudioControllerActionResult | null = null;
-        for (const step of steps) {
-          const preview = previewChartText(step.text);
-          if (preview.status !== "ready") {
-            unwind();
-            return editRefusal(
-              "apply-quick-entry",
-              "u1.insertion_plan_not_atomic",
-              "The draft cannot be split into a first-bar fill and an append.",
-              ["quickEntry", "text"],
-            );
-          }
-          const drafted = setQuickEntryDraft(
-            step.text,
-            step.target,
-            preview.status,
-            preview.issueCodes,
-          );
-          if (!drafted.ok) {
-            unwind();
-            return drafted;
-          }
-          const stepResult = applyQuickEntryPreview();
-          if (!stepResult.ok) {
-            unwind();
-            return stepResult;
-          }
-          appliedSteps += 1;
-          last = stepResult;
-        }
-        if (last !== null) return last;
-      }
-    }
     const parsed = dependencies.parseChartText(
       draft.text,
       { meter: state.document.meter, mode: "fragment" },
@@ -2987,7 +2862,12 @@ function makeStudioComposition(
           beforeMeasureId: resolved.beforeMeasureId,
           completionDeclarations: [] as const,
           kind: "into-section" as const,
-          layoutDisposition: "preserve-implicit-measures" as const,
+          layoutDisposition:
+            target.kind !== "section-start" &&
+            index.sections.get(resolved.sectionId)?.section.measures.length === 1 &&
+            index.sections.get(resolved.sectionId)?.section.measures[0]?.events.length === 0
+              ? "fill-empty-first-measure" as const
+              : "preserve-implicit-measures" as const,
           sectionId: resolved.sectionId,
         }),
       });
