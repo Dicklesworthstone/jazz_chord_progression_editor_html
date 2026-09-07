@@ -15,6 +15,7 @@ export const CHART_FOCUS_ANCHORS = [
 
 export const CHART_FOCUS_PROFILES = [
   { width: 1440, height: 1000, touch: false },
+  { width: 768, height: 1024, touch: true },
   { width: 320, height: 568, touch: true },
   { width: 390, height: 844, touch: true },
 ] as const;
