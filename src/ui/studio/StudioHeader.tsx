@@ -81,8 +81,12 @@ export function StudioHeader({
   onOpenCommandLane,
   onOpenStandards,
   onOpenTour,
+  chartFocus,
+  onToggleChartFocus,
 }: StudioHeaderProps &
   Readonly<{
+    chartFocus: boolean;
+    onToggleChartFocus: () => void;
     onOpenCommandLane: () => void;
     /** Opens the Standards modal where the library rail is hidden (<80rem). */
     onOpenStandards: () => void;
@@ -178,6 +182,20 @@ export function StudioHeader({
         type="button"
       >
         Standards
+      </button>
+
+      <button
+        class="studio-chart-focus-toggle"
+        id="studio-chart-focus-toggle"
+        type="button"
+        aria-label={chartFocus ? "Exit focus" : "Focus chart"}
+        aria-pressed={chartFocus}
+        onClick={onToggleChartFocus}
+      >
+        <svg aria-hidden="true" viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M7 2H2v5M13 2h5v5M2 13v5h5M18 13v5h-5" />
+        </svg>
+        <span>{chartFocus ? "Exit focus" : "Focus chart"}</span>
       </button>
 
       <div class="studio-document-actions">

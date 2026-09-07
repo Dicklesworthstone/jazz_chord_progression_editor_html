@@ -1,4 +1,7 @@
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
+
+import { captureChartFocusScroll, restoreChartFocusScroll } from "./chart-focus";
+import type { ChartFocusScroll } from "./chart-focus";
 
 import { CommandLaneContent } from "./CommandLane";
 import { TourDialogContent } from "./TourDialog";
@@ -327,6 +330,14 @@ export function StudioShell({
    * exist (V=grid V2R-4, I=detail V2R-7, ?=tour V2R-11).
    */
   const [commandLaneOpen, setCommandLaneOpen] = useState(false);
+  const [chartFocus, setChartFocus] = useState(false);
+  const shellElement = useRef<HTMLDivElement>(null);
+  const pendingFocusScroll = useRef<ChartFocusScroll | null>(null);
+  useLayoutEffect(() => {
+    const saved = pendingFocusScroll.current;
+    pendingFocusScroll.current = null;
+    if (saved !== null) restoreChartFocusScroll(saved);
+  }, [chartFocus]);
   /*
    * The Standards modal (jcpe-v2r-library-ulwb): the prototype's
    * "Load a set of changes" surface for widths where the library rail is
@@ -502,6 +513,8 @@ export function StudioShell({
   return (
     <div
       class="studio-shell"
+      ref={shellElement}
+      data-chart-focus={chartFocus ? "true" : "false"}
       onInputCapture={onDraftInput}
       onChangeCapture={onDraftInput}
       data-app-ready="true"
@@ -515,6 +528,12 @@ export function StudioShell({
           </a>
 
           <StudioHeader
+            chartFocus={chartFocus}
+            onToggleChartFocus={() => {
+              const root = shellElement.current;
+              pendingFocusScroll.current = root === null ? null : captureChartFocusScroll(root);
+              setChartFocus(current => !current);
+            }}
             documentActions={documentActions}
             view={view.document}
             callbacks={shellCallbacks}

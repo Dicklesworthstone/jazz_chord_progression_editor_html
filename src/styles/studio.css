@@ -6741,3 +6741,86 @@ li[data-resize-preview]::after {
     flex-shrink: 0;
   }
 }
+
+/* One reversible reading view; the existing chart, panels and transport own
+ * their state throughout. The session preference never rewrites rail choices. */
+.studio-chart-focus-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-inline-size: var(--touch-target);
+  min-block-size: var(--touch-target);
+  padding: var(--space-2);
+  border: var(--border-width) solid var(--rule-2);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.studio-chart-focus-toggle:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+@media (max-width: 63.999rem) {
+  .studio-chart-focus-toggle[aria-pressed="false"] span {
+    display: none;
+  }
+}
+
+.studio-shell[data-chart-focus="true"] .studio-header {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 20;
+}
+
+.studio-shell[data-chart-focus="true"] .studio-brand,
+.studio-shell[data-chart-focus="true"] .studio-header__spacer,
+.studio-shell[data-chart-focus="true"] .studio-layout-tabs,
+.studio-shell[data-chart-focus="true"] .studio-document-actions,
+.studio-shell[data-chart-focus="true"] .studio-chart__edit-actions,
+.studio-shell[data-chart-focus="true"] .studio-chart__view-actions,
+.studio-shell[data-chart-focus="true"] .studio-chart-summary,
+.studio-shell[data-chart-focus="true"] .studio-rail {
+  display: none;
+}
+
+.studio-shell[data-chart-focus="true"][data-library-collapsed][data-harmony-collapsed] .studio-workspace {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.studio-shell[data-chart-focus="true"] .studio-header__standards {
+  display: inline-flex;
+}
+
+/* Short phones retain the transport triggers and their existing focus owner. */
+@media (min-width: 40rem) {
+  .studio-shell[data-chart-focus="true"] .studio-mobile-panel-actions,
+  .studio-shell[data-chart-focus="true"] #studio-open-library-sheet,
+  .studio-shell[data-chart-focus="true"] #studio-open-harmony-sheet {
+    display: flex;
+  }
+}
+
+@media (max-width: 39.999rem) {
+  .studio-shell[data-chart-focus="true"] .studio-transport__row {
+    flex-wrap: wrap;
+  }
+
+  .studio-shell[data-chart-focus="true"] .studio-transport__now {
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
+    order: 2;
+    flex-basis: 100%;
+    min-inline-size: 0;
+  }
+
+  .studio-shell[data-chart-focus="true"] .studio-transport__now-place {
+    display: block;
+  }
+}
