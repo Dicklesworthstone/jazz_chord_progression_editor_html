@@ -61,6 +61,14 @@ export function useEntryRepair(view: StudioQuickEntryView, onDraftChange: (text:
     onDraftChange(text);
   };
   const finish = (): void => { setSession(null); };
+  const focusField = (): void => {
+    const input = field.current;
+    if (input === null) return;
+    // WebKit can keep a previously focused textarea above a resized dialog's
+    // visible scrollport. Reveal only on explicit repair actions, never render.
+    input.focus({ preventScroll: true });
+    input.scrollIntoView({ block: "nearest", inline: "nearest" });
+  };
   const select = (token: StudioQuickEntryTokenView): void => {
     const input = field.current;
     const range = token.diagnosticRange;
@@ -72,8 +80,9 @@ export function useEntryRepair(view: StudioQuickEntryView, onDraftChange: (text:
     setSession(target);
     setMessage(diagnosticProse(token.diagnosticCode ?? ""));
     lastError.current = token.ordinal;
-    input.focus();
+    input.focus({ preventScroll: true });
     input.setSelectionRange(target.start, target.end);
+    focusField();
   };
   const cancel = (): boolean => {
     if (composing.current || session === null) return false;
@@ -85,8 +94,9 @@ export function useEntryRepair(view: StudioQuickEntryView, onDraftChange: (text:
     if (input !== null && sessionStillOwned.current && input.value === latestDraft.current) {
       changeDraft(session.draftText);
       input.value = session.draftText;
-      input.focus();
+      input.focus({ preventScroll: true });
       input.setSelectionRange(session.start, session.end);
+      focusField();
     }
     finish();
     return true;
@@ -113,7 +123,7 @@ export function useEntryRepair(view: StudioQuickEntryView, onDraftChange: (text:
     return false;
   };
   return {
-    field, select, cancel, finish, changeDraft, nextError, guardKey, message,
+    field, select, cancel, finish, focusField, changeDraft, nextError, guardKey, message,
     active: session !== null,
     errorCount: errors.length,
     composing: compositionActive,
@@ -135,7 +145,7 @@ export function EntryRepairControls({ repair }: Readonly<{ repair: ReturnType<ty
       {repair.active ? <>
         <span role="status">{repair.message} Edit the selected text. The chart is unchanged.</span>
         <button type="button" class="studio-entry-repair__action" disabled={repair.composing}
-          onClick={() => { repair.finish(); repair.field.current?.focus(); }}>Keep repair</button>
+          onClick={() => { repair.finish(); repair.focusField(); }}>Keep repair</button>
         <button type="button" class="studio-entry-repair__action" disabled={repair.composing}
           onClick={repair.cancel}>Cancel repair</button>
       </> : null}
