@@ -18,7 +18,7 @@ consulting the markdown plan.
 
 Pinned identities: contract schema
 `changes.ui.u2-chord-inspector-contract.v1`; policy
-`changes.u2-chord-inspector` version 1; fixture manifest schema
+`changes.u2-chord-inspector` version 2; fixture manifest schema
 `changes.fixtures.u2-chord-inspector-contract.v1`.
 
 ---
@@ -27,7 +27,7 @@ Pinned identities: contract schema
 
 U2 is the Chord Inspector surface: the progressive 7-section detail panel,
 interactive MIDI coordinate piano, voicing mode manager, structured chord
-editor, annotation sanitizer, and isolated chord preview orchestrator.
+editor, inert annotation editor, and isolated chord preview orchestrator.
 
 Key architectural invariants:
 
@@ -78,15 +78,15 @@ The inspector organizes chord information into 7 progressive tabs:
 
 ### 2.4 Voicing Tab (`voicing`)
 - **Voicing Mode**: One of `auto`, `manual`, `frozen`.
-- **Family**: V0 voicing family (`drop-2`, `drop-3`, `rootless-a`, `rootless-b`, `quartal`, `cluster`, `open-spread`, etc.).
+- **Family**: Accepted V0 family (`balanced`, `shell`, `rootless-a`, `rootless-b`, `open`, `drop2`, `quartal`). Rootless families require external bass; other families allow generated/external/none subject to domain slash-bass rules.
 - **Pitches**: Spelled pitches, MIDI note numbers, and pitch classes.
 - **Mode Transitions**:
   - `Auto -> Manual`: Copies currently synthesized pitches into editable manual pitches.
   - `Manual -> Auto`: Requires user confirmation (`confirmDiscardManual: true`) to discard manual overrides.
-  - `Auto -> Frozen` / `Manual -> Frozen`: Freezes current pitches against progression-level re-voicing.
+  - `Auto -> Frozen`: Freezes current generated pitches with their actual provenance. Manual notes are already fixed; the application must not invent generating metadata to label arbitrary Manual notes Frozen (REBUILD_PLAN9.5). A retained generated candidate may be kept explicitly.
 - **Unison & Octave Laws**:
-  - Exact duplicate unison notes (same MIDI number) are rejected (`u2.manual_voicing_unison_duplicate`).
-  - Octave doublings (same pitch class in different octaves) are permitted.
+  - Exact duplicate unisons and octave doublings are valid and remain in supplied order with their source spelling. Never sort, deduplicate, clamp or truncate stored arrays.
+  - Manual/Frozen bass policy is included or external; external stored bass requires a slash bass and excludes that pitch class. Custom chords cannot enter Auto. Frozen metadata records actual engine/family provenance, never an invented origin for arbitrary Manual notes.
 
 ### 2.5 Harmony Tab (`harmony`)
 - **Quality Category**: Major, Minor, Dominant, Half-Diminished, Diminished, Augmented, Suspended, Altered.
@@ -102,8 +102,8 @@ The inspector organizes chord information into 7 progressive tabs:
 
 ### 2.7 Notes / Annotation Tab (`notes`)
 - **User Annotation**: Freeform textual notes associated with the chord event.
-- **Sanitization Law (`L-MARKUP-01`)**: All HTML markup and control characters are strictly sanitized/escaped before rendering; malformed markup is treated as inert plain text.
-- **Length Bounds**: Capped at `MAX_ANNOTATION_CODE_POINTS` (500 code points).
+- **Inert Text Law (`L-MARKUP-01`)**: Preserve exact source, including literal tags, control characters and astral Unicode. Render as Preact text children or textContent, never raw HTML. Rendering escapes text without changing stored/exported content.
+- **Length Bounds**: `MAX_ANNOTATION_CODE_POINTS` is2000 Unicode code points, not UTF-16 code units. Refuse2001 while preserving the draft for correction.
 
 ---
 
@@ -112,7 +112,7 @@ The inspector organizes chord information into 7 progressive tabs:
 The interactive piano provides an authentic, accessible MIDI coordinate visualizer:
 
 1. **Geometry & Key Mapping**:
-   - Spans 88 keys (`PIANO_MIN_MIDI` = 21 / A0 to `PIANO_MAX_MIDI` = 108 / C8).
+   - Accepts all128 MIDI coordinates (`PIANO_MIN_MIDI` = 0 / C-1 to `PIANO_MAX_MIDI` = 127 / G9). An optional physical88-key lens (21..108) never restricts valid data.
    - Default visible viewport focuses on the core harmonic register (`PIANO_DEFAULT_VISIBLE_MIN_MIDI` = 36 / C2 to `PIANO_DEFAULT_VISIBLE_MAX_MIDI` = 84 / C6).
    - Accurate white and black key layout (`L-PIANO-01`).
 2. **Visual Role Indicators**:
@@ -122,8 +122,8 @@ The interactive piano provides an authentic, accessible MIDI coordinate visualiz
    - `bass`: Bass note indicator (for slash chords).
    - `color`: Modal/color additions.
 3. **Manual Note Editing**:
-   - In `manual` mode, clicking/activating a key toggles the note in the active voicing.
-   - Enforces `MIN_MANUAL_VOICING_NOTES` (1) and `MAX_MANUAL_VOICING_NOTES` (12).
+   - In `manual` mode, Add appends one exact pitch and a row-specific Remove removes only that occurrence. A visual key toggle must not remove every duplicate.
+   - Enforces `MIN_MANUAL_VOICING_NOTES` (1) and `MAX_MANUAL_VOICING_NOTES` (16). List/spin controls reach all valid MIDI coordinates, spellings and octaves outside the viewport.
 4. **Accessible Navigation**:
    - Roving tabindex across piano keys with Left/Right arrow navigation.
    - Screen-reader text announcements for key names (e.g., "C4, Root", "F#4, Sharp 11 Tension").
@@ -151,7 +151,45 @@ Chord preview is mediated through the application audio ports:
 
 | Legacy Defect | Defect Description | U2 Prevention Invariant | Test Trace ID |
 |---|---|---|---|
-| `L-RUNTIME-02` | Preview argument/notes mismatch | Exact voiced pitch array passed directly to preview adapter | `U2-TRACE-PREVIEW-ARG` |
+| `L-RUNTIME-02` | Preview argument/notes mismatch | Exact voiced pitch array passed directly to preview adapter | `U2-TRACE-PREVIEW-ISOLATION` |
 | `L-THEORY-03` | Displayed alterations do not alter notes | Structural alterations directly re-resolve degrees and synthesized pitches | `U2-TRACE-ALTERATION-SYNC` |
 | `L-PIANO-01` | Octave geometry / flats incorrect | Strict MIDI-to-pitch-class geometry and canonical flat/sharp spellings | `U2-TRACE-PIANO-GEOMETRY` |
-| `L-MARKUP-01` | Annotation markup malformed / unsafe | Strict plain-text sanitization; zero raw HTML injection | `U2-TRACE-ANNOTATION-SAFETY` |
+| `L-MARKUP-01` | Annotation markup malformed / unsafe | Exact source preserved in text nodes; zero raw HTML injection | `U2-TRACE-ANNOTATION-SAFETY` |
+
+## September reconciliation and choose/hear/keep workflow
+
+Authority: U2 Refinement2 and REBUILD_PLAN17.4–17.5 resolve the older packet's
+contradictions. Domain/chord and document limits bind this packet. Policy
+version2 records the repair without changing document format or musical laws.
+Fixtures are independently authored arithmetic/data expectations. Injected
+voicing, analysis and neighboring pitches must be explicit inputs; a displayed
+symbol alone cannot certify an Auto realization, key reading or motion path.
+
+The initial Voicing view shows the current mode and a small set of eligible
+existing V0 family/realization options. Each carries exact registered pitches,
+family, range, bass policy, engine version and source revision/event identity.
+Refused choices explain the existing constraint; no invented fallback pitches.
+Advanced controls retain all valid families/ranges and inspector sections.
+
+Choose and Hear stage/audition through application/X1. Apply writes the Auto
+policy once. Keep this voicing freezes exactly the displayed/heard realization
+with actual provenance. Edit exact notes copies the current list into Manual,
+preserving every occurrence. Returning from Manual/Frozen to Auto requires an
+explicit valid policy and confirmation; Cancel preserves the exact document.
+Each accepted change is one Undo step. Stale candidates cannot Apply, Keep or
+preview. Selection changes, closing, cancellation, release and global Stop
+retire the preview owner; no late callback restarts it. Failed preview leaves
+document, selection, history and playhead unchanged.
+
+Root/bass/quality/modifier drafts re-resolve their structure and Auto pitches.
+Auto displays consume actual V0/playback realizations. Manual/Frozen never
+recompute stored notes after symbol changes. Timing uses actual meter and exact
+preceding durations. Custom source stays available for exact-note editing;
+converting to parsed text requires an explicit valid edit.
+
+Required proof includes order/duplicate and16/17-note source mutations, valid
+offscreen MIDI,2000/2001 and astral annotation boundaries, native inert-markup
+rendering, exact heard/applied notes, confirmation, stale/cancelled previews,
+one Undo, global Stop and existing semantic-edit/piano regressions. Listening
+and screen-reader acceptance remain separate real observations. A packet hash
+alone proves no behavior.

@@ -19,20 +19,42 @@ Consumer: the user and Codex executing the 2026-09-04 request to implement the r
   - [x] Independently test phone keyboard space: the first run exposed WebKit fields above the viewport after Cancel (-137/-116px). Explicit repair actions now reveal the field; all six reduced-viewport tests pass, preserving selected source, real chord IDs, revision and Undo/Redo availability.
   - [x] Complete the combined69-case verification packet on artifact462f8155 (8324728bytes):69 pass,0failed/skipped/flaky,one attempt each; six real reduced-motion profile rechecks pass. App/E2E/tools types, owned lint, static standalone and isolated exact build pass. Five selection mutants and a real premature-Insert source fault are killed. Exact reports/results are in the verification Bead; the17 pre-existing U2 test-type errors remain open.
 
-- [ ] Chart focus (`jcpe-chart-focus-7iz1`): specification closed; build leaf claimed by CodexWorkflow.
+- [ ] Chart focus (`jcpe-chart-focus-7iz1`): specification closed; build leaf released without closure after failed acceptance (Bead comment359). Feature code is present; full browser proof is not green.
   - [x] Freeze keyboard entry/exit, draft/caret, scroll, transport, recovery and preference-failure semantics; independently calculate ten boundary fixtures (specification1/0; production anchor11/0 including packet check).
   - [ ] Add one session-only toggle and preserve existing chart DOM, rails, document/history and audio ownership.
   - [ ] Expose existing Library/Harmony sheets at focused desktop widths; retain short-phone transport trigger ownership and focus return.
   - [ ] Preserve reading anchor and raw input selection; keep explicit Exit/Stop and title reachable.
   - [ ] Verify file/loopback, three engines, desktop/two touch phones,200% layout and reduced motion with actual adapters and error/request logs.
   - [ ] Retain recovery/entry regressions, prove source faults are detected, run owned types/lint/standalone checks, and close only green phases.
+  - [x] Retain12 unit/fixture passes (22 assertions) and four killed production arithmetic faults, including a strengthened fractional-output case after the original rounding mutant survived.
+  - [x] Preserve the local4/7 first run and subsequent startup-failing/interrupted controls. Both preceding/current artifacts exceeded the same10s startup deadline; exploratory sampling also observed3.369s startup, with no stable code-hotspot or speedup claim.
+  - [x] Prepare an isolated hz3 browser copy with exact input manifests, identical Bun1.3.14/Node26/browser binaries, native system libraries/audio and an exclusive browser lock. RCH scheduling refused the generic job's16-slot estimate; direct SSH execution is explicitly not an RCH receipt.
+  - [x] Record remote3/0 focused controls (23.4s) and first full32/13 matrix (596451.428ms;0skips/flakes). Reports and before/after hashes are in `/tmp/jcpe-focus-remote-controls` and `/tmp/jcpe-focus-remote-first-full`. Do not treat the focused controls as the full gate.
+  - [ ] Investigate navigation/input deadlines, Firefox pending recovery/export settlement and native-audio control delays. Retain failures; no timeout/expectation relaxation. Complete final isolated proof and existing recovery/entry regressions before closure.
+
 
 - [x] Restore Cloudflare publication under `jcpe-0bjj`: the committed build is deployed and verified on both hosts.
 - [ ] U5 remains open and unassigned; resume its remaining lifecycle acceptance. Automatic recovery, phone chart space, title preservation and replacement/playback fixes are verified on both hosts.
 - [x] Voice-leading: reproduce raw and actually sounded discontinuities; specify a compatible versioned policy; implement; prove small-oracle, real chart, fixed-voicing, browser audio and MIDI behavior.
 - [ ] U5: connect the ready lifecycle package; fix observed recovery ordering defects before adding import/export and replacement workflows.
 - [ ] H0: implement all three accepted operations, full scale/readings evidence and independent proof; then close the parent.
-- [ ] U2: reconcile exact note/annotation/Auto-policy authority; finish inspector with existing owner and required proof.
+- [ ] U2 / idea2: specification leaf `jcpe-milestone-reliable-studio-l3a.11.1` closed with exact gates; build `.11.2` claimed by CodexWorkflow. No build/browser/aggregate closure yet.
+  - [x] Reconcile policy2 with Foundation: 1..16 ordered exact notes, duplicate unisons, MIDI0..127, inert2000-code-point annotations and all21 accepted family/bass combinations. Frozen copies generated pitches with actual provenance; it does not invent metadata for arbitrary Manual notes.
+  - [x] Replace hash-only validation with independent arithmetic/preservation/count/reference checks; correct impossible E5/A5 MIDI coordinates and C# pitch class; add16/17, astral2000/2001, unison/order/boundary, and12 revision/preview/Undo workflow obligations.
+  - [x] Catch five actual domain source faults (order, dedupe, register clamp, cap12, accept17) and four actual annotation faults (strip markup, UTF-16 counting, erase draft, reject2000), each with a passing baseline. Preserve reports under `/tmp/jcpe-u2-{source,annotation}-mutations/`.
+  - [x] Preserve annotation source in the application projection, including literal markup/controls and invalid drafts. Correct contradictory unit expectations under accepted Foundation authority; retain the custom formula/pitch mismatch as a negative publication test. Focused61/0,239assertions; native rendering remains a build/verification obligation.
+  - [x] Repair the17 test-type errors using real constructors and valid measure completion; fix the UI contract's private layer import without widening the production entry point.
+    - [x] Publish test documents through real F2/F3; remove the17 original type errors and private import. Full refreshed typecheck passes once, then is repeated against the final frozen inputs after annotation cleanup.
+    - [x] Final full typecheck/lint pass against1340 unchanged hash/mtime inputs; `/tmp/jcpe-u2-{typecheck,lint}-final.log` and `/tmp/jcpe-u2-gates-identity.json`. Initial failures retained. These gates precede the new build changes and must run again before build closure.
+  - [ ] Replace unused inspector placeholder pitches/timing with real V0/playback realizations and exact document timing before wiring the surface. Fix custom-to-Auto availability, exact enharmonic octave projection and preview lifecycle; X1/X0 permit16 notes but the controller currently caps arbitrary previews at10.
+  - [ ] Bind a small choice/hear/keep workflow to the existing V0/X1/application commands; retain advanced structure/timing/exact-note/annotation editing.
+    - [x] Add bounded current/balanced/shell proposals from real whole-chart V2 selection; never invent notes for an unavailable family. Service6/0; real-pitch/exact-time projection14/0. No browser proof yet.
+    - [ ] Complete command bridge and regression proof: SetVoicing, SetChord, annotation and exact duration; no-change reads, stale source/selection, explicit stored-note replacement, single Undo/Redo.
+    - [ ] Complete preview bridge: serialized release by exact preview ID, 16-note support, preparation cancellation, adapter failure/retry and protection of band/newer preview ownership.
+    - [ ] Mount an accessible inspector from Harmony Lens at desktop/phone widths; staged exact-note/Auto controls, dirty Apply/Discard/Continue, truthful preview feedback and global Stop.
+    - [ ] Complete synchronized semantic structure/symbol drafts and actual Harmony/Motion facts; remove remaining projection placeholders rather than labeling them implemented.
+  - [ ] Verify Manual/Frozen order, duplicates,16/17 notes, offscreen MIDI,2000/2001 and astral/markup annotations, mode confirmation, stale/cancelled preview, one Undo and global Stop.
+  - [ ] Complete real browser/audio/download/storage acceptance and named aggregate gates; close only phases whose requirements actually pass.
 - [ ] Shared discovery execution: accepted types/fixtures, actual bounded execution and atomic Apply, then proof.
 - [ ] H1 and G0/G1: exact transforms, plural tonal paths, correct hashes/rights/compiler/query behavior and independent proof.
 - [ ] G2/G3/G4: real context/route/constraint search and current web/native wiring, with all-slot constraints and proof.
