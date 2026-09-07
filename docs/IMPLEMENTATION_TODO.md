@@ -4,6 +4,11 @@ Consumer: the user and Codex executing the 2026-09-04 request to implement the r
 
 ## Current order
 
+- [ ] Semantic surface conformance (`jcpe-semantic-surface-conformance-32w2.1`, claimed CodexWorkflow): freeze executable expectations for real engine dispatch and the currently false major-key containment explanation; build/proof retain their engine/UI prerequisites.
+  - [ ] Read the parent/leaf, architecture, rebuild/theory contracts and actual web/native call sites; inventory genuine callables and missing operations without treating a symbol as capability.
+  - [ ] Freeze source-owned adapter/version/selection/boundary contracts and independent literal/context/continuation law cases, including the starter-chart containment counterexample and transposed/near-miss/custom/altered cases.
+  - [ ] Specify exact production journey, storage/audio/download/Undo invariants, source/bundle/fixture identity and actual per-engine limits; retain native first-release scope and Apple/human execution boundaries.
+  - [ ] Author the named contract validator and static mutation/trace checks. Run every specification gate, then close only the specification leaf with exact evidence; do not claim engine adoption or musician workflows from fixture checks.
 - [x] Shared discovery execution (`jcpe-discovery-execution-proof-gdcw`; spec `.1` closed359b02c; build `.2` closed55608ae; proof `.3` and parent closed6dd9ee3). It unblocks existing H1/G0–G9 proof prerequisites; it does not complete an engine or a fifth September idea.
   - [x] Read live parent/spec, architecture, theory plan, exact G0/G2/G3/G4/G5 caps, and the existing A0 derived-patch/pending-request/semantic-publication path.
   - [x] Freeze domain-bound requests, complete version/constraint/seed identity, selected realizations and source snapshots; distinguish musical proof from application publication authority.
@@ -533,7 +538,7 @@ Statuses below are the campaign-start snapshot. Use br show and br ready before 
 - [ ] `jcpe-sample-elimination-physical-qzgo` — Replace CC0 sample recipes with physical wasm models (vibes, bass; scope piano) (in_progress; P1; unassigned)
 - [ ] `jcpe-sample-elimination-physical-qzgo.6` — Replace Salamander piano attack with cooperative physical WASM (blocked; P1; unassigned)
 - [ ] `jcpe-semantic-surface-conformance-32w2` — Semantic conformance: real engine wiring across studio and native bridge (open; P1; unassigned)
-- [ ] `jcpe-semantic-surface-conformance-32w2.1` — Semantic conformance: real engine wiring across studio and native bridge / spec (open; P1; unassigned)
+- [ ] `jcpe-semantic-surface-conformance-32w2.1` — Semantic conformance: real engine wiring across studio and native bridge / spec (in_progress; CodexWorkflow)
 - [ ] `jcpe-semantic-surface-conformance-32w2.2` — Semantic conformance: real engine wiring across studio and native bridge / build (open; P1; unassigned)
 - [ ] `jcpe-semantic-surface-conformance-32w2.3` — Semantic conformance: real engine wiring across studio and native bridge / verify (open; P1; unassigned)
 - [ ] `jcpe-upbz` — M1/build: Implement the automated pipeline and the two-mode import UI (Automatic default, Advanced disclosure) (open; P1; ubuntu)
