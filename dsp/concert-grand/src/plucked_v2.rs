@@ -35,7 +35,7 @@ mod upright_bass_body;
 
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
-use core::sync::atomic::{AtomicBool, Ordering};
+use core::sync::atomic::{AtomicBool, AtomicI32, Ordering};
 use libm::{cos, exp, floor, pow, round, sin, sqrt, tan};
 
 const PI: f64 = core::f64::consts::PI;
@@ -81,6 +81,7 @@ const PLK2_CHORD_OUTPUT_CHUNK_FRAMES: usize = 16_384;
 const PLK2_CHORD_MAX_OUTPUT_FRAMES: usize = 6 * 96_000;
 pub const PLK2_CHORD_STEP_PROGRESS: i32 = 1;
 pub const PLK2_CHORD_STEP_COMPLETE: i32 = 2;
+pub const PLK2_CHORD_STEP_CANCELLED: i32 = 3;
 
 const AIR_DENSITY_KG_PER_M3: f64 = 1.204;
 const ACOUSTIC_MIC_DISTANCE_M: f64 = 1.0;
@@ -3869,6 +3870,7 @@ pub fn plk2_render_slices(
 enum PluckedChordAdvance {
     Progress,
     Complete,
+    Cancelled,
     Invalid,
 }
 
@@ -3969,6 +3971,7 @@ unsafe impl Sync for PluckedChordRuntimeControlSlot {}
 unsafe impl Sync for PluckedChordRuntimeSessionSlot {}
 
 static PLK2_CHORD_RUNTIME_BUSY: AtomicBool = AtomicBool::new(false);
+static PLK2_CHORD_RUNTIME_CANCEL_HANDLE: AtomicI32 = AtomicI32::new(0);
 static PLK2_CHORD_RUNTIME_CONTROL: PluckedChordRuntimeControlSlot =
     PluckedChordRuntimeControlSlot(UnsafeCell::new(PluckedChordRuntimeControl {
         next_handle: 1,
@@ -4168,15 +4171,31 @@ impl PluckedChordSession {
         })
     }
 
-    fn advance(&mut self, left: &mut [f32], right: &mut [f32]) -> PluckedChordAdvance {
+    fn advance(
+        &mut self,
+        left: &mut [f32],
+        right: &mut [f32],
+        cancellation_handle: Option<i32>,
+    ) -> PluckedChordAdvance {
         if left.len() < self.frames || right.len() < self.frames {
             return PluckedChordAdvance::Invalid;
+        }
+        let cancellation_requested = || {
+            cancellation_handle.is_some_and(|handle| {
+                PLK2_CHORD_RUNTIME_CANCEL_HANDLE.load(Ordering::Acquire) == handle
+            })
+        };
+        if cancellation_requested() {
+            return PluckedChordAdvance::Cancelled;
         }
         if self.simulated_frames < self.simulation_frames {
             let stop = (self.simulated_frames + PLK2_CHORD_SIMULATION_CHUNK_FRAMES)
                 .min(self.simulation_frames);
             let stereo_gain = core::f64::consts::FRAC_1_SQRT_2;
             while self.simulated_frames < stop {
+                if cancellation_requested() {
+                    return PluckedChordAdvance::Cancelled;
+                }
                 let frame = self.simulated_frames;
                 let taps = self
                     .stem_session
@@ -4223,6 +4242,9 @@ impl PluckedChordSession {
             let stop =
                 (self.reconstructed_frames + PLK2_CHORD_OUTPUT_CHUNK_FRAMES).min(self.frames);
             while self.reconstructed_frames < stop {
+                if cancellation_requested() {
+                    return PluckedChordAdvance::Cancelled;
+                }
                 let frame = self.reconstructed_frames;
                 let sample = self.resampler.sample(
                     &right[..self.simulation_frames],
@@ -4236,6 +4258,9 @@ impl PluckedChordSession {
         }
 
         if self.copied_frames < self.frames {
+            if cancellation_requested() {
+                return PluckedChordAdvance::Cancelled;
+            }
             let stop = (self.copied_frames + PLK2_CHORD_OUTPUT_CHUNK_FRAMES).min(self.frames);
             right[self.copied_frames..stop].copy_from_slice(&left[self.copied_frames..stop]);
             self.copied_frames = stop;
@@ -4448,8 +4473,11 @@ pub fn plk2_chord_session_step_slices(
     {
         return 0;
     }
-    let status = session.advance(left, right);
-    if status == PluckedChordAdvance::Invalid {
+    let status = session.advance(left, right, None);
+    if matches!(
+        status,
+        PluckedChordAdvance::Invalid | PluckedChordAdvance::Cancelled
+    ) {
         return 0;
     }
     let mut encoded = [0_u8; PLK2_CHORD_STATE_MAX_BYTES];
@@ -4467,7 +4495,7 @@ pub fn plk2_chord_session_step_slices(
     match status {
         PluckedChordAdvance::Progress => PLK2_CHORD_STEP_PROGRESS,
         PluckedChordAdvance::Complete => PLK2_CHORD_STEP_COMPLETE,
-        PluckedChordAdvance::Invalid => 0,
+        PluckedChordAdvance::Cancelled | PluckedChordAdvance::Invalid => 0,
     }
 }
 
@@ -4496,6 +4524,7 @@ pub fn plk2_chord_runtime_init_slices(
         }
         session_slot.write(session);
         runtime.active_handle = handle;
+        PLK2_CHORD_RUNTIME_CANCEL_HANDLE.store(0, Ordering::Release);
         handle as i32
     })
     .unwrap_or(0)
@@ -4522,13 +4551,31 @@ pub fn plk2_chord_runtime_step_slices(
         {
             return 0;
         }
-        match session.advance(left, right) {
+        match session.advance(left, right, Some(handle)) {
             PluckedChordAdvance::Progress => PLK2_CHORD_STEP_PROGRESS,
             PluckedChordAdvance::Complete => {
                 // SAFETY: the exact active handle still owns this session.
                 unsafe { session_slot.assume_init_drop() };
                 runtime.active_handle = 0;
+                let _ = PLK2_CHORD_RUNTIME_CANCEL_HANDLE.compare_exchange(
+                    handle,
+                    0,
+                    Ordering::AcqRel,
+                    Ordering::Relaxed,
+                );
                 PLK2_CHORD_STEP_COMPLETE
+            }
+            PluckedChordAdvance::Cancelled => {
+                // SAFETY: the exact active handle still owns this session.
+                unsafe { session_slot.assume_init_drop() };
+                runtime.active_handle = 0;
+                let _ = PLK2_CHORD_RUNTIME_CANCEL_HANDLE.compare_exchange(
+                    handle,
+                    0,
+                    Ordering::AcqRel,
+                    Ordering::Relaxed,
+                );
+                PLK2_CHORD_STEP_CANCELLED
             }
             PluckedChordAdvance::Invalid => {
                 // SAFETY: the exact active handle still owns this session.
@@ -4552,6 +4599,12 @@ pub fn plk2_chord_runtime_reset_handle(handle: i32) -> i32 {
         // SAFETY: the exact active handle proves init wrote the session.
         unsafe { session_slot.assume_init_drop() };
         runtime.active_handle = 0;
+        let _ = PLK2_CHORD_RUNTIME_CANCEL_HANDLE.compare_exchange(
+            handle,
+            0,
+            Ordering::AcqRel,
+            Ordering::Relaxed,
+        );
         1
     })
     .unwrap_or(0)
@@ -4608,10 +4661,10 @@ fn plk2_render_chord_slices_inner(
         return 0;
     }
     loop {
-        match session.advance(left, right) {
+        match session.advance(left, right, None) {
             PluckedChordAdvance::Progress => {}
             PluckedChordAdvance::Complete => return session.frames as i32,
-            PluckedChordAdvance::Invalid => return 0,
+            PluckedChordAdvance::Cancelled | PluckedChordAdvance::Invalid => return 0,
         }
     }
 }
@@ -5189,6 +5242,19 @@ pub extern "C" fn plk2_chord_runtime_step(
     let left = unsafe { core::slice::from_raw_parts_mut(left, output_capacity as usize) };
     let right = unsafe { core::slice::from_raw_parts_mut(right, output_capacity as usize) };
     plk2_chord_runtime_step_slices(handle, left, right, output_capacity)
+}
+
+/// Publish a handle-scoped cancellation request without waiting for the
+/// runtime's exclusion flag. The active step checks this atomic once per
+/// physical frame, so a native host can interrupt a costly quantum from a
+/// different thread without changing successful PCM or cooperative cadence.
+#[no_mangle]
+pub extern "C" fn plk2_chord_runtime_cancel(handle: i32) -> i32 {
+    if handle <= 0 {
+        return 0;
+    }
+    PLK2_CHORD_RUNTIME_CANCEL_HANDLE.store(handle, Ordering::Release);
+    1
 }
 
 /// Abandon the exact active opaque session. This is idempotent only for the
