@@ -7,7 +7,7 @@ import {
 } from "./discovery-execution-contract";
 import { discoveryArenaCapacity } from "./discovery-arena";
 import { captureDiscoveryValue, type CapturedDiscoveryValue } from "./discovery-data";
-import { makeBeatDuration, makeBeatPosition } from "../domain";
+import { addBeatValues, compareBeatValues, makeBeatDuration, makeBeatPosition, type BeatValue } from "../domain";
 
 export type DiscoveryExpansionSink = Readonly<{
   /** The producer is never invoked after its corresponding budget is exhausted. */
@@ -73,6 +73,7 @@ function validRequest(request: DiscoveryRequest): boolean {
       if (!safe(value) || value > maximum) return false;
     }
     const eventIds = new Set<string>();
+    let previousEnd: BeatValue | null = null;
     for (const entry of request.source) {
       if (!keys(entry, ["event", "position", "selectedRealizationId"]) ||
         !token(entry.event.id) || eventIds.has(entry.event.id) ||
@@ -85,6 +86,10 @@ function validRequest(request: DiscoveryRequest): boolean {
         !keys(entry.event.duration, ["numerator", "denominator"]) ||
         position.value.numerator !== entry.position.numerator || position.value.denominator !== entry.position.denominator ||
         duration.value.numerator !== entry.event.duration.numerator || duration.value.denominator !== entry.event.duration.denominator) return false;
+      if (previousEnd !== null && compareBeatValues(position.value, previousEnd) < 0) return false;
+      const end = addBeatValues(position.value, duration.value);
+      if (!end.ok || !makeBeatPosition(end.value).ok) return false;
+      previousEnd = end.value;
       eventIds.add(entry.event.id);
     }
     return true;
