@@ -136,6 +136,15 @@ export type StudioAudibleEvidenceApi = Readonly<{
   snapshot: () => StudioAudibleSnapshotFacts | null;
   inspection: () => StudioAudibleInspectionFacts | null;
   report: () => StudioAudibleReport;
+  /**
+   * U4/verify (l3a.12.3): suspend the observed live context to drive the
+   * real browser-interruption path (X1 §7). Resolves true when a context
+   * existed and the suspend call was issued; the engine/transport observe
+   * the state change exactly as a browser interruption.
+   */
+  suspendContext: () => Promise<boolean>;
+  /** Resume the observed context after an interruption proof. */
+  resumeContext: () => Promise<boolean>;
 }>;
 
 const SAMPLING_INTERVAL_MS = 25;
@@ -496,6 +505,18 @@ function bootHarness(): StudioAudibleEvidenceApi {
     },
     snapshot: () => (snapshotReader === null ? null : snapshotReader()),
     inspection: () => (inspectionReader === null ? null : inspectionReader()),
+    suspendContext: async () => {
+      const context = tap.observedContext();
+      if (context === null) return false;
+      await context.suspend();
+      return true;
+    },
+    resumeContext: async () => {
+      const context = tap.observedContext();
+      if (context === null) return false;
+      await context.resume();
+      return true;
+    },
     report: () => {
       const context = tap.observedContext();
       return Object.freeze({

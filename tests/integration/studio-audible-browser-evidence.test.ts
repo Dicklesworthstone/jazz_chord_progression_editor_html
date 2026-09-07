@@ -1093,7 +1093,7 @@ test("PHS0 physical flute, clarinet, and guitar produce measured browser audio a
   });
   await page.fill(
     "#studio-quick-entry-field",
-    "| Cmaj7 | Fmaj7 | Dm7 G7 | Cmaj7 |",
+    "| Cmaj7 | Fmaj7 | Dm7 G7 | Cmaj7 | Em7 A7 | Dm7 G7 | Cmaj7 | Cmaj7 |",
   );
   await page.press("#studio-quick-entry-field", "Enter");
 

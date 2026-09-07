@@ -361,7 +361,7 @@
     "keyboard-guard-cases.json": "4ddb2559497a3c2c67f7097fa09bc8ff2aa0991531ce0056c59f6122aad2e3e5",
     "layout-cells.json": "55ccfe57ecde386b8eca781af44934e34a1aaf77b1e931708f37db019e7c7d95",
     "provenance-ledger.json": "b11fc06de427b90e4fe34343b66dbf5dce335f263c4bb36df15a692f0635efdd",
-    "trace-ledger.json": "3c6cb6896ee2ffe88f70ac8f14f659b8d4bc9d940b82c9386f1e0c1e8de5d148",
+    "trace-ledger.json": "a5bf54edb9211d9bbb540d980688613743b78d6eb63ba401c5135956e8f491fb",
     "mutation-controls.json": "18207e4ab4de72f36a2c61d963e7a4a179352363d4ec41dd920b7cc00e6241f7"
   },
   "handoff": "An implementer needs the contract document, the contract module, and this fixture package — not the markdown plan. The two new controller intents (restartProgression, setCountInEnabled, setMetronomeEnabled) plus stepChordOrSeek, seekToBeat, resumeProgression, reinitializeAudio, openSoundSheet, and playSectionRun are specified here at the UI boundary and owned by the U4 build leg's application work."
