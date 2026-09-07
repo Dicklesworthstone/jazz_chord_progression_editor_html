@@ -171,6 +171,7 @@ export default tseslint.config(
   {
     files: [
       "playwright.config.ts",
+      "playwright.discovery.config.ts",
       "playwright.studio-audible.config.ts",
       "playwright.u4.config.ts",
       "playwright.x0.config.ts",
