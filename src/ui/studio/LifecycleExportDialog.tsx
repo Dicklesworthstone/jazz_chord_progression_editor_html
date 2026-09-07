@@ -1,4 +1,4 @@
-import { useCallback, useState } from "preact/hooks";
+import { useCallback, useLayoutEffect, useState } from "preact/hooks";
 import type { StudioLifecycleService, StudioLifecycleView } from "../../application/runtime";
 import type { UiDiagnostic } from "../ui-contract";
 import { Button } from "../primitives";
@@ -14,6 +14,11 @@ export function LifecycleExportDialog({ service, view }: Readonly<{
   view: StudioLifecycleView;
 }>) {
   const [refusal, setRefusal] = useState<string | null>(null);
+  useLayoutEffect(() => {
+    // A fresh export owns fresh feedback. Clear before a new gesture can
+    // produce another refusal, rather than after a delayed passive effect.
+    if (view.dialog !== null) setRefusal(null);
+  }, [view.dialog]);
   const onContractRefusal = useCallback((diagnostic: UiDiagnostic) => {
     setRefusal(`${diagnostic.code}: ${diagnostic.message}`);
     service.cancelLifecycleDialog();

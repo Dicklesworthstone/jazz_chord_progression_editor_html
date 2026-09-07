@@ -1,19 +1,22 @@
 # U5 lifecycle production verification — 2026-09-07
 
-Status: **verification in progress**. U5/build is closed; U5/verify and the
-package remain open. This record maps the frozen ten-row trace ledger to actual
-production tests. It does not change any fixture, accepted baseline, model
-acceptance row or human-acceptance flag. Exact sharing is specified but its
-implementation still depends on U5 verification.
+Status: **package verification complete**. The ten frozen trace rows below map
+to actual production tests. U5 specification, implementation and verification
+are complete; exact sharing can now enter implementation. No fixture, accepted
+baseline, model acceptance row or human-acceptance flag was changed.
 
-Current generated artifact: SHA-256
-`8aac97ced7520c1cb86d8ac14f3600dae5ebded9c9fa7e26c567ddc3dba45f3e`,
-8,385,260 bytes, identical to `dist/index.html`. Source is committed through
-`6bd8c93`; the generated artifact checkpoint follows separately. The expanded
-411-case invocation is active against a frozen 1,590-input project at
-`/data/tmp/jcpe-u5-completion.hur4al6q/project`. Results must be inspected before
-claiming it passes. A subsequent lint-only brace change in one browser callback
-preserves its native focus call and assertions; the copied tests remain frozen.
+Final generated artifact: SHA-256
+`2d9d786da0704cfb0a8ad87dd9f3d702ce887117369b6804142d1c742966ccde`,
+8,385,312 bytes, identical to `dist/index.html`. Source base is `ad94eea`, plus
+the export-feedback reset in `src/ui/studio/LifecycleExportDialog.tsx`. That is
+the only production-source change since the complete 411-case run on artifact
+`8aac97ced7520c1cb86d8ac14f3600dae5ebded9c9fa7e26c567ddc3dba45f3e`
+(8,385,260 bytes). The final artifact passes the affected 108-case export,
+recovery and accessibility suite and the public 36-case standalone gate. These
+are separate scoped invocations; 411 cases were not rerun on the final artifact.
+All copied inputs passed before/after hashes. The expanded run's copied
+accessibility callback predates a lint-only brace correction, with the same
+native focus operation and assertions.
 
 ## Trace to production behavior
 
@@ -32,12 +35,13 @@ A fixture validator alone is not production evidence.
 | TR-U5-STORAGE-STATES | `tests/integration/studio-recovery-orchestrator.test.ts`, `studio-recovery-storage.test.ts`; `tests/e2e/u5-recovery-lifecycle.spec.ts` | Real recovery envelopes and unavailable/quota/denied/corrupt paths; refusal preserves prior bytes, stays pending, permits actual subsequent edits and JSON export. Native quota and failed Discard have fresh successful twins. |
 | TR-U5-VOCABULARY | `tests/integration/studio-recovery-orchestrator.test.ts`; `tests/static/u5-contract.test.ts`; native recovery suite | Frozen recovery vocabulary and revision truth. A production source fault changing pending recovery to Save is killed by the unchanged behavior assertion. |
 | TR-U5-HISTORY-BOUNDARY | `tests/fixtures/history-limit.ts`; `tests/integration/studio-real-history-limit.test.ts`; `tests/e2e/u5-history-limit.spec.ts` | Real 16,777,216-byte retained-history cap with hand-authored 4,096/6,144-event charts and sixteen exact notes per event. Inert Cancel, fresh consent, exact below-cap Undo, explicit above-cap non-Undoability and truthful 2 MiB JSON export refusal. Native reduced host uses the production dialogs, controller, estimator, audio, storage and download adapters; it does not prove rendering thousands of chart cards. Small-chart native download is the export success twin. |
-| TR-U5-FOCUS | `tests/e2e/u5-local-replacement.spec.ts`, `u5-document-import.spec.ts`, `u5-recovery-lifecycle.spec.ts`, `u5-lifecycle-accessibility.spec.ts`, `chord-inspector.spec.ts` | Exact trigger return after cancellation/download; missing lesson owner falls back to title with `ui.stale_owner`; chart/bookmark preservation; named modal and native inert behavior. Pointer/keyboard panel gestures survive real chord boundaries, and open modals stop background auto-scroll. Automated DOM/axe proof does not certify human screen-reader or listening acceptance. |
+| TR-U5-FOCUS | `tests/e2e/u5-local-replacement.spec.ts`, `u5-document-import.spec.ts`, `u5-recovery-lifecycle.spec.ts`, `u5-lifecycle-accessibility.spec.ts`, `chord-inspector.spec.ts`, `u5-lifecycle-announcements.spec.ts` | Exactly one heading-focus event per export opening, one stale-owner alert and one successful handoff status; a new export clears obsolete refusal feedback. Exact trigger return after cancellation/download; missing lesson owner falls back to title with `ui.stale_owner`; chart/bookmark preservation; named modal and native inert behavior. Pointer/keyboard panel gestures survive real chord boundaries, and open modals stop background auto-scroll. Automated DOM/axe proof does not certify human screen-reader or listening acceptance. |
 
 ## Completed invocations
 
 Bun 1.3.14; supported real Node 26.0.0; Playwright 1.61.1; Chromium1228,
-Firefox1532 and WebKit2311 installations. Browser user agent is
+Firefox1532 and WebKit2311 installations. Reported browser versions are
+Chromium149.0.7827.55, Firefox151.0 and WebKit26.5. Browser user agent is
 `OpenAI File Downloader, XaiImageApiFetch/1.0`. Every browser invocation uses one
 worker, zero retries and the repository's unchanged timeouts, CSP and network
 policy. Seeded/property cases use their existing checked-in fixtures and seeds;
@@ -48,10 +52,14 @@ no new random expectation was generated from production output.
 | 44-file focused Bun suite | 539 pass, 0 fail; 3,592 assertions | Exact argv: `/tmp/jcpe-u5-verification-final-unit-command.json`; log `/tmp/jcpe-u5-verification-final-unit.log`. Includes the permanent production-fault suite. Before the subsequent type annotation and UI auto-follow change; no touched music/lifecycle algorithm changed after this run. |
 | `bun test tests/integration/a0-application-state.test.ts tests/unit/u0-overlay-coordinator.test.ts tests/unit/u0-overlay-runtime-preflight.test.ts tests/unit/u0-runtime-kernel.test.ts tests/property/u0-limits.test.ts` | 120 pass, 0 fail; 756 assertions | `/tmp/jcpe-u5-inherited-dialog-gates.log`; real A0/U0 production kernels, not browser proof. |
 | Inspector type correction: three focused files | 26 pass, 0 fail; 162 assertions | `/tmp/jcpe-u2-explicit-state-type.log`; explicit AppState annotation preserves artifact bytes. |
-| `bun run typecheck`; `bun run lint`; `bun scripts/verify-standalone.ts --static-only`; `bun run verify:reproducible` | All four subprocess exits 0 | `/tmp/jcpe-u5-gesture-gates.json`; current artifact8aac97ce. New accessibility file separately typechecked and linted; initial shorthand-void lint finding corrected without suppressions. |
+| `bun run typecheck`; `bun run lint`; `bun scripts/verify-standalone.ts --static-only`; `bun run verify:reproducible` | All four subprocess exits 0 | `/tmp/jcpe-u5-announcement-gates.json`; final artifact2d9d786d. Earlier artifact8aac97ce gates are retained at `/tmp/jcpe-u5-gesture-gates.json`. Initial new-test type/lint findings were corrected before the final invocation, without suppression. |
 | Native gesture repair, original preview/band cells and ordinary phone follow | 33 pass, 0 unexpected/skipped/flaky; 226,350.995 ms | `/data/tmp/jcpe-u5-completion.wbjj8fsh/gesture-proof/results.json`; artifact8aac97ce; all1,589 copied inputs unchanged before/after. |
 | Native lifecycle accessibility | 24 pass, 0 unexpected/skipped/flaky; 63,486.701 ms; zero axe/console/page findings | `/data/tmp/jcpe-u5-completion.hur4al6q/accessibility/results.json`; artifact8aac97ce. Four workflows × two widths × three engines; malformed-import refusal is also scanned. |
 | Earlier focused native build gate | 33 pass, 0 unexpected/skipped/flaky; 135,034.030 ms | `/data/tmp/jcpe-u5-completion.ovt0vgvf/build-proof/results.json`; artifact0c15728f. Real history boundary, title draft scheduling, import loss disclosure and pending native resume. |
+
+| Full U5 and inspector native matrix | 411 pass, 0 unexpected/skipped/flaky; 1,895,472.066 ms | `/data/tmp/jcpe-u5-completion.hur4al6q/verification/results.json`; artifact8aac97ce; all1,590 inputs unchanged. All JSON diagnostics inspected: no console/page errors, unexpected requests or axe violations. |
+| Final export feedback, lifecycle accessibility and recovery/export regression | 108 pass, 0 unexpected/skipped/flaky; 400,164.955 ms | `/data/tmp/jcpe-u5-completion.h33w5n2g/export-proof/results.json`; artifact2d9d786d; all1,594 inputs unchanged. Includes twelve observed focus/announcement transcripts, each with two openings, one refusal and one successful handoff. No console/page/request/axe findings. |
+| `bun run verify:standalone` | 36 pass, 0 unexpected/skipped/flaky; 48,072.844 ms | `/data/tmp/jcpe-u5-completion.h33w5n2g/standalone/results.json`; artifact2d9d786d; all1,594 inputs unchanged. Twelve positive offline/accessibility reports pass; all24 intentional network/error controls detect their named faults. The reaped wrapper's exit is unavailable; complete native JSON, copied after-input manifest and final runner log independently establish the result. |
 
 Full browser argv is preserved in each sibling `run-*.sh`; configs and input
 hash manifests are beside the copied project. Source/artifact identities, browser
@@ -86,6 +94,16 @@ specific repaired defects and are not counted as nine additional frozen laws.
 The newly added mobile gesture controls fail12/12 on the old0c15728f artifact at
 actual control displacement, then pass12/12 after the production auto-follow fix.
 Old report: `/data/tmp/jcpe-u5-completion.8_3e1t9_/gesture-baseline/results.json`.
+
+The stale export-owner regression fails12/12 on artifact8aac97ce at the exact
+assertion that no obsolete alert remains after a fresh successful export. Every
+baseline transcript observes the erroneous second refusal announcement. Report:
+`/data/tmp/jcpe-u5-completion.dacwg7sm/announcement-baseline/results.json`,
+105,783.841 ms; all1,592 inputs unchanged. Resetting the old local refusal when
+a new dialog opens fixes all twelve cases, including actual JSON/text download,
+exact trigger focus return and unchanged chart title. These cases pass within
+the final108 invocation. The DOM observer and focus listener are bounded and
+removed after each case; this is not a claim about a human speech queue.
 
 ## Failures retained and acceptance limits
 
