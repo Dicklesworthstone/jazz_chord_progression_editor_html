@@ -1,13 +1,13 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 
-import { captureChartFocusScroll, restoreChartFocusScroll } from "./chart-focus";
-import type { ChartFocusScroll } from "./chart-focus";
+import { captureChartFocusScroll, restoreChartFocusScroll, type ChartFocusScroll } from "./chart-focus";
 
 import { CommandLaneContent } from "./CommandLane";
 import { TourDialogContent } from "./TourDialog";
 
 import { ChartWorkspace } from "./ChartWorkspace";
 import { HarmonyLens, HarmonyLensContent } from "./HarmonyLens";
+import { ChordInspector } from "./ChordInspector";
 import { MidiExportPanel } from "./MidiExportPanel";
 import {
   LibraryPanel,
@@ -109,6 +109,7 @@ function MeasureCompletionDialogContent({
 const DISMISSIBLE = Object.freeze({ kind: "dismissible" } as const);
 
 export function StudioShell({
+  inspector,
   documentActions,
   recoveryRegion,
   onDraftInput,
@@ -118,6 +119,11 @@ export function StudioShell({
   annotations,
   midiExportAvailable,
 }: StudioShellProps) {
+  const [inspectorEventId, setInspectorEventId] = useState<string | null>(null);
+  const openInspector = inspector?.selectedEventId == null ? undefined : () => {
+    setInspectorEventId(inspector.selectedEventId);
+    callbacks.onDismissPanelSheet();
+  };
   /*
    * jcpe-disi.3 labeled undo. Every mutation path already flows through the
    * callbacks this shell hands down, so the sentence is composed centrally
@@ -649,6 +655,7 @@ export function StudioShell({
               view={view.harmony}
               onAddSuggestedChord={callbacks.onAddSuggestedChord}
               onPreviewPitch={callbacks.onPreviewPitch}
+              onEditChord={openInspector}
               onCollapsedChange={(collapsed) => {
                 callbacks.onRailCollapsedChange("harmony", collapsed);
               }}
@@ -675,6 +682,10 @@ export function StudioShell({
       </div>
 
       <div id="dialog-host">
+        {inspector !== undefined && inspectorEventId !== null && activeSheet === null ? (
+          <ChordInspector eventId={inspectorEventId} ports={inspector}
+            onClose={() => { setInspectorEventId(null); }} onContractRefusal={callbacks.onUiContractRefusal} />
+        ) : null}
         {exportOpen && !completionDialogOpen && !commandLaneOpen && !standardsOpen && !tourOpen ? (
           <Dialog
             backgroundRootId="studio-shell-background"
@@ -941,6 +952,7 @@ export function StudioShell({
                   view={view.harmony}
                   onAddSuggestedChord={callbacks.onAddSuggestedChord}
                   onPreviewPitch={callbacks.onPreviewPitch}
+                  onEditChord={openInspector}
                 />
               )
             }

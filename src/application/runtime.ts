@@ -55,6 +55,11 @@ export type {
 } from "./studio-controller";
 
 export type { StudioViewModel } from "./studio-view-model";
+export type {
+  StudioInspectorChange, StudioInspectorChoice, StudioInspectorPreview,
+  StudioInspectorResult, StudioInspectorSource, StudioInspectorView,
+  StudioInspectorStructurePatch, StudioInspectorSymbolDraft,
+} from "./studio-inspector";
 export { instrumentOptions } from "./studio-view-model";
 
 export {

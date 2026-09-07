@@ -678,7 +678,7 @@ export function TransportBar({
             describedBy={["studio-transport-status-detail"]}
             /* U4 (l3a.12.2): X1 admits stop from playing AND paused — the
              * paused-state Stop returns the playhead to the run start. */
-            disabled={!(running || view.audioState === "paused")}
+            disabled={!(running || view.audioState === "paused" || view.previewStoppable === true)}
             id="studio-transport-stop"
             iconId="stop"
             invalid={false}

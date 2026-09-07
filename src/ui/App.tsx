@@ -90,6 +90,7 @@ import {
 } from "./studio";
 
 export type AppActions = Readonly<{
+  inspector: Pick<StudioController, "readInspector" | "readInspectorDraft" | "applyInspectorChange" | "previewInspector" | "releaseInspectorPreview">;
   /**
    * The controller's LIVE snapshot. The render's `snapshot` prop is frozen
    * per render; a handler that mutates the document and then derives a
@@ -1652,6 +1653,7 @@ function viewFromSnapshot(
     transport: Object.freeze({
       // The live A0 transport status, not a hardcoded literal.
       audioState: snapshot.transport.status,
+      previewStoppable: snapshot.previewStoppable,
       audioStatusLabel: snapshot.transport.statusLabel,
       // jcpe-uslp: a carried failure code outranks the standing hint — the
       // detail line then says what failed and the next safe action. While
@@ -2595,6 +2597,20 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
   return (
     <>
     <StudioShell
+      inspector={{
+        selectedEventId: snapshot.bookmarks.selectionFocusEventId,
+        revision: snapshot.revision,
+        read: actions.inspector.readInspector,
+        readDraft: actions.inspector.readInspectorDraft,
+        apply: (source, change) => {
+          const result = actions.inspector.applyInspectorChange(source, change);
+          recordEditResult(result);
+          return result;
+        },
+        hear: (source, preview) => actions.inspector.previewInspector(source, preview, nextAudioGesture("trusted-pointer")),
+        release: actions.inspector.releaseInspectorPreview,
+        stop: () => { recordEditResult(actions.stopProgression()); },
+      }}
       documentActions={documentActions}
       recoveryRegion={recoveryRegion}
       onDraftInput={onDraftInput}
@@ -3904,6 +3920,7 @@ export function StudioRoot({
         previewChord: controller.previewChord,
         previewPitch: controller.previewPitch,
         previewPitches: controller.previewPitches,
+        inspector: controller,
         readTransportPlayheadLabel: controller.readTransportPlayheadLabel,
         readTransportAnalysisFrame: controller.readTransportAnalysisFrame,
         readEventPitchClasses: controller.readEventPitchClasses,

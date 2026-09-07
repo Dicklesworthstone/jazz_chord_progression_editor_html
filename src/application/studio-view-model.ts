@@ -170,6 +170,7 @@ export type StudioNoticeViewModel = Readonly<{
  */
 export type StudioSessionViewInput = Readonly<{
   performanceStyleId?: PerformanceStyleId;
+  previewStoppable?: boolean;
 }>;
 
 export type StudioPerformanceViewModel = Readonly<{
@@ -179,6 +180,7 @@ export type StudioPerformanceViewModel = Readonly<{
 }>;
 
 export type StudioViewModel = Readonly<{
+  previewStoppable: boolean;
   documentId: string;
   title: string;
   revision: number;
@@ -738,6 +740,7 @@ export function selectStudioViewModel(
     chordCount,
     bookmarks,
     quickEntry: quickEntryView(state),
+    previewStoppable: session?.previewStoppable ?? false,
     transport: Object.freeze({
       status: state.transport.status,
       statusLabel: transportStatusLabel(

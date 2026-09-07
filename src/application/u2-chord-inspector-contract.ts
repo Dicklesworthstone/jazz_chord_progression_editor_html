@@ -5,7 +5,7 @@
  *
  * Defines the public interfaces, view models, intents, limits, and invariant
  * types for the progressive 7-section Chord Inspector, interactive piano,
- * voicing mode lifecycle, structured chord editing, annotation sanitization,
+ * voicing mode lifecycle, structured chord editing, inert annotations,
  * and safe isolated chord audio preview.
  */
 
@@ -20,6 +20,7 @@ import type {
   SpelledPitch,
   SpelledPitchClass,
 } from "../domain";
+import type { VoiceAssignmentWorkEvidence } from "../theory";
 
 /* -------------------------------------------------------------------------- */
 /* Constants & Schemas                                                        */
@@ -32,7 +33,7 @@ export const U2_MANIFEST_SCHEMA =
 export const U2_PACKAGE = "U2" as const;
 export const U2_BEAD_ID = "jcpe-milestone-reliable-studio-l3a.11.1" as const;
 export const U2_POLICY_ID = "changes.u2-chord-inspector" as const;
-export const U2_POLICY_VERSION = 1 as const;
+export const U2_POLICY_VERSION = 2 as const;
 
 export const INSPECTOR_TABS = Object.freeze([
   "symbol",
@@ -67,13 +68,13 @@ export const PIANO_NOTE_ROLES = Object.freeze([
 export type PianoNoteRole = (typeof PIANO_NOTE_ROLES)[number];
 
 /* Bounds & Limits */
-export const PIANO_MIN_MIDI = 21 as const; // A0
-export const PIANO_MAX_MIDI = 108 as const; // C8
+export const PIANO_MIN_MIDI = 0 as const; // C-1; viewport is not a data limit.
+export const PIANO_MAX_MIDI = 127 as const; // G9
 export const PIANO_DEFAULT_VISIBLE_MIN_MIDI = 36 as const; // C2
 export const PIANO_DEFAULT_VISIBLE_MAX_MIDI = 84 as const; // C6
 export const MIN_MANUAL_VOICING_NOTES = 1 as const;
-export const MAX_MANUAL_VOICING_NOTES = 12 as const;
-export const MAX_ANNOTATION_CODE_POINTS = 500 as const;
+export const MAX_MANUAL_VOICING_NOTES = 16 as const;
+export const MAX_ANNOTATION_CODE_POINTS = 2000 as const;
 export const MAX_STRUCTURED_EDIT_HISTORY = 50 as const;
 
 /* -------------------------------------------------------------------------- */
@@ -140,7 +141,7 @@ export type InspectorVoicingView = Readonly<{
   canSwitchToAuto: boolean;
   canSwitchToFrozen: boolean;
   manualNoteCount: number;
-  isUnisonDuplicateRejected: boolean;
+  realizationFailure: Readonly<{ code: string; message: string }> | null;
 }>;
 
 /** 5. Harmony Tab */
@@ -158,11 +159,13 @@ export type InspectorHarmonyView = Readonly<{
 export type InspectorMotionPathItem = Readonly<{
   fromPitch: SpelledPitch | null;
   toPitch: SpelledPitch | null;
-  intervalSemis: number;
-  motionType: "common" | "step" | "skip" | "leap" | "retained";
+  intervalSemis: number | null;
+  motionType: "common" | "step" | "skip" | "leap" | "retained" | "enter" | "leave";
 }>;
 
 export type InspectorMotionView = Readonly<{
+  unavailableReason: string | null;
+  assignmentEvidence: VoiceAssignmentWorkEvidence | null;
   previousChordSymbol: string | null;
   nextChordSymbol: string | null;
   commonToneCount: number;
@@ -173,10 +176,10 @@ export type InspectorMotionView = Readonly<{
 /** 7. Notes / Annotation Tab */
 export type InspectorNotesView = Readonly<{
   rawAnnotation: string;
-  sanitizedAnnotation: string;
+  /** Exact source, rendered as a text node. Never stripped or repaired. */
+  text: string;
   codePointCount: number;
   maxCodePoints: number;
-  hasUnsafeMarkupStripped: boolean;
   isDirty: boolean;
 }>;
 
@@ -276,7 +279,6 @@ export const U2_REFUSAL_CODES = Object.freeze([
   "u2.unresolvable_chord_symbol",
   "u2.manual_voicing_empty",
   "u2.manual_voicing_exceeds_maximum",
-  "u2.manual_voicing_unison_duplicate",
   "u2.manual_voicing_out_of_range",
   "u2.mode_switch_requires_confirmation",
   "u2.annotation_length_exceeded",

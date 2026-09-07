@@ -177,6 +177,8 @@ export type StudioAudioPort = Readonly<{
     midiPitches: readonly [MidiPitch, ...MidiPitch[]],
     gateSeconds: number,
   ) => Promise<TransportCommandOutcome>;
+  /** Retire exactly this preview; leave the band, playhead and newer previews alone. */
+  releasePreview: (commandRequestId: number, previewId: string) => Promise<TransportCommandOutcome>;
   /**
    * Warm the rendered-instrument buffer cache for the run's distinct notes.
    * Resolves false when the renderer refuses; oscillator instruments resolve
@@ -650,6 +652,8 @@ export function createStudioAudio(
           gateSeconds,
         }),
       ),
+    releasePreview: async (commandRequestId, previewId) =>
+      submit(commandRequestId, Object.freeze({ kind: "release-preview" as const, previewId })),
     setInstrument: async (commandRequestId, instrumentId) =>
       submit(
         commandRequestId,

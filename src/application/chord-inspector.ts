@@ -4,14 +4,16 @@
  * Package: U2 (jcpe-milestone-reliable-studio-l3a.11.2), Reliable Studio milestone.
  *
  * Implements the progressive 7-tab Chord Inspector projection, interactive piano
- * geometry, voicing mode lifecycle manager, annotation sanitization, and isolated preview.
+ * geometry and inert annotation validation. The application owns edits/preview.
  */
 
 import {
-  makeSpelledPitch,
+  accumulateTimeline,
+  measureCapacity,
   normalizeBeatValue,
   pitchClassOf,
-  type ChordDegree,
+  projectSpelledPitch,
+  type BeatDuration,
   type ChordEvent,
   type DegreeNumber,
   type PitchClass,
@@ -19,29 +21,25 @@ import {
   type SpelledPitchClass,
 } from "../domain";
 import {
-  formatChordSymbol,
   parseChordSymbol,
   resolveChord,
+  analyzeChartEvent,
+  resolutionOperations,
   type ResolvedChord,
 } from "../theory";
 import type { AppState } from "./application-state-contract";
+import { buildStudioRealizations } from "./studio-realization";
+import { projectInspectorMotion } from "./studio-inspector-motion";
 import {
-  INSPECTOR_TABS,
   MAX_ANNOTATION_CODE_POINTS,
   PIANO_DEFAULT_VISIBLE_MAX_MIDI,
   PIANO_DEFAULT_VISIBLE_MIN_MIDI,
   PIANO_MAX_MIDI,
   PIANO_MIN_MIDI,
-  type ChordInspectorIntent,
   type ChordInspectorViewModel,
-  type ChordPreviewStatus,
   type InspectorDegreeItem,
   type InspectorHarmonyView,
-  type InspectorMotionPathItem,
-  type InspectorMotionView,
   type InspectorNotesView,
-  type InspectorStructureView,
-  type InspectorSymbolView,
   type InspectorSyntaxDiagnostic,
   type InspectorTabId,
   type InspectorTimingView,
@@ -50,7 +48,6 @@ import {
   type PianoKeyboardViewModel,
   type PianoKeyView,
   type PianoNoteRole,
-  type U2OperationResult,
   type U2RefusalCode,
 } from "./u2-chord-inspector-contract";
 
@@ -60,33 +57,31 @@ if (!ZERO_BEATS_RES.ok) {
 }
 const ZERO_BEATS = ZERO_BEATS_RES.value;
 
+function midiOf(pitch: SpelledPitch): number {
+  const projected = projectSpelledPitch(pitch);
+  if (!projected.ok) throw new Error("Inspector pitch is outside validated MIDI data");
+  return projected.value.midi;
+}
+
 /* -------------------------------------------------------------------------- */
-/* Annotation Sanitization (L-MARKUP-01)                                      */
+/* Inert Annotation Text (L-MARKUP-01)                                        */
 /* -------------------------------------------------------------------------- */
 
-const HTML_TAG_REGEX = /<[^>]*>/gu;
-const CONTROL_CHARS_REGEX = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/gu;
-
-export type SanitizedAnnotationResult = Readonly<{
-  sanitized: string;
+export type InspectorAnnotationResult = Readonly<{
+  text: string;
   codePointCount: number;
-  hasUnsafeMarkupStripped: boolean;
   isWithinLimit: boolean;
   isRefused: boolean;
   refusalCode: U2RefusalCode | null;
 }>;
 
-export function sanitizeAnnotationText(raw: string): SanitizedAnnotationResult {
-  const strippedTags = raw.replace(HTML_TAG_REGEX, "");
-  const hasUnsafeMarkupStripped = strippedTags !== raw;
-  const sanitized = strippedTags.replace(CONTROL_CHARS_REGEX, "");
+export function inspectAnnotationText(raw: string): InspectorAnnotationResult {
   const codePointCount = Array.from(raw).length;
 
   if (codePointCount > MAX_ANNOTATION_CODE_POINTS) {
     return Object.freeze({
-      sanitized: "",
+      text: raw,
       codePointCount,
-      hasUnsafeMarkupStripped,
       isWithinLimit: false,
       isRefused: true,
       refusalCode: "u2.annotation_length_exceeded",
@@ -94,9 +89,8 @@ export function sanitizeAnnotationText(raw: string): SanitizedAnnotationResult {
   }
 
   return Object.freeze({
-    sanitized,
-    codePointCount: Array.from(sanitized).length,
-    hasUnsafeMarkupStripped,
+    text: raw,
+    codePointCount,
     isWithinLimit: true,
     isRefused: false,
     refusalCode: null,
@@ -110,21 +104,6 @@ export function sanitizeAnnotationText(raw: string): SanitizedAnnotationResult {
 const WHITE_PITCH_CLASSES: readonly PitchClass[] = [
   0, 2, 4, 5, 7, 9, 11,
 ] as const;
-const STEP_FOR_WHITE_PC: Readonly<Record<PitchClass, "C" | "D" | "E" | "F" | "G" | "A" | "B">> = {
-  0: "C",
-  2: "D",
-  4: "E",
-  5: "F",
-  7: "G",
-  9: "A",
-  11: "B",
-  1: "C",
-  3: "D",
-  6: "F",
-  8: "G",
-  10: "A",
-};
-
 export function isBlackKeyMidi(midi: number): boolean {
   const pc = (midi % 12) as PitchClass;
   return !WHITE_PITCH_CLASSES.includes(pc);
@@ -175,12 +154,13 @@ export function buildPianoAccessibleLabel(
   spelling: SpelledPitchClass,
   octave: number,
   role: PianoNoteRole | null,
+  degreeAlter: number | null = null,
 ): string {
-  const alterStr = spelling.alter === 1 ? "#" : spelling.alter === -1 ? "b" : "";
-  const noteName = `${spelling.step}${alterStr}${octave}`;
+  const alterStr = spelling.alter < 0 ? "b".repeat(-spelling.alter) : "#".repeat(spelling.alter);
+  const noteName = `${spelling.step}${alterStr}${String(octave)}`;
   if (role === "root") return `${noteName}, Root`;
-  if (role === "guide-third") return `${noteName}, Major Third Guide Tone`;
-  if (role === "guide-seventh") return `${noteName}, Minor Seventh Guide Tone`;
+  if (role === "guide-third") return `${noteName}, ${degreeAlter === 0 ? "Major " : degreeAlter === -1 ? "Minor " : ""}Third Guide Tone`;
+  if (role === "guide-seventh") return `${noteName}, ${degreeAlter === 0 ? "Major " : degreeAlter === -1 ? "Minor " : degreeAlter === -2 ? "Diminished " : ""}Seventh Guide Tone`;
   if (role === "tension") return `${noteName}, Tension`;
   if (role === "bass") return `${noteName}, Bass Note`;
   if (role === "color") return `${noteName}, Chord Tone`;
@@ -193,15 +173,19 @@ export function derivePianoKeyboardViewModel(
   spellingByPitchClass?: ReadonlyMap<PitchClass, SpelledPitchClass>,
   hoveredMidi: number | null = null,
   focusedMidi: number | null = null,
+  degreeAlterByPitchClass?: ReadonlyMap<PitchClass, number>,
+  activeSpelledPitches: readonly SpelledPitch[] = [],
 ): PianoKeyboardViewModel {
   const activeSet = new Set(activeMidiNotes);
   const keys: PianoKeyView[] = [];
 
-  for (let midi = PIANO_MIN_MIDI; midi <= PIANO_MAX_MIDI; midi += 1) {
+  for (let midi: number = PIANO_MIN_MIDI; midi <= PIANO_MAX_MIDI; midi += 1) {
     const pc = midiToPitchClass(midi);
-    const octave = midiToOctave(midi);
     const isBlack = isBlackKeyMidi(midi);
-    const spelling = spellingByPitchClass?.get(pc) ?? defaultSpellingForMidi(midi);
+    const occurrences = activeSpelledPitches.filter(pitch => midiOf(pitch) === midi);
+    const spelling = occurrences[0] ?? spellingByPitchClass?.get(pc) ?? defaultSpellingForMidi(midi);
+    // Written octaves follow spelling: B#3 is MIDI60 and Cb5 is MIDI71.
+    const octave = Math.floor((midi - pitchClassOf({ step: spelling.step, alter: 0 }) - spelling.alter) / 12) - 1;
     const isActiveVoiced = activeSet.has(midi);
     const role = isActiveVoiced ? (roleByPitchClass?.get(pc) ?? "color") : null;
 
@@ -217,7 +201,8 @@ export function derivePianoKeyboardViewModel(
         isGuideTone: role === "guide-third" || role === "guide-seventh",
         role,
         octave,
-        accessibleLabel: buildPianoAccessibleLabel(spelling, octave, role),
+        accessibleLabel: occurrences.length > 1 ? occurrences.map(pitch => buildPianoAccessibleLabel(pitch, pitch.octave, role, degreeAlterByPitchClass?.get(pc))).join("; ")
+          : buildPianoAccessibleLabel(spelling, octave, role, degreeAlterByPitchClass?.get(pc)),
       }),
     );
   }
@@ -233,58 +218,6 @@ export function derivePianoKeyboardViewModel(
 }
 
 /* -------------------------------------------------------------------------- */
-/* Voice Leading Motion Derivation                                            */
-/* -------------------------------------------------------------------------- */
-
-export function deriveVoiceLeadingMotion(
-  currentPitches: readonly SpelledPitch[],
-  previousChordSymbol: string | null = null,
-  nextChordSymbol: string | null = null,
-  nextPitches: readonly SpelledPitch[] = [],
-): InspectorMotionView {
-  const voicePaths: InspectorMotionPathItem[] = [];
-  let commonToneCount = 0;
-  let stepwiseMotionCount = 0;
-
-  const maxLen = Math.max(currentPitches.length, nextPitches.length);
-  for (let i = 0; i < maxLen; i += 1) {
-    const from = currentPitches[i] ?? null;
-    const to = nextPitches[i] ?? null;
-    if (from !== null && to !== null) {
-      const fromMidi = pitchClassOf(from) + from.octave * 12;
-      const toMidi = pitchClassOf(to) + to.octave * 12;
-      const interval = Math.abs(toMidi - fromMidi);
-      let motionType: InspectorMotionPathItem["motionType"] = "leap";
-      if (interval === 0) {
-        motionType = "common";
-        commonToneCount += 1;
-      } else if (interval <= 2) {
-        motionType = "step";
-        stepwiseMotionCount += 1;
-      } else if (interval <= 4) {
-        motionType = "skip";
-      }
-      voicePaths.push(
-        Object.freeze({
-          fromPitch: from,
-          toPitch: to,
-          intervalSemis: interval,
-          motionType,
-        }),
-      );
-    }
-  }
-
-  return Object.freeze({
-    previousChordSymbol,
-    nextChordSymbol,
-    commonToneCount,
-    stepwiseMotionCount,
-    voicePaths: Object.freeze(voicePaths),
-  });
-}
-
-/* -------------------------------------------------------------------------- */
 /* Main Chord Inspector Projection                                            */
 /* -------------------------------------------------------------------------- */
 
@@ -296,6 +229,8 @@ export function projectChordInspectorViewModel(
     draftAnnotationText?: string;
     hoveredPianoMidi?: number | null;
     focusedPianoMidi?: number | null;
+    /** Supplied by the application after realizing a validated draft. */
+    realizedDraftPitches?: readonly SpelledPitch[];
   } = {},
 ): ChordInspectorViewModel {
   const activeTab = options.activeTab ?? "symbol";
@@ -349,7 +284,7 @@ export function projectChordInspectorViewModel(
         canSwitchToAuto: false,
         canSwitchToFrozen: false,
         manualNoteCount: 0,
-        isUnisonDuplicateRejected: false,
+        realizationFailure: null,
       }),
       harmony: Object.freeze({
         qualityCategory: "None",
@@ -361,6 +296,8 @@ export function projectChordInspectorViewModel(
         tonalFunction: null,
       }),
       motion: Object.freeze({
+        unavailableReason: "Select a chord to inspect voice leading.",
+        assignmentEvidence: null,
         previousChordSymbol: null,
         nextChordSymbol: null,
         commonToneCount: 0,
@@ -369,10 +306,9 @@ export function projectChordInspectorViewModel(
       }),
       notes: Object.freeze({
         rawAnnotation: "",
-        sanitizedAnnotation: "",
+        text: "",
         codePointCount: 0,
         maxCodePoints: MAX_ANNOTATION_CODE_POINTS,
-        hasUnsafeMarkupStripped: false,
         isDirty: false,
       }),
       piano: derivePianoKeyboardViewModel([]),
@@ -390,6 +326,9 @@ export function projectChordInspectorViewModel(
   let measureIndex = 0;
   let selectedMeasureId = null;
   let selectedSectionId = null;
+  let isMeasureComplete = false;
+  const precedingDurations: BeatDuration[] = [];
+  const precedingInMeasure: BeatDuration[] = [];
 
   for (const section of state.document.sections) {
     for (let mIdx = 0; mIdx < section.measures.length; mIdx += 1) {
@@ -398,13 +337,19 @@ export function projectChordInspectorViewModel(
       for (const ev of measure.events) {
         if (ev.id === selectedEventId) {
           chordEvent = ev;
-          measureIndex = mIdx;
           selectedMeasureId = measure.id;
           selectedSectionId = section.id;
+          isMeasureComplete = measure.completion.kind === "complete";
           break;
         }
+        precedingInMeasure.push(ev.duration);
       }
       if (chordEvent !== null) break;
+      // P0: empty measures occupy a bar; partial measures keep their exact sum.
+      precedingDurations.push(...(measure.completion.kind === "empty"
+        ? [measureCapacity(state.document.meter)] : precedingInMeasure));
+      precedingInMeasure.length = 0;
+      measureIndex += 1;
     }
     if (chordEvent !== null) break;
   }
@@ -417,7 +362,7 @@ export function projectChordInspectorViewModel(
         ...state.bookmarks,
         selection: { kind: "none" },
       },
-    });
+    }, options);
   }
 
   const rawSymbol = chordEvent.chord.sourceText;
@@ -428,7 +373,7 @@ export function projectChordInspectorViewModel(
   const parseResult = parseChordSymbol(draftText, "ascii");
   const isValidSyntax = parseResult.ok;
   const isCustomUnrecognized =
-    chordEvent.chord.kind === "custom" || (!isValidSyntax && !isSymbolDirty);
+    (chordEvent.chord.kind === "custom" && !isSymbolDirty) || (!isValidSyntax && !isSymbolDirty);
   const canonicalText = parseResult.ok ? parseResult.canonicalText : null;
   const diagnostics: InspectorSyntaxDiagnostic[] = parseResult.ok
     ? []
@@ -440,8 +385,8 @@ export function projectChordInspectorViewModel(
 
   // 2. Structure Tab (T1)
   const resolvedResult =
-    chordEvent.chord.kind === "parsed"
-      ? resolveChord(chordEvent.chord)
+    !isCustomUnrecognized && parseResult.ok
+      ? resolveChord(parseResult.chord)
       : null;
   const resolved: ResolvedChord | null =
     resolvedResult?.ok ? resolvedResult.value : null;
@@ -453,6 +398,7 @@ export function projectChordInspectorViewModel(
 
   const roleByPitchClass = new Map<PitchClass, PianoNoteRole>();
   const spellingByPitchClass = new Map<PitchClass, SpelledPitchClass>();
+  const degreeAlterByPitchClass = new Map<PitchClass, number>();
 
   let rootSpelling: SpelledPitchClass | null = null;
   let bassSpelling: SpelledPitchClass | null = null;
@@ -462,84 +408,81 @@ export function projectChordInspectorViewModel(
 
   if (resolved !== null) {
     const realization = resolved.realizations[0];
-    if (resolved.source.kind === "parsed") {
-      rootSpelling = resolved.source.root;
-      const seventhStr =
-        resolved.source.seventh === "major"
-          ? "Major Seventh"
-          : resolved.source.seventh === "minor"
-            ? "Dominant Seventh"
-            : "";
-      qualityName = seventhStr !== "" ? seventhStr : resolved.source.triad;
-      if (resolved.source.bass !== null) {
-        bassSpelling = resolved.source.bass;
-      }
+
+    rootSpelling = resolved.source.root;
+    const { triad, seventh } = resolved.source;
+    qualityName = seventh === null ? triad
+      : triad === "major" && seventh === "minor" ? "Dominant Seventh"
+      : triad === "major" && seventh === "major" ? "Major Seventh"
+      : triad === "minor" && seventh === "minor" ? "Minor Seventh"
+      : triad === "diminished" && seventh === "minor" ? "Half-diminished Seventh"
+      : triad === "diminished" && seventh === "diminished" ? "Diminished Seventh"
+      : `${triad}, ${seventh} seventh`;
+    const degreeText = (degree: Readonly<{ number: number; alter: number }>): string =>
+      `${degree.alter < 0 ? "b".repeat(-degree.alter) : "#".repeat(degree.alter)}${String(degree.number)}`;
+    omissions.push(...resolved.source.omissions);
+    alterations.push(...resolved.source.alterations.map(degreeText));
+    if (resolved.source.colorPolicy === "altered-dominant") alterations.push("alt");
+    additions.push(...resolved.source.additions.map(degree => `add${degreeText(degree)}`));
+    if (resolved.source.sixth !== null) additions.push(degreeText(resolved.source.sixth));
+    if (resolved.source.bass !== null) {
+      bassSpelling = resolved.source.bass;
     }
 
-    if (realization !== undefined && realization.degrees !== null) {
-      if (rootSpelling !== null) {
-        roleByPitchClass.set(pitchClassOf(rootSpelling), "root");
-        spellingByPitchClass.set(pitchClassOf(rootSpelling), rootSpelling);
-      }
 
-      for (let i = 0; i < realization.degrees.length; i += 1) {
-        const d = realization.degrees[i];
-        const sp = realization.spelledPitchNames[i];
-        if (!d || !sp) continue;
-        const pc = pitchClassOf(sp);
-        const isRoot = d.number === 1;
-        const isBass =
-          bassSpelling !== null && pc === pitchClassOf(bassSpelling);
-        let role: PianoNoteRole = "color";
-        if (isRoot) role = "root";
-        else if (isBass) role = "bass";
-        else if (d.number === 3) role = "guide-third";
-        else if (d.number === 7) role = "guide-seventh";
-        else if (d.number === 9 || d.number === 11 || d.number === 13)
-          role = "tension";
+    roleByPitchClass.set(pitchClassOf(rootSpelling), "root");
+    spellingByPitchClass.set(pitchClassOf(rootSpelling), rootSpelling);
 
-        roleByPitchClass.set(pc, role);
-        spellingByPitchClass.set(pc, sp);
+    for (let i = 0; i < realization.degrees.length; i += 1) {
+      const d = realization.degrees[i];
+      const sp = realization.spelledPitchNames[i];
+      if (!d || !sp) continue;
+      const pc = pitchClassOf(sp);
+      const isRoot = d.number === 1;
+      const isBass =
+        bassSpelling !== null && pc === pitchClassOf(bassSpelling);
+      let role: PianoNoteRole = "color";
+      if (isRoot) role = "root";
+      else if (isBass) role = "bass";
+      else if (d.number === 3) role = "guide-third";
+      else if (d.number === 7) role = "guide-seventh";
+      else if (d.number === 9 || d.number === 11 || d.number === 13)
+        role = "tension";
 
-        degrees.push(
-          Object.freeze({
-            degree: d.number,
-            spelling: sp,
-            pitchClass: pc,
-            isRoot,
-            isBass,
-            isOmitted: false,
-            role,
-          }),
-        );
-      }
+      roleByPitchClass.set(pc, role);
+      degreeAlterByPitchClass.set(pc, d.alter);
+      spellingByPitchClass.set(pc, sp);
+
+      degrees.push(
+        Object.freeze({
+          degree: d.number,
+          spelling: sp,
+          pitchClass: pc,
+          isRoot,
+          isBass,
+          isOmitted: false,
+          role,
+        }),
+      );
     }
+
   }
 
   // 3. Timing Tab
-  const startBeatRes = normalizeBeatValue({
-    numerator: measureIndex * 4,
-    denominator: 1,
-  });
-  const beatInMeasureRes = normalizeBeatValue({
-    numerator: 0,
-    denominator: 1,
-  });
-  const measureStartBeat = startBeatRes.ok
-    ? startBeatRes.value
-    : chordEvent.duration;
-  const beatInMeasure = beatInMeasureRes.ok
-    ? beatInMeasureRes.value
-    : chordEvent.duration;
+  const startBeatRes = accumulateTimeline(precedingDurations);
+  const beatInMeasureRes = accumulateTimeline(precedingInMeasure);
+  if (!startBeatRes.ok || !beatInMeasureRes.ok) throw new Error("Validated inspector timeline exceeded its domain limit");
+  const measureStartBeat = startBeatRes.value;
+  const beatInMeasure = beatInMeasureRes.value;
 
   const timingView: InspectorTimingView = Object.freeze({
     duration: chordEvent.duration,
-    durationLabel: `${chordEvent.duration.numerator} beats`,
+    durationLabel: `${String(chordEvent.duration.numerator)}${chordEvent.duration.denominator === 1 ? "" : `/${String(chordEvent.duration.denominator)}`} beats`,
     measureIndex,
     measureOrdinal: measureIndex + 1,
     measureStartBeat,
     beatInMeasure,
-    isMeasureComplete: true,
+    isMeasureComplete,
   });
 
   // 4. Voicing Tab
@@ -548,33 +491,28 @@ export function projectChordInspectorViewModel(
     chordEvent.voicing.mode === "auto" ? chordEvent.voicing.family : null;
 
   let activePitches: readonly SpelledPitch[] = [];
+  let realizationFailure: InspectorVoicingView["realizationFailure"] = null;
   if (
     chordEvent.voicing.mode === "manual" ||
     chordEvent.voicing.mode === "frozen"
   ) {
     activePitches = chordEvent.voicing.pitches;
-  } else if (resolved !== null) {
-    const realization = resolved.realizations[0];
-    if (realization !== undefined) {
-      activePitches = realization.spelledPitchNames.map((sp, idx) => {
-        const pitchRes = makeSpelledPitch({
-          step: sp.step,
-          alter: sp.alter,
-          octave: 4 + Math.floor(idx / 4),
-        });
-        return pitchRes.ok
-          ? pitchRes.value
-          : Object.freeze({
-              step: sp.step,
-              alter: sp.alter,
-              octave: 4 + Math.floor(idx / 4),
-            });
-      });
-    }
+  } else if (options.realizedDraftPitches !== undefined) {
+    activePitches = options.realizedDraftPitches;
+  } else if (!isSymbolDirty) {
+    const realized = buildStudioRealizations(state.document);
+    const binding = realized.ok ? realized.realizations.get(chordEvent.id) : undefined;
+    if (binding?.kind === "generated" && binding.outcome.ok) activePitches = binding.outcome.candidate.pitches;
+    else realizationFailure = Object.freeze({
+      code: !realized.ok ? realized.refusal.code : binding?.kind === "generated" && !binding.outcome.ok ? binding.outcome.refusal.code : "u2.unresolvable_chord_symbol",
+      message: !realized.ok ? realized.refusal.message : "This family and range cannot realize the chord. Choose another voicing or edit the symbol.",
+    });
+  } else {
+    realizationFailure = Object.freeze({ code: "u2.draft_not_realized", message: "Hear the edited chord to realize its current draft." });
   }
 
   const midiNoteNumbers = activePitches.map(
-    (p) => pitchClassOf(p) + (p.octave + 1) * 12,
+    (p) => midiOf(p),
   );
 
   const voicingView: InspectorVoicingView = Object.freeze({
@@ -585,11 +523,11 @@ export function projectChordInspectorViewModel(
       activePitches.map((p) => ({ step: p.step, alter: p.alter })),
     ),
     midiNoteNumbers: Object.freeze(midiNoteNumbers),
-    canSwitchToManual: voicingMode !== "manual",
-    canSwitchToAuto: voicingMode !== "auto",
-    canSwitchToFrozen: voicingMode !== "frozen",
+    canSwitchToManual: voicingMode !== "manual" && activePitches.length > 0,
+    canSwitchToAuto: voicingMode !== "auto" && !isCustomUnrecognized,
+    canSwitchToFrozen: voicingMode === "auto" && activePitches.length > 0,
     manualNoteCount: voicingMode === "manual" ? activePitches.length : 0,
-    isUnisonDuplicateRejected: false,
+    realizationFailure,
   });
 
   // 5. Harmony Tab
@@ -597,44 +535,48 @@ export function projectChordInspectorViewModel(
   const tensions: string[] = [];
   if (resolved !== null) {
     const realization = resolved.realizations[0];
-    if (realization !== undefined && realization.degrees !== null) {
-      for (let i = 0; i < realization.degrees.length; i += 1) {
-        const d = realization.degrees[i];
-        const sp = realization.spelledPitchNames[i];
-        if (!d || !sp) continue;
-        if (d.number === 3 || d.number === 7) {
-          guideTones.push(sp);
-        } else if (d.number === 9 || d.number === 11 || d.number === 13) {
-          tensions.push(String(d.number));
-        }
+
+    for (let i = 0; i < realization.degrees.length; i += 1) {
+      const d = realization.degrees[i];
+      const sp = realization.spelledPitchNames[i];
+      if (!d || !sp) continue;
+      if (d.number === 3 || d.number === 7) {
+        guideTones.push(sp);
+      } else if (d.number === 9 || d.number === 11 || d.number === 13) {
+        tensions.push(String(d.number));
       }
     }
+
   }
 
+  const sectionKey = state.document.sections.find(section => section.id === selectedSectionId)?.keyOverride;
+  const analysisChord = !isSymbolDirty && isCustomUnrecognized ? chordEvent.chord : parseResult.ok ? parseResult.chord : null;
+  const analysis = analysisChord === null ? null : analyzeChartEvent({ current: analysisChord,
+    key: sectionKey ?? state.document.key }, resolutionOperations);
   const harmonyView: InspectorHarmonyView = Object.freeze({
     qualityCategory: isCustomUnrecognized ? "Custom" : (qualityName ?? "Unknown"),
     guideTones: Object.freeze(guideTones),
     tensions: Object.freeze(tensions),
-    characteristicTones: Object.freeze([]),
-    scaleSuggestions: Object.freeze([]),
-    romanNumeral: null,
-    tonalFunction: null,
+    characteristicTones: Object.freeze(degrees.filter(degree => degree.role === "tension").map(degree =>
+      `${degree.spelling.step}${degree.spelling.alter < 0 ? "b".repeat(-degree.spelling.alter) : "#".repeat(degree.spelling.alter)}`)),
+    scaleSuggestions: Object.freeze(analysis?.scaleSentence ? [analysis.scaleSentence] : []),
+    romanNumeral: analysis?.roman ?? null,
+    tonalFunction: analysis?.functionSentence ?? null,
   });
 
   // 6. Motion Tab
-  const motionView = deriveVoiceLeadingMotion(activePitches);
+  const motionView = projectInspectorMotion(state.document, chordEvent.id, isSymbolDirty);
 
   // 7. Notes / Annotation Tab (L-MARKUP-01)
-  const rawAnnotation = options.draftAnnotationText ?? chordEvent.annotation ?? "";
-  const isAnnotationDirty = rawAnnotation !== (chordEvent.annotation ?? "");
-  const sanitizedResult = sanitizeAnnotationText(rawAnnotation);
+  const rawAnnotation = options.draftAnnotationText ?? chordEvent.annotation;
+  const isAnnotationDirty = rawAnnotation !== chordEvent.annotation;
+  const annotationResult = inspectAnnotationText(rawAnnotation);
 
   const notesView: InspectorNotesView = Object.freeze({
     rawAnnotation,
-    sanitizedAnnotation: sanitizedResult.sanitized,
-    codePointCount: sanitizedResult.codePointCount,
+    text: annotationResult.text,
+    codePointCount: annotationResult.codePointCount,
     maxCodePoints: MAX_ANNOTATION_CODE_POINTS,
-    hasUnsafeMarkupStripped: sanitizedResult.hasUnsafeMarkupStripped,
     isDirty: isAnnotationDirty,
   });
 
@@ -645,6 +587,8 @@ export function projectChordInspectorViewModel(
     spellingByPitchClass,
     options.hoveredPianoMidi,
     options.focusedPianoMidi,
+    degreeAlterByPitchClass,
+    activePitches,
   );
 
   return Object.freeze({
@@ -678,10 +622,10 @@ export function projectChordInspectorViewModel(
     notes: notesView,
     piano: pianoView,
     preview: Object.freeze({
-      kind: "idle",
+      kind: realizationFailure === null ? "idle" : "unavailable",
       activePitches: Object.freeze(activePitches),
       generation: 0,
-      failureCode: null,
+      failureCode: realizationFailure?.code ?? null,
     }),
   });
 }

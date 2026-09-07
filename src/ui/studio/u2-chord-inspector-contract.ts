@@ -1,4 +1,11 @@
 /**
  * Re-export of U2 Chord Inspector Contract for UI consumers.
  */
-export * from "../../application/u2-chord-inspector-contract";
+// Development contract surface only; the live shell uses application/runtime.
+export {
+  INSPECTOR_TABS, MAX_ANNOTATION_CODE_POINTS, MAX_MANUAL_VOICING_NOTES,
+  MIN_MANUAL_VOICING_NOTES, PIANO_DEFAULT_VISIBLE_MAX_MIDI,
+  PIANO_DEFAULT_VISIBLE_MIN_MIDI, PIANO_MAX_MIDI, PIANO_MIN_MIDI,
+  PIANO_NOTE_ROLES, U2_BEAD_ID, U2_CONTRACT_SCHEMA, U2_MANIFEST_SCHEMA,
+  U2_PACKAGE, U2_POLICY_ID, U2_POLICY_VERSION, U2_REFUSAL_CODES, VOICING_MODES,
+} from "../../application";

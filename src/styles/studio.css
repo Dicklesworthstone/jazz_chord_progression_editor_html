@@ -8,6 +8,33 @@
  * hook the U1 surfaces render is styled here; behavior hooks are unchanged.
  */
 
+/* Chord inspector: the exact-note list remains usable independently of the piano. */
+.studio-inspector { display: grid; gap: 1rem; min-inline-size: 0; overflow-wrap: anywhere; }
+.studio-inspector p { margin-block: .5rem; }
+.studio-inspector-summary { display: grid; gap: .35rem; }
+.studio-inspector-summary strong { font-size: 1.5rem; }
+.studio-inspector-actions, .studio-inspector-fields { display: flex; flex-wrap: wrap; gap: .5rem; }
+.studio-inspector-button { min-block-size: 44px; padding: .5rem .75rem; border: 1px solid var(--border-strong); border-radius: .4rem; background: var(--surface-elevated); color: var(--text-primary); cursor: pointer; }
+.studio-inspector-button:disabled { opacity: .55; cursor: default; }
+.studio-inspector button:focus-visible, .studio-inspector input:focus-visible, .studio-inspector textarea:focus-visible, .studio-inspector select:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 3px; }
+.studio-inspector label { display: grid; gap: .25rem; min-inline-size: 0; margin-block: .5rem; }
+.studio-inspector input, .studio-inspector select, .studio-inspector textarea { min-inline-size: 0; max-inline-size: 100%; min-block-size: 44px; border: 1px solid var(--border-strong); border-radius: .3rem; padding: .4rem; background: var(--surface-app); color: var(--text-primary); font: inherit; }
+.studio-inspector textarea { inline-size: 100%; resize: vertical; }
+.studio-inspector-fields > label { flex: 1 1 8rem; }
+.studio-inspector-choices { list-style: none; padding: 0; display: grid; gap: .75rem; }
+.studio-inspector-choices > li { border: 1px solid var(--border-strong); border-radius: .5rem; padding: .75rem; }
+.studio-inspector-tabs { display: flex; gap: .25rem; overflow-x: auto; }
+.studio-inspector-tabs button { min-block-size: 44px; padding-inline: .75rem; background: var(--surface-app); color: var(--text-primary); border: 1px solid var(--border-strong); border-radius: .3rem; }
+.studio-inspector-tabs [aria-selected="true"] { font-weight: 700; border-block-end: 3px solid currentColor; }
+.studio-inspector-notes { padding-inline-start: 1.5rem; }
+.studio-inspector-notes > li { display: flex; flex-wrap: wrap; align-items: end; gap: .4rem; margin-block: .5rem; }
+.studio-inspector-notes label { flex: 1 1 5rem; }
+.studio-inspector-notes input { inline-size: 5rem; }
+.studio-inspector-piano-scroll { overflow-x: auto; padding: .4rem; }
+.studio-inspector-piano { position: relative; block-size: 9rem; }
+.studio-inspector-piano button { position: absolute; inline-size: 64px; block-size: 9rem; border: 1px solid #252525; border-radius: 0 0 .25rem .25rem; color: #121212; background: #faf8f0; align-content: end; padding: .25rem; font-size: .7rem; }
+.studio-inspector-piano .is-black { z-index: 1; inline-size: 44px; background: #252525; color: #fff; block-size: 5.5rem; }
+
 /* ---------------------------------------------------------------- shell */
 
 .studio-shell {

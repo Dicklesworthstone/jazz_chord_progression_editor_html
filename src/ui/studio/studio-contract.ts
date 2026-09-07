@@ -1,5 +1,6 @@
 import type { ComponentChildren } from "preact";
 import type { UiDiagnostic } from "../ui-contract";
+import type { StudioInspectorPorts } from "./ChordInspector";
 
 export type StudioPanelSide = "library" | "harmony";
 
@@ -392,6 +393,8 @@ export type StudioHarmonyView = Readonly<{
 }>;
 
 export type StudioTransportView = Readonly<{
+  /** Preparing or submitted preview ownership also needs the global Stop control. */
+  previewStoppable?: boolean;
   /** The live A0 transport status, not a hardcoded literal. */
   audioState:
     | "unavailable"
@@ -947,6 +950,7 @@ export type StudioChartAnnotationPorts = Readonly<{
 }>;
 
 export type StudioShellProps = Readonly<{
+  inspector?: StudioInspectorPorts;
   documentActions?: ComponentChildren;
   recoveryRegion?: ComponentChildren;
   onDraftInput?: (() => void) | undefined;

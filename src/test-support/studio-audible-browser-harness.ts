@@ -352,6 +352,7 @@ function bootHarness(): StudioAudibleEvidenceApi {
         ),
       prepareInstrument: realPort.prepareInstrument,
       startPreview: realPort.startPreview,
+      releasePreview: realPort.releasePreview,
       readAnalysisFrame: realPort.readAnalysisFrame,
       subscribe: realPort.subscribe,
       isInitialized: realPort.isInitialized,

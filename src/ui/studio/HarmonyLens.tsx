@@ -8,6 +8,7 @@ export type HarmonyLensContentProps = Readonly<{
   view: StudioHarmonyView;
   onAddSuggestedChord: (symbolText: string) => void;
   onPreviewPitch: (midiPitch: number) => void;
+  onEditChord?: (() => void) | undefined;
 }>;
 
 export function HarmonyLensContent({
@@ -16,6 +17,7 @@ export function HarmonyLensContent({
   view,
   onAddSuggestedChord,
   onPreviewPitch,
+  onEditChord,
 }: HarmonyLensContentProps) {
   const factsHeadingId = `${headingId}-facts`;
   const continuationHeadingId = `${headingId}-continuation`;
@@ -90,6 +92,12 @@ export function HarmonyLensContent({
           </p>
         </section>
       )}
+
+      {view.selected !== null && onEditChord !== undefined ? (
+        <button type="button" class="studio-inspector-button" id={`studio-edit-chord-${context}`} onClick={onEditChord}>
+          Choose voicing / Edit chord
+        </button>
+      ) : null}
 
       {/*
         Plural continuation options from the session engine: each row is one
@@ -182,6 +190,7 @@ export type HarmonyLensProps = Readonly<{
   onCollapsedChange: (collapsed: boolean) => void;
   onAddSuggestedChord: (symbolText: string) => void;
   onPreviewPitch: (midiPitch: number) => void;
+  onEditChord?: (() => void) | undefined;
 }>;
 
 export function HarmonyLens({
@@ -191,6 +200,7 @@ export function HarmonyLens({
   onCollapsedChange,
   onAddSuggestedChord,
   onPreviewPitch,
+  onEditChord,
 }: HarmonyLensProps) {
   const headingId = "studio-harmony-heading";
 
@@ -216,6 +226,7 @@ export function HarmonyLens({
             view={view}
             onAddSuggestedChord={onAddSuggestedChord}
             onPreviewPitch={onPreviewPitch}
+            onEditChord={onEditChord}
           />
         )}
         <button
