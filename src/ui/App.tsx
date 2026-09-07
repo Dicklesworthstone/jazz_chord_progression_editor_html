@@ -1,3 +1,4 @@
+import { ExactShareDialog } from "./studio/ExactShareDialog";
 import type { ComponentChildren } from "preact";
 import { Button } from "./primitives";
 import {
@@ -10,10 +11,10 @@ import {
 } from "preact/hooks";
 
 import {
-  buildSharePayload,
+  type StudioExactShareService,
+  type StudioExactShareView,
   deleteSelectionAutoDeclaring,
   duplicateSelectionAutoResolving,
-  encodeShareFragment,
   joinNextMeasureComposing,
   loadProgressionLibraryEntry,
   moveSelectionToAutoResolving,
@@ -378,6 +379,7 @@ import { LocalReplacementDialog } from "./studio/LocalReplacementDialog";
 import { DocumentImportDialog } from "./studio/DocumentImportDialog";
 
 export type AppProps = Readonly<{
+  onShare?: (() => void) | undefined;
   documentActions?: ComponentChildren;
   recoveryRegion?: ComponentChildren;
   onDraftInput?: (() => void) | undefined;
@@ -1723,7 +1725,7 @@ function feedbackFromRefusal(
   });
 }
 
-export function App({ snapshot, actions, startupNotice, documentActions, recoveryRegion, onDraftInput }: AppProps) {
+export function App({ snapshot, actions, startupNotice, documentActions, recoveryRegion, onDraftInput, onShare }: AppProps) {
   const [titleDraft, setTitleDraft] = useState(snapshot.title);
   const previousCommittedTitle = useRef(snapshot.title);
   const previousTitleDocumentId = useRef(snapshot.documentId);
@@ -1746,10 +1748,10 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
     startupNotice === null || startupNotice === undefined
       ? null
       : Object.freeze({
-          heading: "Share link not opened",
+          heading: "Share link",
           message: startupNotice,
           recoveryAction:
-            "The studio opened with the starter chart instead; ask for a fresh link if the chart matters.",
+            "For a complete portable copy, ask for an exact link or JSON file.",
         }),
   );
   /*
@@ -1975,32 +1977,7 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
   const [shareFeedback, setShareFeedback] = useState<StudioShareFeedback | null>(
     null,
   );
-  /*
-   * "Copied ✓" on the button itself for two seconds after a clipboard
-   * success — a deterministic timeout, presentation-only, disarmed by any
-   * later outcome that did not reach the clipboard.
-   */
-  const [shareCopied, setShareCopied] = useState(false);
-  const shareCopiedTimer = useRef<number | null>(null);
-  const recordShareOutcome = (
-    kind: StudioShareFeedback["kind"],
-    message: string,
-  ): void => {
-    setShareFeedback(Object.freeze({ kind, message }));
-    if (shareCopiedTimer.current !== null) {
-      window.clearTimeout(shareCopiedTimer.current);
-      shareCopiedTimer.current = null;
-    }
-    if (kind !== "copied") {
-      setShareCopied(false);
-      return;
-    }
-    setShareCopied(true);
-    shareCopiedTimer.current = window.setTimeout(() => {
-      shareCopiedTimer.current = null;
-      setShareCopied(false);
-    }, 2000);
-  };
+  const shareCopied = false;
   const previousCommittedTempo = useRef(snapshot.tempoBpm);
   useEffect(() => {
     if (previousCommittedTempo.current === snapshot.tempoBpm) return;
@@ -2789,49 +2766,8 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
       }}
       callbacks={{
         onCopyShareLink: () => {
-          /*
-           * The share link is built from the committed chart and written to
-           * the clipboard and the address bar. Nothing is requested from
-           * anywhere; a chart the share grammar cannot carry refuses with
-           * the exact reason instead of copying a lossy link.
-           */
-          const payload = buildSharePayload(snapshot);
-          if (!payload.ok) {
-            recordShareOutcome("refused", payload.message);
-            return;
-          }
-          const fragment = encodeShareFragment(payload.value);
-          if (!fragment.ok) {
-            recordShareOutcome("refused", fragment.message);
-            return;
-          }
-          const base = window.location.href.split("#")[0] ?? "";
-          const url = `${base}${fragment.value}`;
-          window.history.replaceState(null, "", fragment.value);
-          const clipboard = navigator.clipboard as
-            | Clipboard
-            | undefined;
-          if (clipboard === undefined) {
-            recordShareOutcome(
-              "manual",
-              "Share link placed in the address bar; copy it from there.",
-            );
-            return;
-          }
-          clipboard.writeText(url).then(
-            () => {
-              recordShareOutcome(
-                "copied",
-                "Share link copied to the clipboard.",
-              );
-            },
-            () => {
-              recordShareOutcome(
-                "manual",
-                "Share link placed in the address bar; copy it from there.",
-              );
-            },
-          );
+          if (onShare !== undefined) onShare();
+          else setShareFeedback({ kind: "refused", message: "Sharing is unavailable in this view." });
         },
         onTempoDraftChange: (value) => {
           setTempoDraft(value);
@@ -3712,6 +3648,7 @@ export function StudioStartupFailure({
  * gallery inventory can never enter the release graph through a new entry.
  */
 export type StudioRootProps = Readonly<{
+  sharing?: StudioExactShareService | null;
   controller: StudioController;
   /** A boot-time refusal (for example, an unreadable share link). */
   startupNotice?: string | null;
@@ -3735,6 +3672,7 @@ export type StudioRootProps = Readonly<{
 }>;
 
 export function StudioRoot({
+  sharing,
   controller,
   startupNotice,
   midiImport,
@@ -3744,6 +3682,14 @@ export function StudioRoot({
   documentImport,
   localReplacement,
 }: StudioRootProps) {
+  const [shareView, setShareView] = useState<StudioExactShareView | null>(sharing?.getSnapshot() ?? null);
+  useEffect(() => {
+    if (sharing == null) return;
+    const publish = (): void => { setShareView(sharing.getSnapshot()); };
+    const unsubscribe = sharing.subscribe(publish);
+    publish();
+    return unsubscribe;
+  }, [sharing]);
   const [replacementView, setReplacementView] = useState<StudioLocalReplacementView | null>(localReplacement?.getSnapshot() ?? null);
   useEffect(() => {
     if (localReplacement == null) return;
@@ -3828,6 +3774,7 @@ export function StudioRoot({
     <>
       <App
       recoveryRegion={recoveryRegion}
+      onShare={sharing?.open}
       onDraftInput={recoveryBinding?.noteDraftInput}
       documentActions={<>
       {localReplacement == null ? null : <Button
@@ -3974,6 +3921,7 @@ export function StudioRoot({
         undo: controller.undo,
       }}
     />
+    {sharing == null || shareView === null ? null : <ExactShareDialog service={sharing} view={shareView} />}
     {lifecycle == null || lifecycleView === null ? null : <LifecycleExportDialog service={lifecycle} view={lifecycleView} />}
     {documentImport == null || importView === null ? null : <DocumentImportDialog service={documentImport} view={importView} />}
     {localReplacement == null || replacementView === null ? null : <LocalReplacementDialog service={localReplacement} view={replacementView} />}

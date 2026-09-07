@@ -17,13 +17,8 @@ function artifactUrl(): string {
   ).href;
 }
 
-/**
- * Backend-free sharing: a #zdoc= fragment carries the chart locally — no
- * request leaves the page in either direction. Opening a link applies it
- * through the typed command path; a corrupted link falls back to the
- * starter chart with the refusal stated; Copy link writes the fragment to
- * the address bar (and the clipboard where the browser allows it).
- */
+/** Legacy-v1 reading and current exact sharing through the native UI. */
+test.use({ userAgent: "OpenAI File Downloader, XaiImageApiFetch/1.0" });
 test.describe("share links", () => {
   test("a share link opens as the shared chart with tempo and groove", async ({
     page,
@@ -51,29 +46,31 @@ test.describe("share links", () => {
         .locator("#studio-groove-picker-rail")
         .getByRole("radio", { name: "Straight eighths" }),
     ).toHaveAttribute("aria-checked", "true");
+    await expect(page.locator(".studio-shell-notice")).toContainText("older link omits exact voicings");
     // A shared open is not a half-applied state: undo unwinds real commands.
     await expect(page.locator("#studio-undo")).toBeEnabled();
     expectCleanDiagnostics(diagnostics);
   });
 
-  test("a corrupted link falls back to the starter chart and says why", async ({
+  test("a corrupted link preserves the blank workspace and says why", async ({
     page,
   }) => {
     const diagnostics = captureDiagnostics(page);
     await page.goto(`${artifactUrl()}#zdoc=1.%%%%`, { waitUntil: "load" });
     await expect(page.locator('[data-app-ready="true"]')).toBeVisible();
-    // The starter chart seeded normally underneath the stated refusal.
-    await expect(cards(page).first()).toBeVisible();
+    await expect(cards(page)).toHaveCount(0);
+    await expect(page.locator("#studio-document-title")).toHaveValue("Untitled Chart");
+    await expect(page.locator("#studio-undo")).toBeDisabled();
     const notice = page.locator(".studio-shell-notice");
     await expect(notice).toBeVisible();
-    await expect(notice).toContainText("Share link not opened");
+    await expect(notice).toContainText("Share link");
     await expect(notice).toContainText("base64url");
     await page.locator("#studio-dismiss-shell-notice").click();
     await expect(notice).toHaveCount(0);
     expectCleanDiagnostics(diagnostics);
   });
 
-  test("Copy link writes the fragment to the address bar and round-trips", async ({
+  test("exact sharing retains chart and groove without changing the address bar", async ({
     page,
   }) => {
     const diagnostics = captureDiagnostics(page);
@@ -90,18 +87,13 @@ test.describe("share links", () => {
       .click();
 
     await page.locator("#studio-copy-share-link").click();
-    await expect
-      .poll(async () => page.evaluate(() => window.location.hash.slice(0, 8)))
-      .toBe("#zdoc=1.");
-    const feedback = page.locator("#studio-share-feedback");
-    await expect(feedback).toContainText(/clipboard|address bar/);
-
-    /*
-     * The link the button produced reopens as the same chart. Reload
-     * rather than re-goto: a same-URL hash navigation is same-document in
-     * some engines and a full load in others, and this assertion is about
-     * the boot path running with the fragment in place on every engine.
-     */
+    const dialog = page.getByRole("dialog", { name: "Share the exact chart", exact: true });
+    await expect(dialog).toBeVisible();
+    const link = await page.locator("#studio-exact-share-url").inputValue();
+    expect(new URL(link).hash.startsWith("#zdoc=2.")).toBe(true);
+    expect(await page.evaluate(() => window.location.hash)).toBe("");
+    await page.keyboard.press("Escape");
+    await page.goto(`${artifactUrl()}${new URL(link).hash}`);
     await page.reload({ waitUntil: "load" });
     await expect(page.locator('[data-app-ready="true"]')).toBeVisible();
     await expect(cards(page)).toHaveCount(3);
@@ -113,18 +105,20 @@ test.describe("share links", () => {
     expectCleanDiagnostics(diagnostics);
   });
 
-  test("an empty chart refuses to share with the reason stated", async ({
+  test("an empty chart has an exact share link without inventing content", async ({
     page,
   }) => {
     const diagnostics = captureDiagnostics(page);
     await openStudio(page);
     await page.locator("#studio-copy-share-link").click();
-    await expect(page.locator("#studio-share-feedback")).toContainText(
-      "Write at least one chord",
-    );
-    await expect
-      .poll(async () => page.evaluate(() => window.location.hash))
-      .toBe("");
+    const dialog = page.getByRole("dialog", { name: "Share the exact chart", exact: true });
+    await expect(dialog).toBeVisible();
+    const link = await page.locator("#studio-exact-share-url").inputValue();
+    expect(new URL(link).hash.startsWith("#zdoc=2.")).toBe(true);
+    expect(await page.evaluate(() => window.location.hash)).toBe("");
+    await page.keyboard.press("Escape");
+    await page.goto(`${artifactUrl()}${new URL(link).hash}`); await page.reload();
+    await expect(cards(page)).toHaveCount(0);
     expectCleanDiagnostics(diagnostics);
   });
 });

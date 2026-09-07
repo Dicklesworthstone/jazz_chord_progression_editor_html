@@ -6858,3 +6858,5 @@ li[data-resize-preview]::after {
 .studio-inspector-piano button[data-active="true"] { box-shadow: inset 0 -8px 0 #a93829; }
 .studio-inspector-piano button[data-role="root"] { border-block-end: 5px solid #245d87; }
 .studio-inspector-piano-role { display: block; margin-block-start: .3rem; font-size: .6rem; font-weight: 700; }
+
+.studio-exact-share textarea { width: 100%; box-sizing: border-box; overflow-wrap: anywhere; resize: vertical; font: inherit; }

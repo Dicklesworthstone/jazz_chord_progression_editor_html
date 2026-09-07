@@ -14,7 +14,9 @@ import {
   createX1SerializedTransportRetirementAdapter,
   applicationHistoryRetainedByteEstimator,
   validateDocumentSemantics,
-  decodeShareFragment,
+  decodeSharedStartup,
+  applyExactSharedStartup,
+  createStudioExactShare,
   seedStarterChart,
 } from "./application/runtime";
 import { decodeDocumentShape } from "./domain";
@@ -118,27 +120,11 @@ const creation = createStudioComposition({
 });
 
 if (creation.ok) {
-  /*
-   * A `#zdoc=` fragment is a shared chart: decode it through the bounded
-   * total decoder and apply it through the exact typed command path a user
-   * travels. A refused share falls back to the reviewed starter chart with
-   * the refusal surfaced, never a half-applied document. With no share
-   * present, a pristine first open receives the starter chart (jcpe-b20t).
-   * Recovery is checked before seeding. The workspace renders immediately;
-   * an untouched first open without recovery then receives the playable demo.
-   */
   const composition = creation.composition;
   const { controller, midiExport } = composition;
   let startupNotice: string | null = null;
-  const shared = decodeShareFragment(window.location.hash);
-  if (shared.ok) {
-    const applied = applySharedStartup(controller, shared.value);
-    if (!applied.applied) {
-      startupNotice = `The shared chart was not opened: ${applied.reason}`;
-    }
-  } else if (shared.code !== "share.fragment_absent") {
-    startupNotice = `The share link could not be read: ${shared.message}`;
-  }
+  const shared = decodeSharedStartup(window.location.hash);
+  const explicitShare = shared.ok || shared.code !== "share.fragment_absent";
   /*
    * A1 recovery wiring (l3a.2): the service over the real browser
    * adapters (IndexedDB primary, localStorage fallback), the mutation
@@ -197,8 +183,8 @@ if (creation.ok) {
     subscribeRecovery: recoveryStatus.subscribe,
     composition,
     orchestrator: recoveryOrchestrator,
-    sessionEdited: shared.ok || shared.code !== "share.fragment_absent",
-    onEmptyStartup: () => { seedStarterChart(controller); },
+    sessionEdited: explicitShare,
+    onEmptyStartup: () => { if (!explicitShare) seedStarterChart(controller); },
     formatTimestamp: (timestamp) => {
       const parsed = Date.parse(timestamp);
       return Number.isNaN(parsed) ? timestamp : new Date(parsed).toLocaleString();
@@ -228,20 +214,40 @@ if (creation.ok) {
     exportCurrent: () => { void lifecycle.openExport(); },
   });
 
-  void recoveryBinding.start();
-  render(
-    <StudioRoot
-      controller={controller}
-      midiExport={midiExport}
-      midiImport={midiImport}
-      startupNotice={startupNotice}
-      recovery={recoveryBinding}
-      lifecycle={lifecycle}
-      documentImport={documentImport}
-      localReplacement={localReplacement}
-    />,
-    mountPoint,
-  );
+  const sharing = createStudioExactShare({ composition, lifecycle,
+    readLocation: () => window.location.href,
+    writeClipboard: async (text) => { await navigator.clipboard.writeText(text); },
+  });
+  // Only a bounded explicit startup delays the first editable render. The
+  // existing import service owns validation and the serialized one-step swap;
+  // recovery cannot race it, and an invalid link never seeds a replacement demo.
+  const finishStartup = async (): Promise<void> => {
+    if (shared.ok) {
+      const applied = shared.value.version === 2
+        ? await applyExactSharedStartup(composition, documentImport, shared.value.text)
+        : applySharedStartup(controller, shared.value.payload);
+      if (!applied.applied) startupNotice = `The shared chart was not opened: ${applied.reason}`;
+      else if (shared.value.version === 1) startupNotice = "This older link omits exact voicings, annotations, section details and other settings. Sound can change between app versions.";
+    } else if (shared.code !== "share.fragment_absent") {
+      startupNotice = `The share link could not be read: ${shared.message}`;
+    }
+    render(
+      <StudioRoot
+        sharing={sharing}
+        controller={controller}
+        midiExport={midiExport}
+        midiImport={midiImport}
+        startupNotice={startupNotice}
+        recovery={recoveryBinding}
+        lifecycle={lifecycle}
+        documentImport={documentImport}
+        localReplacement={localReplacement}
+      />,
+      mountPoint,
+    );
+    void recoveryBinding.start();
+  };
+  void finishStartup();
 } else {
   render(
     <StudioStartupFailure

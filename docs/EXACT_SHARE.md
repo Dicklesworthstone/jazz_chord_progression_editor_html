@@ -58,7 +58,11 @@ change between app versions; preserve existing Frozen provenance as data.
 
 The composition creates a sharing service over its private current-document
 read. UI receives a view and intents, never the interchange owner or exporter.
-Browser URL/clipboard adapters are bound in the composition root. Copy is
+Browser URL/clipboard adapters are bound in the composition root. The dialog
+uses the additive A0 `exact-share` descriptor kind, with one non-history-blocking
+host and the existing U0 focus/stack rules. The frozen original A0 kind tuple is
+unchanged. Its explicit JSON fallback closes Share before opening the existing
+canonical export dialog; no nested export host is introduced. Copy is
 revision-bound: if the chart changed after opening Share, refresh its preview
 and require another explicit click. A pending clipboard completion cannot
 reopen a cancelled dialog or claim a newer chart was copied. Share never marks

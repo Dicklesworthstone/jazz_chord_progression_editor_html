@@ -168,3 +168,7 @@ export type {
 } from "./studio-midi-export";
 
 export { createStudioLocalReplacement, type StudioLocalReplacementService, type StudioLocalReplacementView } from "./studio-local-replacement";
+
+export { createStudioExactShare, type StudioExactShareService, type StudioExactShareView } from "./studio-exact-share";
+export { decodeSharedStartup } from "./exact-share";
+export { applyExactSharedStartup } from "./exact-share-startup";
