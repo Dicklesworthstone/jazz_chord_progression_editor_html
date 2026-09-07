@@ -54,59 +54,66 @@ for (const mode of ["file", "http"] as const) {
     test.describe(`${mode} ${String(viewport.width)}px entry repair`, () => {
       test.use({ viewport, hasTouch: viewport.width < 600, userAgent: "OpenAI File Downloader, XaiImageApiFetch/1.0", contextOptions: { reducedMotion: "reduce" } });
 
-      test("select, cancel, keep, insert and Undo over real multiline input", async ({ page, context, browser }, info) => {
-        const consoleErrors: string[] = [], pageErrors: string[] = [];
-        const requests: { url: string; allowed: boolean }[] = [];
-        const url = mode === "http" ? httpUrl : pathToFileURL(artifactPath).href;
-        page.on("console", message => { if (message.type() === "error") consoleErrors.push(message.text()); });
-        page.on("pageerror", error => { pageErrors.push(error.message); });
-        await context.route("**/*", async route => {
-          const allowed = route.request().isNavigationRequest() && route.request().url() === url;
-          requests.push({ url: route.request().url(), allowed });
-          if (allowed) await route.continue(); else await route.abort();
+      for (const workflow of ["cancel", "commit"] as const) {
+        test(`${workflow}: exact multiline source and atomic history`, async ({ page, context, browser }, info) => {
+          const consoleErrors: string[] = [], pageErrors: string[] = [];
+          const requests: { url: string; allowed: boolean }[] = [];
+          const url = mode === "http" ? httpUrl : pathToFileURL(artifactPath).href;
+          page.on("console", message => { if (message.type() === "error") consoleErrors.push(message.text()); });
+          page.on("pageerror", error => { pageErrors.push(error.message); });
+          await context.route("**/*", async route => {
+            const allowed = route.request().isNavigationRequest() && route.request().url() === url;
+            requests.push({ url: route.request().url(), allowed });
+            if (allowed) await route.continue(); else await route.abort();
+          });
+          try {
+            await blankStudio(page, url);
+            const beforeIds = await page.locator(".studio-measure").evaluateAll(elements => elements.map(element => element.getAttribute("data-measure-id")));
+            await page.locator("#studio-open-command-lane").click();
+            const field = page.getByTestId("command-lane-input");
+            await field.fill(draft);
+            await expect(field).toHaveValue(draft);
+            await expect(page.locator("#studio-command-lane-insert")).toBeDisabled();
+            const error = page.getByRole("button", { name: /^Repair H:/ });
+            await expect(error).toContainText("Repair");
+            await error.focus();
+            await page.keyboard.press("Enter");
+            expect(await selection(page, "command-lane-input")).toEqual({ start: 19, end: 20, text: "H", focused: true });
+            await page.keyboard.insertText("G");
+            await expect(field).toHaveValue(repaired);
+            await expect(page.locator(".studio-chord-card")).toHaveCount(0);
+            if (workflow === "cancel") {
+              // The overlay must let this Escape reach the repair first.
+              await page.keyboard.press("Escape");
+              await expect(field).toBeVisible();
+              await expect(field).toHaveValue(draft);
+              expect(await selection(page, "command-lane-input")).toEqual({ start: 19, end: 20, text: "H", focused: true });
+              await page.getByRole("button", { name: /^Next error/ }).click();
+              await page.keyboard.insertText("G");
+              await expect(field).toHaveValue(repaired);
+              await expect(page.locator(".studio-chord-card")).toHaveCount(0);
+            } else {
+              await page.getByRole("button", { name: "Keep repair", exact: true }).click();
+              await expect(field).toBeFocused();
+              await expect(field).toHaveValue(repaired);
+              await expect(page.getByRole("button", { name: "Cancel repair", exact: true })).toHaveCount(0);
+              await expect(page.getByTestId("command-lane-tokens")).toContainText("2/1 beats");
+              await page.locator("#studio-command-lane-insert").click();
+              await expect(page.locator(".studio-chord-card")).toHaveCount(2);
+              await page.locator("#studio-undo").click();
+              await expect(page.locator(".studio-chord-card")).toHaveCount(0);
+              expect(await page.locator(".studio-measure").evaluateAll(elements => elements.map(element => element.getAttribute("data-measure-id")))).toEqual(beforeIds);
+              // The pre-existing Clear command remains undoable after exactly one
+              // Undo removes the new insertion. No repair added a history entry.
+              await expect(page.locator("#studio-undo")).toBeEnabled();
+            }
+            expect(consoleErrors).toEqual([]); expect(pageErrors).toEqual([]);
+            expect(requests.filter(row => !row.allowed)).toEqual([]);
+          } finally {
+            await info.attach("entry-repair-evidence", { contentType: "application/json", body: JSON.stringify({ artifactHash, browser: browser.version(), mode, viewport, consoleErrors, pageErrors, requests }) });
+          }
         });
-        try {
-          await blankStudio(page, url);
-          const beforeIds = await page.locator(".studio-measure").evaluateAll(elements => elements.map(element => element.getAttribute("data-measure-id")));
-          await page.locator("#studio-open-command-lane").click();
-          const field = page.getByTestId("command-lane-input");
-          await field.fill(draft);
-          await expect(field).toHaveValue(draft);
-          await expect(page.locator("#studio-command-lane-insert")).toBeDisabled();
-          const error = page.getByRole("button", { name: /^Repair H:/ });
-          await expect(error).toContainText("Repair");
-          await error.focus();
-          await page.keyboard.press("Enter");
-          expect(await selection(page, "command-lane-input")).toEqual({ start: 19, end: 20, text: "H", focused: true });
-          await page.keyboard.insertText("G");
-          await expect(field).toHaveValue(repaired);
-          await expect(page.locator(".studio-chord-card")).toHaveCount(0);
-          // The overlay must let this Escape reach the repair first.
-          await page.keyboard.press("Escape");
-          await expect(field).toBeVisible();
-          await expect(field).toHaveValue(draft);
-          expect(await selection(page, "command-lane-input")).toEqual({ start: 19, end: 20, text: "H", focused: true });
-          await page.getByRole("button", { name: /^Next error/ }).click();
-          await page.keyboard.insertText("G");
-          await page.getByRole("button", { name: "Keep repair", exact: true }).click();
-          await expect(field).toBeFocused();
-          await expect(field).toHaveValue(repaired);
-          await expect(page.getByRole("button", { name: "Cancel repair", exact: true })).toHaveCount(0);
-          await expect(page.getByTestId("command-lane-tokens")).toContainText("2/1 beats");
-          await page.locator("#studio-command-lane-insert").click();
-          await expect(page.locator(".studio-chord-card")).toHaveCount(2);
-          await page.locator("#studio-undo").click();
-          await expect(page.locator(".studio-chord-card")).toHaveCount(0);
-          expect(await page.locator(".studio-measure").evaluateAll(elements => elements.map(element => element.getAttribute("data-measure-id")))).toEqual(beforeIds);
-          // The pre-existing Clear command remains undoable after exactly one
-          // Undo removes the new insertion. No repair added a history entry.
-          await expect(page.locator("#studio-undo")).toBeEnabled();
-          expect(consoleErrors).toEqual([]); expect(pageErrors).toEqual([]);
-          expect(requests.filter(row => !row.allowed)).toEqual([]);
-        } finally {
-          await info.attach("entry-repair-evidence", { contentType: "application/json", body: JSON.stringify({ artifactHash, browser: browser.version(), mode, viewport, consoleErrors, pageErrors, requests }) });
-        }
-      });
+      }
     });
   }
 }
