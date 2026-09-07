@@ -393,10 +393,8 @@ export type OverlaySurfaceRequest = Readonly<{
   descriptor: UiOverlayDescriptor;
   getSurface: () => HTMLElement | null;
   isDismissible: () => boolean;
-  onDismiss: (
-    reason: UiDismissReason,
-    source: UiInteractionSource,
-  ) => void;
+  onDismiss: ((reason: UiDismissReason, source: UiInteractionSource) => void) |
+    ((reason: UiDismissReason, source: UiInteractionSource) => false);
   outsidePointerDismisses: boolean;
   transient: OverlayTransientKind;
   trigger: HTMLElement;
@@ -627,7 +625,13 @@ export class DocumentOverlayCoordinator {
       return false;
     }
     record.dismissRequested = true;
-    record.onDismiss(reason, source);
+    // A controlled editor may retain its surface to ask about unsaved work.
+    // Keep the reentrancy guard during the callback, then permit a later user
+    // gesture when the owner explicitly declines this request.
+    if (record.onDismiss(reason, source) === false && !force) {
+      record.dismissRequested = false;
+      return false;
+    }
     return true;
   }
 

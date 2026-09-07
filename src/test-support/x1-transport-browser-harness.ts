@@ -141,9 +141,9 @@ async function runScenario(
       Object.freeze({
         step,
         termination: outcome.termination,
-        code: outcome.termination === "refusal" ? outcome.code : null,
+        code: outcome.termination !== "receipt" ? outcome.code : null,
         engineRefusalCode:
-          outcome.termination === "refusal" ? outcome.engineRefusalCode : null,
+          outcome.termination !== "receipt" ? outcome.engineRefusalCode : null,
         engineStateAfter: engine.inspectAudioEngine().state,
         stateAfter:
           outcome.termination === "receipt"
@@ -157,7 +157,7 @@ async function runScenario(
             : null,
       }),
     );
-    if (outcome.termination === "refusal" && failure.detail === null) {
+    if (outcome.termination !== "receipt" && failure.detail === null) {
       failure.detail = `${step}:${outcome.code}`;
     }
     return outcome;

@@ -146,4 +146,19 @@ describe("U2 Chord Inspector Projection", () => {
     expect(view.symbol.isCustomUnrecognized).toBe(true);
     expect(view.structure.qualityName).toBe("Custom / Unrecognized");
   });
+
+  test("a Custom label that also parses is not presented as that parsed chord", () => {
+    const event = inspectorEvent({ id: "u2-parseable-custom", annotation: "",
+      chord: { ...SAMPLE_CUSTOM_SPEC, sourceText: "G7", label: "G7" },
+      voicing: { mode: "manual", bassPolicy: "included", pitches: [
+        { step: "C", alter: 0, octave: 4 }, { step: "F", alter: 1, octave: 4 },
+      ] } });
+    const state = inspectorState(event), before = JSON.stringify(state);
+    const view = projectChordInspectorViewModel(state);
+    expect(view.symbol).toMatchObject({ sourceText: "G7", draftText: "G7", canonicalText: null,
+      isCustomUnrecognized: true, isDirty: false });
+    expect(view.structure.degrees).toEqual([]);
+    expect(view.voicing.activePitches).toEqual(event.voicing.mode === "manual" ? event.voicing.pitches : []);
+    expect(JSON.stringify(state)).toBe(before);
+  });
 });

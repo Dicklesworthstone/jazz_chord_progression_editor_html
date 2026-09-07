@@ -61,6 +61,12 @@ export function createX1SerializedTransportRetirementAdapter(
   const retire = async (request: RetireImportReplacementRequest | LocalReplacementRetirementRequest): Promise<unknown> => {
       const before = transport.inspectTransport();
       if (before.state === "locked") {
+        // A trusted initialization can be awaiting the browser's resume
+        // promise while X1 still says locked. It may open an epoch later;
+        // therefore only an empty queue proves the vacuous startup case.
+        if (before.queuedCommandCount !== 0) {
+          return Object.freeze({ ok: false, code: "transport.replacement_retirement_unavailable", retirementEffect: "none" });
+        }
         /* Vacuous retirement: a locked transport has never opened an
          * epoch — no plan is bound, nothing is scheduled, and no attack
          * can start without a trusted-gesture initialize. The recovery
@@ -110,13 +116,13 @@ export function createX1SerializedTransportRetirementAdapter(
       );
       observation?.settled(outcome);
 
-      if (outcome.termination === "refusal") {
-        /* replace-plan(null) refuses only from an illegal state, before
-         * any mutation: still a no-effect refusal. */
+      if (outcome.termination !== "receipt") {
+        // A total refusal has no effect. A fatal command may have retired
+        // voices; it supplies no receipt that can authorize publication.
         return Object.freeze({
           ok: false as const,
           code: "transport.replacement_retirement_failed" as const,
-          retirementEffect: "none" as const,
+          retirementEffect: outcome.termination === "fault" ? "no-future-attack-unproven" : "none",
         });
       }
 

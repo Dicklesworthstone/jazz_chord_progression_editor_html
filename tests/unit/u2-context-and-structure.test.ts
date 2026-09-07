@@ -1,7 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { decodeDocumentShape, makeBeatDuration, type SpelledPitch } from "../../src/domain";
-import { parseChordSymbol } from "../../src/theory";
+import { parseChordSymbol, type VoiceAssignmentWorkEvidence } from "../../src/theory";
 import { validateDocumentSemantics } from "../../src/application/document-validation";
+import { projectInspectorMotion } from "../../src/application/studio-inspector-motion";
 import { projectChordInspectorViewModel } from "../../src/application/chord-inspector";
 import { readInspectorSymbolDraft } from "../../src/application/studio-inspector";
 import { inspectorEvent, inspectorState } from "../support/u2-inspector-fixtures";
@@ -33,10 +34,25 @@ describe("U2 registered motion and semantic drafts", () => {
     expect(view.motion.commonToneCount).toBe(3);
     expect(view.motion.voicePaths.map(path => path.intervalSemis)).toEqual([0, 0, 0]);
     expect(view.motion.unavailableReason).toBeNull();
-    expect(view.motion.assignmentEvidence?.termination).toBe("complete-assigned");
+    // The projector already proves V1 -> UI assignability. This opposite
+    // direction also checks that the UI record loses no typed evidence field.
+    const evidence: VoiceAssignmentWorkEvidence | null = view.motion.assignmentEvidence;
+    expect(evidence?.termination).toBe("complete-assigned");
     expect(JSON.stringify(state.document)).toBe(before);
     const key = view.piano.keys.find(key => key.midi === (octave + 2) * 12);
     expect(key?.accessibleLabel).toContain(`B#${String(octave)}`);
+  });
+
+  test("the final chord still shows its incoming transition with independent work evidence", () => {
+    const from = [{ step: "C", alter: 0, octave: 4 }, { step: "E", alter: 0, octave: 4 }, { step: "G", alter: 0, octave: 4 }] as const;
+    const state = pair(from, [...from, { step: "B", alter: 0, octave: 4 }]);
+    const view = projectInspectorMotion(state.document, "u2-motion-next", false);
+    expect(view.incoming.commonToneCount).toBe(3);
+    expect(view.incoming.voicePaths.at(-1)).toEqual({ fromPitch: null, toPitch: { step: "B", alter: 0, octave: 4 }, intervalSemis: null, motionType: "enter" });
+    expect(view.incoming.assignmentEvidence?.termination).toBe("complete-assigned");
+    expect(view.nextChordSymbol).toBeNull();
+    expect(view.unavailableReason).toContain("no following chord");
+    expect(projectInspectorMotion(state.document, "u2-motion-current", false).incoming.unavailableReason).toContain("no previous chord");
   });
 
   test("entering notes are explicit and never described as zero-distance matches", () => {

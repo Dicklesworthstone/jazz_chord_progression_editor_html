@@ -59,6 +59,7 @@ import {
   type TransportCommandOutcome,
   type TransportCommandReceipt,
   type TransportCommandRefusal,
+  type TransportCommandFault,
   type TransportCommandRequestId,
   type TransportGeneration,
   type TransportNotificationStatus,
@@ -798,7 +799,14 @@ export function createTransportService(
     kind: TransportCommandKind | null,
     code: TransportRefusalCode,
     engineRefusalCode: TransportCommandRefusal["engineRefusalCode"] = null,
-  ): TransportCommandRefusal {
+  ): TransportCommandRefusal | TransportCommandFault {
+    if (code === "transport.engine_refusal" &&
+        (state === "fault" || platform.engine.inspectAudioEngine().state === "fault")) {
+      enterFault(code);
+      work.commandsAdmitted += 1;
+      return Object.freeze({ termination: "fault", commandRequestId, kind, code, engineRefusalCode,
+        state: "fault", generation, work: freezeCounters(work) });
+    }
     work.commandsRefused += 1;
     return Object.freeze({
       termination: "refusal",

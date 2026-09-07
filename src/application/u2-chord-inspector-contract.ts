@@ -20,7 +20,6 @@ import type {
   SpelledPitch,
   SpelledPitchClass,
 } from "../domain";
-import type { VoiceAssignmentWorkEvidence } from "../theory";
 
 /* -------------------------------------------------------------------------- */
 /* Constants & Schemas                                                        */
@@ -163,14 +162,55 @@ export type InspectorMotionPathItem = Readonly<{
   motionType: "common" | "step" | "skip" | "leap" | "retained" | "enter" | "leave";
 }>;
 
-export type InspectorMotionView = Readonly<{
+/** Presentation record supplied by the application projector. The UI contract
+ * owns this data shape; algorithm types remain behind the application boundary.
+ * No work limits or musical decisions are reimplemented here.
+ */
+export type InspectorAssignmentEvidence = Readonly<{
+  sourceVoicesVisited: number;
+  targetVoicesVisited: number;
+  matrixCellsVisited: number;
+  transitionCandidatesEvaluated: number;
+  scoreComparisons: number;
+  backtraceSteps: number;
+  identityComparisons: number;
+  roleDegreesVisited: number;
+  roleMembershipComparisons: number;
+  roleOrderComparisons: number;
+  relationClassifications: number;
+  lockChecks: number;
+  voiceIdsAllocated: number;
+  arcsProduced: number;
+  peakInputVoiceRecords: number;
+  peakInputRoleDegreeRecords: number;
+  peakMatrixCellRecords: number;
+  peakPredecessorRecords: number;
+  peakScoreRecords: number;
+  peakPathStepRecords: number;
+  peakArcRecords: number;
+  peakArcEndpointRecords: number;
+  peakArcIdentityRecords: number;
+  peakOutputVoiceRecords: number;
+  peakOutputRoleDegreeRecords: number;
+  peakRelationRecords: number;
+  peakLockRecords: number;
+  peakLockEvidenceRecords: number;
+  peakTrackedRecords: number;
+  termination: "complete-initialized" | "complete-assigned" | "request-invalid" | "no-assignment" | "work-limit-exceeded";
+}>;
+
+export type InspectorMotionSegment = Readonly<{
   unavailableReason: string | null;
-  assignmentEvidence: VoiceAssignmentWorkEvidence | null;
-  previousChordSymbol: string | null;
-  nextChordSymbol: string | null;
+  assignmentEvidence: InspectorAssignmentEvidence | null;
   commonToneCount: number;
   stepwiseMotionCount: number;
   voicePaths: readonly InspectorMotionPathItem[];
+}>;
+
+export type InspectorMotionView = InspectorMotionSegment & Readonly<{
+  previousChordSymbol: string | null;
+  nextChordSymbol: string | null;
+  incoming: InspectorMotionSegment;
 }>;
 
 /** 7. Notes / Annotation Tab */

@@ -302,6 +302,30 @@ describe("U0 document overlay coordinator kernel", () => {
     expect(documentDouble.listenerCount("pointerdown")).toBe(0);
   });
 
+  test("a declined dirty-draft dismissal permits a later gesture without reentrant or duplicate delivery", () => {
+    const owner = new ListenerDocument();
+    const coordinator = new DocumentOverlayCoordinator(owner as unknown as Document);
+    let dirty = true, calls = 0;
+    let reenter: () => boolean = () => false;
+    const result = coordinator.acquire(surfaceRequest("editor", "modal", {} as HTMLElement, () => null, () => {
+      calls++;
+      expect(reenter()).toBe(false);
+      return dirty ? false : undefined;
+    }));
+    if (!result.ok) throw new Error("expected editor lease");
+    reenter = () => result.lease.requestDismiss("escape", "keyboard");
+    expect(reenter()).toBe(false);
+    expect(reenter()).toBe(false);
+    expect(calls).toBe(2);
+    dirty = false;
+    expect(reenter()).toBe(true);
+    expect(reenter()).toBe(false);
+    expect(calls).toBe(3);
+    result.lease.release();
+    expect(reenter()).toBe(false);
+    expect(owner.listenerCount("keydown")).toBe(0);
+  });
+
   test("replaces one transient callback once and ignores its stale lease", () => {
     const documentDouble = new ListenerDocument();
     const ownerDocument = documentDouble as unknown as Document;

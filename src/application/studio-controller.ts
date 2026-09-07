@@ -33,6 +33,8 @@ import {
   type AutoVoicingInput,
   type Voicing,
   type SpelledPitch,
+  type SpelledPitchInput,
+  type StoredBassPolicy,
 } from "../domain";
 import {
   A0_U1_NEW_EVENT_POLICY_ID,
@@ -133,6 +135,7 @@ import type { StudioAnalysisFrame } from "./studio-analysis";
 import {
   inspectorSourceEvent, prepareInspectorAutoChange, prepareInspectorFrozen, prepareInspectorManual,
   prepareInspectorSymbol, readStudioInspector, readInspectorSymbolDraft,
+  readInspectorManualDraft as projectInspectorManualDraft,
   type StudioInspectorChange, type StudioInspectorPreview, type StudioInspectorResult,
   type StudioInspectorSource, type StudioInspectorView,
   type StudioInspectorStructurePatch, type StudioInspectorSymbolDraft,
@@ -495,7 +498,8 @@ export type StudioControllerListener = () => void;
 
 export interface StudioController {
   readonly readInspector: (eventId: string, policy?: AutoVoicingInput) => StudioInspectorResult<StudioInspectorView>;
-  readonly readInspectorDraft: (source: StudioInspectorSource, text: string, patch?: StudioInspectorStructurePatch) => StudioInspectorResult<StudioInspectorSymbolDraft>;
+  readonly readInspectorManualDraft: (source: StudioInspectorSource, pitches: readonly SpelledPitchInput[], bassPolicy: StoredBassPolicy) => ReturnType<typeof projectInspectorManualDraft>;
+  readonly readInspectorDraft: (source: StudioInspectorSource, text: string, patch?: StudioInspectorStructurePatch, realize?: boolean) => StudioInspectorResult<StudioInspectorSymbolDraft>;
   readonly applyInspectorChange: (source: StudioInspectorSource, change: StudioInspectorChange) => StudioControllerActionResult;
   readonly previewInspector: (source: StudioInspectorSource, preview: StudioInspectorPreview, gesture: StudioAudioGesture) => Promise<StudioInspectorResult<void>>;
   readonly releaseInspectorPreview: (source: StudioInspectorSource) => Promise<StudioInspectorResult<void>>;
@@ -3600,8 +3604,11 @@ function makeStudioComposition(
 
   const readInspector = (eventId: string, policy?: AutoVoicingInput): StudioInspectorResult<StudioInspectorView> =>
     readStudioInspector(state, eventId, policy);
-  const readInspectorDraft = (source: StudioInspectorSource, text: string, patch?: StudioInspectorStructurePatch): StudioInspectorResult<StudioInspectorSymbolDraft> =>
-    readInspectorSymbolDraft(state, source, text, patch);
+  const readInspectorDraft: StudioController["readInspectorDraft"] = (source, text, patch, realize) =>
+    readInspectorSymbolDraft(state, source, text, patch, realize);
+
+  const readInspectorManualDraft: StudioController["readInspectorManualDraft"] = (source, pitches, bassPolicy) =>
+    projectInspectorManualDraft(state, source, pitches, bassPolicy);
 
   const applyInspectorChange = (source: StudioInspectorSource, change: StudioInspectorChange): StudioControllerActionResult => {
     const selected = inspectorSourceEvent(state, source);
@@ -4557,7 +4564,7 @@ function makeStudioComposition(
     outcome: TransportCommandOutcome,
   ): void => {
     const settlement =
-      outcome.termination === "refusal"
+      outcome.termination !== "receipt"
         ? {
             failureCode: outcome.engineRefusalCode ?? outcome.code,
             status: SETTLED_TRANSPORT_STATUS[outcome.state],
@@ -5180,7 +5187,7 @@ function makeStudioComposition(
         instrumentId,
       );
       if (
-        outcome.termination === "refusal" ||
+        outcome.termination !== "receipt" ||
         thisInstrumentRun !== renderAheadRunToken
       ) {
         return;
@@ -5497,7 +5504,7 @@ function makeStudioComposition(
             reverbAmount: state.document.playback.reverbAmount,
           }),
         );
-        if (initializeOutcome.termination === "refusal") {
+        if (initializeOutcome.termination !== "receipt") {
           clearActiveRunIfMatches(
             binding.documentId,
             binding.planRevision,
@@ -5572,7 +5579,7 @@ function makeStudioComposition(
           setInstrumentRequestId,
           instrumentId,
         );
-        if (instrumentOutcome.termination === "refusal") {
+        if (instrumentOutcome.termination !== "receipt") {
           clearActiveRunIfMatches(
             binding.documentId,
             binding.planRevision,
@@ -5593,7 +5600,7 @@ function makeStudioComposition(
           binding.planRevision,
           playOutcome,
         );
-        if (playOutcome.termination === "refusal") {
+        if (playOutcome.termination !== "receipt") {
           clearActiveRunIfMatches(
             binding.documentId,
             binding.planRevision,
@@ -5644,7 +5651,7 @@ function makeStudioComposition(
         setInstrumentRequestId,
         instrumentId,
       );
-      if (instrumentOutcome.termination === "refusal") {
+      if (instrumentOutcome.termination !== "receipt") {
         clearActiveRunIfMatches(
           binding.documentId,
           binding.planRevision,
@@ -5665,7 +5672,7 @@ function makeStudioComposition(
         binding.planRevision,
         playOutcome,
       );
-      if (playOutcome.termination === "refusal") {
+      if (playOutcome.termination !== "receipt") {
         clearActiveRunIfMatches(
           binding.documentId,
           binding.planRevision,
@@ -6162,6 +6169,7 @@ function makeStudioComposition(
     generation: number;
     previewId: string;
     midiPitches: readonly [MidiPitch, ...MidiPitch[]];
+    gateSeconds?: number;
     notes: Parameters<StudioAudioPort["prepareInstrument"]>[1];
     mix: Readonly<{ masterVolume: number; reverbAmount: number }>;
   }>): Promise<StudioInspectorResult<void>> => {
@@ -6174,13 +6182,35 @@ function makeStudioComposition(
     if (previewSubmission !== null) void releaseSubmittedPreview(request.port, previewSubmission);
     try {
       if (!request.port.isInitialized()) {
-        const initialization = previewInitialization ??= request.port.initialize(
-          nextTransportRequestId(), request.gesture, request.documentId, request.planRevision, request.mix,
-        );
+        if (previewInitialization === null) {
+          const commandRequestId = nextTransportRequestId();
+          // Initialization opens an X1 epoch even when the first gesture is
+          // a chord preview. Register its real notification through A0, just
+          // as Play does, so subsequent replacement retires that exact epoch.
+          const expected = expectTransport("preview-chord", commandRequestId, "starting", state.transport.playhead);
+          if (!expected.ok) return previewFailure(expected.refusal.code, "Audio initialization could not be requested. Try Hear again.");
+          previewInitialization = (async () => {
+            try {
+              const outcome = await request.port.initialize(commandRequestId, request.gesture,
+                request.documentId, request.planRevision, request.mix);
+              settleTransportOutcome("preview-chord", request.documentId, request.planRevision, outcome);
+              return outcome;
+            } catch (error) {
+              apply("preview-chord", current => reduceEphemeralIntent({ state: current, intent: {
+                kind: "settle-transport-expectation", commandRequestId,
+                documentId: request.documentId, planRevision: request.planRevision,
+                status: SETTLED_TRANSPORT_STATUS[request.port.inspect().transport.state],
+                failureCode: "u2.preview_adapter_failed",
+              } }));
+              throw error;
+            }
+          })();
+        }
+        const initialization = previewInitialization;
         let initialized: TransportCommandOutcome;
         try { initialized = await initialization; }
         finally { if (previewInitialization === initialization) previewInitialization = null; }
-        if (initialized.termination === "refusal") return previewFailure(initialized.code, "Audio could not start. Try Hear again with a fresh gesture.");
+        if (initialized.termination !== "receipt") return previewFailure(initialized.code, "Audio could not start. Try Hear again with a fresh gesture.");
         if (request.generation !== previewOrdinal) return cancelled();
         if (!request.port.isInitialized()) return previewFailure("u2.preview_unavailable", "The audio engine is not ready.");
       }
@@ -6190,9 +6220,9 @@ function makeStudioComposition(
       // A preview owns its instrument. It must never change the band's instrument or plan.
       previewSubmission = Object.freeze({ generation: request.generation, previewId: request.previewId });
       const started = await request.port.startPreview(nextTransportRequestId(), request.previewId,
-        request.instrumentId, request.midiPitches, PREVIEW_GATE_SECONDS);
+        request.instrumentId, request.midiPitches, request.gateSeconds ?? PREVIEW_GATE_SECONDS);
       if (request.generation !== previewOrdinal) return cancelled();
-      if (started.termination === "refusal") {
+      if (started.termination !== "receipt") {
         if (previewSubmission.generation === request.generation) previewSubmission = null;
         return previewFailure(started.code, "The audio engine refused this preview.");
       }
@@ -6219,7 +6249,7 @@ function makeStudioComposition(
   const releaseSubmittedPreview = async (port: StudioAudioPort, submitted: Readonly<{ generation: number; previewId: string }>): Promise<StudioInspectorResult<void>> => {
     try {
       const result = await port.releasePreview(nextTransportRequestId(), submitted.previewId);
-      if (result.termination === "refusal" && result.code !== "transport.preview_invalid") return previewReleaseFailure(result.code);
+      if (result.termination !== "receipt" && result.code !== "transport.preview_invalid") return previewReleaseFailure(result.code);
       if (previewSubmission === submitted) previewSubmission = null;
       publishPreviewAvailability();
       return Object.freeze({ ok: true, value: undefined });
@@ -6253,7 +6283,13 @@ function makeStudioComposition(
     if (!inspectorSelectionIsCurrent(source)) return previewFailure("u2.selection_changed", "Reopen the selected chord before hearing this draft.");
     if (audioPort === null) return previewFailure("u2.preview_unavailable", "This build has no audio output.");
     let pitches: readonly SpelledPitch[];
-    if (preview.kind === "choice") {
+    if (preview.kind === "symbol") {
+      const draft = readInspectorDraft(source, preview.text);
+      if (!draft.ok) return draft;
+      const failure = draft.value.detail.voicing.realizationFailure;
+      if (failure !== null) return previewFailure(failure.code, failure.message);
+      pitches = draft.value.detail.voicing.activePitches;
+    } else if (preview.kind === "choice") {
       const prepared = prepareInspectorFrozen(state, source, preview.choice, true);
       if (!prepared.ok) return prepared;
       if (prepared.value.mode === "auto") return previewFailure("u2.no_exact_notes", "This choice has no exact notes.");
@@ -6278,11 +6314,12 @@ function makeStudioComposition(
     if (first === undefined || midi.length > 16) return previewFailure("u2.no_exact_notes", "Choose one to 16 playable exact notes.");
     previewOrdinal += 1;
     const generation = previewOrdinal, previewId = `x1:preview:inspector-${String(generation)}`;
+    const gateSeconds = preview.hold === true ? 30 : PREVIEW_GATE_SECONDS;
     inspectorPreviewOwner = Object.freeze({ source, generation, previewId });
     return startPreparedPreview({ port: audioPort, gesture, documentId: state.document.id,
       planRevision: state.revision, instrumentId: state.document.playback.instrumentId, generation, previewId,
-      midiPitches: [first, ...rest], notes: midi.map(midiPitch => ({ midiPitch,
-        velocity: PLAYBACK_PLAN_FIXED_VELOCITY, gateSeconds: PREVIEW_GATE_SECONDS })),
+      midiPitches: [first, ...rest], gateSeconds, notes: midi.map(midiPitch => ({ midiPitch,
+        velocity: PLAYBACK_PLAN_FIXED_VELOCITY, gateSeconds })),
       mix: { masterVolume: state.document.playback.masterVolume, reverbAmount: state.document.playback.reverbAmount } });
   };
 
@@ -7102,11 +7139,24 @@ function makeStudioComposition(
    */
   const installOwnerState = (next: AppState): void => {
     if (next === state) return;
+    const documentReplaced = next.document !== state.document;
     const nextSnapshot = selectStudioViewModel(
       next,
-      sessionViewFor(next.document),
+      documentReplaced
+        ? { ...sessionViewFor(next.document), previewStoppable: false }
+        : sessionViewFor(next.document),
     );
     const previous = state;
+    if (documentReplaced) {
+      // Owner publication follows proven progression-and-preview retirement.
+      // Retire the matching application ownership in the same publication,
+      // including card previews which have no inspector owner to close them.
+      // Pending preparation must not attack after the new document appears.
+      previewOrdinal += 1;
+      previewPreparationGeneration = null;
+      previewSubmission = null;
+      inspectorPreviewOwner = null;
+    }
     state = next;
     retireInspectorPreviewIfChanged();
     snapshot = nextSnapshot;
@@ -7170,6 +7220,7 @@ function makeStudioComposition(
     previewPitches,
     readInspector,
     readInspectorDraft,
+    readInspectorManualDraft,
     applyInspectorChange,
     previewInspector,
     releaseInspectorPreview,

@@ -44,8 +44,11 @@ export type DialogFocusTargets = Readonly<{
   workspaceId: string;
 }>;
 
-export type DialogProps = UiDialogProps<ComponentChildren> &
+export type DialogProps = Omit<UiDialogProps<ComponentChildren>, "onDismiss"> &
   Readonly<{
+    /** Return false when an unsaved-draft decision keeps the dialog open. */
+    onDismiss: UiDialogProps<ComponentChildren>["onDismiss"] |
+      ((intent: Parameters<UiDialogProps<ComponentChildren>["onDismiss"]>[0]) => false);
     backgroundRootId: string;
     focusTargets: DialogFocusTargets;
     onContractRefusal: (diagnostic: UiDiagnostic) => void;
@@ -434,7 +437,7 @@ function ModalDialog(props: ModalDialogProps) {
       getSurface: () => surfaceRef.current,
       isDismissible: () => dismissibility.current.kind === "dismissible",
       onDismiss: (reason, source) => {
-        dismissCallback.current({
+        return dismissCallback.current({
           action: "dismiss",
           componentId: props.id,
           itemId: null,

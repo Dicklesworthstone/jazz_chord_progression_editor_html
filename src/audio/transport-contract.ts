@@ -425,7 +425,15 @@ export type TransportCommandRefusal = Readonly<{
 
 export type TransportCommandOutcome =
   | TransportCommandReceipt
-  | TransportCommandRefusal;
+  | TransportCommandRefusal
+  | TransportCommandFault;
+
+/** An admitted command met a fatal engine error; this is not a no-effect refusal. */
+export type TransportCommandFault = Omit<TransportCommandRefusal, "termination" | "state"> & Readonly<{
+  termination: "fault";
+  state: "fault";
+  generation: TransportGeneration;
+}>;
 
 export type TransportSnapshot = Readonly<{
   schema: typeof TRANSPORT_SNAPSHOT_SCHEMA;

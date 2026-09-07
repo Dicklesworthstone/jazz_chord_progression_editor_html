@@ -256,8 +256,8 @@ function bootHarness(): StudioAudibleEvidenceApi {
       Object.freeze({
         kind: "command" as const,
         detail:
-          outcome.termination === "refusal"
-            ? `${name}#${String(outcome.commandRequestId)}:refusal:${outcome.code}:${String(outcome.engineRefusalCode)}:state=${outcome.state}`
+          outcome.termination !== "receipt"
+            ? `${name}#${String(outcome.commandRequestId)}:${outcome.termination}:${outcome.code}:${String(outcome.engineRefusalCode)}:state=${outcome.state}`
             : `${name}#${String(outcome.commandRequestId)}:receipt:${outcome.stateAfter}`,
         atMs: performance.now(),
       }),

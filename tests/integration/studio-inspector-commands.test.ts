@@ -69,6 +69,22 @@ describe("U2 real application command bridge", () => {
     expect(view(actions).event).toEqual(original.event);
   });
 
+  test("exact duration edits refuse overflow and preserve an explicit incomplete-bar reason through Undo", () => {
+    const actions = controller(), before = view(actions);
+    const originalMeasure = actions.getSnapshot().sections[0]?.measures[0];
+    expect(actions.applyInspectorChange(before.source, { kind: "duration", text: "5", reason: "" }).ok).toBe(false);
+    expect(view(actions).event).toEqual(before.event);
+    expect(actions.applyInspectorChange(before.source, { kind: "duration", text: "3/2", reason: "Practice pickup" }).ok).toBe(true);
+    const after = view(actions);
+    expect({ numerator: 3, denominator: 2 }).toEqual(after.event.duration);
+    expect(after.detail.timing.isMeasureComplete).toBe(false);
+    expect(actions.getSnapshot().sections[0]?.measures[0]).toMatchObject({ completion: "incomplete", completionReason: "Practice pickup" });
+    expect(actions.undo().ok).toBe(true); expect(view(actions).event).toEqual(before.event);
+    expect(actions.getSnapshot().sections[0]?.measures[0]).toEqual(originalMeasure);
+    expect(actions.redo().ok).toBe(true); expect(view(actions).event).toEqual(after.event);
+    expect(actions.getSnapshot().sections[0]?.measures[0]).toMatchObject({ completion: "incomplete", completionReason: "Practice pickup" });
+  });
+
   test("invalid symbols and changed selection cannot mutate the chord", () => {
     const actions = controller(), before = view(actions);
     expect(actions.applyInspectorChange(before.source, { kind: "symbol", text: "!?", confirmed: false }).ok).toBe(false);
@@ -79,6 +95,24 @@ describe("U2 real application command bridge", () => {
 });
 
 describe("U2 preview ownership over X1", () => {
+  test("a held symbol draft serializes the new pitches and retires without a document edit", async () => {
+    const real = createStudioAudio(createFakeAudioPlatform().platform), batches: number[][] = [], gates: number[] = [], preparedGates: number[] = [];
+    const actions = controller({ ...real, prepareInstrument: (_instrument, notes) => { preparedGates.push(...notes.map(note => { if (note.gateSeconds === undefined) throw new Error("Missing prepared held gate"); return note.gateSeconds; })); return Promise.resolve(true); },
+      startPreview: (...args) => { batches.push([...args[3]]); gates.push(args[4]); return real.startPreview(...args); } });
+    const before = view(actions), snapshot = actions.getSnapshot();
+    expect((await actions.previewInspector(before.source, { kind: "symbol", text: "Dmaj7", hold: true }, gesture)).ok).toBe(true);
+    expect(batches).toHaveLength(1);
+    expect([...new Set(batches[0]?.map(midi => midi % 12))].sort((a, b) => a - b)).toEqual([1, 2, 6, 9]);
+    expect(gates).toEqual([30]); expect(preparedGates).toEqual([30, 30, 30, 30]);
+    expect(view(actions).event).toEqual(before.event);
+    expect(actions.getSnapshot().revision).toBe(snapshot.revision);
+    expect(actions.getSnapshot().bookmarks).toEqual(snapshot.bookmarks);
+    expect((await actions.releaseInspectorPreview(before.source)).ok).toBe(true);
+    expect(actions.getSnapshot().previewStoppable).toBe(false);
+    expect((await actions.previewInspector(before.source, { kind: "symbol", text: "not a chord" }, gesture)).ok).toBe(false);
+    expect(batches).toHaveLength(1);
+  });
+
   for (const retire of ["close", "edit", "selection", "stop"] as const) test(`${retire} during preparation prevents every late attack`, async () => {
     const real = createStudioAudio(createFakeAudioPlatform().platform);
     let release: () => void = () => { throw new Error("Uninitialized gate"); };
@@ -109,7 +143,11 @@ describe("U2 preview ownership over X1", () => {
     expect(observed).toEqual([[72, 60, 72, 60, 72, 60, 72, 60, 72, 60, 72, 60, 72, 60, 72, 60]]);
     expect(actions.getSnapshot().revision).toBe(snapshot.revision);
     expect(actions.getSnapshot().bookmarks).toEqual(snapshot.bookmarks);
-    expect(actions.getSnapshot().transport).toEqual(snapshot.transport);
+    // First Hear initializes the real graph. Its ready notification changes
+    // availability, while every timeline coordinate remains exactly intact.
+    expect(actions.getSnapshot().transport).toEqual({ ...snapshot.transport,
+      isAvailable: true, status: "ready", statusLabel: "Audio ready" });
+    expect(real.isInitialized()).toBe(true);
     expect(actions.getSnapshot().previewStoppable).toBe(true);
     expect(await actions.releaseInspectorPreview(before.source)).toMatchObject({ ok: true });
     expect(released.length).toBe(1);
@@ -167,6 +205,8 @@ describe("U2 preview ownership over X1", () => {
     const source = view(actions).source;
     expect(await actions.previewInspector(source, { kind: "current" }, gesture)).toMatchObject({ ok: false, code: "u2.preview_adapter_failed" });
     expect(actions.getSnapshot().previewStoppable).toBe(false);
+    expect(actions.getSnapshot().transport.status).toBe("unavailable");
+    expect(actions.getSnapshot().transport.isAvailable).toBe(false);
     expect((await actions.previewInspector(source, { kind: "current" }, { ...gesture, sequence: 2 })).ok).toBe(true);
     expect(calls).toBe(2);
     await actions.releaseInspectorPreview(source);

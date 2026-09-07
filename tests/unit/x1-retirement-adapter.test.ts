@@ -61,6 +61,20 @@ function makeRequest(expectedTransportGeneration: number) {
 }
 
 describe("X1 serialized-transport retirement adapter (real transport)", () => {
+  test("a fatal retirement outcome never masquerades as a no-effect refusal", async () => {
+    const h = await makeReadyTransport(), before = h.service.inspectTransport();
+    const adapter = createX1SerializedTransportRetirementAdapter({ ...h.service,
+      submitTransportCommand: command => Promise.resolve(Object.freeze({
+        termination: "fault" as const, commandRequestId: command.commandRequestId, kind: command.payload.kind,
+        code: "transport.engine_refusal" as const, engineRefusalCode: null, state: "fault" as const,
+        generation: before.generation + 1, work: before.work,
+      })),
+    }, h.nextRequestId);
+    expect(await adapter.retireImportReplacement(makeRequest(before.generation))).toEqual({
+      ok: false, code: "transport.replacement_retirement_failed", retirementEffect: "no-future-attack-unproven",
+    });
+  });
+
   test("retirement rides replace-plan(null): evidence, generation advance, plan cleared", async () => {
     const h = await makeReadyTransport();
     const before = h.service.inspectTransport();

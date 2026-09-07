@@ -90,7 +90,7 @@ import {
 } from "./studio";
 
 export type AppActions = Readonly<{
-  inspector: Pick<StudioController, "readInspector" | "readInspectorDraft" | "applyInspectorChange" | "previewInspector" | "releaseInspectorPreview">;
+  inspector: Pick<StudioController, "readInspector" | "readInspectorDraft" | "readInspectorManualDraft" | "applyInspectorChange" | "previewInspector" | "releaseInspectorPreview">;
   /**
    * The controller's LIVE snapshot. The render's `snapshot` prop is frozen
    * per render; a handler that mutates the document and then derives a
@@ -2602,12 +2602,13 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
         revision: snapshot.revision,
         read: actions.inspector.readInspector,
         readDraft: actions.inspector.readInspectorDraft,
+        readManualDraft: actions.inspector.readInspectorManualDraft,
         apply: (source, change) => {
           const result = actions.inspector.applyInspectorChange(source, change);
           recordEditResult(result);
           return result;
         },
-        hear: (source, preview) => actions.inspector.previewInspector(source, preview, nextAudioGesture("trusted-pointer")),
+        hear: (source, preview, input) => actions.inspector.previewInspector(source, preview, nextAudioGesture(input === "keyboard" ? "trusted-keyboard" : "trusted-pointer")),
         release: actions.inspector.releaseInspectorPreview,
         stop: () => { recordEditResult(actions.stopProgression()); },
       }}

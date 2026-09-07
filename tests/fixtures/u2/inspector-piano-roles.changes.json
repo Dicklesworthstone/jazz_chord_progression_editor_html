@@ -1,0 +1,116 @@
+{
+  "schema": "changes.progression.v2",
+  "id": "document-u2-piano-roles",
+  "title": "Spelled tensions and slash bass",
+  "description": "Independent U2 piano specimen: Db3 bass, G3, B3, F4, Ab4 flat ninth and C#5 sharp eleventh.",
+  "meter": {
+    "beatsPerBar": 4,
+    "beatUnit": 4
+  },
+  "tempoBpm": 132,
+  "key": {
+    "tonic": {
+      "step": "C",
+      "alter": 0
+    },
+    "mode": "major"
+  },
+  "sections": [
+    {
+      "id": "section-e0-a",
+      "name": "A",
+      "annotation": "Nested order witness",
+      "keyOverride": null,
+      "voiceLeadingBoundary": "continue",
+      "measures": [
+        {
+          "id": "measure-u2-exact-data",
+          "events": [
+            {
+              "id": "event-u2-exact-data",
+              "duration": {
+                "numerator": 4,
+                "denominator": 1
+              },
+              "annotation": "Exact bass and tension role labels",
+              "chord": {
+                "kind": "parsed",
+                "sourceText": "G7(b9,#11)/Db",
+                "root": {
+                  "step": "G",
+                  "alter": 0
+                },
+                "triad": "major",
+                "sixth": null,
+                "seventh": "minor",
+                "extensions": [],
+                "additions": [],
+                "alterations": [
+                  {
+                    "number": 9,
+                    "alter": -1
+                  },
+                  {
+                    "number": 11,
+                    "alter": 1
+                  }
+                ],
+                "omissions": [],
+                "bass": {
+                  "step": "D",
+                  "alter": -1
+                },
+                "colorPolicy": "none"
+              },
+              "voicing": {
+                "mode": "manual",
+                "pitches": [
+                  {
+                    "step": "D",
+                    "alter": -1,
+                    "octave": 3
+                  },
+                  {
+                    "step": "G",
+                    "alter": 0,
+                    "octave": 3
+                  },
+                  {
+                    "step": "B",
+                    "alter": 0,
+                    "octave": 3
+                  },
+                  {
+                    "step": "F",
+                    "alter": 0,
+                    "octave": 4
+                  },
+                  {
+                    "step": "A",
+                    "alter": -1,
+                    "octave": 4
+                  },
+                  {
+                    "step": "C",
+                    "alter": 1,
+                    "octave": 5
+                  }
+                ],
+                "bassPolicy": "included"
+              }
+            }
+          ],
+          "completion": {
+            "kind": "complete"
+          }
+        }
+      ]
+    }
+  ],
+  "playback": {
+    "instrumentId": "mellow-keys",
+    "masterVolume": 0.8,
+    "reverbAmount": 0.2,
+    "countInBars": 1
+  }
+}
