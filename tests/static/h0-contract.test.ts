@@ -123,8 +123,9 @@ describe("H0 independent specification packet", () => {
     expect(H0_REVIEWED_ANALYSIS_RULE_IDS).toHaveLength(16);
     expect(H0_REVIEWED_SCALE_FAMILIES).toHaveLength(12);
     expect(H0_REVIEWED_SCALE_MAPPING_RULE_IDS).toHaveLength(13);
-    expect(H0_REVIEWED_REFUSAL_CODES).toHaveLength(12);
-    expect(H0_REVIEWED_REFUSAL_PRECEDENCE).toHaveLength(12);
+    expect(H0_REVIEWED_REFUSAL_CODES).toHaveLength(13);
+    expect(report.counts.scaleContextDeclarationCases).toBe(15);
+    expect(H0_REVIEWED_REFUSAL_PRECEDENCE).toHaveLength(13);
     expect(H0_REVIEWED_LIMITS).toMatchObject({
       previousEvents: 1,
       nextEvents: 1,
@@ -1052,5 +1053,20 @@ describe("H0 independent specification packet", () => {
       expect(codes).toContain("H0-ROMAN-INDEPENDENT-ORACLE");
       expect(codes).toContain("H0-TRANSPOSITION-INDEPENDENCE");
     });
+  });
+});
+
+test("preserves the reviewed declaration near misses when whole-packet hashes are disabled", async () => {
+  await withFixtureCopy(async copyRoot => {
+    await mutateFixture(copyRoot, "chord-scale-cases.json", root => {
+      const declared = objects(root["declarationCases"]);
+      const target = declared.find(row => row["id"] === "H0-DECL-FIXTURE-ID");
+      if (target === undefined) throw new Error("Missing independent declaration near miss");
+      target["declaration"] = { kind: "dorian", tonic: { step: "C", alter: 0 } };
+      target["expectedDefect"] = null;
+      target["retainedInputRecords"] = 2;
+    });
+    const report = await validateH0Contract(copyRoot, { enforceDigests: false });
+    expect(findingCodes(report)).toContain("H0-DECLARATION-CASE-PAYLOAD");
   });
 });

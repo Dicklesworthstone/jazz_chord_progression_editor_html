@@ -116,6 +116,37 @@ current event ID, key actually used, and declared span. Repeating the revision
 makes later application staleness checks possible; H0 itself cannot observe a
 newer revision and never applies an edit.
 
+Scale requests additionally carry `declaredScaleContext`, either null or exactly
+one `{kind, tonic}` record. Its four closed kinds are `diminished-dominant`,
+`dorian`, `locrian-flat-nine`, and `locrian-natural-nine`; `tonic` is a domain
+`SpelledPitchClass`. The requested chord-scale mapping table versions their
+meaning. This is an explicit caller declaration about the current chord, not a
+proof of musical quality or an inferred/persisted key. Results repeat the actual
+declaration in the scale context projection so its conditional basis is visible.
+
+Before mappings, validate record shape, supported kind, domain tonic shape and
+exact spelling equality with the current parsed chord root, in that order.
+Invalid input returns `harmony.scale_context_invalid` with field
+`declaredScaleContext` and defect `shape`, `kind-unsupported`, `tonic-invalid`
+or `tonic-mismatch`; no semantic output is emitted. A Custom chord has no
+authoritative root and requires a null declaration. Do not choose a root for it.
+The bound is one declaration and one nested tonic record, accounted as two
+retained input records within the unchanged1,024-record cap; no array, cache,
+ID resolver or document snapshot is introduced.
+
+The declared frame can supply only its named context predicate. All required
+degrees, selected realization, forbidden colors, containment and clash laws
+still apply independently. A C diminished-dominant declaration cannot admit
+C7#5b9 to a scale that forbids #5. With null declaration, the matching explicit
+context premise remains missing and cannot receive exact tier. A Dorian
+declaration supplies its context predicate only when the request also declares
+a modal span; otherwise the premise remains missing. This does not add Dorian
+to persisted KeyMode.
+Locrian b9 and natural9 remain distinct declarations and retain their original
+positive/negative degree tests. A declaration for another frame does not supply
+the missing premise. Fixture-only `contextEvidenceIds` are not a public input
+and must never select a musical outcome.
+
 ### 3.2 Chord snapshots
 
 A contextual chord snapshot contains one stable domain `ChordEventId`, the
@@ -586,6 +617,10 @@ not passing diminished. Contrary-direction motion, a whole-tone or larger
 step, missing neighbor, stationary endpoint, half-diminished/nondiminished
 middle chord, enharmonic-only root, or non-immediate endpoint is a near miss.
 
+In particular, H0-CONTEXT-023 retains the same exact secondary-leading-tone
+reading as H0-CONTEXT-011: its missing previous event forbids passing diminished,
+but cannot erase the immediate C#dim7 -> Dm7 target that is actually supplied.
+
 ### 9.9 Modal, nonfunctional, ambiguous, and unresolved
 
 An explicit modal frame returns a `modal` reading and literal facts without
@@ -599,6 +634,15 @@ settles the chord, disposition is `unclassified` and may retain ordered
 `chromatic-roman` and `unresolved` readings. If no key or explicit span exists,
 the `unresolved` reading has no Roman label, names the missing key evidence, and
 never persists an inference.
+
+H0-CONTEXT-007 has unequal tiers and is therefore classified, not ambiguous.
+Its exact literal chromatic Roman reading sorts before the strong secondary
+dominant reading; the nondiatonic target quality still prevents an exact
+secondary-dominant claim. Neither its counterevidence nor either reading is
+discarded to obtain a preferred ordering. The same tie law makes the
+enharmonic near misses H0-CONTEXT-012 and014 unclassified: neither has two
+strongest readings or a supported function that settles its counterevidence.
+Their exact Roman labels and speculative/counterevidence records remain intact.
 
 ## 10. Normative chord-scale table
 
@@ -747,6 +791,7 @@ the result.
 | context events | 3 |
 | T1 resolutions/selected realizations visited | 3 |
 | context edges | 2 |
+| request-local scale declaration | 1 nullable record plus its tonic record |
 | contextual readings | 12 |
 | chord-scale options | 12 |
 | degrees in one T1 realization | 16, inherited unchanged from T1 |
@@ -832,6 +877,7 @@ harmony.rule_version_unsupported
 harmony.selected_realization_required
 harmony.selected_realization_unknown
 harmony.duplicate_event_id
+harmony.scale_context_invalid
 limit.harmony_context_events_exceeded
 limit.harmony_readings_exceeded
 limit.harmony_scale_options_exceeded
@@ -843,6 +889,9 @@ The public refusal-code declaration/inventory is not a validation-order table.
 Its request-code order is request ID, base revision, selected realization
 required, selected realization unknown, upstream version, rule version, and
 duplicate event ID, followed by the five limit codes in the order shown above.
+The scale-only `harmony.scale_context_invalid` code is inserted between duplicate
+event ID and the limit codes in the combined inventory and precedence; the
+literal-facts and contextual-analysis operation inventories stay unchanged.
 The separately frozen precedence above intentionally evaluates upstream and
 rule versions before selected-realization validity. Implementations and
 validators must preserve both orders and must not derive either one by sorting
@@ -865,6 +914,12 @@ Within an aggregate code, the surface order is exactly the order listed above.
 Exact selected-realization absence is checked before unknown selection.
 Analysis-table version precedes chord-scale-table version within
 `harmony.rule_version_unsupported`.
+
+Scale declarations are validated after shared event/selection identity checks
+and before mapping/limit publication. The single bounded record needs no
+additional variable-length work counter: its declaration/tonic consume two
+tracked input records, and each evaluated mapping context predicate consumes
+its existing mapping evaluation. Null declarations retain zero such records.
 
 Within one code, paths compare context position `previous`, `current`, `next`,
 then field order declared by the public contract, then numeric array index.
@@ -1150,10 +1205,11 @@ The H0/spec exit gates are exactly:
 ```text
 bun run validate:t1-contract
 bun run validate:h0-contract
-bun test tests/static/h0-contract.test.ts tests/static/h0-type-contract.test.ts --max-concurrency=1
+bun scripts/audit-h0-contract-consistency.ts
+bun test tests/static/h0-contract.test.ts tests/static/h0-type-contract.test.ts tests/static/h0-contract-consistency.test.ts --max-concurrency=1
 bunx tsc -p tsconfig.h0-tests.json --noEmit --pretty false
 bunx tsc -p tsconfig.app.json --noEmit --pretty false
-bunx eslint src/theory/analysis-contract.ts src/theory/chord-scales-contract.ts scripts/validate-h0-contract.ts tests/static/h0-contract.test.ts tests/static/h0-type-contract.test.ts
+bunx eslint src/theory/analysis-contract.ts src/theory/chord-scales-contract.ts scripts/validate-h0-contract.ts scripts/audit-h0-contract-consistency.ts tests/static/h0-contract.test.ts tests/static/h0-type-contract.test.ts tests/static/h0-contract-consistency.test.ts
 git diff --check
 bun run verify
 ```

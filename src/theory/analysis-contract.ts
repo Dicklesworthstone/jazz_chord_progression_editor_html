@@ -975,12 +975,20 @@ export type H0LiteralFactsRefusalCode = H0LiteralFactsRefusal["code"];
 export type H0AnalysisRefusal =
   | H0AnalysisRequestRefusal
   | H0AnalysisLimitRefusal;
-export type H0Refusal = H0RequestRefusal | H0LimitRefusal;
+/** Scale-only declaration diagnostic. Literal/context analysis cannot emit
+ * this code: those operations do not accept a scale-context declaration. */
+export type H0ScaleContextInvalidRefusal = Readonly<{
+  code: "harmony.scale_context_invalid";
+  field: "declaredScaleContext";
+  defect: "shape" | "kind-unsupported" | "tonic-invalid" | "tonic-mismatch";
+}>;
+export type H0Refusal = H0RequestRefusal | H0ScaleContextInvalidRefusal | H0LimitRefusal;
 export type H0RefusalCode = H0Refusal["code"];
 export type H0AnalysisRefusalCode = H0AnalysisRefusal["code"];
 
 export const H0_REFUSAL_CODES = Object.freeze([
   ...H0_REQUEST_REFUSAL_CODES,
+  "harmony.scale_context_invalid",
   ...H0_LIMIT_CODES,
 ] as const);
 
@@ -993,6 +1001,7 @@ export const H0_REFUSAL_PRECEDENCE = Object.freeze([
   "harmony.selected_realization_required",
   "harmony.selected_realization_unknown",
   "harmony.duplicate_event_id",
+  "harmony.scale_context_invalid",
   "limit.harmony_context_events_exceeded",
   "limit.harmony_readings_exceeded",
   "limit.harmony_scale_options_exceeded",

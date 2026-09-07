@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { auditH0FixtureConsistency } from "./audit-h0-contract-consistency";
 
 type JsonObject = Record<string, unknown>;
 
@@ -27,6 +28,7 @@ export type H0ContractValidationReport = Readonly<{
     romanRootModeCells: number;
     scaleMappings: number;
     scaleCases: number;
+    scaleContextDeclarationCases: number;
     scaleRootPolarityCells: number;
     transpositionCases: number;
     lawCases: number;
@@ -189,6 +191,7 @@ const EXPECTED_TOP_LEVEL_KEYS: Readonly<
   ],
   "chord-scale-cases.json": [
     "cases",
+    "declarationCases",
     "expectedValuesGenerated",
     "fixtureVersion",
     "productionOutputUsed",
@@ -365,6 +368,7 @@ export const H0_REVIEWED_REFUSAL_CODES = Object.freeze([
   "harmony.upstream_contract_version_unsupported",
   "harmony.rule_version_unsupported",
   "harmony.duplicate_event_id",
+  "harmony.scale_context_invalid",
   "limit.harmony_context_events_exceeded",
   "limit.harmony_readings_exceeded",
   "limit.harmony_scale_options_exceeded",
@@ -380,6 +384,7 @@ export const H0_REVIEWED_REFUSAL_PRECEDENCE = Object.freeze([
   "harmony.selected_realization_required",
   "harmony.selected_realization_unknown",
   "harmony.duplicate_event_id",
+  "harmony.scale_context_invalid",
   "limit.harmony_context_events_exceeded",
   "limit.harmony_readings_exceeded",
   "limit.harmony_scale_options_exceeded",
@@ -750,7 +755,7 @@ const H0_REVIEWED_T1_FORMULA_RULE_IDS = Object.freeze([
 
 const H0_REVIEWED_SOURCE_ROW_DIGESTS = Object.freeze({
   roots: "e7073313f37a0c0fb38b4ef018a3c41ef78d90dd436fc62c8b24828422795a9d",
-  chords: "f224b1f8697c771b2931c04a54bb26661de80f9fedfbe6c0a3163eaeaac8cf9d",
+  chords: "a2fab9bc0d8576a3c52bb43dc873852bd6f9ef4c15554b376bd6e8eb6306a505",
   contexts: "2e1cf8baca248ef7d5101dd4872cf6beb09b02d5a10b180cad9bbe678742897a",
 } as const);
 
@@ -761,11 +766,13 @@ const H0_REVIEWED_ENHARMONIC_STRESS_DIGEST =
 const H0_REVIEWED_LITERAL_CASES_DIGEST =
   "646ed2438575bc85fc3b8da52fe38bea56a97b07d613c575bbca3c16cc1a9ce0";
 const H0_REVIEWED_CONTEXT_CASES_DIGEST =
-  "6b35fb2e82908b2edbf0443a62f19393484e3097ccdf967945d78ef99aad7996";
+  "8045410a84cff47e5255c8033f51e7d3be52e31d0ea3835bfafd02500b305c98";
 const H0_REVIEWED_SCALE_CASES_DIGEST =
-  "c990aa7d638aeb05d4b1711a2b3709fee3163ea69177be4dd0e6c80d5e579c24";
+  "ea2898a48568a82b4f9abd593d50ba8ef659b6ef343db5a25b27895695304bd6";
+const H0_REVIEWED_DECLARATION_CASES_DIGEST =
+  "ec86191eecdc1a1c9d5d77e0f16b59d0e5593f7c141b05b12155150b054146ce";
 const H0_REVIEWED_TRACE_ROWS_DIGEST =
-  "3944049d92f87df8bf622c2165cdf508d4438101203742babc9e0f1c5f0a48fb";
+  "9a293bb770d2bc6fd28a8b52389d86390e1044086bcaa1c85484f47c9f9bd4cd";
 
 const H0_REVIEWED_CONTEXT_FIXTURE_POLICY = Object.freeze({
   adjacency: "immediate-only",
@@ -1393,41 +1400,41 @@ type ParsedFixture = Readonly<{
 const EXPECTED_BYTE_DIGESTS: Readonly<
   Record<H0FixtureFilename, string | null>
 > = {
-  "h0-harmony-analysis-contract.json": "6c4e0c07450638062970cf4c487ece694ea163222e708360e6f80a091132d18d",
-  "source-catalog.json": "e0750ac08f8097580c946eb30eb6122487c0e371c8b78ef87fb158e8185cda98",
+  "h0-harmony-analysis-contract.json": "3be5694bf2aebae7d8662514967c885ea848fbf436463c0e7cbae6f56bca4d4a",
+  "source-catalog.json": "e78edcdf2eb7138cda7cd722e5be667edb097387790385626b7132cd7edae779",
   "analysis-rules.json": "a6c6a782f7e25cf47b6d13b34a8ff73db05a417fd6143fe554422dca9772c553",
   "literal-fact-cases.json": "fb5887b043f9a7caef8889a913c35cff0455c50eae49d14a39f9ba783bd4dfd4",
-  "context-reading-cases.json": "c8d4d5ad9235ca3451189e430ae3367ddd64b5921efa00e04236bfed79df9343",
+  "context-reading-cases.json": "3f0f930836899c0f6f65d0ded6a7e203d1a891b3735d6e605ab638a9194b4175",
   "roman-root-mode-matrix.json": "3e21e90bdaf65c1e2ae51a38957405829a3685a1d1640bad1b943673b6d7156f",
   "chord-scale-mappings.json": "2ba6a009fe3a9585332aadf71ad2834070a0431347f781041a1441e7d5c7a770",
-  "chord-scale-cases.json": "892535b42ba3e2134a3e77cda25265d31aa2ca0d85d900fee57a5c282ee2fe19",
+  "chord-scale-cases.json": "29a110609c0803c82f914aeec6914153ce8784bb70007084a8c7d5ebf82c9e27",
   "transposition-cases.json": "10f3de57efc8a49627b586890983a3ca32ea8e0b9c3b862904b2b7bab74b0767",
   "law-cases.json": "2e7adb9237c32e28fb219aa6476c3d3e06f99e70111ef49c71397200b97fb784",
   "limit-cases.json": "9e91b3cf040ef38734a8535f530babaa9ba6769cd8210d23471bdcfb528dd849",
-  "operation-state-cases.json": "713d82e2cf2644419a6c976855cfbca67aefbc7ec1d1fd63b08cfe34a77d9212",
+  "operation-state-cases.json": "7d3bffb07e49b151fbfa199f1c7a76d9dd61e98649928b3de10e0dc89f573013",
   "mutation-controls.json": "bbb1a46783111afc7eeca53f15c46cc1ef00ec4433a00dd3266813b75d4f45c1",
   "provenance-ledger.json": "3473050aa9a4121a7c8d1f746513a4c75f96071677be0e13ebb6f9f5372f0fcd",
-  "trace-ledger.json": "a0ade95b20a9ec04005c9ae9a2f597121dfa0132b9fc1d1da2edf0ebe4ac7bbd",
+  "trace-ledger.json": "4a5ab10c18fec1909c6c769816a3059d39c519888b6b56c09dbbb3b309dac08e",
 };
 
 const EXPECTED_SEMANTIC_DIGESTS: Readonly<
   Record<H0FixtureFilename, string | null>
 > = {
-  "h0-harmony-analysis-contract.json": "abaf07c3c0324b67cb0e006815807fb3e03e346918e4942dd5605a1b97ceabba",
-  "source-catalog.json": "8f795108e634220610650f4f3caa58f57f706711b486d2429b6d40b6a9a5b30b",
+  "h0-harmony-analysis-contract.json": "d5b0db58d99cf7a3831be71d939ad1407bca32709f00c005f20028506b0cbb55",
+  "source-catalog.json": "8a185b616225e7b530ec7ec766faee6cf93ea53c94b6144b342e919ac859a9eb",
   "analysis-rules.json": "dec6e84ff6a00e57b5b3760de01ef384a4fb1d61b7b26c37030e4a94f17eb2c5",
   "literal-fact-cases.json": "0a4184a52fc286ef2d0634b01508514a4fc321b5c442cb608379feaa407c4e15",
-  "context-reading-cases.json": "1f0c94f9c0b2e76396c1ee5e3af41f6263f46eb06ce0185c120a94bc83bc4f84",
+  "context-reading-cases.json": "17bb51029bd5009d0f65bef3ced7c6cd9d168182338819d6af656ca8ead5a52b",
   "roman-root-mode-matrix.json": "0c3772d29dfd5123e4e4d31cffedf037ba59cbd2646b349a25e26681a503e639",
   "chord-scale-mappings.json": "c30a2ed0c971d5251877402afa7bf9de07a52bd572d42d7131414c602ae805e2",
-  "chord-scale-cases.json": "71d09d6904edefb55d80c9b85daf51b0c5e5e0c10fe2f5f620816b8eec58b61a",
+  "chord-scale-cases.json": "dfe7e75d6870f4ae6dbea425b9f1def21029ad5bc24a8c847da227c46fa407b3",
   "transposition-cases.json": "80e900d8a6028828505782c9b3badbbb91b0e51ceeef31acc01d64e9be6d9f41",
   "law-cases.json": "0bd026accb267a672b14a74aa413ee0c285d7cde50650eefa951c506503aec47",
   "limit-cases.json": "7237bc8511936183cdb562cd23a1c9de4ebb8062707c303403736280328f629b",
-  "operation-state-cases.json": "38d4a01141610207dfca27a2aed57a10ff4a1aafed039ccf673c4df140903864",
+  "operation-state-cases.json": "6874c5e2692301d151707c473e42fcc38a4a9ff3d28e227221108cdf09c299f4",
   "mutation-controls.json": "633acc2c9152a93d7b565298169d735204c2b2b8a62b340cab88e926769d3e93",
   "provenance-ledger.json": "a065ec1c88aba10b2005d78e57ce35d1fdfc8c158093cbb80ad9dadebf4954ad",
-  "trace-ledger.json": "7f0f1904346611f4be7a229c7eeb3645f4ef27bba76f47d71ffa6c0814596722",
+  "trace-ledger.json": "570d18f4ee40a604d9e5178b87e8112645766ffc008fa9ff4adeccd4204a18cc",
 };
 
 function isObject(value: unknown): value is JsonObject {
@@ -3203,6 +3210,7 @@ export async function validateH0Contract(
   const traces = objectArray(traceFixture["traces"]);
 
   requireReviewedPayloadDigest(findings, scaleCases, H0_REVIEWED_SCALE_CASES_DIGEST, "H0-SCALE-CASE-PAYLOAD", "chord-scale-cases.json.cases");
+  requireReviewedPayloadDigest(findings, scaleFixture["declarationCases"], H0_REVIEWED_DECLARATION_CASES_DIGEST, "H0-DECLARATION-CASE-PAYLOAD", "chord-scale-cases.json.declarationCases");
   requireReviewedPayloadDigest(findings, traces, H0_REVIEWED_TRACE_ROWS_DIGEST, "H0-TRACE-PAYLOAD", "trace-ledger.json.traces");
   requireReviewedPayloadDigest(findings, scaleMappings, H0_REVIEWED_SCALE_MAPPINGS_DIGEST, "H0-SCALE-MAPPING-PAYLOAD", "chord-scale-mappings.json.mappings");
   requireReviewedPayloadDigest(findings, lawCases, H0_REVIEWED_LAWS_DIGEST, "H0-LAW-PAYLOAD", "law-cases.json.laws");
@@ -3294,6 +3302,7 @@ export async function validateH0Contract(
     registerSyntheticCaseOwner(findings, caseOwners, matrix["id"], "roman-root-mode-matrix.json", "roman-root-mode-matrix.json.matrix.id");
   }
   registerCaseOwners(findings, caseOwners, scaleCases, "chord-scale-cases.json");
+  registerCaseOwners(findings, caseOwners, objectArray(scaleFixture["declarationCases"]), "chord-scale-cases.json");
   if (isObject(scaleFixture["rootExpansion"])) {
     registerSyntheticCaseOwner(findings, caseOwners, scaleFixture["rootExpansion"]["id"], "chord-scale-cases.json", "chord-scale-cases.json.rootExpansion.id");
   }
@@ -3528,6 +3537,20 @@ export async function validateH0Contract(
     }
   }
 
+  // Hashes preserve a reviewed packet; they cannot establish that its musical
+  // expectations are mutually consistent. Keep this independent semantic
+  // check active even in hostile-copy tests with digest enforcement disabled.
+  try {
+    const t1: unknown = JSON.parse(await readFile(resolve(DEFAULT_FIXTURE_ROOT, "../resolution/formula-rules.json"), "utf8"));
+    if (!isObject(t1)) throw new Error("Invalid independent T1 formula packet");
+    for (const semantic of auditH0FixtureConsistency(
+      fixture(fixtures, "context-reading-cases.json"),
+      fixture(fixtures, "source-catalog.json"),
+      fixture(fixtures, "chord-scale-cases.json"), t1,
+    )) finding(findings, semantic.code, semantic.cases.join(","), semantic.detail);
+  } catch (error) {
+    finding(findings, "H0-CONSISTENCY-INPUT", "independent-semantic-inputs", error instanceof Error ? error.message : "Malformed consistency inputs");
+  }
   const report: H0ContractValidationReport = {
     schema: "changes.validation.h0-contract.v1",
     package: "H0",
@@ -3544,6 +3567,7 @@ export async function validateH0Contract(
       romanRootModeCells: romanCellCount,
       scaleMappings: scaleMappings.length,
       scaleCases: scaleCases.length,
+      scaleContextDeclarationCases: objectArray(scaleFixture["declarationCases"]).length,
       scaleRootPolarityCells: isObject(scaleFixture["rootExpansion"])
         ? objectArray(scaleFixture["rootExpansion"]["cells"]).length
         : 0,

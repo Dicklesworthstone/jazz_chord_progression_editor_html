@@ -52,6 +52,7 @@ import {
   type H0OperationTermination,
   type H0RuleVersionUnsupportedRefusal,
   type H0ScaleOptionsLimitRefusal,
+  type H0ScaleContextInvalidRefusal,
   type H0SelectedRealizationId,
   type H0ContextEventsLimitRefusal,
   type H0WorkLimitRefusal,
@@ -109,8 +110,24 @@ export type H0ChordScaleMappingId =
   (typeof H0_CHORD_SCALE_MAPPING_IDS)[number];
 export type H0ChordScaleMappingRuleId = H0ChordScaleMappingId;
 
+/** Explicit request-local musical frames, never fixture IDs or inferred keys.
+ * Meaning is versioned by the requested chord-scale mapping table. */
+export const H0_DECLARED_SCALE_CONTEXT_KINDS = Object.freeze([
+  "diminished-dominant", "dorian", "locrian-flat-nine", "locrian-natural-nine",
+] as const);
+export type H0DeclaredScaleContextKind = (typeof H0_DECLARED_SCALE_CONTEXT_KINDS)[number];
+export type H0DeclaredScaleContext = Readonly<{
+  kind: H0DeclaredScaleContextKind;
+  /** Exact written anchor of the current chord, checked before mappings.
+   * The caller declares this frame; H0 still proves all chord predicates. */
+  tonic: SpelledPitchClass;
+}>;
+
 export type H0ChordScaleRequest = H0AnalysisRequest &
   Readonly<{
+    /** One bounded declaration or no declaration. No external evidence lookup,
+     * claimed confidence, persisted mode, or fixture identifier is accepted. */
+    declaredScaleContext: H0DeclaredScaleContext | null;
     chordScaleMappingTable: Readonly<{
       id: string;
       version: number;
@@ -339,6 +356,7 @@ type H0ChordScaleValueBase = Readonly<{
   currentEventId: ChordEventId;
   keyUsed: KeyContext | null;
   declaredSpan: H0DeclaredSpanKind;
+  declaredScaleContextUsed: H0DeclaredScaleContext | null;
   selectedRealizationId: H0SelectedRealizationId;
   literalFacts: H0LiteralFacts;
 }>;
@@ -389,6 +407,7 @@ export type H0UnclassifiedChordScales = H0ChordScaleValueBase &
 export type H0NotApplicableChordScales = H0ChordScaleValueBase &
   Readonly<{
     disposition: "not-applicable";
+    declaredScaleContextUsed: null;
     selectedRealizationId: "custom";
     literalFacts: Extract<H0LiteralFacts, { applicability: "not-applicable" }>;
     options: readonly [];
@@ -420,6 +439,7 @@ export type H0ChordScaleRuleVersionUnsupportedRefusal =
 /** Request refusals reachable from enumerateChordScaleOptions(request). */
 export type H0ChordScaleRequestRefusal =
   | H0AnalysisRequestRefusal
+  | H0ScaleContextInvalidRefusal
   | H0ChordScaleRuleVersionUnsupportedRefusal;
 
 type H0ChordScaleWorkLimitRefusal = Extract<
@@ -477,6 +497,7 @@ export const H0_CHORD_SCALE_REFUSAL_PRECEDENCE = Object.freeze([
   "harmony.selected_realization_required",
   "harmony.selected_realization_unknown",
   "harmony.duplicate_event_id",
+  "harmony.scale_context_invalid",
   "limit.harmony_context_events_exceeded",
   "limit.harmony_scale_options_exceeded",
   "limit.harmony_evidence_records_exceeded",
