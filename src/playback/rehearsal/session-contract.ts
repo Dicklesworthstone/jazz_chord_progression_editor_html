@@ -10,6 +10,7 @@ export const REHEARSAL_LIMITS = Object.freeze({
   templates: 12,
   passes: 64,
   sourceEventsPerTemplate: 8_192,
+  inputEventsVisited: 786_432,
   retainedEvents: 65_536,
   retainedPitchSlots: 262_144,
   passEventVisits: 4_194_304,
@@ -56,6 +57,7 @@ export type RehearsalFailure = Readonly<{
   /** Exact upstream refusal, when one owns the failure; never a replacement
    * musical diagnosis or a reason to fall back to a different arrangement. */
   causeCode: string | null;
+  limit: Readonly<{ resource: string; maximum: number; attempted: number }> | null;
   work: RehearsalWork;
 }>;
 export type RehearsalTemplate = Readonly<{
@@ -117,3 +119,4 @@ export type RehearsalTransportProgress = Readonly<{
   countingIn: boolean;
   state: "playing" | "paused" | "interrupted" | "complete" | "stopped" | "failed";
 }>;
+export type ReadRehearsalTransportProgress = () => RehearsalTransportProgress | null;
