@@ -2580,6 +2580,13 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
     }
     if (followedChordId.current === chordId) return;
     followedChordId.current = chordId;
+    // Playback must not scroll a control out from under a pointer or keyboard
+    // gesture, or move the chart behind an open modal. Transport controls are
+    // fixed outside the chart scrollport: leaving focus on Play still follows
+    // the band. No timer releases this protection during a long interaction.
+    const chartControl = '.studio-shell :is(button, input, textarea, select, [contenteditable="true"]):not(.studio-transport *)';
+    if (document.querySelector('[aria-modal="true"]') !== null ||
+      document.querySelector(`${chartControl}:hover, ${chartControl}:focus`) !== null) return;
     const card = document.querySelector(
       `.studio-chord-card[data-chord-id="${CSS.escape(chordId)}"]`,
     );

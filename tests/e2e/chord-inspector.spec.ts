@@ -184,6 +184,44 @@ for (const mode of ["file", "http"] as const) for (const viewport of [{ width: 1
       await expect(page.locator("#studio-transport-pause")).toBeDisabled(); clean();
     });
 
+    if (viewport.width === 390) for (const interaction of ["pointer", "keyboard"] as const) {
+      test(`U5 playback preserves a ${interaction} panel gesture across chord boundaries`, async ({ page }, info) => {
+        await boot(page, mode); await observeNativeSources(page);
+        await page.locator("#studio-transport-play").click();
+        await expect(page.locator("#studio-transport-pause")).toBeEnabled();
+        const trigger = page.locator("#studio-open-harmony-sheet");
+        await trigger.scrollIntoViewIfNeeded();
+        if (interaction === "pointer") await trigger.hover();
+        else await trigger.focus();
+        const position = await trigger.boundingBox();
+        expect(position).not.toBeNull();
+        const playing = () => page.locator('.studio-chord-card[data-playing="true"]').getAttribute("data-chord-id");
+        const boundaries: string[] = [];
+        for (let boundary = 0; boundary < 2; boundary += 1) {
+          const before = await playing();
+          await expect.poll(playing).not.toBe(before);
+          const after = await playing();
+          expect(after).not.toBeNull();
+          boundaries.push(after ?? "missing");
+          expect(await trigger.boundingBox()).toEqual(position);
+        }
+        if (interaction === "pointer") await trigger.click();
+        else await trigger.press("Enter");
+        await expect(page.getByRole("dialog", { name: "Harmony Lens", exact: true })).toBeVisible();
+        await page.getByRole("button", { name: "Choose voicing / Edit chord", exact: true }).click();
+        const dialog = page.getByRole("dialog", { name: "Edit chord", exact: true });
+        await expect(dialog).toBeVisible();
+        const scroll = () => page.locator("#chart-workspace").evaluate(element => ({ top: element.scrollTop, left: element.scrollLeft }));
+        const whileEditing = await scroll(), before = await playing();
+        await expect.poll(playing).not.toBe(before);
+        expect(await scroll()).toEqual(whileEditing);
+        await dialog.getByRole("button", { name: "Stop all audio", exact: true }).click();
+        await expect.poll(() => page.evaluate(() => window.u5NativeSourceCounts?.())).toMatchObject({ sounding: 0, futureAttacks: 0 });
+        await info.attach("playback-panel-gesture", { contentType: "application/json", body: JSON.stringify({ interaction, position, boundaries, whileEditing }) });
+        clean();
+      });
+    }
+
     test("every advanced tab has a valid accessible panel and keyboard route", async ({ page }, info) => {
       await boot(page, mode); const dialog = await open(page, viewport.width);
       await dialog.getByRole("button", { name: "Advanced chord controls", exact: true }).click();

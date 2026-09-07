@@ -82,9 +82,9 @@ export function readInspectorSymbolDraft(state: AppState, source: StudioInspecto
     text = formatted.canonicalText;
     parsed = parseChordSymbol(text, "ascii");
   }
-  const selectedState = { ...state, bookmarks: { ...state.bookmarks,
+  const selectedState: AppState = { ...state, bookmarks: { ...state.bookmarks,
     selection: { kind: "events", anchorEventId: selected.value.id, focusEventId: selected.value.id, eventIds: [selected.value.id] },
-  } } as const;
+  } };
   let detail: ChordInspectorViewModel;
   if (text === selected.value.chord.sourceText) {
     detail = projectChordInspectorViewModel(selectedState);
