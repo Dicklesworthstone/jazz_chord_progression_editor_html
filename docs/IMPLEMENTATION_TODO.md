@@ -4,11 +4,16 @@ Consumer: the user and Codex executing the 2026-09-04 request to implement the r
 
 ## Current order
 
-- [ ] Semantic surface conformance (`jcpe-semantic-surface-conformance-32w2.1`, claimed CodexWorkflow): freeze executable expectations for real engine dispatch and the currently false major-key containment explanation; build/proof retain their engine/UI prerequisites.
-  - [ ] Read the parent/leaf, architecture, rebuild/theory contracts and actual web/native call sites; inventory genuine callables and missing operations without treating a symbol as capability.
-  - [ ] Freeze source-owned adapter/version/selection/boundary contracts and independent literal/context/continuation law cases, including the starter-chart containment counterexample and transposed/near-miss/custom/altered cases.
-  - [ ] Specify exact production journey, storage/audio/download/Undo invariants, source/bundle/fixture identity and actual per-engine limits; retain native first-release scope and Apple/human execution boundaries.
-  - [ ] Author the named contract validator and static mutation/trace checks. Run every specification gate, then close only the specification leaf with exact evidence; do not claim engine adoption or musician workflows from fixture checks.
+- [x] Semantic surface specification (`jcpe-semantic-surface-conformance-32w2.1`, closed a4713bc): freeze executable expectations for real engine dispatch and the currently false major-key containment explanation; build/proof retain their engine/UI prerequisites.
+  - [x] Read the parent/leaf, architecture, rebuild/theory contracts and actual web/native call sites. Inventory32 public operations,2 additional helpers,4 compatibility operations and7 real UI/Swift consumers. H0 literal facts exist; context/scale operations remain missing. Preserve the Swift store's existing local stale-option guard without calling it a bridge-returned source binding.
+  - [x] Freeze adapter/version/selection/boundary contracts and12 independently authored chord rows,4 containment cases in12 pitch-class transpositions, exact Db7/C#7 spelling distinction, altered selections/custom barriers, P/L/R arithmetic,16 stored voices with duplicate unisons and exact7/8/pickup timing. The starter has17 tones,14 pitch-class matches,12 spelling matches and a C/G-major tie; no complete-containment or persisted-key claim.
+  - [x] Specify13 actual musician-journey stages,7 trace owners,13 limit edges, original engine caps, real storage/audio/download/Undo invariants and exact source/bundle identity. Native parity remains G2 only with explicit v2 exact-source schema; Apple and human observations retain distinct owners.
+  - [x] Author the named validator and49 static tests/136 assertions. All16 corrupted fixture controls fail their designated musical/authority assertion; independent bit-mask membership checks all48 context transpositions. Frozen full typecheck/lint and validator pass; source policy304 files/0findings. All327 input SHA/mtime pairs unchanged; guarded artifact remains8424443bytes/b2a27608. Existing artifact policy/staleness36/0,100 assertions. No runtime or fifth-idea completion is claimed.
+  - [x] Finish full named gates and fresh solo original-criteria review, commit the exact specification a4713bc, then close only `.1`. The broad `.2` build retains all original engine/UI/Apple/human dependencies.
+- [ ] Repair the observed existing-studio continuation regression (`jcpe-semantic-surface-conformance-32w2.4`, claimed CodexWorkflow): truthful overlap/ties/counterevidence, custom barriers, selected-realization-aware cache and actual desktop/phone visible proof. Keep the complete semantic build open; `.4` is an additional prerequisite and no original obligation moved or gate was waived.
+  - [ ] First reproduce the independent starter/positive/near-miss/spelling/altered/barrier cases against the actual existing theory and controller.
+  - [ ] Implement truthful evidence/wording and selection-aware application window/cache, preserving useful candidate behavior and exact source/history.
+  - [ ] Prove real standalone desktop/phone behavior in all three engines, actual source mutants, unchanged source identities and full type/lint/build gates; then close only the bounded bug.
 - [x] Shared discovery execution (`jcpe-discovery-execution-proof-gdcw`; spec `.1` closed359b02c; build `.2` closed55608ae; proof `.3` and parent closed6dd9ee3). It unblocks existing H1/G0–G9 proof prerequisites; it does not complete an engine or a fifth September idea.
   - [x] Read live parent/spec, architecture, theory plan, exact G0/G2/G3/G4/G5 caps, and the existing A0 derived-patch/pending-request/semantic-publication path.
   - [x] Freeze domain-bound requests, complete version/constraint/seed identity, selected realizations and source snapshots; distinguish musical proof from application publication authority.
@@ -538,7 +543,8 @@ Statuses below are the campaign-start snapshot. Use br show and br ready before 
 - [ ] `jcpe-sample-elimination-physical-qzgo` — Replace CC0 sample recipes with physical wasm models (vibes, bass; scope piano) (in_progress; P1; unassigned)
 - [ ] `jcpe-sample-elimination-physical-qzgo.6` — Replace Salamander piano attack with cooperative physical WASM (blocked; P1; unassigned)
 - [ ] `jcpe-semantic-surface-conformance-32w2` — Semantic conformance: real engine wiring across studio and native bridge (open; P1; unassigned)
-- [ ] `jcpe-semantic-surface-conformance-32w2.1` — Semantic conformance: real engine wiring across studio and native bridge / spec (in_progress; CodexWorkflow)
+- [x] `jcpe-semantic-surface-conformance-32w2.1` — Semantic conformance specification (closed; a4713bc; exact gates in Beads)
+- [ ] `jcpe-semantic-surface-conformance-32w2.4` — Existing studio continuation context repair (in_progress; CodexWorkflow; full package remains open)
 - [ ] `jcpe-semantic-surface-conformance-32w2.2` — Semantic conformance: real engine wiring across studio and native bridge / build (open; P1; unassigned)
 - [ ] `jcpe-semantic-surface-conformance-32w2.3` — Semantic conformance: real engine wiring across studio and native bridge / verify (open; P1; unassigned)
 - [ ] `jcpe-upbz` — M1/build: Implement the automated pipeline and the two-mode import UI (Automatic default, Advanced disclosure) (open; P1; ubuntu)
