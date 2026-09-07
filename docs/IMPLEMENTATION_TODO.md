@@ -4,7 +4,7 @@ Consumer: the user and Codex executing the 2026-09-04 request to implement the r
 
 ## Current order
 
-- [ ] Complete all fifteen September ideas requested by the owner; full ownership/dependencies remain in `PRODUCT_IDEAS_2026_09.md` and Beads. Start with the independent entry-repair/focus improvements while preserving existing engine owners and prerequisites.
+- [ ] Complete all fifteen September ideas requested by the owner; full ownership/dependencies remain in `PRODUCT_IDEAS_2026_09.md` and Beads. Entry Repair, Focus and Exact Sharing are complete (3/15). Continue with ready inspector verification while preserving existing engine owners and prerequisites.
 - [x] Entry repair (`jcpe-entry-repair-0h1g`): all three phases and epic closed. Final69 scenarios pass; six focused reduced-motion profile rechecks also pass. This is one of fifteen ideas complete, not an aggregate or deployment claim.
   - [x] Freeze UTF-16 source selection, stale refusal, IME and Escape behavior with independent fixtures (six literal spans, six refusal ranges, twelve interaction obligations; specification-only test 1/0).
   - [x] Share diagnostic prose; retain multiline drafts; add exact token selection and bounded Next error on both entry surfaces.
@@ -34,7 +34,7 @@ Consumer: the user and Codex executing the 2026-09-04 request to implement the r
   - [x] Complete current42c362f7 Focus and unchanged recovery-layout regressions:57/0 in208450.985ms at `/data/tmp/jcpe-u2-piano-native.651u8n09/focus/`; independent768x1024 touch matrix9/0 in36354.137ms at `/data/tmp/jcpe-u2-piano-native.v_wciu63/focus-tablet/`. All66 diagnostics match the artifact, with no console/page errors or denied requests;1357 copied input hashes unchanged. Full types/lint pass, focused unit12/0 (22assertions), four current-source anchor mutants killed, public standalone static+36/0 and different-root/mtime reproduction pass. Exact commands and retained failures are on the verification Bead.
 
 
-- [ ] Exact sharing (`jcpe-exact-share-1ric`): specification and build complete; separate verification is next. The idea stays open until that final phase passes.
+- [x] Exact sharing (`jcpe-exact-share-1ric`): all three phases and epic complete; third of fifteen September ideas. Source/artifact committed in3ede8ef/68ed456; verification evidence below, no deployment claim.
   - [x] Freeze complete canonical document fields, compact JSON,8192 encoded characters/6138 UTF-8 bytes, strict parsing, v1 compatibility, disclosure, stale/cancelled ownership and exact JSON fallback in `EXACT_SHARE.md`.
   - [x] Author independent Manual/Frozen/unison/fraction/section/annotation fixture, literal wire vectors and exact boundary arithmetic. Packet2/0,15assertions; real F2/F3 accepts the fixture without repair.
   - [x] Complete U5 build/verification before claiming the exact-share build; package evidence below.
@@ -45,13 +45,16 @@ Consumer: the user and Codex executing the 2026-09-04 request to implement the r
   - [x] Prove independent wire/limit/semantic/stale/cancel fixtures and actual same-build voicing plans through production paths.
   - [x] Complete native file/HTTP three-engine desktop/touch/zoom/reduced-motion copy, startup, fallback, recovery, audio and download proof; retain all diagnostics and failures.
   - [x] Kill ten actual source faults with honest baselines; complete named build gates and close build.
-  - [ ] Complete separate verification: native late clipboard completion after Cancel/edit/reopen, inherited startup recovery, final source identity and package proof review. Only then close exact sharing.
+  - [x] Complete separate verification: native late clipboard completion after Cancel/edit/reopen, inherited startup recovery, final source identity and package proof review.
+    - [x] Add separate source/recipient contexts, raw HTTP path/User-Agent checks, real object-URL counts and delayed completion from an actual native clipboard write. New native test typecheck/lint pass; cancelled-owner source mutation is killed with a successful baseline (11/0 source-fault suite).
+    - [x] Preserve first verification54 result42/12: all12 fresh-context cases failed at redundant manual tracing teardown,36 tracing lifecycle errors. Keep runner tracing and every assertion; remove only duplicate manual tracing calls. No production source/artifact changed.
+    - [x] Inspect corrected54 result from `/data/tmp/jcpe-u5-completion.1_maeqz4`:54 pass,0 unexpected/skipped/flaky,273587.43ms; all1,604 inputs unchanged and72 JSON attachments inspected with no errors/requests/axe findings. Twelve truly separate source/recipient contexts preserve complete chart data; six delayed native clipboard receipts remain retired after Cancel/edit/reopen; thirty startup-recovery and six recovery/audio cases pass. All18 sharing downloads create/revoke one object URL, zero outstanding; HTTP paths omit fragments. Final full typecheck/lint and11-fault suite pass. Close verification/epic with exact commands and `docs/evidence/EXACT_SHARE_VERIFICATION_2026-09-07.md`.
   - [x] Wire canonical v2 transport, application-owned sharing and startup, explicit JSON fallback and the dialog. Initial focused codec/legacy/fixture/service suite62/0; added empty-chart and exact playback-plan checks bring the integration file to18/0. The final build gate is177/0 across nine files, including ten actual source-fault baselines/mutants.
   - [x] Preserve first native collection failure (missing Node JSON import attribute; zero cases) and correct the import. First complete54 cases:48 pass/6 WebKit selection failures; exact sharing remains unverified. WebKit's read-only Select All did not select the link, although native select() did; add focus/click selection in production, retaining the assertions. Post-failure screenshot CSP errors remain recorded, with CSP unchanged.
   - [x] Inspect expanded93-case native result on artifactef5a0cfa (8,391,898bytes):93/0,252459.392ms, all1,601 inputs unchanged; all150 JSON attachments inspected with no errors/requests/axe findings,18real sources-started/Stop cycles. Public standalone36/0,49,348.318ms; final typecheck/lint/static/reproducibility pass. First54 used a misplaced reducedMotion option;93 uses contextOptions and checks the actual media query. The first54 is not reduced-motion proof. Build closed with exact commands in its Bead and `docs/evidence/EXACT_SHARE_VERIFICATION_2026-09-07.md`.
-  - [ ] Implement exact codec and application-owned Share dialog, real clipboard/manual fallback and existing JSON export; preserve marker/audio/history ownership.
-  - [ ] Open v2 through the existing transactional import authority, preserving explicit-share recovery priority, legacy readability and stale/cancel refusal.
-  - [ ] Verify round trips, same-build chart pitches/timing, caps, refusals, source mutations and actual desktop/phone file/HTTP browser workflows.
+  - [x] Implement exact codec and application-owned Share dialog, real clipboard/manual fallback and existing JSON export; preserve marker/audio/history ownership.
+  - [x] Open v2 through the existing transactional import authority, preserving explicit-share recovery priority, legacy readability and stale/cancel refusal.
+  - [x] Verify round trips, same-build chart pitches/timing, caps, refusals, source mutations and actual desktop/phone file/HTTP browser workflows.
 
 
 - [x] Restore Cloudflare publication under `jcpe-0bjj`: the committed build is deployed and verified on both hosts.

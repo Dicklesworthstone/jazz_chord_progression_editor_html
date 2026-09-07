@@ -11,6 +11,14 @@ const output = await mkdtemp(join(tmpdir(), "jcpe-exact-share-production-faults-
 
 const faults = [
   [
+    "SHARE-CANCELLED-OWNER",
+    "src/application/studio-exact-share.ts",
+    "tests/integration/exact-share-integration.test.ts",
+    "if (owner !== selectedOwner || top() !== selectedOwner) { publish({}); return; }",
+    "if (false) { publish({}); return; }",
+    "late clipboard cannot certify.*true"
+  ],
+  [
     "SHARE-ANNOTATION",
     "src/export/interchange-json.ts",
     "tests/unit/exact-share.test.ts",

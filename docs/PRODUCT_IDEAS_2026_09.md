@@ -217,10 +217,10 @@ Six new workflow packages contain 19 leaf tasks, including the separate rehearsa
   - [ ] Review specification and independent fixtures — `jcpe-my-charts-zt9z.1`
   - [ ] Implement the production workflow — `jcpe-my-charts-zt9z.2`
   - [ ] Complete independent real-adapter proof — `jcpe-my-charts-zt9z.3`
-- [ ] **Share the exact chart, including Manual/Frozen voicings and notes** — `jcpe-exact-share-1ric`
-  - [x] Review specification and independent fixtures — `jcpe-exact-share-1ric.1` (packet2/0; build awaits U5 verification)
-  - [ ] Implement the production workflow — `jcpe-exact-share-1ric.2`
-  - [ ] Complete independent real-adapter proof — `jcpe-exact-share-1ric.3`
+- [x] **Share the exact chart, including Manual/Frozen voicings and notes** — `jcpe-exact-share-1ric`
+  - [x] Review specification and independent fixtures — `jcpe-exact-share-1ric.1` (packet2/0; U5 prerequisite complete)
+  - [x] Implement the production workflow — `jcpe-exact-share-1ric.2` (177 Bun tests,93 native cases,36 standalone cases)
+  - [x] Complete independent real-adapter proof — `jcpe-exact-share-1ric.3` (54 fresh-context/clipboard/recovery cases,11 killed source faults; full types/lint pass; third of fifteen ideas complete)
 - [x] **Repair a chart-entry error where it occurs without retyping the draft** — `jcpe-entry-repair-0h1g`
   - [x] Review specification and independent fixtures — `jcpe-entry-repair-0h1g.1` (solo packet review; implementation proof remains separate)
   - [x] Implement the production workflow — `jcpe-entry-repair-0h1g.2` (63-case build proof; verification follows)

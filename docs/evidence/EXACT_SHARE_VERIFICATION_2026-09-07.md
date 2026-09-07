@@ -1,9 +1,8 @@
 # Exact sharing implementation and verification
 
-Status: build complete; separate verification remains open. This is idea6 of
-the September program. Entry Repair and Focus remain the only two completed
-ideas until exact-share/verify closes. No deployment or aggregate release pass
-is claimed.
+Status: specification, build and separate verification complete. Exact sharing
+is the third completed September idea, after Entry Repair and Focus. No
+deployment or aggregate release pass is claimed.
 
 ## Implemented behavior
 
@@ -28,7 +27,7 @@ The generated artifact is SHA-256
 `ef5a0cfa371a158b0c0f4c454cbbafca7b6ee08892e056a2ae221e55e8802218`,
 8,391,898 bytes, identical to dist/index.html. Source base30526b6 plus the
 exact-sharing implementation; all300 production inputs match the frozen native
-copy. This record identifies bytes, not a future commit hash.
+copy. These bytes are committed in68ed456, following source commit3ede8ef.
 
 ## Completed evidence
 
@@ -44,6 +43,10 @@ user agent `OpenAI File Downloader, XaiImageApiFetch/1.0`.
 | Native copy results within93 | 15 successful clipboard writes;3 genuine clipboard-unavailable outcomes with selectable URL | Chromium HTTP also reads back the actual clipboard. File-mode tests verify the public URL and then open its exact fragment in the local artifact; they do not contact production jazzchords.org. All18 audio observations have started>0,sounding0,futureAttacks0 after Stop. Exact pitches/timing are proven at the immutable plan boundary; the native source observer does not infer MIDI identities from oscillator/sample output. |
 | `bun run verify:standalone` | 36 pass,0 unexpected/skipped/flaky | `/data/tmp/jcpe-u5-completion.uts7_zbm/standalone/results.json`; all1,601 inputs unchanged. Twelve positive accessibility/offline reports and24 intentional negative controls pass; native diagnostics inspected. |
 | `bun run typecheck`; `bun run lint`; `bun scripts/verify-standalone.ts --static-only`; `bun run verify:reproducible` | All exits0; static/repro outcome pass | `/tmp/jcpe-exact-share-final-{typecheck,lint,static,repro}.log`. Distinct roots and mtimes yield the exact artifact above. |
+| `bun scripts/run-playwright.ts test tests/e2e/exact-share-verification.spec.ts tests/e2e/u5-automatic-recovery.spec.ts tests/e2e/u5-automatic-recovery-audio.spec.ts --workers=1 --config complete.config.ts` | 54 pass,0 unexpected/skipped/flaky;273,587.43ms | `/data/tmp/jcpe-u5-completion.1_maeqz4/complete/results.json`; all1,604 frozen inputs unchanged. All72 JSON attachments inspected, with no console/page/request/axe findings. Twelve file/HTTP desktop/phone round trips use separate source and recipient browser contexts; six actual native clipboard writes delay their receipt across Cancel/edit/reopen. Thirty inherited startup-recovery cases and six native recovery/audio cases pass. |
+| Fresh-context/resource/wire audit within54 | All24 inspected records pass | `/tmp/jcpe-share-verify-resource-wire-audit.json`. Each of18 sharing journeys creates and revokes exactly one native object URL with zero outstanding; all12 HTTP observations contain only the request path and required User-Agent, never the fragment. Each of six cancelled-copy journeys makes exactly two actual native writes: the retired receipt cannot claim success for the new dialog, and a fresh copy succeeds. Twelve sharing audio observations and twelve inherited recovery cycles start real sources and stop all sounding/future sources. |
+| `bun test tests/conformance/exact-share-production-mutations.test.ts` (final verification) | 11 pass,0 fail;55 assertions;4.27s | `/tmp/jcpe-share-verify-mutations.log`. Adds a cancelled-dialog ownership fault to the ten build faults; every positive baseline passes and every mutant is killed by its unchanged behavioral assertion. |
+| `bun run typecheck`; `bun run lint` (final verification) | Both exits0 | `/tmp/jcpe-share-verify-final-{typecheck,lint}.log`; includes the new native verification file and eleventh source fault. No production source or artifact changed after the93/36/54 native gates. |
 
 The fixture is checked-in manually authored JSON; expected document data was
 not generated from production output. Native raw reports, source/fixture/artifact
@@ -73,10 +76,17 @@ actual media query in the three zoom-equivalent cases. New-test type/lint errors
 were corrected through real snapshot fields, unknown observations and explicit
 callback types; no brand casts, acceptance pins or suppressions were added.
 
-## Remaining verification and release limits
+The first separate verification54 completed42 pass/12 failures in230,069.836ms,
+`/data/tmp/jcpe-u5-completion.vttivicm/complete/results.json`. All twelve fresh
+context cases failed during tracing teardown: the test's redundant manual
+tracing calls conflicted with the runner's existing context tracing ownership.
+All36 recorded tracing lifecycle errors remain in that report. Removing only
+the manual start/stop calls preserves runner tracing, explicit context cleanup
+and every body/resource/wire assertion. The corrected54 above passes against
+the same production source/artifact, with no retries or time-limit changes.
 
-Finish the separate verification leaf, including native clipboard completion
-after Cancel/edit/reopen and the inherited startup-recovery regression suite.
+## Release limits
+
 The global cast-policy work and X0 human listening remain open. Existing
 aggregate verification, model acceptance, predeploy checks and committed-byte
 publication requirements still apply; no human/model acceptance flag changed.
