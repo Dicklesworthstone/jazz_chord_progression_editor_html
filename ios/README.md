@@ -21,12 +21,17 @@ Support directory.
 - direct selected-chord symbol editing with parser-backed refusal, one-step
   undo, and an explicit choice to clear stored pitches or keep them as Manual;
 - transposition, key, tempo, groove, and generated instrument controls;
-- all 15 original instrument identities, with the original pitch-verified
-  CC0 Upright Bass and Concert Vibes sample engines shared by chart playback
-  and the tappable inspector keyboard; remaining physical-engine ports are
-  identified honestly in the inspector while they are completed;
+- all 15 original instrument identities; the nine source-rendered instruments
+  use their reviewed native equivalents: the original Rust Concert Grand,
+  Flute, Clarinet, Archtop, Electric, Steel Dreadnought, and Re-entrant
+  Ukulele physical models plus the pitch-verified CC0 Upright Bass and Concert
+  Vibes sample engines. Chart playback and the tappable inspector keyboard
+  share the same authoritative renderers;
 - a persistent transport with background preparation, play/pause, Stop, loop,
-  playhead highlighting, and interactive waveform-style seeking;
+  playhead highlighting, and interactive waveform-style seeking. Replacement
+  and Stop cancel Swift render loops immediately, Concert Grand between bounded
+  runtime steps, and simultaneous guitar-family chords inside their Rust
+  physical simulation without caching or publishing partial PCM;
 - atomic local recovery with a previous valid fallback;
 - bounded `.frankenjazz`, lead-sheet text, and format-0/1 Standard MIDI File
   import; accepted named MIDI stacks retain their exact pitches as editable
@@ -59,7 +64,7 @@ xcodebuild -project FrankenJazz.xcodeproj \
   CODE_SIGNING_ALLOWED=NO build
 
 # Repository-owned DSR lane: generated-project drift, Swift/property-list
-# checks, generic iOS build, Catalyst units, nine non-audio iPhone interaction
+# checks, generic iOS build, Catalyst units, eleven non-audio iPhone interaction
 # tests, and a focused iPad expanded-workspace plus inspector test.
 cd ..
 dsr quality --tool jazz_chord_progression_editor_html -w "$PWD"
@@ -67,6 +72,14 @@ dsr quality --tool jazz_chord_progression_editor_html -w "$PWD"
 
 The DSR UI lane deliberately excludes the separate playback-starting test.
 Simulator audio is never played as automated evidence.
+
+The current source-stable gate is recorded in
+`docs/evidence/IOS_PHYSICAL_RENDER_CANCELLATION_2026-09-07.md`: generic iOS
+build, 72 Catalyst tests, 11 iPhone UI tests, and 1 iPad UI test passed. Human
+listening remains a separate owner/device release gate. The Flute, Clarinet,
+and individual single-note plucked C calls are fenced before and after their
+monolithic FFI calls; unlike Concert Grand and simultaneous guitar-family
+chords, those individual calls are not yet preemptible from inside Rust.
 
 The project file is generated from `project.yml`; edit that specification, not
 the generated `project.pbxproj`. Before committing a project-setting change,

@@ -44,7 +44,7 @@ parsed as data and never interpreted as HTML or a URL.
 | voicing family and optimizer modules | Close, shell, rootless, open, and spread voicing previews |
 | chord resolution / chart analysis | Literal tones, Roman reading, guide tones, and transition motion |
 | playback-plan contracts | Immutable compiled events before audio or MIDI delivery |
-| persistent Web Audio graph | One persistent `AVAudioEngine`, generated PCM, owned playback generation |
+| persistent Web Audio graph and source instrument renderers | One persistent `AVAudioEngine`; all 15 source identities; exact native bindings for the seven Rust physical and two reviewed sample engines; shared preview/progression rendering; owned playback generations and bounded cooperative cancellation for the costly Concert Grand and simultaneous guitar-family chord paths |
 | M0/M1 MIDI import doctrine | Bounded SMF 0/1 decoding; accepted named cells retain their exact MIDI stack as editable Manual voicings, conventional DAW note-state quirks are repaired into a reported salvage ledger, and structural corruption still refuses |
 | JSON/text/MIDI exporters | Real files delivered through the system share/export sheet |
 | recovery lifecycle | Atomic Application Support JSON with current and previous valid envelopes |
@@ -111,3 +111,10 @@ The repository-owned `scripts/dsr-apple-quality.sh` lane executes all
 non-audio iPhone interaction tests plus a focused iPad expanded-workspace and
 inspector test. Playback and listening remain separate human/device gates;
 automated Simulator proof must not create audible output.
+
+The source-stable 2026-09-07 physical-render proof is recorded in
+`docs/evidence/IOS_PHYSICAL_RENDER_CANCELLATION_2026-09-07.md`. It covers exact
+successful-output identity and causal interruption of live Concert Grand and
+simultaneous guitar-family chord runtimes. It does not promote transport
+generation fencing into a claim that every monolithic single-instrument Rust
+call is internally preemptible, and it does not replace human listening.

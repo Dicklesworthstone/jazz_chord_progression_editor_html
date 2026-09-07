@@ -16,6 +16,21 @@ int32_t cg_render(
     float *right,
     int32_t max_frames
 );
+int32_t cg_runtime_max_steps(int32_t output_capacity);
+int32_t cg_runtime_init(
+    int32_t midi,
+    int32_t velocity,
+    float sample_rate,
+    int32_t max_frames
+);
+int32_t cg_runtime_step(
+    int32_t handle,
+    float *left,
+    float *right,
+    int32_t output_capacity
+);
+int32_t cg_runtime_written_frames(int32_t handle);
+int32_t cg_runtime_reset(int32_t handle);
 
 int32_t flt2_note_frames(int32_t midi, float sample_rate);
 int32_t flt2_state_max_bytes(void);
@@ -64,6 +79,23 @@ int32_t plk2_render_chord(
     float *right,
     int32_t max_frames
 );
+int32_t plk2_chord_runtime_max_steps(int32_t output_capacity);
+int32_t plk2_chord_runtime_init(
+    int32_t pack_index,
+    const int32_t *midis,
+    const int32_t *velocities,
+    int32_t note_count,
+    float sample_rate,
+    int32_t max_frames
+);
+int32_t plk2_chord_runtime_step(
+    int32_t handle,
+    float *left,
+    float *right,
+    int32_t output_capacity
+);
+int32_t plk2_chord_runtime_cancel(int32_t handle);
+int32_t plk2_chord_runtime_reset(int32_t handle);
 
 #ifdef __cplusplus
 }

@@ -235,7 +235,8 @@ enum JazzPhysicalInstrumentRenderer {
         midi: Int,
         velocity: Int,
         sampleRate: Double,
-        maximumSeconds: Double? = nil
+        maximumSeconds: Double? = nil,
+        cancellation: JazzRenderCancellationToken? = nil
     ) -> JazzPhysicalRender? {
         guard let metadata = metadata(for: tone),
               (minimumMIDIPitch...maximumMIDIPitch).contains(midi),
@@ -256,7 +257,9 @@ enum JazzPhysicalInstrumentRenderer {
             sampleRateBits: sampleRate.bitPattern,
             maximumFrames: maximumFrames
         )
+        guard cancellation?.isCancelled != true else { return nil }
         if let cached = renderCache.value(for: key, tone: tone) {
+            guard cancellation?.isCancelled != true else { return nil }
             return JazzPhysicalRender(
                 algorithmID: metadata.algorithmID,
                 requestedMIDIPitch: midi,
@@ -270,16 +273,32 @@ enum JazzPhysicalInstrumentRenderer {
         var left = [Float](repeating: 0, count: maximumFrames)
         var right = [Float](repeating: 0, count: maximumFrames)
         engineLock.lock()
-        let written = renderLocked(
-            tone: tone,
-            midi: renderedMidi,
-            velocity: velocity,
-            sampleRate: sampleRate,
-            left: &left,
-            right: &right,
-            maximumFrames: maximumFrames
-        )
+        let written: Int
+        if cancellation?.isCancelled == true {
+            written = 0
+        } else if tone == .concertGrand {
+            written = renderConcertGrandCooperativelyLocked(
+                midi: renderedMidi,
+                velocity: velocity,
+                sampleRate: sampleRate,
+                left: &left,
+                right: &right,
+                maximumFrames: maximumFrames,
+                cancellation: cancellation
+            )
+        } else {
+            written = renderLocked(
+                tone: tone,
+                midi: renderedMidi,
+                velocity: velocity,
+                sampleRate: sampleRate,
+                left: &left,
+                right: &right,
+                maximumFrames: maximumFrames
+            )
+        }
         engineLock.unlock()
+        guard cancellation?.isCancelled != true else { return nil }
         guard written > 0, written <= maximumFrames else { return nil }
         left.removeSubrange(written...)
         right.removeSubrange(written...)
@@ -299,6 +318,7 @@ enum JazzPhysicalInstrumentRenderer {
             wasTruncated: tone != .concertGrand && written == maximumFrames && maximumFrames < naturalFrames,
             sampleRate: sampleRate
         )
+        guard cancellation?.isCancelled != true else { return nil }
         let cached = CachedPCM(left: left, right: right)
         renderCache.insert(cached, for: key, tone: tone, limit: metadata.bufferCacheLimit)
         return JazzPhysicalRender(
@@ -316,7 +336,8 @@ enum JazzPhysicalInstrumentRenderer {
         midis requestedMIDIs: [Int],
         velocity: Int,
         sampleRate: Double,
-        maximumSeconds: Double
+        maximumSeconds: Double,
+        cancellation: JazzRenderCancellationToken? = nil
     ) -> JazzPhysicalRender? {
         guard let metadata = metadata(for: tone),
               let packIndex = metadata.packIndex,
@@ -347,7 +368,9 @@ enum JazzPhysicalInstrumentRenderer {
             sampleRateBits: sampleRate.bitPattern,
             maximumFrames: maximumFrames
         )
+        guard cancellation?.isCancelled != true else { return nil }
         if let cached = renderCache.value(for: key, tone: tone) {
+            guard cancellation?.isCancelled != true else { return nil }
             return JazzPhysicalRender(
                 algorithmID: metadata.algorithmID,
                 requestedMIDIPitch: requestedMIDIs[0],
@@ -363,30 +386,24 @@ enum JazzPhysicalInstrumentRenderer {
         var left = [Float](repeating: 0, count: maximumFrames)
         var right = [Float](repeating: 0, count: maximumFrames)
         engineLock.lock()
-        let written = midi32.withUnsafeBufferPointer { midiBuffer in
-            velocity32.withUnsafeBufferPointer { velocityBuffer in
-                left.withUnsafeMutableBufferPointer { leftBuffer in
-                    right.withUnsafeMutableBufferPointer { rightBuffer in
-                        Int(plk2_render_chord(
-                            packIndex,
-                            midiBuffer.baseAddress,
-                            velocityBuffer.baseAddress,
-                            Int32(renderedMIDIs.count),
-                            Float(sampleRate),
-                            leftBuffer.baseAddress,
-                            rightBuffer.baseAddress,
-                            Int32(maximumFrames)
-                        ))
-                    }
-                }
-            }
-        }
+        let written = cancellation?.isCancelled == true ? 0 : renderPluckedChordCooperativelyLocked(
+            packIndex: packIndex,
+            midis: midi32,
+            velocities: velocity32,
+            sampleRate: sampleRate,
+            left: &left,
+            right: &right,
+            maximumFrames: maximumFrames,
+            cancellation: cancellation
+        )
         engineLock.unlock()
+        guard cancellation?.isCancelled != true else { return nil }
         guard written > 0, written <= maximumFrames else { return nil }
         left.removeSubrange(written...)
         right.removeSubrange(written...)
         guard left.allSatisfy(\.isFinite), right.allSatisfy(\.isFinite) else { return nil }
         applyTruncationFade(left: &left, right: &right, wasTruncated: written == maximumFrames && maximumFrames < naturalFrames, sampleRate: sampleRate)
+        guard cancellation?.isCancelled != true else { return nil }
         let cached = CachedPCM(left: left, right: right)
         renderCache.insert(cached, for: key, tone: tone, limit: metadata.bufferCacheLimit)
         return JazzPhysicalRender(
@@ -470,6 +487,114 @@ enum JazzPhysicalInstrumentRenderer {
                     ))
                 default:
                     return 0
+                }
+            }
+        }
+    }
+
+    /// Uses the exact bounded runtime already exercised by the original web
+    /// app. Every incomplete call advances at most one Rust work quantum.
+    private static func renderConcertGrandCooperativelyLocked(
+        midi: Int,
+        velocity: Int,
+        sampleRate: Double,
+        left: inout [Float],
+        right: inout [Float],
+        maximumFrames: Int,
+        cancellation: JazzRenderCancellationToken?
+    ) -> Int {
+        let maximumSteps = Int(cg_runtime_max_steps(Int32(maximumFrames)))
+        guard maximumSteps > 0 else { return 0 }
+        var handle = Int32(cg_runtime_init(
+            Int32(midi), Int32(velocity), Float(sampleRate), Int32(maximumFrames)
+        ))
+        guard handle > 0 else { return 0 }
+        defer {
+            if handle > 0 { _ = cg_runtime_reset(handle) }
+        }
+        return left.withUnsafeMutableBufferPointer { leftBuffer in
+            right.withUnsafeMutableBufferPointer { rightBuffer in
+                for _ in 0..<maximumSteps {
+                    guard cancellation?.isCancelled != true else { return 0 }
+                    let status = cg_runtime_step(
+                        handle,
+                        leftBuffer.baseAddress,
+                        rightBuffer.baseAddress,
+                        Int32(maximumFrames)
+                    )
+                    if status == 2 {
+                        let written = Int(cg_runtime_written_frames(handle))
+                        guard cg_runtime_reset(handle) == 1 else { return 0 }
+                        handle = 0
+                        return written
+                    }
+                    guard status == 1,
+                          cancellation?.completedCooperativeStep() != false
+                    else { return 0 }
+                }
+                return 0
+            }
+        }
+    }
+
+    /// Simultaneous guitar-family voicings use the same opaque cooperative
+    /// session as the web app, preserving the one-body model and bit identity.
+    private static func renderPluckedChordCooperativelyLocked(
+        packIndex: Int32,
+        midis: [Int32],
+        velocities: [Int32],
+        sampleRate: Double,
+        left: inout [Float],
+        right: inout [Float],
+        maximumFrames: Int,
+        cancellation: JazzRenderCancellationToken?
+    ) -> Int {
+        let maximumSteps = Int(plk2_chord_runtime_max_steps(Int32(maximumFrames)))
+        guard maximumSteps > 0 else { return 0 }
+        return midis.withUnsafeBufferPointer { midiBuffer in
+            velocities.withUnsafeBufferPointer { velocityBuffer in
+                var handle = Int32(plk2_chord_runtime_init(
+                    packIndex,
+                    midiBuffer.baseAddress,
+                    velocityBuffer.baseAddress,
+                    Int32(midis.count),
+                    Float(sampleRate),
+                    Int32(maximumFrames)
+                ))
+                guard handle > 0 else { return 0 }
+                let runtimeHandle = handle
+                let cancellationHandler = cancellation?.registerCancellationHandler {
+                    _ = plk2_chord_runtime_cancel(runtimeHandle)
+                }
+                defer {
+                    cancellation?.unregisterCancellationHandler(cancellationHandler)
+                    if handle > 0 { _ = plk2_chord_runtime_reset(handle) }
+                }
+                guard cancellation?.enteredCooperativeRuntime() != false else { return 0 }
+                return left.withUnsafeMutableBufferPointer { leftBuffer in
+                    right.withUnsafeMutableBufferPointer { rightBuffer in
+                        for _ in 0..<maximumSteps {
+                            guard cancellation?.isCancelled != true else { return 0 }
+                            let status = plk2_chord_runtime_step(
+                                handle,
+                                leftBuffer.baseAddress,
+                                rightBuffer.baseAddress,
+                                Int32(maximumFrames)
+                            )
+                            if status == 2 {
+                                // Completion consumes the opaque Rust session and
+                                // makes its handle stale. Reset is only for an
+                                // incomplete exit from this loop.
+                                handle = 0
+                                return maximumFrames
+                            }
+                            if status == 3 { return 0 }
+                            guard status == 1,
+                                  cancellation?.completedCooperativeStep() != false
+                            else { return 0 }
+                        }
+                        return 0
+                    }
                 }
             }
         }

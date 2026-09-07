@@ -9,19 +9,19 @@ use plucked_v2::{
     kirchhoff_carrier_extension_energy_j, kirchhoff_carrier_modal_force_n_per_sqrt_kg,
     marshall_electric_pack, midi_frequency_hz, plk2_assigned_chord_contact_duration_seconds,
     plk2_chord_contact_duration_seconds, plk2_chord_physical_sample_rate,
-    plk2_chord_radiation_taps_match_full_reference, plk2_chord_runtime_init_slices,
-    plk2_chord_runtime_step_slices, plk2_chord_session_init, plk2_chord_session_init_slices,
-    plk2_chord_session_max_steps, plk2_chord_session_state_max_bytes, plk2_chord_session_step,
-    plk2_chord_session_step_slices, plk2_chord_string_frets, plk2_cubic_reconstruct,
-    plk2_note_frames, plk2_render, plk2_render_chord, plk2_render_chord_slices,
-    plk2_render_chord_slices_full_rate_reference, plk2_render_path, plk2_render_slices,
-    plk2_stem_init, plk2_stem_init_slice, plk2_stem_render, plk2_stem_render_max_frames,
-    plk2_stem_render_slices, plk2_stem_state_max_bytes, plk2_stem_state_string_energy_j,
-    plk2_string_fret, plk2_triode_tanh, ukulele_pack, upright_bass_pack, BodyModeKind,
-    PluckGesture, PluckedError, PluckedRenderPath, PluckedStem, PLK2_ARCHTOP_PACK,
-    PLK2_CHORD_STEP_COMPLETE, PLK2_CHORD_STEP_PROGRESS, PLK2_DREADNOUGHT_PACK,
-    PLK2_MARSHALL_ELECTRIC_PACK, PLK2_STEM_EVENT_PLUCK, PLK2_STEM_EVENT_RESET, PLK2_UKULELE_PACK,
-    PLK2_UPRIGHT_BASS_PACK,
+    plk2_chord_radiation_taps_match_full_reference, plk2_chord_runtime_cancel,
+    plk2_chord_runtime_init_slices, plk2_chord_runtime_step_slices, plk2_chord_session_init,
+    plk2_chord_session_init_slices, plk2_chord_session_max_steps,
+    plk2_chord_session_state_max_bytes, plk2_chord_session_step, plk2_chord_session_step_slices,
+    plk2_chord_string_frets, plk2_cubic_reconstruct, plk2_note_frames, plk2_render,
+    plk2_render_chord, plk2_render_chord_slices, plk2_render_chord_slices_full_rate_reference,
+    plk2_render_path, plk2_render_slices, plk2_stem_init, plk2_stem_init_slice, plk2_stem_render,
+    plk2_stem_render_max_frames, plk2_stem_render_slices, plk2_stem_state_max_bytes,
+    plk2_stem_state_string_energy_j, plk2_string_fret, plk2_triode_tanh, ukulele_pack,
+    upright_bass_pack, BodyModeKind, PluckGesture, PluckedError, PluckedRenderPath, PluckedStem,
+    PLK2_ARCHTOP_PACK, PLK2_CHORD_STEP_CANCELLED, PLK2_CHORD_STEP_COMPLETE,
+    PLK2_CHORD_STEP_PROGRESS, PLK2_DREADNOUGHT_PACK, PLK2_MARSHALL_ELECTRIC_PACK,
+    PLK2_STEM_EVENT_PLUCK, PLK2_STEM_EVENT_RESET, PLK2_UKULELE_PACK, PLK2_UPRIGHT_BASS_PACK,
 };
 
 const SAMPLE_RATE: f64 = 48_000.0;
@@ -2264,6 +2264,35 @@ fn cooperative_chord_session_is_bit_exact_across_four_packs_and_browser_rates() 
                 ),
                 0,
                 "completed handle must be stale"
+            );
+
+            let cancelled = plk2_chord_runtime_init_slices(
+                pack_index,
+                midis,
+                velocities,
+                sample_rate,
+                FRAMES as i32,
+            );
+            assert!(cancelled > 0);
+            assert_eq!(plk2_chord_runtime_cancel(cancelled), 1);
+            assert_eq!(
+                plk2_chord_runtime_step_slices(
+                    cancelled,
+                    &mut runtime_left,
+                    &mut runtime_right,
+                    FRAMES as i32,
+                ),
+                PLK2_CHORD_STEP_CANCELLED,
+            );
+            assert_eq!(
+                plk2_chord_runtime_step_slices(
+                    cancelled,
+                    &mut runtime_left,
+                    &mut runtime_right,
+                    FRAMES as i32,
+                ),
+                0,
+                "cancelled handle must be stale"
             );
         }
     }

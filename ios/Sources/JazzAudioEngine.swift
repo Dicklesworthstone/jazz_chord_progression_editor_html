@@ -36,6 +36,10 @@ final class JazzAudioEngine: ObservableObject {
     private var renderRequest = 0
     private var previewGeneration = 0
     private var cacheSignature = ""
+    private var renderTask: Task<Void, Never>?
+    private var renderCancellation: JazzRenderCancellationToken?
+    private var previewRenderTask: Task<Void, Never>?
+    private var previewCancellation: JazzRenderCancellationToken?
 
     init() {
         engine.attach(player)
@@ -47,6 +51,10 @@ final class JazzAudioEngine: ObservableObject {
     }
 
     deinit {
+        renderCancellation?.cancel()
+        previewCancellation?.cancel()
+        renderTask?.cancel()
+        previewRenderTask?.cancel()
         timer?.invalidate()
         player.stop()
         previewPlayer.stop()
@@ -63,13 +71,22 @@ final class JazzAudioEngine: ObservableObject {
         tempo = chart.tempoBPM
         events = JazzTheory.compilePlayback(chart)
         totalBeats = chart.durationBeats
+        cancelMainRender()
         renderRequest += 1
         let request = renderRequest
-        Task { [weak self] in
+        let cancellation = JazzRenderCancellationToken()
+        renderCancellation = cancellation
+        renderTask = Task { [weak self] in
             let rendered = await Task.detached(priority: .utility) {
-                JazzAudioRenderer.render(chart: chart)
+                JazzAudioRenderer.render(chart: chart, cancellation: cancellation)
             }.value
-            guard let self, self.renderRequest == request, self.state == .ready,
+            guard let self,
+                  self.renderRequest == request,
+                  self.renderCancellation === cancellation
+            else { return }
+            self.renderTask = nil
+            self.renderCancellation = nil
+            guard self.state == .ready,
                   let rendered, let pcm = self.makePCM(rendered) else { return }
             self.buffer = pcm
             self.cacheSignature = signature
@@ -90,6 +107,7 @@ final class JazzAudioEngine: ObservableObject {
         let requestedGeneration = generation
         timer?.invalidate()
         player.stop()
+        cancelMainRender()
         tempo = chart.tempoBPM
         events = JazzTheory.compilePlayback(chart)
         totalBeats = chart.durationBeats
@@ -103,11 +121,19 @@ final class JazzAudioEngine: ObservableObject {
         renderRequest += 1
         let request = renderRequest
         let renderChart = chart
-        Task { [weak self] in
+        let cancellation = JazzRenderCancellationToken()
+        renderCancellation = cancellation
+        renderTask = Task { [weak self] in
             let rendered = await Task.detached(priority: .userInitiated) {
-                JazzAudioRenderer.render(chart: renderChart)
+                JazzAudioRenderer.render(chart: renderChart, cancellation: cancellation)
             }.value
-            guard let self, requestedGeneration == self.generation, request == self.renderRequest else { return }
+            guard let self,
+                  requestedGeneration == self.generation,
+                  request == self.renderRequest,
+                  self.renderCancellation === cancellation
+            else { return }
+            self.renderTask = nil
+            self.renderCancellation = nil
             guard let rendered, let pcm = self.makePCM(rendered) else {
                 self.state = .failed("The local audio renderer could not create a safe buffer.")
                 return
@@ -134,6 +160,7 @@ final class JazzAudioEngine: ObservableObject {
     func stop() {
         generation += 1
         renderRequest += 1
+        cancelMainRender()
         timer?.invalidate()
         player.stop()
         stopPreview()
@@ -152,14 +179,23 @@ final class JazzAudioEngine: ObservableObject {
         }
         previewGeneration += 1
         let request = previewGeneration
+        cancelPreviewRender()
         previewPlayer.stop()
         scheduledPreviewBuffer = nil
         previewIssue = nil
-        Task { [weak self] in
+        let cancellation = JazzRenderCancellationToken()
+        previewCancellation = cancellation
+        previewRenderTask = Task { [weak self] in
             let rendered = await Task.detached(priority: .userInitiated) {
-                JazzAudioRenderer.renderPreview(midi: midi, tone: tone)
+                JazzAudioRenderer.renderPreview(midi: midi, tone: tone, cancellation: cancellation)
             }.value
-            guard let self, self.previewGeneration == request,
+            guard let self,
+                  self.previewGeneration == request,
+                  self.previewCancellation === cancellation
+            else { return }
+            self.previewRenderTask = nil
+            self.previewCancellation = nil
+            guard
                   let rendered, let pcm = self.makePCM(rendered) else { return }
             do {
                 try self.configureSession()
@@ -180,9 +216,24 @@ final class JazzAudioEngine: ObservableObject {
 
     func stopPreview() {
         previewGeneration += 1
+        cancelPreviewRender()
         previewPlayer.stop()
         scheduledPreviewBuffer = nil
         previewIssue = nil
+    }
+
+    private func cancelMainRender() {
+        renderCancellation?.cancel()
+        renderTask?.cancel()
+        renderCancellation = nil
+        renderTask = nil
+    }
+
+    private func cancelPreviewRender() {
+        previewCancellation?.cancel()
+        previewRenderTask?.cancel()
+        previewCancellation = nil
+        previewRenderTask = nil
     }
 
     private func makePCM(_ rendered: JazzRenderedAudio) -> AVAudioPCMBuffer? {

@@ -1,5 +1,6 @@
 import XCTest
 import UIKit
+import FrankenJazzDSP
 @testable import FrankenJazz
 
 final class FrankenJazzCoreTests: XCTestCase {
@@ -369,6 +370,134 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertEqual(fourCourse.renderedMIDIPitches, [60, 64, 67, 71])
         XCTAssertEqual(fourCourse.left.count, fourCourse.right.count)
         XCTAssertTrue(fourCourse.left.allSatisfy(\.isFinite))
+    }
+
+    func testCooperativePluckedChordIsBitExactWithOriginalMonolithicABIWithoutAudioOutput() throws {
+        JazzPhysicalInstrumentRenderer.resetCacheForTesting()
+        let renderedMIDIs = [48, 52, 55, 59, 62, 65]
+        let midi32 = renderedMIDIs.map(Int32.init)
+        let velocity32 = [Int32](repeating: 96, count: renderedMIDIs.count)
+        let sampleRate = 24_000.0
+        let frameCount = 1_920
+        var directLeft = [Float](repeating: 0, count: frameCount)
+        var directRight = [Float](repeating: 0, count: frameCount)
+        let written = midi32.withUnsafeBufferPointer { midiBuffer in
+            velocity32.withUnsafeBufferPointer { velocityBuffer in
+                directLeft.withUnsafeMutableBufferPointer { leftBuffer in
+                    directRight.withUnsafeMutableBufferPointer { rightBuffer in
+                        Int(plk2_render_chord(
+                            0,
+                            midiBuffer.baseAddress,
+                            velocityBuffer.baseAddress,
+                            Int32(renderedMIDIs.count),
+                            Float(sampleRate),
+                            leftBuffer.baseAddress,
+                            rightBuffer.baseAddress,
+                            Int32(frameCount)
+                        ))
+                    }
+                }
+            }
+        }
+        XCTAssertEqual(written, frameCount)
+
+        // Match the renderer's established raised-cosine truncation guard.
+        let fadeFrames = Int(round(0.015 * sampleRate))
+        for index in 0..<fadeFrames {
+            let gain = Float(fadeFrames - index) / Float(fadeFrames)
+            let frame = frameCount - fadeFrames + index
+            directLeft[frame] *= gain
+            directRight[frame] *= gain
+        }
+
+        let cooperative = try XCTUnwrap(JazzPhysicalInstrumentRenderer.renderChord(
+            tone: .guitar,
+            midis: renderedMIDIs,
+            velocity: 96,
+            sampleRate: sampleRate,
+            maximumSeconds: Double(frameCount) / sampleRate
+        ))
+        XCTAssertEqual(cooperative.left, directLeft)
+        XCTAssertEqual(cooperative.right, directRight)
+    }
+
+    func testCancellationInterruptsLiveConcertGrandRuntimeAndLeavesNoCacheEntry() async throws {
+        JazzPhysicalInstrumentRenderer.resetCacheForTesting()
+        let cancellation = JazzRenderCancellationToken()
+        let renderTask = Task.detached {
+            JazzPhysicalInstrumentRenderer.render(
+                tone: .concertGrand,
+                midi: 60,
+                velocity: 96,
+                sampleRate: 96_000,
+                maximumSeconds: 8,
+                cancellation: cancellation
+            )
+        }
+        let enteredRuntime = await Task.detached {
+            cancellation.waitForCooperativeStep(timeout: 5)
+        }.value
+        XCTAssertTrue(enteredRuntime, "The test must observe a completed Rust quantum before cancelling.")
+        cancellation.cancel()
+        let cancelledRender = await renderTask.value
+        XCTAssertNil(cancelledRender)
+        XCTAssertGreaterThan(cancellation.cooperativeStepCount, 0)
+        XCTAssertEqual(
+            JazzPhysicalInstrumentRenderer.cacheSnapshot(for: .concertGrand),
+            JazzPhysicalCacheSnapshot(entryCount: 0, hitCount: 0, missCount: 1, evictionCount: 0)
+        )
+
+        XCTAssertNotNil(JazzPhysicalInstrumentRenderer.render(
+            tone: .concertGrand,
+            midi: 60,
+            velocity: 96,
+            sampleRate: 24_000,
+            maximumSeconds: 0.04
+        ), "Cancellation must reset the opaque Rust runtime for the next render.")
+    }
+
+    func testCancellationInterruptsLivePluckedChordRuntimeAndLeavesNoCacheEntry() async throws {
+        JazzPhysicalInstrumentRenderer.resetCacheForTesting()
+        let cancellation = JazzRenderCancellationToken()
+        let renderTask = Task.detached {
+            JazzPhysicalInstrumentRenderer.renderChord(
+                tone: .guitar,
+                midis: [48, 52, 55, 59, 62, 65],
+                velocity: 96,
+                sampleRate: 24_000,
+                maximumSeconds: 6,
+                cancellation: cancellation
+            )
+        }
+        let enteredRuntime = await Task.detached {
+            cancellation.waitForCooperativeRuntimeEntry(timeout: 5)
+        }.value
+        XCTAssertTrue(enteredRuntime, "The test must observe a live Rust chord handle before cancelling.")
+        cancellation.cancel()
+        let cancelledRender = await renderTask.value
+        XCTAssertNil(cancelledRender)
+        XCTAssertGreaterThan(cancellation.cooperativeRuntimeEntryCount, 0)
+        XCTAssertEqual(
+            JazzPhysicalInstrumentRenderer.cacheSnapshot(for: .guitar),
+            JazzPhysicalCacheSnapshot(entryCount: 0, hitCount: 0, missCount: 1, evictionCount: 0)
+        )
+
+        let recoveryMIDIs = [Int32(48), 52, 55]
+        let recoveryVelocities = [Int32](repeating: 96, count: recoveryMIDIs.count)
+        let recoveryHandle = recoveryMIDIs.withUnsafeBufferPointer { midiBuffer in
+            recoveryVelocities.withUnsafeBufferPointer { velocityBuffer in
+                plk2_chord_runtime_init(
+                    0,
+                    midiBuffer.baseAddress,
+                    velocityBuffer.baseAddress,
+                    Int32(recoveryMIDIs.count),
+                    24_000,
+                    1
+                )
+            }
+        }
+        XCTAssertGreaterThan(recoveryHandle, 0, "Cancellation must release the opaque runtime for the next render.")
+        XCTAssertEqual(plk2_chord_runtime_reset(recoveryHandle), 1)
     }
 
     func testPhysicalRendererCacheIsPerInstrumentAndVelocityAwareWithoutAudioOutput() throws {
