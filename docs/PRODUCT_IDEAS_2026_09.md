@@ -138,8 +138,12 @@ the session without committing a chart. **Cancel repair** or Escape restores the
 pre-repair draft and source selection. Escape is consumed during repair; outside
 repair the existing Library Clear and command-dialog Close behavior remains.
 Insert is still the sole whole-draft publication, followed by one exact Undo.
-Clear explicitly abandons repair. A new diagnostic selection starts a new repair
-from the current draft. No focus or selection effect runs on ordinary rerenders.
+Clear explicitly abandons repair. A refused own edit (including the draft limit)
+keeps Cancel able to restore the original draft. A change accepted through another
+entry surface invalidates that repair ownership, even if typing later resumes in
+the original field. Repeated native input events carrying the restored accepted
+text do not erase the refusal notice; a different accepted edit clears it.
+A new diagnostic selection starts a new repair from the current draft. No focus or selection effect runs on ordinary rerenders.
 
 Composition start/end and keyboard `isComposing` suppress Enter/Escape and repair
 actions while IME owns the field. Shift+Enter inserts a newline. Diagnostic rows

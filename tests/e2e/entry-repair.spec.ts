@@ -5,7 +5,7 @@ import { createHash } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { resolve } from "node:path";
 
-const artifactPath = resolve("jazz_chord_progression_editor.html");
+const artifactPath = resolve(process.env["JCPE_ENTRY_ARTIFACT"] ?? "jazz_chord_progression_editor.html");
 const artifact = readFileSync(artifactPath);
 const artifactHash = createHash("sha256").update(artifact).digest("hex");
 const draft = '; 🎷 é\n| D♭maj7:2 H7:2 |';
@@ -131,14 +131,22 @@ test.describe("entry repair keyboard ownership", () => {
       // Plant the stale DOM value and activate the real button in one event turn.
       // Otherwise a legitimate intervening render can restore the current draft
       // before the click, so the test no longer presents stale input at all.
-      await scope.getByRole("button", { name: /^Repair H:/ }).evaluate((button, fieldId) => {
+      const staleSelection = await scope.getByRole("button", { name: /^Repair H:/ }).evaluate((button, fieldId) => {
         const input = document.querySelector(`[data-testid="${fieldId}"]`);
         if (!(input instanceof HTMLTextAreaElement) || !(button instanceof HTMLButtonElement)) throw new Error("missing repair controls");
+        const original = input.value;
         input.value = "D7:2 H7:2";
+        const before = { start: input.selectionStart, end: input.selectionEnd, focused: document.activeElement === input };
         button.click();
+        const after = { start: input.selectionStart, end: input.selectionEnd, focused: document.activeElement === input };
+        // Confine the out-of-band perturbation to this negative control. Leaving
+        // it installed lets a render interrupt WebKit's next native fill.
+        input.value = original;
+        return { before, after };
       }, id);
+      expect(staleSelection.after).toEqual(staleSelection.before);
       await expect(scope.getByRole("button", { name: "Cancel repair", exact: true })).toHaveCount(0);
-      await field.fill("C7:2 H7:2");
+      await expect(field).toHaveValue("C7:2 H7:2");
       await scope.getByRole("button", { name: /^Repair H:/ }).click();
       await field.dispatchEvent("compositionstart", { data: "G" });
       await field.dispatchEvent("keydown", { key: "Enter", code: "Enter", isComposing: true, bubbles: true });
@@ -201,6 +209,67 @@ test.describe("entry repair keyboard ownership", () => {
     await expect(page.locator(".studio-command-lane .studio-entry-repair")).toContainText("explicit durations");
     await expect(page.locator("#studio-command-lane-insert")).toBeDisabled();
     await expect(field).toHaveValue(longDraft);
+  });
+
+  test("cancel cannot overwrite an edit made through the other entry surface", async ({ page }) => {
+    await blankStudio(page, pathToFileURL(artifactPath).href);
+    const library = page.locator(".studio-quick-entry");
+    const field = page.getByTestId("quick-entry-field");
+    await field.fill("C7:2 H7:2");
+    await library.getByRole("button", { name: /^Repair H:/ }).click();
+    await page.keyboard.insertText("G");
+    await expect(field).toHaveValue("C7:2 G7:2");
+    await page.locator("#studio-open-command-lane").click();
+    await page.getByTestId("command-lane-input").fill("D7:4");
+    await page.getByTestId("command-lane-input").press("Escape");
+    await expect(field).toHaveValue("D7:4");
+    // Continuing to type here does not grant an old repair ownership of the
+    // intervening edit made in the command lane.
+    await field.fill("E7:4");
+    await library.getByRole("button", { name: "Cancel repair", exact: true }).click();
+    await expect(field).toHaveValue("E7:4");
+    await expect(page.locator(".studio-chord-card")).toHaveCount(0);
+  });
+
+  test("overfilled source selects the whole bar and cannot publish until repaired", async ({ page }) => {
+    await blankStudio(page, pathToFileURL(artifactPath).href);
+    await page.locator("#studio-open-command-lane").click();
+    const field = page.getByTestId("command-lane-input");
+    await field.fill("| C7:3 G7:2 |");
+    await expect(page.locator("#studio-command-lane-insert")).toBeDisabled();
+    await page.getByRole("button", { name: /^Next error/ }).click();
+    expect(await selection(page, "command-lane-input")).toEqual({ start: 0, end: 13, text: "| C7:3 G7:2 |", focused: true });
+    await page.keyboard.insertText("| C7:2 G7:2 |");
+    await expect(field).toHaveValue("| C7:2 G7:2 |");
+    await expect(page.locator(".studio-chord-card")).toHaveCount(0);
+    await page.locator("#studio-command-lane-insert").click();
+    await expect(page.locator(".studio-chord-card")).toHaveCount(2);
+    await page.locator("#studio-undo").click();
+    await expect(page.locator(".studio-chord-card")).toHaveCount(0);
+  });
+
+  test("draft limit preserves the last exact accepted draft and states refusal", async ({ page }) => {
+    await blankStudio(page, pathToFileURL(artifactPath).href);
+    await page.locator("#studio-open-command-lane").click();
+    const field = page.getByTestId("command-lane-input");
+    // Eleven literal code points plus 4085 comment characters: no parser oracle.
+    const atLimit = "; " + "x".repeat(4085) + "\n| C7:4 |";
+    expect(Array.from(atLimit)).toHaveLength(4096);
+    const original = atLimit.replace("C7", "H7");
+    await field.fill(original);
+    await page.getByRole("button", { name: /^Next error/ }).click();
+    await page.keyboard.insertText("C");
+    await expect(field).toHaveValue(atLimit);
+    await expect(page.locator("#studio-command-lane-insert")).toBeEnabled();
+    await field.fill(atLimit + "x");
+    await expect(page.locator(".studio-command-lane__refusal")).toContainText("4,096 Unicode code points");
+    await expect(field).toHaveValue(atLimit);
+    await expect(page.locator(".studio-chord-card")).toHaveCount(0);
+    await page.getByRole("button", { name: "Cancel repair", exact: true }).click();
+    await expect(field).toHaveValue(original);
+    await field.fill("| D7:4 |");
+    await expect(field).toHaveValue("| D7:4 |");
+    await expect(page.locator(".studio-command-lane__refusal")).toHaveCount(0);
   });
 
   test("native composition listeners are released when the command lane closes", async ({ page }, info) => {
