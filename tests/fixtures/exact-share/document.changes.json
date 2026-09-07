@@ -1,0 +1,70 @@
+{
+  "schema": "changes.progression.v2",
+  "id": "share-document-exact",
+  "title": "Teacher's <chart> 🎹",
+  "description": "Two exact voicings; keep every spelling and note.",
+  "meter": { "beatsPerBar": 4, "beatUnit": 4 },
+  "tempoBpm": 132,
+  "key": { "tonic": { "step": "C", "alter": 0 }, "mode": "major" },
+  "sections": [
+    {
+      "id": "share-section-a",
+      "name": "A / whispered",
+      "annotation": "Keep <b>these</b> notes\n🎹",
+      "keyOverride": { "tonic": { "step": "D", "alter": -1 }, "mode": "major" },
+      "voiceLeadingBoundary": "continue",
+      "measures": [{
+        "id": "share-measure-a",
+        "events": [
+          {
+            "id": "share-event-manual",
+            "duration": { "numerator": 5, "denominator": 3 },
+            "annotation": "Unisons stay: Db3, Db3, C#3.\tNo HTML.",
+            "chord": {
+              "kind": "custom", "sourceText": "E / Db + C#", "label": "E / Db + C#",
+              "pitchNames": [{ "step": "E", "alter": 0 }, { "step": "D", "alter": -1 }, { "step": "C", "alter": 1 }],
+              "bass": null
+            },
+            "voicing": {
+              "mode": "manual", "bassPolicy": "included",
+              "pitches": [
+                { "step": "E", "alter": 0, "octave": 4 },
+                { "step": "D", "alter": -1, "octave": 3 },
+                { "step": "D", "alter": -1, "octave": 3 },
+                { "step": "C", "alter": 1, "octave": 3 }
+              ]
+            }
+          },
+          {
+            "id": "share-event-frozen",
+            "duration": { "numerator": 7, "denominator": 3 },
+            "annotation": "Do not optimize this inversion.",
+            "chord": {
+              "kind": "parsed", "sourceText": "Cmaj7", "root": { "step": "C", "alter": 0 },
+              "triad": "major", "sixth": null, "seventh": "major", "extensions": [], "additions": [],
+              "alterations": [], "omissions": [], "bass": null, "colorPolicy": "none"
+            },
+            "voicing": {
+              "mode": "frozen", "bassPolicy": "included",
+              "pitches": [
+                { "step": "B", "alter": 0, "octave": 3 },
+                { "step": "E", "alter": 0, "octave": 4 },
+                { "step": "G", "alter": 0, "octave": 4 },
+                { "step": "C", "alter": 0, "octave": 5 }
+              ],
+              "generatedBy": { "engineVersion": "independent-share-fixture-1", "family": "balanced" }
+            }
+          }
+        ],
+        "completion": { "kind": "complete" }
+      }]
+    },
+    {
+      "id": "share-section-b", "name": "B / space", "annotation": "Intentional silence",
+      "keyOverride": null, "voiceLeadingBoundary": "reset",
+      "measures": [{ "id": "share-measure-b", "events": [], "completion": { "kind": "empty" } }]
+    }
+  ],
+  "playback": { "instrumentId": "mellow-keys", "masterVolume": 0.8, "reverbAmount": 0.2,
+    "countInBars": 1, "grooveStyleId": "straight-eighths@1" }
+}
