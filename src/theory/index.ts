@@ -306,3 +306,9 @@ export type {
   DiscoveryResult, DiscoverySourceEvent, DiscoveryStepper, DiscoveryStepperCreation,
   DiscoveryValue, DiscoveryVersion,
 } from "./discovery-execution-contract";
+export { createDiscoveryArena } from "./discovery-arena";
+export { captureDiscoveryValue } from "./discovery-data";
+export type { CapturedDiscoveryValue } from "./discovery-data";
+export { createDiscoveryStepper, inspectMeasuredDiscoveryResult, isMeasuredDiscoveryResult } from "./discovery-execution";
+export type { DiscoveryEnumerationKernel, DiscoveryExpansionSink } from "./discovery-execution";
+export { DISCOVERY_EXECUTION_LIMITS, DISCOVERY_EXECUTION_SCHEMA, DISCOVERY_ENGINE_CEILINGS } from "./discovery-execution-contract";

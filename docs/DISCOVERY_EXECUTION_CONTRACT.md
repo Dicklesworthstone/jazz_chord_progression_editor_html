@@ -37,6 +37,11 @@ exact admitted canonical request, not only a caller-supplied digest or boolean.
 Source replacement, Undo/Redo, recovery, a new revision, or a changed requested
 realization selection invalidates the job even if its musical values happen to
 match. A new job cancels and releases the old one before claiming capacity.
+If transport retirement is already awaiting completion, cancellation removes
+Apply authority immediately but its continuation remains charged until the
+await settles. Another start refuses the occupied publication-attempt slot;
+it cannot hide the retained old snapshot behind a fresh ledger. Disposal closes
+ports/listeners immediately and follows the same honest pending-retirement rule.
 
 The decoder accepts passive own-data-property JSON-shaped values only: no
 getters, prototypes other than Object/null, holes, symbols, cycles, undefined,
@@ -68,6 +73,14 @@ Cancel/stale at a yield wins before further work and clears all options. The
 application also checks cancellation/source identity before initial work and
 before publishing a terminal result. A completed result cannot acquire Apply
 authority merely by retaining a cursor or copying a result object.
+
+The runtime stepper also exposes idempotent `dispose()`: its consumer drops the
+prepared result, relinquishes all job reservations and invalidates the private
+measured-result registration. A previously returned immutable value is historical
+data and cannot acquire publication authority after disposal. An expansion sink
+is valid only during its synchronous seed/expansion call; retaining a sink cannot
+enqueue work or emit options later. Seeding enqueues initial states only and
+cannot emit uncounted options.
 
 The common ceilings are literal in `contract.json` and the public constants.
 All requested budgets are safe nonnegative integers (step is strictly positive)
@@ -137,6 +150,21 @@ container contents; checking a claimed counter against itself is not proof.
 Engine-specific transient allocations and bounded expansion internals require
 that engine's own proof. The generic service cannot certify arbitrary injected
 code or claim a64MiB browser-heap limit.
+
+The generic kernel is registered with an explicit engine family. Requests above
+that family's directly corresponding common ceilings refuse; the runtime never
+silently rewrites their budgets. Provider, route, slot, law and patch-operation
+limits that depend on the engine's data model remain mandatory in that engine's
+decoder/expansion proof. Reservation handles spend128 bytes of bounded registry
+bookkeeping in addition to their payload. The generic job reserves one fixed
+control/cursor/result workspace; each actual expansion acquires and releases its
+registered workspace independently of scheduler partitioning.
+Captures also reserve1024 bytes for their return records, ownership-set entries,
+and queue/option wrappers, separately from measured data graphs and canonical
+strings. This deliberately conservative bookkeeping must not be mistaken for
+physical heap instrumentation. The final result byte check uses measured UTF-8
+payload sizes plus the actual envelope, counters and ordinal IDs; trimming at
+that output boundary reports `bounded-partial`/`result-byte-cap` explicitly.
 
 ## Options, ordering and musical proof
 

@@ -33,6 +33,11 @@ export type DiscoveryJobView = Readonly<{
   /** Local performance diagnostics; excluded from semantic result bytes. */
   yields: number;
   scheduledCallbacks: number;
+  /** Actual owned containers/handles; pending retirement remains charged. */
+  retainedBytes: number;
+  openMessagePorts: number;
+  listeners: number;
+  publicationAttempts: number;
 }>;
 export type DiscoveryApplyResult =
   | Readonly<{ kind: "committed"; revision: number }>

@@ -5,6 +5,7 @@ type Gate = {
 
 const gates: Gate[] = [
   { id: "toolchain", command: [process.execPath, "scripts/toolchain-doctor.ts"] },
+  { id: "discovery-execution-contract", command: [process.execPath, "scripts/validate-discovery-execution-contract.ts"] },
   {
     id: "foundation-contract",
     command: [process.execPath, "scripts/validate-f0-contract.ts"],

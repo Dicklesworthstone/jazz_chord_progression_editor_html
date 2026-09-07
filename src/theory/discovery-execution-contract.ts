@@ -175,6 +175,8 @@ export type DiscoveryAdvance =
 export type DiscoveryStepper = Readonly<{
   step: (workQuantum: number, cursor: DiscoveryCursor | null) => DiscoveryAdvance;
   cancel: (reason: "cancelled" | "stale") => DiscoveryResult;
+  /** Relinquish job ownership after its consumer discards the prepared result. */
+  dispose: () => void;
 }>;
 
 /** A reservation must succeed before allocating the corresponding owned data. */
