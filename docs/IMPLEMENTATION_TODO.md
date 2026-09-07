@@ -4,7 +4,7 @@ Consumer: the user and Codex executing the 2026-09-04 request to implement the r
 
 ## Current order
 
-- [ ] Shared discovery execution (`jcpe-discovery-execution-proof-gdcw`; spec leaf `.1` closed359b02c; build leaf `.2` claimed CodexWorkflow). It unblocks existing H1/G0–G9 engine work; it does not complete an engine or a fifth September idea.
+- [ ] Shared discovery execution (`jcpe-discovery-execution-proof-gdcw`; spec `.1` closed359b02c; build `.2` closed55608ae; proof `.3` claimed CodexWorkflow). It unblocks existing H1/G0–G9 engine work; it does not complete an engine or a fifth September idea.
   - [x] Read live parent/spec, architecture, theory plan, exact G0/G2/G3/G4/G5 caps, and the existing A0 derived-patch/pending-request/semantic-publication path.
   - [x] Freeze domain-bound requests, complete version/constraint/seed identity, selected realizations and source snapshots; distinguish musical proof from application publication authority.
   - [x] Specify measured primitive work and managed allocation accounting, canonical ties/candidate identity, input/output/cache/snapshot bounds, deterministic termination and resumable cursor validity.
@@ -18,7 +18,7 @@ Consumer: the user and Codex executing the 2026-09-04 request to implement the r
   - [x] Implement the capacity-one MessageChannel service and real A0/F2/F3 publication path. Bind immutable source/selection/versions and private measured-result identity; validate before and after retirement, preserve explicit timing/scope, and publish one undoable command. A cancelled retirement keeps its source/patch charged until its await settles and blocks a second job. Native audio retirement itself remains a proof-phase obligation.
   - [x] Exercise independent graph/quantum/limit/cursor fixtures plus actual A0 complete and bounded-partial Apply/Undo, stale edits/selections/versions, malformed proof/patches, double clicks, retirement failure, replacement, disposal and subscriber reentrancy. Named final unit/integration42/0,658 assertions. Controlled retirement promises establish await races, not native audio evidence.
   - [x] Pass the unchanged contract validator, named final unit/integration42/0, full typecheck and full lint (source policy303 files/0 findings). Add the real unchanged contract command to aggregate verify; no prior gate removed. Retain initial tuple/type/lint errors and the later bookkeeping/result-byte corrections under `/tmp/jcpe-discovery-build-*`. All316 source identities are frozen for final gates.
-  - [ ] Commit/push the complete verified build and close only `.2` with exact revision-bound results; then atomically claim `.3`. Guarded build and fresh solo artifact/A0/static/runtime checks are complete; this is a separate self-review pass, not independent-agent or browser certification.
+  - [x] Commit/push build55608ae and close only `.2` with exact revision-bound results; atomically claim `.3`. Guarded build/root-dist equality8424443bytes SHA25661d6d02d04b552a5ec96025f66e697666f6e5e5dfc6bb3581b9880cb89b9afbf. Fresh solo artifact/A0/static/runtime108/0,1238 assertions; this is a separate self-review pass, not independent-agent or browser certification.
   - [ ] Execute `.3` against the original proof criteria; preserve all downstream engine/UI/human/release obligations.
     - [ ] Add independent conformance/resource-edge and cancellation/state-replacement property checks at all named fixture and phase-gate paths.
     - [ ] Plant real production source faults for synthetic counters, allocation/queue bounds, cursor/selection/source authority and final Apply revalidation; retain successful baselines and exact changed hashes.
@@ -453,8 +453,8 @@ Statuses below are the campaign-start snapshot. Use br show and br ready before 
 - [ ] `jcpe-bv2b` — FrankenSim-powered next-gen instrument physics: ultra-realism campaign (owner criteria 2026-08-09) (in_progress; P1; unassigned)
 - [ ] `jcpe-discovery-execution-proof-gdcw` — Discovery execution: truthful bounded jobs and atomic proof validation (open; P1; unassigned)
 - [x] `jcpe-discovery-execution-proof-gdcw.1` — Discovery execution specification (closed;359b02c; exact gates recorded in Beads)
-- [ ] `jcpe-discovery-execution-proof-gdcw.2` — Discovery execution build (in_progress; CodexWorkflow; final gates pass, commit/closure pending)
-- [ ] `jcpe-discovery-execution-proof-gdcw.3` — Discovery execution: truthful bounded jobs and atomic proof validation / verify (open; P1; unassigned)
+- [x] `jcpe-discovery-execution-proof-gdcw.2` — Discovery execution build (closed;55608ae; exact gates recorded in Beads)
+- [ ] `jcpe-discovery-execution-proof-gdcw.3` — Discovery execution verification (in_progress; CodexWorkflow)
 - [ ] `jcpe-espf` — HUMAN: audition Upright Bass + Concert Vibes on the live studio (jcpe-1miv acceptance) (open; P1; unassigned)
 - [ ] `jcpe-ionn` — M1/spec: Freeze the automated-import laws — track roles, harmonic-rhythm segmentation, contextual resolution, settings transfer, groove match (open; P1; ubuntu)
 - [ ] `jcpe-ios-quality-verification-uo47` — FrankenJazz iOS: quality, honesty, and recorded verification (in_progress; P1; unassigned)
