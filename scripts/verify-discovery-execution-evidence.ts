@@ -36,7 +36,8 @@ function at(value: unknown, ...path: string[]): unknown {
 }
 const json = async (path: string): Promise<unknown> => await Bun.file(path).json();
 async function paths(): Promise<string[]> {
-  const result = new Set<string>();
+  const result = new Set<string>(["node_modules/@playwright/test/package.json", "node_modules/playwright-core/package.json",
+    "node_modules/playwright-core/lib/coreBundle.js"]);
   for (const pattern of ["src/**/*", "tests/**/*", "scripts/**/*", "docs/**/*", "*.json", "*.ts", "*.mjs", "*.md", "bun.lock"]) {
     for await (const path of new Bun.Glob(pattern).scan({ cwd: root, onlyFiles: true })) result.add(path);
   }
@@ -79,7 +80,8 @@ async function inspectBrowserEvidence(): Promise<number> {
   requireTrue(array(at(report, "errors")).length === 0, "Playwright global error");
   let results = 0;
   const inspectSuite = (value: unknown): void => {
-    for (const child of array(at(value, "suites"))) inspectSuite(child);
+    // Playwright omits this property on leaf suites, rather than writing [].
+    for (const child of array(at(value, "suites") ?? [])) inspectSuite(child);
     for (const spec of array(at(value, "specs"))) {
       requireTrue(at(spec, "ok") === true, "Unexpected native spec result");
       for (const test of array(at(spec, "tests"))) {
@@ -121,6 +123,8 @@ async function inspectBrowserEvidence(): Promise<number> {
     for (const name of ["contextListeners", "messagePorts", "messageHandlers", "intervals", "uiListeners"]) requireTrue(at(disposed, "native", name) === 0, `Leaked native ${name}: ${key}`);
     for (const name of ["listeners", "retainedBytes", "publicationAttempts", "scheduledCallbacks"]) requireTrue(at(disposed, "job", name) === 0, `Leaked job ${name}: ${key}`);
     requireTrue(at(disposed, "audio", "transport", "state") === "disposed" && at(disposed, "audio", "engine", "retainedVoiceCount") === 0, `Audio disposal failed: ${key}`);
+    requireTrue(at(disposed, "audio", "engine", "contextState") === "closed" && at(disposed, "audio", "engine", "persistentEdgeCount") === 0 &&
+      at(disposed, "audio", "engine", "registryIndexCounts", "totalReferences") === 0, `Live context/graph/voice registry after disposal: ${key}`);
     const scenario = String(at(evidence, "scenario"));
     if (scenario.endsWith("during-search")) {
       requireTrue(at(phase("busy"), "inputWhileBusy") === true && Number(at(phase("search-ended"), "expansions")) < 16384, `Search did not yield: ${key}`);
@@ -176,7 +180,7 @@ try {
   browserResults = await inspectBrowserEvidence();
   after = await snapshot(declared);
   requireTrue(stableJson(before) === stableJson(after), "Declared inputs changed during evidence execution");
-  requireTrue(stableJson(await paths()) === stableJson(declared.filter(path => !path.startsWith("node_modules/"))), "Declared source set changed");
+  requireTrue(stableJson(await paths()) === stableJson(declared), "Declared source set changed");
   outcome = "pass";
 } catch (error) {
   findings.push(error instanceof Error ? error.message : String(error));

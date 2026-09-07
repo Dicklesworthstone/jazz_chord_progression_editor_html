@@ -57,7 +57,7 @@ function receipt(action: string, outcome: TransportCommandOutcome): void {
 async function stopAudio(action: string): Promise<boolean> {
   const outcome = await audio.stop(++audioSequence); receipt(action, outcome);
   const actual = audio.inspect();
-  return outcome.termination === "receipt" && outcome.noFutureAttackPostcondition === true &&
+  return outcome.termination === "receipt" && outcome.noFutureAttackPostcondition &&
     actual.transport.state === "ready" && actual.engine.progressionNonreleasingVoiceCount === 0 && actual.engine.previewNonreleasingVoiceCount === 0;
 }
 function coordinate(value: DiscoveryValue): Readonly<{ branch: number; left: number }> {
@@ -154,7 +154,7 @@ listen("play", "click", async event => {
     compiled.plan.events.flatMap(row => row.midiPitches.map(midiPitch => ({ midiPitch, velocity: row.velocity }))), binding);
   if (!prepared) throw new Error("Native instrument preparation refused");
   receipt("play", await audio.play(++audioSequence, binding, first.startBeat, false));
-  receipt("preview", await audio.startPreview(++audioSequence, "discovery-preview", state.document.playback.instrumentId, first.midiPitches, 1));
+  receipt("preview", await audio.startPreview(++audioSequence, "x1:preview:discovery", state.document.playback.instrumentId, first.midiPitches, 1));
   render();
 });
 listen("apply", "click", async () => { applyResult = await fixture.service.apply("option.0"); render(); });

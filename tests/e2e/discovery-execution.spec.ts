@@ -13,7 +13,12 @@ const bundleSha256 = createHash("sha256").update(code).digest("hex");
 if (bundleSha256 !== process.env["JCPE_DISCOVERY_BUNDLE_SHA256"]) throw new Error("Discovery harness bytes changed");
 const style = "body{margin:0;background:#101820;color:#eef3f5;font:18px system-ui}main{max-width:920px;margin:auto;padding:20px}label{display:block;margin:12px 0}input,button{font:inherit;min-height:44px;box-sizing:border-box}input:not([type=checkbox]){display:block;width:100%;max-width:500px}button{padding:8px 14px}.controls{display:flex;flex-wrap:wrap;gap:8px}output{display:block;padding:12px 0}pre{white-space:pre-wrap;overflow-wrap:anywhere}h1{font-size:28px}";
 const hash = (text: string): string => createHash("sha256").update(text).digest("base64");
-const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-${hash(code)}'; style-src 'sha256-${hash(style)}'; img-src data:; connect-src 'none'"><link rel="icon" href="data:,"><title>Discovery execution proof</title><style>${style}</style></head><body><script>${code}</script></body></html>`;
+// Match the production build's embedded-WASM permission; JavaScript eval and
+// remote scripts remain forbidden. The actual audio module contains WASM.
+// Playwright 1.61.1 synchronizes WebKit screenshots by inserting exactly
+// "body {}" (coreBundle.js/inPagePrepareForScreenshots). Authorize that inert
+// rule by its exact hash in THIS harness only; no console errors are filtered.
+const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-${hash(code)}' 'wasm-unsafe-eval'; style-src 'sha256-${hash(style)}' 'sha256-${hash("body {}")}' ; style-src-attr 'none'; img-src data:; connect-src 'none'"><link rel="icon" href="data:,"><title>Discovery execution proof</title><style>${style}</style></head><body><script>${code}</script></body></html>`;
 const url = "https://discovery.evidence.localhost/";
 const agent = "OpenAI File Downloader, XaiImageApiFetch/1.0";
 type Snapshot = ReturnType<DiscoveryBrowserApi["snapshot"]>;
@@ -121,7 +126,8 @@ for (const viewport of [{ width: 1280, height: 720 }, { width: 390, height: 844 
         expect(final.native.postedMessages).toBeGreaterThan(0); expect(final.native.deliveredMessages).toBeGreaterThan(0);
         expect(final.errors).toEqual([]);
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-        await page.screenshot({ path: info.outputPath("scenario.png"), fullPage: true });
+        // Keep the real caret; no additional hiding stylesheet is authorized.
+        await page.screenshot({ path: info.outputPath("scenario.png"), fullPage: true, caret: "initial" });
       } finally {
         if (booted) {
           await page.evaluate(async () => { await window.__JCPE_DISCOVERY__.dispose(); });
@@ -136,6 +142,9 @@ for (const viewport of [{ width: 1280, height: 720 }, { width: 390, height: 844 
           expect(cleaned.native.uiListeners).toBe(0); expect(cleaned.native.messagePorts).toBe(0);
           expect(cleaned.job.listeners).toBe(0); expect(cleaned.job.retainedBytes).toBe(0);
           expect(cleaned.audio.engine.retainedVoiceCount).toBe(0);
+          expect(cleaned.audio.engine.contextState).toBe("closed");
+          expect(cleaned.audio.engine.persistentEdgeCount).toBe(0);
+          expect(cleaned.audio.engine.registryIndexCounts.totalReferences).toBe(0);
           expect(pageErrors).toEqual([]);
           expect(consoleMessages.filter(message => message.type === "warning" || message.type === "error")).toEqual([]);
           expect(requests).toEqual([{ method: "GET", url, userAgent: agent }]);
