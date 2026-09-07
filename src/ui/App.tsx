@@ -2419,11 +2419,15 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
         }
       }
     }
-    setQuickEntryRefusal(
-      result.ok
-        ? null
-        : `${result.refusal.message} ${result.refusal.recoveryAction}`,
-    );
+    if (!result.ok) {
+      setQuickEntryRefusal(`${result.refusal.message} ${result.refusal.recoveryAction}`);
+    } else if (value !== snapshot.quickEntry.text) {
+      // A native multiline paste can emit several input events. After a
+      // refused oversized edit, controlled rendering restores the accepted
+      // draft; later events then carry that unchanged text. They must not
+      // erase the refusal before the musician can read it.
+      setQuickEntryRefusal(null);
+    }
   };
 
   const applyQuickEntryInsert = (): void => {

@@ -36,6 +36,10 @@ export function useEntryRepair(view: StudioQuickEntryView, onDraftChange: (text:
   const lastAuthoredDraft = useRef(view.draftText);
   const lastError = useRef(-1);
   const latestDraft = useRef(view.draftText);
+  const sessionStillOwned = useRef(false);
+  if (view.draftText !== latestDraft.current && view.draftText !== lastAuthoredDraft.current) {
+    sessionStillOwned.current = false;
+  }
   latestDraft.current = view.draftText;
   useLayoutEffect(() => {
     const input = field.current;
@@ -64,6 +68,7 @@ export function useEntryRepair(view: StudioQuickEntryView, onDraftChange: (text:
     const target = { ...range, draftText: view.draftText, sourceText: token.sourceText };
     if (!entryRepairRangeIsCurrent(target, input.value) || latestDraft.current !== target.draftText) return;
     lastAuthoredDraft.current = target.draftText;
+    sessionStillOwned.current = true;
     setSession(target);
     setMessage(diagnosticProse(token.diagnosticCode ?? ""));
     lastError.current = token.ordinal;
@@ -74,8 +79,10 @@ export function useEntryRepair(view: StudioQuickEntryView, onDraftChange: (text:
     if (composing.current || session === null) return false;
     const input = field.current;
     // An external change must not be overwritten by cancelling an old repair.
-    if (input !== null && input.value === lastAuthoredDraft.current &&
-        latestDraft.current === lastAuthoredDraft.current) {
+    // A refused own edit leaves the accepted draft unchanged, so cancellation
+    // is still safe. An observed change from another entry surface invalidates
+    // this session even if the musician subsequently types here again.
+    if (input !== null && sessionStillOwned.current && input.value === latestDraft.current) {
       changeDraft(session.draftText);
       input.value = session.draftText;
       input.focus();
