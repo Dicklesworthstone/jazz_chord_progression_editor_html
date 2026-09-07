@@ -213,10 +213,10 @@ Six new workflow packages contain 19 leaf tasks, including the separate rehearsa
   - [ ] Implement the production workflow — `jcpe-rehearsal-session-6y2b.2`
   - [ ] Add the explicit transposed key sequence — `jcpe-rehearsal-session-6y2b.3`
   - [ ] Complete independent real-adapter proof — `jcpe-rehearsal-session-6y2b.4`
-- [ ] **My Charts: an explicit local chart collection with portable backup** — `jcpe-my-charts-zt9z`
+- [x] **My Charts: an explicit local chart collection with portable backup** — `jcpe-my-charts-zt9z` (fourth of fifteen ideas complete; all phases closed).
   - [x] Review specification and independent fixtures — `jcpe-my-charts-zt9z.1` (`MY_CHARTS.md`; independent packet3/0,58assertions; no implementation claim).
   - [x] Implement the production workflow — `jcpe-my-charts-zt9z.2` (192/0 Bun,129/0 native,36/0 standalone; independent verification remains open).
-  - [ ] Complete independent real-adapter proof — `jcpe-my-charts-zt9z.3`
+  - [x] Complete independent real-adapter proof — `jcpe-my-charts-zt9z.3` (30 native storage laws/source faults;60 transfer/recovery/Remove/Restore/two-tab cases;36 standalone;193 Bun tests. Native selection-draft race fixed in9ed4925; exact evidence and retained failures in `evidence/MY_CHARTS_VERIFICATION_2026-09-07.md`).
 - [x] **Share the exact chart, including Manual/Frozen voicings and notes** — `jcpe-exact-share-1ric`
   - [x] Review specification and independent fixtures — `jcpe-exact-share-1ric.1` (packet2/0; U5 prerequisite complete)
   - [x] Implement the production workflow — `jcpe-exact-share-1ric.2` (177 Bun tests,93 native cases,36 standalone cases)
