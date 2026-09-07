@@ -194,3 +194,4 @@ export { createStudioLocalReplacement, type StudioLocalReplacementService, type 
 export { createDiscoveryJobService } from "./discovery-execution";
 export type { DiscoveryApplicationPorts, DiscoveryApplyResult, DiscoveryJobService,
   DiscoveryJobView, DiscoveryPublicationAdapter, DiscoveryPublicationValidation, DiscoveryStartResult } from "./discovery-execution-contract";
+export * from "./semantic-surface-contract";

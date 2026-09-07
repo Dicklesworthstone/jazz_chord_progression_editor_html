@@ -1,0 +1,343 @@
+{
+  "schema": "changes.fixtures.semantic-operation-inventory.v1",
+  "baselineRevision": "86aee23",
+  "presenceIsCapabilityProof": false,
+  "publicEntry": "src/theory/index.ts",
+  "engines": [
+    {
+      "engine": "H0",
+      "operationsModule": null,
+      "entries": [
+        {
+          "module": "src/theory/analysis.ts",
+          "operations": [
+            "deriveLiteralFacts",
+            "analyzeChordInContext"
+          ]
+        },
+        {
+          "module": "src/theory/chord-scales.ts",
+          "operations": [
+            "enumerateChordScaleOptions"
+          ]
+        }
+      ],
+      "fixtureRoot": "tests/fixtures/harmony-analysis"
+    },
+    {
+      "engine": "H1",
+      "operationsModule": "src/theory/h1-operations.ts",
+      "entries": [
+        {
+          "module": "src/theory/transform-laws.ts",
+          "operations": [
+            "getTransformLaw",
+            "listTransformLaws",
+            "evaluateTransformCandidates"
+          ]
+        },
+        {
+          "module": "src/theory/spelled-transposition.ts",
+          "operations": [
+            "makeSpelledInterval",
+            "invertInterval",
+            "transposePitchByInterval",
+            "transposeChordSymbolByInterval",
+            "transposeProgressionByInterval"
+          ]
+        }
+      ],
+      "fixtureRoot": "tests/fixtures/transform-laws"
+    },
+    {
+      "engine": "G0",
+      "operationsModule": "src/theory/g0-operations.ts",
+      "entries": [
+        {
+          "module": "src/theory/phrase-cadence.ts",
+          "operations": [
+            "detectCadence"
+          ]
+        },
+        {
+          "module": "src/theory/tonal-journey.ts",
+          "operations": [
+            "analyzeTonalJourney"
+          ]
+        }
+      ],
+      "fixtureRoot": "tests/fixtures/tonal-journey"
+    },
+    {
+      "engine": "G1",
+      "operationsModule": "src/theory/g1-operations.ts",
+      "entries": [
+        {
+          "module": "src/theory/atlas-compiler.ts",
+          "operations": [
+            "sha256Sync",
+            "computeFingerprints",
+            "compileAtlasCorpus"
+          ]
+        },
+        {
+          "module": "src/theory/atlas-query.ts",
+          "operations": [
+            "makeAtlasQueryAdapter"
+          ]
+        }
+      ],
+      "fixtureRoot": "tests/fixtures/atlas-compiler"
+    },
+    {
+      "engine": "G2",
+      "operationsModule": "src/theory/g2-operations.ts",
+      "entries": [
+        {
+          "module": "src/theory/contextual-continuation.ts",
+          "operations": [
+            "generateContextualContinuations"
+          ]
+        }
+      ],
+      "fixtureRoot": "tests/fixtures/continuation"
+    },
+    {
+      "engine": "G3",
+      "operationsModule": "src/theory/g3-operations.ts",
+      "entries": [
+        {
+          "module": "src/theory/route-planner.ts",
+          "operations": [
+            "planHarmonicRoutes"
+          ]
+        }
+      ],
+      "fixtureRoot": "tests/fixtures/route-planner"
+    },
+    {
+      "engine": "G4",
+      "operationsModule": "src/theory/g4-operations.ts",
+      "entries": [
+        {
+          "module": "src/theory/harmonization-workbench.ts",
+          "operations": [
+            "harmonizeConstraints"
+          ]
+        }
+      ],
+      "fixtureRoot": "tests/fixtures/harmonization"
+    },
+    {
+      "engine": "G5",
+      "operationsModule": "src/theory/g5-operations.ts",
+      "entries": [
+        {
+          "module": "src/theory/reharmonization-tree.ts",
+          "operations": [
+            "buildReharmonizationTree",
+            "compareReharmonizationBranches"
+          ]
+        }
+      ],
+      "fixtureRoot": "tests/fixtures/reharmonization-tree"
+    },
+    {
+      "engine": "G6",
+      "operationsModule": "src/theory/g6-operations.ts",
+      "entries": [
+        {
+          "module": "src/theory/guide-tones.ts",
+          "operations": [
+            "extractEventGuideTones",
+            "classifyGuideToneMotion",
+            "optimizeGuideTonePaths"
+          ]
+        },
+        {
+          "module": "src/theory/color-lab.ts",
+          "operations": [
+            "deriveContextualColor"
+          ]
+        }
+      ],
+      "fixtureRoot": "tests/fixtures/guide-tones"
+    },
+    {
+      "engine": "G7",
+      "operationsModule": "src/theory/g7-operations.ts",
+      "entries": [
+        {
+          "module": "src/theory/rhythm-transforms.ts",
+          "operations": [
+            "computeTensionCurve",
+            "applyRhythmTransform"
+          ]
+        }
+      ],
+      "fixtureRoot": "tests/fixtures/rhythm-transforms"
+    },
+    {
+      "engine": "G8",
+      "operationsModule": "src/theory/g8-operations.ts",
+      "entries": [
+        {
+          "module": "src/theory/nonfunctional-transforms.ts",
+          "operations": [
+            "applyNeoRiemannianTransform",
+            "generateHarmonicSequence"
+          ]
+        }
+      ],
+      "fixtureRoot": "tests/fixtures/nonfunctional-atlas"
+    },
+    {
+      "engine": "G9",
+      "operationsModule": "src/theory/g9-operations.ts",
+      "entries": [
+        {
+          "module": "src/theory/practice-laboratory.ts",
+          "operations": [
+            "createPracticeSession",
+            "gradePracticeSubmission"
+          ]
+        }
+      ],
+      "fixtureRoot": "tests/fixtures/practice-laboratory"
+    }
+  ],
+  "additionalPublicHelpers": [
+    {
+      "engine": "G6",
+      "module": "src/theory/guide-tones.ts",
+      "operations": [
+        "transposeSpelledPitchClass",
+        "spelledPitchClassToString"
+      ]
+    }
+  ],
+  "compatibilityEntries": [
+    {
+      "module": "src/theory/continuation.ts",
+      "operations": [
+        "deriveContinuationSuggestions"
+      ],
+      "scope": "legacy-four-event-six-provider-menu"
+    },
+    {
+      "module": "src/theory/chart-analysis.ts",
+      "operations": [
+        "analyzeChartEvent",
+        "deriveChordDetail",
+        "detectChartPhrases"
+      ],
+      "scope": "narrow-chart-display-not-full-H0"
+    }
+  ],
+  "baselineConsumers": [
+    {
+      "module": "src/application/studio-controller.ts",
+      "surface": "web-studio",
+      "operations": [
+        "deriveContinuationSuggestions",
+        "analyzeChartEvent",
+        "deriveChordDetail",
+        "detectChartPhrases"
+      ]
+    },
+    {
+      "module": "src/application/chord-inspector.ts",
+      "surface": "web-studio",
+      "operations": [
+        "analyzeChartEvent"
+      ]
+    },
+    {
+      "module": "ios/TheoryBridgeSource/entry.ts",
+      "surface": "native-continuation",
+      "operations": [
+        "generateContextualContinuations"
+      ]
+    }
+  ],
+  "missingAtBaseline": [
+    "analyzeChordInContext",
+    "enumerateChordScaleOptions"
+  ],
+  "presentButNotStudioAdoptedAtBaseline": [
+    "deriveLiteralFacts"
+  ],
+  "requiredRuntimeEvidence": [
+    "actual-dispatch",
+    "consumed-result",
+    "independent-musical-diff",
+    "source-identity",
+    "versions",
+    "actual-work",
+    "stale-refusal",
+    "resource-cleanup"
+  ],
+  "helperPresenceAddsFeatureCredit": false,
+  "owningEngineProofMayBeReplacedByThisInventory": false,
+  "baselineSurfaceConsumers": [
+    {
+      "module": "src/ui/App.tsx",
+      "selectors": [
+        "readContinuationSuggestions",
+        "readEventAnalysis",
+        "readSectionPhrases",
+        "readChordDetail",
+        "readInspector"
+      ],
+      "applicationOwner": "src/application/studio-controller.ts"
+    },
+    {
+      "module": "src/ui/studio/HarmonyLens.tsx",
+      "consumes": [
+        "StudioHarmonyView.continuation",
+        "StudioHarmonyView.detail"
+      ],
+      "source": "src/ui/App.tsx"
+    },
+    {
+      "module": "src/ui/studio/ChordDetailPanel.tsx",
+      "consumes": [
+        "StudioChordDetailView"
+      ],
+      "source": "src/ui/App.tsx"
+    },
+    {
+      "module": "src/ui/studio/ChordInspector.tsx",
+      "selectors": [
+        "readInspector",
+        "readInspectorDraft",
+        "readInspectorManualDraft"
+      ],
+      "applicationOwner": "src/application/studio-controller.ts"
+    },
+    {
+      "module": "ios/Sources/JazzTheoryBridge.swift",
+      "consumes": [
+        "FrankenJazzTheoryBridge.continuations"
+      ],
+      "source": "ios/TheoryBridgeSource/entry.ts",
+      "sourceRevisionReturnedByEngine": false
+    },
+    {
+      "module": "ios/Sources/JazzStudioStore.swift",
+      "consumes": [
+        "JazzTheoryBridge.continuations",
+        "JazzContinuationOption"
+      ],
+      "retainsLocalStaleOptionGuard": true,
+      "scope": "locally-tagged-revision-is-not-a-bridge-returned-source-binding"
+    },
+    {
+      "module": "ios/Sources/FrankenJazzStudioView.swift",
+      "consumes": [
+        "JazzStudioStore.continuationOptions"
+      ],
+      "source": "ios/Sources/JazzStudioStore.swift"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "schema":"changes.fixtures.semantic-surface-contract.v1",
+  "status":"specified-not-implemented",
+  "publicContract":"src/application/semantic-surface-contract.ts",
+  "contractDocument":"docs/SEMANTIC_SURFACE_CONFORMANCE_CONTRACT.md",
+  "validator":"scripts/validate-semantic-surface-conformance-contract.ts",
+  "staticTest":"tests/static/semantic-surface-conformance-contract.test.ts",
+  "verifier":"scripts/verify-semantic-surface-conformance-evidence.ts",
+  "browserInventory":"tests/e2e/semantic-surface-conformance.spec.ts",
+  "report":"test-results/semantic-surface-conformance-evidence.json",
+  "engines":["H0","H1","G0","G1","G2","G3","G4","G5","G6","G7","G8","G9"],
+  "surfaces":["web-studio","native-continuation"],
+  "nativeParityEngines":["G2"],
+  "nativeWorkbenchNonGoals":["G0","G1","G3","G4","G5","G6","G7","G8","G9"],
+  "nativeSchemas":{"request":"frankenjazz.native-continuation-request.v2","response":"frankenjazz.native-continuation-response.v2","v1CannotClaimExactSource":true},
+  "limits":{"sourceEvents":256,"legacyContextEvents":4,"continuationContextEvents":8,"continuationCandidatesPerProvider":32,"webDisplayedContinuations":16,"nativeDisplayedContinuations":8,"nativeRequestCodeUnits":16384,"requestBytes":4194304,"resultBytes":8388608,"snapshotBytes":8388608,"trackedBytes":67108864,"activeQueries":1,"publicationAttempts":1},
+  "journey":["enter-chart","inspect-literal","inspect-context","preview","edit-during-search","reject-stale","recompute","apply","undo","restart-recovery","download-canonical","download-text","download-midi"],
+  "namedRealAdapters":["production-studio","application-publication","MessageChannel","serialized-transport","persistent-Web-Audio","IndexedDB","localStorage","browser-download","same-playback-plan-MIDI","generated-native-bridge","Apple-JavaScriptCore"],
+  "evidenceAuthorities":{"linuxBridgeReplay":"javascript-source-only","appleRuntime":"existing-DSR-Xcode-lane","humanListening":"explicit-human-observation","genericDiscoveryHarness":"upstream-protocol-only"},
+  "releaseClaims":{"engineComplete":false,"studioAdopted":false,"nativeAppleExecuted":false,"humanListened":false,"aggregatePassed":false,"deploymentApproved":false},
+  "companions":["law-cases.json","limit-cases.json","mutation-controls.json","provenance.json","trace-ledger.json","operation-inventory.json"]
+}

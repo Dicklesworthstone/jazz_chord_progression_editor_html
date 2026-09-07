@@ -1,0 +1,24 @@
+{
+  "schema":"changes.fixtures.semantic-surface-limits.v1",
+  "boundaries":[
+    {"key":"sourceEvents","maximum":256,"below":255,"at":256,"above":257},
+    {"key":"legacyContextEvents","maximum":4,"below":3,"at":4,"above":5},
+    {"key":"continuationContextEvents","maximum":8,"below":7,"at":8,"above":9},
+    {"key":"continuationCandidatesPerProvider","maximum":32,"below":31,"at":32,"above":33},
+    {"key":"webDisplayedContinuations","maximum":16,"below":15,"at":16,"above":17},
+    {"key":"nativeDisplayedContinuations","maximum":8,"below":7,"at":8,"above":9},
+    {"key":"nativeRequestCodeUnits","maximum":16384,"below":16383,"at":16384,"above":16385},
+    {"key":"requestBytes","maximum":4194304,"below":4194303,"at":4194304,"above":4194305},
+    {"key":"resultBytes","maximum":8388608,"below":8388607,"at":8388608,"above":8388609},
+    {"key":"snapshotBytes","maximum":8388608,"below":8388607,"at":8388608,"above":8388609},
+    {"key":"trackedBytes","maximum":67108864,"below":67108863,"at":67108864,"above":67108865},
+    {"key":"activeQueries","maximum":1,"below":0,"at":1,"above":2},
+    {"key":"publicationAttempts","maximum":1,"below":0,"at":1,"above":2}
+  ],
+  "engineCeilings":{"G0":{"sourceEvents":256,"paths":5},"G2":{"contextEvents":8,"perProvider":32,"displayed":16},"G3":{"routeEvents":8,"outgoing":64,"states":50000,"trackedBytes":67108864},"G4":{"slots":16,"perSlot":128,"states":100000},"G5":{"depth":3,"width":8,"nodes":128}},
+  "edgeSemantics":{"legacyContextEvents":"explicit-last-four-window-without-crossing-barriers","nativeRequestCodeUnits":"UTF-16-size-refusal","webDisplayedContinuations":"visible-projection-after-full-bounded-enumeration","nativeDisplayedContinuations":"same-explicit-eight-option-projection-for-parity","activeQueries":"shared-capacity-one-owner","publicationAttempts":"pending-retirement-remains-owned"},
+  "commonOverflow":"typed-refusal-or-explicit-bounded-partial-never-silent-repair",
+  "invalidNumericInputs":[-1,0.5,9007199254740992],
+  "wallTimeMayChangeMusic":false,
+  "physicalHeapLimitClaim":false
+}
