@@ -165,6 +165,43 @@ drafts and document/history before repair, after Insert and after Undo. These
 are UI repairs, so musical transposition laws do not apply; original T0/U1
 parser, limits and atomic-insertion regressions remain required.
 
+### Chart focus specification (2026-09-07 UTC)
+
+One **Focus chart** toggle in the current header becomes a visible **Exit focus**
+control while active. Keyboard activation leaves focus on that same button. The
+view is session-only: no storage read/write, document edit, history entry, new
+shortcut, Fullscreen request or playback command. Exit restores the prior rails
+and Sheet/Edit layout. Normal editor/dialog ownership prevents background
+activation; Escape retains the current dialog behavior and is not repurposed.
+Document actions and other hidden header controls remain available after Exit.
+
+The existing chart and rail DOM remain mounted across the toggle. Raw field text,
+selection and caret remain unchanged; the existing Library/Harmony sheets own
+panel interactions and restore focus to their currently visible trigger. Focus
+exposes those same named sheet buttons on desktop, preserving the short-phone
+transport triggers. Type changes and Standards remain directly reachable.
+The title, selected chord, current playback position, loop and transport remain
+in their existing surfaces. The smaller sticky header keeps Exit reachable while
+reading. Recovery notices remain visible and confirmations keep active focus.
+
+Before an explicit toggle, capture the chart scrollport's first visible measure
+and its relative vertical offset. After layout, compensate for that same node's
+movement and clamp to the new scroll range. A chart already at the top stays at
+the top; if the content now fits, native clamping to zero is correct. Preserve
+horizontal/outer-frame scroll within their new bounds. Ordinary rerenders do not
+move focus, caret or scroll. The scan is bounded by the existing rendered chart;
+no musical algorithm or timing policy changes.
+
+Independent literal arithmetic and workflow obligations are in
+`tests/fixtures/chart-focus.ts`. The proof uses the real shared shell at desktop,
+320x568 and390x844 touch over file and loopback in all three engines, plus200%
+layout, reduced motion, unavailable storage and existing recovery regressions.
+Check actual chart IDs/history/drafts, native playback ownership and Stop,
+visible hit targets, focus return and absence of duplicate IDs/listeners; retain
+source/artifact hashes and native request/error diagnostics. UI anchor arithmetic
+has boundary, boundary+1 and fractional-offset cases; musical transposition laws
+do not apply to this presentation-only control. Human-only acceptance is separate.
+
 Six new workflow packages contain 19 leaf tasks, including the separate rehearsal key-sequence leaf. The original ideation pass left them open and unassigned; implementation status now follows the checklist and live Beads. Existing feature work was refined through 13 comments on seven ownership groups, covering nine finalist ideas; the ideation pass did not rewrite existing titles, descriptions, priorities, statuses or assignees.
 
 - [ ] **Transpose a chord, range, section or chart with an audible preview** — `jcpe-transpose-workflow-nazh`
@@ -184,12 +221,12 @@ Six new workflow packages contain 19 leaf tasks, including the separate rehearsa
   - [ ] Review specification and independent fixtures — `jcpe-exact-share-1ric.1`
   - [ ] Implement the production workflow — `jcpe-exact-share-1ric.2`
   - [ ] Complete independent real-adapter proof — `jcpe-exact-share-1ric.3`
-- [ ] **Repair a chart-entry error where it occurs without retyping the draft** — `jcpe-entry-repair-0h1g`
+- [x] **Repair a chart-entry error where it occurs without retyping the draft** — `jcpe-entry-repair-0h1g`
   - [x] Review specification and independent fixtures — `jcpe-entry-repair-0h1g.1` (solo packet review; implementation proof remains separate)
-  - [ ] Implement the production workflow — `jcpe-entry-repair-0h1g.2`
-  - [ ] Complete independent real-adapter proof — `jcpe-entry-repair-0h1g.3`
+  - [x] Implement the production workflow — `jcpe-entry-repair-0h1g.2` (63-case build proof; verification follows)
+  - [x] Complete independent real-adapter proof — `jcpe-entry-repair-0h1g.3` (69 scenarios plus six profile rechecks; epic closed)
 - [ ] **A reversible chart-focus view with reachable editing and transport** — `jcpe-chart-focus-7iz1`
-  - [ ] Review specification and independent fixtures — `jcpe-chart-focus-7iz1.1`
+  - [x] Review specification and independent fixtures — `jcpe-chart-focus-7iz1.1` (solo packet review; production proof remains separate)
   - [ ] Implement the production workflow — `jcpe-chart-focus-7iz1.2`
   - [ ] Complete independent real-adapter proof — `jcpe-chart-focus-7iz1.3`
 
