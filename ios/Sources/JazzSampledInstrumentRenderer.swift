@@ -30,12 +30,94 @@ struct JazzSampledInstrumentMetadata: Equatable, Sendable {
     var slices: [JazzSampledSlice]
 }
 
+struct JazzSampledCacheSnapshot: Equatable, Sendable {
+    var entryCount: Int
+    var hitCount: Int
+    var missCount: Int
+    var evictionCount: Int
+}
+
 /// Exact native port of `src/audio/sampled-renderer.ts` for the two sampled
 /// instruments the original studio deliberately ships instead of its rejected
 /// physical replacements. It loads the byte-identical, SHA-pinned CC0 PCM
 /// resources and performs the same nearest-key selection, tuning compensation,
 /// Catmull-Rom interpolation, and 64-frame truncation guard.
 enum JazzSampledInstrumentRenderer {
+    private struct RenderCacheKey: Hashable, Sendable {
+        var renderedMIDIPitch: Int
+        var sampleRateBits: UInt64
+        var ceilingFrames: Int
+    }
+
+    /// Arrays are immutable after insertion and Swift arrays use copy-on-write,
+    /// so the lock only protects the dictionaries, LRU order, and counters.
+    private final class RenderCache: @unchecked Sendable {
+        private struct State {
+            var values: [RenderCacheKey: [Float]] = [:]
+            var recency: [RenderCacheKey] = []
+            var hitCount = 0
+            var missCount = 0
+            var evictionCount = 0
+        }
+
+        private let lock = NSLock()
+        private var states: [InstrumentTone: State] = [:]
+
+        func value(for key: RenderCacheKey, tone: InstrumentTone) -> [Float]? {
+            lock.lock()
+            defer { lock.unlock() }
+            var state = states[tone] ?? State()
+            guard let value = state.values[key] else {
+                state.missCount += 1
+                states[tone] = state
+                return nil
+            }
+            state.hitCount += 1
+            state.recency.removeAll { $0 == key }
+            state.recency.append(key)
+            states[tone] = state
+            return value
+        }
+
+        func insert(
+            _ value: [Float],
+            for key: RenderCacheKey,
+            tone: InstrumentTone,
+            limit: Int
+        ) {
+            lock.lock()
+            defer { lock.unlock() }
+            var state = states[tone] ?? State()
+            state.values[key] = value
+            state.recency.removeAll { $0 == key }
+            state.recency.append(key)
+            while state.recency.count > limit, let oldest = state.recency.first {
+                state.recency.removeFirst()
+                state.values.removeValue(forKey: oldest)
+                state.evictionCount += 1
+            }
+            states[tone] = state
+        }
+
+        func snapshot(for tone: InstrumentTone) -> JazzSampledCacheSnapshot {
+            lock.lock()
+            defer { lock.unlock() }
+            let state = states[tone] ?? State()
+            return JazzSampledCacheSnapshot(
+                entryCount: state.values.count,
+                hitCount: state.hitCount,
+                missCount: state.missCount,
+                evictionCount: state.evictionCount
+            )
+        }
+
+        func reset() {
+            lock.lock()
+            states.removeAll(keepingCapacity: false)
+            lock.unlock()
+        }
+    }
+
     private struct LoadedInstrument: Sendable {
         var metadata: JazzSampledInstrumentMetadata
         var samples: [Int16]
@@ -108,6 +190,7 @@ enum JazzSampledInstrumentRenderer {
         metadata: concertVibesMetadata,
         resource: "vibraphone-samples"
     )
+    private static let renderCache = RenderCache()
 
     static func metadata(for tone: InstrumentTone) -> JazzSampledInstrumentMetadata? {
         switch tone {
@@ -148,6 +231,21 @@ enum JazzSampledInstrumentRenderer {
         let requestedMaximum = min(maximumSeconds ?? metadata.maximumRenderSeconds, metadata.maximumRenderSeconds)
         let ceilingFrames = min(naturalFrames, Int(floor(requestedMaximum * sampleRate)))
         let frameCount = max(1, ceilingFrames)
+        let cacheKey = RenderCacheKey(
+            renderedMIDIPitch: renderedMidi,
+            sampleRateBits: sampleRate.bitPattern,
+            ceilingFrames: frameCount
+        )
+        if let cached = renderCache.value(for: cacheKey, tone: tone) {
+            return JazzSampledRender(
+                algorithmID: metadata.algorithmID,
+                requestedMIDIPitch: midi,
+                renderedMIDIPitch: renderedMidi,
+                sourceMIDIPitch: slice.midiPitch,
+                samples: cached,
+                sampleRate: sampleRate
+            )
+        }
         let base = slice.byteOffset / 2
         guard base >= 0, base + slice.frameCount <= instrument.samples.count else { return nil }
 
@@ -175,6 +273,13 @@ enum JazzSampledInstrumentRenderer {
             }
         }
 
+        renderCache.insert(
+            output,
+            for: cacheKey,
+            tone: tone,
+            limit: metadata.bufferCacheLimit
+        )
+
         return JazzSampledRender(
             algorithmID: metadata.algorithmID,
             requestedMIDIPitch: midi,
@@ -183,6 +288,14 @@ enum JazzSampledInstrumentRenderer {
             samples: output,
             sampleRate: sampleRate
         )
+    }
+
+    static func cacheSnapshot(for tone: InstrumentTone) -> JazzSampledCacheSnapshot {
+        renderCache.snapshot(for: tone)
+    }
+
+    static func resetCacheForTesting() {
+        renderCache.reset()
     }
 
     private static func loadedInstrument(for tone: InstrumentTone) -> LoadedInstrument? {

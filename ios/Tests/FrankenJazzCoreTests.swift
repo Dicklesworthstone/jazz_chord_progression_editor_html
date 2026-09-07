@@ -182,6 +182,65 @@ final class FrankenJazzCoreTests: XCTestCase {
         }
     }
 
+    func testSampledRendererCacheIsPerInstrumentLRUAndBoundedWithoutAudioOutput() throws {
+        JazzSampledInstrumentRenderer.resetCacheForTesting()
+
+        let first = try XCTUnwrap(
+            JazzSampledInstrumentRenderer.render(
+                tone: .uprightBass,
+                midi: 60,
+                velocity: 96,
+                sampleRate: 8_000,
+                maximumSeconds: 0.01
+            )
+        )
+        let repeated = try XCTUnwrap(
+            JazzSampledInstrumentRenderer.render(
+                tone: .uprightBass,
+                midi: 60,
+                velocity: 24,
+                sampleRate: 8_000,
+                maximumSeconds: 0.01
+            )
+        )
+        XCTAssertEqual(first.samples, repeated.samples, "Velocity belongs at voice gain and must share PCM.")
+        XCTAssertEqual(
+            JazzSampledInstrumentRenderer.cacheSnapshot(for: .uprightBass),
+            JazzSampledCacheSnapshot(entryCount: 1, hitCount: 1, missCount: 1, evictionCount: 0)
+        )
+
+        _ = try XCTUnwrap(
+            JazzSampledInstrumentRenderer.render(
+                tone: .concertVibes,
+                midi: 60,
+                velocity: 96,
+                sampleRate: 8_000,
+                maximumSeconds: 0.01
+            )
+        )
+        for frameCeiling in 81...144 {
+            _ = try XCTUnwrap(
+                JazzSampledInstrumentRenderer.render(
+                    tone: .uprightBass,
+                    midi: 60,
+                    velocity: 96,
+                    sampleRate: 8_000,
+                    maximumSeconds: Double(frameCeiling) / 8_000
+                )
+            )
+        }
+
+        XCTAssertEqual(
+            JazzSampledInstrumentRenderer.cacheSnapshot(for: .uprightBass),
+            JazzSampledCacheSnapshot(entryCount: 64, hitCount: 1, missCount: 65, evictionCount: 1)
+        )
+        XCTAssertEqual(
+            JazzSampledInstrumentRenderer.cacheSnapshot(for: .concertVibes),
+            JazzSampledCacheSnapshot(entryCount: 1, hitCount: 0, missCount: 1, evictionCount: 0),
+            "Pressure in one recipe must not evict another instrument's PCM."
+        )
+    }
+
     func testMIDIExportUsesTheSelectedInstrumentProgram() throws {
         let parsed = try JazzTheory.parseChart("| Cmaj7 |")
         var chart = JazzChart(title: "Programs", measures: parsed.measures)
