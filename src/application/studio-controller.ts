@@ -2283,11 +2283,13 @@ function makeStudioComposition(
         playback: Object.freeze({ ...playback, instrumentId: made.value }),
       }),
     });
+    const previousRevision = state.revision;
     const result = apply("set-instrument", (current) =>
       runDocumentCommand({ command, dependencies, state: current }),
     );
     /* jcpe-pd7g: a committed instrument reaches a live run immediately. */
     if (result.ok) {
+      carryLiveProjectionAcrossMixEdit(previousRevision);
       const run = activeRun;
       const status = state.transport.status;
       const liveRide =
@@ -2335,13 +2337,17 @@ function makeStudioComposition(
         playback: Object.freeze({ ...playback, masterVolume: volume }),
       }),
     });
+    const previousRevision = state.revision;
     const result = apply("set-master-volume", (current) =>
       runDocumentCommand({ command, dependencies, state: current }),
     );
     /* jcpe-v2r-live-mix-btb4: a committed volume also reaches a live engine
      * through the ride; before this, only the first initialize ever read
      * the document mix. A muted session keeps its silence. */
-    if (result.ok && !sessionMuted) rideLiveMix(volume);
+    if (result.ok) {
+      carryLiveProjectionAcrossMixEdit(previousRevision);
+      if (!sessionMuted) rideLiveMix(volume);
+    }
     return result;
   };
 
@@ -4646,9 +4652,21 @@ function makeStudioComposition(
   let activeRun: Readonly<{
     documentId: AppState["document"]["id"];
     planRevision: number;
+    viewRevision: number;
     totalBeats: BeatPosition;
     runToken: number;
   }> | null = null;
+
+  /** Only these two controller-owned setting commits preserve the bound
+   * plan. An intervening musical/history/replacement edit breaks the chain;
+   * a later instrument or volume commit cannot make that stale plan current. */
+  const carryLiveProjectionAcrossMixEdit = (previousRevision: number): void => {
+    const run = activeRun;
+    if (run !== null && run.documentId === state.document.id &&
+      run.viewRevision === previousRevision && state.revision === previousRevision + 1) {
+      activeRun = Object.freeze({ ...run, viewRevision: state.revision });
+    }
+  };
 
   const clearActiveRunIfMatches = (
     documentId: AppState["document"]["id"],
@@ -5085,7 +5103,7 @@ function makeStudioComposition(
         status === "playing" ? "next-unstarted-note" : "next-play";
       notify();
     });
-    activeRun = Object.freeze({ ...run, planRevision: state.revision });
+    activeRun = Object.freeze({ ...run, planRevision: state.revision, viewRevision: state.revision });
   };
 
   /**
@@ -5444,6 +5462,7 @@ function makeStudioComposition(
     activeRun = Object.freeze({
       documentId: binding.documentId,
       planRevision: binding.planRevision,
+      viewRevision: binding.planRevision,
       totalBeats: compiled.plan.totalBeats,
       runToken: thisRenderAheadRun,
     });
@@ -6733,9 +6752,23 @@ function makeStudioComposition(
   if (audioPort !== null) {
     audioPort.subscribe((notification) => {
       const sequenceBefore = state.transport.notificationSequence;
+      const service = audioPort.inspect().transport;
+      const serviceStatus = SETTLED_TRANSPORT_STATUS[service.state];
+      const run = activeRun;
+      const currentSource = service.documentId === state.document.id &&
+        service.planRevision !== null && serviceStatus !== "unavailable" &&
+        (service.planRevision === state.revision ||
+          (run !== null && run.documentId === service.documentId &&
+            run.planRevision === service.planRevision && run.viewRevision === state.revision))
+        ? Object.freeze({ documentId: service.documentId, planRevision: service.planRevision,
+          viewRevision: state.revision, commandRequestId: service.lastCommandRequestId,
+          generation: service.generation, notificationSequence: service.lastNotificationSequence,
+          status: serviceStatus })
+        : undefined;
       apply("transport-notification", (current) =>
         acceptTransportNotification({
           state: current,
+          ...(currentSource === undefined ? {} : { currentSource }),
           notification: Object.freeze({
             status: notification.status,
             generation: notification.generation,

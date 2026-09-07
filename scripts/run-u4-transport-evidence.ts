@@ -188,6 +188,25 @@ async function buildHarness(
       `U4_TRANSPORT_HARNESS_MISSING: ${repoRelative(HARNESS_ENTRY)}`,
     );
   }
+  // Use the product's exact stylesheet order. The unstyled harness let the
+  // analyser canvas's intrinsic dimensions grow on every high-DPI frame.
+  const indexPath = resolve(ROOT, "src/index.html");
+  const indexSource = await Bun.file(indexPath).text();
+  const capturedStyleInputs = new Map<string, string>([[indexPath, indexSource]]);
+  const styles: string[] = [];
+  for (const match of indexSource.matchAll(
+    /<link\s+rel="stylesheet"\s+href="(\.\/styles\/[A-Za-z0-9-]+\.css)"\s*>/gu,
+  )) {
+    const href = match[1];
+    if (href === undefined) continue;
+    const path = resolve(ROOT, "src", href);
+    const source = await Bun.file(path).text();
+    capturedStyleInputs.set(path, source);
+    styles.push(source);
+  }
+  if (styles.length === 0) {
+    throw new Error("U4_TRANSPORT_STYLES_MISSING");
+  }
   const result = await Bun.build({
     entrypoints: [HARNESS_ENTRY],
     target: "browser",
@@ -241,6 +260,9 @@ async function buildHarness(
   for (const path of EVIDENCE_DRIVER_INPUTS) {
     addRole(path, "evidence-driver");
   }
+  for (const path of capturedStyleInputs.keys()) {
+    addRole(path, "evidence-driver");
+  }
   const components: InputComponent[] = [];
   const sortedInputPaths = [...inputRoles.keys()].sort((left, right) => {
     const leftPath = repoRelative(left);
@@ -254,6 +276,15 @@ async function buildHarness(
       );
     }
     const bytes = new Uint8Array(await Bun.file(absolutePath).arrayBuffer());
+    const capturedStyleInput = capturedStyleInputs.get(absolutePath);
+    if (
+      capturedStyleInput !== undefined &&
+      new TextDecoder().decode(bytes) !== capturedStyleInput
+    ) {
+      throw new Error(
+        `U4_TRANSPORT_INPUT_CHANGED_DURING_BUNDLE: ${repoRelative(absolutePath)}`,
+      );
+    }
     const reportedBytes = reportedBundleBytes.get(absolutePath);
     if (reportedBytes !== undefined && bytes.byteLength !== reportedBytes) {
       throw new Error(
@@ -278,7 +309,10 @@ async function buildHarness(
     digest: await sha256Hex(stableJson(components)),
     components: Object.freeze(components),
   });
-  const bundleBytes = new Uint8Array(await output.arrayBuffer());
+  // Keep the styles inside the same byte-bound, offline bundle. This does not
+  // change the shared audible harness or permit an unrecorded asset request.
+  const styleScript = `(()=>{const style=document.createElement("style");style.textContent=${JSON.stringify(styles.join("\n"))};document.head.append(style);})();\n`;
+  const bundleBytes = new TextEncoder().encode(styleScript + await output.text());
   const bundle: BundleEvidence = Object.freeze({
     path: repoRelative(paths.harnessPath),
     bytes: bundleBytes.byteLength,

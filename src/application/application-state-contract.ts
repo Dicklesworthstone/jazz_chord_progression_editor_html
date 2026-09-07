@@ -873,6 +873,19 @@ export type TransportNotification = Readonly<{
 export type AcceptTransportNotificationRequest = Readonly<{
   state: AppState;
   notification: TransportNotification;
+  /** Live-source authority captured synchronously from the owned service at
+   * delivery. Omission preserves the original A0 stale law. viewRevision is
+   * the controller's projection authorization; planRevision remains X1's
+   * actual bound source revision. */
+  currentSource?: Readonly<{
+    documentId: DocumentId;
+    planRevision: AppRevision;
+    viewRevision: AppRevision;
+    commandRequestId: TransportRequestId;
+    generation: TransportGeneration;
+    notificationSequence: ApplicationSequence;
+    status: "ready" | "playing" | "paused" | "failed";
+  }>;
 }>;
 
 export type SelectedEventsResult = Readonly<{

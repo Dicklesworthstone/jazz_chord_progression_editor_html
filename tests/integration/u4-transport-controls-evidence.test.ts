@@ -36,6 +36,8 @@ const HARNESS_SHA256_ENV = "JCPE_U4_EVIDENCE_HARNESS_SHA256";
 const INPUT_DIGEST_ENV = "JCPE_U4_EVIDENCE_INPUT_DIGEST";
 const HARNESS_DOCUMENT_URL = "https://u4-transport.evidence.localhost/";
 const STATUS_POLL_TIMEOUT_MS = 15_000;
+const USER_AGENT = "OpenAI File Downloader, XaiImageApiFetch/1.0";
+test.use({ userAgent: USER_AGENT });
 
 const CHART_TEXT = "| Cmaj7 | Fmaj7 | Dm7 G7 | Cmaj7 | Em7 A7 | Dm7 G7 | Cmaj7 | Cmaj7 |";
 
@@ -73,6 +75,7 @@ type Diagnostics = {
   pageErrors: string[];
   blockedRequests: string[];
   allowedDocuments: number;
+  requests: { method: string; url: string; userAgent: string | undefined; allowed: boolean }[];
 };
 
 async function installDiagnostics(
@@ -93,8 +96,11 @@ async function installDiagnostics(
       diagnostics.allowedDocuments === 0 &&
       request.isNavigationRequest() &&
       request.method() === "GET" &&
+      request.headers()["user-agent"] === USER_AGENT &&
       request.url() === HARNESS_DOCUMENT_URL &&
       request.frame() === page.mainFrame();
+    diagnostics.requests.push({ method: request.method(), url: request.url(),
+      userAgent: request.headers()["user-agent"], allowed });
     if (allowed) {
       diagnostics.allowedDocuments += 1;
       await route.fulfill({
@@ -208,6 +214,7 @@ test("records the complete U4 transport-controls browser evidence", async ({
     pageErrors: [],
     blockedRequests: [],
     allowedDocuments: 0,
+    requests: [],
   };
   await installDiagnostics(
     context,
@@ -262,6 +269,8 @@ test("records the complete U4 transport-controls browser evidence", async ({
    * the state-machine truth U4 fixed. */
   await page.click("#studio-transport-play");
   await waitForTransportStatus(page, "playing");
+  // Global Space belongs to the workspace, not a focused transport button.
+  await page.locator("#workspace").focus();
   await page.keyboard.press("Space");
   await waitForTransportStatus(page, "paused");
   recordStep("space-pause", "paused via Space");
@@ -270,6 +279,7 @@ test("records the complete U4 transport-controls browser evidence", async ({
   recordStep("resume-via-play", "playing after paused Play");
 
   /* 5. Stop while paused returns the playhead to the run start. */
+  await page.locator("#workspace").focus();
   await page.keyboard.press("Space");
   await waitForTransportStatus(page, "paused");
   await page.click("#studio-transport-stop");
@@ -321,6 +331,14 @@ test("records the complete U4 transport-controls browser evidence", async ({
   );
   recordStep("click-toggles-off", "metronome released");
 
+  /* jcpe-7tgc: expectation-less commands must not strand a later genuine
+   * interruption. The earlier interruption is the untouched success twin. */
+  await suspendAudioContext(page);
+  await waitForBadge(page, "Interrupted");
+  recordStep("interruption-after-click-toggles", "actual context suspension reaches the badge");
+  await page.click("#studio-transport-play");
+  await waitForTransportStatus(page, "playing");
+
   /* 9. Instrument change while playing publishes the boundary notice. */
   await page.selectOption("#studio-transport-instrument", "upright-bass");
   await expect(
@@ -333,6 +351,12 @@ test("records the complete U4 transport-controls browser evidence", async ({
     timeout: 30_000,
   });
   recordStep("instrument-boundary-playing", "transient statement shown");
+  await suspendAudioContext(page);
+  await waitForBadge(page, "Interrupted");
+  await expect(page.locator("[data-testid='transport-boundary-notice']")).toHaveCount(0);
+  recordStep("interruption-after-instrument", "older bound plan remains observable after the setting commit");
+  await page.click("#studio-transport-play");
+  await waitForTransportStatus(page, "playing");
   await page.click("#studio-transport-pause");
   await waitForTransportStatus(page, "paused");
   await expect(
@@ -354,15 +378,39 @@ test("records the complete U4 transport-controls browser evidence", async ({
   await page.click("#studio-transport-stop");
   await waitForTransportStatus(page, "ready");
 
+  // A real seek to the end exhausts X1's plan; no synthetic ready receipt.
+  await page.click("#studio-transport-play");
+  await waitForTransportStatus(page, "playing");
+  await page.locator("#studio-transport-scrub").focus();
+  await page.keyboard.press("End");
+  await waitForTransportStatus(page, "ready");
+  await expect(page.locator("#studio-transport-stop")).toBeDisabled();
+  recordStep("natural-end-after-seek", "actual plan exhaustion clears Playing without Stop");
+
   /* Final bookkeeping: zero nonreleasing voices, clean diagnostics. */
   const finalInspection = await readInspection(page);
   expect(finalInspection?.nonreleasingVoiceCount).toBe(0);
   expect(finalInspection?.transportState).toBe("ready");
+  const canvases = await page.locator(".studio-transport canvas").evaluateAll(
+    (elements) => elements.map((element) => {
+      if (!(element instanceof HTMLCanvasElement)) throw new Error("Expected canvas");
+      return { className: element.className, width: element.width, height: element.height,
+        clientWidth: element.clientWidth, clientHeight: element.clientHeight };
+    }),
+  );
+  expect(canvases.length).toBeGreaterThan(0);
+  for (const canvas of canvases) {
+    expect(canvas.clientWidth).toBeGreaterThan(0);
+    expect(canvas.clientHeight).toBeGreaterThan(0);
+    expect(canvas.width).toBeLessThan(1024);
+    expect(canvas.height).toBeLessThan(1024);
+  }
   const report = await readReport(page);
   const consoleErrors = diagnostics.console.filter(
     (entry) => entry.type === "error",
   );
   expect(consoleErrors).toEqual([]);
+  expect(diagnostics.console.filter((entry) => entry.type === "warning")).toEqual([]);
   expect(diagnostics.pageErrors).toEqual([]);
   expect(diagnostics.allowedDocuments).toBe(1);
   expect(diagnostics.blockedRequests).toEqual([]);
@@ -375,6 +423,8 @@ test("records the complete U4 transport-controls browser evidence", async ({
     browser: {
       name: browser.browserType().name(),
       version: browser.version(),
+      userAgent: USER_AGENT,
+      viewport: page.viewportSize(),
     },
     harnessSha256: bundleSha,
     inputDigest,
@@ -385,9 +435,14 @@ test("records the complete U4 transport-controls browser evidence", async ({
       pageErrorCount: diagnostics.pageErrors.length,
       blockedRequestCount: diagnostics.blockedRequests.length,
       allowedDocumentCount: diagnostics.allowedDocuments,
+      consoleMessages: diagnostics.console,
+      pageErrors: diagnostics.pageErrors,
+      blockedRequests: diagnostics.blockedRequests,
+      requests: diagnostics.requests,
     },
     finalTransportState: finalInspection?.transportState ?? null,
     nonreleasingVoiceCount: finalInspection?.nonreleasingVoiceCount ?? null,
+    canvases,
     journal: report.journal,
     startupOk: report.startupOk,
   };
@@ -396,4 +451,5 @@ test("records the complete U4 transport-controls browser evidence", async ({
     `${JSON.stringify(evidence, null, 2)}\n`,
     { encoding: "utf8" },
   );
+  await page.screenshot({ path: resolve(runDirectory, `${testInfo.project.name}.png`), fullPage: true });
 });
