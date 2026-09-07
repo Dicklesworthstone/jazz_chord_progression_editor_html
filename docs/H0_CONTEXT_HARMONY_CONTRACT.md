@@ -2,6 +2,8 @@
 
 Status: reviewed pre-production specification
 
+Bead: `jcpe-milestone-musical-intelligence-qqy.2.1`
+
 Package: H0
 
 Public contract schemas: `changes.theory.harmony-analysis-contract.v1` and
