@@ -4,7 +4,21 @@ Consumer: the user and Codex executing the 2026-09-04 request to implement the r
 
 ## Current order
 
-- [ ] Complete all fifteen September ideas requested by the owner; full ownership/dependencies remain in `PRODUCT_IDEAS_2026_09.md` and Beads. Entry Repair, Focus and Exact Sharing are complete (3/15). Continue with ready inspector verification while preserving existing engine owners and prerequisites.
+- [ ] Complete all fifteen September ideas requested by the owner; full ownership/dependencies remain in `PRODUCT_IDEAS_2026_09.md` and Beads. Entry Repair, Focus and Exact Sharing are complete (3/15). Continue with My Charts after the completed U5 prerequisite. U2 technical checks pass; named human observations remain open/unassigned. Preserve existing engine owners and prerequisites.
+- [ ] My Charts (`jcpe-my-charts-zt9z`): explicit local collection and portable backup; specification complete, build active, no runtime completion claim.
+  - [x] Read parent/spec/build context and F1/F2/F3/A0/E0/U5 persistence/publication contracts; distinguish record IDs, musical IDs, recovery and file exports.
+  - [x] Specify atomic two-store publication, immutable payloads, exact manifest CAS, cross-tab/ABA refusal, quota/denied/corrupt behavior and limits in `MY_CHARTS.md`.
+  - [x] Specify detached A0 rename, complete F1 duplicate remap, explicit Keep/Replace/Remove and existing stop-and-replace Open confirmation.
+  - [x] Author independent transaction/restore/identity/boundary/negative/workflow cases; preserve existing manually authored exact-note specimen.
+  - [x] Run specification consistency tests and owned types/lint; close specification with exact commands/results, then claim build. Packet3/0,58assertions; tests-project typecheck and focused ESLint exit0. These are specification checks, not runtime proof.
+  - [ ] Implement bounded backup/document validation, collection merge/conflict planning and detached title/duplicate operations.
+  - [ ] Implement native IndexedDB snapshot reads and atomic CAS writes; prove two-tab conflict, abort, quota and corruption preservation.
+  - [ ] Implement application-owned current/record/preview identity, cancellation, prepared downloads and existing U5 Open delegation.
+  - [ ] Add accessible My Charts list/search/actions/restore conflict preview and current JSON escape to the studio.
+  - [ ] Exercise focused production unit/integration fixtures; retain failures and real source-fault sensitivity.
+  - [ ] Build frozen inputs; run actual file/HTTP three-engine desktop/phone storage/download/audio matrix without racing Playwright.
+  - [ ] Inspect exact documents/history, storage generations/records, requests/errors, resources and accessibility reports; run types/lint/static/reproducibility/public standalone gates.
+  - [ ] Close build only on its named proof, claim independent verification, execute fresh-context backup/restore and adversarial mutation proofs, then close verification/epic if green.
 - [x] Entry repair (`jcpe-entry-repair-0h1g`): all three phases and epic closed. Final69 scenarios pass; six focused reduced-motion profile rechecks also pass. This is one of fifteen ideas complete, not an aggregate or deployment claim.
   - [x] Freeze UTF-16 source selection, stale refusal, IME and Escape behavior with independent fixtures (six literal spans, six refusal ranges, twelve interaction obligations; specification-only test 1/0).
   - [x] Share diagnostic prose; retain multiline drafts; add exact token selection and bounded Next error on both entry surfaces.

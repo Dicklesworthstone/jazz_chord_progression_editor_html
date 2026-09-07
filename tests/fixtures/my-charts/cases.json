@@ -1,0 +1,43 @@
+{
+  "schema": "changes.my-charts.fixture.v1",
+  "authorship": "Manually specified before My Charts production code; arithmetic and state transitions are independent expectations.",
+  "bounds": [
+    { "kind": "records", "value": 128, "accepted": true },
+    { "kind": "records", "value": 129, "accepted": false },
+    { "kind": "documentBytes", "value": 2097152, "accepted": true },
+    { "kind": "documentBytes", "value": 2097153, "accepted": false },
+    { "kind": "collectionBytes", "value": 33554432, "accepted": true },
+    { "kind": "collectionBytes", "value": 33554433, "accepted": false },
+    { "kind": "backupBytes", "value": 67239936, "accepted": true },
+    { "kind": "backupBytes", "value": 67239937, "accepted": false },
+    { "kind": "indexBytes", "value": 131072, "accepted": true },
+    { "kind": "indexBytes", "value": 131073, "accepted": false }
+  ],
+  "transactions": [
+    { "id": "empty-first-keep", "expectedGeneration": 0, "actualGeneration": 0, "before": [], "proposed": ["A"], "fault": null, "result": "committed", "after": ["A"], "generation": 1 },
+    { "id": "preserve-on-quota", "expectedGeneration": 7, "actualGeneration": 7, "before": ["A", "B"], "proposed": ["A", "C"], "fault": "quota", "result": "quota", "after": ["A", "B"], "generation": 7 },
+    { "id": "preserve-on-denial", "expectedGeneration": 7, "actualGeneration": 7, "before": ["A", "B"], "proposed": ["A", "C"], "fault": "denied", "result": "denied", "after": ["A", "B"], "generation": 7 },
+    { "id": "abort-after-payload", "expectedGeneration": 7, "actualGeneration": 7, "before": ["A", "B"], "proposed": ["A", "C", "D"], "fault": "abort-after-payload", "result": "aborted", "after": ["A", "B"], "generation": 7 },
+    { "id": "abort-after-manifest", "expectedGeneration": 7, "actualGeneration": 7, "before": ["A", "B"], "proposed": ["A", "C", "D"], "fault": "abort-after-manifest", "result": "aborted", "after": ["A", "B"], "generation": 7 },
+    { "id": "tab-first-wins", "expectedGeneration": 7, "actualGeneration": 7, "before": ["A"], "proposed": ["A", "B"], "fault": null, "result": "committed", "after": ["A", "B"], "generation": 8 },
+    { "id": "tab-stale-loses", "expectedGeneration": 7, "actualGeneration": 8, "before": ["A", "B"], "proposed": ["A", "C"], "fault": null, "result": "conflict", "after": ["A", "B"], "generation": 8 },
+    { "id": "remove-all-keeps-generation", "expectedGeneration": 8, "actualGeneration": 8, "before": ["A", "B"], "proposed": [], "fault": null, "result": "committed", "after": [], "generation": 9 },
+    { "id": "empty-aba-loses", "expectedGeneration": 0, "actualGeneration": 9, "before": [], "proposed": ["C"], "fault": null, "result": "conflict", "after": [], "generation": 9 },
+    { "id": "generation-exhausted", "expectedGeneration": 9007199254740991, "actualGeneration": 9007199254740991, "before": ["A"], "proposed": ["B"], "fault": null, "result": "generation-exhausted", "after": ["A"], "generation": 9007199254740991 }
+  ],
+  "restore": [
+    { "id": "fresh", "local": [], "incoming": [["chart_a", "doc-A", "Old title"], ["chart_b", "doc-B", "Same name"]], "conflicts": [], "additions": ["chart_a", "chart_b"], "identical": [] },
+    { "id": "identical", "local": [["chart_a", "doc-A", "Old title"]], "incoming": [["chart_a", "doc-A", "Old title"]], "conflicts": [], "additions": [], "identical": ["chart_a"] },
+    { "id": "same-record-different-bytes", "local": [["chart_a", "doc-A", "Old title"]], "incoming": [["chart_a", "doc-A", "Renamed"]], "conflicts": ["chart_a"], "additions": [], "identical": [] },
+    { "id": "duplicate-title-and-musical-id", "local": [["chart_a", "doc-A", "Same name"]], "incoming": [["chart_b", "doc-A", "Same name"]], "conflicts": [], "additions": ["chart_b"], "identical": [] },
+    { "id": "union-before-cap", "local": [["chart_a", "doc-A", "A"], ["chart_b", "doc-B", "B"]], "incoming": [["chart_b", "doc-C", "B changed"], ["chart_c", "doc-D", "C"]], "conflicts": ["chart_b"], "additions": ["chart_c"], "identical": [] }
+  ],
+  "readRefusals": ["unknown-index-schema", "duplicate-index-record-id", "invalid-payload-key", "missing-record", "corrupt-record", "orphan-without-index", "unknown-backup-field", "unknown-inner-document-field", "future-backup-schema", "future-document-schema", "escaped-duplicate-json-key", "duplicate-backup-record-id", "invalid-utf8", "bom", "nesting-33", "false-small-file-size", "union-129", "aggregate-33554433"],
+  "identity": {
+    "source": ["share-document-exact", "share-section-a", "share-measure-a", "share-event-manual", "share-event-frozen", "share-section-b", "share-measure-b"],
+    "duplicate": ["copy-document-1", "copy-section-2", "copy-measure-3", "copy-event-4", "copy-event-5", "copy-section-6", "copy-measure-7"],
+    "unchangedNotes": [[64, 49, 49, 49], [59, 64, 67, 72]],
+    "unchangedDurations": [{ "numerator": 5, "denominator": 3 }, { "numerator": 7, "denominator": 3 }]
+  },
+  "workflow": ["keep-adds-without-remap", "explicit-replace-confirms-both-titles", "stale-live-revision-refuses", "rename-uses-detached-a0", "rename-kept-only", "duplicate-remaps-all-seven-ids", "remove-current-copy-leaves-live-chart", "open-stages-before-confirmation", "open-stops-real-audio-before-publication", "open-one-undo", "cancel-preview-preserves-storage", "owner-retirement-rejects-late-completion", "one-operation-pending", "backup-prepared-before-gesture", "backup-download-no-export-marker", "chart-download-no-export-marker", "native-object-url-retired", "storage-denied-current-export-available", "keyboard-phone-focus-restored"]
+}
