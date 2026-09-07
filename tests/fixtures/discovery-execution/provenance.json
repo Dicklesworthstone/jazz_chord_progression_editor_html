@@ -1,0 +1,12 @@
+{
+  "schema":"changes.fixtures.discovery-execution-provenance.v1",
+  "records":[
+    {"id":"DE-PLAN","source":"docs/REBUILD_PLAN.md sections11.5,11.9,12.5,14; docs/ARCHITECTURE.md boundaries","authority":"accepted-project-contract","productionOutputUsed":false},
+    {"id":"DE-ARITHMETIC","source":"Original finite FIFO graph, exact rational arithmetic and ordered string-array examples, authored before discovery execution production code","authority":"independent-definition-derived","productionOutputUsed":false},
+    {"id":"DE-LIMITS","source":"G0/G2/G3/G4/G5 literal ceilings from accepted plan; H1 public contract; new common ceilings deliberately frozen by gdcw.1","authority":"explicit-bounded-policy","productionOutputUsed":false},
+    {"id":"DE-APPLICATION","source":"Existing A0 request/derived-patch/F3 publication contracts and exact state observations required by gdcw.1","authority":"accepted-project-contract","productionOutputUsed":false}
+  ],
+  "humanListeningPerformed":false,
+  "engineCompletenessClaim":false,
+  "runtimeImplementationClaim":false
+}

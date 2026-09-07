@@ -4,6 +4,17 @@ Consumer: the user and Codex executing the 2026-09-04 request to implement the r
 
 ## Current order
 
+- [ ] Shared discovery execution (`jcpe-discovery-execution-proof-gdcw`; spec leaf `.1` claimed CodexWorkflow). It unblocks existing H1/G0–G9 engine work; it does not complete an engine or a fifth September idea.
+  - [x] Read live parent/spec, architecture, theory plan, exact G0/G2/G3/G4/G5 caps, and the existing A0 derived-patch/pending-request/semantic-publication path.
+  - [x] Freeze domain-bound requests, complete version/constraint/seed identity, selected realizations and source snapshots; distinguish musical proof from application publication authority.
+  - [x] Specify measured primitive work and managed allocation accounting, canonical ties/candidate identity, input/output/cache/snapshot bounds, deterministic termination and resumable cursor validity.
+  - [x] Specify a capacity-one cooperative application job and publication lifecycle: cancellation/staleness at each yield and retirement await, exact patch revalidation, one A0 transaction and Undo, zero document/history/export-marker effects on refusal.
+  - [x] Author independent finite enumeration, limit-edge, schedule-partition, authority corruption, exact-time and Manual/Frozen preservation fixtures, provenance and mutation/trace controls before production.
+  - [x] Implement the named specification validator and static checks:22/0,119 assertions, all16 corrupted fixture controls rejected,26 maximum-edge rows,21 authority corruption dimensions and32 exact six-unit schedule partitions. The existing independent Manual/Frozen source is hash-bound; publication/Undo expectations preserve exact pitch/time and markers. Full typecheck and owned ESLint pass. Initial two Bun literal-type assertion errors and one void-arrow lint error are retained; no assertions/rules were weakened.
+  - [x] Fresh solo specification review clarified shared source-snapshot accounting, terminal cursor/refusal behavior and cancellation of a prepared result. Final frozen validator/static22/0/full typecheck/owned lint/tools TSC PASS; guarded build/static artifact PASS,311 source identities unchanged and runtime artifact identical to603ef80. Source policy caught a type-only private theory import; publish the types through the existing theory entry and recheck it (298 files/0 findings). No runtime or fifth-idea completion follows from these fixture checks.
+  - [ ] Commit/push the specification, close only its leaf with exact proof, then proceed directly to the ready implementation.
+  - [ ] Claim the dependent build leaf, implement the generic stepper/scheduler/real A0 publication adapter and actual bounded counters, then pass its named unit/integration/type/lint gates.
+  - [ ] Execute the independent verification leaf, including real-browser cancellation/edit/Stop/Apply/Undo and honest-counter mutants; preserve all downstream engine/UI/human/release obligations.
 - [ ] H0 authority repair (`jcpe-milestone-musical-intelligence-qqy.2.1`): the five original contradictions and two additional false ambiguity labels are repaired. Specification closure still requires the unchanged aggregate gate; no contextual-analysis or scale runtime is claimed.
   - [x] Recover latest parent/spec context and the actual request/result types, evidence-tier/ordering rules, T1 extension authority and independent counterexamples.
   - [x] Reproduce five consistency findings (audit exit1) and actual literal-facts50pass/2fail before edits; preserve the original production implementation and valid assertions.

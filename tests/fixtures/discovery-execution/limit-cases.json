@@ -1,0 +1,459 @@
+{
+  "schema": "changes.fixtures.discovery-execution-limits.v1",
+  "authority": "DE-LIMITS",
+  "edges": [
+    {
+      "id": "DE-LIMIT-sourceEvents",
+      "resource": "sourceEvents",
+      "maximum": 256,
+      "below": 255,
+      "at": 256,
+      "over": 257,
+      "expected": [
+        "admit",
+        "admit",
+        "refuse-before-operation"
+      ]
+    },
+    {
+      "id": "DE-LIMIT-requestBytes",
+      "resource": "requestBytes",
+      "maximum": 4194304,
+      "below": 4194303,
+      "at": 4194304,
+      "over": 4194305,
+      "expected": [
+        "admit",
+        "admit",
+        "refuse-before-operation"
+      ]
+    },
+    {
+      "id": "DE-LIMIT-snapshotBytes",
+      "resource": "snapshotBytes",
+      "maximum": 8388608,
+      "below": 8388607,
+      "at": 8388608,
+      "over": 8388609,
+      "expected": [
+        "admit",
+        "admit",
+        "refuse-before-operation"
+      ]
+    },
+    {
+      "id": "DE-LIMIT-resultBytes",
+      "resource": "resultBytes",
+      "maximum": 8388608,
+      "below": 8388607,
+      "at": 8388608,
+      "over": 8388609,
+      "expected": [
+        "admit",
+        "admit",
+        "refuse-before-operation"
+      ]
+    },
+    {
+      "id": "DE-LIMIT-valueDepth",
+      "resource": "valueDepth",
+      "maximum": 32,
+      "below": 31,
+      "at": 32,
+      "over": 33,
+      "expected": [
+        "admit",
+        "admit",
+        "refuse-before-operation"
+      ]
+    },
+    {
+      "id": "DE-LIMIT-valueNodes",
+      "resource": "valueNodes",
+      "maximum": 262144,
+      "below": 262143,
+      "at": 262144,
+      "over": 262145,
+      "expected": [
+        "admit",
+        "admit",
+        "refuse-before-operation"
+      ]
+    },
+    {
+      "id": "DE-LIMIT-textCodeUnits",
+      "resource": "textCodeUnits",
+      "maximum": 65536,
+      "below": 65535,
+      "at": 65536,
+      "over": 65537,
+      "expected": [
+        "admit",
+        "admit",
+        "refuse-before-operation"
+      ]
+    },
+    {
+      "id": "DE-LIMIT-identityCodeUnits",
+      "resource": "identityCodeUnits",
+      "maximum": 128,
+      "below": 127,
+      "at": 128,
+      "over": 129,
+      "expected": [
+        "admit",
+        "admit",
+        "refuse-before-operation"
+      ]
+    },
+    {
+      "id": "DE-LIMIT-versions",
+      "resource": "versions",
+      "maximum": 64,
+      "below": 63,
+      "at": 64,
+      "over": 65,
+      "expected": [
+        "admit",
+        "admit",
+        "refuse-before-operation"
+      ]
+    },
+    {
+      "id": "DE-LIMIT-evidenceRows",
+      "resource": "evidenceRows",
+      "maximum": 128,
+      "below": 127,
+      "at": 128,
+      "over": 129,
+      "expected": [
+        "admit",
+        "admit",
+        "refuse-before-operation"
+      ]
+    },
+    {
+      "id": "DE-LIMIT-costAxes",
+      "resource": "costAxes",
+      "maximum": 16,
+      "below": 15,
+      "at": 16,
+      "over": 17,
+      "expected": [
+        "admit",
+        "admit",
+        "refuse-before-operation"
+      ]
+    },
+    {
+      "id": "DE-LIMIT-retainedOptions",
+      "resource": "retainedOptions",
+      "maximum": 128,
+      "below": 127,
+      "at": 128,
+      "over": 129,
+      "expected": [
+        "admit",
+        "admit",
+        "refuse-before-operation"
+      ]
+    },
+    {
+      "id": "DE-LIMIT-generatedCandidates",
+      "resource": "generatedCandidates",
+      "maximum": 8388608,
+      "below": 8388607,
+      "at": 8388608,
+      "over": 8388609,
+      "expected": [
+        "admit",
+        "admit",
+        "refuse-before-operation"
+      ]
+    },
+    {
+      "id": "DE-LIMIT-depth",
+      "resource": "depth",
+      "maximum": 256,
+      "below": 255,
+      "at": 256,
+      "over": 257,
+      "expected": [
+        "admit",
+        "admit",
+        "refuse-before-operation"
+      ]
+    },
+    {
+      "id": "DE-LIMIT-stateBytes",
+      "resource": "stateBytes",
+      "maximum": 65536,
+      "below": 65535,
+      "at": 65536,
+      "over": 65537,
+      "expected": [
+        "admit",
+        "admit",
+        "refuse-before-operation"
+      ]
+    },
+    {
+      "id": "DE-LIMIT-optionBytes",
+      "resource": "optionBytes",
+      "maximum": 262144,
+      "below": 262143,
+      "at": 262144,
+      "over": 262145,
+      "expected": [
+        "admit",
+        "admit",
+        "refuse-before-operation"
+      ]
+    },
+    {
+      "id": "DE-LIMIT-queuedStates",
+      "resource": "queuedStates",
+      "maximum": 100000,
+      "below": 99999,
+      "at": 100000,
+      "over": 100001,
+      "expected": [
+        "admit",
+        "admit",
+        "refuse-before-operation"
+      ]
+    },
+    {
+      "id": "DE-LIMIT-expandedStates",
+      "resource": "expandedStates",
+      "maximum": 100000,
+      "below": 99999,
+      "at": 100000,
+      "over": 100001,
+      "expected": [
+        "admit",
+        "admit",
+        "refuse-before-operation"
+      ]
+    },
+    {
+      "id": "DE-LIMIT-outgoingPerState",
+      "resource": "outgoingPerState",
+      "maximum": 128,
+      "below": 127,
+      "at": 128,
+      "over": 129,
+      "expected": [
+        "admit",
+        "admit",
+        "refuse-before-operation"
+      ]
+    },
+    {
+      "id": "DE-LIMIT-workUnits",
+      "resource": "workUnits",
+      "maximum": 8388608,
+      "below": 8388607,
+      "at": 8388608,
+      "over": 8388609,
+      "expected": [
+        "admit",
+        "admit",
+        "refuse-before-operation"
+      ]
+    },
+    {
+      "id": "DE-LIMIT-stepMaximum",
+      "resource": "stepMaximum",
+      "maximum": 1024,
+      "below": 1023,
+      "at": 1024,
+      "over": 1025,
+      "expected": [
+        "admit",
+        "admit",
+        "refuse-before-operation"
+      ]
+    },
+    {
+      "id": "DE-LIMIT-trackedBytes",
+      "resource": "trackedBytes",
+      "maximum": 67108864,
+      "below": 67108863,
+      "at": 67108864,
+      "over": 67108865,
+      "expected": [
+        "admit",
+        "admit",
+        "refuse-before-operation"
+      ]
+    },
+    {
+      "id": "DE-LIMIT-activeJobs",
+      "resource": "activeJobs",
+      "maximum": 1,
+      "below": 0,
+      "at": 1,
+      "over": 2,
+      "expected": [
+        "admit",
+        "admit",
+        "refuse-before-operation"
+      ]
+    },
+    {
+      "id": "DE-LIMIT-scheduledCallbacks",
+      "resource": "scheduledCallbacks",
+      "maximum": 1,
+      "below": 0,
+      "at": 1,
+      "over": 2,
+      "expected": [
+        "admit",
+        "admit",
+        "refuse-before-operation"
+      ]
+    },
+    {
+      "id": "DE-LIMIT-preparedResults",
+      "resource": "preparedResults",
+      "maximum": 1,
+      "below": 0,
+      "at": 1,
+      "over": 2,
+      "expected": [
+        "admit",
+        "admit",
+        "refuse-before-operation"
+      ]
+    },
+    {
+      "id": "DE-LIMIT-publicationAttempts",
+      "resource": "publicationAttempts",
+      "maximum": 1,
+      "below": 0,
+      "at": 1,
+      "over": 2,
+      "expected": [
+        "admit",
+        "admit",
+        "refuse-before-operation"
+      ]
+    }
+  ],
+  "quantumCases": [
+    {
+      "value": 0,
+      "valid": false
+    },
+    {
+      "value": 1,
+      "valid": true
+    },
+    {
+      "value": 1024,
+      "valid": true
+    },
+    {
+      "value": 1025,
+      "valid": false
+    },
+    {
+      "value": 1.5,
+      "valid": false
+    },
+    {
+      "value": -1,
+      "valid": false
+    }
+  ],
+  "budgetCases": [
+    {
+      "value": 0,
+      "valid": true
+    },
+    {
+      "value": 1,
+      "valid": true
+    },
+    {
+      "value": -1,
+      "valid": false
+    },
+    {
+      "value": 1.5,
+      "valid": false
+    },
+    {
+      "value": 9007199254740992,
+      "valid": false
+    }
+  ],
+  "terminalCases": [
+    {
+      "case": "exhaustive-positive",
+      "kind": "complete",
+      "termination": "complete",
+      "options": 1
+    },
+    {
+      "case": "exhaustive-empty",
+      "kind": "no-result",
+      "termination": "complete",
+      "options": 0
+    },
+    {
+      "case": "bounded-empty",
+      "kind": "bounded-partial",
+      "termination": "work-cap",
+      "options": 0
+    },
+    {
+      "case": "bounded-positive",
+      "kind": "bounded-partial",
+      "termination": "state-cap",
+      "options": 1
+    },
+    {
+      "case": "invalid-input",
+      "kind": "refused",
+      "termination": "refused",
+      "options": 0
+    },
+    {
+      "case": "cancel",
+      "kind": "cancelled",
+      "termination": "cancelled",
+      "options": 0
+    },
+    {
+      "case": "edit",
+      "kind": "stale",
+      "termination": "stale",
+      "options": 0
+    }
+  ],
+  "authorityCorruptions": [
+    "requestId",
+    "documentId",
+    "sourceRevision",
+    "engineVersion",
+    "policyVersion",
+    "lawVersion",
+    "corpusVersion",
+    "seed",
+    "constraints",
+    "sourceEventId",
+    "selectedRealizationId",
+    "sourceSpelling",
+    "duration",
+    "manualPitchOrder",
+    "frozenDuplicate",
+    "candidateId",
+    "proposal",
+    "evidencePremise",
+    "counter",
+    "cursor",
+    "registryMembership"
+  ]
+}

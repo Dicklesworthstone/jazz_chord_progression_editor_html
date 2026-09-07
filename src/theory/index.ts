@@ -298,3 +298,11 @@ export {
   gradePracticeSubmission,
 } from "./practice-laboratory";
 export { g9Operations, type G9Operations } from "./g9-operations";
+export type {
+  DiscoveryAdvance, DiscoveryAllocation, DiscoveryArena, DiscoveryBudgets,
+  DiscoveryContentAdapter, DiscoveryCostAxis, DiscoveryCounters, DiscoveryCursor,
+  DiscoveryEngine, DiscoveryEvidence, DiscoveryIdentity, DiscoveryLimit,
+  DiscoveryOption, DiscoveryOptionDraft, DiscoveryRefusal, DiscoveryRequest,
+  DiscoveryResult, DiscoverySourceEvent, DiscoveryStepper, DiscoveryStepperCreation,
+  DiscoveryValue, DiscoveryVersion,
+} from "./discovery-execution-contract";
