@@ -1,4 +1,6 @@
 import { Button } from "../primitives";
+import { diagnosticProse } from "./entry-diagnostics";
+import { EntryRepairControls, useEntryRepair } from "./EntryRepair";
 import type { StudioQuickEntryView } from "./studio-contract";
 
 /**
@@ -43,9 +45,14 @@ export function CommandLaneContent({
   onInsert,
   onClear,
 }: CommandLaneContentProps) {
+  const repair = useEntryRepair(quickEntry, onDraftChange);
+  const insert = (): void => { repair.finish(); onInsert(); };
   return (
     <div class="studio-command-lane">
-      <input
+      <textarea
+        ref={repair.field}
+        rows={3}
+        data-ui-local-escape={repair.active || repair.composing ? "true" : undefined}
         aria-describedby="studio-command-lane-status"
         aria-label="Chart text"
         class="studio-command-lane__input"
@@ -53,15 +60,15 @@ export function CommandLaneContent({
         id="studio-command-lane-input"
         placeholder="| Dm7 G7 | Cmaj7 |"
         spellcheck={false}
-        type="text"
         value={quickEntry.draftText}
         onInput={(event) => {
-          onDraftChange(event.currentTarget.value);
+          repair.changeDraft(event.currentTarget.value);
         }}
         onKeyDown={(event) => {
-          if (event.key === "Enter" && quickEntry.canInsert) {
+          if (repair.guardKey(event)) return;
+          if (event.key === "Enter" && !event.shiftKey && quickEntry.canInsert) {
             event.preventDefault();
-            onInsert();
+            insert();
           }
         }}
       />
@@ -72,6 +79,8 @@ export function CommandLaneContent({
       >
         {quickEntry.statusLabel}
       </p>
+      <p class="studio-command-lane__plan">{quickEntry.insertionPlan.label}</p>
+      <EntryRepairControls repair={repair} />
       {quickEntry.refusalMessage === null ? null : (
         <p class="studio-command-lane__refusal" role="alert">
           {quickEntry.refusalMessage}
@@ -84,12 +93,19 @@ export function CommandLaneContent({
             class="studio-command-lane__token"
             data-state={token.state}
           >
-            <span class="studio-command-lane__token-symbol">
-              {token.sourceText}
-            </span>
+            {token.diagnosticRange === null ? (
+              <span class="studio-command-lane__token-symbol">{token.sourceText}</span>
+            ) : (
+              <button type="button" class="studio-entry-repair__action" disabled={repair.composing}
+                onClick={() => { repair.select(token); }}
+                aria-label={`Repair ${token.sourceText || "text at end of draft"}: ${diagnosticProse(token.diagnosticCode ?? "")}`}>
+                {token.sourceText || "End of draft"} · Repair
+              </button>
+            )}
+            {token.durationLabel === null ? null : <span>{token.durationLabel} beats</span>}
             {token.diagnosticCode === null ? null : (
-              <span class="studio-command-lane__token-code">
-                {token.diagnosticCode}
+              <span><span>{diagnosticProse(token.diagnosticCode)}</span>{" "}
+                <code class="studio-command-lane__token-code">{token.diagnosticCode}</code>
               </span>
             )}
           </span>
@@ -105,11 +121,11 @@ export function CommandLaneContent({
           busy={false}
           density="comfortable"
           describedBy={["studio-command-lane-status"]}
-          disabled={!quickEntry.canInsert}
+          disabled={!quickEntry.canInsert || repair.composing}
           id="studio-command-lane-insert"
           invalid={false}
           label={`Insert ${quickEntry.targetLabel}`.trimEnd()}
-          onAction={onInsert}
+          onAction={insert}
           type="button"
           variant="primary"
         />
@@ -117,15 +133,15 @@ export function CommandLaneContent({
           busy={false}
           density="comfortable"
           describedBy={[]}
-          disabled={!quickEntry.canClear}
+          disabled={!quickEntry.canClear || repair.composing}
           id="studio-command-lane-clear"
           invalid={false}
           label="Clear draft"
-          onAction={onClear}
+          onAction={() => { repair.finish(); onClear(); }}
           type="button"
           variant="ghost"
         />
-        <span class="studio-command-lane__hint">↵ inserts · esc closes</span>
+        <span class="studio-command-lane__hint">↵ inserts · shift+↵ adds a line · esc cancels a repair or closes</span>
       </div>
       <dl class="studio-command-lane__shortcuts">
         {LANE_SHORTCUTS.map(([keys, does]) => (

@@ -1,7 +1,7 @@
 # Product ideas for the working Changes studio
 
 Date: 2026-09-06 (New York). Source baseline: `658baddd620d2060d215280ec34efdb858be8bc3`.
-Status: idea-wizard phases 1–6 completed, including four refinement passes. These are proposed improvements; no new application capability is implemented or certified by this document.
+Status: idea-wizard phases 1–6 completed, including four refinement passes. The owner authorized implementation of all fifteen ideas on 2026-09-06; execution is tracked below and in IMPLEMENTATION_TODO.md. This document itself certifies no runtime capability.
 
 The strongest direction is to make a useful musical decision easy to hear, apply and undo. The studio already has substantial parsing, voicing, playback, recovery and import/export machinery. More of that power should be accessible through a small number of clear actions on the chart.
 
@@ -121,7 +121,47 @@ This ordering preserves all planned functionality. A delivered increment does no
 
 ## Concrete Beads and remaining TODO
 
-Six new proposed workflow packages contain 19 leaf tasks, including the separate rehearsal key-sequence leaf. All are open and unassigned. Existing feature work was refined through 13 comments on seven ownership groups, covering nine finalist ideas; no existing title, description, priority, status or assignee was rewritten.
+### Entry repair specification (2026-09-07 UTC)
+
+The first implementation leaf uses T0's existing zero-based, end-exclusive
+UTF-16 offsets directly with textarea selection APIs. Newline, flat glyph,
+astral and combining-text fixtures live in `tests/fixtures/entry-repair.ts`.
+No scalar-index conversion, trimming, normalization or second parser is allowed.
+Both entry surfaces retain multiline text. A diagnostic action validates the
+entire captured draft, range bounds and exact selected slice against the current
+field before moving focus; an old diagnostic cannot act on a newer draft.
+
+Activating an error selects its source characters and starts a local repair
+session. Typing is the explicit draft edit; existing diagnostic prose gives
+grammar-supported examples without guessing a replacement. **Keep repair** ends
+the session without committing a chart. **Cancel repair** or Escape restores the
+pre-repair draft and source selection. Escape is consumed during repair; outside
+repair the existing Library Clear and command-dialog Close behavior remains.
+Insert is still the sole whole-draft publication, followed by one exact Undo.
+Clear explicitly abandons repair. A new diagnostic selection starts a new repair
+from the current draft. No focus or selection effect runs on ordinary rerenders.
+
+Composition start/end and keyboard `isComposing` suppress Enter/Escape and repair
+actions while IME owns the field. Shift+Enter inserts a newline. Diagnostic rows
+share the Library's complete prose vocabulary and fallback. The command lane
+shows each resolved exact duration plus the existing insertion-plan label;
+neither UI calculates a new approximate beat total. **Next error** cycles the
+bounded diagnostic rows in source order, surfaces the matching explanation beside
+the input and selects its source, including when recovered rows fill the preview allocation.
+The existing 4096-code-point/16384-byte input limits and 2048-row preview bound
+remain unchanged. Selection validation is linear only in the bounded draft;
+navigation visits at most the current bounded token list. No audio, storage,
+document schema, export marker or runtime network capability is added.
+
+Proof: hand-authored selection/refusal fixtures and real controller tests,
+followed by retry-free Chromium/Firefox/WebKit over file and loopback at desktop,
+320x568 and390x844, with keyboard/IME, reduced motion and200% layout coverage.
+The tests retain request and console/page-error diagnostics and compare actual
+drafts and document/history before repair, after Insert and after Undo. These
+are UI repairs, so musical transposition laws do not apply; original T0/U1
+parser, limits and atomic-insertion regressions remain required.
+
+Six new workflow packages contain 19 leaf tasks, including the separate rehearsal key-sequence leaf. The original ideation pass left them open and unassigned; implementation status now follows the checklist and live Beads. Existing feature work was refined through 13 comments on seven ownership groups, covering nine finalist ideas; the ideation pass did not rewrite existing titles, descriptions, priorities, statuses or assignees.
 
 - [ ] **Transpose a chord, range, section or chart with an audible preview** — `jcpe-transpose-workflow-nazh`
   - [ ] Review specification and independent fixtures — `jcpe-transpose-workflow-nazh.1`
@@ -141,7 +181,7 @@ Six new proposed workflow packages contain 19 leaf tasks, including the separate
   - [ ] Implement the production workflow — `jcpe-exact-share-1ric.2`
   - [ ] Complete independent real-adapter proof — `jcpe-exact-share-1ric.3`
 - [ ] **Repair a chart-entry error where it occurs without retyping the draft** — `jcpe-entry-repair-0h1g`
-  - [ ] Review specification and independent fixtures — `jcpe-entry-repair-0h1g.1`
+  - [x] Review specification and independent fixtures — `jcpe-entry-repair-0h1g.1` (solo packet review; implementation proof remains separate)
   - [ ] Implement the production workflow — `jcpe-entry-repair-0h1g.2`
   - [ ] Complete independent real-adapter proof — `jcpe-entry-repair-0h1g.3`
 - [ ] **A reversible chart-focus view with reachable editing and transport** — `jcpe-chart-focus-7iz1`

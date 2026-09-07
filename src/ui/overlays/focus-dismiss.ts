@@ -549,6 +549,12 @@ export class DocumentOverlayCoordinator {
 
   #onKeyDown = (event: KeyboardEvent): void => {
     if (event.key !== "Escape") return;
+    // An IME or an explicit in-surface text repair owns this Escape first.
+    // Ordinary controls still dismiss only the top overlay through its lease.
+    const ElementConstructor = this.#document.defaultView?.Element;
+    if (event.isComposing ||
+        (ElementConstructor !== undefined && event.target instanceof ElementConstructor &&
+         event.target.closest('[data-ui-local-escape="true"]') !== null)) return;
     const record = this.#topRecord();
     if (record === null) return;
     event.preventDefault();

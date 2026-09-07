@@ -4,6 +4,18 @@ Consumer: the user and Codex executing the 2026-09-04 request to implement the r
 
 ## Current order
 
+- [ ] Complete all fifteen September ideas requested by the owner; full ownership/dependencies remain in `PRODUCT_IDEAS_2026_09.md` and Beads. Start with the independent entry-repair/focus improvements while preserving existing engine owners and prerequisites.
+- [ ] Entry repair (`jcpe-entry-repair-0h1g`): specification closed; build claimed by CodexWorkflow; complete the full browser matrix and fresh verification before package closure.
+  - [x] Freeze UTF-16 source selection, stale refusal, IME and Escape behavior with independent fixtures (six literal spans, six refusal ranges, twelve interaction obligations; specification-only test 1/0).
+  - [x] Share diagnostic prose; retain multiline drafts; add exact token selection and bounded Next error on both entry surfaces.
+  - [x] Preserve surrounding text and caret; add explicit Keep/Cancel repair and composition-safe Enter/Escape. First browser run found camel-cased Preact composition handlers did not subscribe to native events; fixed with native lowercase listeners and cleanup. Original assertions retained; command and Library IME/stale tests now pass 2/0.
+  - [x] Show exact existing duration/insertion labels; retain all U1 parser/input/render limits and explicit recovery semantics.
+  - [x] Prove current controller draft-only edits, Insert/Undo, stale ranges, Unicode and boundary cases: focused unit/controller 44/0 (236 assertions), existing overlay/U1 edit-channel 56/0 (280 assertions); four production-source mutations killed with an honest baseline pass. The first integration test called a nonexistent snapshot property; corrected to the public previewQuickEntryDraft method and manually recounted the UTF-16 offset. No production expectation was regenerated.
+  - [x] Replace the raw-barlines pristine insertion workaround with one parsed atomic edit. Retain the first measure ID, comments/quoted barlines, intentional empty bars, exact fractions and one-step Undo/Redo. The committed implementation fails all three independent regression cases; the replacement passes them plus existing atomic/editing laws (334 tests, 7163 assertions).
+  - [ ] Build and run real file/HTTP three-engine desktop/phone/zoom/IME proof; retain failures, diagnostics and artifact hash. The first complete matrix was 34/2: an out-of-band stale-input control could be reset before activation, and WebKit exceeded Clear's real five-second confirmation window. Make the stale control atomic and use real keyboard confirmation; retain every assertion. A subsequent Firefox combined-flow timeout is under investigation; it is not a pass.
+  - [ ] Keep native IME listeners installed from layout commit until unmount; complete owned lint and application/E2E typechecks. The global typecheck still has 17 pre-existing U2 test type errors; no release claim until aggregate gates pass.
+  - [ ] Fresh solo verification against original criteria; record exact results and close spec/build/verify in order only when satisfied.
+
 - [x] Restore Cloudflare publication under `jcpe-0bjj`: the committed build is deployed and verified on both hosts.
 - [ ] U5 remains open and unassigned; resume its remaining lifecycle acceptance. Automatic recovery, phone chart space, title preservation and replacement/playback fixes are verified on both hosts.
 - [x] Voice-leading: reproduce raw and actually sounded discontinuities; specify a compatible versioned policy; implement; prove small-oracle, real chart, fixed-voicing, browser audio and MIDI behavior.
