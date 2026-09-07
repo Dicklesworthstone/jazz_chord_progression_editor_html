@@ -6,56 +6,109 @@
       "target": "voicing-mode-confirmation",
       "description": "A mutation that allows Manual -> Auto switch without confirmation must be killed by refusal check.",
       "killedByCase": "U2-VOICE-002",
-      "traceIds": ["U2-TRACE-VOICING-TRANSITION"]
+      "traceIds": [
+        "U2-TRACE-VOICING-TRANSITION"
+      ]
     },
     {
       "id": "U2-MUT-002",
-      "target": "manual-unison-duplicate-rejection",
-      "description": "A mutation that allows identical MIDI pitch duplicate in manual voicing must be killed.",
-      "killedByCase": "U2-PIANO-004",
-      "traceIds": ["U2-TRACE-VOICING-TRANSITION"]
+      "target": "exact-unison-preservation",
+      "description": "A source mutation that removes duplicate unisons must fail exact-array equality.",
+      "killedByCase": "U2-EXACT-001",
+      "traceIds": [
+        "U2-TRACE-VOICING-TRANSITION"
+      ]
     },
     {
       "id": "U2-MUT-003",
-      "target": "annotation-markup-sanitization",
-      "description": "A mutation that renders raw HTML tags in annotations must be killed by markup sanitization.",
+      "target": "inert-annotation-preservation",
+      "description": "A source mutation that strips HTML or controls must fail exact source equality; raw HTML rendering additionally requires a native browser refusal.",
       "killedByCase": "U2-NOTE-002",
-      "traceIds": ["U2-TRACE-ANNOTATION-SAFETY"]
+      "traceIds": [
+        "U2-TRACE-ANNOTATION-SAFETY"
+      ]
     },
     {
       "id": "U2-MUT-004",
       "target": "custom-chord-symbol-preservation",
       "description": "A mutation that overwrites custom/unrecognized chords with a guessed canonical chord must be killed.",
       "killedByCase": "U2-INSP-004",
-      "traceIds": ["U2-TRACE-CUSTOM-PRESERVATION"]
+      "traceIds": [
+        "U2-TRACE-CUSTOM-PRESERVATION"
+      ]
     },
     {
       "id": "U2-MUT-005",
       "target": "annotation-length-bounding",
-      "description": "A mutation that permits annotations longer than 500 code points must be killed by length refusal.",
+      "description": "A source mutation accepting2001 code points must fail refusal.",
       "killedByCase": "U2-NOTE-004",
-      "traceIds": ["U2-TRACE-ANNOTATION-SAFETY"]
+      "traceIds": [
+        "U2-TRACE-ANNOTATION-SAFETY"
+      ]
     },
     {
       "id": "U2-MUT-006",
       "target": "piano-midi-key-bounds",
-      "description": "A mutation that renders piano keys outside the 88-key physical MIDI bounds (21..108) must be killed.",
-      "killedByCase": "U2-PIANO-001",
-      "traceIds": ["U2-TRACE-PIANO-GEOMETRY"]
+      "description": "A source mutation clamping valid notes to21..108 must fail endpoints.",
+      "killedByCase": "U2-EXACT-001",
+      "traceIds": [
+        "U2-TRACE-PIANO-GEOMETRY"
+      ]
     },
     {
       "id": "U2-MUT-007",
       "target": "piano-guide-tone-role-assignment",
       "description": "A mutation that drops 3rd/7th guide tone identification on piano keys must be killed.",
       "killedByCase": "U2-PIANO-002",
-      "traceIds": ["U2-TRACE-STRUCTURE", "U2-TRACE-PIANO-GEOMETRY"]
+      "traceIds": [
+        "U2-TRACE-STRUCTURE",
+        "U2-TRACE-PIANO-GEOMETRY"
+      ]
     },
     {
       "id": "U2-MUT-008",
       "target": "structural-alteration-synchronization",
       "description": "A mutation that alters chord quality without synchronizing spelled degrees and pitch classes must be killed.",
       "killedByCase": "U2-INSP-003",
-      "traceIds": ["U2-TRACE-ALTERATION-SYNC"]
+      "traceIds": [
+        "U2-TRACE-ALTERATION-SYNC"
+      ]
+    },
+    {
+      "id": "U2-MUT-009",
+      "target": "stored-pitch-order",
+      "description": "Sorting the stored pitch array must fail.",
+      "killedByCase": "U2-EXACT-001",
+      "traceIds": [
+        "U2-TRACE-VOICING-TRANSITION"
+      ]
+    },
+    {
+      "id": "U2-MUT-010",
+      "target": "manual-note-cap",
+      "description": "Accepting17 notes must fail.",
+      "killedByCase": "U2-EXACT-003",
+      "traceIds": [
+        "U2-TRACE-VOICING-TRANSITION"
+      ]
+    },
+    {
+      "id": "U2-MUT-011",
+      "target": "astral-code-point-boundary",
+      "description": "Counting UTF-16 units must reject the valid2000-astral control and be detected.",
+      "killedByCase": "U2-NOTE-006",
+      "traceIds": [
+        "U2-TRACE-ANNOTATION-SAFETY"
+      ]
+    },
+    {
+      "id": "U2-MUT-012",
+      "target": "rootless-bass-policy",
+      "description": "Accepting generated rootless bass must fail.",
+      "killedByCase": "U2-AUTO-007",
+      "traceIds": [
+        "U2-TRACE-VOICING"
+      ]
     }
   ]
 }

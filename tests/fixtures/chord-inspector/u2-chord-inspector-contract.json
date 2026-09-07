@@ -5,7 +5,7 @@
   "package": "U2",
   "beadId": "jcpe-milestone-reliable-studio-l3a.11.1",
   "policyId": "changes.u2-chord-inspector",
-  "policyVersion": 1,
+  "policyVersion": 2,
   "files": [
     "inspector-cases.json",
     "piano-cases.json",
@@ -13,17 +13,22 @@
     "annotation-cases.json",
     "mutation-controls.json",
     "trace-ledger.json",
-    "provenance-ledger.json"
+    "provenance-ledger.json",
+    "exact-note-cases.json",
+    "auto-policy-cases.json"
   ],
   "counts": {
     "tabs": 7,
     "inspectorCases": 4,
     "pianoCases": 4,
-    "voicingTransitionCases": 4,
-    "annotationCases": 4,
-    "mutationControls": 8,
+    "voicingTransitionCases": 7,
+    "annotationCases": 9,
+    "mutationControls": 12,
     "traces": 11,
-    "authorities": 6,
-    "laws": 6
+    "authorities": 7,
+    "laws": 6,
+    "exactNoteCases": 8,
+    "autoPolicyCases": 21,
+    "workflowCases": 12
   }
 }

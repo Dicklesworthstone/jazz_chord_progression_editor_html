@@ -8,23 +8,57 @@
       "toMode": "manual",
       "confirmDiscardManual": false,
       "synthesizedAutoPitches": [
-        { "step": "E", "alter": 0, "octave": 4 },
-        { "step": "G", "alter": 0, "octave": 4 },
-        { "step": "B", "alter": 0, "octave": 4 },
-        { "step": "D", "alter": 0, "octave": 5 }
+        {
+          "step": "E",
+          "alter": 0,
+          "octave": 4
+        },
+        {
+          "step": "G",
+          "alter": 0,
+          "octave": 4
+        },
+        {
+          "step": "B",
+          "alter": 0,
+          "octave": 4
+        },
+        {
+          "step": "D",
+          "alter": 0,
+          "octave": 5
+        }
       ],
       "expectedOutcome": {
         "ok": true,
         "resultingMode": "manual",
         "resultingPitches": [
-          { "step": "E", "alter": 0, "octave": 4 },
-          { "step": "G", "alter": 0, "octave": 4 },
-          { "step": "B", "alter": 0, "octave": 4 },
-          { "step": "D", "alter": 0, "octave": 5 }
+          {
+            "step": "E",
+            "alter": 0,
+            "octave": 4
+          },
+          {
+            "step": "G",
+            "alter": 0,
+            "octave": 4
+          },
+          {
+            "step": "B",
+            "alter": 0,
+            "octave": 4
+          },
+          {
+            "step": "D",
+            "alter": 0,
+            "octave": 5
+          }
         ],
         "confirmationRequired": false
       },
-      "traceIds": ["U2-TRACE-VOICING-TRANSITION"]
+      "traceIds": [
+        "U2-TRACE-VOICING-TRANSITION"
+      ]
     },
     {
       "id": "U2-VOICE-002",
@@ -33,9 +67,21 @@
       "toMode": "auto",
       "confirmDiscardManual": false,
       "currentManualPitches": [
-        { "step": "C", "alter": 0, "octave": 4 },
-        { "step": "F", "alter": 1, "octave": 4 },
-        { "step": "B", "alter": -1, "octave": 4 }
+        {
+          "step": "C",
+          "alter": 0,
+          "octave": 4
+        },
+        {
+          "step": "F",
+          "alter": 1,
+          "octave": 4
+        },
+        {
+          "step": "B",
+          "alter": -1,
+          "octave": 4
+        }
       ],
       "expectedOutcome": {
         "ok": false,
@@ -43,7 +89,19 @@
         "message": "Switching from Manual to Auto will discard custom note edits.",
         "confirmationRequired": true
       },
-      "traceIds": ["U2-TRACE-VOICING-TRANSITION"]
+      "traceIds": [
+        "U2-TRACE-VOICING-TRANSITION"
+      ],
+      "requestedAuto": {
+        "mode": "auto",
+        "family": "balanced",
+        "voiceCount": 4,
+        "range": {
+          "lowMidi": 48,
+          "highMidi": 84
+        },
+        "bassPolicy": "generated"
+      }
     },
     {
       "id": "U2-VOICE-003",
@@ -52,16 +110,40 @@
       "toMode": "auto",
       "confirmDiscardManual": true,
       "currentManualPitches": [
-        { "step": "C", "alter": 0, "octave": 4 },
-        { "step": "F", "alter": 1, "octave": 4 },
-        { "step": "B", "alter": -1, "octave": 4 }
+        {
+          "step": "C",
+          "alter": 0,
+          "octave": 4
+        },
+        {
+          "step": "F",
+          "alter": 1,
+          "octave": 4
+        },
+        {
+          "step": "B",
+          "alter": -1,
+          "octave": 4
+        }
       ],
       "expectedOutcome": {
         "ok": true,
         "resultingMode": "auto",
         "confirmationRequired": false
       },
-      "traceIds": ["U2-TRACE-VOICING-TRANSITION"]
+      "traceIds": [
+        "U2-TRACE-VOICING-TRANSITION"
+      ],
+      "requestedAuto": {
+        "mode": "auto",
+        "family": "balanced",
+        "voiceCount": 4,
+        "range": {
+          "lowMidi": 48,
+          "highMidi": 84
+        },
+        "bassPolicy": "generated"
+      }
     },
     {
       "id": "U2-VOICE-004",
@@ -70,23 +152,373 @@
       "toMode": "frozen",
       "confirmDiscardManual": false,
       "synthesizedAutoPitches": [
-        { "step": "D", "alter": 0, "octave": 4 },
-        { "step": "F", "alter": 0, "octave": 4 },
-        { "step": "A", "alter": 0, "octave": 4 },
-        { "step": "C", "alter": 0, "octave": 5 }
+        {
+          "step": "D",
+          "alter": 0,
+          "octave": 4
+        },
+        {
+          "step": "F",
+          "alter": 0,
+          "octave": 4
+        },
+        {
+          "step": "A",
+          "alter": 0,
+          "octave": 4
+        },
+        {
+          "step": "C",
+          "alter": 0,
+          "octave": 5
+        }
       ],
       "expectedOutcome": {
         "ok": true,
         "resultingMode": "frozen",
         "resultingPitches": [
-          { "step": "D", "alter": 0, "octave": 4 },
-          { "step": "F", "alter": 0, "octave": 4 },
-          { "step": "A", "alter": 0, "octave": 4 },
-          { "step": "C", "alter": 0, "octave": 5 }
+          {
+            "step": "D",
+            "alter": 0,
+            "octave": 4
+          },
+          {
+            "step": "F",
+            "alter": 0,
+            "octave": 4
+          },
+          {
+            "step": "A",
+            "alter": 0,
+            "octave": 4
+          },
+          {
+            "step": "C",
+            "alter": 0,
+            "octave": 5
+          }
         ],
         "confirmationRequired": false
       },
-      "traceIds": ["U2-TRACE-VOICING-TRANSITION"]
+      "traceIds": [
+        "U2-TRACE-VOICING-TRANSITION"
+      ],
+      "generatedBy": {
+        "engineVersion": "fixture-v0-1",
+        "family": "balanced"
+      }
+    },
+    {
+      "id": "U2-VOICE-005",
+      "name": "frozen-to-auto-5",
+      "fromMode": "frozen",
+      "toMode": "auto",
+      "confirmDiscardManual": false,
+      "requestedAuto": {
+        "mode": "auto",
+        "family": "balanced",
+        "voiceCount": 4,
+        "range": {
+          "lowMidi": 48,
+          "highMidi": 84
+        },
+        "bassPolicy": "generated"
+      },
+      "currentManualPitches": [
+        {
+          "step": "C",
+          "alter": 0,
+          "octave": 4
+        }
+      ],
+      "expectedOutcome": {
+        "ok": false,
+        "confirmationRequired": true,
+        "code": "u2.mode_switch_requires_confirmation"
+      },
+      "traceIds": [
+        "U2-TRACE-VOICING-TRANSITION"
+      ]
+    },
+    {
+      "id": "U2-VOICE-006",
+      "name": "frozen-to-auto-6",
+      "fromMode": "frozen",
+      "toMode": "auto",
+      "confirmDiscardManual": true,
+      "requestedAuto": null,
+      "currentManualPitches": [
+        {
+          "step": "C",
+          "alter": 0,
+          "octave": 4
+        }
+      ],
+      "expectedOutcome": {
+        "ok": false,
+        "confirmationRequired": false,
+        "code": "voicing.auto_settings_required"
+      },
+      "traceIds": [
+        "U2-TRACE-VOICING-TRANSITION"
+      ]
+    },
+    {
+      "id": "U2-VOICE-007",
+      "name": "frozen-to-auto-7",
+      "fromMode": "frozen",
+      "toMode": "auto",
+      "confirmDiscardManual": true,
+      "requestedAuto": {
+        "mode": "auto",
+        "family": "balanced",
+        "voiceCount": 4,
+        "range": {
+          "lowMidi": 48,
+          "highMidi": 84
+        },
+        "bassPolicy": "generated"
+      },
+      "currentManualPitches": [
+        {
+          "step": "C",
+          "alter": 0,
+          "octave": 4
+        }
+      ],
+      "expectedOutcome": {
+        "ok": true,
+        "confirmationRequired": false,
+        "resultingMode": "auto"
+      },
+      "traceIds": [
+        "U2-TRACE-VOICING-TRANSITION"
+      ]
+    }
+  ],
+  "workflows": [
+    {
+      "id": "U2-FLOW-001",
+      "action": "choose",
+      "sourceRevision": 3,
+      "currentRevision": 3,
+      "expected": {
+        "documentWrites": 0,
+        "undoSteps": 0,
+        "previewStarts": 0,
+        "storedMode": "auto"
+      },
+      "obligation": "Mark the candidate current only in the draft; keep full chart/selection/playhead exact.",
+      "traceIds": [
+        "U2-TRACE-VOICING-TRANSITION",
+        "U2-TRACE-PREVIEW-ISOLATION"
+      ]
+    },
+    {
+      "id": "U2-FLOW-002",
+      "action": "hear",
+      "sourceRevision": 3,
+      "currentRevision": 3,
+      "pitches": [
+        67,
+        60,
+        60,
+        72
+      ],
+      "expected": {
+        "documentWrites": 0,
+        "undoSteps": 0,
+        "previewStarts": 1,
+        "soundedPitches": [
+          67,
+          60,
+          60,
+          72
+        ]
+      },
+      "obligation": "Native X1 preview receives the exact registered ordered list including duplicate unisons.",
+      "traceIds": [
+        "U2-TRACE-VOICING-TRANSITION",
+        "U2-TRACE-PREVIEW-ISOLATION"
+      ]
+    },
+    {
+      "id": "U2-FLOW-003",
+      "action": "apply-auto",
+      "sourceRevision": 3,
+      "currentRevision": 3,
+      "expected": {
+        "documentWrites": 1,
+        "undoSteps": 1,
+        "previewStarts": 0,
+        "storedMode": "auto"
+      },
+      "obligation": "One revision-checked set-voicing command; actual selected policy, no persisted draft or derived notes.",
+      "traceIds": [
+        "U2-TRACE-VOICING-TRANSITION",
+        "U2-TRACE-PREVIEW-ISOLATION"
+      ]
+    },
+    {
+      "id": "U2-FLOW-004",
+      "action": "keep",
+      "sourceRevision": 3,
+      "currentRevision": 3,
+      "expected": {
+        "documentWrites": 1,
+        "undoSteps": 1,
+        "previewStarts": 0,
+        "storedMode": "frozen"
+      },
+      "obligation": "Copy exactly the displayed/heard generated candidate and actual engine/family provenance.",
+      "traceIds": [
+        "U2-TRACE-VOICING-TRANSITION",
+        "U2-TRACE-PREVIEW-ISOLATION"
+      ]
+    },
+    {
+      "id": "U2-FLOW-005",
+      "action": "edit-exact-notes",
+      "sourceRevision": 3,
+      "currentRevision": 3,
+      "expected": {
+        "documentWrites": 1,
+        "undoSteps": 1,
+        "previewStarts": 0,
+        "storedMode": "manual"
+      },
+      "obligation": "Copy the realized pitches in supplied order; subsequent edits remain draft until Apply.",
+      "traceIds": [
+        "U2-TRACE-VOICING-TRANSITION",
+        "U2-TRACE-PREVIEW-ISOLATION"
+      ]
+    },
+    {
+      "id": "U2-FLOW-006",
+      "action": "return-auto",
+      "confirmed": false,
+      "sourceRevision": 3,
+      "currentRevision": 3,
+      "expected": {
+        "documentWrites": 0,
+        "undoSteps": 0,
+        "previewStarts": 0,
+        "refused": true
+      },
+      "obligation": "The existing Manual/Frozen notes survive; require complete policy and explicit confirmation.",
+      "traceIds": [
+        "U2-TRACE-VOICING-TRANSITION",
+        "U2-TRACE-PREVIEW-ISOLATION"
+      ]
+    },
+    {
+      "id": "U2-FLOW-007",
+      "action": "return-auto",
+      "confirmed": true,
+      "sourceRevision": 3,
+      "currentRevision": 3,
+      "expected": {
+        "documentWrites": 1,
+        "undoSteps": 1,
+        "previewStarts": 0,
+        "storedMode": "auto"
+      },
+      "obligation": "One Undo restores every prior Manual/Frozen note and metadata.",
+      "traceIds": [
+        "U2-TRACE-VOICING-TRANSITION",
+        "U2-TRACE-PREVIEW-ISOLATION"
+      ]
+    },
+    {
+      "id": "U2-FLOW-008",
+      "action": "keep",
+      "sourceRevision": 3,
+      "currentRevision": 4,
+      "expected": {
+        "documentWrites": 0,
+        "undoSteps": 0,
+        "previewStarts": 0,
+        "refused": true
+      },
+      "obligation": "Refuse stale revision even when the same event ID still exists.",
+      "traceIds": [
+        "U2-TRACE-VOICING-TRANSITION",
+        "U2-TRACE-PREVIEW-ISOLATION"
+      ]
+    },
+    {
+      "id": "U2-FLOW-009",
+      "action": "hear",
+      "sourceRevision": 3,
+      "currentRevision": 4,
+      "pitches": [
+        67,
+        60,
+        60,
+        72
+      ],
+      "expected": {
+        "documentWrites": 0,
+        "undoSteps": 0,
+        "previewStarts": 0,
+        "refused": true
+      },
+      "obligation": "A stale candidate may not start audio.",
+      "traceIds": [
+        "U2-TRACE-VOICING-TRANSITION",
+        "U2-TRACE-PREVIEW-ISOLATION"
+      ]
+    },
+    {
+      "id": "U2-FLOW-010",
+      "action": "cancel",
+      "sourceRevision": 3,
+      "currentRevision": 3,
+      "expected": {
+        "documentWrites": 0,
+        "undoSteps": 0,
+        "previewStarts": 0,
+        "futurePreviewStarts": 0
+      },
+      "obligation": "Retire pending preparation and sounding preview; preserve exact current document and selection.",
+      "traceIds": [
+        "U2-TRACE-VOICING-TRANSITION",
+        "U2-TRACE-PREVIEW-ISOLATION"
+      ]
+    },
+    {
+      "id": "U2-FLOW-011",
+      "action": "global-stop",
+      "sourceRevision": 3,
+      "currentRevision": 3,
+      "expected": {
+        "documentWrites": 0,
+        "undoSteps": 0,
+        "previewStarts": 0,
+        "futurePreviewStarts": 0
+      },
+      "obligation": "Retire preview plus transport sources; wait beyond pending native preparation to prove no late restart.",
+      "traceIds": [
+        "U2-TRACE-VOICING-TRANSITION",
+        "U2-TRACE-PREVIEW-ISOLATION"
+      ]
+    },
+    {
+      "id": "U2-FLOW-012",
+      "action": "selection-change",
+      "sourceRevision": 3,
+      "currentRevision": 3,
+      "expected": {
+        "documentWrites": 0,
+        "undoSteps": 0,
+        "previewStarts": 0,
+        "futurePreviewStarts": 0
+      },
+      "obligation": "Retire the old preview owner; old candidate cannot commit against the newly selected event.",
+      "traceIds": [
+        "U2-TRACE-VOICING-TRANSITION",
+        "U2-TRACE-PREVIEW-ISOLATION"
+      ]
     }
   ]
 }

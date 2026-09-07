@@ -57,7 +57,10 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }
         // Native Tab must remain in the recovery dialog rather than finding Exit.
         for (let step = 0; step < 5; step++) {
           await page.keyboard.press("Tab");
-          expect(await page.evaluate(() => document.activeElement?.closest('[role="dialog"]') !== null)).toBe(true);
+          expect(await page.evaluate(() => {
+            const active = document.activeElement;
+            return active !== null && active.closest('[role="dialog"]') !== null;
+          })).toBe(true);
         }
         await page.keyboard.press("Escape");
         await expect(page.getByRole("dialog")).toHaveCount(0);

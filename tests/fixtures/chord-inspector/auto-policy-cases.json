@@ -1,0 +1,424 @@
+{
+  "cases": [
+    {
+      "id": "U2-AUTO-001",
+      "policy": {
+        "mode": "auto",
+        "family": "balanced",
+        "voiceCount": 4,
+        "range": {
+          "lowMidi": 48,
+          "highMidi": 84
+        },
+        "bassPolicy": "generated"
+      },
+      "expected": {
+        "ok": true,
+        "code": null
+      },
+      "traceIds": [
+        "U2-TRACE-VOICING"
+      ]
+    },
+    {
+      "id": "U2-AUTO-002",
+      "policy": {
+        "mode": "auto",
+        "family": "balanced",
+        "voiceCount": 4,
+        "range": {
+          "lowMidi": 48,
+          "highMidi": 84
+        },
+        "bassPolicy": "external"
+      },
+      "expected": {
+        "ok": true,
+        "code": null
+      },
+      "traceIds": [
+        "U2-TRACE-VOICING"
+      ]
+    },
+    {
+      "id": "U2-AUTO-003",
+      "policy": {
+        "mode": "auto",
+        "family": "balanced",
+        "voiceCount": 4,
+        "range": {
+          "lowMidi": 48,
+          "highMidi": 84
+        },
+        "bassPolicy": "none"
+      },
+      "expected": {
+        "ok": true,
+        "code": null
+      },
+      "traceIds": [
+        "U2-TRACE-VOICING"
+      ]
+    },
+    {
+      "id": "U2-AUTO-004",
+      "policy": {
+        "mode": "auto",
+        "family": "shell",
+        "voiceCount": 4,
+        "range": {
+          "lowMidi": 48,
+          "highMidi": 84
+        },
+        "bassPolicy": "generated"
+      },
+      "expected": {
+        "ok": true,
+        "code": null
+      },
+      "traceIds": [
+        "U2-TRACE-VOICING"
+      ]
+    },
+    {
+      "id": "U2-AUTO-005",
+      "policy": {
+        "mode": "auto",
+        "family": "shell",
+        "voiceCount": 4,
+        "range": {
+          "lowMidi": 48,
+          "highMidi": 84
+        },
+        "bassPolicy": "external"
+      },
+      "expected": {
+        "ok": true,
+        "code": null
+      },
+      "traceIds": [
+        "U2-TRACE-VOICING"
+      ]
+    },
+    {
+      "id": "U2-AUTO-006",
+      "policy": {
+        "mode": "auto",
+        "family": "shell",
+        "voiceCount": 4,
+        "range": {
+          "lowMidi": 48,
+          "highMidi": 84
+        },
+        "bassPolicy": "none"
+      },
+      "expected": {
+        "ok": true,
+        "code": null
+      },
+      "traceIds": [
+        "U2-TRACE-VOICING"
+      ]
+    },
+    {
+      "id": "U2-AUTO-007",
+      "policy": {
+        "mode": "auto",
+        "family": "rootless-a",
+        "voiceCount": 4,
+        "range": {
+          "lowMidi": 48,
+          "highMidi": 84
+        },
+        "bassPolicy": "generated"
+      },
+      "expected": {
+        "ok": false,
+        "code": "voicing.rootless_requires_external"
+      },
+      "traceIds": [
+        "U2-TRACE-VOICING"
+      ]
+    },
+    {
+      "id": "U2-AUTO-008",
+      "policy": {
+        "mode": "auto",
+        "family": "rootless-a",
+        "voiceCount": 4,
+        "range": {
+          "lowMidi": 48,
+          "highMidi": 84
+        },
+        "bassPolicy": "external"
+      },
+      "expected": {
+        "ok": true,
+        "code": null
+      },
+      "traceIds": [
+        "U2-TRACE-VOICING"
+      ]
+    },
+    {
+      "id": "U2-AUTO-009",
+      "policy": {
+        "mode": "auto",
+        "family": "rootless-a",
+        "voiceCount": 4,
+        "range": {
+          "lowMidi": 48,
+          "highMidi": 84
+        },
+        "bassPolicy": "none"
+      },
+      "expected": {
+        "ok": false,
+        "code": "voicing.rootless_requires_external"
+      },
+      "traceIds": [
+        "U2-TRACE-VOICING"
+      ]
+    },
+    {
+      "id": "U2-AUTO-010",
+      "policy": {
+        "mode": "auto",
+        "family": "rootless-b",
+        "voiceCount": 4,
+        "range": {
+          "lowMidi": 48,
+          "highMidi": 84
+        },
+        "bassPolicy": "generated"
+      },
+      "expected": {
+        "ok": false,
+        "code": "voicing.rootless_requires_external"
+      },
+      "traceIds": [
+        "U2-TRACE-VOICING"
+      ]
+    },
+    {
+      "id": "U2-AUTO-011",
+      "policy": {
+        "mode": "auto",
+        "family": "rootless-b",
+        "voiceCount": 4,
+        "range": {
+          "lowMidi": 48,
+          "highMidi": 84
+        },
+        "bassPolicy": "external"
+      },
+      "expected": {
+        "ok": true,
+        "code": null
+      },
+      "traceIds": [
+        "U2-TRACE-VOICING"
+      ]
+    },
+    {
+      "id": "U2-AUTO-012",
+      "policy": {
+        "mode": "auto",
+        "family": "rootless-b",
+        "voiceCount": 4,
+        "range": {
+          "lowMidi": 48,
+          "highMidi": 84
+        },
+        "bassPolicy": "none"
+      },
+      "expected": {
+        "ok": false,
+        "code": "voicing.rootless_requires_external"
+      },
+      "traceIds": [
+        "U2-TRACE-VOICING"
+      ]
+    },
+    {
+      "id": "U2-AUTO-013",
+      "policy": {
+        "mode": "auto",
+        "family": "open",
+        "voiceCount": 4,
+        "range": {
+          "lowMidi": 48,
+          "highMidi": 84
+        },
+        "bassPolicy": "generated"
+      },
+      "expected": {
+        "ok": true,
+        "code": null
+      },
+      "traceIds": [
+        "U2-TRACE-VOICING"
+      ]
+    },
+    {
+      "id": "U2-AUTO-014",
+      "policy": {
+        "mode": "auto",
+        "family": "open",
+        "voiceCount": 4,
+        "range": {
+          "lowMidi": 48,
+          "highMidi": 84
+        },
+        "bassPolicy": "external"
+      },
+      "expected": {
+        "ok": true,
+        "code": null
+      },
+      "traceIds": [
+        "U2-TRACE-VOICING"
+      ]
+    },
+    {
+      "id": "U2-AUTO-015",
+      "policy": {
+        "mode": "auto",
+        "family": "open",
+        "voiceCount": 4,
+        "range": {
+          "lowMidi": 48,
+          "highMidi": 84
+        },
+        "bassPolicy": "none"
+      },
+      "expected": {
+        "ok": true,
+        "code": null
+      },
+      "traceIds": [
+        "U2-TRACE-VOICING"
+      ]
+    },
+    {
+      "id": "U2-AUTO-016",
+      "policy": {
+        "mode": "auto",
+        "family": "drop2",
+        "voiceCount": 4,
+        "range": {
+          "lowMidi": 48,
+          "highMidi": 84
+        },
+        "bassPolicy": "generated"
+      },
+      "expected": {
+        "ok": true,
+        "code": null
+      },
+      "traceIds": [
+        "U2-TRACE-VOICING"
+      ]
+    },
+    {
+      "id": "U2-AUTO-017",
+      "policy": {
+        "mode": "auto",
+        "family": "drop2",
+        "voiceCount": 4,
+        "range": {
+          "lowMidi": 48,
+          "highMidi": 84
+        },
+        "bassPolicy": "external"
+      },
+      "expected": {
+        "ok": true,
+        "code": null
+      },
+      "traceIds": [
+        "U2-TRACE-VOICING"
+      ]
+    },
+    {
+      "id": "U2-AUTO-018",
+      "policy": {
+        "mode": "auto",
+        "family": "drop2",
+        "voiceCount": 4,
+        "range": {
+          "lowMidi": 48,
+          "highMidi": 84
+        },
+        "bassPolicy": "none"
+      },
+      "expected": {
+        "ok": true,
+        "code": null
+      },
+      "traceIds": [
+        "U2-TRACE-VOICING"
+      ]
+    },
+    {
+      "id": "U2-AUTO-019",
+      "policy": {
+        "mode": "auto",
+        "family": "quartal",
+        "voiceCount": 4,
+        "range": {
+          "lowMidi": 48,
+          "highMidi": 84
+        },
+        "bassPolicy": "generated"
+      },
+      "expected": {
+        "ok": true,
+        "code": null
+      },
+      "traceIds": [
+        "U2-TRACE-VOICING"
+      ]
+    },
+    {
+      "id": "U2-AUTO-020",
+      "policy": {
+        "mode": "auto",
+        "family": "quartal",
+        "voiceCount": 4,
+        "range": {
+          "lowMidi": 48,
+          "highMidi": 84
+        },
+        "bassPolicy": "external"
+      },
+      "expected": {
+        "ok": true,
+        "code": null
+      },
+      "traceIds": [
+        "U2-TRACE-VOICING"
+      ]
+    },
+    {
+      "id": "U2-AUTO-021",
+      "policy": {
+        "mode": "auto",
+        "family": "quartal",
+        "voiceCount": 4,
+        "range": {
+          "lowMidi": 48,
+          "highMidi": 84
+        },
+        "bassPolicy": "none"
+      },
+      "expected": {
+        "ok": true,
+        "code": null
+      },
+      "traceIds": [
+        "U2-TRACE-VOICING"
+      ]
+    }
+  ]
+}

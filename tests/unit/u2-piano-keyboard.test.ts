@@ -4,7 +4,6 @@
 import { describe, expect, test } from "bun:test";
 import {
   buildPianoAccessibleLabel,
-  defaultSpellingForMidi,
   derivePianoKeyboardViewModel,
   isBlackKeyMidi,
   midiToOctave,
@@ -18,11 +17,11 @@ import {
 } from "../../src/application/u2-chord-inspector-contract";
 
 describe("U2 Piano Keyboard Geometry & Accessible Navigation (L-PIANO-01)", () => {
-  test("generates all 88 physical keys from A0 (21) to C8 (108)", () => {
+  test("exposes all128 MIDI coordinates while retaining the smaller default viewport", () => {
     const vm = derivePianoKeyboardViewModel([]);
-    expect(vm.keys.length).toBe(88);
+    expect(vm.keys.length).toBe(128);
     expect(vm.keys[0]?.midi).toBe(PIANO_MIN_MIDI);
-    expect(vm.keys[87]?.midi).toBe(PIANO_MAX_MIDI);
+    expect(vm.keys[127]?.midi).toBe(PIANO_MAX_MIDI);
     expect(vm.visibleMinMidi).toBe(PIANO_DEFAULT_VISIBLE_MIN_MIDI);
     expect(vm.visibleMaxMidi).toBe(PIANO_DEFAULT_VISIBLE_MAX_MIDI);
   });
@@ -62,7 +61,9 @@ describe("U2 Piano Keyboard Geometry & Accessible Navigation (L-PIANO-01)", () =
       4,
       "guide-third",
     );
-    expect(guideLabel).toBe("E4, Major Third Guide Tone");
+    expect(guideLabel).toBe("E4, Third Guide Tone");
+    expect(buildPianoAccessibleLabel({ step: "E", alter: 0 }, 4, "guide-third", 0)).toBe("E4, Major Third Guide Tone");
+    expect(buildPianoAccessibleLabel({ step: "E", alter: -1 }, 4, "guide-third", -1)).toBe("Eb4, Minor Third Guide Tone");
 
     const tensionLabel = buildPianoAccessibleLabel(
       { step: "A", alter: 1 },

@@ -36,6 +36,12 @@
       "name": "Serialized Transport & Audio Stop Guarantee",
       "package": "X1",
       "role": "Executes isolated chord audio previews without mutating progression state."
+    },
+    {
+      "id": "F2",
+      "name": "Foundation exact document data",
+      "package": "F2",
+      "role": "U2 Refinement2; domain/chord.ts and domain/document.ts:16 exact notes, MIDI0..127,2000 Unicode code points. Arithmetic fixtures independently authored; no human listening or expert approval claimed."
     }
   ],
   "laws": [
@@ -45,19 +51,19 @@
     },
     {
       "id": "U2-LAW-PIANO-BOUNDS",
-      "description": "Piano keyboard maps accurately across 88 physical keys (21..108 MIDI)."
+      "description": "All128 MIDI coordinates remain accessible; a visual viewport never restricts valid notes."
     },
     {
       "id": "U2-LAW-VOICING-DISCARD-CONFIRMATION",
       "description": "Switching from Manual to Auto voicing requires user confirmation to prevent accidental loss."
     },
     {
-      "id": "U2-LAW-MANUAL-UNISON-REJECTION",
-      "description": "Adding an exact MIDI unison duplicate in manual mode is rejected; octave doublings are permitted."
+      "id": "U2-LAW-EXACT-NOTES",
+      "description": "One to16 notes preserve order, spelling, octave and duplicate unisons exactly in Manual/Frozen. Refuse17; never silently normalize."
     },
     {
-      "id": "U2-LAW-ANNOTATION-SANITIZATION",
-      "description": "All annotation text is strictly sanitized to prevent HTML/script injection and bounded to 500 code points."
+      "id": "U2-LAW-INERT-ANNOTATION",
+      "description": "Preserve up to2000 Unicode code points as inert text, including markup and controls. Refuse2001 without erasing the draft."
     },
     {
       "id": "U2-LAW-PREVIEW-ISOLATION",

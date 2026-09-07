@@ -100,10 +100,10 @@ describe("U2 Chord Inspector Specification Contract", () => {
     expect(U2_SPEC_SEMANTIC_DIGEST).toHaveLength(64);
   });
 
-  test("module source policy: u2-chord-inspector-contract imports only domain", () => {
+  test("contract imports only domain; UI re-exports use the public application entry", () => {
     const modulePath = resolve(
       import.meta.dirname,
-      "../../src/ui/studio/u2-chord-inspector-contract.ts",
+      "../../src/application/u2-chord-inspector-contract.ts",
     );
     const content = readFileSync(modulePath, "utf8");
     const source = ts.createSourceFile(
@@ -116,7 +116,8 @@ describe("U2 Chord Inspector Specification Contract", () => {
     const importedModules: string[] = [];
     ts.forEachChild(source, (node) => {
       if (
-        ts.isImportDeclaration(node) &&
+        (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
+        node.moduleSpecifier !== undefined &&
         ts.isStringLiteral(node.moduleSpecifier)
       ) {
         importedModules.push(node.moduleSpecifier.text);
@@ -124,7 +125,18 @@ describe("U2 Chord Inspector Specification Contract", () => {
     });
 
     for (const specifier of importedModules) {
-      expect(["../../domain"].includes(specifier)).toBe(true);
+      expect(specifier).toBe("../domain");
     }
+    expect(importedModules.length).toBeGreaterThan(0);
+    const wrapperPath = resolve(import.meta.dirname, "../../src/ui/studio/u2-chord-inspector-contract.ts");
+    const wrapper = ts.createSourceFile(wrapperPath, readFileSync(wrapperPath, "utf8"), ts.ScriptTarget.Latest, true);
+    let exportCount = 0;
+    ts.forEachChild(wrapper, node => {
+      if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) && node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier)) {
+        expect(node.moduleSpecifier.text).toBe("../../application");
+        exportCount += 1;
+      }
+    });
+    expect(exportCount).toBe(1);
   });
 });

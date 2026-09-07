@@ -2,9 +2,9 @@
  * Independent validator for the proposed U2 Chord Inspector packet.
  *
  * This validator imports no production module. It restates every constant it
- * judges (the U2_REVIEWED_* exports below), re-derives every expectation
- * from the fixture scenarios, replays every mutation control, and pins
- * the frozen packet with byte and semantic digests.
+ * judges (the U2_REVIEWED_* exports below), checks fixture arithmetic and exact
+ * data laws independently, and pins the packet with byte/semantic digests.
+ * Mutation references are obligations; only executed tests prove a source kill.
  *
  * CLI: bun scripts/validate-u2-contract.ts [fixtureRoot] [--allow-pending-freeze]
  */
@@ -23,7 +23,7 @@ export const U2_REVIEWED_MANIFEST_SCHEMA =
 export const U2_REVIEWED_PACKAGE = "U2";
 export const U2_REVIEWED_BEAD_ID = "jcpe-milestone-reliable-studio-l3a.11.1";
 export const U2_REVIEWED_POLICY_ID = "changes.u2-chord-inspector";
-export const U2_REVIEWED_POLICY_VERSION = 1;
+export const U2_REVIEWED_POLICY_VERSION = 2;
 
 export const U2_REVIEWED_TABS = Object.freeze([
   "symbol",
@@ -52,13 +52,13 @@ export const U2_REVIEWED_PIANO_NOTE_ROLES = Object.freeze([
 ] as const);
 
 export const U2_REVIEWED_PIANO_BOUNDS = Object.freeze({
-  minMidi: 21,
-  maxMidi: 108,
+  minMidi: 0,
+  maxMidi: 127,
   visibleMinMidi: 36,
   visibleMaxMidi: 84,
   minManualNotes: 1,
-  maxManualNotes: 12,
-  maxAnnotationCodePoints: 500,
+  maxManualNotes: 16,
+  maxAnnotationCodePoints: 2000,
 });
 
 export const U2_REVIEWED_REFUSAL_CODES = Object.freeze([
@@ -67,7 +67,6 @@ export const U2_REVIEWED_REFUSAL_CODES = Object.freeze([
   "u2.unresolvable_chord_symbol",
   "u2.manual_voicing_empty",
   "u2.manual_voicing_exceeds_maximum",
-  "u2.manual_voicing_unison_duplicate",
   "u2.manual_voicing_out_of_range",
   "u2.mode_switch_requires_confirmation",
   "u2.annotation_length_exceeded",
@@ -83,42 +82,41 @@ export const U2_EXPECTED_COMPANIONS = Object.freeze([
   "mutation-controls.json",
   "trace-ledger.json",
   "provenance-ledger.json",
+  "exact-note-cases.json",
+  "auto-policy-cases.json",
 ] as const);
 
 export const U2_EXPECTED_COUNTS = Object.freeze({
   tabs: 7,
   inspectorCases: 4,
   pianoCases: 4,
-  voicingTransitionCases: 4,
-  annotationCases: 4,
-  mutationControls: 8,
+  voicingTransitionCases: 7,
+  annotationCases: 9,
+  mutationControls: 12,
   traces: 11,
-  authorities: 6,
+  authorities: 7,
   laws: 6,
+  exactNoteCases: 8,
+  autoPolicyCases: 21,
+  workflowCases: 12,
 });
 
 export const U2_SPEC_BYTE_DIGESTS: Readonly<Record<string, string>> =
   Object.freeze({
-    "u2-chord-inspector-contract.json":
-      "be7d4d64a1e3f4b0ce2fd6cfae1999eb197f91897f25d9a25724ff92f951375c",
-    "inspector-cases.json":
-      "687ed9952189a005d2e4cb5208198db157ab774ca7ceb47fd7e8284311b52704",
-    "piano-cases.json":
-      "b47b27e2863e2d3479f6633d149be539774c12260f5c0ee4dcadcf8571cda4c9",
-    "voicing-transition-cases.json":
-      "4bf4adf137830ada2b299cfb138d0416d7da30d727ce70ffdef0c93af5fac242",
-    "annotation-cases.json":
-      "80e5d33e87959253d4f6b0537a03a44d6dc523c9cc6f0ddf96f66ac26fbef27a",
-    "mutation-controls.json":
-      "25655052bb480f87ae4763bce4ced9d475ef041bb9563c73da79c863b0d9ef5f",
-    "trace-ledger.json":
-      "9e4b5f7125217cc8cfab18814339627ad6a2d614da7c5123071b59f23322a456",
-    "provenance-ledger.json":
-      "a046cd5043a2e420cdbb450bdccf0a6949d1ceb083d6ad7933d98e797da4abd7",
-  });
+    "u2-chord-inspector-contract.json": "2f1db8b26b7c40d21d2b1956946d7f65227d150955c56a4f02a76e90f09c9ef7",
+    "inspector-cases.json": "ebc3d89fb135c9165ae70baee2e09b642688c0385ddd4129382d0892d8698a83",
+    "piano-cases.json": "0f1803c2fac8cc0949317f1e9d84d4e2dced0114a5098fc325feac6561439667",
+    "voicing-transition-cases.json": "90b47659028852ee00e56c8dd3ed310d43acb1001b462b06f0af44c1f67f42f2",
+    "annotation-cases.json": "27f21cdc6df1d54d00c4911698687cecdae75049e840e4fd6f21cd5647147c18",
+    "mutation-controls.json": "e5dc10f8befbed090ae07161d61426d516a38c78eff4aa241a2ef854f4782967",
+    "trace-ledger.json": "7d782f3b73c904c970f2a4b8630da1a02acab9549ffd402b3d5256bb212c63d2",
+    "provenance-ledger.json": "2c55525f5ea5cc7e0ba348a12af9e113be5fe0842aeabd8f90e57b002548e93a",
+    "exact-note-cases.json": "57b902a0bc60af640d4ed6079cee6c70bde9e780af80aa5485957a136d98e03d",
+    "auto-policy-cases.json": "887c27a0c176e80b12861369c29babf45dcf8ef5105c30c21c0cce21750d47b7"
+});
 
 export const U2_SPEC_SEMANTIC_DIGEST =
-  "5d8a3fa6e18a97f8d857c13e7ff52565e5194f5821ac8e3a24b96cfe43f4e564";
+  "dd79a17fe1c32260001deb9201b2498022a31128c679e36c6c3b1484b8e9e148";
 
 /* -------------------------------------------------------------------------- */
 /* Validation Types & Helpers                                                 */
@@ -162,6 +160,153 @@ function finding(
   message: string,
 ): void {
   list.push(Object.freeze({ code, path, message }));
+}
+
+function record(value: unknown): Record<string, unknown> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return {};
+  return Object.fromEntries(Object.entries(value));
+}
+
+function items(value: unknown): readonly unknown[] {
+  return Array.isArray(value) ? value : [];
+}
+
+// Independently restated diatonic semitones. No production theory imports.
+function semitone(value: unknown): number {
+  const pitch = record(value);
+  const step = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+  const base = Object.entries(step).find(([name]) => name === pitch["step"])?.[1];
+  const alter = pitch["alter"];
+  if (base === undefined || typeof alter !== "number" || !Number.isInteger(alter) || Math.abs(alter) > 2) return NaN;
+  return base + alter;
+}
+
+function midi(value: unknown): number {
+  const octave = record(value)["octave"];
+  return typeof octave === "number" && Number.isInteger(octave)
+    ? 12 * (octave + 1) + semitone(value) : NaN;
+}
+
+/** Also callable without digest checks, so tests cannot hide behind changed pins. */
+export function validateU2Semantics(files: Readonly<Record<string, unknown>>): readonly U2ValidationFinding[] {
+  const findings: U2ValidationFinding[] = [];
+  const check = (actual: unknown, expected: unknown, path: string, code = "U2_EXPECTATION_INVALID") => {
+    if (stableJson(actual) !== stableJson(expected)) finding(findings, code, path,
+      `Expected ${stableJson(expected)}, got ${stableJson(actual)}`);
+  };
+  const rows = (file: string, key = "cases") => items(record(files[file])[key]).map(record);
+  const idOf = (row: Record<string, unknown>) => typeof row["id"] === "string" ? row["id"] : "<missing-id>";
+  const caseFiles = ["inspector-cases.json", "piano-cases.json", "voicing-transition-cases.json", "annotation-cases.json", "exact-note-cases.json", "auto-policy-cases.json"];
+  const countKeys = ["inspectorCases", "pianoCases", "voicingTransitionCases", "annotationCases", "exactNoteCases", "autoPolicyCases"];
+  const counts = record(record(files["u2-chord-inspector-contract.json"])["counts"]);
+  for (const [file, field, countKey] of [
+    ["trace-ledger.json", "traces", "traces"],
+    ["mutation-controls.json", "controls", "mutationControls"],
+    ["provenance-ledger.json", "authorities", "authorities"],
+    ["provenance-ledger.json", "laws", "laws"],
+  ] as const) check(rows(file, field).length, counts[countKey], `${file}.${field}.count`, "U2_ACTUAL_COUNT_MISMATCH");
+  const ids = new Set<string>();
+  for (const [index, file] of caseFiles.entries()) {
+    check(rows(file).length, counts[countKeys[index] ?? ""], `${file}.count`, "U2_ACTUAL_COUNT_MISMATCH");
+    for (const row of rows(file)) {
+      const id = idOf(row);
+      if (id === "<missing-id>" || ids.has(id)) finding(findings, "U2_CASE_ID_INVALID", file, id);
+      ids.add(id);
+    }
+  }
+  for (const row of rows("annotation-cases.json")) {
+    const path = idOf(row), raw = row["rawInput"], expected = record(row["expected"]);
+    if (typeof raw !== "string") { finding(findings, "U2_ANNOTATION_INVALID", path, "Source must be text"); continue; }
+    const count = Array.from(raw).length, valid = count <= 2000;
+    check(expected["text"], raw, path + ".text", "U2_ANNOTATION_SOURCE_CHANGED");
+    check(expected["codePoints"], count, path + ".codePoints");
+    check(expected["isWithinLimit"], valid, path + ".isWithinLimit");
+    check(expected["isRefused"], !valid, path + ".isRefused");
+    if (!valid) check(expected["refusalCode"], "u2.annotation_length_exceeded", path + ".refusalCode");
+  }
+  for (const row of rows("exact-note-cases.json")) {
+    const path = idOf(row), pitches = items(row["pitches"]), expected = record(row["expected"]);
+    const numbers = pitches.map(midi);
+    const code = pitches.length === 0 ? "voicing.pitches_empty" : pitches.length > 16 ? "limit.voicing_notes_exceeded"
+      : numbers.some(n => !Number.isInteger(n) || n < 0 || n > 127) ? "pitch.midi_out_of_range" : null;
+    check(expected["midi"], numbers, path + ".midi", "U2_PITCH_ARITHMETIC_INVALID");
+    check(expected["ok"], code === null, path + ".ok");
+    if (code === null) check(expected["pitches"], pitches, path + ".pitches", "U2_EXACT_PITCHES_CHANGED");
+    else check(expected["code"], code, path + ".code");
+  }
+  for (const row of rows("auto-policy-cases.json")) {
+    const path = idOf(row), policy = record(row["policy"]), expected = record(row["expected"]);
+    const family = policy["family"];
+    const rootless = family === "rootless-a" || family === "rootless-b";
+    const valid = !rootless || policy["bassPolicy"] === "external";
+    check(["balanced", "shell", "rootless-a", "rootless-b", "open", "drop2", "quartal"].includes(String(family)), true, path + ".family");
+    check(expected["ok"], valid, path + ".ok", "U2_AUTO_POLICY_INVALID");
+    check(expected["code"], valid ? null : "voicing.rootless_requires_external", path + ".code");
+  }
+  for (const row of rows("piano-cases.json")) {
+    const path = idOf(row);
+    if (row["totalKeys"] !== undefined) {
+      check(row["minMidi"], 0, path + ".minMidi"); check(row["maxMidi"], 127, path + ".maxMidi");
+      check(row["totalKeys"], 128, path + ".totalKeys");
+      check(row["whiteKeyCount"], 75, path + ".whiteKeyCount"); check(row["blackKeyCount"], 53, path + ".blackKeyCount");
+      check(row["visibleKeyCount"], 49, path + ".visibleKeyCount");
+    }
+    for (const key of items(row["expectedKeyRoles"]).map(record)) {
+      const note = key["midi"], spelling = record(key["spelling"]);
+      if (typeof note !== "number") { finding(findings, "U2_PIANO_INVALID", path, "Missing MIDI coordinate"); continue; }
+      const pc = ((semitone(spelling) % 12) + 12) % 12;
+      check(key["pitchClass"], note % 12, path + ".pitchClass", "U2_PITCH_ARITHMETIC_INVALID");
+      check(pc, note % 12, path + ".spelling", "U2_PITCH_ARITHMETIC_INVALID");
+      check(key["isBlack"], [1,3,6,8,10].includes(note % 12), path + ".isBlack");
+    }
+    if (row["duplicateUnisonRejected"] !== undefined) check(row["duplicateUnisonRejected"], false, path + ".duplicateUnisonRejected");
+  }
+  for (const row of rows("inspector-cases.json")) {
+    const path = idOf(row), view = record(row["expected"]), voice = record(view["voicing"]), notes = record(view["notes"]);
+    check(voice["midiNoteNumbers"], items(voice["activePitches"]).map(midi), path + ".voicing.midi", "U2_PITCH_ARITHMETIC_INVALID");
+    check(notes["text"], notes["rawAnnotation"], path + ".notes.text", "U2_ANNOTATION_SOURCE_CHANGED");
+    check(notes["codePointCount"], typeof notes["text"] === "string" ? Array.from(notes["text"]).length : null, path + ".notes.codePoints");
+    check(notes["maxCodePoints"], 2000, path + ".notes.maxCodePoints");
+    for (const degree of items(record(view["structure"])["degrees"]).map(record))
+      check(degree["pitchClass"], ((semitone(degree["spelling"]) % 12) + 12) % 12, path + ".degree.pitchClass", "U2_PITCH_ARITHMETIC_INVALID");
+  }
+  for (const row of rows("voicing-transition-cases.json")) {
+    const path = idOf(row), expected = record(row["expectedOutcome"]);
+    if (row["toMode"] === "auto") {
+      const code = row["confirmDiscardManual"] !== true ? "u2.mode_switch_requires_confirmation"
+        : row["requestedAuto"] === null || row["requestedAuto"] === undefined ? "voicing.auto_settings_required" : null;
+      check(expected["ok"], code === null, path + ".ok");
+      if (code !== null) check(expected["code"], code, path + ".code");
+    } else {
+      check(expected["resultingPitches"], row["synthesizedAutoPitches"], path + ".pitches", "U2_EXACT_PITCHES_CHANGED");
+    }
+  }
+  const workflows = rows("voicing-transition-cases.json", "workflows");
+  check(workflows.length, counts["workflowCases"], "workflowCases", "U2_ACTUAL_COUNT_MISMATCH");
+  for (const row of workflows) {
+    const path = idOf(row), expected = record(row["expected"]), action = row["action"];
+    if (ids.has(path)) finding(findings, "U2_CASE_ID_INVALID", path, "Duplicate workflow ID");
+    ids.add(path);
+    const refused = row["sourceRevision"] !== row["currentRevision"] || action === "return-auto" && row["confirmed"] !== true;
+    const commits = !refused && ["apply-auto", "keep", "edit-exact-notes", "return-auto"].includes(String(action));
+    check(expected["documentWrites"], commits ? 1 : 0, path + ".documentWrites");
+    check(expected["undoSteps"], commits ? 1 : 0, path + ".undoSteps");
+    check(expected["previewStarts"], action === "hear" && !refused ? 1 : 0, path + ".previewStarts");
+    if (refused) check(expected["refused"], true, path + ".refused");
+    if (action === "hear" && !refused) check(expected["soundedPitches"], row["pitches"], path + ".soundedPitches", "U2_EXACT_PITCHES_CHANGED");
+    if (["cancel", "global-stop", "selection-change"].includes(String(action))) check(expected["futurePreviewStarts"], 0, path + ".futurePreviewStarts");
+  }
+  for (const row of rows("trace-ledger.json", "traces")) {
+    for (const id of items(row["cases"])) check(ids.has(String(id)), true, idOf(row) + ".case", "U2_TRACE_CASE_MISSING");
+  }
+  const traceIds = new Set(rows("trace-ledger.json", "traces").map(idOf));
+  for (const file of caseFiles) for (const row of rows(file)) {
+    check(items(row["traceIds"]).length > 0, true, idOf(row) + ".traceIds");
+    for (const id of items(row["traceIds"])) check(traceIds.has(String(id)), true, idOf(row) + ".trace", "U2_CASE_TRACE_MISSING");
+  }
+  for (const row of rows("mutation-controls.json", "controls"))
+    check(ids.has(String(row["killedByCase"])), true, idOf(row), "U2_MUTATION_CASE_MISSING");
+  return Object.freeze(findings);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -352,7 +497,9 @@ export async function validateU2Contract(
     }
   }
 
-  // Validate semantic digest
+  findings.push(...validateU2Semantics(loadedFiles));
+
+  // Digest pins are additional integrity checks, not semantic authority.
   const computedSemanticDigest = sha256(stableJson(loadedFiles));
   if (computedSemanticDigest !== U2_SPEC_SEMANTIC_DIGEST) {
     finding(

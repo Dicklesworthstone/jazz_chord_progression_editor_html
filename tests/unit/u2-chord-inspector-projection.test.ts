@@ -3,12 +3,11 @@
  * (bead jcpe-milestone-reliable-studio-l3a.11.2).
  */
 import { describe, expect, test } from "bun:test";
+import { inspectorEvent, inspectorState } from "../support/u2-inspector-fixtures";
 import { projectChordInspectorViewModel } from "../../src/application";
 import { createStudioBootstrap } from "../../src/application/studio-bootstrap";
 import type { AppState } from "../../src/application/application-state-contract";
 import type {
-  ChordEvent,
-  ChordEventId,
   ChordSpec,
   CustomChordSpec,
 } from "../../src/domain";
@@ -28,11 +27,21 @@ const SAMPLE_CUSTOM_SPEC: CustomChordSpec = {
   kind: "custom",
   sourceText: "CcustomX",
   label: "CcustomX",
-  pitchNames: [{ step: "C", alter: 0 }],
+  pitchNames: [{ step: "C", alter: 0 }, { step: "F", alter: 1 }],
   bass: null,
 };
 
 describe("U2 Chord Inspector Projection", () => {
+  test("fixture publication refuses custom pitches absent from its declared formula", () => {
+    const event = inspectorEvent({
+      id: "ev-custom-mismatch", annotation: "",
+      chord: { ...SAMPLE_CUSTOM_SPEC, pitchNames: [{ step: "C", alter: 0 }] },
+      voicing: { mode: "manual", bassPolicy: "included", pitches: [
+        { step: "C", alter: 0, octave: 4 }, { step: "F", alter: 1, octave: 4 },
+      ] },
+    });
+    expect(() => inspectorState(event)).toThrow("custom.pitch_voicing_mismatch");
+  });
   test("returns clean empty state when no chord event is selected", () => {
     const state = getBootstrapState();
     const emptyState: AppState = {
@@ -55,58 +64,26 @@ describe("U2 Chord Inspector Projection", () => {
   });
 
   test("projects standard parsed chord (Cmaj7) across all 7 tabs", () => {
-    const baseState = getBootstrapState();
-    const eventId = "ev-1" as ChordEventId;
+    const eventId = "ev-1";
 
-    const sampleChordEvent: ChordEvent = {
+    const sampleChordEvent = inspectorEvent({
       id: eventId,
-      duration: Object.freeze({ numerator: 4, denominator: 1 }),
       annotation: "Opening tonic",
       chord: SAMPLE_CMAJ7_SPEC,
       voicing: Object.freeze({
         mode: "auto",
-        family: "rootless-a",
+        family: "balanced",
         bassPolicy: "generated",
         voiceCount: 4,
-        colorPolicy: "none",
         range: Object.freeze({ lowMidi: 48, highMidi: 72 }),
       }),
-    };
+    });
 
-    const state: AppState = {
-      ...baseState,
-      document: {
-        ...baseState.document,
-        sections: baseState.document.sections.map((sec, sIdx) =>
-          sIdx === 0
-            ? {
-                ...sec,
-                measures: sec.measures.map((m, mIdx) =>
-                  mIdx === 0
-                    ? {
-                        ...m,
-                        events: Object.freeze([sampleChordEvent]),
-                      }
-                    : m,
-                ),
-              }
-            : sec,
-        ),
-      },
-      bookmarks: {
-        ...baseState.bookmarks,
-        selection: {
-          kind: "events",
-          eventIds: Object.freeze([eventId]),
-          anchorEventId: eventId,
-          focusEventId: eventId,
-        },
-      },
-    };
+    const state = inspectorState(sampleChordEvent);
 
     const view = projectChordInspectorViewModel(state);
     expect(view.hasSelectedEvent).toBe(true);
-    expect(view.selectedEventId).toBe(eventId);
+    expect(view.selectedEventId).toBe(sampleChordEvent.id);
 
     // 1. Symbol
     expect(view.symbol.sourceText).toBe("Cmaj7");
@@ -140,17 +117,15 @@ describe("U2 Chord Inspector Projection", () => {
     expect(view.motion.voicePaths).toBeDefined();
 
     // 7. Notes
-    expect(view.notes.maxCodePoints).toBe(500);
+    expect(view.notes.maxCodePoints).toBe(2000);
     expect(view.notes.rawAnnotation).toBe("Opening tonic");
   });
 
   test("custom unrecognized chords preserve source text without guessing canonical", () => {
-    const baseState = getBootstrapState();
-    const eventId = "ev-custom" as ChordEventId;
+    const eventId = "ev-custom";
 
-    const customEvent: ChordEvent = {
+    const customEvent = inspectorEvent({
       id: eventId,
-      duration: Object.freeze({ numerator: 4, denominator: 1 }),
       annotation: "Custom experiment",
       chord: SAMPLE_CUSTOM_SPEC,
       voicing: Object.freeze({
@@ -158,41 +133,12 @@ describe("U2 Chord Inspector Projection", () => {
         pitches: Object.freeze([
           { step: "C", alter: 0, octave: 4 },
           { step: "F", alter: 1, octave: 4 },
-        ]),
-        bassPolicy: "external",
+        ] as const),
+        bassPolicy: "included",
       }),
-    };
+    });
 
-    const customState: AppState = {
-      ...baseState,
-      document: {
-        ...baseState.document,
-        sections: baseState.document.sections.map((sec, sIdx) =>
-          sIdx === 0
-            ? {
-                ...sec,
-                measures: sec.measures.map((m, mIdx) =>
-                  mIdx === 0
-                    ? {
-                        ...m,
-                        events: Object.freeze([customEvent]),
-                      }
-                    : m,
-                ),
-              }
-            : sec,
-        ),
-      },
-      bookmarks: {
-        ...baseState.bookmarks,
-        selection: {
-          kind: "events",
-          eventIds: Object.freeze([eventId]),
-          anchorEventId: eventId,
-          focusEventId: eventId,
-        },
-      },
-    };
+    const customState = inspectorState(customEvent);
 
     const view = projectChordInspectorViewModel(customState);
     expect(view.symbol.sourceText).toBe("CcustomX");

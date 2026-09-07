@@ -1,0 +1,622 @@
+{
+  "cases": [
+    {
+      "id": "U2-EXACT-001",
+      "mode": "manual",
+      "pitches": [
+        {
+          "step": "G",
+          "alter": 0,
+          "octave": 4
+        },
+        {
+          "step": "C",
+          "alter": 0,
+          "octave": 4
+        },
+        {
+          "step": "C",
+          "alter": 0,
+          "octave": 4
+        },
+        {
+          "step": "C",
+          "alter": 0,
+          "octave": 5
+        },
+        {
+          "step": "B",
+          "alter": 1,
+          "octave": 3
+        },
+        {
+          "step": "C",
+          "alter": -1,
+          "octave": 5
+        },
+        {
+          "step": "C",
+          "alter": 0,
+          "octave": -1
+        },
+        {
+          "step": "G",
+          "alter": 0,
+          "octave": 9
+        },
+        {
+          "step": "F",
+          "alter": 1,
+          "octave": 4
+        },
+        {
+          "step": "G",
+          "alter": -1,
+          "octave": 4
+        },
+        {
+          "step": "D",
+          "alter": 0,
+          "octave": 3
+        },
+        {
+          "step": "D",
+          "alter": 0,
+          "octave": 5
+        },
+        {
+          "step": "E",
+          "alter": 0,
+          "octave": 4
+        },
+        {
+          "step": "A",
+          "alter": 0,
+          "octave": 4
+        },
+        {
+          "step": "B",
+          "alter": -1,
+          "octave": 4
+        },
+        {
+          "step": "F",
+          "alter": 0,
+          "octave": 4
+        }
+      ],
+      "bassPolicy": "included",
+      "expected": {
+        "ok": true,
+        "midi": [
+          67,
+          60,
+          60,
+          72,
+          60,
+          71,
+          0,
+          127,
+          66,
+          66,
+          50,
+          74,
+          64,
+          69,
+          70,
+          65
+        ],
+        "pitches": [
+          {
+            "step": "G",
+            "alter": 0,
+            "octave": 4
+          },
+          {
+            "step": "C",
+            "alter": 0,
+            "octave": 4
+          },
+          {
+            "step": "C",
+            "alter": 0,
+            "octave": 4
+          },
+          {
+            "step": "C",
+            "alter": 0,
+            "octave": 5
+          },
+          {
+            "step": "B",
+            "alter": 1,
+            "octave": 3
+          },
+          {
+            "step": "C",
+            "alter": -1,
+            "octave": 5
+          },
+          {
+            "step": "C",
+            "alter": 0,
+            "octave": -1
+          },
+          {
+            "step": "G",
+            "alter": 0,
+            "octave": 9
+          },
+          {
+            "step": "F",
+            "alter": 1,
+            "octave": 4
+          },
+          {
+            "step": "G",
+            "alter": -1,
+            "octave": 4
+          },
+          {
+            "step": "D",
+            "alter": 0,
+            "octave": 3
+          },
+          {
+            "step": "D",
+            "alter": 0,
+            "octave": 5
+          },
+          {
+            "step": "E",
+            "alter": 0,
+            "octave": 4
+          },
+          {
+            "step": "A",
+            "alter": 0,
+            "octave": 4
+          },
+          {
+            "step": "B",
+            "alter": -1,
+            "octave": 4
+          },
+          {
+            "step": "F",
+            "alter": 0,
+            "octave": 4
+          }
+        ]
+      },
+      "traceIds": [
+        "U2-TRACE-VOICING-TRANSITION"
+      ]
+    },
+    {
+      "id": "U2-EXACT-002",
+      "mode": "frozen",
+      "pitches": [
+        {
+          "step": "G",
+          "alter": 0,
+          "octave": 4
+        },
+        {
+          "step": "C",
+          "alter": 0,
+          "octave": 4
+        },
+        {
+          "step": "C",
+          "alter": 0,
+          "octave": 4
+        },
+        {
+          "step": "C",
+          "alter": 0,
+          "octave": 5
+        },
+        {
+          "step": "B",
+          "alter": 1,
+          "octave": 3
+        },
+        {
+          "step": "C",
+          "alter": -1,
+          "octave": 5
+        },
+        {
+          "step": "C",
+          "alter": 0,
+          "octave": -1
+        },
+        {
+          "step": "G",
+          "alter": 0,
+          "octave": 9
+        },
+        {
+          "step": "F",
+          "alter": 1,
+          "octave": 4
+        },
+        {
+          "step": "G",
+          "alter": -1,
+          "octave": 4
+        },
+        {
+          "step": "D",
+          "alter": 0,
+          "octave": 3
+        },
+        {
+          "step": "D",
+          "alter": 0,
+          "octave": 5
+        },
+        {
+          "step": "E",
+          "alter": 0,
+          "octave": 4
+        },
+        {
+          "step": "A",
+          "alter": 0,
+          "octave": 4
+        },
+        {
+          "step": "B",
+          "alter": -1,
+          "octave": 4
+        },
+        {
+          "step": "F",
+          "alter": 0,
+          "octave": 4
+        }
+      ],
+      "bassPolicy": "included",
+      "expected": {
+        "ok": true,
+        "midi": [
+          67,
+          60,
+          60,
+          72,
+          60,
+          71,
+          0,
+          127,
+          66,
+          66,
+          50,
+          74,
+          64,
+          69,
+          70,
+          65
+        ],
+        "pitches": [
+          {
+            "step": "G",
+            "alter": 0,
+            "octave": 4
+          },
+          {
+            "step": "C",
+            "alter": 0,
+            "octave": 4
+          },
+          {
+            "step": "C",
+            "alter": 0,
+            "octave": 4
+          },
+          {
+            "step": "C",
+            "alter": 0,
+            "octave": 5
+          },
+          {
+            "step": "B",
+            "alter": 1,
+            "octave": 3
+          },
+          {
+            "step": "C",
+            "alter": -1,
+            "octave": 5
+          },
+          {
+            "step": "C",
+            "alter": 0,
+            "octave": -1
+          },
+          {
+            "step": "G",
+            "alter": 0,
+            "octave": 9
+          },
+          {
+            "step": "F",
+            "alter": 1,
+            "octave": 4
+          },
+          {
+            "step": "G",
+            "alter": -1,
+            "octave": 4
+          },
+          {
+            "step": "D",
+            "alter": 0,
+            "octave": 3
+          },
+          {
+            "step": "D",
+            "alter": 0,
+            "octave": 5
+          },
+          {
+            "step": "E",
+            "alter": 0,
+            "octave": 4
+          },
+          {
+            "step": "A",
+            "alter": 0,
+            "octave": 4
+          },
+          {
+            "step": "B",
+            "alter": -1,
+            "octave": 4
+          },
+          {
+            "step": "F",
+            "alter": 0,
+            "octave": 4
+          }
+        ]
+      },
+      "traceIds": [
+        "U2-TRACE-VOICING-TRANSITION"
+      ]
+    },
+    {
+      "id": "U2-EXACT-003",
+      "mode": "manual",
+      "pitches": [
+        {
+          "step": "G",
+          "alter": 0,
+          "octave": 4
+        },
+        {
+          "step": "C",
+          "alter": 0,
+          "octave": 4
+        },
+        {
+          "step": "C",
+          "alter": 0,
+          "octave": 4
+        },
+        {
+          "step": "C",
+          "alter": 0,
+          "octave": 5
+        },
+        {
+          "step": "B",
+          "alter": 1,
+          "octave": 3
+        },
+        {
+          "step": "C",
+          "alter": -1,
+          "octave": 5
+        },
+        {
+          "step": "C",
+          "alter": 0,
+          "octave": -1
+        },
+        {
+          "step": "G",
+          "alter": 0,
+          "octave": 9
+        },
+        {
+          "step": "F",
+          "alter": 1,
+          "octave": 4
+        },
+        {
+          "step": "G",
+          "alter": -1,
+          "octave": 4
+        },
+        {
+          "step": "D",
+          "alter": 0,
+          "octave": 3
+        },
+        {
+          "step": "D",
+          "alter": 0,
+          "octave": 5
+        },
+        {
+          "step": "E",
+          "alter": 0,
+          "octave": 4
+        },
+        {
+          "step": "A",
+          "alter": 0,
+          "octave": 4
+        },
+        {
+          "step": "B",
+          "alter": -1,
+          "octave": 4
+        },
+        {
+          "step": "F",
+          "alter": 0,
+          "octave": 4
+        },
+        {
+          "step": "G",
+          "alter": 0,
+          "octave": 4
+        }
+      ],
+      "bassPolicy": "included",
+      "expected": {
+        "ok": false,
+        "midi": [
+          67,
+          60,
+          60,
+          72,
+          60,
+          71,
+          0,
+          127,
+          66,
+          66,
+          50,
+          74,
+          64,
+          69,
+          70,
+          65,
+          67
+        ],
+        "code": "limit.voicing_notes_exceeded"
+      },
+      "traceIds": [
+        "U2-TRACE-VOICING-TRANSITION"
+      ]
+    },
+    {
+      "id": "U2-EXACT-004",
+      "mode": "manual",
+      "pitches": [],
+      "bassPolicy": "included",
+      "expected": {
+        "ok": false,
+        "midi": [],
+        "code": "voicing.pitches_empty"
+      },
+      "traceIds": [
+        "U2-TRACE-VOICING-TRANSITION"
+      ]
+    },
+    {
+      "id": "U2-EXACT-005",
+      "mode": "manual",
+      "pitches": [
+        {
+          "step": "C",
+          "alter": 0,
+          "octave": -1
+        }
+      ],
+      "bassPolicy": "included",
+      "expected": {
+        "ok": true,
+        "midi": [
+          0
+        ],
+        "pitches": [
+          {
+            "step": "C",
+            "alter": 0,
+            "octave": -1
+          }
+        ]
+      },
+      "traceIds": [
+        "U2-TRACE-VOICING-TRANSITION"
+      ]
+    },
+    {
+      "id": "U2-EXACT-006",
+      "mode": "manual",
+      "pitches": [
+        {
+          "step": "G",
+          "alter": 0,
+          "octave": 9
+        }
+      ],
+      "bassPolicy": "included",
+      "expected": {
+        "ok": true,
+        "midi": [
+          127
+        ],
+        "pitches": [
+          {
+            "step": "G",
+            "alter": 0,
+            "octave": 9
+          }
+        ]
+      },
+      "traceIds": [
+        "U2-TRACE-VOICING-TRANSITION"
+      ]
+    },
+    {
+      "id": "U2-EXACT-007",
+      "mode": "manual",
+      "pitches": [
+        {
+          "step": "B",
+          "alter": 0,
+          "octave": -2
+        }
+      ],
+      "bassPolicy": "included",
+      "expected": {
+        "ok": false,
+        "midi": [
+          -1
+        ],
+        "code": "pitch.midi_out_of_range"
+      },
+      "traceIds": [
+        "U2-TRACE-VOICING-TRANSITION"
+      ]
+    },
+    {
+      "id": "U2-EXACT-008",
+      "mode": "manual",
+      "pitches": [
+        {
+          "step": "G",
+          "alter": 1,
+          "octave": 9
+        }
+      ],
+      "bassPolicy": "included",
+      "expected": {
+        "ok": false,
+        "midi": [
+          128
+        ],
+        "code": "pitch.midi_out_of_range"
+      },
+      "traceIds": [
+        "U2-TRACE-VOICING-TRANSITION"
+      ]
+    }
+  ]
+}

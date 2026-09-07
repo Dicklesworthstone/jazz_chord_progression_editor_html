@@ -3,25 +3,15 @@
  * (bead jcpe-milestone-reliable-studio-l3a.11.2).
  */
 import { describe, expect, test } from "bun:test";
+import { inspectorEvent, inspectorState } from "../support/u2-inspector-fixtures";
 import {
-  makeSpelledPitch,
-  type ChordEvent,
-  type ChordEventId,
   type ChordSpec,
 } from "../../src/domain";
 import { parseChordSymbol } from "../../src/theory";
 import {
   projectChordInspectorViewModel,
-  sanitizeAnnotationText,
 } from "../../src/application";
-import { createStudioBootstrap } from "../../src/application/studio-bootstrap";
-import type { AppState } from "../../src/application/application-state-contract";
 
-function getBootstrapState(): AppState {
-  const bootstrap = createStudioBootstrap();
-  if (!bootstrap.ok) throw new Error("Failed to bootstrap studio");
-  return bootstrap.value.state;
-}
 
 const parsedG7 = parseChordSymbol("G7", "ascii");
 if (!parsedG7.ok) throw new Error("Failed to parse G7");
@@ -29,12 +19,10 @@ const G7_SPEC: ChordSpec = parsedG7.chord;
 
 describe("U2 Chord Inspector Full Workflow Integration", () => {
   test("complete tab navigation, draft editing, and annotation workflow", () => {
-    const baseState = getBootstrapState();
-    const eventId = "ev-workflow-1" as ChordEventId;
+    const eventId = "ev-workflow-1";
 
-    const sampleChordEvent: ChordEvent = {
+    const sampleChordEvent = inspectorEvent({
       id: eventId,
-      duration: Object.freeze({ numerator: 4, denominator: 1 }),
       annotation: "Original note",
       chord: G7_SPEC,
       voicing: Object.freeze({
@@ -42,36 +30,11 @@ describe("U2 Chord Inspector Full Workflow Integration", () => {
         family: "drop2",
         bassPolicy: "generated",
         voiceCount: 4,
-        colorPolicy: "none",
         range: Object.freeze({ lowMidi: 48, highMidi: 72 }),
       }),
-    };
+    });
 
-    const state: AppState = {
-      ...baseState,
-      document: {
-        ...baseState.document,
-        sections: baseState.document.sections.map((sec, sIdx) =>
-          sIdx === 0
-            ? {
-                ...sec,
-                measures: sec.measures.map((m, mIdx) =>
-                  mIdx === 0 ? { ...m, events: Object.freeze([sampleChordEvent]) } : m,
-                ),
-              }
-            : sec,
-        ),
-      },
-      bookmarks: {
-        ...baseState.bookmarks,
-        selection: {
-          kind: "events",
-          eventIds: Object.freeze([eventId]),
-          anchorEventId: eventId,
-          focusEventId: eventId,
-        },
-      },
-    };
+    const state = inspectorState(sampleChordEvent);
 
     // 1. Initial Projection
     let view = projectChordInspectorViewModel(state);
@@ -119,14 +82,13 @@ describe("U2 Chord Inspector Full Workflow Integration", () => {
     expect(view.piano.hoveredMidi).toBe(67);
     expect(view.piano.focusedMidi).toBe(60);
 
-    // 6. Annotation Sanitization in Workflow
+    // 6. Exact inert annotation text; rendering must not interpret markup.
     const unsafeDraft = "<b>Bold remark</b> <script>steal()</script>";
     view = projectChordInspectorViewModel(state, {
       draftAnnotationText: unsafeDraft,
     });
     expect(view.notes.rawAnnotation).toBe(unsafeDraft);
     expect(view.notes.isDirty).toBe(true);
-    expect(view.notes.hasUnsafeMarkupStripped).toBe(true);
-    expect(view.notes.sanitizedAnnotation).toBe("Bold remark steal()");
+    expect(view.notes.text).toBe(unsafeDraft);
   });
 });

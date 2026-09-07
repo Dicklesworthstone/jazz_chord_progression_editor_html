@@ -4,67 +4,165 @@
     {
       "id": "U2-TRACE-EMPTY-STATE",
       "description": "Inspector cleanly presents empty/disabled state when no chord event is selected.",
-      "cases": ["U2-INSP-001"],
+      "cases": [
+        "U2-INSP-001"
+      ],
       "legacyId": null
     },
     {
       "id": "U2-TRACE-STRUCTURE",
       "description": "Spelled degrees, pitch classes, root, quality, and omissions accurately reflect chord structure.",
-      "cases": ["U2-INSP-002", "U2-INSP-003", "U2-PIANO-002"],
+      "cases": [
+        "U2-INSP-002",
+        "U2-INSP-003",
+        "U2-PIANO-002"
+      ],
       "legacyId": "L-THEORY-03"
     },
     {
       "id": "U2-TRACE-VOICING",
       "description": "Auto, Manual, and Frozen voicings expose exact spelled pitches, MIDI numbers, and families.",
-      "cases": ["U2-INSP-002", "U2-INSP-003", "U2-INSP-004"],
+      "cases": [
+        "U2-INSP-002",
+        "U2-INSP-003",
+        "U2-INSP-004",
+        "U2-AUTO-001",
+        "U2-AUTO-002",
+        "U2-AUTO-003",
+        "U2-AUTO-004",
+        "U2-AUTO-005",
+        "U2-AUTO-006",
+        "U2-AUTO-007",
+        "U2-AUTO-008",
+        "U2-AUTO-009",
+        "U2-AUTO-010",
+        "U2-AUTO-011",
+        "U2-AUTO-012",
+        "U2-AUTO-013",
+        "U2-AUTO-014",
+        "U2-AUTO-015",
+        "U2-AUTO-016",
+        "U2-AUTO-017",
+        "U2-AUTO-018",
+        "U2-AUTO-019",
+        "U2-AUTO-020",
+        "U2-AUTO-021"
+      ],
       "legacyId": null
     },
     {
       "id": "U2-TRACE-HARMONY",
       "description": "Guide tones (3rd & 7th), tensions, scale suggestions, and Roman numeral analyses are disclosed.",
-      "cases": ["U2-INSP-002", "U2-INSP-003"],
+      "cases": [
+        "U2-INSP-002",
+        "U2-INSP-003"
+      ],
       "legacyId": null
     },
     {
       "id": "U2-TRACE-MOTION",
       "description": "Voice leading paths, interval semitones, and common tone metrics are computed in context.",
-      "cases": ["U2-INSP-002"],
+      "cases": [
+        "U2-INSP-002"
+      ],
       "legacyId": null
     },
     {
       "id": "U2-TRACE-ALTERATION-SYNC",
       "description": "Displayed chord alterations correctly update spelled degrees and synthesized voicing notes.",
-      "cases": ["U2-INSP-003", "U2-PIANO-003"],
+      "cases": [
+        "U2-INSP-003",
+        "U2-PIANO-003"
+      ],
       "legacyId": "L-THEORY-03"
     },
     {
       "id": "U2-TRACE-CUSTOM-PRESERVATION",
       "description": "Custom / unrecognized chords preserve raw user input without being overwritten by guesses.",
-      "cases": ["U2-INSP-004"],
+      "cases": [
+        "U2-INSP-004"
+      ],
       "legacyId": null
     },
     {
       "id": "U2-TRACE-PIANO-GEOMETRY",
-      "description": "Piano visualizer accurately renders 88-key layout, flats/sharps, octave tags, and accessible names.",
-      "cases": ["U2-PIANO-001", "U2-PIANO-002", "U2-PIANO-003"],
+      "description": "All128 MIDI coordinates, spellings, black/white positions and octave labels are accurate and accessible.",
+      "cases": [
+        "U2-PIANO-001",
+        "U2-PIANO-002",
+        "U2-PIANO-003"
+      ],
       "legacyId": "L-PIANO-01"
     },
     {
       "id": "U2-TRACE-VOICING-TRANSITION",
-      "description": "Voicing mode transitions preserve notes, require confirmation when destructive, and reject unisons.",
-      "cases": ["U2-VOICE-001", "U2-VOICE-002", "U2-VOICE-003", "U2-VOICE-004", "U2-PIANO-004"],
+      "description": "Preserve exact ordered pitches/unisons and require valid policy plus confirmation before replacing stored notes.",
+      "cases": [
+        "U2-VOICE-001",
+        "U2-VOICE-002",
+        "U2-VOICE-003",
+        "U2-VOICE-004",
+        "U2-PIANO-004",
+        "U2-EXACT-001",
+        "U2-EXACT-002",
+        "U2-EXACT-003",
+        "U2-EXACT-004",
+        "U2-EXACT-005",
+        "U2-EXACT-006",
+        "U2-EXACT-007",
+        "U2-EXACT-008",
+        "U2-VOICE-005",
+        "U2-VOICE-006",
+        "U2-VOICE-007",
+        "U2-FLOW-001",
+        "U2-FLOW-002",
+        "U2-FLOW-003",
+        "U2-FLOW-004",
+        "U2-FLOW-005",
+        "U2-FLOW-006",
+        "U2-FLOW-007",
+        "U2-FLOW-008",
+        "U2-FLOW-009",
+        "U2-FLOW-010",
+        "U2-FLOW-011",
+        "U2-FLOW-012"
+      ],
       "legacyId": null
     },
     {
       "id": "U2-TRACE-ANNOTATION-SAFETY",
-      "description": "User annotations are strictly sanitized against unsafe HTML markup and bounded to 500 code points.",
-      "cases": ["U2-NOTE-001", "U2-NOTE-002", "U2-NOTE-003", "U2-NOTE-004"],
+      "description": "Preserve up to2000 code points as inert text and refuse over-limit drafts without data loss.",
+      "cases": [
+        "U2-NOTE-001",
+        "U2-NOTE-002",
+        "U2-NOTE-003",
+        "U2-NOTE-004",
+        "U2-NOTE-005",
+        "U2-NOTE-006",
+        "U2-NOTE-007",
+        "U2-NOTE-008",
+        "U2-NOTE-009"
+      ],
       "legacyId": "L-MARKUP-01"
     },
     {
       "id": "U2-TRACE-PREVIEW-ISOLATION",
       "description": "Audio preview sounds via real X1 generation without mutating playhead, selection, or document.",
-      "cases": ["U2-INSP-002"],
+      "cases": [
+        "U2-INSP-002",
+        "U2-FLOW-001",
+        "U2-FLOW-002",
+        "U2-FLOW-003",
+        "U2-FLOW-004",
+        "U2-FLOW-005",
+        "U2-FLOW-006",
+        "U2-FLOW-007",
+        "U2-FLOW-008",
+        "U2-FLOW-009",
+        "U2-FLOW-010",
+        "U2-FLOW-011",
+        "U2-FLOW-012"
+      ],
       "legacyId": "L-RUNTIME-02"
     }
   ]
