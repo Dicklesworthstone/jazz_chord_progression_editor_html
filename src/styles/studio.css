@@ -6860,3 +6860,14 @@ li[data-resize-preview]::after {
 .studio-inspector-piano-role { display: block; margin-block-start: .3rem; font-size: .6rem; font-weight: 700; }
 
 .studio-exact-share textarea { width: 100%; box-sizing: border-box; overflow-wrap: anywhere; resize: vertical; font: inherit; }
+
+.studio-my-charts { display: grid; gap: .75rem; min-inline-size: 0; overflow-wrap: anywhere; }
+.studio-my-charts p, .studio-my-charts h3 { margin-block: .35rem; }
+.studio-my-charts input:not([type="radio"]) { display: block; inline-size: 100%; min-block-size: 44px; box-sizing: border-box; font: inherit; }
+.studio-my-charts__actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-block: .5rem; }
+.studio-my-charts__list { list-style: none; padding: 0; margin: 0; max-block-size: 18rem; overflow: auto; }
+.studio-my-charts__row { display: grid; gap: .25rem; inline-size: 100%; min-block-size: 52px; text-align: start; padding: .65rem; margin-block: .25rem; font: inherit; color: inherit; background: var(--surface-panel); border: 1px solid var(--border-strong); border-radius: .4rem; overflow-wrap: anywhere; }
+.studio-my-charts__row[aria-pressed="true"] { border: 2px solid currentColor; padding: calc(.65rem - 1px); }
+.studio-my-charts__row span { font-size: .85em; }
+.studio-my-charts fieldset { min-inline-size: 0; margin-block: .5rem; }
+.studio-my-charts fieldset label { display: flex; align-items: center; gap: .5rem; min-block-size: 44px; }

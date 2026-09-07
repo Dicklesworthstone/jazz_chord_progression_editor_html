@@ -172,3 +172,4 @@ export { createStudioLocalReplacement, type StudioLocalReplacementService, type 
 export { createStudioExactShare, type StudioExactShareService, type StudioExactShareView } from "./studio-exact-share";
 export { decodeSharedStartup } from "./exact-share";
 export { applyExactSharedStartup } from "./exact-share-startup";
+export { createStudioMyCharts, type StudioMyChartsService, type StudioMyChartsView } from "./studio-my-charts";

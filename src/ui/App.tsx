@@ -1,4 +1,5 @@
 import { ExactShareDialog } from "./studio/ExactShareDialog";
+import { MyChartsDialog } from "./studio/MyChartsDialog";
 import type { ComponentChildren } from "preact";
 import { Button } from "./primitives";
 import {
@@ -13,6 +14,8 @@ import {
 import {
   type StudioExactShareService,
   type StudioExactShareView,
+  type StudioMyChartsService,
+  type StudioMyChartsView,
   deleteSelectionAutoDeclaring,
   duplicateSelectionAutoResolving,
   joinNextMeasureComposing,
@@ -3648,6 +3651,7 @@ export function StudioStartupFailure({
  * gallery inventory can never enter the release graph through a new entry.
  */
 export type StudioRootProps = Readonly<{
+  myCharts?: StudioMyChartsService | null;
   sharing?: StudioExactShareService | null;
   controller: StudioController;
   /** A boot-time refusal (for example, an unreadable share link). */
@@ -3672,6 +3676,7 @@ export type StudioRootProps = Readonly<{
 }>;
 
 export function StudioRoot({
+  myCharts,
   sharing,
   controller,
   startupNotice,
@@ -3682,6 +3687,12 @@ export function StudioRoot({
   documentImport,
   localReplacement,
 }: StudioRootProps) {
+  const [myChartsView, setMyChartsView] = useState<StudioMyChartsView | null>(myCharts?.getSnapshot() ?? null);
+  useEffect(() => {
+    if (myCharts == null) return;
+    const publish = (): void => { setMyChartsView(myCharts.getSnapshot()); };
+    const unsubscribe = myCharts.subscribe(publish); publish(); return unsubscribe;
+  }, [myCharts]);
   const [shareView, setShareView] = useState<StudioExactShareView | null>(sharing?.getSnapshot() ?? null);
   useEffect(() => {
     if (sharing == null) return;
@@ -3777,6 +3788,9 @@ export function StudioRoot({
       onShare={sharing?.open}
       onDraftInput={recoveryBinding?.noteDraftInput}
       documentActions={<>
+      {myCharts == null ? null : <Button
+        id="studio-my-charts-open" label="My Charts" type="button" variant="secondary" density="comfortable"
+        disabled={false} busy={false} describedBy={[]} invalid={false} onAction={myCharts.open} />}
       {localReplacement == null ? null : <Button
         id="studio-new-chart" label="New chart" type="button" variant="secondary" density="comfortable"
         disabled={false} busy={false} describedBy={[]} invalid={false}
@@ -3922,6 +3936,7 @@ export function StudioRoot({
       }}
     />
     {sharing == null || shareView === null ? null : <ExactShareDialog service={sharing} view={shareView} />}
+    {myCharts == null || myChartsView === null ? null : <MyChartsDialog service={myCharts} view={myChartsView} />}
     {lifecycle == null || lifecycleView === null ? null : <LifecycleExportDialog service={lifecycle} view={lifecycleView} />}
     {documentImport == null || importView === null ? null : <DocumentImportDialog service={documentImport} view={importView} />}
     {localReplacement == null || replacementView === null ? null : <LocalReplacementDialog service={localReplacement} view={replacementView} />}

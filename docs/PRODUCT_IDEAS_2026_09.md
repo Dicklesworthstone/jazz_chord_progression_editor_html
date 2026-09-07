@@ -215,7 +215,7 @@ Six new workflow packages contain 19 leaf tasks, including the separate rehearsa
   - [ ] Complete independent real-adapter proof — `jcpe-rehearsal-session-6y2b.4`
 - [ ] **My Charts: an explicit local chart collection with portable backup** — `jcpe-my-charts-zt9z`
   - [x] Review specification and independent fixtures — `jcpe-my-charts-zt9z.1` (`MY_CHARTS.md`; independent packet3/0,58assertions; no implementation claim).
-  - [ ] Implement the production workflow — `jcpe-my-charts-zt9z.2`
+  - [x] Implement the production workflow — `jcpe-my-charts-zt9z.2` (192/0 Bun,129/0 native,36/0 standalone; independent verification remains open).
   - [ ] Complete independent real-adapter proof — `jcpe-my-charts-zt9z.3`
 - [x] **Share the exact chart, including Manual/Frozen voicings and notes** — `jcpe-exact-share-1ric`
   - [x] Review specification and independent fixtures — `jcpe-exact-share-1ric.1` (packet2/0; U5 prerequisite complete)

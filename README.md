@@ -54,9 +54,10 @@ This table describes the repository build. Automatic startup recovery, **Import 
 | Recovery | Best-effort IndexedDB with localStorage fallback, revision-bound writes, automatic current recovery when startup is untouched, Keep/Discard for conflicts, previous-copy fallback, and visible storage failures |
 | Chart import | Local Changes/legacy JSON files and pasted data get a bounded preview before replacement; migration reports disclose retained data, confirmation retires playback, and imported document IDs survive recovery |
 | JSON export | **Export JSON** prepares and validates a portable chart, then **Download JSON** hands it to the browser; only exact successful delivery advances the export marker |
+| My Charts | Explicit local collection with search, rename, fresh-ID duplication, confirmed replacement/removal, and exact portable backups; atomic IndexedDB writes refuse stale tabs and preserve existing charts on failure |
 | Chart-text export | **Export text** checks the supported chart structure and lists lost voicing, identity, analysis, and playback data before download; it leaves the JSON export marker unchanged |
 | MIDI export | Deterministic Standard MIDI files with preview, blocker cards, and real downloads (E1 + U7) |
-| Share links | Copy link encodes the chart into a local `#zdoc=` fragment; opening one crosses the same refusing decoders as typed text |
+| Share links | **Share** carries the entire exact chart in a bounded `#zdoc=2.` fragment, including Manual/Frozen notes and annotations; oversized charts offer exact JSON and existing v1 links remain readable |
 | Reproducible build contract | Source-driven build, generated-file banner, byte-equality checks, size budget, CSP hashes, license inventory |
 | Verification | 64-gate aggregate `verify` (contract validators, evidence gates with hash-bound ledgers, typecheck, lint, unit/property/mutation suites, build, reproducibility, licenses, Chromium/Firefox/WebKit E2E), plus real-browser predeploy playback and model-acceptance gates |
 
@@ -289,7 +290,7 @@ The studio keeps edits in browser-local, best-effort **Recovery** using IndexedD
 
 **Export text** makes a readable lead sheet with canonical chord symbols, exact durations, sections, annotations, and global key, meter, and tempo. Its preview lists the data text cannot preserve. Custom chords and pickup or incomplete measures require JSON; text export refuses them without changing the chart. Downloading text does not mark the chart as exported to JSON.
 
-All exports require an explicit gesture. **Copy link** encodes the chart, title, tempo, and groove into a local `#zdoc=` URL fragment. No request is made: the fragment leaves the page only when you share the link. Opening it crosses bounded decoders, and a refusal leaves the starter chart with a diagnostic. Imported data is never evaluated or inserted as HTML.
+All exports require an explicit gesture. **Copy exact link** encodes the complete published chart into a bounded `#zdoc=2.` URL fragment, preserving exact notes, spellings, durations, annotations and settings. Larger charts offer exact JSON instead. No request is made: the fragment leaves the page only when you share the link. Opening it crosses the existing validation and replacement boundary; a refusal preserves the workspace with a diagnostic. Existing v1 links remain readable with their omissions disclosed. Imported data is never evaluated or inserted as HTML.
 
 Local recovery is not cloud backup. Keep JSON copies of important charts; browser storage can be unavailable, cleared, or limited by quota.
 
@@ -402,6 +403,8 @@ The release must remain one small offline file with Preact as its only productio
 ### Where will charts be saved?
 
 Edits queue best-effort local recovery. An untouched reload can open the current copy automatically. If a recovery choice appears, choose **Keep recovered chart** or **Discard** before relying on further local recovery. Discarding an automatically opened local copy leaves the chart in memory; further edits create another recovery copy. For a portable copy, choose **Export JSON**, review the filename and revision, then **Download JSON** and check your browser’s downloads. Browser recovery is never a durable “Save.”
+
+**My Charts** keeps explicit snapshots separately from recovery. Choose **Keep current chart**, then select a kept chart to open, rename, duplicate, replace or remove it. Renaming changes the kept copy; editing the open chart never silently updates the collection. **Download backup** creates a portable collection file, and **Restore backup** previews additions and asks you to choose each conflicting version before one atomic restore. The collection holds up to128 charts and32MiB in this browser. If storage is unavailable, **Download current chart JSON** remains available. See [the exact collection and backup contract](docs/MY_CHARTS.md).
 
 ### Can I import a chart from the legacy app?
 

@@ -5,20 +5,25 @@ Consumer: the user and Codex executing the 2026-09-04 request to implement the r
 ## Current order
 
 - [ ] Complete all fifteen September ideas requested by the owner; full ownership/dependencies remain in `PRODUCT_IDEAS_2026_09.md` and Beads. Entry Repair, Focus and Exact Sharing are complete (3/15). Continue with My Charts after the completed U5 prerequisite. U2 technical checks pass; named human observations remain open/unassigned. Preserve existing engine owners and prerequisites.
-- [ ] My Charts (`jcpe-my-charts-zt9z`): explicit local collection and portable backup; specification complete, build active, no runtime completion claim.
+- [ ] My Charts (`jcpe-my-charts-zt9z`): specification and build complete; independent verification active. No package/deployment completion claim.
   - [x] Read parent/spec/build context and F1/F2/F3/A0/E0/U5 persistence/publication contracts; distinguish record IDs, musical IDs, recovery and file exports.
   - [x] Specify atomic two-store publication, immutable payloads, exact manifest CAS, cross-tab/ABA refusal, quota/denied/corrupt behavior and limits in `MY_CHARTS.md`.
   - [x] Specify detached A0 rename, complete F1 duplicate remap, explicit Keep/Replace/Remove and existing stop-and-replace Open confirmation.
   - [x] Author independent transaction/restore/identity/boundary/negative/workflow cases; preserve existing manually authored exact-note specimen.
   - [x] Run specification consistency tests and owned types/lint; close specification with exact commands/results, then claim build. Packet3/0,58assertions; tests-project typecheck and focused ESLint exit0. These are specification checks, not runtime proof.
-  - [ ] Implement bounded backup/document validation, collection merge/conflict planning and detached title/duplicate operations.
-  - [ ] Implement native IndexedDB snapshot reads and atomic CAS writes; prove two-tab conflict, abort, quota and corruption preservation.
-  - [ ] Implement application-owned current/record/preview identity, cancellation, prepared downloads and existing U5 Open delegation.
-  - [ ] Add accessible My Charts list/search/actions/restore conflict preview and current JSON escape to the studio.
-  - [ ] Exercise focused production unit/integration fixtures; retain failures and real source-fault sensitivity.
-  - [ ] Build frozen inputs; run actual file/HTTP three-engine desktop/phone storage/download/audio matrix without racing Playwright.
-  - [ ] Inspect exact documents/history, storage generations/records, requests/errors, resources and accessibility reports; run types/lint/static/reproducibility/public standalone gates.
-  - [ ] Close build only on its named proof, claim independent verification, execute fresh-context backup/restore and adversarial mutation proofs, then close verification/epic if green.
+  - [x] Implement bounded backup/document validation, collection merge/conflict planning and detached title/duplicate operations. Exact negative zero and full manually authored document witnesses pass.
+  - [x] Implement native IndexedDB snapshot reads and atomic CAS writes; first actual phone control proves two-tab conflict and native abort/quota byte preservation. Wider corruption/resource proof is running, not complete.
+  - [x] Implement application-owned current/record/preview identity, cancellation, prepared downloads and existing U5 Open delegation.
+  - [x] Add My Charts list/search/actions/restore conflict preview and current JSON escape to the studio; complete native accessibility matrix remains open.
+  - [x] Initial focused production checks36/0,234assertions. First full typecheck found seven new-test branded/null comparison errors; use explicit unknown observations without brand casts. Corrected full typecheck passes. First full ESLint found13 new-test capture/rejection/comparison issues; retain logs and fix native capture typing/error values, with final full lint still pending.
+  - [x] Retain first native control5/0,14.1s on76a6ee52,1622 frozen inputs, Chromium file390. Actual storage/download/audio workflows pass. Improve the native abort diagnostic to an explicit aborted transaction rather than unavailable storage; rebuild8a0c3985 (8421875bytes). No musical or assertion changes.
+  - [x] Inspect the129-case expanded native run on8a0c3985:129/0 in323313.002ms, all1622 input hashes unchanged. All258 JSON reports inspected;18 sources-started/stop cycles,90 created/revoked object URLs,747 opened/closed database connections and183 referentially consistent snapshots. Zero console/page/denied-request/axe violations; incomplete axe rules retained as incomplete. Frozen root `/data/tmp/jcpe-u5-completion.4b74pqhs`.
+  - [ ] Independently exercise populated-tab CAS, maximum/maximum+1 and generation/empty-ABA boundaries, native source faults and fresh-context restore in the verification phase. Do not mistake initial-empty CAS coverage for a populated-version overwrite proof.
+  - [x] Exercise focused production unit/integration fixtures;45/0,279assertions includes9 killed source faults with honest baselines. Expanded existing exact-sharing/U0/U5/lifecycle regressions192/0,1594assertions across13files. Retain every initial type/lint failure without suppression or relaxed assertions.
+  - [x] Build frozen inputs; run actual file/HTTP three-engine desktop/phone storage/download/audio matrix without racing Playwright.
+  - [x] Inspect exact documents/history, storage generations/records, requests/errors, resources and accessibility reports. Full types/lint/static/distinct-root reproduction exit0. Public standalone36/0 in48037.531ms, all1623 input hashes unchanged; inspect12 positive and24 intentional negative JSON reports. Evidence in `docs/evidence/MY_CHARTS_VERIFICATION_2026-09-07.md`.
+  - [x] Close build with192/0 Bun,129/0 native,36/0 public standalone and final type/lint/static/reproducible/guarded-build proof; claim `jcpe-my-charts-zt9z.3` atomically.
+  - [ ] Execute fresh-context backup/restore and adversarial verification, then close verification/epic only if green.
 - [x] Entry repair (`jcpe-entry-repair-0h1g`): all three phases and epic closed. Final69 scenarios pass; six focused reduced-motion profile rechecks also pass. This is one of fifteen ideas complete, not an aggregate or deployment claim.
   - [x] Freeze UTF-16 source selection, stale refusal, IME and Escape behavior with independent fixtures (six literal spans, six refusal ranges, twelve interaction obligations; specification-only test 1/0).
   - [x] Share diagnostic prose; retain multiline drafts; add exact token selection and bounded Next error on both entry surfaces.

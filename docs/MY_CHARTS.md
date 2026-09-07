@@ -153,7 +153,11 @@ supported fields without recovery/export markers, drafts, history or transport.
 
 Download artifacts are prepared before the trusted click, bound to the displayed
 snapshot, delivered synchronously through an injected native download adapter,
-and single-use with object-URL cleanup. A stale collection must refresh first.
+and single-use with object-URL cleanup. A known-stale collection must refresh
+first. Downloads explicitly contain the displayed collection version; they do
+not claim to include a concurrent tab's edits after the last refresh. Native
+activation is synchronous, so do not pretend an asynchronous IndexedDB read at
+click time can both certify latest bytes and preserve that activation.
 Delivery errors stay visible; saying “Downloaded” requires an actual issued
 download, not mere serialization. Collection/kept-chart downloads never change
 the current document's export or recovery marker.

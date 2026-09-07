@@ -17,15 +17,17 @@ import {
   decodeSharedStartup,
   applyExactSharedStartup,
   createStudioExactShare,
+  createStudioMyCharts,
   seedStarterChart,
 } from "./application/runtime";
 import { decodeDocumentShape } from "./domain";
-import { startPreparedExportDelivery } from "./export";
+import { startPreparedExportDelivery, prepareBrowserJsonDownload } from "./export";
 import {
   createIndexedDbRecoveryAdapter,
   createLocalStorageRecoveryAdapter,
   createRecoveryService,
   createStudioRecoveryStorage,
+  createIndexedDbMyChartsStorage,
 } from "./persistence";
 import {
   createBrowserAudioPlatform,
@@ -218,6 +220,10 @@ if (creation.ok) {
     readLocation: () => window.location.href,
     writeClipboard: async (text) => { await navigator.clipboard.writeText(text); },
   });
+  const myCharts = createStudioMyCharts({ composition, lifecycle, documentImport,
+    storage: createIndexedDbMyChartsStorage(), nowIso: () => new Date().toISOString(),
+    prepareDownload: prepareBrowserJsonDownload,
+  });
   // Only a bounded explicit startup delays the first editable render. The
   // existing import service owns validation and the serialized one-step swap;
   // recovery cannot race it, and an invalid link never seeds a replacement demo.
@@ -233,6 +239,7 @@ if (creation.ok) {
     }
     render(
       <StudioRoot
+        myCharts={myCharts}
         sharing={sharing}
         controller={controller}
         midiExport={midiExport}
