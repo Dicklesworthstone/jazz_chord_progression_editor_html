@@ -6,6 +6,9 @@ that rehearsal is implemented or that existing release/human gates have passed.
 The code-facing sequence types are in
 `src/playback/rehearsal/session-contract.ts`. Independent examples are in
 `tests/fixtures/rehearsal/cases.json`.
+Retire the proposal status when the four dependent phases implement and verify
+this version; retain its literal examples as regressions until that version is
+retired. This specification earns no runtime capability credit.
 
 ## 1. What a musician does
 
@@ -96,9 +99,13 @@ passes. Total=`templateCount*passesPerKey`, checked before compiling/rendering.
 Same-key uses one template, including a null key for a chart with no declared
 key. An all-key request requires an explicit source key and H1's checked spelled
 transformations; no inferred key, octave folding, range repair or mode change.
-All-key convenience order must be a checked-in explicit twelve-pitch-class
-spelling table approved with the key leaf. Custom order retains user order,
-including intentional repeats, within12 entries and64 total passes.
+The all-key convenience order is the explicit ascending tonic table
+`C, Db, D, Eb, E, F, F#, G, Ab, A, Bb, B`, starting at C. Show this order before
+admission; preserve the source mode for each tonic. The independent packet pins
+each spelling, including double accidentals when required by a written interval.
+H1 still owns admitting those transformations; this table cannot bypass a range
+or spelling refusal. Custom order retains user order, including intentional
+repeats, within12 entries and64 total passes.
 
 Tempo endpoints are integers20..400, admitted by `makeTempoBpm`. With N>1,
 pass i has `start + sign(end-start)*floor((2*abs(end-start)*i+N-1)/(2*(N-1)))`.
@@ -214,7 +221,8 @@ and render ownership. Templates share immutable arrays; do not retain64 full
 document copies. Native heap samples are performance evidence, not a claim that
 JavaScript object sizes are portable musical limits.
 
-Precedence: request/schema/source binding, scalar pass/key/tempo bounds, exact
+Precedence: request/schema/source binding, key-count bounds, pass-count/expanded
+pass bounds, tempo bounds, exact
 range, template identity/shape in declared order, source transform/performance
 cause, retained work/memory bounds, then whole-session native preparation.
 Application cancellation/staleness is checked around every awaited boundary
