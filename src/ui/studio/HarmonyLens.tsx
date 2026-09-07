@@ -47,6 +47,12 @@ export function HarmonyLensContent({
         />
       </div>
 
+      {view.selected !== null && onEditChord !== undefined ? (
+        <button type="button" class="studio-inspector-button" id={`studio-edit-chord-${context}`} onClick={onEditChord}>
+          Choose voicing / Edit chord
+        </button>
+      ) : null}
+
       {view.detail !== null && view.selected !== null ? (
         <ChordDetailPanel
           context={context}
@@ -92,12 +98,6 @@ export function HarmonyLensContent({
           </p>
         </section>
       )}
-
-      {view.selected !== null && onEditChord !== undefined ? (
-        <button type="button" class="studio-inspector-button" id={`studio-edit-chord-${context}`} onClick={onEditChord}>
-          Choose voicing / Edit chord
-        </button>
-      ) : null}
 
       {/*
         Plural continuation options from the session engine: each row is one

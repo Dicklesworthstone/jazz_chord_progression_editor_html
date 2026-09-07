@@ -23,7 +23,9 @@ const TABS = ["Symbol", "Structure", "Timing", "Voicing", "Harmony", "Motion", "
 type Tab = typeof TABS[number];
 const STEPS: readonly Step[] = ["C", "D", "E", "F", "G", "A", "B"];
 const DISMISSIBLE = Object.freeze({ kind: "dismissible" } as const);
-const FOCUS = Object.freeze({ triggerId: "chart-workspace", workflowTargetId: "chart-workspace", workspaceId: "workspace" });
+// The chart remains connected when the phone Harmony sheet hands off to this
+// dialog. It is the restore target; no second workflow fallback is needed.
+const FOCUS = Object.freeze({ triggerId: "chart-workspace", workflowTargetId: null, workspaceId: "workspace" });
 type NoteRow = Readonly<{ step: Step; alter: string; octave: string }>;
 const number = (text: string): number => text.trim() === "" ? Number.NaN : Number(text);
 const label = (note: Readonly<{ step: string; alter: number; octave?: number }>): string =>
@@ -185,14 +187,14 @@ export function ChordInspector({ eventId, ports, onClose, onContractRefusal }: R
         </button>
         {advanced ? <>
           <div class="studio-inspector-tabs" role="tablist" aria-label="Chord details">{TABS.map((name, index) =>
-            <button type="button" role="tab" id={`inspector-tab-${name}`} aria-controls={`inspector-panel-${name}`} aria-selected={tab === name}
+            <button type="button" role="tab" id={`inspector-tab-${name}`} aria-controls="inspector-panel" aria-selected={tab === name}
               tabIndex={tab === name ? 0 : -1} key={name} onClick={() => { if (tab !== name) leave(() => { setTab(name); }); }}
               onKeyDown={event => {
                 const next = event.key === "ArrowRight" ? TABS[(index + 1) % TABS.length] : event.key === "ArrowLeft" ? TABS[(index + TABS.length - 1) % TABS.length]
                   : event.key === "Home" ? TABS[0] : event.key === "End" ? TABS[TABS.length - 1] : undefined;
                 if (next !== undefined) { event.preventDefault(); leave(() => { setTab(next); document.getElementById(`inspector-tab-${next}`)?.focus(); }); }
               }}>{name}</button>)}</div>
-          <section role="tabpanel" tabIndex={0} id={`inspector-panel-${tab}`} aria-labelledby={`inspector-tab-${tab}`}>
+          <section role="tabpanel" tabIndex={0} id="inspector-panel" aria-labelledby={`inspector-tab-${tab}`}>
             {tab === "Symbol" || tab === "Structure" ? <>
               <label>Chord symbol<input value={symbol} onInput={event => { cancelPreview(); setSymbol(event.currentTarget.value); }} aria-invalid={detail?.symbol.isValidSyntax === false} /></label>
               <p>Canonical: {detail?.symbol.canonicalText ?? "Unavailable"}</p>
