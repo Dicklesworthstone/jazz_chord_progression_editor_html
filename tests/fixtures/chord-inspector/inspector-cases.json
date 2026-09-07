@@ -85,10 +85,10 @@
     },
     {
       "id": "U2-INSP-002",
-      "name": "c-major-seven-standard",
+      "name": "c-major-nine-exact-rootless-register",
       "selectedChord": {
         "id": "chord-1",
-        "symbolText": "Cmaj7",
+        "symbolText": "Cmaj9",
         "duration": {
           "numerator": 4,
           "denominator": 1
@@ -113,11 +113,6 @@
             "octave": 4
           },
           {
-            "step": "G",
-            "alter": 0,
-            "octave": 4
-          },
-          {
             "step": "B",
             "alter": 0,
             "octave": 4
@@ -126,16 +121,21 @@
             "step": "D",
             "alter": 0,
             "octave": 5
+          },
+          {
+            "step": "G",
+            "alter": 0,
+            "octave": 5
           }
         ],
-        "pitchSource": "independent-projection-input",
+        "pitchSource": "independent-v0-template:3,7,9,5; range64..79",
         "autoPolicy": {
           "mode": "auto",
           "family": "rootless-a",
           "voiceCount": 4,
           "range": {
-            "lowMidi": 48,
-            "highMidi": 84
+            "lowMidi": 64,
+            "highMidi": 79
           },
           "bassPolicy": "external"
         }
@@ -145,11 +145,11 @@
         "selectedEventId": "chord-1",
         "activeTab": "symbol",
         "symbol": {
-          "sourceText": "Cmaj7",
-          "canonicalText": "Cmaj7",
+          "sourceText": "Cmaj9",
+          "canonicalText": "Cmaj9",
           "isValidSyntax": true,
           "isCustomUnrecognized": false,
-          "draftText": "Cmaj7",
+          "draftText": "Cmaj9",
           "isDirty": false
         },
         "structure": {
@@ -207,6 +207,18 @@
               "isBass": false,
               "isOmitted": false,
               "role": "guide-seventh"
+            },
+            {
+              "degree": 9,
+              "spelling": {
+                "step": "D",
+                "alter": 0
+              },
+              "pitchClass": 2,
+              "isRoot": false,
+              "isBass": false,
+              "isOmitted": false,
+              "role": "tension"
             }
           ],
           "omissions": [],
@@ -241,17 +253,17 @@
               "octave": 4
             },
             {
-              "step": "G",
-              "alter": 0,
-              "octave": 4
-            },
-            {
               "step": "B",
               "alter": 0,
               "octave": 4
             },
             {
               "step": "D",
+              "alter": 0,
+              "octave": 5
+            },
+            {
+              "step": "G",
               "alter": 0,
               "octave": 5
             }
@@ -262,31 +274,32 @@
               "alter": 0
             },
             {
-              "step": "G",
-              "alter": 0
-            },
-            {
               "step": "B",
               "alter": 0
             },
             {
               "step": "D",
               "alter": 0
+            },
+            {
+              "step": "G",
+              "alter": 0
             }
           ],
           "midiNoteNumbers": [
             64,
-            67,
             71,
-            74
+            74,
+            79
           ],
           "canSwitchToManual": true,
           "canSwitchToAuto": false,
           "canSwitchToFrozen": true,
-          "manualNoteCount": 0
+          "manualNoteCount": 0,
+          "realizationFailure": null
         },
         "harmony": {
-          "qualityCategory": "Major",
+          "qualityCategory": "Major Seventh",
           "guideTones": [
             {
               "step": "E",
@@ -298,26 +311,22 @@
             }
           ],
           "tensions": [
-            "9",
-            "13",
-            "#11"
+            "9"
           ],
           "characteristicTones": [
-            "7",
-            "3"
+            "D"
           ],
           "scaleSuggestions": [
-            "Ionian",
-            "Lydian"
+            "C Ionian"
           ],
           "romanNumeral": "Imaj7",
-          "tonalFunction": "Tonic"
+          "tonalFunction": "Tonic — home"
         },
         "motion": {
           "previousChordSymbol": null,
-          "nextChordSymbol": "Dm7",
-          "commonToneCount": 1,
-          "stepwiseMotionCount": 3,
+          "nextChordSymbol": "Dm9",
+          "commonToneCount": 0,
+          "stepwiseMotionCount": 4,
           "voicePaths": [
             {
               "fromPitch": {
@@ -331,20 +340,6 @@
                 "octave": 4
               },
               "intervalSemis": 1,
-              "motionType": "step"
-            },
-            {
-              "fromPitch": {
-                "step": "G",
-                "alter": 0,
-                "octave": 4
-              },
-              "toPitch": {
-                "step": "A",
-                "alter": 0,
-                "octave": 4
-              },
-              "intervalSemis": 2,
               "motionType": "step"
             },
             {
@@ -368,12 +363,26 @@
                 "octave": 5
               },
               "toPitch": {
-                "step": "D",
+                "step": "E",
                 "alter": 0,
                 "octave": 5
               },
-              "intervalSemis": 0,
-              "motionType": "common"
+              "intervalSemis": 2,
+              "motionType": "step"
+            },
+            {
+              "fromPitch": {
+                "step": "G",
+                "alter": 0,
+                "octave": 5
+              },
+              "toPitch": {
+                "step": "A",
+                "alter": 0,
+                "octave": 5
+              },
+              "intervalSemis": 2,
+              "motionType": "step"
             }
           ]
         },
@@ -391,22 +400,17 @@
         "U2-TRACE-MOTION"
       ],
       "analysisContext": {
-        "key": "C major",
-        "readings": [
-          {
-            "romanNumeral": "Imaj7",
-            "tonalFunction": "Tonic"
-          }
-        ]
+        "key": {
+          "tonic": {
+            "step": "C",
+            "alter": 0
+          },
+          "mode": "major"
+        }
       },
       "nextVoicingPitches": [
         {
           "step": "F",
-          "alter": 0,
-          "octave": 4
-        },
-        {
-          "step": "A",
           "alter": 0,
           "octave": 4
         },
@@ -416,15 +420,21 @@
           "octave": 5
         },
         {
-          "step": "D",
+          "step": "E",
+          "alter": 0,
+          "octave": 5
+        },
+        {
+          "step": "A",
           "alter": 0,
           "octave": 5
         }
-      ]
+      ],
+      "nextChordSymbol": "Dm9"
     },
     {
       "id": "U2-INSP-003",
-      "name": "g-seven-altered-tensions",
+      "name": "g-seven-altered-tensions-exact-manual",
       "selectedChord": {
         "id": "chord-2",
         "symbolText": "G7b9#11",
@@ -442,8 +452,8 @@
           "numerator": 0,
           "denominator": 1
         },
-        "voicingMode": "auto",
-        "voicingFamily": "drop2",
+        "voicingMode": "manual",
+        "voicingFamily": null,
         "annotation": "Altered dominant turnaround",
         "pitches": [
           {
@@ -467,17 +477,8 @@
             "octave": 5
           }
         ],
-        "pitchSource": "independent-projection-input",
-        "autoPolicy": {
-          "mode": "auto",
-          "family": "drop2",
-          "voiceCount": 4,
-          "range": {
-            "lowMidi": 48,
-            "highMidi": 84
-          },
-          "bassPolicy": "generated"
-        }
+        "pitchSource": "explicit-stored-pitches",
+        "bassPolicy": "included"
       },
       "expected": {
         "hasSelectedEvent": true,
@@ -496,7 +497,7 @@
             "step": "G",
             "alter": 0
           },
-          "qualityName": "Dominant Seventh Altered",
+          "qualityName": "Dominant Seventh",
           "bassSpelling": null,
           "degrees": [
             {
@@ -598,8 +599,8 @@
           "isMeasureComplete": true
         },
         "voicing": {
-          "mode": "auto",
-          "family": "drop2",
+          "mode": "manual",
+          "family": null,
           "activePitches": [
             {
               "step": "F",
@@ -646,13 +647,14 @@
             71,
             73
           ],
-          "canSwitchToManual": true,
-          "canSwitchToAuto": false,
-          "canSwitchToFrozen": true,
-          "manualNoteCount": 0
+          "canSwitchToManual": false,
+          "canSwitchToAuto": true,
+          "canSwitchToFrozen": false,
+          "manualNoteCount": 4,
+          "realizationFailure": null
         },
         "harmony": {
-          "qualityCategory": "Dominant",
+          "qualityCategory": "Dominant Seventh",
           "guideTones": [
             {
               "step": "B",
@@ -665,27 +667,21 @@
           ],
           "tensions": [
             "b9",
-            "#11",
-            "b13",
-            "#9"
-          ],
-          "characteristicTones": [
-            "3",
-            "b7",
-            "b9",
             "#11"
           ],
+          "characteristicTones": [
+            "Ab",
+            "C#"
+          ],
           "scaleSuggestions": [
-            "Altered",
-            "Half-Whole Diminished",
-            "Lydian Dominant"
+            "G half–whole diminished"
           ],
           "romanNumeral": "V7",
-          "tonalFunction": "Dominant"
+          "tonalFunction": "Dominant — pulls home to the tonic"
         },
         "motion": {
-          "previousChordSymbol": "Dm7",
-          "nextChordSymbol": "Cmaj7",
+          "previousChordSymbol": null,
+          "nextChordSymbol": null,
           "commonToneCount": 0,
           "stepwiseMotionCount": 0,
           "voicePaths": []
@@ -704,13 +700,13 @@
         "U2-TRACE-HARMONY"
       ],
       "analysisContext": {
-        "key": "C major",
-        "readings": [
-          {
-            "romanNumeral": "V7",
-            "tonalFunction": "Dominant"
-          }
-        ]
+        "key": {
+          "tonic": {
+            "step": "C",
+            "alter": 0
+          },
+          "mode": "major"
+        }
       }
     },
     {
@@ -836,8 +832,9 @@
           ],
           "canSwitchToManual": false,
           "canSwitchToAuto": false,
-          "canSwitchToFrozen": true,
-          "manualNoteCount": 3
+          "canSwitchToFrozen": false,
+          "manualNoteCount": 3,
+          "realizationFailure": null
         },
         "harmony": {
           "qualityCategory": "Custom",
@@ -846,7 +843,7 @@
           "characteristicTones": [],
           "scaleSuggestions": [],
           "romanNumeral": null,
-          "tonalFunction": null
+          "tonalFunction": "A custom chord carries no degree analysis."
         },
         "motion": {
           "previousChordSymbol": null,

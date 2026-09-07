@@ -127,9 +127,11 @@ describe("analyzeChartEvent — roman numerals and function", () => {
     expect(result.functionSentence).toContain("ii");
   });
 
-  test("an altered dominant is offered the altered scale", () => {
+  test("a dominant b9 retains its natural fifth in the suggested scale", () => {
     const result = analyze("G7b9", C_MAJOR);
-    expect(result.scaleSentence).toBe("G altered");
+    // T1 keeps D natural in G7b9. G altered excludes D; half-whole includes
+    // G,Ab,B,D,F exactly. The earlier expectation contradicted these facts.
+    expect(result.scaleSentence).toBe("G half–whole diminished");
   });
 
   test("the half-diminished ii of a minor ii–V reads Locrian", () => {

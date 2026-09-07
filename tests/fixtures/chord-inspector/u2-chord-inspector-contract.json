@@ -5,7 +5,7 @@
   "package": "U2",
   "beadId": "jcpe-milestone-reliable-studio-l3a.11.1",
   "policyId": "changes.u2-chord-inspector",
-  "policyVersion": 2,
+  "policyVersion": 3,
   "files": [
     "inspector-cases.json",
     "piano-cases.json",

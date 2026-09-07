@@ -23,7 +23,7 @@ import type {
  * correct or best.
  */
 
-export const CHART_ANALYSIS_ENGINE_VERSION = "chart-annotation@1" as const;
+export const CHART_ANALYSIS_ENGINE_VERSION = "chart-annotation@2" as const;
 
 /** Functional families a keyed reading may claim; nothing else is invented. */
 export const CHART_HARMONIC_KINDS = Object.freeze([
@@ -90,7 +90,9 @@ export type ChartEventAnalysis = Readonly<{
   /**
    * A scale that fits the chord ("G Mixolydian"). Quality-only scales are
    * still offered when no key is set (they need none); null when even the
-   * quality is unknown (custom chords, refused resolutions).
+   * quality is unknown (custom chords, refused resolutions) or the suggested
+   * scale lacks any exact resolved degree or the explicitly spelled bass.
+   * Containment is not H0's complete scale/tension/clash analysis.
    */
   scaleSentence: string | null;
 }>;

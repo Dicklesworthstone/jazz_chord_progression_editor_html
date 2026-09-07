@@ -32,7 +32,7 @@ export const U2_MANIFEST_SCHEMA =
 export const U2_PACKAGE = "U2" as const;
 export const U2_BEAD_ID = "jcpe-milestone-reliable-studio-l3a.11.1" as const;
 export const U2_POLICY_ID = "changes.u2-chord-inspector" as const;
-export const U2_POLICY_VERSION = 2 as const;
+export const U2_POLICY_VERSION = 3 as const;
 
 export const INSPECTOR_TABS = Object.freeze([
   "symbol",

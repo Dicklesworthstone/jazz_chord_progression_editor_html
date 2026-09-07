@@ -23,7 +23,7 @@ export const U2_REVIEWED_MANIFEST_SCHEMA =
 export const U2_REVIEWED_PACKAGE = "U2";
 export const U2_REVIEWED_BEAD_ID = "jcpe-milestone-reliable-studio-l3a.11.1";
 export const U2_REVIEWED_POLICY_ID = "changes.u2-chord-inspector";
-export const U2_REVIEWED_POLICY_VERSION = 2;
+export const U2_REVIEWED_POLICY_VERSION = 3;
 
 export const U2_REVIEWED_TABS = Object.freeze([
   "symbol",
@@ -103,20 +103,20 @@ export const U2_EXPECTED_COUNTS = Object.freeze({
 
 export const U2_SPEC_BYTE_DIGESTS: Readonly<Record<string, string>> =
   Object.freeze({
-    "u2-chord-inspector-contract.json": "2f1db8b26b7c40d21d2b1956946d7f65227d150955c56a4f02a76e90f09c9ef7",
-    "inspector-cases.json": "ebc3d89fb135c9165ae70baee2e09b642688c0385ddd4129382d0892d8698a83",
+    "u2-chord-inspector-contract.json": "ed953fde365102e7a76665463ff95dc10336c1f2c5099c288e1d3f261b7a9acb",
+    "inspector-cases.json": "a5427728c3a396ab7dce985d4fdc080e980ffbc28efe193e7e9536fd6850524a",
     "piano-cases.json": "0f1803c2fac8cc0949317f1e9d84d4e2dced0114a5098fc325feac6561439667",
     "voicing-transition-cases.json": "90b47659028852ee00e56c8dd3ed310d43acb1001b462b06f0af44c1f67f42f2",
     "annotation-cases.json": "27f21cdc6df1d54d00c4911698687cecdae75049e840e4fd6f21cd5647147c18",
     "mutation-controls.json": "e5dc10f8befbed090ae07161d61426d516a38c78eff4aa241a2ef854f4782967",
-    "trace-ledger.json": "7d782f3b73c904c970f2a4b8630da1a02acab9549ffd402b3d5256bb212c63d2",
-    "provenance-ledger.json": "2c55525f5ea5cc7e0ba348a12af9e113be5fe0842aeabd8f90e57b002548e93a",
+    "trace-ledger.json": "32aecacc811f405b768f3595855cef32c9fcf1abc04151e210b527da8ece7f1f",
+    "provenance-ledger.json": "22c1282cbb5ecae259b05dddfbe14f19e0ab6b12d7b2af2860ce9f0c2fab21b4",
     "exact-note-cases.json": "57b902a0bc60af640d4ed6079cee6c70bde9e780af80aa5485957a136d98e03d",
     "auto-policy-cases.json": "887c27a0c176e80b12861369c29babf45dcf8ef5105c30c21c0cce21750d47b7"
 });
 
 export const U2_SPEC_SEMANTIC_DIGEST =
-  "dd79a17fe1c32260001deb9201b2498022a31128c679e36c6c3b1484b8e9e148";
+  "0f02a16efdb2de1e5f6b79d885905a829d2c9a7c87630c7bf54207217f0038b5";
 
 /* -------------------------------------------------------------------------- */
 /* Validation Types & Helpers                                                 */
@@ -263,6 +263,33 @@ export function validateU2Semantics(files: Readonly<Record<string, unknown>>): r
   }
   for (const row of rows("inspector-cases.json")) {
     const path = idOf(row), view = record(row["expected"]), voice = record(view["voicing"]), notes = record(view["notes"]);
+    const selected = record(row["selectedChord"]), mode = selected["voicingMode"];
+    const pitches = items(voice["activePitches"]);
+    if (row["selectedChord"] !== null) {
+      check(pitches, selected["pitches"], path + ".voicing.input", "U2_EXACT_PITCHES_CHANGED");
+      check(voice["mode"], mode, path + ".voicing.mode");
+      check(voice["family"], selected["voicingFamily"], path + ".voicing.family");
+      check(notes["rawAnnotation"], selected["annotation"], path + ".notes.input", "U2_ANNOTATION_SOURCE_CHANGED");
+    }
+    check(voice["canSwitchToFrozen"], mode === "auto" && pitches.length > 0,
+      path + ".voicing.canSwitchToFrozen", "U2_FROZEN_PROVENANCE_INVENTED");
+    const motion = record(view["motion"]), paths = items(motion["voicePaths"]).map(record);
+    check(motion["nextChordSymbol"], row["nextChordSymbol"] ?? null, path + ".motion.next", "U2_MOTION_INPUT_MISSING");
+    check(motion["previousChordSymbol"], null, path + ".motion.previous", "U2_MOTION_INPUT_MISSING");
+    if (paths.length > 0) {
+      check(paths.map(arc => arc["fromPitch"]), pitches, path + ".motion.from", "U2_MOTION_INPUT_MISSING");
+      check(paths.map(arc => arc["toPitch"]), row["nextVoicingPitches"], path + ".motion.to", "U2_MOTION_INPUT_MISSING");
+    }
+    const distances = paths.map(arc => Math.abs(midi(arc["fromPitch"]) - midi(arc["toPitch"])));
+    for (const [index, distance] of distances.entries()) {
+      check(paths[index]?.["intervalSemis"], distance, path + ".motion.interval", "U2_MOTION_ARITHMETIC_INVALID");
+      check(paths[index]?.["motionType"], distance === 0 ? "common" : distance <= 2 ? "step" : distance <= 4 ? "skip" : "leap",
+        path + ".motion.type", "U2_MOTION_ARITHMETIC_INVALID");
+    }
+    check(motion["commonToneCount"], distances.filter(distance => distance === 0).length, path + ".motion.common");
+    check(motion["stepwiseMotionCount"], distances.filter(distance => distance > 0 && distance <= 2).length, path + ".motion.steps");
+    if (record(row["analysisContext"])["key"] === undefined)
+      check(record(view["harmony"])["romanNumeral"], null, path + ".harmony.roman", "U2_ANALYSIS_INPUT_MISSING");
     check(voice["midiNoteNumbers"], items(voice["activePitches"]).map(midi), path + ".voicing.midi", "U2_PITCH_ARITHMETIC_INVALID");
     check(notes["text"], notes["rawAnnotation"], path + ".notes.text", "U2_ANNOTATION_SOURCE_CHANGED");
     check(notes["codePointCount"], typeof notes["text"] === "string" ? Array.from(notes["text"]).length : null, path + ".notes.codePoints");

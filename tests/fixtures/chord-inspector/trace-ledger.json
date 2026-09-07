@@ -7,7 +7,10 @@
       "cases": [
         "U2-INSP-001"
       ],
-      "legacyId": null
+      "legacyId": null,
+      "executableProofs": [
+        "tests/integration/u2-inspector-packet.test.ts"
+      ]
     },
     {
       "id": "U2-TRACE-STRUCTURE",
@@ -17,7 +20,11 @@
         "U2-INSP-003",
         "U2-PIANO-002"
       ],
-      "legacyId": "L-THEORY-03"
+      "legacyId": "L-THEORY-03",
+      "executableProofs": [
+        "tests/integration/u2-inspector-packet.test.ts",
+        "tests/unit/u2-context-and-structure.test.ts"
+      ]
     },
     {
       "id": "U2-TRACE-VOICING",
@@ -48,7 +55,12 @@
         "U2-AUTO-020",
         "U2-AUTO-021"
       ],
-      "legacyId": null
+      "legacyId": null,
+      "executableProofs": [
+        "tests/integration/u2-inspector-packet.test.ts",
+        "tests/unit/u2-realized-projection.test.ts",
+        "tests/static/u2-exact-data.test.ts"
+      ]
     },
     {
       "id": "U2-TRACE-HARMONY",
@@ -57,7 +69,11 @@
         "U2-INSP-002",
         "U2-INSP-003"
       ],
-      "legacyId": null
+      "legacyId": null,
+      "executableProofs": [
+        "tests/integration/u2-inspector-packet.test.ts",
+        "tests/unit/chart-scale-containment.test.ts"
+      ]
     },
     {
       "id": "U2-TRACE-MOTION",
@@ -65,7 +81,11 @@
       "cases": [
         "U2-INSP-002"
       ],
-      "legacyId": null
+      "legacyId": null,
+      "executableProofs": [
+        "tests/integration/u2-inspector-packet.test.ts",
+        "tests/unit/u2-context-and-structure.test.ts"
+      ]
     },
     {
       "id": "U2-TRACE-ALTERATION-SYNC",
@@ -74,7 +94,11 @@
         "U2-INSP-003",
         "U2-PIANO-003"
       ],
-      "legacyId": "L-THEORY-03"
+      "legacyId": "L-THEORY-03",
+      "executableProofs": [
+        "tests/unit/u2-draft-realization.test.ts",
+        "tests/e2e/chord-inspector.spec.ts"
+      ]
     },
     {
       "id": "U2-TRACE-CUSTOM-PRESERVATION",
@@ -82,7 +106,12 @@
       "cases": [
         "U2-INSP-004"
       ],
-      "legacyId": null
+      "legacyId": null,
+      "executableProofs": [
+        "tests/integration/u2-inspector-packet.test.ts",
+        "tests/unit/u2-chord-inspector-projection.test.ts",
+        "tests/e2e/chord-inspector.spec.ts"
+      ]
     },
     {
       "id": "U2-TRACE-PIANO-GEOMETRY",
@@ -92,7 +121,12 @@
         "U2-PIANO-002",
         "U2-PIANO-003"
       ],
-      "legacyId": "L-PIANO-01"
+      "legacyId": "L-PIANO-01",
+      "executableProofs": [
+        "tests/unit/u2-piano-role-semantics.test.ts",
+        "tests/unit/u2-piano-keyboard.test.ts",
+        "tests/e2e/chord-inspector.spec.ts"
+      ]
     },
     {
       "id": "U2-TRACE-VOICING-TRANSITION",
@@ -127,7 +161,12 @@
         "U2-FLOW-011",
         "U2-FLOW-012"
       ],
-      "legacyId": null
+      "legacyId": null,
+      "executableProofs": [
+        "tests/integration/studio-inspector-commands.test.ts",
+        "tests/unit/u2-voicing-lifecycle.test.ts",
+        "tests/e2e/chord-inspector.spec.ts"
+      ]
     },
     {
       "id": "U2-TRACE-ANNOTATION-SAFETY",
@@ -143,7 +182,12 @@
         "U2-NOTE-008",
         "U2-NOTE-009"
       ],
-      "legacyId": "L-MARKUP-01"
+      "legacyId": "L-MARKUP-01",
+      "executableProofs": [
+        "tests/static/u2-exact-data.test.ts",
+        "tests/unit/u2-annotation-sanitization.test.ts",
+        "tests/e2e/chord-inspector.spec.ts"
+      ]
     },
     {
       "id": "U2-TRACE-PREVIEW-ISOLATION",
@@ -163,7 +207,11 @@
         "U2-FLOW-011",
         "U2-FLOW-012"
       ],
-      "legacyId": "L-RUNTIME-02"
+      "legacyId": "L-RUNTIME-02",
+      "executableProofs": [
+        "tests/integration/studio-inspector-commands.test.ts",
+        "tests/e2e/chord-inspector.spec.ts"
+      ]
     }
   ]
 }

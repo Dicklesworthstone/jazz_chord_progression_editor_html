@@ -326,6 +326,7 @@ export function ChordInspector({ eventId, ports, onClose, onContractRefusal }: R
               <p>Tensions: {detail?.harmony.tensions.join(", ") || "none"}. Color notes: {detail?.harmony.characteristicTones.join(", ") || "none"}.</p>
               <p>{detail?.harmony.romanNumeral ?? "No tonal reading for this context."} {detail?.harmony.tonalFunction}</p>
               {detail?.harmony.scaleSuggestions.map((suggestion, index) => <p key={index}>{suggestion}</p>)}
+              {detail !== undefined && detail.harmony.scaleSuggestions.length === 0 ? <p>No compatible scale suggestion for these exact chord tones.</p> : null}
             </> : null}
             {tab === "Motion" ? <>
               {detail === undefined ? null : [

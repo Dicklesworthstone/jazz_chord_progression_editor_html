@@ -32,6 +32,7 @@ import type {
   ResolutionOperations,
   ResolvedChord,
 } from "./resolution-contract";
+import { containedChartScale, type ChartScaleFamily } from "./chart-scale-containment";
 
 /**
  * Deterministic chart annotation from literal chord facts.
@@ -114,7 +115,8 @@ function isMinorSeventhSpec(spec: ChordSpec): boolean {
 }
 
 function isHalfDiminishedSpec(spec: ChordSpec): boolean {
-  return spec.triad === "diminished" && spec.seventh === "minor";
+  return spec.seventh === "minor" && (spec.triad === "diminished" ||
+    spec.triad === "minor" && hasDegree(spec.alterations, 5, -1));
 }
 
 function isDiminishedSpec(spec: ChordSpec): boolean {
@@ -152,16 +154,6 @@ function hasDegree(
 ): boolean {
   return degrees.some(
     (degree) => degree.number === number && degree.alter === alter,
-  );
-}
-
-function isAlteredDominantSpec(spec: ChordSpec): boolean {
-  if (spec.colorPolicy === "altered-dominant") return true;
-  return (
-    hasDegree(spec.alterations, 9, -1) ||
-    hasDegree(spec.alterations, 9, 1) ||
-    hasDegree(spec.alterations, 5, 1) ||
-    hasDegree(spec.alterations, 13, -1)
   );
 }
 
@@ -221,18 +213,20 @@ function romanFor(key: KeyContext, spec: ChordSpec): string {
 
 /* ------------------------------------------------------------- analysis */
 
-function qualityScale(spec: ChordSpec): string | null {
-  const root = displayName(spec.root);
+function qualityScale(spec: ChordSpec): ChartScaleFamily | null {
   if (isDominantSpec(spec)) {
-    return isAlteredDominantSpec(spec) ? `${root} altered` : `${root} Mixolydian`;
+    if (spec.colorPolicy === "altered-dominant" || hasDegree(spec.alterations, 5, -1) || hasDegree(spec.alterations, 5, 1)) return "altered";
+    if (hasDegree(spec.alterations, 9, -1) || hasDegree(spec.alterations, 9, 1)) return "half–whole diminished";
+    return hasSharpEleven(spec) ? "Lydian dominant" : "Mixolydian";
   }
-  if (isHalfDiminishedSpec(spec)) return `${root} Locrian`;
-  if (isDiminishedSpec(spec)) return `${root} whole–half diminished`;
-  if (spec.triad === "minor") return `${root} Dorian`;
+  if (isHalfDiminishedSpec(spec)) return [...spec.extensions, ...spec.additions].some(degree => degree.number === 9 && degree.alter === 0)
+    ? "Locrian natural 2" : "Locrian";
+  if (isDiminishedSpec(spec)) return "whole–half diminished";
+  if (spec.triad === "minor") return spec.seventh === "major" ? "melodic minor" : "Dorian";
   if (spec.triad === "major" && (spec.seventh === "major" || spec.sixth !== null)) {
-    return hasSharpEleven(spec) ? `${root} Lydian` : `${root} Ionian`;
+    return hasSharpEleven(spec) ? "Lydian" : "Ionian";
   }
-  if (isSuspendedSpec(spec)) return `${root} Mixolydian`;
+  if (isSuspendedSpec(spec)) return "Mixolydian";
   return null;
 }
 
@@ -279,13 +273,12 @@ export function analyzeChartEvent(
   }
   const scale = qualityScale(current);
   if (key === null) {
-    return frozenAnalysis("unkeyed", null, null, UNKEYED_SENTENCE, scale);
+    return frozenAnalysis("unkeyed", null, null, UNKEYED_SENTENCE, containedChartScale(current, resolved.value, scale));
   }
 
   const keyPc = pitchClassOf(key.tonic);
   const rootPc = pitchClassOf(current.root);
   const degree = pc(rootPc - keyPc);
-  const root = displayName(current.root);
   const roman = romanFor(key, current);
 
   let kind: ChartHarmonicKind = "colour";
@@ -296,10 +289,9 @@ export function analyzeChartEvent(
     kind = "dominant";
     if (degree === 7) {
       sentence = "Dominant — pulls home to the tonic";
-      keyedScale = `${root} Mixolydian`;
     } else if (degree === 1) {
       sentence = "Tritone substitute for the V7";
-      keyedScale = `${root} Lydian dominant`;
+      if (scale === "Mixolydian") keyedScale = "Lydian dominant";
     } else {
       /* The target degree wears its diatonic case in a major key: the V7 of
        * ii, iii, or vi is written lowercase because the chord it tonicizes
@@ -308,16 +300,12 @@ export function analyzeChartEvent(
       const minorTargets = new Set([2, 4, 9]);
       const target = pcNumeral(targetDistance, minorTargets.has(targetDistance));
       sentence = `Secondary dominant — the V7 of ${target}`;
-      keyedScale = `${root} Mixolydian`;
     }
-    if (isAlteredDominantSpec(current)) keyedScale = `${root} altered`;
   } else if (isHalfDiminishedSpec(current)) {
     kind = "predominant";
     sentence = "Half-diminished — usually the ii of a minor ii–V";
-    keyedScale = `${root} Locrian`;
   } else if (isDiminishedSpec(current)) {
     sentence = "Diminished — passing chord or dominant substitute";
-    keyedScale = `${root} whole–half diminished`;
   } else if (current.triad === "minor") {
     kind = degree === 2 ? "predominant" : "colour";
     sentence =
@@ -328,8 +316,7 @@ export function analyzeChartEvent(
           : degree === 4
             ? "iii — tonic-adjacent colour"
             : "Minor colour";
-    keyedScale =
-      `${root} ${degree === 2 || degree === 9 ? "Dorian" : "Aeolian"}`;
+    if (current.seventh !== "major") keyedScale = degree === 2 || degree === 9 ? "Dorian" : "Aeolian";
   } else if (
     current.triad === "major" &&
     (current.seventh === "major" || current.sixth !== null)
@@ -343,11 +330,10 @@ export function analyzeChartEvent(
           : degree === 8 || degree === 3 || degree === 10
             ? "Borrowed from the parallel minor"
             : "Major colour";
-    keyedScale =
-      `${root} ${hasSharpEleven(current) || degree === 5 ? "Lydian" : "Ionian"}`;
+    keyedScale = hasSharpEleven(current) || degree === 5 ? "Lydian" : "Ionian";
   } else if (isSuspendedSpec(current)) {
     sentence = "Suspended — the third is withheld";
-    keyedScale = `${root} Mixolydian`;
+    keyedScale = "Mixolydian";
   }
 
   return Object.freeze({
@@ -356,7 +342,7 @@ export function analyzeChartEvent(
     kind,
     roman,
     functionSentence: sentence,
-    scaleSentence: keyedScale,
+    scaleSentence: containedChartScale(current, resolved.value, keyedScale),
   });
 }
 

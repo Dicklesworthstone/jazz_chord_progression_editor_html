@@ -1,8 +1,8 @@
 # U2 Chord Inspector Contract
 
-Status: proposed independent specification packet — no production
-implementation, no UI completion, no human acceptance, and no expert review
-is claimed.
+Status: reviewed specification packet, policy3. Build is complete; independent
+verification and real human acceptance remain tracked separately on U2/verify.
+This packet alone certifies no production, listening or screen-reader result.
 
 Package: U2 (`jcpe-milestone-reliable-studio-l3a.11.1`), Reliable Studio
 milestone. Depends on accepted/closed authorities: U0 (accessible primitives),
@@ -18,7 +18,7 @@ consulting the markdown plan.
 
 Pinned identities: contract schema
 `changes.ui.u2-chord-inspector-contract.v1`; policy
-`changes.u2-chord-inspector` version 2; fixture manifest schema
+`changes.u2-chord-inspector` version 3; fixture manifest schema
 `changes.fixtures.u2-chord-inspector-contract.v1`.
 
 ---
@@ -193,3 +193,39 @@ rendering, exact heard/applied notes, confirmation, stale/cancelled previews,
 one Undo, global Stop and existing semantic-edit/piano regressions. Listening
 and screen-reader acceptance remain separate real observations. A packet hash
 alone proves no behavior.
+
+## Policy3: executable projection and scale containment
+
+The original policy2 inspector examples remain in Git3f52b83. Their file hash
+is `ebc3d89fb135c9165ae70baee2e09b642688c0385ddd4129382d0892d8698a83`.
+Running all four through real F2/F3 documents exposed three failing examples;
+the empty state passed. This amendment corrects those explicit assumptions,
+using Foundation, T1 and V0 authority, without relaxing any exact-data law.
+
+| Example | Contradiction and corrected executable input |
+|---|---|
+| U2-INSP-002 | Cmaj7 lacks the ninth required by rootless-a. The accepted fixed template is3,7,9,5, so Cmaj9 with range64..79 uniquely realizes E4,B4,D5,G5. The original E4,G4,B4,D5 cannot represent that template. A first64..74 trial was correctly refused and remains in the verification log. The explicit next chord is Manual Dm9 at F4,C5,E5,A5; independent MIDI differences are1,1,2,2. The actual document supplies C major; no injected fictional analysis output is used. The original Cmaj7 rootless refusal remains a production regression test. |
+| U2-INSP-003 | The supplied F4,Ab4,B4,C#5 pitches were illustrative, not an established drop2 realization with generated G bass. They are now explicit Manual data. Literal G7b9#11 contains only the named b9/#11 tensions and retains natural5. Unprovided neighbors cannot create a motion path. |
+| U2-INSP-004 | Arbitrary Custom Manual notes cannot be labeled Frozen without actual generating provenance. They remain exactly editable/audible Manual pitches and carry no invented key or scale analysis. |
+
+`tests/integration/u2-inspector-packet.test.ts` now executes every field of the
+seven declared sections against real validated documents. The independent
+validator additionally checks pitch/input equality, Frozen eligibility, context,
+motion endpoints, exact interval arithmetic and count labels, without consulting
+production. Its digest pins protect this amended packet; they do not certify it.
+
+Chart-annotation@2 preserves the existing one-suggestion scope and checks every
+resolved degree, every T1 alternative and the exact spelled slash bass. A
+compound ninth/eleventh/thirteenth reduces by seven while retaining alteration;
+#11 never becomes b5 merely because it sounds the same. One candidate is checked
+against at most four16-degree realizations and eight scale degrees, plus bass.
+There is no search or wall-time cutoff. Suggestions with a missing degree are
+withheld. The checked-in H0 section10 scale degrees provide arithmetic authority;
+this does not implement H0 option ranking, contextual evidence or clash analysis.
+
+G7b9 and G7b9#11 can name half-whole diminished, which includes natural5;
+G7#11 can name Lydian dominant. Minor-major7 and half-diminished natural9 use
+melodic minor and Locrian natural2 respectively. Incompatible explicit colors
+or bass produce no scale suggestion. The earlier G7b9→altered expectation is
+retained in Git and its failing invocation; altered lacks the explicit natural
+fifth. Independent12-root keyed/unkeyed tests retain all positive/refusal twins.

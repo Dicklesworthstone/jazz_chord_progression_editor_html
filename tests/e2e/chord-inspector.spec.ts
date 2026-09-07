@@ -222,6 +222,54 @@ for (const mode of ["file", "http"] as const) for (const viewport of [{ width: 1
       });
     }
 
+    test("Harmony preserves exact alterations and refuses incompatible scale advice", async ({ page }, info) => {
+      await boot(page, mode); await observeNativeSources(page);
+      const before = await state(page), dialog = await open(page, viewport.width);
+      const originalSymbol = await dialog.locator(".studio-inspector-summary strong").innerText();
+      await dialog.getByRole("button", { name: "Advanced chord controls", exact: true }).click();
+      const observations = [];
+      for (const [symbol, scale] of [["G7", "G Mixolydian"], ["G7b9#11", "G half–whole diminished"],
+        ["G7b9add9", null], ["G7#11", "G Lydian dominant"]] as const) {
+        await dialog.getByRole("tab", { name: "Symbol", exact: true }).click();
+        await dialog.getByRole("textbox", { name: "Chord symbol", exact: true }).fill(symbol);
+        await dialog.getByRole("button", { name: "Apply draft", exact: true }).click();
+        if (symbol !== "G7") await dialog.getByRole("button", { name: "Confirm change", exact: true }).click();
+        await expect(dialog.getByRole("status")).toContainText("Applied.");
+        await dialog.getByRole("tab", { name: "Harmony", exact: true }).click();
+        const panel = dialog.getByRole("tabpanel");
+        if (scale === null) {
+          await expect(panel.getByText("No compatible scale suggestion for these exact chord tones.", { exact: true })).toBeVisible();
+          await expect(panel.getByText(/^G (altered|Mixolydian|Lydian dominant|half–whole diminished)$/)).toHaveCount(0);
+        } else await expect(panel.getByText(scale, { exact: true })).toBeVisible();
+        if (symbol === "G7b9#11") await expect(panel).toContainText("Tensions: b9, #11. Color notes: Ab, C#.");
+        if (symbol === "G7") {
+          const saved = await state(page);
+          await dialog.getByRole("button", { name: "Hear current chord", exact: true }).click();
+          await expect.poll(() => page.evaluate(() => window.u5NativeSourceCounts?.().started ?? 0)).toBeGreaterThan(0);
+          await dialog.getByRole("button", { name: "Release preview", exact: true }).click();
+          await expect.poll(() => page.evaluate(() => window.u5NativeSourceCounts?.())).toMatchObject({ sounding: 0, futureAttacks: 0 });
+          expect(await state(page)).toEqual(saved);
+        }
+        observations.push({ symbol, scale, actual: await panel.textContent(), state: await state(page) });
+        if (symbol === "G7") {
+          // These four real G7 notes remain legal under each subsequent symbol.
+          // A four-voice Auto policy cannot realize every six-degree formula.
+          // Use the actual Manual workflow and its explicit symbol confirmation.
+          await dialog.getByRole("tab", { name: "Voicing", exact: true }).click();
+          await dialog.getByRole("button", { name: "Edit exact notes", exact: true }).click();
+          await dialog.getByRole("button", { name: "Apply draft", exact: true }).click();
+          await expect(dialog.locator(".studio-inspector-summary")).toContainText("manual");
+        }
+      }
+      await page.keyboard.press("Escape"); await expect(dialog).toHaveCount(0);
+      for (let index = 0; index < 5; index++) await page.locator("#studio-undo").click();
+      await expect(page.locator(".studio-chord-card").first()).toContainText(originalSymbol);
+      const after = await state(page);
+      expect(after.ids).toEqual(before.ids); expect(after.selected).toEqual(before.selected);
+      await info.attach("inspector-exact-scale-observations", { contentType: "application/json", body: JSON.stringify(observations) });
+      clean();
+    });
+
     test("every advanced tab has a valid accessible panel and keyboard route", async ({ page }, info) => {
       await boot(page, mode); const dialog = await open(page, viewport.width);
       await dialog.getByRole("button", { name: "Advanced chord controls", exact: true }).click();

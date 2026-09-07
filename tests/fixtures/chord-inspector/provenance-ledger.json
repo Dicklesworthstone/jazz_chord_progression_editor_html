@@ -23,13 +23,13 @@
       "id": "T1",
       "name": "Chord Resolution & Spelling",
       "package": "T1",
-      "role": "Resolves chord qualities, spelled degrees, pitch classes, and tension categories."
+      "role": "Resolves chord qualities, spelled degrees, pitch classes, and tension categories. Chart-annotation@2 separately checks every exact resolved degree and spelled slash bass against its one suggested scale. It does not implement H0 plural readings, tension availability or clash evidence."
     },
     {
       "id": "V0",
       "name": "Voicing Generation",
       "package": "V0",
-      "role": "Generates jazz voicing family candidates (drop-2, rootless, quartal, etc.)."
+      "role": "Generates jazz voicing family candidates (drop-2, rootless, quartal, etc.). The fixed rootless-a major template orders3,7,9,5 low to high; range64..79 uniquely gives E4,B4,D5,G5 for Cmaj9. Cmaj7 lacks9 and cannot certify that candidate."
     },
     {
       "id": "X1",
@@ -41,7 +41,7 @@
       "id": "F2",
       "name": "Foundation exact document data",
       "package": "F2",
-      "role": "U2 Refinement2; domain/chord.ts and domain/document.ts:16 exact notes, MIDI0..127,2000 Unicode code points. Arithmetic fixtures independently authored; no human listening or expert approval claimed."
+      "role": "U2 Refinement2; domain/chord.ts and domain/document.ts:16 exact notes, MIDI0..127,2000 Unicode code points. Arithmetic fixtures independently authored; no human listening or expert approval claimed. Policy3 makes all four inspector examples executable through F2/F3; Manual cannot claim generated Frozen provenance. Original policy2 bytes remain in Git3f52b83 (inspector SHA256ebc3d89fb135c9165ae70baee2e09b642688c0385ddd4129382d0892d8698a83)."
     }
   ],
   "laws": [

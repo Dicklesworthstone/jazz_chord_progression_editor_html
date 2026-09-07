@@ -107,4 +107,16 @@ describe("U2 independent exact-data packet", () => {
     expect(findings.some(f => f.code === "U2_PITCH_ARITHMETIC_INVALID")).toBe(true);
     expect(findings.some(f => f.code === "U2_AUTO_POLICY_INVALID")).toBe(true);
   });
+
+  test("projection semantics reject invented Frozen provenance and ungrounded motion", () => {
+    const changed = structuredClone(packet);
+    const custom = changed["inspector-cases.json"].cases[3];
+    const motion = changed["inspector-cases.json"].cases[1]?.expected.motion.voicePaths[0];
+    if (!custom || !motion) throw new Error("Missing independent projection controls");
+    custom.expected.voicing.canSwitchToFrozen = true;
+    motion.intervalSemis = 9;
+    const findings = validateU2Semantics(changed);
+    expect(findings.some(f => f.code === "U2_FROZEN_PROVENANCE_INVENTED")).toBe(true);
+    expect(findings.some(f => f.code === "U2_MOTION_ARITHMETIC_INVALID")).toBe(true);
+  });
 });
