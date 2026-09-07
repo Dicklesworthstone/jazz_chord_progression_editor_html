@@ -95,7 +95,7 @@ test("explicit pristine disposition refuses a populated destination before alloc
   const result = runAtomicEditPlan({
     state: scenario.state,
     dependencies: scenario.dependencies,
-    command: { ...scenario.command, plan: { ...plan, placement: { ...plan.placement, layoutDisposition: "fill-empty-first-measure" } } },
+    command: { ...scenario.command, plan: { ...plan, source: plan.source, placement: { ...plan.placement, layoutDisposition: "fill-empty-first-measure" } } },
   });
   expect(result.ok).toBe(false);
   if (result.ok) throw new Error("populated destination accepted");
