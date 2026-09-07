@@ -13,7 +13,9 @@ export function MyChartsDialog({ service, view }: Readonly<{ service: StudioMyCh
   const heading = useRef<HTMLHeadingElement>(null);
   const selected = view.records.find(row => row.recordId === view.selectedId);
   const onContractRefusal = useCallback(() => { service.invalidateHost(); }, [service]);
-  useEffect(() => { setTitle(selected?.title ?? ""); }, [selected?.recordId, selected?.title]);
+  // Seed the draft during selection's layout commit. A deferred effect can
+  // otherwise overwrite input typed immediately after selecting a kept chart.
+  useLayoutEffect(() => { setTitle(selected?.title ?? ""); }, [selected?.recordId, selected?.title]);
   useEffect(() => { if (!view.open) setSearch(""); }, [view.open]);
   useLayoutEffect(() => {
     if (view.confirmation !== null || view.restore !== null) heading.current?.focus();
