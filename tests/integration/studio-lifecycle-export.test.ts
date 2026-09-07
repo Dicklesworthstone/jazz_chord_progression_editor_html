@@ -90,11 +90,14 @@ describe("U5 canonical export through production encoder, registry, A0 CAS and A
     const h = harness((request) => ({ completion: new Promise((resolve) => {
       release = () => { resolve(delivery(request)); };
     }) }));
+    expect(h.composition.controller.setTitle("A real undoable edit before delivery").ok).toBe(true);
+    expect(h.composition.controller.getSnapshot().history.canUndo).toBe(true);
     await h.service.openExport();
     const pending = h.service.deliverCanonicalExport();
     expect(h.calls).toHaveLength(1);
     expect(h.composition.readApplicationState().dialogs.at(-1)?.blocksHistory).toBe(true);
     expect(h.composition.controller.undo().ok).toBe(false);
+    expect(h.composition.controller.getSnapshot().history.canUndo).toBe(false);
     h.service.cancelLifecycleDialog();
     await h.service.deliverCanonicalExport();
     expect(h.calls).toHaveLength(1);

@@ -103,8 +103,12 @@ describe("U5 New and lesson replacement through real A0/X1", () => {
     const h = await harness({ retirement: { retireLocalReplacement: async request => {
       await gate; return h.real.retireLocalReplacement(request);
     } } });
+    const before = h.composition.readApplicationState();
     await h.service.requestNew(); const pending = h.service.confirm(false);
     await h.service.confirm(false); h.service.cancel();
+    expect(h.composition.readApplicationState().document).toBe(before.document);
+    expect(h.composition.readApplicationState().history).toBe(before.history);
+    expect(h.composition.controller.getSnapshot().history.canUndo).toBe(false);
     expect(h.requests).toHaveLength(1); expect(h.composition.controller.undo().ok).toBe(false);
     expect(h.composition.controller.setTitle("Forbidden").ok).toBe(false);
     release?.(); await pending; expect(h.service.getSnapshot().open).toBe(false);

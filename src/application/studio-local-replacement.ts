@@ -211,7 +211,8 @@ export function createStudioLocalReplacement(options: Readonly<{
     const facts = selectReplacementConfirmation(before, options.recovery.inspectRecovery());
     confirmationRequired = facts.confirmationRequired || assessed.oversized;
     const pushed = workflow.applyLifecycleIntent({ kind: "push-dialog", dialog: {
-      id: DIALOG_ID, kind: origin === "new" ? "new-document" : "lesson-load", phase: "open", blocksHistory: false, requestId: identity.requestId } });
+      id: DIALOG_ID, kind: assessed.oversized ? "history-limit" : origin === "new" ? "new-document" : "lesson-load",
+      phase: "open", blocksHistory: false, requestId: identity.requestId } });
     if (!pushed.ok) { failure(pushed.code); return; }
     publish({ open: true, phase: "confirm", origin, title: candidate.title,
       nonUndoable: assessed.oversized, exportRecommended: facts.exportRecommended || assessed.oversized,

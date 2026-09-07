@@ -91,7 +91,8 @@ export function createStudioDocumentImport(options: Readonly<{
     chartText = null;
     workflow.applyLifecycleIntent({ kind: "set-import-draft", draft: null });
     workflow.updateLifecycleDialogPhase(DIALOG_ID, "failed");
-    publish({ phase: "failed", issueCodes: [code], message: `${code}: ${message}` });
+    publish({ phase: "failed", title: null, sourceFormat: null, summary: null, groups: [], omittedItems: 0,
+      issueCodes: [code], message: `${code}: ${message}` });
   }
   function cancel(): void {
     if (!view.open || view.phase === "committing" || view.reconciliationRequired) return;
@@ -131,7 +132,7 @@ export function createStudioDocumentImport(options: Readonly<{
       readRequestId: identity.requestId, status: "reading", candidate: null, issueCodes: [],
     } });
     if (!draft.ok) { failure(draft.code); return; }
-    workflow.updateLifecycleDialogPhase(DIALOG_ID, "open");
+    workflow.updateLifecycleDialogPhase(DIALOG_ID, "open", "import-preview");
     publish({ phase: "reading", title: null, sourceFormat: null, summary: null, groups: [], omittedItems: 0, issueCodes: [], message: null,
       nonUndoable: false, ...confirmationFacts() });
     try {
@@ -199,6 +200,8 @@ export function createStudioDocumentImport(options: Readonly<{
     if (!current(chosen)) { failure("command.stale_revision"); return; }
     const facts = confirmationFacts();
     if ((facts.confirmationRequired || view.nonUndoable) && view.phase !== "confirm") {
+      const hosted = workflow.updateLifecycleDialogPhase(DIALOG_ID, "open", view.nonUndoable ? "history-limit" : "import-confirm");
+      if (!hosted.ok) { failure(hosted.code); return; }
       publish({ phase: "confirm", ...facts, exportRecommended: facts.exportRecommended || view.nonUndoable }); return;
     }
     if (chosen.nonUndoableConfirmationRequirement !== null && !acknowledgeNonUndoable) {
@@ -295,12 +298,17 @@ export function createStudioDocumentImport(options: Readonly<{
       }, hint);
     },
     requestCommit: (hostIsCurrent) => commit(false, hostIsCurrent), confirm: commit,
-    backToPreview: () => { if (view.phase === "confirm") publish({ phase: "preview", message: null }); },
+    backToPreview: () => {
+      if (view.phase !== "confirm") return;
+      const hosted = workflow.updateLifecycleDialogPhase(DIALOG_ID, "open", "import-preview");
+      if (!hosted.ok) { failure(hosted.code); return; }
+      publish({ phase: "preview", message: null });
+    },
     invalidatePreview: () => {
       if (!view.open || (view.phase === "committing" || view.reconciliationRequired)) return;
       readAbort?.abort(); readAbort = null; preview = null; chartText = null;
       workflow.applyLifecycleIntent({ kind: "set-import-draft", draft: null });
-      workflow.updateLifecycleDialogPhase(DIALOG_ID, "open");
+      workflow.updateLifecycleDialogPhase(DIALOG_ID, "open", "import-preview");
       publish({ phase: "input", title: null, sourceFormat: null, summary: null, groups: [], omittedItems: 0, issueCodes: [], message: null });
     },
     exportCurrentFirst: () => { if ((view.phase === "committing" || view.reconciliationRequired)) return; cancel(); if (!view.open) options.exportCurrent(); },

@@ -69,6 +69,81 @@ async function replacePreview(page: Page): Promise<void> {
 for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) {
   test.describe(`U5 document import ${String(viewport.width)}px`, () => {
     test.use({ viewport });
+    test("a truncated legacy report still discloses every rejected chord count before confirmation", async ({ page }) => {
+      const original = await exportDocument(page);
+      const source = { name: "Partial legacy chart", sections: [{ name: "A", chords: [
+        ...Array.from({ length: 300 }, () => ({ name: "Cmaj7", notes: ["C3", "E3", "G3", "B3"] })), null,
+      ] }, null] };
+      await page.locator("#studio-import-chart").click();
+      await page.locator("#studio-import-file").setInputFiles({ name: "partial.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(source)) });
+      const review = page.getByRole("region", { name: "Import preview" });
+      await expect(review).toContainText("Detected format: Legacy JSON");
+      await expect(review).toContainText("300 chords");
+      await expect(review).toContainText("additional report items omitted");
+      await expect(page.getByRole("alert")).toContainText("1 chord slot could not be imported");
+      await expect(page.getByRole("alert")).toContainText("1 section could not be imported");
+      await expect(review.getByRole("heading", { name: "rejected (0 shown)" })).toBeVisible();
+      await page.locator("#studio-import-commit").click();
+      await expect(page.getByRole("alert")).toContainText("1 chord slot could not be imported");
+      await page.locator("#studio-import-back").click();
+      await page.locator("#studio-import-file").setInputFiles({ name: "invalid.json", mimeType: "application/json", buffer: Buffer.from("{") });
+      await expect(page.getByRole("alert")).toContainText("import.json_syntax_invalid");
+      await expect(review).toHaveCount(0);
+      await expect(page.locator("#studio-import-commit")).toHaveCount(0);
+      await page.keyboard.press("Escape");
+      expect(await exportDocument(page)).toEqual(original);
+    });
+    test("nested duplicate fields report the conflict, preserve the chart, and allow a fresh valid import", async ({ page }) => {
+      await expect(page.locator("#studio-document-title")).toHaveValue("Deacon Blues");
+      const original = await exportDocument(page);
+      await page.locator("#studio-import-chart").click();
+      const conflicting = canonical.replace('"beatsPerBar": 4', '"beatsPerBar": 4, "\\u0062eatsPerBar": 3');
+      expect(conflicting).not.toBe(canonical);
+      await page.locator("#studio-import-file").setInputFiles({ name: "conflicting.changes.json", mimeType: "application/json",
+        buffer: Buffer.from(conflicting) });
+      await expect(page.getByRole("dialog")).toContainText("import.json_duplicate_key");
+      await expect(page.locator("#studio-import-commit")).toHaveCount(0);
+      await page.keyboard.press("Escape");
+      expect(await exportDocument(page)).toEqual(original);
+      await previewFile(page); await replacePreview(page);
+      expect(await exportDocument(page)).toEqual(expectedDocument);
+      await page.locator("#studio-undo").click(); expect(await exportDocument(page)).toEqual(original);
+    });
+    for (const format of ["canonical", "legacy"] as const) {
+      test(`${format} import retires an actually sounding chord preview`, async ({ page }, info) => {
+        await expect(page.locator("#studio-document-title")).toHaveValue("Deacon Blues");
+        const original = await exportDocument(page);
+        await observeNativeSources(page);
+        await page.locator(".studio-chord-card").first().click();
+        await expect.poll(() => page.evaluate(() => window.u5NativeSourceCounts?.().sounding ?? 0)).toBeGreaterThan(0);
+        await page.locator("#studio-import-chart").click();
+        await page.locator("#studio-import-file").setInputFiles(format === "canonical" ? fixture : {
+          name: "legacy-preview.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify({ name: "Legacy preview replacement",
+            description: "Exact manual notes", sections: [{ name: "A", chords: [{ name: "Cmaj7", root: "C", type: "maj7",
+              notes: ["C3", "E3", "G3", "B3"], annotation: "Keep this note" }] }] })),
+        });
+        await page.locator("#studio-import-commit").click();
+        await expect(page.locator("#studio-import-confirm")).toBeEnabled();
+        const atConfirm = await page.evaluate(() => window.u5NativeSourceCounts?.());
+        expect(atConfirm?.sounding).toBeGreaterThan(0);
+        await page.locator("#studio-import-confirm").click();
+        await expect(page.getByRole("dialog")).toHaveCount(0);
+        await expect.poll(() => page.evaluate(() => window.u5NativeSourceCounts?.()))
+          .toMatchObject({ sounding: 0, futureAttacks: 0 });
+        await expect(page.locator("#studio-transport-stop")).toBeDisabled();
+        await info.attach("preview-retirement", { contentType: "application/json", body: JSON.stringify({ atConfirm,
+          after: await page.evaluate(() => window.u5NativeSourceCounts?.()) }) });
+        const actual = await exportDocument(page);
+        if (format === "canonical") expect(actual).toEqual(expectedDocument);
+        else expect(actual).toMatchObject({ title: "Legacy preview replacement", sections: [{ measures: [{ events: [{
+          annotation: "Keep this note", voicing: { mode: "manual", pitches: [
+            { step: "C", alter: 0, octave: 3 }, { step: "E", alter: 0, octave: 3 },
+            { step: "G", alter: 0, octave: 3 }, { step: "B", alter: 0, octave: 3 },
+          ] },
+        }] }] }] });
+        await page.locator("#studio-undo").click(); expect(await exportDocument(page)).toEqual(original);
+      });
+    }
     for (const loss of ["hidden-trigger", "replaced-trigger", "hidden-dialog"] as const) {
       test(`import owner loss during retirement preserves the chart (${loss})`, async ({ page }, info) => {
         const original = await exportDocument(page);

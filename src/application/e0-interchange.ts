@@ -318,6 +318,10 @@ export const classifyJsonLexically: ClassifyJsonLexically = (
   const text = sourceText;
   let pos = 0;
   const len = text.length;
+  // A nested object's refusal belongs to the whole lexical pass. Keeping the
+  // first range here also covers objects inside arrays without losing their
+  // diagnostic while unwinding skipValue's void return.
+  const observation: { duplicate: SourceRange | null } = { duplicate: null };
 
   const skipWhitespace = () => {
     while (pos < len) {
@@ -397,6 +401,7 @@ export const classifyJsonLexically: ClassifyJsonLexically = (
         return { ok: false, schema: schemaValue, hasSections };
       }
       if (seenKeys.has(strToken.value)) {
+        observation.duplicate = Object.freeze({ start: strToken.start, end: strToken.end });
         return {
           ok: false,
           schema: schemaValue,
@@ -430,18 +435,22 @@ export const classifyJsonLexically: ClassifyJsonLexically = (
       }
 
       skipValue(depth + 1);
+      if (observation.duplicate !== null) {
+        return { ok: false, schema: schemaValue, hasSections };
+      }
 
       skipWhitespace();
       if (pos < len && text.charCodeAt(pos) === 0x2c) {
         pos++;
       } else if (pos < len && text.charCodeAt(pos) === 0x7d) {
         pos++;
-        break;
+        return { ok: true, schema: schemaValue, hasSections };
       } else {
         return { ok: false, schema: schemaValue, hasSections };
       }
     }
-    return { ok: true, schema: schemaValue, hasSections };
+    // Reaching EOF after the opening brace or a comma is not a closed object.
+    return { ok: false, schema: schemaValue, hasSections };
   };
 
   const skipValue = (depth: number) => {
@@ -459,6 +468,7 @@ export const classifyJsonLexically: ClassifyJsonLexically = (
           break;
         }
         skipValue(depth + 1);
+        if (observation.duplicate !== null) return;
         skipWhitespace();
         if (pos < len && text.charCodeAt(pos) === 0x2c) {
           pos++;
@@ -492,6 +502,12 @@ export const classifyJsonLexically: ClassifyJsonLexically = (
 
   skipWhitespace();
   if (pos >= len || text.charCodeAt(pos) !== 0x7b) {
+    // Root arrays remain unsupported document shapes, but their object keys
+    // still cross the same duplicate-key preflight before the owned parse.
+    if (pos < len && text.charCodeAt(pos) === 0x5b) skipValue(0);
+    if (observation.duplicate !== null) {
+      return Object.freeze({ ok: false, code: "import.json_duplicate_key", range: observation.duplicate });
+    }
     return Object.freeze({
       ok: true,
       route: "host-parse-to-diagnose-malformed",
@@ -501,11 +517,11 @@ export const classifyJsonLexically: ClassifyJsonLexically = (
   }
 
   const rootRes = validateObject(0);
-  if (rootRes.dupKeyRange !== undefined) {
+  if (observation.duplicate !== null) {
     return Object.freeze({
       ok: false,
       code: "import.json_duplicate_key",
-      range: rootRes.dupKeyRange,
+      range: observation.duplicate,
     });
   }
 
@@ -806,6 +822,8 @@ function runPrepareImportPreview(
     let sourceFormat: ImportSourceFormat;
     let origin: "canonical-import" | "legacy-import";
     const reportItems: ImportPreviewReportItem[] = [];
+    let migrationRejectedSections = 0;
+    let migrationRejectedEvents = 0;
 
     if (isJsonLooking) {
       const lexical = dependencies.classifyJsonLexically(text);
@@ -931,6 +949,10 @@ function runPrepareImportPreview(
         candidateDoc = validated.value;
         sourceFormat = "unversioned-legacy-json";
         origin = "legacy-import";
+        // Rejection totals describe the complete C0 result, even when its
+        // rejected rows fall beyond the bounded first-256 report projection.
+        migrationRejectedSections = legacyCand.report.summary.rejectedSections;
+        migrationRejectedEvents = legacyCand.report.summary.rejectedEvents;
 
         const allGroups = [
           legacyCand.report.groups.preserved,
@@ -1034,8 +1056,8 @@ function runPrepareImportPreview(
       frozenVoicings: frozenVoicingsCount,
       customChords: customChordsCount,
       migrationWarnings: reportItems.length,
-      migrationRejectedSections: 0,
-      migrationRejectedEvents: 0,
+      migrationRejectedSections,
+      migrationRejectedEvents,
     });
 
     const impactRes = resolveImpact(candidateDoc);

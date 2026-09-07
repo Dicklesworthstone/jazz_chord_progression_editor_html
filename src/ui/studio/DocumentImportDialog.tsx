@@ -85,10 +85,11 @@ export function DocumentImportDialog({ service, view }: Readonly<{ service: Stud
         {view.phase === "reading" ? <p role="status">Reading and validating the chart…</p> : null}
         {view.summary === null ? null : <section aria-label="Import preview">
           <h3>{view.title}</h3>
+          <p>Detected format: {view.sourceFormat === "unversioned-legacy-json" ? "Legacy JSON" : "Changes JSON"}</p>
           <p>{view.summary.sections} sections; {view.summary.measures} measures; {view.summary.chordEvents} chords.</p>
-          <p>{view.summary.manualVoicings} Manual; {view.summary.frozenVoicings} Frozen; {view.summary.customChords} Custom chords. Exact supplied data is retained.</p>
-          {view.groups.filter((group) => group.items.length > 0).map((group) => <section key={group.name} aria-label={group.name}>
-            <h4>{group.name}</h4><ul>{group.items.map((item, index) => <li key={index}>{item.code} — {JSON.stringify(item.sourcePath)}{item.targetPath === null ? "" : ` → ${JSON.stringify(item.targetPath)}`}</li>)}</ul>
+          <p>{view.summary.manualVoicings} Manual; {view.summary.frozenVoicings} Frozen; {view.summary.customChords} Custom chords. Imported Manual and Frozen notes keep their supplied pitches and order.</p>
+          {view.groups.filter((group) => group.items.length > 0 || view.omittedItems > 0).map((group) => <section key={group.name} aria-label={group.name}>
+            <h4>{group.name} ({group.items.length} shown)</h4><ul>{group.items.map((item, index) => <li key={index}>{item.code} — {JSON.stringify(item.sourcePath)}{item.targetPath === null ? "" : ` → ${JSON.stringify(item.targetPath)}`}</li>)}</ul>
           </section>)}
           {view.omittedItems === 0 ? null : <p>{view.omittedItems} additional report items omitted by the 256-item display bound.</p>}
         </section>}
@@ -97,6 +98,11 @@ export function DocumentImportDialog({ service, view }: Readonly<{ service: Stud
         {view.phase === "chart-text" ? <Button {...COMMON} id="studio-import-stage-text" busy={false} disabled={false} type="button" variant="primary"
           label="Send to Quick entry" onAction={service.stageChartText} /> : null}
       </>}
+      {view.summary !== null && (view.summary.migrationRejectedEvents > 0 || view.summary.migrationRejectedSections > 0) ? <p role="alert">
+        {view.summary.migrationRejectedEvents > 0 ? <>{view.summary.migrationRejectedEvents} chord {view.summary.migrationRejectedEvents === 1 ? "slot" : "slots"} could not be imported. </> : null}
+        {view.summary.migrationRejectedSections > 0 ? <>{view.summary.migrationRejectedSections} {view.summary.migrationRejectedSections === 1 ? "section" : "sections"} could not be imported. </> : null}
+        Only the accepted changes will be imported. Keep your source file to preserve the rejected material.
+      </p> : null}
       {view.message === null ? null : <p role={view.phase === "failed" ? "alert" : "status"}>{view.message}</p>}
       {view.issueCodes.length < 2 ? null : <ul aria-label="Import refusals">{view.issueCodes.map((code) => <li key={code}>{code}</li>)}</ul>}
     </div>} />;

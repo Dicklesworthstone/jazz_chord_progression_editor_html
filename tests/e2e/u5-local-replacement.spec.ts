@@ -7,6 +7,7 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
 test.use({ userAgent: "OpenAI File Downloader, XaiImageApiFetch/1.0" });
+declare global { interface Window { u5PendingResume?: { entered: boolean; release: () => void } } }
 const artifact = pathToFileURL(join(process.cwd(), "jazz_chord_progression_editor.html")).href;
 const artifactSha256 = createHash("sha256").update(readFileSync(new URL(artifact))).digest("hex");
 const diagnostics = new WeakMap<Page, { consoleErrors: string[]; pageErrors: string[]; requests: string[] }>();
@@ -63,6 +64,44 @@ async function confirm(page: Page): Promise<void> {
 for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) {
   test.describe(`U5 New/lesson ${String(viewport.width)}px`, () => {
     test.use({ viewport });
+    test("a pending native resume cannot certify retirement; a fresh replacement works after it settles", async ({ page }, info) => {
+      const original = await exportDocument(page);
+      await observeNativeSources(page);
+      await page.evaluate(async () => {
+        const Native = window.AudioContext;
+        const context = new Native(); await context.suspend();
+        let release: () => void = () => { throw new Error("RESUME_GATE_MISSING"); };
+        const gate = new Promise<void>(resolve => { release = resolve; });
+        const observation = { entered: false, release };
+        const resume = context.resume.bind(context);
+        context.resume = async () => { observation.entered = true; await resume(); await gate; };
+        // Reuse this actual suspended native context for the application's
+        // first construction; delay only the real resume acknowledgement.
+        let supplied = false;
+        window.AudioContext = new Proxy(Native, { construct: () => {
+          if (supplied) throw new Error("UNEXPECTED_SECOND_CONTEXT");
+          supplied = true; return context;
+        } });
+        window.u5PendingResume = observation;
+      });
+      await page.locator(".studio-chord-card").first().click();
+      await expect.poll(() => page.evaluate(() => window.u5PendingResume?.entered)).toBe(true);
+      await page.locator("#studio-new-chart").click();
+      await page.locator("#studio-replacement-confirm").click();
+      await expect(page.getByRole("alert")).toContainText("transport.replacement_retirement_failed");
+      await expect(page.locator("#studio-replacement-cancel")).toBeEnabled();
+      await page.evaluate(() => { window.u5PendingResume?.release(); });
+      await expect.poll(() => page.evaluate(() => window.u5NativeSourceCounts?.().sounding ?? 0)).toBeGreaterThan(0);
+      await page.locator("#studio-replacement-cancel").click();
+      expect(await exportDocument(page)).toEqual(original);
+      await page.locator("#studio-new-chart").click(); await confirm(page);
+      await expect.poll(() => page.evaluate(() => window.u5NativeSourceCounts?.()))
+        .toMatchObject({ sounding: 0, futureAttacks: 0 });
+      await info.attach("pending-native-resume", { contentType: "application/json", body: JSON.stringify({
+        after: await page.evaluate(() => window.u5NativeSourceCounts?.()),
+      }) });
+      await page.locator("#studio-undo").click(); expect(await exportDocument(page)).toEqual(original);
+    });
     test("New cancellation preserves exact JSON; confirmed New is one exact Undo/Redo boundary", async ({ page }) => {
       const original = await exportDocument(page);
       await page.locator("#studio-new-chart").click();
@@ -118,6 +157,28 @@ for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 
         await expect(page.locator("#studio-transport-pause")).toBeDisabled();
         const replaced = await exportDocument(page);
         expect(replaced).toMatchObject({ title: origin === "new" ? "Untitled Chart" : "ii–V–I in C" });
+        await page.locator("#studio-undo").click(); expect(await exportDocument(page)).toEqual(original);
+      });
+    }
+    for (const origin of ["new", "lesson"] as const) {
+      test(`${origin} replacement retires an actually sounding chord preview`, async ({ page }, info) => {
+        await expect(page.locator("#studio-document-title")).toHaveValue("Deacon Blues");
+        const original = await exportDocument(page);
+        await observeNativeSources(page);
+        await page.locator(".studio-chord-card").first().click();
+        await expect.poll(() => page.evaluate(() => window.u5NativeSourceCounts?.().sounding ?? 0)).toBeGreaterThan(0);
+        if (origin === "new") await page.locator("#studio-new-chart").click(); else await chooseLesson(page);
+        // This positive precondition rules out a preview that expired before
+        // confirmation; observing an already silent chart proves no retirement.
+        const atConfirm = await page.evaluate(() => window.u5NativeSourceCounts?.());
+        expect(atConfirm?.sounding).toBeGreaterThan(0);
+        await confirm(page);
+        await expect.poll(() => page.evaluate(() => window.u5NativeSourceCounts?.()))
+          .toMatchObject({ sounding: 0, futureAttacks: 0 });
+        await expect(page.locator("#studio-transport-stop")).toBeDisabled();
+        await info.attach("preview-retirement", { contentType: "application/json", body: JSON.stringify({ atConfirm,
+          after: await page.evaluate(() => window.u5NativeSourceCounts?.()) }) });
+        expect(await exportDocument(page)).toMatchObject({ title: origin === "new" ? "Untitled Chart" : "ii–V–I in C" });
         await page.locator("#studio-undo").click(); expect(await exportDocument(page)).toEqual(original);
       });
     }

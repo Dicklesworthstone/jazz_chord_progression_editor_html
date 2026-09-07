@@ -35,6 +35,64 @@ async function harness(options: { seed?: boolean; estimate?: number; retirement?
 }
 
 describe("U5 production import workflow", () => {
+  test("retained legacy refusals carry their exact codes and source paths into the review", async () => {
+    const h = await harness(); const before = h.composition.readApplicationState(); h.service.open();
+    await h.service.previewPaste(JSON.stringify({ name: "Partial chart", sections: [{ name: "A", chords: [
+      { name: "Cmaj7", notes: ["C3", "E3", "G3", "B3"] }, null,
+    ] }, null] }), "legacy-json");
+    const view = h.service.getSnapshot();
+    expect(view.phase).toBe("preview"); expect(view.omittedItems).toBe(0);
+    expect(view.groups.find(group => group.name === "rejected")?.items).toEqual([
+      { code: "legacy.rejected.event_not_object", sourcePath: ["sections", 0, "chords", 1], targetPath: null },
+      { code: "legacy.rejected.section_not_object", sourcePath: ["sections", 1], targetPath: null },
+    ]);
+    expect(view.summary).toMatchObject({ chordEvents: 1, migrationRejectedEvents: 1, migrationRejectedSections: 1 });
+    expect(h.retirements()).toBe(0); h.service.cancel();
+    expect(h.composition.readApplicationState().document).toBe(before.document);
+    expect(h.composition.readApplicationState().history).toBe(before.history);
+  });
+  test("complete legacy rejection totals survive the first-256 report projection", async () => {
+    const h = await harness({ seed: false }); h.service.open();
+    await h.service.previewPaste(JSON.stringify({ name: "Partial legacy chart", sections: [{ name: "A", chords: [
+      ...Array.from({ length: 300 }, () => ({ name: "Cmaj7", notes: ["C3", "E3", "G3", "B3"] })), null,
+    ] }, null] }), "auto");
+    expect(h.service.getSnapshot()).toMatchObject({ phase: "preview", summary: {
+      chordEvents: 300, manualVoicings: 300, migrationRejectedSections: 1, migrationRejectedEvents: 1,
+    } });
+    expect(h.service.getSnapshot().omittedItems).toBeGreaterThan(0);
+    expect(h.service.getSnapshot().groups.find(group => group.name === "rejected")?.items).toEqual([]);
+    expect(h.retirements()).toBe(0);
+  });
+  test("a refused new source clears the previous candidate's displayed summary and report", async () => {
+    const h = await harness(); h.service.open();
+    await h.service.previewPaste(minimal, "auto");
+    expect(h.service.getSnapshot().summary).not.toBeNull();
+    const before = h.composition.readApplicationState();
+    await h.service.previewPaste("x".repeat(2_097_153), "auto");
+    expect(h.service.getSnapshot()).toMatchObject({ phase: "failed", summary: null, title: null,
+      sourceFormat: null, groups: [], omittedItems: 0 });
+    expect(h.composition.readApplicationState().document).toBe(before.document);
+    expect(h.composition.readApplicationState().history).toBe(before.history);
+  });
+  for (const oversized of [false, true]) {
+    test(`the import confirmation and Back keep one correctly typed A0 dialog (oversized=${String(oversized)})`, async () => {
+      const h = await harness({ seed: !oversized, estimate: oversized ? 50_000_000 : 4000 });
+      const before = h.composition.readApplicationState();
+      h.service.open(); await h.service.previewPaste(minimal, "auto");
+      expect(h.composition.readApplicationState().dialogs.map(dialog => dialog.kind)).toEqual(["import-preview"]);
+      await h.service.requestCommit();
+      expect(h.composition.readApplicationState().dialogs.map(dialog => dialog.kind))
+        .toEqual([oversized ? "history-limit" : "import-confirm"]);
+      h.service.backToPreview();
+      expect(h.composition.readApplicationState().dialogs.map(dialog => dialog.kind)).toEqual(["import-preview"]);
+      expect(h.composition.readApplicationState().document).toBe(before.document);
+      expect(h.composition.readApplicationState().history).toBe(before.history);
+      expect(h.retirements()).toBe(0);
+      await h.service.requestCommit(); h.service.cancel();
+      expect(h.composition.readApplicationState().dialogs).toEqual([]);
+      expect(h.composition.readApplicationState().document).toBe(before.document);
+    });
+  }
   test("legacy JSON preserves exact manual notes and exposes the reviewed report groups", async () => {
     const h = await harness({ seed: false }); h.service.open();
     const source = JSON.stringify({ name: "Legacy manual chart", description: "Portable manual voicing",
@@ -163,6 +221,28 @@ describe("U5 production import workflow", () => {
     await h.service.previewPaste(minimal, "auto"); await h.service.requestCommit();
     expect(h.service.getSnapshot().open).toBe(false); expect(h.retirements()).toBe(1);
   });
+
+  for (const key of ['"beatsPerBar"', '"\\u0062eatsPerBar"']) {
+    test(`nested duplicate ${key} refuses before retirement and a fresh valid preview still works`, async () => {
+      const h = await harness(); const before = h.composition.readApplicationState();
+      h.service.open();
+      const source = minimal.replace('"beatsPerBar": 4', `"beatsPerBar": 4, ${key}: 3`);
+      expect(source).not.toBe(minimal);
+      await h.service.previewPaste(source, "canonical-json");
+      expect(h.service.getSnapshot().issueCodes).toContain("import.json_duplicate_key");
+      await h.service.requestCommit();
+      const after = h.composition.readApplicationState();
+      expect(after.document).toBe(before.document); expect(after.history).toBe(before.history);
+      expect(after.exportRevision).toBe(before.exportRevision); expect(h.retirements()).toBe(0);
+      expect(after.importDraft).toBeNull(); expect(after.documentTransition.kind).toBe("idle");
+      await h.service.previewPaste(minimal, "canonical-json");
+      await h.service.requestCommit(); await h.service.confirm(false);
+      expect(h.service.getSnapshot().open).toBe(false); expect(h.retirements()).toBe(1);
+      const expected: unknown = JSON.parse(minimal);
+      const observed: unknown = h.composition.readApplicationState().document;
+      expect(observed).toEqual(expected);
+    });
+  }
 
   test("chart text routes into the real quick-entry draft without replacing the chart", async () => {
     const h = await harness(); const before = h.composition.readApplicationState().document;

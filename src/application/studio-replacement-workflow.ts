@@ -29,6 +29,7 @@ import {
 import type {
   AppState,
   ApplicationCommandDependencies,
+  DialogDescriptor,
   DocumentTransitionState,
   ApplicationReplacementOrigin,
   EphemeralIntent,
@@ -61,7 +62,7 @@ export type StudioReplacementWorkflow = Readonly<{
   applyLifecycleIntent: (intent: Extract<EphemeralIntent,
     { kind: "push-dialog" | "pop-dialog" | "set-import-draft" | "dismiss-notice" }>) =>
       Readonly<{ ok: true }> | Readonly<{ ok: false; code: string }>;
-  updateLifecycleDialogPhase: (dialogId: string, phase: "open" | "committing" | "failed") =>
+  updateLifecycleDialogPhase: (dialogId: string, phase: "open" | "committing" | "failed", kind?: DialogDescriptor["kind"]) =>
       Readonly<{ ok: true }> | Readonly<{ ok: false; code: string }>;
   begin: <Origin extends ApplicationReplacementOrigin>(
     input: Readonly<{
@@ -135,14 +136,14 @@ export function createStudioReplacementWorkflow(
       access.notifyListeners();
       return Object.freeze({ ok: true as const });
     },
-    updateLifecycleDialogPhase: (dialogId, phase) => {
+    updateLifecycleDialogPhase: (dialogId, phase, kind) => {
       const state = access.readState();
       const dialog = state.dialogs[state.dialogs.length - 1];
       if (dialog?.id !== dialogId) return Object.freeze({ ok: false as const, code: "ephemeral.intent_invalid" });
       const popped = reduceEphemeralIntent({ state, intent: { kind: "pop-dialog", dialogId } });
       if (!popped.ok) return Object.freeze({ ok: false as const, code: popped.refusal.code });
       const pushed = reduceEphemeralIntent({ state: popped.state, intent: { kind: "push-dialog",
-        dialog: { ...dialog, phase, blocksHistory: phase === "committing" },
+        dialog: { ...dialog, kind: kind ?? dialog.kind, phase, blocksHistory: phase === "committing" },
       } });
       if (!pushed.ok) return Object.freeze({ ok: false as const, code: pushed.refusal.code });
       // Publish once: observers never see history unlocked between reducers.

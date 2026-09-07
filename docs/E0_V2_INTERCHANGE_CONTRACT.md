@@ -252,3 +252,23 @@ commit, so the aggregate gate never sees a pending packet.
 - Claiming semantic compatibility with v1, controller implementation, or
   project-owner acceptance from this proposed packet.
 - Authoring fixture expectations from production output.
+
+## 7. Production chart-text correction and archival restoration
+
+The production text exporter emits an annotated event as a literal chord,
+even when its canonical chord text equals the preceding event. Unannotated
+events may use `/` with their own explicit duration. Neither form copies the
+preceding event's duration or annotation; repeat eligibility resets at each
+section. The complete output is reparsed by T0 and its supported projection
+must equal the source before delivery.
+
+This follows the accepted T0 version 1 grammar (§5.6 of
+`docs/T0_SYNTAX_CONTRACT.md`), which forbids annotations on repeats. The
+archived E0 v1 §5.1 sentence allowing annotated repeats conflicts with that
+grammar and must not govern the production encoder. Commit `9a8bae5` fixed
+the exporter but also changed the immutable E0 v1 document in place. On
+2026-09-07 that document was restored to its accepted SHA-256
+`288c7ba1e36f8422c9753d501feb68efa721fa8b320b5e20bce8503da85e7d4f`.
+The bridge's byte pins, validators, accepted fixtures and T0 negative cases
+remain unchanged. This records the existing production correction under the
+current version; it does not retroactively repair or reinterpret the archive.

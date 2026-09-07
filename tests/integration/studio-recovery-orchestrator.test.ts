@@ -538,6 +538,8 @@ for (const outcome of ["quota", "denied"] as const) {
     expect(session.getSnapshot().diagnosticText).toContain("Use Export JSON");
     expect(h.composition.readApplicationState().document).toBe(document);
     expect(h.recoveryHarness.service.inspectRecovery().cleanRevision).toBeNull();
+    expect(h.composition.controller.setTitle("Editing still works after storage refusal").ok).toBe(true);
+    expect(h.composition.readApplicationState().document.title).toBe("Editing still works after storage refusal");
   });
 }
 
