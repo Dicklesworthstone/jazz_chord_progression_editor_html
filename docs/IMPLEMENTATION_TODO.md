@@ -5,6 +5,15 @@ Consumer: the user and Codex executing the 2026-09-04 request to implement the r
 ## Current order
 
 - [ ] Complete all fifteen September ideas requested by the owner; full ownership/dependencies remain in `PRODUCT_IDEAS_2026_09.md` and Beads. Entry Repair, Focus, Exact Sharing and My Charts are complete (4/15). Next ready independent workflow is rehearsal; its same-key phase does not wait for transposition. U2 technical checks pass; named human observations remain open/unassigned. Preserve existing engine owners and prerequisites.
+- [ ] Rehearsal (`jcpe-rehearsal-session-6y2b`): specification leaf `.1` claimed; implementation is also gated by the existing U4 verification, and key sequences require H1 verification. Do not bypass those owners or call the package complete after same-key work.
+  - [x] Read all four phase Beads and parent, current P0/X1/U4 contracts, exact range bookmarks, tempo bounds and the actual performance/loop seam.
+  - [x] Identify the specific seam: P0 keeps absolute source positions; the performance layer refuses looped input and the application silently falls back to literal chords. Preserve the source bar grid by performing the full chart before projecting its range.
+  - [ ] Specify exact selected-range authority, pickup/empty/partial-bar behavior, preserved performance articulation and source metadata, and explicit performance refusal.
+  - [ ] Specify a finite immutable sequence of per-pass plans and tempos, consumed by the existing X1 horizon scheduler; no second timer or repeated UI Play. Distinguish scheduled occurrences from the pass currently audible.
+  - [ ] Specify64-pass/key-expansion bounds, integer20..400 tempo progression, count-in once, native render preflight, cancellation/staleness, source edits, pause/interruption/resume, final tails and Stop.
+  - [ ] Define UI/application/audio ports and explicit additive boundaries without weakening old P0/X1/U4 contracts; preserve source document/history/recovery/export and session settings.
+  - [ ] Author literal three-pass groove/timing/tempo/count-in fixtures, boundary and refusal twins, exact work/state bounds and named source-fault controls before production code.
+  - [ ] Validate the specification and independent arithmetic; commit the packet and close only its specification obligations. Respect U4/H1 dependencies before claiming the production phases.
 - [x] My Charts (`jcpe-my-charts-zt9z`): specification, build, independent verification and parent complete. Final selection-race fix9ed4925; no deployment claim.
   - [x] Read parent/spec/build context and F1/F2/F3/A0/E0/U5 persistence/publication contracts; distinguish record IDs, musical IDs, recovery and file exports.
   - [x] Specify atomic two-store publication, immutable payloads, exact manifest CAS, cross-tab/ABA refusal, quota/denied/corrupt behavior and limits in `MY_CHARTS.md`.
