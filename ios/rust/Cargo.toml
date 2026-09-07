@@ -1,0 +1,27 @@
+[package]
+name = "frankenjazz-dsp-apple"
+version = "1.0.0"
+edition = "2021"
+license = "MIT"
+publish = false
+
+# Compile the exact source module used by the original web app. Keeping the
+# path here instead of copying the DSP prevents the native port from silently
+# becoming a second, divergent instrument implementation.
+[lib]
+name = "frankenjazz_dsp"
+path = "../../dsp/concert-grand/src/lib.rs"
+crate-type = ["staticlib"]
+
+[dependencies]
+libm = "0.2"
+
+[profile.release]
+opt-level = 2
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = "symbols"
+
+[features]
+dark-models = []

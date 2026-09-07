@@ -20,6 +20,12 @@ import {
   VIBRAPHONE_SAMPLES_BYTE_LENGTH,
   VIBRAPHONE_SAMPLES_SHA256,
 } from "../src/audio/wasm/vibraphone-samples";
+import {
+  PIANO_ATTACK_SAMPLES_BASE64,
+  PIANO_ATTACK_SAMPLES_BYTE_LENGTH,
+  PIANO_ATTACK_SAMPLES_SHA256,
+  PIANO_ATTACK_SLICE_INDEX,
+} from "../src/audio/wasm/piano-attack-samples";
 
 const repositoryRoot = resolve(import.meta.dirname, "..");
 const outputDirectory = resolve(
@@ -40,6 +46,12 @@ const payloads = [
     base64: VIBRAPHONE_SAMPLES_BASE64,
     bytes: VIBRAPHONE_SAMPLES_BYTE_LENGTH,
     sha256: VIBRAPHONE_SAMPLES_SHA256,
+  },
+  {
+    name: "piano-attack-samples.pcm",
+    base64: PIANO_ATTACK_SAMPLES_BASE64,
+    bytes: PIANO_ATTACK_SAMPLES_BYTE_LENGTH,
+    sha256: PIANO_ATTACK_SAMPLES_SHA256,
   },
 ] as const;
 
@@ -73,6 +85,26 @@ for (const payload of payloads) {
   await writeFile(outputPath, decoded);
 }
 
+const pianoIndex = Buffer.from(
+  `${JSON.stringify(PIANO_ATTACK_SLICE_INDEX, null, 2)}\n`,
+  "utf8",
+);
+const pianoIndexPath = resolve(outputDirectory, "piano-attack-index.json");
+if (checkOnly) {
+  let current: Buffer;
+  try {
+    current = await readFile(pianoIndexPath);
+  } catch {
+    throw new Error("piano-attack-index.json: generated iOS resource is missing");
+  }
+  if (!current.equals(pianoIndex)) {
+    throw new Error("piano-attack-index.json: generated iOS resource has drifted");
+  }
+} else {
+  await mkdir(outputDirectory, { recursive: true });
+  await writeFile(pianoIndexPath, pianoIndex);
+}
+
 console.log(
-  `${checkOnly ? "checked" : "wrote"} ${String(payloads.length)} FrankenJazz sample resources`,
+  `${checkOnly ? "checked" : "wrote"} ${String(payloads.length)} PCM payloads and the piano index`,
 );

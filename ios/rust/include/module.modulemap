@@ -1,0 +1,4 @@
+module FrankenJazzDSP {
+    header "frankenjazz_dsp.h"
+    export *
+}

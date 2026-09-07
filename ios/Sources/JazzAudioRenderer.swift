@@ -100,21 +100,31 @@ enum JazzAudioRenderer {
                 max(0.16, event.durationBeats * 60 / chart.tempoBPM + 0.28)
             )
             let voiceCount = max(1, event.midiPitches.count)
-            for (index, midi) in event.midiPitches.enumerated() {
-                let pan = voiceCount == 1
-                    ? 0
-                    : Double(index) / Double(voiceCount - 1) * 0.7 - 0.35
-                mixNote(
-                    NoteRequest(
-                        midi: midi,
-                        velocity: 0.72 / sqrt(Double(voiceCount)),
-                        start: start,
-                        duration: duration,
-                        tone: chart.instrument,
-                        pan: pan
-                    ),
-                    into: &stereo
-                )
+            if let chord = JazzPhysicalInstrumentRenderer.renderChord(
+                tone: chart.instrument,
+                midis: event.midiPitches,
+                velocity: 96,
+                sampleRate: sampleRate,
+                maximumSeconds: duration
+            ) {
+                mixPhysicalChord(chord, tone: chart.instrument, voiceCount: voiceCount, start: start, into: &stereo)
+            } else {
+                for (index, midi) in event.midiPitches.enumerated() {
+                    let pan = voiceCount == 1
+                        ? 0
+                        : Double(index) / Double(voiceCount - 1) * 0.7 - 0.35
+                    mixNote(
+                        NoteRequest(
+                            midi: midi,
+                            velocity: 0.72 / sqrt(Double(voiceCount)),
+                            start: start,
+                            duration: duration,
+                            tone: chart.instrument,
+                            pan: pan
+                        ),
+                        into: &stereo
+                    )
+                }
             }
             if event.permitsBassReinforcement, let bass = event.midiPitches.first {
                 mixNote(
@@ -281,6 +291,16 @@ enum JazzAudioRenderer {
             mixSampledNote(rendered, request: request, into: &stereo)
             return
         }
+        if let rendered = JazzPhysicalInstrumentRenderer.render(
+            tone: request.tone,
+            midi: request.midi,
+            velocity: 96,
+            sampleRate: sampleRate,
+            maximumSeconds: request.duration
+        ) {
+            mixPhysicalNote(rendered, request: request, into: &stereo)
+            return
+        }
 
         let renderedMidi = request.tone.renderedMIDIPitch(for: request.midi)
         let frequency = 440 * pow(2, Double(renderedMidi - 69) / 12)
@@ -346,6 +366,51 @@ enum JazzAudioRenderer {
             let value = Double(rendered.samples[frame]) * request.velocity * recipeLevel * attack
             stereo.left[request.start + frame] += Float(value * leftGain)
             stereo.right[request.start + frame] += Float(value * rightGain)
+        }
+    }
+
+    private static func mixPhysicalNote(
+        _ rendered: JazzPhysicalRender,
+        request: NoteRequest,
+        into stereo: inout StereoBuffer
+    ) {
+        let frames = min(rendered.left.count, stereo.left.count - request.start)
+        guard request.start >= 0,
+              frames > 0,
+              let metadata = JazzPhysicalInstrumentRenderer.metadata(for: request.tone)
+        else { return }
+        let attackFrames = max(1, Int(0.002 * sampleRate))
+        let releaseFrames = max(1, min(frames, Int(0.12 * sampleRate)))
+        for frame in 0..<frames {
+            let attack = min(1, Double(frame) / Double(attackFrames))
+            let release = frame >= frames - releaseFrames
+                ? Double(frames - frame) / Double(releaseFrames)
+                : 1
+            let gain = request.velocity * metadata.outputLevel * attack * release
+            stereo.left[request.start + frame] += Float(Double(rendered.left[frame]) * gain)
+            stereo.right[request.start + frame] += Float(Double(rendered.right[frame]) * gain)
+        }
+    }
+
+    private static func mixPhysicalChord(
+        _ rendered: JazzPhysicalRender,
+        tone: InstrumentTone,
+        voiceCount: Int,
+        start: Int,
+        into stereo: inout StereoBuffer
+    ) {
+        let frames = min(rendered.left.count, stereo.left.count - start)
+        guard start >= 0,
+              frames > 0,
+              let metadata = JazzPhysicalInstrumentRenderer.metadata(for: tone)
+        else { return }
+        let normalization = metadata.outputLevel / sqrt(Double(max(1, voiceCount)))
+        let attackFrames = max(1, Int(0.002 * sampleRate))
+        for frame in 0..<frames {
+            let attack = min(1, Double(frame) / Double(attackFrames))
+            let gain = normalization * attack
+            stereo.left[start + frame] += Float(Double(rendered.left[frame]) * gain)
+            stereo.right[start + frame] += Float(Double(rendered.right[frame]) * gain)
         }
     }
 

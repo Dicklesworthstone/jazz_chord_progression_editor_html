@@ -241,6 +241,169 @@ final class FrankenJazzCoreTests: XCTestCase {
         )
     }
 
+    func testPhysicalInstrumentMetadataMatchesOriginalRecipeContract() throws {
+        let expected: [(InstrumentTone, String, Double, Int, Double, Int?)] = [
+            (.concertGrand, "changes.dsp.concert-grand@1", 8, 96, 0.3, nil),
+            (.flute, "changes.dsp.waveguide-flute@2", 5, 64, 2.8, nil),
+            (.guitar, "changes.dsp.plucked-archtop@2", 6, 64, 0.5, 0),
+            (.bluesGuitar, "changes.dsp.plucked-electric@2", 6, 64, 0.46, 1),
+            (.clarinet, "changes.dsp.waveguide-clarinet@1", 5, 128, 1.1, nil),
+            (.dreadnoughtGuitar, "changes.dsp.plucked-dreadnought@1", 5, 64, 0.5, 2),
+            (.ukulele, "changes.dsp.plucked-ukulele@1", 3, 64, 0.65, 3)
+        ]
+        for (tone, algorithm, maximumSeconds, cacheLimit, outputLevel, packIndex) in expected {
+            let metadata = try XCTUnwrap(JazzPhysicalInstrumentRenderer.metadata(for: tone), tone.displayName)
+            XCTAssertEqual(metadata.algorithmID, algorithm)
+            XCTAssertEqual(metadata.maximumRenderSeconds, maximumSeconds)
+            XCTAssertEqual(metadata.bufferCacheLimit, cacheLimit)
+            XCTAssertEqual(metadata.outputLevel, outputLevel)
+            XCTAssertEqual(metadata.packIndex.map(Int.init), packIndex)
+        }
+        XCTAssertNil(JazzPhysicalInstrumentRenderer.metadata(for: .mellowKeys))
+        XCTAssertNil(JazzPhysicalInstrumentRenderer.metadata(for: .uprightBass))
+        XCTAssertNil(JazzPhysicalInstrumentRenderer.metadata(for: .concertVibes))
+    }
+
+    func testPhysicalInstrumentPCMMatchesOriginalWebRendererWithoutAudioOutput() throws {
+        struct Oracle {
+            var tone: InstrumentTone
+            var peak: Double
+            var rms: Double
+            var checkpoints: [Float]
+        }
+        let oracles = [
+            Oracle(tone: .concertGrand, peak: 0.51139605, rms: 0.23397876, checkpoints: [0.13247535, 0.3801051, -0.09048364, 0.33112088, 0.22011156, -0.24113809]),
+            Oracle(tone: .flute, peak: 0.00731089, rms: 0.00168315, checkpoints: [0, 0, -0.00011881, 0.00047502, 0.00239247, 0.00000249]),
+            Oracle(tone: .guitar, peak: 0.31474185, rms: 0.11777734, checkpoints: [-0.17600192, -0.29870582, -0.01587303, -0.14124712, 0.15688771, -0.00011896]),
+            Oracle(tone: .bluesGuitar, peak: 0.28499281, rms: 0.11327524, checkpoints: [0.17948247, -0.22237934, -0.05282186, 0.11182754, -0.05755475, -0.00049102]),
+            Oracle(tone: .clarinet, peak: 0.80418330, rms: 0.21990502, checkpoints: [0.00019390, -0.00627828, 0.05914050, -0.09812076, 0.27508476, -0.00000084]),
+            Oracle(tone: .dreadnoughtGuitar, peak: 0.29836378, rms: 0.10737738, checkpoints: [-0.07627976, -0.25140291, -0.01606975, -0.11777935, 0.03135712, -0.00025631]),
+            Oracle(tone: .ukulele, peak: 0.30346236, rms: 0.06647430, checkpoints: [-0.00247413, -0.22076225, -0.03507708, -0.01694006, 0.05712122, 0.00009684])
+        ]
+        let checkpointFrames = [17, 101, 511, 1_023, 2_047, 3_839]
+
+        for oracle in oracles {
+            let rendered = try XCTUnwrap(JazzPhysicalInstrumentRenderer.render(
+                tone: oracle.tone,
+                midi: 60,
+                velocity: 96,
+                sampleRate: 24_000,
+                maximumSeconds: 0.16
+            ), oracle.tone.displayName)
+            XCTAssertEqual(rendered.left.count, 3_840, oracle.tone.displayName)
+            XCTAssertEqual(rendered.left.count, rendered.right.count, oracle.tone.displayName)
+            XCTAssertTrue(rendered.left.allSatisfy(\.isFinite), oracle.tone.displayName)
+            XCTAssertTrue(rendered.right.allSatisfy(\.isFinite), oracle.tone.displayName)
+            let peak = rendered.left.map { abs(Double($0)) }.max() ?? 0
+            let rms = sqrt(rendered.left.reduce(0) { $0 + Double($1) * Double($1) } / Double(rendered.left.count))
+            XCTAssertEqual(peak, oracle.peak, accuracy: 0.000_1, oracle.tone.displayName)
+            XCTAssertEqual(rms, oracle.rms, accuracy: 0.000_1, oracle.tone.displayName)
+            for (frame, expected) in zip(checkpointFrames, oracle.checkpoints) {
+                XCTAssertEqual(rendered.left[frame], expected, accuracy: 0.000_1, "\(oracle.tone.displayName) frame \(frame)")
+            }
+        }
+    }
+
+    func testConcertGrandAttackLayerMatchesOriginalHybridWebRendererWithoutAudioOutput() throws {
+        XCTAssertTrue(JazzPianoAttackLayer.isAvailable)
+        let slice = try XCTUnwrap(JazzPianoAttackLayer.slice(for: 60, velocity: 96))
+        XCTAssertEqual(slice.midiPitch, 60)
+        XCTAssertEqual(slice.velocityBucket, 2)
+        XCTAssertEqual(slice.sourceLayer, 14)
+        XCTAssertEqual(slice.sourceChannel, 0)
+        XCTAssertEqual(slice.tuningCents, -2)
+        XCTAssertEqual(slice.byteOffset, 1_023_120)
+        XCTAssertEqual(slice.frameCount, 17_640)
+
+        let rendered = try XCTUnwrap(JazzPhysicalInstrumentRenderer.render(
+            tone: .concertGrand,
+            midi: 60,
+            velocity: 96,
+            sampleRate: 24_000,
+            maximumSeconds: 0.4
+        ))
+        XCTAssertEqual(rendered.left.count, 9_600)
+        let peak = rendered.left.map { abs(Double($0)) }.max() ?? 0
+        let rms = sqrt(rendered.left.reduce(0) { $0 + Double($1) * Double($1) } / Double(rendered.left.count))
+        XCTAssertEqual(peak, 0.71340579, accuracy: 0.000_1)
+        XCTAssertEqual(rms, 0.18713286, accuracy: 0.000_1)
+        let checkpoints: [(Int, Float)] = [
+            (17, -0.00017832),
+            (101, 0.01417949),
+            (511, 0.10324643),
+            (1_023, 0.33996013),
+            (2_047, -0.23960657),
+            (3_839, -0.16459367),
+            (4_319, 0.22851957),
+            (5_759, -0.25027356),
+            (7_679, -0.19341671),
+            (9_599, -0.14667712)
+        ]
+        for (frame, expected) in checkpoints {
+            XCTAssertEqual(rendered.left[frame], expected, accuracy: 0.000_1, "Concert Grand frame \(frame)")
+        }
+    }
+
+    func testPhysicalPluckedChordUsesOneBodyAndCourseBoundWithoutAudioOutput() throws {
+        let sixCourse = try XCTUnwrap(JazzPhysicalInstrumentRenderer.renderChord(
+            tone: .guitar,
+            midis: [48, 52, 55, 59, 62, 65, 69],
+            velocity: 96,
+            sampleRate: 24_000,
+            maximumSeconds: 0.08
+        ))
+        XCTAssertEqual(sixCourse.algorithmID, "changes.dsp.plucked-archtop@2")
+        XCTAssertEqual(sixCourse.renderedMIDIPitches.count, 6)
+        XCTAssertEqual(sixCourse.renderedMIDIPitches, [48, 52, 55, 59, 62, 65])
+        XCTAssertEqual(sixCourse.left.count, 1_920)
+        XCTAssertTrue(sixCourse.left.contains { abs($0) > 0.0001 })
+
+        let fourCourse = try XCTUnwrap(JazzPhysicalInstrumentRenderer.renderChord(
+            tone: .ukulele,
+            midis: [60, 64, 67, 71, 74],
+            velocity: 96,
+            sampleRate: 24_000,
+            maximumSeconds: 0.08
+        ))
+        XCTAssertEqual(fourCourse.algorithmID, "changes.dsp.plucked-ukulele@1")
+        XCTAssertEqual(fourCourse.renderedMIDIPitches, [60, 64, 67, 71])
+        XCTAssertEqual(fourCourse.left.count, fourCourse.right.count)
+        XCTAssertTrue(fourCourse.left.allSatisfy(\.isFinite))
+    }
+
+    func testPhysicalRendererCacheIsPerInstrumentAndVelocityAwareWithoutAudioOutput() throws {
+        JazzPhysicalInstrumentRenderer.resetCacheForTesting()
+        let first = try XCTUnwrap(JazzPhysicalInstrumentRenderer.render(
+            tone: .guitar, midi: 60, velocity: 96, sampleRate: 8_000, maximumSeconds: 0.01
+        ))
+        let repeated = try XCTUnwrap(JazzPhysicalInstrumentRenderer.render(
+            tone: .guitar, midi: 60, velocity: 96, sampleRate: 8_000, maximumSeconds: 0.01
+        ))
+        let differentVelocity = try XCTUnwrap(JazzPhysicalInstrumentRenderer.render(
+            tone: .guitar, midi: 60, velocity: 64, sampleRate: 8_000, maximumSeconds: 0.01
+        ))
+        XCTAssertEqual(first.left, repeated.left)
+        XCTAssertNotEqual(first.left, differentVelocity.left, "Physical excitation velocity belongs in the PCM cache key.")
+        XCTAssertEqual(
+            JazzPhysicalInstrumentRenderer.cacheSnapshot(for: .guitar),
+            JazzPhysicalCacheSnapshot(entryCount: 2, hitCount: 1, missCount: 2, evictionCount: 0)
+        )
+
+        _ = try XCTUnwrap(JazzPhysicalInstrumentRenderer.render(
+            tone: .clarinet, midi: 60, velocity: 96, sampleRate: 8_000, maximumSeconds: 0.01
+        ))
+        XCTAssertEqual(
+            JazzPhysicalInstrumentRenderer.cacheSnapshot(for: .clarinet),
+            JazzPhysicalCacheSnapshot(entryCount: 1, hitCount: 0, missCount: 1, evictionCount: 0)
+        )
+        XCTAssertEqual(
+            JazzPhysicalInstrumentRenderer.globalCacheSnapshot(),
+            JazzPhysicalGlobalCacheSnapshot(entryCount: 3, pcmByteCount: 1_920)
+        )
+        XCTAssertEqual(JazzPhysicalInstrumentRenderer.maximumGlobalCacheEntries, 256)
+        XCTAssertEqual(JazzPhysicalInstrumentRenderer.maximumGlobalCachePCMBytes, 100_663_296)
+    }
+
     func testMIDIExportUsesTheSelectedInstrumentProgram() throws {
         let parsed = try JazzTheory.parseChart("| Cmaj7 |")
         var chart = JazzChart(title: "Programs", measures: parsed.measures)

@@ -202,8 +202,10 @@ enum InstrumentTone: String, CaseIterable, Codable, Identifiable, Sendable {
             "Original VSCO 2 CC0 sampled engine"
         case .concertVibes:
             "Original VCSL CC0 sampled engine"
-        case .concertGrand, .flute, .guitar, .bluesGuitar, .clarinet, .dreadnoughtGuitar, .ukulele:
-            "Native voice; original physical engine port in progress"
+        case .concertGrand:
+            "Original hybrid Yamaha C5 attack + Rust sustain"
+        case .flute, .guitar, .bluesGuitar, .clarinet, .dreadnoughtGuitar, .ukulele:
+            "Original Rust physical renderer"
         default:
             "Native synthesis"
         }

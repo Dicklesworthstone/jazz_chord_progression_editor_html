@@ -47,6 +47,9 @@ targets:
         buildPhase: resources
       - path: Resources/InstrumentSamples
         buildPhase: resources
+    dependencies:
+      - framework: FrankenJazzDSP.xcframework
+        embed: false
     info:
       path: Sources/Info.plist
       properties:
@@ -99,6 +102,8 @@ targets:
       - path: Tests
     dependencies:
       - target: FrankenJazz
+      - framework: FrankenJazzDSP.xcframework
+        embed: false
   FrankenJazzUITests:
     type: bundle.ui-testing
     platform: iOS

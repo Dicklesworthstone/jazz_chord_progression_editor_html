@@ -1,4 +1,5 @@
 build/
+FrankenJazzDSP.xcframework/
 *.xcuserstate
 xcuserdata/
 .DS_Store

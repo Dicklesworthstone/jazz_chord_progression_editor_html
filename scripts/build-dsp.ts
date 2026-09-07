@@ -100,7 +100,7 @@ export function compareDspSourceClosure(
     /CONCERT_GRAND_DSP_SOURCE_CLOSURE_SHA256 =\n {2}"([0-9a-f]{64})"/u.exec(
       moduleText,
     )?.[1];
-  const ledgerMatch = /CONCERT_GRAND_DSP_SOURCE_CLOSURE = Object\.freeze\(\n(\{[\s\S]*?\}) as const,\n\)/u.exec(
+  const ledgerMatch = /CONCERT_GRAND_DSP_SOURCE_CLOSURE = Object\.freeze\(\n\s*(\{[\s\S]*?\}) as const,\n\)/u.exec(
     moduleText,
   )?.[1];
   if (recordedHash === undefined || ledgerMatch === undefined) {
