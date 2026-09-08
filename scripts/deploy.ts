@@ -28,6 +28,7 @@
  *
  * There is deliberately no flag that skips a gate.
  */
+import { assertBrowserLaneFree } from "./browser-suite-admission";
 import { createHash } from "node:crypto";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -150,16 +151,8 @@ async function main(): Promise<void> {
     await spawnText(["git", "rev-parse", "HEAD"], { label: "rev-parse" })
   ).stdout.trim();
 
-  /* 2. Never race a Playwright suite. The pattern names the real suite
-   * launchers; a loose `playwright.*test` also matches the unrelated
-   * `@playwright/mcp@latest` server (the substring is in "latest"). */
-  const suites = await spawnText(
-    ["pgrep", "-f", "playwright/test/cli|run-playwright\\.ts test|check-predeploy-playback"],
-    { label: "pgrep" },
-  );
-  if (suites.exitCode === 0 && suites.stdout.trim().length > 0) {
-    fail("a Playwright suite is running; chain behind it instead of racing it");
-  }
+  // Cheap preflight; the actual Node playback gate also acquires the atomic lane.
+  await assertBrowserLaneFree();
 
   // Fail cheaply on the real Pages endpoint, not after all instrument gates.
   // Check-only remains usable offline and never needs host credentials.

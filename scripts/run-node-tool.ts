@@ -1,3 +1,5 @@
+import { mkdtemp, writeFile } from "node:fs/promises";
+import { resolve } from "node:path";
 import { findRealNode } from "./toolchain-doctor";
 
 const TOOL_ENTRYPOINTS = {
@@ -19,8 +21,24 @@ export async function runNodeTool(
       `NODE_TOOL_MISSING: ${entrypoint}; run bun install --frozen-lockfile.`,
     );
   }
+  let launch = [runtime.path, entrypoint, ...args];
+  if (tool === "playwright" && args[0] === "test") {
+    const built = await Bun.build({ entrypoints: [resolve(import.meta.dirname, "browser-suite-runner.ts")],
+      target: "node", format: "esm", packages: "external", minify: false, sourcemap: "none" });
+    const output = built.outputs[0];
+    if (!built.success || built.outputs.length !== 1 || output === undefined) {
+      throw new Error(`BROWSER_SUITE_BUILD: ${built.logs.map(log => log.message).join("\n")}`);
+    }
+    // Keep the exact launcher beside test evidence. Unique directories avoid
+    // concurrent writers and remain ignored; no shared source file is rewritten.
+    await import("node:fs/promises").then(fs => fs.mkdir("test-results", { recursive: true }));
+    const directory = await mkdtemp(resolve("test-results/browser-suite-runner-"));
+    const runner = resolve(directory, "runner.mjs");
+    await writeFile(runner, await output.text());
+    launch = [runtime.path, runner, resolve(entrypoint), ...args];
+  }
   const child = Bun.spawn({
-    cmd: [runtime.path, entrypoint, ...args],
+    cmd: launch,
     cwd: process.cwd(),
     env: process.env,
     stdin: "inherit",

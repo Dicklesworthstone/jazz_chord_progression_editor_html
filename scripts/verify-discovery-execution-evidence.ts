@@ -1,3 +1,4 @@
+import { assertBrowserLaneFree } from "./browser-suite-admission";
 import { randomUUID } from "node:crypto";
 import { mkdir, stat } from "node:fs/promises";
 import { resolve, relative } from "node:path";
@@ -149,8 +150,7 @@ await mkdir(directory, { recursive: true });
 let browserResults = 0, outcome = "fail";
 try {
   requireTrue(Bun.version === "1.3.14", "Use Bun 1.3.14");
-  const active = Bun.spawnSync(["pgrep", "-af", "[p]laywright"], { stdout: "pipe", stderr: "pipe" });
-  requireTrue(active.exitCode === 1, `Do not race an existing Playwright process: ${new TextDecoder().decode(active.stdout)}`);
+  await assertBrowserLaneFree();
   const discovered = await bundle();
   const declared = [...new Set([...(await paths()), ...discovered.inputs])].sort();
   before = await snapshot(declared); inputDigest = await sha256Hex(stableJson(before));

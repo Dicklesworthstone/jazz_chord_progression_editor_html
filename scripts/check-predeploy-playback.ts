@@ -46,6 +46,7 @@
  * chart, or behavior in other engines; those live in the model acceptance
  * gates.
  */
+import { acquireBrowserSuite } from "./browser-suite-admission.ts";
 import { createServer } from "node:http";
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -519,6 +520,7 @@ async function recoveryFixture(
 }
 
 async function main(): Promise<number> {
+  await acquireBrowserSuite();
   const args = process.argv.slice(2);
   /* jcpe-engine-refusal-fault-cascade-vg8h landed, so the recovery fixture
    * is enforced by default (bead jcpe-deploy-pipeline-restoration-kbvj.3);
