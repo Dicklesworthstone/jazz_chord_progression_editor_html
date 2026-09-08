@@ -42,6 +42,14 @@ export function projectPlaybackPlanLoop(plan: PlaybackPlan, loop: BeatRange): Pl
     const clippedStart = Math.max(start, event.startTick), clippedEnd = Math.min(end, eventEnd);
     const restarted = clippedStart > event.startTick, endClipped = clippedEnd < eventEnd;
     const ticks = clippedEnd - clippedStart;
+    // Most arranged attacks are wholly inside the passage. Their compiled
+    // rational mirrors and offsets already have the exact required values;
+    // retain them instead of allocating and validating four equal values.
+    if (!restarted && !endClipped && event.gateDurationTicks === Math.max(PLAYBACK_PLAN_MINIMUM_GATE_TICKS, ticks - PLAYBACK_PLAN_RELEASE_GAP_TICKS)) {
+      events.push(Object.freeze({ ...event, ordinal: events.length, articulation: "ordinary" }));
+      retainedPitchSlots += event.pitches.length;
+      continue;
+    }
     const startBeat = makeBeatPosition({ numerator: clippedStart, denominator: PLAYBACK_PLAN_MIDI_PPQ });
     const duration = makeBeatDuration({ numerator: ticks, denominator: PLAYBACK_PLAN_MIDI_PPQ });
     const gate = makeBeatDuration({ numerator: Math.max(PLAYBACK_PLAN_MINIMUM_GATE_TICKS, ticks - PLAYBACK_PLAN_RELEASE_GAP_TICKS), denominator: PLAYBACK_PLAN_MIDI_PPQ });
