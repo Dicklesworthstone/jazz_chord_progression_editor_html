@@ -38,3 +38,9 @@ Thumbs.db
 # === multi-repo ephemeral patterns 2026-08-15 ===
 # Qwen Code local project settings (machine-specific)
 .qwen/
+
+# Playwright MCP session dumps (screenshots, console logs, page YAML).
+.playwright-mcp/
+
+# Local debug probes and overflow-audit captures (not product fixtures).
+/tmp/

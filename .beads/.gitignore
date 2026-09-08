@@ -15,6 +15,13 @@
 # Schema migration scratch databases retain these local support files.
 *.vacuum-wal-cert*
 *.fsqlite-migration-state
+*.fsqlite-migration-state*
+
+# Quarantined / rebuild SQLite copies. Names like beads.db.bad_DATE and
+# beads.db.rebuild_* do not match `*.db` / `*.db-wal` / `*.db-shm`.
+*.bad_*
+*.rebuild_*
+recovery*/
 
 # Lock files
 *.lock
