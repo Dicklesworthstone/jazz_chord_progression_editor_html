@@ -2,9 +2,55 @@
 
 Consumer: the user and Codex executing the 2026-09-04 request to implement the reality-check backlog and GitHub voice-leading issue #2. Gate: do not declare this campaign complete while a requested item remains unresolved. Observed defect: the audit found 51 closed records with unfulfilled obligations. Retirement: retire this checklist when the campaign is complete; lasting commands/results belong on the Beads. This inventory is process and earns no implementation credit.
 
+## Fresh reality check — 2026-09-08
+
+The current assessment is [REALITY_CHECK.md](REALITY_CHECK.md), based on
+`9964f76`. This section supersedes stale status summaries below without deleting
+historical evidence. The audit changes no production code and closes no runtime
+or human-acceptance task.
+
+- [x] Read complete AGENTS/README and principal vision plans; map24 vision goals,
+  all15 discovery systems and all15 September workflow ideas to current code and Beads.
+- [x] Execute the29-case independent semantic probe:10pass/19fail. Credit the
+  literal-facts and web-containment repairs; preserve every remaining counterexample.
+- [x] Execute the focused H0/cast/memo packet:84pass/1fail,4,497 assertions;
+  the failure is the same29 publication-policy findings, not a timeout.
+- [x] Execute aggregate once under supported tools:2 gates pass, discovery browser
+  admission refuses idle foreign browser cache paths. No later-gate pass inferred.
+- [x] Execute mandatory predeploy check: source/WASM drift in two committed DSP
+  files blocks release; the chained instrument-quality command never runs.
+- [x] Inspect8 declared local/host desktop/phone workflow cases:4 local pass,
+  4 host new-feature journeys fail (one includes an explicit harness timing limitation).
+  Separately inspect4 hosted boot/native Play/Stop cases:4pass; do not erase original failures.
+- [x] Compare both public payloads to Git: both match11ef504, not9964f76.
+  Preserve the expected Cloudflare blocked-analytics console error.
+- [x] Reuse existing coverage, add only `jcpe-browser-suite-admission-0nyi`,
+  and reopen the false-closed U4 parent while preserving its children's owners.
+- [x] Apply three ambition rounds and six refinement passes; correct README's
+  U2/U5/F0-only claims,71-gate count and8,431,411-byte artifact size.
+- [ ] Reconcile intentional DSP changes and embedded payload under u90y.
+  - [ ] Review the pinned Rust toolchain and plucked_v2 cancellation changes with the owner.
+  - [ ] Build the correct WASM and refresh every affected exact-input acceptance replay.
+  - [ ] Pass unchanged model, instrument-quality and real playback/recovery gates.
+- [ ] Repair actual-suite admission (`jcpe-browser-suite-admission-0nyi`).
+  - [ ] Write independent idle-cache-path/active-suite refusal twins first.
+  - [ ] Preserve foreign processes and prove atomic admission, child lifetime and cleanup.
+  - [ ] Run one honest aggregate and retain its actual next failure or complete result.
+- [ ] Repair29 publication findings through np17's existing owned leaf and named gates.
+- [ ] Finish U4/ordinary-loop remaining13+1 timing failures without widening limits.
+- [ ] Finish U2 independent proof and H0 contextual/scale runtime after its actual dependencies.
+- [ ] Repair H1 and complete explicit-scope audible transposition and U6 comparison.
+- [ ] Adopt completed gdcw in real G2/U8 and native/web semantic consumers.
+  - [ ] Produce only valid distinct options; retain More and complete constraints.
+  - [ ] Prove exact Preview/Apply/Undo/recovery/JSON/MIDI with real adapters and stale refusal.
+- [ ] Repair G1 hashing/rights/query; complete reviewed D0 corpus within its reservation.
+- [ ] Complete every G3–G9/U9–U11/D1 and remaining September workflow obligation.
+- [ ] Complete unchanged Q0/R0, actual Apple/device, human listening/accessibility and
+  exact committed-byte deployment/browser gates. Current deployment remains blocked.
+
 ## Current order
 
-- [ ] Ordinary loop arrangement (`jcpe-rehearsal-session-6y2b.5`, claimed CodexWorkflow): perform the full chart before projecting its range; preserve the selected bass/comp groove through Play, live loop changes, groove replacement and instrument preparation. Full rehearsal build retains U4 verification and additionally depends on this bug.
+- [ ] Ordinary loop arrangement (`jcpe-rehearsal-session-6y2b.5`, open/unassigned after audit handoff): perform the full chart before projecting its range; preserve the selected bass/comp groove through Play, live loop changes, groove replacement and instrument preparation. Full rehearsal build retains U4 verification and additionally depends on this bug.
   - [ ] Finish the final packet in ignored `test-results/loop-final-evidence-2026-09-08/`. An external cleanup removed the earlier `/tmp/jcpe-loop-*` files, pinned Bun directory and browser cache while work continued. Earlier `/tmp` links below now identify historical observations whose raw files are unavailable; the original `/data/tmp/jcpe-loop-arrangement-faults-vx6moY` bundles remain. Do not fabricate the missing failures or call those raw reports retained. Restore Bun1.3.14 from the official archive with SHA256951ee2aee855f08595aeec6225226a298d3fea83a3dcd6465c09cbccdf7e848f, use its absolute path, and restore the exact browser revisions. Recent fallback Bun1.4.2 runs are diagnostic only; pinned reruns below supersede them.
   - [x] Reproduce the pad fallback through the actual controller: pinned Bun1.3.14 returns ten literal pads and fails the new positive band assertion. Preserve the earlier Bun1.4.2 harness timeout separately. Use the existing independent rehearsal interval fixtures, seven style relations, pickup/rest section bounds and twelve spelling/16-note duplicate-preservation cases.
   - [x] Implement bounded immutable full-performance projection and wire ordinary Play, live whole/section loop, groove replacement and instrument preparation. Preserve absolute ticks, source offsets/identity, ordered pitches and 24-tick gate law; include explicit empty bars in section bounds. Existing low-level clipped-plan refusal stays intact. Guarded artifact8430922bytes SHA256006bddb72c68b2619bdf283470e067aa91e30420c4a210ee2a125ce0b9be6085.

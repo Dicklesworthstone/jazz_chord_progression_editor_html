@@ -2,13 +2,14 @@
 
 An offline, deterministic jazz chord-progression studio designed to turn lead-sheet changes into an explainable, playable, portable chart—without accounts, telemetry, cloud services, or runtime AI.
 
-> **Development status (2026-09-01):** the deployed studio is a working
-> product: chart authoring, deterministic theory/voicing/playback, a reviewed
-> progression library, MIDI import and export, and share links are live at
-> <https://jazzchords.org>. Evidence for any particular surface still belongs
-> to its named tests and release gate; planned discovery work is not silently
-> counted as shipped, and the outstanding gaps are listed honestly under
-> [Current limitations](#current-limitations).
+> **Development status (2026-09-08):** Changes is a working editor and
+> playback studio, with substantial recovery, interchange and voicing tools.
+> The repository includes newer exact-sharing, My Charts and Focus workflows
+> than the build currently served at <https://jazzchords.org>. Full harmonic
+> discovery and release acceptance remain incomplete. The current candidate
+> fails the mandatory DSP source/WASM binding gate and must not be deployed
+> until its required evidence passes. See the [current reality check](docs/REALITY_CHECK.md)
+> and [limitations](#current-limitations).
 
 ## Why Changes
 
@@ -40,7 +41,14 @@ acceptance gates, and [`ios/README.md`](ios/README.md) for build instructions.
 
 ## What works today
 
-This table describes the repository build. Automatic startup recovery, **Import chart**, **Export JSON**, the phone layout/title repairs, and the replacement/playback fixes are deployed to [jazzchords.org](https://jazzchords.org/) and its [Vercel mirror](https://changes-jazz-progression-studio.vercel.app/), with the committed build verified in desktop and phone browsers (2026-09-06 UTC). Cloudflare authorization is restored; see the [deployment evidence and remaining acceptance work](docs/IMPLEMENTATION_TODO.md#completed-cloudflare-delivery-jcpe-0bjj).
+This table describes the repository build at `9964f76`. On September 8, both
+[jazzchords.org](https://jazzchords.org/) and its
+[Vercel mirror](https://changes-jazz-progression-studio.vercel.app/) serve the
+older committed artifact from `11ef504`. Both boot and play in desktop and phone
+browsers, but lack the newer My Charts and Focus controls and exact-sharing
+dialog. The [reality check](docs/REALITY_CHECK.md#committed-source-and-public-delivery)
+records exact hashes and the release blocker. Historical Cloudflare login
+problems have been resolved; deployment freshness is a separate requirement.
 
 | Capability | Current state |
 |---|---|
@@ -48,8 +56,9 @@ This table describes the repository build. Automatic startup recovery, **Import 
 | Offline runtime | Every script, style, font, sample, and WASM payload is embedded; the hash-based CSP denies all network destinations |
 | Chart authoring | Engraved sheet view and grid edit view over the demo chart; quick entry (`⌘K` / Type changes) for whole charts; per-chord inline editing, exact beat durations, measure/section structure edits, drag moves, range selection, and single-step undo/redo (U1 acceptance E2E) |
 | Analysis | Literal-first Harmony Lens: chord tones with degrees, chord scale, guide tones, guide-tone motion into the next chord, and plural next-chord options with one-line reasons ("Options, not answers"); roman numerals and phrase brackets on the sheet. Deliberately narrower than the planned H0 evidence-tier engine and says so in source |
+| Exact voicings | Choose and audition alternatives, keep a Frozen realization, or edit up to 16 exact Manual notes in the chord inspector; complete U2 package proof remains open |
 | Playback | One persistent Web Audio graph, serialized transport with loop/seek/pause/live mix, 7 grooves, and 15 instruments spanning physical models (clarinet, flute, four plucked strings), the hybrid concert grand, and CC0-sampled bass/vibes — every shipping model gated by the model-acceptance ledger |
-| Progression library | 28 reviewed entries with a machine-checked provenance law |
+| Progression library | 27 library entries plus the starter chart, with a machine-checked provenance law |
 | MIDI import | One-gesture `.mid` import with a Rust SMF parser in WASM, salvage ledger, per-track preview/overrides, and automated groove matching (M0 shipped; M1 owner-listening gate open) |
 | Recovery | Best-effort IndexedDB with localStorage fallback, revision-bound writes, automatic current recovery when startup is untouched, Keep/Discard for conflicts, previous-copy fallback, and visible storage failures |
 | Chart import | Local Changes/legacy JSON files and pasted data get a bounded preview before replacement; migration reports disclose retained data, confirmation retires playback, and imported document IDs survive recovery |
@@ -59,7 +68,7 @@ This table describes the repository build. Automatic startup recovery, **Import 
 | MIDI export | Deterministic Standard MIDI files with preview, blocker cards, and real downloads (E1 + U7) |
 | Share links | **Share** carries the entire exact chart in a bounded `#zdoc=2.` fragment, including Manual/Frozen notes and annotations; oversized charts offer exact JSON and existing v1 links remain readable |
 | Reproducible build contract | Source-driven build, generated-file banner, byte-equality checks, size budget, CSP hashes, license inventory |
-| Verification | 64-gate aggregate `verify` (contract validators, evidence gates with hash-bound ledgers, typecheck, lint, unit/property/mutation suites, build, reproducibility, licenses, Chromium/Firefox/WebKit E2E), plus real-browser predeploy playback and model-acceptance gates |
+| Verification | 71-gate aggregate `verify` (contract validators, evidence gates with hash-bound ledgers, typecheck, lint, unit/property/mutation suites, build, reproducibility, licenses, Chromium/Firefox/WebKit E2E), plus real-browser predeploy playback and model-acceptance gates |
 
 There is no hidden legacy editor behind the page; the studio is the ground-up rebuild.
 
@@ -115,7 +124,7 @@ The two HTML outputs must be byte-identical. The enforced artifact ceiling is
 9 MiB (`maxUncompressedBytes: 9437184`, the same figure the reviewed PHS7
 physical-system contract pins), with a hard 512 KiB reservation for the
 future Harmonic Atlas and an 8,912,896-byte shell allocation; the current
-artifact measures 7,934,464 bytes. The full amendment history and the
+tracked artifact at `9964f76` measures 8,431,411 bytes. The full amendment history and the
 reclamation path (physical models replacing the ~2.8 MB sampled payloads)
 are recorded in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
@@ -194,7 +203,7 @@ measured wall time and process resources are observations, never musical cutoffs
 
 ## Architecture
 
-The completed system is specified as a set of strict layers. The diagram describes the target architecture; most layers beyond the F0 shell are not implemented yet.
+The source implements the domain, application, playback, audio, persistence, export and Preact UI layers below. The diagram also includes the planned reviewed-content adapter. Deeper harmonic-discovery implementations and their consumers remain incomplete; layer presence alone does not establish musical correctness.
 
 ```text
                          ui (Preact)
@@ -222,7 +231,7 @@ The load-bearing rules are:
 - `ui` renders selector values and dispatches intents; it does not call audio, storage, or export adapters directly.
 - `main.tsx` is the only composition root.
 
-Only Preact may ship as a production package. The planned design system follows the source-owned approach popularized by shadcn, but is implemented in native Preact and CSS—not React, Radix, Tailwind, a shadcn package, or a compatibility layer.
+Only Preact may ship as a production package. The design system follows the source-owned approach popularized by shadcn, but is implemented in native Preact and CSS—not React, Radix, Tailwind, a shadcn package, or a compatibility layer.
 
 For the normative contracts, read [Architecture](docs/ARCHITECTURE.md) and the [Rebuild Plan](docs/REBUILD_PLAN.md).
 
@@ -235,11 +244,11 @@ hold for its named packages, and mixed rows say what remains.
 | Gate | Status | State |
 |---|---|---|
 | Foundation (F0–F3, T0–T1) | Complete | Pinned toolchain, standalone artifact, total decoder, chord parser/resolver, semantic publication, independent theory corpus — all package epics closed with evidence gates in `verify` |
-| Reliable studio | Largely current | Chart editing, commands/history, deterministic transport/audio, voicing engines, and MIDI import/export ship today. Recovery, JSON/legacy import, JSON export, and chart-text export are connected in the repository build. Still open: manual/frozen voicing editing (U2), X1 verify leg, and the remaining lifecycle dialogs (U5) |
-| Musical intelligence | Reduced subset shipped | The live Harmony Lens/roman numerals/next options are an honest narrower substitute; the H0/H1 evidence-tier engines, transposition, tonal journeys, Atlas, fingerprints, and the Continuation Engine remain planned |
-| Advanced craft | Early pieces shipped | V2 progression optimizer, E1 MIDI export, and the U7 export workflow landed ahead of schedule; route/constraint search, reharmonization, guide-tone/color/rhythm/tension/sequence tools, and practice workflows remain planned |
+| Reliable studio | Largely current | Chart editing, commands/history, deterministic transport/audio, voicing engines, and MIDI import/export ship today. Recovery, JSON/legacy import, JSON export, and chart-text export are connected in the repository build. U5 lifecycle is complete; U2 exact voicing editing is implemented with package proof still open. U4 transport proof and identified regression gates remain open |
+| Musical intelligence | Reduced subset shipped | The live Harmony Lens/roman numerals/next options are an honest narrower substitute; H0 literal facts now exist, but contextual/scale operations are missing. H1 and discovery engine code have known semantic defects, and their complete workflows remain open |
+| Advanced craft | Early pieces shipped | V2 progression optimizer, E1 MIDI export, and the U7 export workflow landed ahead of schedule; route/constraint search, reharmonization, guide-tone/color/rhythm/tension/sequence and practice code is partial and not accepted as the complete planned workflows |
 | Physical instruments | In progress | Clarinet v2, flute v2, and four plucked models ship behind the model-acceptance ledger; trumpet and physical vibes/bass remain dark pending performance and owner listening |
-| Release proof | Planned | Browser/device, audio-listening, accessibility, migration, security, performance, and reproducible-artifact evidence — every human gate is still outstanding |
+| Release proof | Incomplete | Substantial automated evidence exists, but aggregate browser admission, publication casts, transport timing and DSP source binding remain red; the full browser/device and human listening/accessibility acceptance is outstanding |
 
 The planned Harmonic Discovery set contains fifteen deterministic systems:
 
@@ -298,18 +307,18 @@ Local recovery is not cloud backup. Keep JSON copies of important charts; browse
 
 - You cannot transpose a chart yet; key selection changes the analysis
   context only (spelled transposition is the planned H1 package).
-- You cannot choose, edit, or freeze a voicing; the V0/V1/V2 engines pick
-  voicings automatically (the exact manual/frozen editor is the open U2
-  package).
-- JSON/legacy import, JSON and chart-text export, share links, and MIDI export
-  are available in the repository build; the remaining lifecycle dialogs are open.
-- Recovery is best-effort browser storage. Keep/Discard and fallback work,
-  but the complete U5 lifecycle/confirmation package is still in progress.
+- The repository supports choosing, auditioning, freezing and manually editing
+  voicings. Complete U2 proof and the broader U6 voicing workbench remain open.
+- JSON/legacy import, JSON and chart-text export, exact share links, My Charts
+  and MIDI export are available in the repository build. The live sites still
+  serve an older build; see the status above.
+- Recovery and My Charts use best-effort browser storage. U5 lifecycle is
+  complete, but a local collection is not a durable backup; keep portable JSON files.
 - Legacy application behavior was deliberately removed rather than copied
   forward; the bounded legacy importer reports every supported migration and refuses unsupported data.
-- The Harmonic Discovery systems (continuation engine, Atlas, route
-  planner, reharmonization, practice tools) are planned, not shipped; the
-  live analysis panel is a deliberately narrower substitute.
+- The full Harmonic Discovery workflows are not delivered. Partial engine code
+  contains known hashing, exact-time, transposition, constraint and grading
+  defects; the live analysis panel is a deliberately narrower implementation.
 - The final browser and real-device support matrix is not certified, and
   the human listening/accessibility evidence sessions are outstanding.
 - The page requires JavaScript. With JavaScript disabled it displays only an
