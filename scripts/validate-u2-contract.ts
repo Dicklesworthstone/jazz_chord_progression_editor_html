@@ -109,14 +109,14 @@ export const U2_SPEC_BYTE_DIGESTS: Readonly<Record<string, string>> =
     "voicing-transition-cases.json": "90b47659028852ee00e56c8dd3ed310d43acb1001b462b06f0af44c1f67f42f2",
     "annotation-cases.json": "27f21cdc6df1d54d00c4911698687cecdae75049e840e4fd6f21cd5647147c18",
     "mutation-controls.json": "e5dc10f8befbed090ae07161d61426d516a38c78eff4aa241a2ef854f4782967",
-    "trace-ledger.json": "32aecacc811f405b768f3595855cef32c9fcf1abc04151e210b527da8ece7f1f",
+    "trace-ledger.json": "a59f0098f1185c95786ab8df03143ff7cc39b9e3380732aeda5292efae75f4a8",
     "provenance-ledger.json": "22c1282cbb5ecae259b05dddfbe14f19e0ab6b12d7b2af2860ce9f0c2fab21b4",
     "exact-note-cases.json": "57b902a0bc60af640d4ed6079cee6c70bde9e780af80aa5485957a136d98e03d",
     "auto-policy-cases.json": "887c27a0c176e80b12861369c29babf45dcf8ef5105c30c21c0cce21750d47b7"
 });
 
 export const U2_SPEC_SEMANTIC_DIGEST =
-  "0f02a16efdb2de1e5f6b79d885905a829d2c9a7c87630c7bf54207217f0038b5";
+  "535640d0c66a9bc922e94c8b7ef3a586600fc114e100f0e76a7262a4ee42a251";
 
 /* -------------------------------------------------------------------------- */
 /* Validation Types & Helpers                                                 */

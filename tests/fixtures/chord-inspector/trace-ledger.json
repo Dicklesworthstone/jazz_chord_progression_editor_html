@@ -10,7 +10,8 @@
       "legacyId": null,
       "executableProofs": [
         "tests/integration/u2-inspector-packet.test.ts"
-      ]
+      ],
+      "evidenceOwner": "tests/integration/u2-chord-inspector-workflow.test.ts"
     },
     {
       "id": "U2-TRACE-STRUCTURE",
@@ -24,7 +25,8 @@
       "executableProofs": [
         "tests/integration/u2-inspector-packet.test.ts",
         "tests/unit/u2-context-and-structure.test.ts"
-      ]
+      ],
+      "evidenceOwner": "tests/unit/u2-chord-inspector-projection.test.ts"
     },
     {
       "id": "U2-TRACE-VOICING",
@@ -60,7 +62,8 @@
         "tests/integration/u2-inspector-packet.test.ts",
         "tests/unit/u2-realized-projection.test.ts",
         "tests/static/u2-exact-data.test.ts"
-      ]
+      ],
+      "evidenceOwner": "tests/unit/u2-chord-inspector-projection.test.ts"
     },
     {
       "id": "U2-TRACE-HARMONY",
@@ -73,7 +76,8 @@
       "executableProofs": [
         "tests/integration/u2-inspector-packet.test.ts",
         "tests/unit/chart-scale-containment.test.ts"
-      ]
+      ],
+      "evidenceOwner": "tests/unit/u2-chord-inspector-projection.test.ts"
     },
     {
       "id": "U2-TRACE-MOTION",
@@ -85,7 +89,8 @@
       "executableProofs": [
         "tests/integration/u2-inspector-packet.test.ts",
         "tests/unit/u2-context-and-structure.test.ts"
-      ]
+      ],
+      "evidenceOwner": "tests/unit/u2-chord-inspector-projection.test.ts"
     },
     {
       "id": "U2-TRACE-ALTERATION-SYNC",
@@ -98,7 +103,8 @@
       "executableProofs": [
         "tests/unit/u2-draft-realization.test.ts",
         "tests/e2e/chord-inspector.spec.ts"
-      ]
+      ],
+      "evidenceOwner": "tests/integration/u2-chord-inspector-workflow.test.ts"
     },
     {
       "id": "U2-TRACE-CUSTOM-PRESERVATION",
@@ -111,7 +117,8 @@
         "tests/integration/u2-inspector-packet.test.ts",
         "tests/unit/u2-chord-inspector-projection.test.ts",
         "tests/e2e/chord-inspector.spec.ts"
-      ]
+      ],
+      "evidenceOwner": "tests/integration/u2-chord-inspector-workflow.test.ts"
     },
     {
       "id": "U2-TRACE-PIANO-GEOMETRY",
@@ -126,7 +133,8 @@
         "tests/unit/u2-piano-role-semantics.test.ts",
         "tests/unit/u2-piano-keyboard.test.ts",
         "tests/e2e/chord-inspector.spec.ts"
-      ]
+      ],
+      "evidenceOwner": "tests/integration/u2-inspector-evidence.test.ts"
     },
     {
       "id": "U2-TRACE-VOICING-TRANSITION",
@@ -166,7 +174,8 @@
         "tests/integration/studio-inspector-commands.test.ts",
         "tests/unit/u2-voicing-lifecycle.test.ts",
         "tests/e2e/chord-inspector.spec.ts"
-      ]
+      ],
+      "evidenceOwner": "tests/unit/u2-voicing-lifecycle.test.ts"
     },
     {
       "id": "U2-TRACE-ANNOTATION-SAFETY",
@@ -187,7 +196,8 @@
         "tests/static/u2-exact-data.test.ts",
         "tests/unit/u2-annotation-sanitization.test.ts",
         "tests/e2e/chord-inspector.spec.ts"
-      ]
+      ],
+      "evidenceOwner": "tests/integration/u2-chord-inspector-workflow.test.ts"
     },
     {
       "id": "U2-TRACE-PREVIEW-ISOLATION",
@@ -211,7 +221,8 @@
       "executableProofs": [
         "tests/integration/studio-inspector-commands.test.ts",
         "tests/e2e/chord-inspector.spec.ts"
-      ]
+      ],
+      "evidenceOwner": "tests/integration/u2-inspector-evidence.test.ts"
     }
   ]
 }
