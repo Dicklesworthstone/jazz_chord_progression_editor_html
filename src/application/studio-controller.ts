@@ -103,7 +103,8 @@ import type { StudioAudioGesture, StudioAudioPort } from "./studio-audio";
 import { buildPlaybackPreparationPlan } from "./playback-preparation-plan";
 import {
   compileStudioPlaybackPlan,
-  performStudioPlaybackPlan,
+  performStudioPlaybackRange,
+  studioSectionLoopRange,
   studioPlanIsPlayable,
   STUDIO_PERFORMANCE_STYLE,
 } from "./studio-playback";
@@ -831,9 +832,8 @@ export interface StudioController {
    * session presentation intent: the next Play compiles its plan WITH the
    * loop (X1 law puts the loop inside the plan), and toggling during an
    * active run re-binds the run through the serialized set-loop command.
-   * The loop plays the literal written pad — the band-sketch performance
-   * layer refuses looped plans by design, and that refusal falls back to
-   * the literal plan rather than faking a sketch against a rebased grid.
+   * The selected band arrangement is compiled over the full chart, then
+   * clipped to this loop with its source bar/cycle context intact.
    */
   readonly toggleLoop: () => StudioControllerActionResult;
   /**
@@ -4729,39 +4729,6 @@ function makeStudioComposition(
     return range.ok ? range.value : null;
   };
 
-  /**
-   * Exact beat range a section occupies in plan space (V2R-18,
-   * jcpe-v2r-section-loop-jjsw). The plan compiler's timeline is the single
-   * authority — its events carry the exact cumulative startBeat — so the
-   * range is read from a loop-free compile of the current document: the
-   * section starts at its first event's startBeat and ends where a later
-   * section's first event starts (or at totalBeats when nothing follows).
-   * A section with no events occupies no span and yields null.
-   */
-  const sectionLoopRange = (
-    plan: Readonly<{
-      events: ReadonlyArray<
-        Readonly<{ sectionId: string; startBeat: BeatPosition }>
-      >;
-      totalBeats: BeatPosition;
-    }>,
-    sectionId: string,
-  ): BeatRange | null => {
-    let start: BeatPosition | null = null;
-    let end: BeatPosition | null = null;
-    for (const event of plan.events) {
-      if (event.sectionId === sectionId) {
-        start ??= event.startBeat;
-      } else if (start !== null) {
-        end = event.startBeat;
-        break;
-      }
-    }
-    if (start === null) return null;
-    const range = makeBeatRange(start, end ?? plan.totalBeats);
-    return range.ok ? range.value : null;
-  };
-
   /** The armed loop intent resolved against a loop-free compiled plan. */
   const armedLoopRange = (
     plan: Readonly<{
@@ -4771,25 +4738,25 @@ function makeStudioComposition(
       totalBeats: BeatPosition;
     }>,
   ): BeatRange | null => {
-    if (loopSectionId !== null) return sectionLoopRange(plan, loopSectionId);
+    if (loopSectionId !== null) return studioSectionLoopRange(state.document, loopSectionId);
     return loopEnabled ? wholeChartLoop(plan) : null;
   };
 
-  /**
-   * Compile the current document with whatever loop intent is armed. The
-   * section range needs event start beats, so the compile runs loop-free
-   * first and recompiles with the resolved range; an unresolvable range
-   * (empty section) honestly yields the loop-free plan.
-   */
-  const compileWithArmedLoop = (): ReturnType<
-    typeof compileStudioPlaybackPlan
-  > => {
-    const base = compileStudioPlaybackPlan(state.document);
+  /** Compile and arrange the complete source chart before projecting its
+   * armed range, retaining bar phase, incoming bass and comp continuity. */
+  const compileWithArmedLoop = (
+    base = compileStudioPlaybackPlan(state.document),
+    styleId = activePerformanceStyleId(),
+  ): ReturnType<typeof compileStudioPlaybackPlan> => {
     if (!base.ok) return base;
     const range = armedLoopRange(base.plan);
-    if (range === null) return base;
-    const looped = compileStudioPlaybackPlan(state.document, range);
-    return looped.ok ? looped : base;
+    if (loopSectionId !== null && range === null) {
+      return Object.freeze({ ok: false, refusal: Object.freeze({
+        code: "playback.loop_unavailable",
+        message: "That loop passage no longer exists. Choose a section or switch to whole-chart looping.",
+      }) });
+    }
+    return performStudioPlaybackRange(base.plan, range, styleId);
   };
 
   const seekToFraction = (
@@ -4891,10 +4858,7 @@ function makeStudioComposition(
        */
       const compiled = compileWithArmedLoop();
       if (compiled.ok) {
-        const performed = performStudioPlaybackPlan(
-          compiled.plan,
-          activePerformanceStyleId(),
-        );
+        const performed = compiled.plan;
         void port.setLoop(
           nextTransportRequestId(),
           Object.freeze({
@@ -4950,10 +4914,10 @@ function makeStudioComposition(
     if (loopSectionId === sectionId) {
       loopSectionId = null;
     } else {
-      /* Arming needs a real span: a section with no chords has nothing to
-       * loop, and a silently inert armed button would be a lie. */
+      // Explicit empty bars retain their silent span; a section with no
+      // measures has zero duration and cannot form a loop.
       const base = compileStudioPlaybackPlan(state.document);
-      if (!base.ok || sectionLoopRange(base.plan, sectionId) === null) {
+      if (!base.ok || studioSectionLoopRange(state.document, sectionId) === null) {
         return editRefusal(
           "toggle-loop",
           "u1.playback_refused",
@@ -4974,10 +4938,7 @@ function makeStudioComposition(
     ) {
       const compiled = compileWithArmedLoop();
       if (compiled.ok) {
-        const performed = performStudioPlaybackPlan(
-          compiled.plan,
-          activePerformanceStyleId(),
-        );
+        const performed = compiled.plan;
         void port.setLoop(
           nextTransportRequestId(),
           Object.freeze({
@@ -5087,9 +5048,9 @@ function makeStudioComposition(
     ) {
       return;
     }
-    const compiled = compileWithArmedLoop();
+    const compiled = compileWithArmedLoop(compileStudioPlaybackPlan(state.document), styleId);
     if (!compiled.ok) return;
-    const performed = performStudioPlaybackPlan(compiled.plan, styleId);
+    const performed = compiled.plan;
     void port.setPerformance(
       nextTransportRequestId(),
       Object.freeze({
@@ -5136,10 +5097,7 @@ function makeStudioComposition(
     let deferredNotes: readonly PreparationNote[] = Object.freeze([]);
     let warmBinding: TransportPlanBinding | undefined;
     if (compiled.ok) {
-      const performed = performStudioPlaybackPlan(
-        compiled.plan,
-        activePerformanceStyleId(),
-      );
+      const performed = compiled.plan;
       warmBinding = Object.freeze({
         plan: performed,
         documentId: performed.sourceDocumentId,
@@ -5321,48 +5279,20 @@ function makeStudioComposition(
     if (acceptedStatus === "paused") {
       return resumeProgression(gesture);
     }
-    /*
-     * jcpe-v2r-loop-seek-ukk6: with looping armed the plan compiles WITH the
-     * whole-chart loop (X1 keeps the loop inside the plan). A looped plan
-     * plays the literal written pad: the band-sketch layer refuses looped
-     * plans by design and that refusal falls back to the literal plan.
-     * The loop range needs the chart's exact length, which only a compiled
-     * plan knows, so an armed loop compiles twice — bounded, and only on
-     * the Play press itself.
-     */
-    let compiled = compileStudioPlaybackPlan(state.document);
+    // The literal plan remains the source for analysis; audio receives a
+    // full-chart arrangement projected into the armed absolute-time loop.
+    const compiled = compileStudioPlaybackPlan(state.document);
     if (!compiled.ok) {
-      return editRefusal(
-        "play-progression",
-        "u1.playback_refused",
-        compiled.refusal.message,
-      );
-    }
-    {
-      const loopRange = armedLoopRange(compiled.plan);
-      if (loopRange !== null) {
-        const looped = compileStudioPlaybackPlan(state.document, loopRange);
-        if (looped.ok) compiled = looped;
-      }
+      return editRefusal("play-progression", "u1.playback_refused", compiled.refusal.message);
     }
     if (!studioPlanIsPlayable(compiled.plan)) {
-      return editRefusal(
-        "play-progression",
-        "u1.playback_requires_a_chord",
-        "Write at least one chord before playing.",
-      );
+      return editRefusal("play-progression", "u1.playback_requires_a_chord", "Write at least one chord before playing.");
     }
-    /*
-     * jcpe-1gao: the transport plays the band sketch, not the written pad.
-     * The literal plan stays the chart's source of truth — the analyzer below
-     * and every export path still read it — and a performance-layer refusal
-     * silently returns that literal plan, so Play can never fail because the
-     * sketch could not be rendered.
-     */
-    const performance = performStudioPlaybackPlan(
-      compiled.plan,
-      activePerformanceStyleId(),
-    );
+    const arranged = compileWithArmedLoop(compiled);
+    if (!arranged.ok) {
+      return editRefusal("play-progression", "u1.playback_refused", arranged.refusal.message);
+    }
+    const performance = arranged.plan;
     /* A chart run supersedes any click-preview still waiting on initialization
      * or physical preparation. It must never start over the newly played run. */
     supersedePreviewPreparation();

@@ -570,7 +570,12 @@ export function createTransportService(
       event.midiPitches.map((midiPitch, index) => {
         const physicalGesture = physicalGestures[index];
         return {
-          voiceId: `${event.eventId}:g${String(generation)}:v${String(index)}`,
+          // Recipe range folding can change a pending voice's realized MIDI
+          // pitch on an instrument swap. Its retired predecessor may still
+          // occupy X0's registry, so the new recipe needs a distinct ID.
+          // Use the bounded event index rather than lengthening source IDs
+          // (which may already consume X0's complete 128-character budget).
+          voiceId: `x1:g${String(generation)}:e${String(eventIndex)}:i${instrumentId}:v${String(index)}`,
           midiPitch,
           velocity: event.velocity,
           ...(physicalGesture === undefined ? {} : { physicalGesture }),

@@ -146,3 +146,5 @@ export type {
   PerformanceSwingRatio,
 } from "./performance/performance-plan-contract";
 export { compilePerformancePlan } from "./performance/performance-plan";
+
+export { projectPlaybackPlanLoop, type PlaybackLoopProjectionEvidence, type PlaybackLoopProjectionResult } from "./project-playback-loop";

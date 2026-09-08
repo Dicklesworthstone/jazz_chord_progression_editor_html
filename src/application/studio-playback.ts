@@ -10,6 +10,7 @@
  */
 import {
   compilePerformancePlan,
+  projectPlaybackPlanLoop,
   compilePlaybackPlan,
   PLAYBACK_ARTICULATION_POLICY_ID,
   PLAYBACK_ARTICULATION_POLICY_VERSION,
@@ -25,7 +26,7 @@ import {
   type PerformanceStyleId,
   type PlaybackPlan,
 } from "../playback";
-import type { BeatRange, ValidatedDocument } from "../domain";
+import { accumulateTimeline, makeBeatRange, measureCapacity, type BeatDuration, type BeatRange, type ValidatedDocument } from "../domain";
 import {
   buildStudioRealizations,
   type StudioRealizationRefusal,
@@ -178,4 +179,40 @@ export function performStudioPlaybackPlan(
     return plan;
   }
   return performed.plan;
+}
+
+/** Arrange with the complete source context, then select the absolute range.
+ * Ordinary playback retains its existing fallback for unsupported grooves;
+ * a supported arrangement never becomes literal merely because it is looped. */
+export function performStudioPlaybackRange(
+  fullPlan: PlaybackPlan,
+  loop: BeatRange | null,
+  styleId: PerformanceStyleId = STUDIO_PERFORMANCE_STYLE,
+): StudioPlaybackCompileResult {
+  if (fullPlan.loop !== null || fullPlan.loopTicks !== null) return Object.freeze({ ok: false,
+    refusal: Object.freeze({ code: "playback.projection_requires_full_plan", message: "Prepare the complete chart before choosing a playback range." }) });
+  const performance = performStudioPlaybackPlan(fullPlan, styleId);
+  if (loop === null) return Object.freeze({ ok: true, plan: performance });
+  const projected = projectPlaybackPlanLoop(performance, loop);
+  if (!projected.ok) return Object.freeze({ ok: false, refusal: Object.freeze({ code: projected.refusal.code,
+    message: "That loop range cannot be played in this chart." }) });
+  return Object.freeze({ ok: true, plan: projected.plan });
+}
+
+/** A section includes its explicit silent measures. Chord onsets alone cannot
+ * locate its boundaries: a leading rest belongs to this section, not the last. */
+export function studioSectionLoopRange(document: ValidatedDocument, sectionId: string): BeatRange | null {
+  const before: BeatDuration[] = [];
+  for (const section of document.sections) {
+    const durations = section.measures.flatMap(measure => measure.completion.kind === "empty"
+      ? [measureCapacity(document.meter)] : measure.events.map(event => event.duration));
+    if (section.id === sectionId) {
+      const start = accumulateTimeline(before), end = accumulateTimeline([...before, ...durations]);
+      if (!start.ok || !end.ok) return null;
+      const range = makeBeatRange(start.value, end.value);
+      return range.ok ? range.value : null;
+    }
+    before.push(...durations);
+  }
+  return null;
 }
