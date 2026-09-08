@@ -10,9 +10,13 @@ import {
 } from "../../src/application/runtime";
 import {
   compareBeatValues,
+  decodeDocumentShape,
   makeBeatPosition,
   makeInstrumentId,
 } from "../../src/domain";
+import { createStudioBootstrap } from "../../src/application/studio-bootstrap";
+import { createStudioControllerOverState } from "../../src/application/studio-controller";
+import { validateDocumentSemantics } from "../../src/application/document-validation";
 import { createFakeAudioPlatform } from "../../src/test-support/fake-audio-platform";
 
 const GESTURE = Object.freeze({
@@ -32,6 +36,37 @@ async function until(predicate: () => boolean): Promise<void> {
     await new Promise<void>((resolve) => setTimeout(resolve, 0));
   }
   throw new Error("PLUCKED_RENDER_AHEAD_TIMEOUT");
+}
+
+function eventBoundaryController(audio: StudioAudioPort) {
+  const bootstrap = createStudioBootstrap();
+  if (!bootstrap.ok) throw new Error(bootstrap.refusal.code);
+  const base = bootstrap.value.state;
+  // Independent literal score: three pairs of one note and four notes.
+  // Starter charts and accompaniment styles may legitimately change density;
+  // neither is the authority for this complete-event preparation boundary.
+  const decoded = decodeDocumentShape({
+    ...base.document,
+    playback: { ...base.document.playback, grooveStyleId: "block-chords@1" },
+    sections: [{ ...base.document.sections[0], measures: [0, 1, 2].map(measure => ({
+      id: `boundary-measure-${String(measure)}`, completion: { kind: "complete" },
+      events: [0, 1].map(ordinal => ({
+        id: `boundary-event-${String(measure)}-${String(ordinal)}`,
+        duration: { numerator: 2, denominator: 1 }, annotation: "",
+        chord: { kind: "custom", sourceText: "Boundary witness", label: "Boundary witness",
+          pitchNames: (ordinal === 0 ? ["C"] : ["C", "E", "G", "B"])
+            .map(step => ({ step, alter: 0 })), bass: null },
+        voicing: { mode: "manual", bassPolicy: "included", pitches: ordinal === 0
+          ? [{ step: "C", alter: 0, octave: 3 }]
+          : ["C", "E", "G", "B"].map(step => ({ step, alter: 0, octave: 4 })) },
+      })),
+    })) }],
+  });
+  if (!decoded.ok) throw new Error(JSON.stringify(decoded.errors));
+  const published = validateDocumentSemantics(decoded.value);
+  if (!published.ok) throw new Error(JSON.stringify(published.errors));
+  return createStudioControllerOverState({ ...base, document: published.value },
+    bootstrap.value.dependencies, { audio });
 }
 
 test("initialization ready cannot dispatch the tail and render-ahead preserves complete chronological events", async () => {
@@ -58,13 +93,7 @@ test("initialization ready cannot dispatch the tail and render-ahead preserves c
     setInstrument: (commandRequestId) =>
       inner.setInstrument(commandRequestId, mellowKeys.value),
   });
-  const created = createStudioController({ audio: port });
-  if (!created.ok) throw new Error(created.refusal.code);
-  const controller = created.controller;
-  expect(seedStarterChart(controller)).toEqual({
-    seeded: true,
-    reason: "seeded",
-  });
+  const controller = eventBoundaryController(port);
   expect(controller.setInstrument("dreadnought-guitar").ok).toBe(true);
   expect(controller.playProgression(GESTURE).ok).toBe(true);
 
@@ -82,6 +111,9 @@ test("initialization ready cannot dispatch the tail and render-ahead preserves c
   expect(plan.events.slice(0, 4).map((event) =>
     event.midiPitches.length
   )).toEqual([1, 4, 1, 4]);
+  expect(plan.events.map(event => event.midiPitches.map(Number))).toEqual([
+    [48], [60, 64, 67, 71], [48], [60, 64, 67, 71], [48], [60, 64, 67, 71],
+  ]);
   const planVoiceCounts = new Map<string, number>(
     plan.events.map((event) => [String(event.eventId), event.midiPitches.length]),
   );
