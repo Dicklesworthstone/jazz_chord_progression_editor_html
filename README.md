@@ -7,8 +7,9 @@ An offline, deterministic jazz chord-progression studio designed to turn lead-sh
 > The repository includes newer exact-sharing, My Charts and Focus workflows
 > than the build currently served at <https://jazzchords.org>. Full harmonic
 > discovery and release acceptance remain incomplete. The current candidate
-> fails the mandatory DSP source/WASM binding gate and must not be deployed
-> until its required evidence passes. See the [current reality check](docs/REALITY_CHECK.md)
+> passes the DSP source/WASM and instrument gates. The aggregate now stops at
+> required X1 human listening evidence; later release gates remain unverified.
+> See the [implementation status](docs/IMPLEMENTATION_TODO.md), [reality check](docs/REALITY_CHECK.md)
 > and [limitations](#current-limitations).
 
 ## Why Changes
@@ -41,9 +42,9 @@ acceptance gates, and [`ios/README.md`](ios/README.md) for build instructions.
 
 ## What works today
 
-This table describes the repository build at `9964f76`. On September 8, both
+This table describes the repository build at `a50e471`. September 8 checks of both
 [jazzchords.org](https://jazzchords.org/) and its
-[Vercel mirror](https://changes-jazz-progression-studio.vercel.app/) serve the
+[Vercel mirror](https://changes-jazz-progression-studio.vercel.app/) recorded the
 older committed artifact from `11ef504`. Both boot and play in desktop and phone
 browsers, but lack the newer My Charts and Focus controls and exact-sharing
 dialog. The [reality check](docs/REALITY_CHECK.md#committed-source-and-public-delivery)
@@ -124,7 +125,7 @@ The two HTML outputs must be byte-identical. The enforced artifact ceiling is
 9 MiB (`maxUncompressedBytes: 9437184`, the same figure the reviewed PHS7
 physical-system contract pins), with a hard 512 KiB reservation for the
 future Harmonic Atlas and an 8,912,896-byte shell allocation; the current
-tracked artifact at `9964f76` measures 8,431,411 bytes. The full amendment history and the
+tracked artifact at `a50e471` measures 8,428,308 bytes. The full amendment history and the
 reclamation path (physical models replacing the ~2.8 MB sampled payloads)
 are recorded in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
@@ -248,7 +249,7 @@ hold for its named packages, and mixed rows say what remains.
 | Musical intelligence | Reduced subset shipped | The live Harmony Lens/roman numerals/next options are an honest narrower substitute; H0 literal facts now exist, but contextual/scale operations are missing. H1 and discovery engine code have known semantic defects, and their complete workflows remain open |
 | Advanced craft | Early pieces shipped | V2 progression optimizer, E1 MIDI export, and the U7 export workflow landed ahead of schedule; route/constraint search, reharmonization, guide-tone/color/rhythm/tension/sequence and practice code is partial and not accepted as the complete planned workflows |
 | Physical instruments | In progress | Clarinet v2, flute v2, and four plucked models ship behind the model-acceptance ledger; trumpet and physical vibes/bass remain dark pending performance and owner listening |
-| Release proof | Incomplete | Substantial automated evidence exists, but aggregate browser admission, publication casts, transport timing and DSP source binding remain red; the full browser/device and human listening/accessibility acceptance is outstanding |
+| Release proof | Incomplete | Browser-suite admission and DSP source binding are repaired. The aggregate reaches X1 and stops for required human listening evidence. Publication-cast work, the full browser/device matrix and human accessibility acceptance remain outstanding; later aggregate gates are not assumed green |
 
 The planned Harmonic Discovery set contains fifteen deterministic systems:
 
