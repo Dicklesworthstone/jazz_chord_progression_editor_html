@@ -960,6 +960,7 @@ export const settleApplicationRequest: SettleApplicationRequest = ({
 export const acceptTransportNotification: AcceptTransportNotification = ({
   state,
   notification,
+  currentSource,
 }) => {
   const counters = createWorkCounters();
   counters.transportNotificationsCompared += 1;
@@ -993,10 +994,32 @@ export const acceptTransportNotification: AcceptTransportNotification = ({
       ["notification"],
     );
   }
+  const runtimeSource: unknown = currentSource;
+  const sourceStatus = runtimeField(runtimeSource, "status");
+  if (currentSource !== undefined && (
+    typeof runtimeSource !== "object" || runtimeSource === null || Array.isArray(runtimeSource) ||
+    !validSettledTransportStatus(sourceStatus) || sourceStatus === "unavailable" ||
+    !isNonnegativeSafeInteger(currentSource.planRevision) ||
+    !isNonnegativeSafeInteger(currentSource.viewRevision) ||
+    !isPositiveSafeInteger(currentSource.commandRequestId) ||
+    !isNonnegativeSafeInteger(currentSource.generation) ||
+    !isNonnegativeSafeInteger(currentSource.notificationSequence)
+  )) return failureResult(state, counters, "transport.notification_invalid", ["currentSource"]);
+  // The default path retains A0's original law. A live source supplies the
+  // actual bound identity; it cannot rewrite it or overtake a newer intent.
+  const identityStale = currentSource === undefined
+    ? notification.planRevision !== state.revision ||
+      notification.commandRequestId !== state.transport.commandRequestId
+    : currentSource.documentId !== notification.documentId ||
+      currentSource.planRevision !== notification.planRevision ||
+      currentSource.viewRevision !== state.revision ||
+      currentSource.commandRequestId !== notification.commandRequestId ||
+      currentSource.generation !== notification.generation ||
+      currentSource.notificationSequence !== notification.notificationSequence ||
+      currentSource.status !== notification.status ||
+      notification.commandRequestId < state.transport.commandRequestId;
   const stale =
-    notification.documentId !== state.document.id ||
-    notification.planRevision !== state.revision ||
-    notification.commandRequestId !== state.transport.commandRequestId ||
+    notification.documentId !== state.document.id || identityStale ||
     notification.generation < state.transport.generation ||
     (notification.generation === state.transport.generation &&
       notification.notificationSequence <=

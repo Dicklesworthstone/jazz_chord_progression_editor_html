@@ -63,7 +63,7 @@ import {
   type H0UnclassifiedAnalysis,
   type H0UnclassifiedChordScales,
 } from "../../src/theory";
-import type { ChordDegree, KeyContext } from "../../src/domain";
+import type { ChordDegree, KeyContext, SpelledPitchClass } from "../../src/domain";
 
 type Equal<Left, Right> =
   [Left] extends [Right]
@@ -144,6 +144,7 @@ type ExpectedScaleLimitInventory = readonly [
 ];
 type ExpectedRefusalInventory = readonly [
   ...ExpectedRequestRefusalInventory,
+  "harmony.scale_context_invalid",
   ...ExpectedLimitInventory,
 ];
 type ExpectedScaleExceptionInventory = readonly [
@@ -160,6 +161,7 @@ type ExpectedRefusalPrecedence = readonly [
   "harmony.selected_realization_required",
   "harmony.selected_realization_unknown",
   "harmony.duplicate_event_id",
+  "harmony.scale_context_invalid",
   ...ExpectedLimitInventory,
 ];
 type ExpectedLiteralRefusalPrecedence = readonly [
@@ -192,6 +194,7 @@ type ExpectedScaleRefusalPrecedence = readonly [
   "harmony.selected_realization_required",
   "harmony.selected_realization_unknown",
   "harmony.duplicate_event_id",
+  "harmony.scale_context_invalid",
   "limit.harmony_context_events_exceeded",
   "limit.harmony_scale_options_exceeded",
   "limit.harmony_evidence_records_exceeded",
@@ -485,7 +488,7 @@ const positiveTypeProofs = [
     ExpectedRequestRefusalCode | ExpectedAnalysisLimitCode
   >>(),
   assertType<Equal<H0ChordScaleRefusalCode,
-    ExpectedRequestRefusalCode | ExpectedScaleLimitCode
+    ExpectedRequestRefusalCode | "harmony.scale_context_invalid" | ExpectedScaleLimitCode
   >>(),
   assertType<Equal<RefusalCodeOf<H0LiteralFactsRequestRefusal>,
     ExpectedLiteralRequestRefusalCode
@@ -501,7 +504,7 @@ const positiveTypeProofs = [
     ExpectedAnalysisLimitCode
   >>(),
   assertType<Equal<RefusalCodeOf<H0ChordScaleRequestRefusal>,
-    ExpectedRequestRefusalCode
+    ExpectedRequestRefusalCode | "harmony.scale_context_invalid"
   >>(),
   assertType<Equal<RefusalCodeOf<H0ChordScaleLimitRefusal>,
     ExpectedScaleLimitCode
@@ -523,6 +526,11 @@ const positiveTypeProofs = [
   assertType<Not<HasKey<H0AnalysisRequest, "chordScaleMappingTable">>>(),
   assertType<HasKey<H0ChordScaleRequest, "analysisRuleTable">>(),
   assertType<HasKey<H0ChordScaleRequest, "chordScaleMappingTable">>(),
+  assertType<Not<HasKey<H0AnalysisRequest, "declaredScaleContext">>>(),
+  assertType<Equal<H0ChordScaleRequest["declaredScaleContext"],
+    Readonly<{ kind: "diminished-dominant" | "dorian" | "locrian-flat-nine" | "locrian-natural-nine"; tonic: SpelledPitchClass }> | null
+  >>(),
+  assertType<Not<HasKey<H0ChordScaleRequest, "contextEvidenceIds">>>(),
   assertType<Equal<Extract<
     H0LiteralFactsRequestRefusal,
     { code: "harmony.rule_version_unsupported" }

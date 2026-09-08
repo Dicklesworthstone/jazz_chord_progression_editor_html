@@ -1,0 +1,39 @@
+{
+  "schema": "changes.fixtures.semantic-surface-laws.v1",
+  "expectedValuesGenerated": false,
+  "productionOutputUsed": false,
+  "naturalPitchClasses": {"C":0,"D":2,"E":4,"F":5,"G":7,"A":9,"B":11},
+  "majorScaleSteps": [0,2,4,5,7,9,11],
+  "chords": [
+    {"id":"Cmaj7","root":"C","degrees":[[1,0],[3,0],[5,0],[7,0]],"spellings":["C","E","G","B"],"pitchClasses":[0,4,7,11]},
+    {"id":"Bm7#5","root":"B","degrees":[[1,0],[3,-1],[5,1],[7,-1]],"spellings":["B","D","F##","A"],"pitchClasses":[11,2,7,9]},
+    {"id":"Ebmaj7","root":"Eb","degrees":[[1,0],[3,0],[5,0],[7,0]],"spellings":["Eb","G","Bb","D"],"pitchClasses":[3,7,10,2]},
+    {"id":"E7#9","root":"E","degrees":[[1,0],[3,0],[5,0],[7,-1],[9,1]],"spellings":["E","G#","B","D","F##"],"pitchClasses":[4,8,11,2,7]},
+    {"id":"Dm7","root":"D","degrees":[[1,0],[3,-1],[5,0],[7,-1]],"spellings":["D","F","A","C"],"pitchClasses":[2,5,9,0]},
+    {"id":"G7","root":"G","degrees":[[1,0],[3,0],[5,0],[7,-1]],"spellings":["G","B","D","F"],"pitchClasses":[7,11,2,5]},
+    {"id":"G7b9","root":"G","degrees":[[1,0],[3,0],[5,0],[7,-1],[9,-1]],"spellings":["G","B","D","F","Ab"],"pitchClasses":[7,11,2,5,8]},
+    {"id":"Db7","root":"Db","degrees":[[1,0],[3,0],[5,0],[7,-1]],"spellings":["Db","F","Ab","Cb"],"pitchClasses":[1,5,8,11]},
+    {"id":"C#7","root":"C#","degrees":[[1,0],[3,0],[5,0],[7,-1]],"spellings":["C#","E#","G#","B"],"pitchClasses":[1,5,8,11]},
+    {"id":"Cdim7","root":"C","degrees":[[1,0],[3,-1],[5,-1],[7,-2]],"spellings":["C","Eb","Gb","Bbb"],"pitchClasses":[0,3,6,9]},
+    {"id":"C7alt:alt-b9-b5","root":"C","degrees":[[1,0],[3,0],[5,-1],[7,-1],[9,-1]],"spellings":["C","E","Gb","Bb","Db"],"pitchClasses":[0,4,6,10,1]},
+    {"id":"C7alt:alt-sharp9-sharp5","root":"C","degrees":[[1,0],[3,0],[5,1],[7,-1],[9,1]],"spellings":["C","E","G#","Bb","D#"],"pitchClasses":[0,4,8,10,3]}
+  ],
+  "containmentCases": [
+    {"id":"SS-CONTAINMENT-POSITIVE","chords":["Cmaj7","Dm7","G7"],"tonic":"C","toneOccurrences":12,"pitchClassMatches":12,"spellingMatches":12,"outsidePitchClasses":[],"bestMajorTonics":[0],"completePitchClassContainment":true,"completeSpelledContainment":true,"keyMayBePersisted":false},
+    {"id":"SS-STARTER-COUNTEREXAMPLE","chords":["Cmaj7","Bm7#5","Ebmaj7","E7#9"],"tonic":"C","toneOccurrences":17,"pitchClassMatches":14,"spellingMatches":12,"outsidePitchClasses":[3,8,10],"bestMajorTonics":[0,7],"completePitchClassContainment":false,"completeSpelledContainment":false,"keyMayBePersisted":false},
+    {"id":"SS-CONTAINMENT-NEAR-MISS","chords":["Cmaj7","Dm7","G7b9"],"tonic":"C","toneOccurrences":13,"pitchClassMatches":12,"spellingMatches":12,"outsidePitchClasses":[8],"bestMajorTonics":[0],"completePitchClassContainment":false,"completeSpelledContainment":false,"keyMayBePersisted":false},
+    {"id":"SS-CONTAINMENT-TIE","chords":["Cmaj7"],"tonic":"C","toneOccurrences":4,"pitchClassMatches":4,"spellingMatches":4,"outsidePitchClasses":[],"bestMajorTonics":[0,7],"completePitchClassContainment":true,"completeSpelledContainment":true,"keyMayBePersisted":false}
+  ],
+  "transpositionOffsets": [0,1,2,3,4,5,6,7,8,9,10,11],
+  "spellingPair": {"left":"Db7","right":"C#7","equalPitchClasses":true,"equalSpellings":false,"semanticIdentityEqual":false},
+  "selectedAlteredPair": {"left":"C7alt:alt-b9-b5","right":"C7alt:alt-sharp9-sharp5","sameDocumentRevision":true,"reuseCachedReading":false,"mergeRealizations":false,"missingSelection":"selected-realization-required"},
+  "barrier": {"events":["Dm7","custom","G7"],"barrierIndex":1,"mayClaimAdjacentTwoFive":false,"mayDropCustomSource":false,"sourceUnchanged":true},
+  "triadRelations": [
+    {"id":"SS-PLR-P","source":[0,4,7],"operation":"P","expected":[0,3,7],"common":[0,7]},
+    {"id":"SS-PLR-L","source":[0,4,7],"operation":"L","expected":[4,7,11],"common":[4,7]},
+    {"id":"SS-PLR-R","source":[0,4,7],"operation":"R","expected":[0,4,9],"common":[0,4]}
+  ],
+  "storedVoices": {"mode":"manual","pitches":["B3","C4","C4","Eb4","F#4","G4","Bb4","C5","Db5","E5","F5","G#5","A5","B5","C6","Db6"],"midi":[59,60,60,63,66,67,70,72,73,76,77,80,81,83,84,85],"allowSorting":false,"allowDeduplication":false,"frozenUsesSameLaw":true},
+  "exactTimeline": {"meter":[7,8],"pickup":[3,2],"sourceDurations":[[5,3],[11,6]],"total":[7,2],"splitDurations":[[5,6],[5,6],[11,12],[11,12]],"allowRounding":false,"allowInventedFourBeatEvents":false},
+  "transaction": {"sourceRevision":5,"historyBefore":2,"recoveryRevision":3,"exportRevision":4,"afterPreviewRevision":5,"afterPreviewHistory":2,"afterApplyRevision":6,"afterApplyHistory":3,"afterUndoRevision":7,"afterUndoHistory":2,"undoRestoresExactDocumentAndBookmarks":true,"textOrMidiMayAdvanceCanonicalMarker":false}
+}

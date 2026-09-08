@@ -440,3 +440,46 @@ as still playing with no resume affordance. The admission now mirrors X1
 exactly. Found by U4/build
 (`jcpe-milestone-reliable-studio-l3a.12.2`) with the studio-level
 interruption regression test in `tests/unit/studio-transport-controls-u4.test.ts`.
+
+### 13.3 Current transport source (jcpe-7tgc, 2026-09-07)
+
+Live mix, click, preview and seek commands advance X1's admitted request ID;
+not all install an optimistic A0 expectation. Instrument and volume commits
+also advance the document revision without changing the bound musical plan.
+Neither fact may strand a genuine interruption or natural-end notification.
+
+`acceptTransportNotification` accepts an optional `currentSource` snapshot
+captured synchronously from the application's owned transport at notification
+delivery. It contains the actual bound document/revision, admitted command ID,
+generation, last notification sequence and projected settled status, plus the
+controller's `viewRevision` authorization. The notification itself is unchanged:
+do not retag its request/revision, fabricate a notification or rebuild a plan
+to refresh presentation identity. The old law is unchanged when this argument
+is absent.
+
+The additional path requires every service field to match the notification
+exactly, the document to equal the current document, and `viewRevision` to
+equal the current application revision. The command ID must not precede an
+already installed expectation; generation/sequence must still be newer under
+the original law. Invalid numeric/status fields refuse as
+`transport.notification_invalid`; well-formed mismatches return `ignored-stale`
+with exact state identity. A snapshot of a later service publication cannot
+authorize an earlier notification. One notification and its fixed-size source
+record are one bounded comparison, with no request queue or retained log.
+
+The controller authorizes a revision at Play and a successful live performance
+binding. It carries that authorization across exactly its own successful
+instrument/volume-only document commits, only when their immediate predecessor
+revision was already authorized for the same active document. No-op/refused
+commands do not advance it. A prior chord, tempo, key, history or replacement
+edit invalidates the chain: a later instrument/volume change cannot launder
+that stale plan into the current chart. The real bound `planRevision` is never
+changed by an instrument/mix ride. A pending Stop/replay expectation continues
+to reject older commands, and foreign/replaced document notifications still
+fall back to the existing receipt-settlement path.
+
+Only matching genuine notifications update status, exact playhead and service
+identity. This does not change the audio scheduler, pitches, durations, graph,
+recipe boundaries, document/history/recovery or the original refusal settlement.
+Proof lives in the authored current-source near misses, real controller/X1
+continuity regressions, unchanged stale/settlement suites and native U4 runs.

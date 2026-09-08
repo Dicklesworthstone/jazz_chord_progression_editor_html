@@ -1,0 +1,25 @@
+{
+  "schema":"changes.fixtures.semantic-surface-mutations.v1",
+  "controls":[
+    {"id":"absent-call","target":"operation-inventory.json","path":["engines",0,"entries",0,"operations",0],"replacement":"missingLiteralFunction"},
+    {"id":"no-op-call","target":"operation-inventory.json","path":["requiredRuntimeEvidence",1],"replacement":"presence-only"},
+    {"id":"wrong-engine","target":"operation-inventory.json","path":["baselineConsumers",2,"operations",0],"replacement":"deriveContinuationSuggestions"},
+    {"id":"discarded-result","target":"operation-inventory.json","path":["requiredRuntimeEvidence",2],"replacement":"element-count"},
+    {"id":"fabricated-dispatch","target":"operation-inventory.json","path":["presenceIsCapabilityProof"],"replacement":true},
+    {"id":"wrong-selection","target":"law-cases.json","path":["selectedAlteredPair","reuseCachedReading"],"replacement":true},
+    {"id":"stale-revision","target":"law-cases.json","path":["transaction","afterPreviewRevision"],"replacement":6},
+    {"id":"invented-duration","target":"law-cases.json","path":["exactTimeline","total",0],"replacement":8},
+    {"id":"normalized-spelling","target":"law-cases.json","path":["chords",7,"spellings",3],"replacement":"B"},
+    {"id":"dropped-unison","target":"law-cases.json","path":["storedVoices","allowDeduplication"],"replacement":true},
+    {"id":"fabricated-counter","target":"operation-inventory.json","path":["requiredRuntimeEvidence",5],"replacement":"estimated-work"},
+    {"id":"false-containment","target":"law-cases.json","path":["containmentCases",1,"completePitchClassContainment"],"replacement":true},
+    {"id":"lost-counterevidence","target":"law-cases.json","path":["containmentCases",1,"outsidePitchClasses"],"replacement":[]},
+    {"id":"hidden-context-barrier","target":"law-cases.json","path":["barrier","mayClaimAdjacentTwoFive"],"replacement":true},
+    {"id":"stale-bridge-bundle","target":"trace-ledger.json","path":["bridgeRequirements","checkGeneratedSourceClosure"],"replacement":false},
+    {"id":"header-only-midi","target":"trace-ledger.json","path":["downloadRequirements","compareMidiEventsToSharedPlan"],"replacement":false}
+  ],
+  "sourceMutantsRequiredInBuildAndProof":true,
+  "fixtureMutationDoesNotProveProduction":true,
+  "baselineAndChangedSourceHashesRequired":true,
+  "failureExitWithoutSemanticAssertionIsInsufficient":true
+}

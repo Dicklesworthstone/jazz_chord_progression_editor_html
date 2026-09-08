@@ -119,6 +119,9 @@ export function HarmonyLensContent({
           <p class="studio-continuation__after">
             After <strong>{view.continuation.afterLabel}</strong>:
           </p>
+          {view.continuation.contextNote === undefined ? null : (
+            <p class="studio-truth-note">{view.continuation.contextNote}</p>
+          )}
           <ul class="studio-continuation__list">
             {view.continuation.suggestions.map((suggestion) => (
               <li class="studio-continuation__row" key={suggestion.id}>

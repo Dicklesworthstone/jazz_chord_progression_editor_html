@@ -2,12 +2,16 @@ import {
   type BeatValue,
   type ChordEventId,
   type ChordSpec,
+  type CustomChordSpec,
+  type ChordDegree,
+  type PitchClass,
+  type SpelledPitchClass,
   type KeyContext,
 } from "../domain";
 import type { AccidentalStyle } from "./syntax-contract";
 
 /** Legacy Session Continuation Contract for Studio Controller */
-export const CONTINUATION_ENGINE_VERSION = "session-continuation@1" as const;
+export const CONTINUATION_ENGINE_VERSION = "session-continuation@2" as const;
 
 export const CONTINUATION_PROVIDER_IDS = Object.freeze([
   "dominant-resolution",
@@ -53,7 +57,43 @@ export type ContinuationSuggestion = Readonly<{
 }>;
 
 export type ContinuationRequest = Readonly<{
-  context: readonly ChordSpec[];
+  context: readonly (ChordSpec | CustomChordSpec)[];
+  /** Aligned to context, before the explicit last-four window is taken. */
+  selectedRealizationIds?: readonly (string | null)[];
+}>;
+
+export type ContinuationContextBarrier = Readonly<{
+  contextIndex: number;
+  sourceSymbol: string;
+  reason: "custom-chord" | "unsupported-chord" | "selected-realization-required" | "invalid-selection";
+}>;
+
+export type ContinuationContextTone = Readonly<{
+  contextIndex: number;
+  sourceSymbol: string;
+  realizationId: string;
+  degree: ChordDegree;
+  spelling: SpelledPitchClass;
+  pitchClass: PitchClass;
+  pitchClassContained: boolean;
+  spellingContained: boolean;
+}>;
+
+/** A finite major-scale overlap reading, never a declared or persisted key. */
+export type ContinuationContextReading = Readonly<{
+  policy: "major-pitch-overlap@1";
+  keyName: string;
+  keyPitchClass: PitchClass;
+  tiedMajorKeys: readonly Readonly<{ name: string; pitchClass: PitchClass }>[];
+  toneOccurrences: number;
+  pitchClassMatches: number;
+  spellingMatches: number;
+  completePitchClassContainment: boolean;
+  completeSpelledContainment: boolean;
+  outsideSpellings: readonly string[];
+  enharmonicSpellings: readonly string[];
+  tones: readonly ContinuationContextTone[];
+  keyDeclared: false;
 }>;
 
 export type ContinuationWorkEvidence = Readonly<{
@@ -61,12 +101,15 @@ export type ContinuationWorkEvidence = Readonly<{
   providersRun: number;
   candidatesEmitted: number;
   dedupeComparisons: number;
+  majorKeyToneComparisons: number;
   termination: "complete";
 }>;
 
 export type LegacyContinuationResult = Readonly<{
   engineVersion: typeof CONTINUATION_ENGINE_VERSION;
   suggestions: readonly ContinuationSuggestion[];
+  contextReading: ContinuationContextReading | null;
+  contextBarriers: readonly ContinuationContextBarrier[];
   evidence: ContinuationWorkEvidence;
 }>;
 

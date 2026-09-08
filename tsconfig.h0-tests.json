@@ -3,6 +3,7 @@
   "include": [],
   "files": [
     "tests/static/h0-contract.test.ts",
-    "tests/static/h0-type-contract.test.ts"
+    "tests/static/h0-type-contract.test.ts",
+    "tests/static/h0-contract-consistency.test.ts"
   ]
 }

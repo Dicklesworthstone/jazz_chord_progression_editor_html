@@ -1,0 +1,30 @@
+{
+  "schema": "changes.fixtures.discovery-execution.v1",
+  "status": "specified-not-implemented",
+  "productionOutputUsed": false,
+  "companions": ["law-cases.json", "limit-cases.json", "mutation-controls.json", "provenance.json", "trace-ledger.json"],
+  "limits": {
+    "sourceEvents": 256, "requestBytes": 4194304, "snapshotBytes": 8388608,
+    "resultBytes": 8388608, "valueDepth": 32, "valueNodes": 262144,
+    "textCodeUnits": 65536, "identityCodeUnits": 128, "versions": 64,
+    "evidenceRows": 128, "costAxes": 16, "retainedOptions": 128,
+    "generatedCandidates": 8388608, "depth": 256, "stateBytes": 65536,
+    "optionBytes": 262144, "queuedStates": 100000, "expandedStates": 100000,
+    "outgoingPerState": 128, "workUnits": 8388608,
+    "workUnitsPerSemanticQuantum": 64, "stepMinimum": 1, "stepMaximum": 1024,
+    "trackedBytes": 67108864, "activeJobs": 1, "scheduledCallbacks": 1,
+    "preparedResults": 1, "publicationAttempts": 1
+  },
+  "engineCeilings": {
+    "H1": {"sourceEvents":64,"lawsPerCandidate":16,"patchOperations":32},
+    "G0": {"sourceEvents":256,"retainedOptions":5},
+    "G2": {"sourceEvents":8,"candidatesPerProvider":32,"retainedOptions":16},
+    "G3": {"routeEvents":8,"outgoingPerState":64,"expandedStates":50000,"retainedOptions":8,"trackedBytes":67108864},
+    "G4": {"slots":16,"candidatesPerSlot":128,"expandedStates":100000},
+    "G5": {"depth":3,"outgoingPerState":8,"canonicalNodes":128}
+  },
+  "resultKinds": ["complete", "no-result", "bounded-partial", "refused", "cancelled", "stale"],
+  "limitPrecedence": ["work-cap", "state-cap", "candidate-cap", "option-cap", "queue-cap", "outgoing-cap", "depth-cap", "memory-cap", "result-byte-cap"],
+  "memoryCharges": {"primitiveOrReference":8,"containerHeader":32,"stringCodeUnit":2},
+  "specGates": ["bun scripts/validate-discovery-execution-contract.ts", "bun test tests/static/discovery-execution-contract.test.ts", "bun run typecheck"]
+}

@@ -1,0 +1,183 @@
+{
+  "schema": "changes.fixtures.rehearsal.v1",
+  "status": "independently-authored-before-implementation",
+  "productionOutputUsed": false,
+  "expectedValuesGenerated": false,
+  "seed": "rehearsal-hand-arithmetic-2026-09-07",
+  "ppq": 960,
+  "projection": {
+    "range": [960, 2880],
+    "fullTotalTicks": 7680,
+    "sourceTempo": 120,
+    "events": [
+      {"id": "ends-at-left.b0", "role": "bass", "start": 0, "duration": 960, "offset": null, "expected": null},
+      {"id": "left.b0", "role": "bass", "start": 480, "duration": 960, "offset": 120, "expected": {"start": 960, "duration": 480, "gate": 456, "offset": 600, "articulation": "loop-restart"}},
+      {"id": "ordinary.c0", "role": "comp", "start": 960, "duration": 960, "offset": null, "expected": {"start": 960, "duration": 960, "gate": 936, "offset": null, "articulation": "ordinary"}},
+      {"id": "middle.b0", "role": "bass", "start": 1920, "duration": 960, "offset": null, "expected": {"start": 1920, "duration": 960, "gate": 936, "offset": null, "articulation": "ordinary"}},
+      {"id": "right.c0", "role": "comp", "start": 2400, "duration": 960, "offset": null, "expected": {"start": 2400, "duration": 480, "gate": 456, "offset": null, "articulation": "loop-end-clipped"}},
+      {"id": "starts-at-right.b0", "role": "bass", "start": 2880, "duration": 960, "offset": null, "expected": null}
+    ],
+    "retainedIds": ["left.b0", "ordinary.c0", "middle.b0", "right.c0"],
+    "extraEdges": [
+      {"id": "both", "start": 480, "duration": 2880, "offset": 120, "expected": {"start": 960, "duration": 1920, "gate": 1896, "offset": 600, "articulation": "loop-restart-end-clipped"}},
+      {"id": "last-tick", "start": 2879, "duration": 2, "offset": null, "expected": {"start": 2879, "duration": 1, "gate": 1, "offset": null, "articulation": "loop-end-clipped"}},
+      {"id": "first-tick", "start": 959, "duration": 2, "offset": null, "expected": {"start": 960, "duration": 1, "gate": 1, "offset": 1, "articulation": "loop-restart"}}
+    ],
+    "preservedFields": ["eventId", "sectionId", "measureId", "sourceOrdinal", "sourceStartBeat", "sourceDurationBeats", "sourceStartTick", "sourceDurationTicks", "pitches", "midiPitches", "velocity"],
+    "orderedPitchWitness": [{"step": "C", "alter": 1, "octave": 4}, {"step": "D", "alter": -1, "octave": 4}, {"step": "G", "alter": 0, "octave": 4}],
+    "orderedMidiWitness": [61, 61, 67]
+  },
+  "threePass": {
+    "rangeTicks": 1920,
+    "tempos": [120, 150, 180],
+    "countInMeter": {"beatsPerBar": 4, "beatUnit": 4},
+    "countInClicksSeconds": [[0, 1], [1, 2], [1, 1], [3, 2]],
+    "passStartsSeconds": [[2, 1], [3, 1], [19, 5]],
+    "completionSeconds": [67, 15],
+    "occurrences": [
+      {"pass": 0, "event": "left.b0", "attack": [2, 1], "release": [179, 80]},
+      {"pass": 0, "event": "ordinary.c0", "attack": [2, 1], "release": [199, 80]},
+      {"pass": 0, "event": "middle.b0", "attack": [5, 2], "release": [239, 80]},
+      {"pass": 0, "event": "right.c0", "attack": [11, 4], "release": [239, 80]},
+      {"pass": 1, "event": "left.b0", "attack": [3, 1], "release": [319, 100]},
+      {"pass": 1, "event": "ordinary.c0", "attack": [3, 1], "release": [339, 100]},
+      {"pass": 1, "event": "middle.b0", "attack": [17, 5], "release": [379, 100]},
+      {"pass": 1, "event": "right.c0", "attack": [18, 5], "release": [379, 100]},
+      {"pass": 2, "event": "left.b0", "attack": [19, 5], "release": [95, 24]},
+      {"pass": 2, "event": "ordinary.c0", "attack": [19, 5], "release": [33, 8]},
+      {"pass": 2, "event": "middle.b0", "attack": [62, 15], "release": [107, 24]},
+      {"pass": 2, "event": "right.c0", "attack": [43, 10], "release": [107, 24]}
+    ],
+    "audible": [
+      {"now": [19, 10], "pass": 0, "tempo": 120, "countingIn": true, "state": "playing"},
+      {"now": [29, 10], "pass": 0, "tempo": 120, "countingIn": false, "state": "playing"},
+      {"now": [3, 1], "pass": 1, "tempo": 150, "countingIn": false, "state": "playing"},
+      {"now": [19, 5], "pass": 2, "tempo": 180, "countingIn": false, "state": "playing"},
+      {"now": [67, 15], "pass": 2, "tempo": 180, "countingIn": false, "state": "complete"}
+    ],
+    "earlyRetirementNearMiss": {"lookaheadAt": [29, 10], "outgoingGateRelease": [239, 80], "nextPassStarts": [3, 1], "retireAtLookahead": false}
+  },
+  "tempos": [
+    {"start": 80, "end": 100, "passes": 4, "expected": [80, 87, 93, 100]},
+    {"start": 100, "end": 80, "passes": 4, "expected": [100, 93, 87, 80]},
+    {"start": 120, "end": 121, "passes": 3, "expected": [120, 121, 121]},
+    {"start": 121, "end": 120, "passes": 3, "expected": [121, 120, 120]},
+    {"start": 20, "end": 400, "passes": 3, "expected": [20, 210, 400]},
+    {"start": 120, "end": 120, "passes": 4, "expected": [120, 120, 120, 120]},
+    {"start": 120, "end": 120, "passes": 1, "expected": [120]}
+  ],
+  "requestEdges": [
+    {"id": "64-passes", "templates": 1, "passesPerKey": 64, "start": 20, "end": 400, "expectedTotal": 64, "refusal": null},
+    {"id": "65-passes", "templates": 1, "passesPerKey": 65, "start": 20, "end": 400, "expectedTotal": null, "refusal": "rehearsal.pass_limit"},
+    {"id": "12-keys-60-passes", "templates": 12, "passesPerKey": 5, "start": 120, "end": 120, "expectedTotal": 60, "refusal": null},
+    {"id": "12-keys-72-passes", "templates": 12, "passesPerKey": 6, "start": 120, "end": 120, "expectedTotal": null, "refusal": "rehearsal.pass_limit"},
+    {"id": "13-keys", "templates": 13, "passesPerKey": 1, "start": 120, "end": 120, "expectedTotal": null, "refusal": "rehearsal.key_invalid"},
+    {"id": "no-keys", "templates": 0, "passesPerKey": 1, "start": 120, "end": 120, "expectedTotal": null, "refusal": "rehearsal.key_invalid"},
+    {"id": "zero-passes", "templates": 1, "passesPerKey": 0, "start": 120, "end": 120, "expectedTotal": null, "refusal": "rehearsal.pass_limit"},
+    {"id": "fractional-passes", "templates": 1, "passesPerKey": 1.5, "start": 120, "end": 120, "expectedTotal": null, "refusal": "rehearsal.pass_limit"},
+    {"id": "low-tempo", "templates": 1, "passesPerKey": 4, "start": 19, "end": 120, "expectedTotal": null, "refusal": "rehearsal.tempo_invalid"},
+    {"id": "high-tempo", "templates": 1, "passesPerKey": 4, "start": 120, "end": 401, "expectedTotal": null, "refusal": "rehearsal.tempo_invalid"},
+    {"id": "fractional-tempo", "templates": 1, "passesPerKey": 4, "start": 120.5, "end": 120, "expectedTotal": null, "refusal": "rehearsal.tempo_invalid"},
+    {"id": "single-conflicting-tempo", "templates": 1, "passesPerKey": 1, "start": 120, "end": 121, "expectedTotal": null, "refusal": "rehearsal.tempo_invalid"}
+  ],
+  "keyOrder": {
+    "tonics": ["C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"],
+    "pitchClasses": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+    "orderedTemplates": ["C", "F", "C"],
+    "passesPerKey": 2,
+    "expectedTemplates": [0, 0, 1, 1, 2, 2],
+    "preservedModes": ["major", "natural-minor", "harmonic-minor", "melodic-minor"],
+    "sourceWitness": [{"step": "C", "alter": 1, "octave": 4}, {"step": "D", "alter": -1, "octave": 4}, {"step": "C", "alter": 1, "octave": 4}],
+    "fromC": [
+      {"tonic": "C", "diatonic": 0, "chromatic": 0, "pitches": ["C#4", "Db4", "C#4"], "midi": [61, 61, 61]},
+      {"tonic": "Db", "diatonic": 1, "chromatic": 1, "pitches": ["D4", "Ebb4", "D4"], "midi": [62, 62, 62]},
+      {"tonic": "D", "diatonic": 1, "chromatic": 2, "pitches": ["D#4", "Eb4", "D#4"], "midi": [63, 63, 63]},
+      {"tonic": "Eb", "diatonic": 2, "chromatic": 3, "pitches": ["E4", "Fb4", "E4"], "midi": [64, 64, 64]},
+      {"tonic": "E", "diatonic": 2, "chromatic": 4, "pitches": ["E#4", "F4", "E#4"], "midi": [65, 65, 65]},
+      {"tonic": "F", "diatonic": 3, "chromatic": 5, "pitches": ["F#4", "Gb4", "F#4"], "midi": [66, 66, 66]},
+      {"tonic": "F#", "diatonic": 3, "chromatic": 6, "pitches": ["F##4", "G4", "F##4"], "midi": [67, 67, 67]},
+      {"tonic": "G", "diatonic": 4, "chromatic": 7, "pitches": ["G#4", "Ab4", "G#4"], "midi": [68, 68, 68]},
+      {"tonic": "Ab", "diatonic": 5, "chromatic": 8, "pitches": ["A4", "Bbb4", "A4"], "midi": [69, 69, 69]},
+      {"tonic": "A", "diatonic": 5, "chromatic": 9, "pitches": ["A#4", "Bb4", "A#4"], "midi": [70, 70, 70]},
+      {"tonic": "Bb", "diatonic": 6, "chromatic": 10, "pitches": ["B4", "Cb5", "B4"], "midi": [71, 71, 71]},
+      {"tonic": "B", "diatonic": 6, "chromatic": 11, "pitches": ["B#4", "C5", "B#4"], "midi": [72, 72, 72]}
+    ],
+    "rangeRefusals": [
+      {"id": "low-boundary", "midi": 0, "delta": 0, "accepted": true},
+      {"id": "below-range", "midi": 0, "delta": -1, "accepted": false},
+      {"id": "high-boundary", "midi": 127, "delta": 0, "accepted": true},
+      {"id": "above-range", "midi": 127, "delta": 1, "accepted": false}
+    ]
+  },
+  "timeline": {
+    "meter": {"beatsPerBar": 3, "beatUnit": 4},
+    "measures": [
+      {"id": "pickup", "completion": "pickup", "eventTicks": [960], "expectedStart": 0, "expectedEnd": 960, "barPhase": 0},
+      {"id": "full", "completion": "complete", "eventTicks": [960, 1920], "expectedStart": 960, "expectedEnd": 3840, "barPhase": 1},
+      {"id": "empty", "completion": "empty", "eventTicks": [], "expectedStart": 3840, "expectedEnd": 6720, "barPhase": 0},
+      {"id": "partial", "completion": "incomplete", "eventTicks": [1920], "expectedStart": 6720, "expectedEnd": 8640, "barPhase": 1}
+    ],
+    "emptySectionTicks": 0,
+    "silentRange": [3840, 6720],
+    "silentRangeExpectedEvents": [],
+    "rangeEdges": [
+      {"start": [0, 1], "end": [9, 1], "refusal": null},
+      {"start": [1, 3], "end": [2, 3], "refusal": null},
+      {"start": [1, 7], "end": [2, 7], "refusal": "rehearsal.range_invalid"},
+      {"start": [1, 1], "end": [1, 1], "refusal": "rehearsal.range_empty"},
+      {"start": [2, 1], "end": [1, 1], "refusal": "rehearsal.range_invalid"},
+      {"start": [-1, 1], "end": [1, 1], "refusal": "rehearsal.range_invalid"},
+      {"start": [0, 1], "end": [8641, 960], "refusal": "rehearsal.range_invalid"}
+    ]
+  },
+  "shortPasses": {"rangeTicks": 1, "tempo": 400, "passes": 64, "countIn": false, "passDurationSeconds": [1, 6400], "completionSeconds": [1, 100], "horizonSeconds": [3, 25], "nowSeconds": [7, 12800], "audiblePass": 3, "scheduledLastPass": 63, "eventOccurrences": 64, "uniqueOccurrenceIds": 64},
+  "bounds": [
+    {"resource": "templates", "maximum": 12, "nextAttempt": 13},
+    {"resource": "passes", "maximum": 64, "nextAttempt": 65},
+    {"resource": "sourceEventsPerTemplate", "maximum": 8192, "nextAttempt": 8193},
+    {"resource": "inputEventsVisited", "maximum": 786432, "nextAttempt": 786433},
+    {"resource": "retainedEvents", "maximum": 65536, "nextAttempt": 65537},
+    {"resource": "retainedPitchSlots", "maximum": 262144, "nextAttempt": 262145},
+    {"resource": "passEventVisits", "maximum": 4194304, "nextAttempt": 4194305},
+    {"resource": "sourceTimelineTicks", "maximum": 960000000, "nextAttempt": 960000001},
+    {"resource": "expandedTicks", "maximum": 61440000000, "nextAttempt": 61440000001},
+    {"resource": "pendingPreparation", "maximum": 1, "nextAttempt": 2},
+    {"resource": "activeSession", "maximum": 1, "nextAttempt": 2}
+  ],
+  "lifetime": [
+    {"id": "start", "trigger": "admitted same-key session", "expected": "one scheduler and graph; count-in then every bass/comp pass", "counterexample": "literal fallback or repeated UI Play"},
+    {"id": "pause-resume", "trigger": "pause halfway through pass2 then trusted Resume", "expected": "retire queued occurrences, resume pass2 at captured source beat without count-in", "counterexample": "reset to pass1 or replay elapsed notes"},
+    {"id": "hidden-running-context", "trigger": "page becomes hidden while AudioContext stays running", "expected": "pause and retire future sound; show explicit Resume", "counterexample": "hidden passes continue or later catch-up burst"},
+    {"id": "interruption", "trigger": "native context suspension across a pass boundary", "expected": "resume only after a trusted gesture from last audible position", "counterexample": "schedule missed attacks after visibility returns"},
+    {"id": "edit", "trigger": "source edit, Undo or Redo during playback", "expected": "invalidate exact source binding and await serialized Stop receipt", "counterexample": "old result repaints the new chart or optimistic Ended label"},
+    {"id": "replace-same-ids", "trigger": "replace the document reference with identical IDs while preparation awaits", "expected": "old preparation cannot publish or play", "counterexample": "ID equality accepted as current source identity"},
+    {"id": "cancel-prepare", "trigger": "Cancel then old render preparation resolves", "expected": "release render ownership and publish no session", "counterexample": "late Play after Cancel"},
+    {"id": "render-refusal", "trigger": "native preflight refuses a later key template", "expected": "play no prefix; display exact failing key and native cause", "counterexample": "first key sounds before all preparation passes"},
+    {"id": "stop", "trigger": "Stop while later pass attacks are already queued", "expected": "retire all session and preview generations; no future source after actual receipt", "counterexample": "Stop hides status while a queued pass starts"},
+    {"id": "stop-refusal", "trigger": "native retirement rejects", "expected": "visible unresolved failure with original cause", "counterexample": "report stopped without a receipt"},
+    {"id": "natural-end", "trigger": "last pass finishes", "expected": "zero new attacks; actual remaining tails retire within existing eight-second cap", "counterexample": "next lookahead kills an outgoing tail or a 65th pass"},
+    {"id": "restart", "trigger": "Restart from pass3", "expected": "await Stop then pass1/count-in on same graph", "counterexample": "overlapping epochs or second graph"},
+    {"id": "preserve-chart", "trigger": "complete transposed tempo-stepped session", "expected": "exact source/history/export/recovery bytes and pitch ordering unchanged", "counterexample": "per-pass tempo writes or octave repair"},
+    {"id": "preserve-explicit-settings", "trigger": "change instrument/mix during session then End", "expected": "restore normal chart scope/tempo meaning while retaining deliberate instrument/mix changes", "counterexample": "restore a stale snapshot over new user settings"}
+  ],
+  "mutationControls": [
+    {"id": "literal-fallback", "witness": "threePass", "difference": "missing bass/comp attacks"},
+    {"id": "perform-after-clipping", "witness": "timeline", "difference": "selected full bar phase becomes zero instead of one"},
+    {"id": "inclusive-end", "witness": "projection", "difference": "starts-at-right.b0 admitted"},
+    {"id": "replace-source-offset", "witness": "projection", "difference": "left offset becomes480 instead of600"},
+    {"id": "reset-absolute-time", "witness": "projection", "difference": "left start becomes0 instead of960"},
+    {"id": "missing-pass", "witness": "threePass", "difference": "fewer than12 event occurrences"},
+    {"id": "duplicate-occurrence-id", "witness": "shortPasses", "difference": "one unique identity instead of64"},
+    {"id": "early-retirement", "witness": "threePass", "difference": "retire at29/10 before gate239/80"},
+    {"id": "tempo-floor", "witness": "tempos", "difference": "80,86,93,100 instead of80,87,93,100"},
+    {"id": "descending-tie", "witness": "tempos", "difference": "121,121,120 instead of121,120,120"},
+    {"id": "expand-before-limit", "witness": "requestEdges", "difference": "72 passes rendered before refusal"},
+    {"id": "count-in-every-pass", "witness": "threePass", "difference": "pass2 starts later than3 seconds"},
+    {"id": "scheduled-is-audible", "witness": "shortPasses", "difference": "visible pass63 instead of3"},
+    {"id": "source-id-only", "witness": "lifetime", "difference": "replacement-same-IDs accepts late preparation"},
+    {"id": "optimistic-stop", "witness": "lifetime", "difference": "success before actual retirement"},
+    {"id": "background-catch-up", "witness": "lifetime", "difference": "missed attacks sound after Resume"},
+    {"id": "unison-deduplication", "witness": "keyOrder", "difference": "three written pitches reduced to one MIDI pitch"},
+    {"id": "octave-folding", "witness": "keyOrder", "difference": "128 admitted as116 instead of refusal"}
+  ]
+}

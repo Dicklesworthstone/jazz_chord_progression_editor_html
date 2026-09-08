@@ -26,6 +26,7 @@
     "tests/integration/audio-offline-render.test.ts",
     "tests/integration/studio-audible-browser-evidence.test.ts",
     "tests/integration/transport-browser-evidence.test.ts",
+    "tests/integration/u4-transport-controls-evidence.test.ts",
     "tests/visual/**"
   ]
 }

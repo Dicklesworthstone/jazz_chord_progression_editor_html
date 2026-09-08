@@ -1,0 +1,102 @@
+{
+  "schema": "changes.fixtures.discovery-execution-mutations.v1",
+  "scope": "Specification-oracle mutations; these do not claim production source-fault proof. Build/proof must separately mutate actual runtime sources.",
+  "controls": [
+    {
+      "id": "DE-MUT-WORK",
+      "target": "work-count",
+      "observedDefect": "derived expansion count changed",
+      "expected": "reject"
+    },
+    {
+      "id": "DE-MUT-QUEUE",
+      "target": "queue-peak",
+      "observedDefect": "invented queue peak",
+      "expected": "reject"
+    },
+    {
+      "id": "DE-MUT-ORDER",
+      "target": "tie-order",
+      "observedDefect": "numeric policy tie loses canonical payload order",
+      "expected": "reject"
+    },
+    {
+      "id": "DE-MUT-DEDUPE",
+      "target": "generated-count",
+      "observedDefect": "duplicate emissions not counted",
+      "expected": "reject"
+    },
+    {
+      "id": "DE-MUT-QUANTA",
+      "target": "scheduler-quanta",
+      "observedDefect": "call count replaces semantic units",
+      "expected": "reject"
+    },
+    {
+      "id": "DE-MUT-EMPTY",
+      "target": "empty-complete",
+      "observedDefect": "empty input mislabeled positive",
+      "expected": "reject"
+    },
+    {
+      "id": "DE-MUT-EXACT",
+      "target": "exact-bound",
+      "observedDefect": "exact completion mislabeled partial",
+      "expected": "reject"
+    },
+    {
+      "id": "DE-MUT-TIME",
+      "target": "invented-time",
+      "observedDefect": "four beats accepted as three",
+      "expected": "reject"
+    },
+    {
+      "id": "DE-MUT-PITCH",
+      "target": "stored-order",
+      "observedDefect": "Manual order normalized",
+      "expected": "reject"
+    },
+    {
+      "id": "DE-MUT-MEMORY",
+      "target": "memory-charge",
+      "observedDefect": "nested ownership undercounted",
+      "expected": "reject"
+    },
+    {
+      "id": "DE-MUT-LIMIT",
+      "target": "over-admitted",
+      "observedDefect": "max+1 accepted",
+      "expected": "reject"
+    },
+    {
+      "id": "DE-MUT-CAP",
+      "target": "engine-cap",
+      "observedDefect": "G3 cap silently raised",
+      "expected": "reject"
+    },
+    {
+      "id": "DE-MUT-TERMINAL",
+      "target": "cancel-options",
+      "observedDefect": "cancel retains partial options",
+      "expected": "reject"
+    },
+    {
+      "id": "DE-MUT-TRACE",
+      "target": "missing-retirement",
+      "observedDefect": "publication trace omits real retirement",
+      "expected": "reject"
+    },
+    {
+      "id": "DE-MUT-AUTHORITY",
+      "target": "missing-premise-binding",
+      "observedDefect": "selected realization not bound",
+      "expected": "reject"
+    },
+    {
+      "id": "DE-MUT-PROVENANCE",
+      "target": "self-certified",
+      "observedDefect": "production output claims authority",
+      "expected": "reject"
+    }
+  ]
+}

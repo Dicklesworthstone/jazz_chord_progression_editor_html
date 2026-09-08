@@ -1,0 +1,463 @@
+{
+  "schema": "changes.fixtures.discovery-execution-laws.v1",
+  "authority": "DE-ARITHMETIC",
+  "enumerations": [
+    {
+      "id": "DE-TREE",
+      "seeds": [
+        "s"
+      ],
+      "nodes": [
+        {
+          "id": "s",
+          "next": [
+            "b",
+            "a"
+          ],
+          "value": null,
+          "order": 0
+        },
+        {
+          "id": "b",
+          "next": [
+            "d",
+            "c",
+            "e"
+          ],
+          "value": null,
+          "order": 0
+        },
+        {
+          "id": "a",
+          "next": [],
+          "value": 4,
+          "order": 1
+        },
+        {
+          "id": "d",
+          "next": [],
+          "value": 9,
+          "order": 2
+        },
+        {
+          "id": "c",
+          "next": [],
+          "value": 1,
+          "order": 1
+        },
+        {
+          "id": "e",
+          "next": [],
+          "value": 4,
+          "order": 1
+        }
+      ],
+      "expected": {
+        "visited": [
+          "s",
+          "b",
+          "a",
+          "d",
+          "c",
+          "e"
+        ],
+        "options": [
+          1,
+          4,
+          9
+        ],
+        "optionIds": [
+          "option.0",
+          "option.1",
+          "option.2"
+        ],
+        "expandedStates": 6,
+        "workUnits": 6,
+        "workQuanta": 1,
+        "generatedCandidates": 4,
+        "retainedOptions": 3,
+        "peakQueuedStates": 4,
+        "depthReached": 2,
+        "kind": "complete",
+        "termination": "complete"
+      }
+    },
+    {
+      "id": "DE-EMPTY",
+      "seeds": [],
+      "nodes": [],
+      "expected": {
+        "visited": [],
+        "options": [],
+        "optionIds": [],
+        "expandedStates": 0,
+        "workUnits": 0,
+        "workQuanta": 0,
+        "generatedCandidates": 0,
+        "retainedOptions": 0,
+        "peakQueuedStates": 0,
+        "depthReached": 0,
+        "kind": "no-result",
+        "termination": "complete"
+      }
+    },
+    {
+      "id": "DE-NO-RESULT",
+      "seeds": [
+        "x"
+      ],
+      "nodes": [
+        {
+          "id": "x",
+          "next": [],
+          "value": null,
+          "order": 0
+        }
+      ],
+      "expected": {
+        "visited": [
+          "x"
+        ],
+        "options": [],
+        "optionIds": [],
+        "expandedStates": 1,
+        "workUnits": 1,
+        "workQuanta": 1,
+        "generatedCandidates": 0,
+        "retainedOptions": 0,
+        "peakQueuedStates": 1,
+        "depthReached": 0,
+        "kind": "no-result",
+        "termination": "complete"
+      }
+    }
+  ],
+  "prefixes": [
+    {
+      "id": "DE-ZERO-WORK",
+      "workCap": 0,
+      "visited": [],
+      "options": [],
+      "kind": "bounded-partial",
+      "termination": "work-cap"
+    },
+    {
+      "id": "DE-THREE-WORK",
+      "workCap": 3,
+      "visited": [
+        "s",
+        "b",
+        "a"
+      ],
+      "options": [
+        4
+      ],
+      "kind": "bounded-partial",
+      "termination": "work-cap"
+    },
+    {
+      "id": "DE-EXACT-WORK",
+      "workCap": 6,
+      "visited": [
+        "s",
+        "b",
+        "a",
+        "d",
+        "c",
+        "e"
+      ],
+      "options": [
+        1,
+        4,
+        9
+      ],
+      "kind": "complete",
+      "termination": "complete"
+    },
+    {
+      "id": "DE-SPARE-WORK",
+      "workCap": 7,
+      "visited": [
+        "s",
+        "b",
+        "a",
+        "d",
+        "c",
+        "e"
+      ],
+      "options": [
+        1,
+        4,
+        9
+      ],
+      "kind": "complete",
+      "termination": "complete"
+    }
+  ],
+  "quantumSchedules": [
+    [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    [
+      2,
+      2,
+      2
+    ],
+    [
+      3,
+      1,
+      2
+    ],
+    [
+      6
+    ],
+    [
+      1024
+    ]
+  ],
+  "semanticQuanta": [
+    {
+      "work": 0,
+      "expected": 0
+    },
+    {
+      "work": 1,
+      "expected": 1
+    },
+    {
+      "work": 63,
+      "expected": 1
+    },
+    {
+      "work": 64,
+      "expected": 1
+    },
+    {
+      "work": 65,
+      "expected": 2
+    },
+    {
+      "work": 8388608,
+      "expected": 131072
+    }
+  ],
+  "times": [
+    {
+      "id": "DE-EXACT-SPLIT",
+      "before": [
+        3,
+        1
+      ],
+      "after": [
+        [
+          3,
+          2
+        ],
+        [
+          3,
+          2
+        ]
+      ],
+      "preserved": true
+    },
+    {
+      "id": "DE-INVENTED-TIME",
+      "before": [
+        3,
+        1
+      ],
+      "after": [
+        [
+          2,
+          1
+        ],
+        [
+          2,
+          1
+        ]
+      ],
+      "preserved": false
+    },
+    {
+      "id": "DE-SUBTICK",
+      "before": [
+        1,
+        960
+      ],
+      "after": [
+        [
+          1,
+          1920
+        ],
+        [
+          1,
+          1920
+        ]
+      ],
+      "preserved": true,
+      "representable": false
+    },
+    {
+      "id": "DE-VALID-TUPLET",
+      "before": [
+        1,
+        1
+      ],
+      "after": [
+        [
+          1,
+          3
+        ],
+        [
+          2,
+          3
+        ]
+      ],
+      "preserved": true,
+      "representable": true
+    }
+  ],
+  "storedPitches": [
+    {
+      "id": "DE-MANUAL-SAME",
+      "mode": "manual",
+      "before": [
+        "C4",
+        "G3",
+        "C4"
+      ],
+      "after": [
+        "C4",
+        "G3",
+        "C4"
+      ],
+      "unchanged": true
+    },
+    {
+      "id": "DE-MANUAL-SORT",
+      "mode": "manual",
+      "before": [
+        "C4",
+        "G3",
+        "C4"
+      ],
+      "after": [
+        "G3",
+        "C4",
+        "C4"
+      ],
+      "unchanged": false
+    },
+    {
+      "id": "DE-FROZEN-DEDUPE",
+      "mode": "frozen",
+      "before": [
+        "E4",
+        "E4",
+        "Bb3"
+      ],
+      "after": [
+        "E4",
+        "Bb3"
+      ],
+      "unchanged": false
+    },
+    {
+      "id": "DE-SPELLING",
+      "mode": "frozen",
+      "before": [
+        "Cb4"
+      ],
+      "after": [
+        "B3"
+      ],
+      "unchanged": false
+    }
+  ],
+  "memory": [
+    {
+      "id": "DE-EMPTY-ARRAY",
+      "value": [],
+      "chargedBytes": 32
+    },
+    {
+      "id": "DE-PRIMITIVES",
+      "value": [
+        1,
+        null,
+        true
+      ],
+      "chargedBytes": 56
+    },
+    {
+      "id": "DE-STRING",
+      "value": "Cb4",
+      "chargedBytes": 14
+    },
+    {
+      "id": "DE-OBJECT",
+      "value": {
+        "x": 1
+      },
+      "chargedBytes": 50
+    },
+    {
+      "id": "DE-NESTED",
+      "value": {
+        "x": [
+          1,
+          2
+        ]
+      },
+      "chargedBytes": 98
+    }
+  ],
+  "publicationSource": {
+    "path": "tests/fixtures/exact-share/document.changes.json",
+    "sha256": "52f01043294f2d2fb8a9b710972f3294e1f0cdb201f206449a6a6086bb90aa42",
+    "documentId": "share-document-exact",
+    "revision": 5,
+    "historyEntries": 2,
+    "savedRevision": 3,
+    "exportedRevision": 4,
+    "selectedRealizations": {
+      "share-event-manual": "custom",
+      "share-event-frozen": "literal"
+    },
+    "positions": [
+      {
+        "eventId": "share-event-manual",
+        "numerator": 0,
+        "denominator": 1
+      },
+      {
+        "eventId": "share-event-frozen",
+        "numerator": 5,
+        "denominator": 3
+      }
+    ],
+    "positiveProposal": {
+      "kind": "replace-event-annotation",
+      "eventId": "share-event-frozen",
+      "before": "Do not optimize this inversion.",
+      "after": "Keep the written line."
+    },
+    "expectedAfterApply": {
+      "revision": 6,
+      "historyEntries": 3,
+      "savedRevision": 3,
+      "exportedRevision": 4,
+      "pitchAndTimeBytesUnchanged": true
+    },
+    "expectedAfterUndo": {
+      "revision": 7,
+      "historyEntries": 2,
+      "originalDocumentBytesRestored": true
+    }
+  }
+}

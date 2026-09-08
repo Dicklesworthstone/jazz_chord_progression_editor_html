@@ -1,0 +1,18 @@
+{
+  "schema":"changes.fixtures.semantic-surface-traces.v1",
+  "traces":[
+    {"id":"SS-LITERAL","owner":"tests/unit/semantic-surface-conformance.test.ts","laws":["degree-arithmetic","spelling-pitch-distinction","selected-altered-realization","stored-voice-identity"],"required":["positive","near-miss","twelve-transpositions","mutation"]},
+    {"id":"SS-CONTEXT","owner":"tests/conformance/semantic-surface-production.test.ts","laws":["major-containment","plural-ties","counterevidence","custom-barrier","selection-cache"],"required":["starter-counterexample","full-containment-twin","chromatic-near-miss","missing-key","actual-studio-dispatch"]},
+    {"id":"SS-DISPATCH","owner":"tests/integration/semantic-surface-conformance.test.ts","laws":["every-engine-operation","consumed-result","actual-work","source-binding"],"required":["actual-application-owner","absent-call-mutant","wrong-engine-mutant","discarded-result-mutant","fake-proof-mutant"]},
+    {"id":"SS-LIFECYCLE","owner":"tests/property/semantic-surface-laws.test.ts","laws":["exact-time","stable-ids","manual-frozen-order-unisons","stale-before-publication","single-transaction","exact-undo-bookmarks"],"required":["cancel-at-every-yield","edit-at-every-await","replacement","undo-redo","recovery","selected-realization-change"]},
+    {"id":"SS-JOURNEY","owner":"tests/e2e/semantic-surface-conformance.spec.ts","laws":["visible-musical-semantics","actual-adapters","offline","same-audio-MIDI-plan"],"required":["enter-chart","inspect-literal","inspect-context","preview","edit-during-search","reject-stale","recompute","apply","undo","restart-recovery","download-canonical","download-text","download-midi"]},
+    {"id":"SS-NATIVE-SOURCE","owner":"tests/integration/semantic-surface-conformance.test.ts","laws":["same-G2-engine-and-policy","exact-source-envelope","version-refusal","generated-bundle-closure"],"required":["same-eight-option-projection","real-generated-bridge","stale-returned-revision","no-Apple-execution-claim"]},
+    {"id":"SS-NATIVE-APPLE","owner":"ios/Tests/FrankenJazzCoreTests.swift","laws":["actual-JavaScriptCore-consumer","exact-source-envelope"],"required":["existing-DSR-Xcode-lane","real-Apple-host","explicit-unexecuted-when-unavailable"]}
+  ],
+  "browserMatrix":{"engines":["chromium","firefox","webkit"],"desktopWidth":1280,"phoneWidth":390,"touchEngines":["chromium","webkit"],"retries":0,"skips":0,"forbidOnly":true,"failOnFlaky":true,"keyboard":true,"zoom":true,"reducedMotion":true,"productStylesRequired":true,"fileAndHttp":true},
+  "bridgeRequirements":{"checkGeneratedSourceClosure":true,"compareExactSourceBinding":true,"sameVersionsAndPolicy":true,"v1MayInventExactAuthority":false,"linuxReplayIsAppleExecution":false,"automateAudibleSimulatorPlayback":false},
+  "downloadRequirements":{"actualBrowserDelivery":true,"decodeCanonicalDocument":true,"checkTextLosses":true,"compareMidiEventsToSharedPlan":true,"headerOnlyIsProof":false,"textOrMidiAdvancesCanonicalMarker":false},
+  "storageFaults":["denied","quota","corrupt-current","valid-previous-copy","localStorage-fallback","replacement-during-read","edit-during-write"],
+  "requiredDiagnostics":["source-revision","before-after-input-hashes-mtimes","artifact-hash","bridge-hash","Bun-Node-browser-versions","request-ids","law-ids","seed","expected-observed-musical-diffs","actual-work","timing-distributions","voices","listeners","ports","retained-bytes","storage-outcomes","download-bytes","console-errors","page-errors","network-requests"],
+  "existingOwnersRetainGates":["U2","U4","U5","U7","Q0","R0","D0","iOS-quality"]
+}

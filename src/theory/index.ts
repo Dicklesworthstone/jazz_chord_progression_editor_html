@@ -298,3 +298,17 @@ export {
   gradePracticeSubmission,
 } from "./practice-laboratory";
 export { g9Operations, type G9Operations } from "./g9-operations";
+export type {
+  DiscoveryAdvance, DiscoveryAllocation, DiscoveryArena, DiscoveryBudgets,
+  DiscoveryContentAdapter, DiscoveryCostAxis, DiscoveryCounters, DiscoveryCursor,
+  DiscoveryEngine, DiscoveryEvidence, DiscoveryIdentity, DiscoveryLimit,
+  DiscoveryOption, DiscoveryOptionDraft, DiscoveryRefusal, DiscoveryRequest,
+  DiscoveryResult, DiscoverySourceEvent, DiscoveryStepper, DiscoveryStepperCreation,
+  DiscoveryValue, DiscoveryVersion,
+} from "./discovery-execution-contract";
+export { createDiscoveryArena } from "./discovery-arena";
+export { captureDiscoveryValue } from "./discovery-data";
+export type { CapturedDiscoveryValue } from "./discovery-data";
+export { createDiscoveryStepper, inspectMeasuredDiscoveryResult, isMeasuredDiscoveryResult } from "./discovery-execution";
+export type { DiscoveryEnumerationKernel, DiscoveryExpansionSink } from "./discovery-execution";
+export { DISCOVERY_EXECUTION_LIMITS, DISCOVERY_EXECUTION_SCHEMA, DISCOVERY_ENGINE_CEILINGS } from "./discovery-execution-contract";

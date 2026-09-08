@@ -1641,6 +1641,7 @@ function viewFromSnapshot(
           ? null
           : Object.freeze({
               afterLabel: continuation.afterLabel,
+              ...(continuation.contextNote === undefined ? {} : { contextNote: continuation.contextNote }),
               suggestions: Object.freeze(
                 continuation.suggestions.map((suggestion) =>
                   Object.freeze({
@@ -2329,9 +2330,9 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
   );
 
   /*
-   * Display-only continuation options. The controller memoizes on the frozen
-   * document object, so calling per render is a WeakMap hit until an edit
-   * publishes a new document.
+   * Display-only continuation options. The controller caches the exact
+   * document and selected-realization premises; this view supplies no implicit
+   * selection for an ambiguous altered chord.
    */
   const continuation = actions.readContinuationSuggestions();
   const detailView = detailViewFrom(actions.readChordDetail, snapshot);

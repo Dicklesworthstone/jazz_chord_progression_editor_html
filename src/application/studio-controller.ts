@@ -93,6 +93,7 @@ import {
   type ChartPhraseKind,
   type ChartTextDraft,
   type ContinuationSuggestion,
+  type ContinuationContextReading,
 } from "../theory";
 import type {
   TransportCommandOutcome,
@@ -360,12 +361,14 @@ export type StudioInsertionPlan = Readonly<{
 /**
  * Plural continuation options for the end of the chart, display-only.
  * `afterLabel` is the exact stored symbol the options follow, or null when
- * the chart has no parsed chord yet — in which case the suggestion list is
+ * the chart has no chord yet — in which case the suggestion list is
  * empty and the surface shows nothing rather than inventing an opening.
  */
 export type StudioContinuationView = Readonly<{
   afterLabel: string | null;
   suggestions: readonly ContinuationSuggestion[];
+  contextReading?: ContinuationContextReading | null;
+  contextNote?: string;
 }>;
 
 /**
@@ -910,11 +913,10 @@ export interface StudioController {
   /**
    * Display-only plural next-chord options for the end of the chart, from
    * the session continuation engine. Memoized on the frozen document object
-   * itself, so an unchanged document returns the identical result and an
-   * edit recomputes — never keyed on id+revision, which would let a stale
-   * cache masquerade as determinism.
+   * and selected T1 realization IDs. Identical premises return the same view;
+   * a document edit or changed relevant selection recomputes without mutation.
    */
-  readonly readContinuationSuggestions: () => StudioContinuationView;
+  readonly readContinuationSuggestions: (selectedRealizations?: ReadonlyMap<string, string>) => StudioContinuationView;
   /**
    * Display-only roman/function/scale reading of one event against the
    * document key. Memoized on the frozen document object like the
@@ -2283,11 +2285,13 @@ function makeStudioComposition(
         playback: Object.freeze({ ...playback, instrumentId: made.value }),
       }),
     });
+    const previousRevision = state.revision;
     const result = apply("set-instrument", (current) =>
       runDocumentCommand({ command, dependencies, state: current }),
     );
     /* jcpe-pd7g: a committed instrument reaches a live run immediately. */
     if (result.ok) {
+      carryLiveProjectionAcrossMixEdit(previousRevision);
       const run = activeRun;
       const status = state.transport.status;
       const liveRide =
@@ -2335,13 +2339,17 @@ function makeStudioComposition(
         playback: Object.freeze({ ...playback, masterVolume: volume }),
       }),
     });
+    const previousRevision = state.revision;
     const result = apply("set-master-volume", (current) =>
       runDocumentCommand({ command, dependencies, state: current }),
     );
     /* jcpe-v2r-live-mix-btb4: a committed volume also reaches a live engine
      * through the ride; before this, only the first initialize ever read
      * the document mix. A muted session keeps its silence. */
-    if (result.ok && !sessionMuted) rideLiveMix(volume);
+    if (result.ok) {
+      carryLiveProjectionAcrossMixEdit(previousRevision);
+      if (!sessionMuted) rideLiveMix(volume);
+    }
     return result;
   };
 
@@ -4646,9 +4654,21 @@ function makeStudioComposition(
   let activeRun: Readonly<{
     documentId: AppState["document"]["id"];
     planRevision: number;
+    viewRevision: number;
     totalBeats: BeatPosition;
     runToken: number;
   }> | null = null;
+
+  /** Only these two controller-owned setting commits preserve the bound
+   * plan. An intervening musical/history/replacement edit breaks the chain;
+   * a later instrument or volume commit cannot make that stale plan current. */
+  const carryLiveProjectionAcrossMixEdit = (previousRevision: number): void => {
+    const run = activeRun;
+    if (run !== null && run.documentId === state.document.id &&
+      run.viewRevision === previousRevision && state.revision === previousRevision + 1) {
+      activeRun = Object.freeze({ ...run, viewRevision: state.revision });
+    }
+  };
 
   const clearActiveRunIfMatches = (
     documentId: AppState["document"]["id"],
@@ -5085,7 +5105,7 @@ function makeStudioComposition(
         status === "playing" ? "next-unstarted-note" : "next-play";
       notify();
     });
-    activeRun = Object.freeze({ ...run, planRevision: state.revision });
+    activeRun = Object.freeze({ ...run, planRevision: state.revision, viewRevision: state.revision });
   };
 
   /**
@@ -5444,6 +5464,7 @@ function makeStudioComposition(
     activeRun = Object.freeze({
       documentId: binding.documentId,
       planRevision: binding.planRevision,
+      viewRevision: binding.planRevision,
       totalBeats: compiled.plan.totalBeats,
       runToken: thisRenderAheadRun,
     });
@@ -6551,45 +6572,47 @@ function makeStudioComposition(
   ): readonly number[] | null => lastPlanPitchClasses?.get(eventId) ?? null;
 
   /*
-   * Continuation options for "what could come next" at the end of the chart.
-   * The cache key is the frozen document object: an unchanged document hands
-   * back the identical view (render-cheap), any published edit produces a
-   * fresh document and therefore a fresh derivation. Custom chords carry no
-   * parsed root/quality facts, so the context window is built from parsed
-   * chords only.
+   * Cache exact document identity plus the selected T1 IDs of the last four
+   * events. Custom/unresolved events remain in that window as explicit barriers.
+   * Selection is a read premise, never an edit or a silent first realization.
    */
-  const continuationCache = new WeakMap<object, StudioContinuationView>();
-  const readContinuationSuggestions = (): StudioContinuationView => {
+  const continuationCache = new WeakMap<object, Readonly<{
+    eventIds: readonly string[];
+    selections: readonly (string | null)[];
+    view: StudioContinuationView;
+  }>>();
+  const readContinuationSuggestions: StudioController["readContinuationSuggestions"] = (selectedRealizations) => {
     const document = state.document;
     const cached = continuationCache.get(document);
-    if (cached !== undefined) return cached;
-    const parsed: ChordSpec[] = [];
-    for (const section of document.sections) {
-      for (const measure of section.measures) {
-        for (const event of measure.events) {
-          if (event.chord.kind === "parsed") parsed.push(event.chord);
-        }
-      }
+    if (cached !== undefined && cached.eventIds.every((id, index) =>
+      (selectedRealizations?.get(id) ?? null) === cached.selections[index])) return cached.view;
+    const window: ChordEvent[] = [];
+    for (const section of document.sections) for (const measure of section.measures) for (const event of measure.events) {
+      window.push(event);
+      if (window.length > MAX_CONTINUATION_CONTEXT_EVENTS) window.shift();
     }
-    const window = parsed.slice(-MAX_CONTINUATION_CONTEXT_EVENTS);
+    const selections = Object.freeze(window.map(event => selectedRealizations?.get(event.id) ?? null));
     const last = window[window.length - 1];
-    let view: StudioContinuationView;
-    if (last === undefined) {
-      view = Object.freeze({
-        afterLabel: null,
-        suggestions: Object.freeze([]),
-      });
-    } else {
-      const result = deriveContinuationSuggestions(
-        { context: Object.freeze(window) },
-        resolutionOperations,
-      );
-      view = Object.freeze({
-        afterLabel: last.sourceText,
-        suggestions: result.suggestions,
-      });
-    }
-    continuationCache.set(document, view);
+    const result = deriveContinuationSuggestions({
+      context: Object.freeze(window.map(event => event.chord)), selectedRealizationIds: selections,
+    }, resolutionOperations);
+    const barrier = result.contextBarriers[result.contextBarriers.length - 1];
+    const barrierReason = barrier?.reason === "custom-chord" ? "its pitches do not define a chord function"
+      : barrier?.reason === "unsupported-chord" ? "its chord formula is unsupported"
+      : barrier?.reason === "selected-realization-required" ? "its altered tones are not specified"
+      : "the chosen altered tones are unavailable";
+    const remedy = barrier?.reason === "selected-realization-required"
+      ? " Write the alterations explicitly (for example, b9 and b5) to get a reading." : "";
+    const contextNote = barrier === undefined ? undefined : result.contextReading === null
+      ? `No continuation reading after ${barrier.sourceSymbol}: ${barrierReason}.${remedy}`
+      : `This reading uses only the chords after ${barrier.sourceSymbol}: ${barrierReason}.`;
+    const view: StudioContinuationView = Object.freeze({
+      afterLabel: last?.chord.sourceText ?? null, suggestions: result.suggestions,
+      contextReading: result.contextReading, ...(contextNote === undefined ? {} : { contextNote }),
+    });
+    continuationCache.set(document, Object.freeze({
+      eventIds: Object.freeze(window.map(event => event.id)), selections, view,
+    }));
     return view;
   };
 
@@ -6733,9 +6756,23 @@ function makeStudioComposition(
   if (audioPort !== null) {
     audioPort.subscribe((notification) => {
       const sequenceBefore = state.transport.notificationSequence;
+      const service = audioPort.inspect().transport;
+      const serviceStatus = SETTLED_TRANSPORT_STATUS[service.state];
+      const run = activeRun;
+      const currentSource = service.documentId === state.document.id &&
+        service.planRevision !== null && serviceStatus !== "unavailable" &&
+        (service.planRevision === state.revision ||
+          (run !== null && run.documentId === service.documentId &&
+            run.planRevision === service.planRevision && run.viewRevision === state.revision))
+        ? Object.freeze({ documentId: service.documentId, planRevision: service.planRevision,
+          viewRevision: state.revision, commandRequestId: service.lastCommandRequestId,
+          generation: service.generation, notificationSequence: service.lastNotificationSequence,
+          status: serviceStatus })
+        : undefined;
       apply("transport-notification", (current) =>
         acceptTransportNotification({
           state: current,
+          ...(currentSource === undefined ? {} : { currentSource }),
           notification: Object.freeze({
             status: notification.status,
             generation: notification.generation,

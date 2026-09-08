@@ -189,6 +189,7 @@
     "harmony.upstream_contract_version_unsupported",
     "harmony.rule_version_unsupported",
     "harmony.duplicate_event_id",
+    "harmony.scale_context_invalid",
     "limit.harmony_context_events_exceeded",
     "limit.harmony_readings_exceeded",
     "limit.harmony_scale_options_exceeded",

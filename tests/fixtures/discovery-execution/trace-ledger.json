@@ -1,0 +1,17 @@
+{
+  "schema":"changes.fixtures.discovery-execution-traces.v1",
+  "traces":[
+    {"id":"DE-QUEUE","authority":"DE-ARITHMETIC","owner":"tests/unit/discovery-execution.test.ts","observations":["actual-expansion-sites","actual-queue-contents","canonical-ties","duplicate-emission-counted","all-quantum-partitions","empty-and-exact-bound-complete"]},
+    {"id":"DE-ALLOCATION","authority":"DE-LIMITS","owner":"tests/conformance/discovery-execution.test.ts","observations":["reserve-before-allocation","actual-container-peak","foreign-and-double-release-refused","all-owner-lifetimes-counted","all-limit-edges","dishonest-counter-mutants-killed"]},
+    {"id":"DE-CANCEL","authority":"DE-APPLICATION","owner":"tests/property/discovery-execution.test.ts","observations":["cancel-before-and-after-every-yield","stale-after-edit-undo-redo-recovery-replacement","foreign-and-replayed-cursor","zero-options-after-cancel","all-resources-released"]},
+    {"id":"DE-APPLY","authority":"DE-APPLICATION","owner":"tests/integration/discovery-execution.test.ts","observations":["real-A0-command","exact-single-history-entry","undo-restores-exact-source","full-binding-and-law-revalidation","corrupt-each-premise-refuses","edit-during-retirement-preserved","double-apply-once","zero-marker-changes-on-refusal"]},
+    {"id":"DE-BROWSER","authority":"DE-APPLICATION","owner":"tests/e2e/discovery-execution.spec.ts","observations":["real-Node-three-engines","input-responsive-during-search","actual-cancel-edit-Stop-Apply-Undo","no-unexpected-requests-or-errors","real-audio-retirement","voice-listener-callback-counts","input-hashes-before-after","zero-retries-skips"]}
+  ],
+  "publicationTraces":[
+    {"id":"DE-APPLY-UNDO","actions":["start","complete","validate","retire","revalidate","apply","undo"],"commits":1,"historyAfterApply":1,"revisionAfterApply":1,"revisionAfterUndo":2,"originalRestored":true},
+    {"id":"DE-EDIT-DURING-RETIRE","actions":["start","complete","validate","retire-await","user-edit","retire-resolve","revalidate-stale"],"discoveryCommits":0,"userEditPreserved":true},
+    {"id":"DE-CANCEL-DURING-RETIRE","actions":["start","complete","validate","retire-await","cancel","retire-resolve"],"discoveryCommits":0,"options":0},
+    {"id":"DE-DOUBLE-APPLY","actions":["start","complete","apply","apply"],"discoveryCommits":1,"second":"discovery.already-consumed"},
+    {"id":"DE-RETIRE-FAIL","actions":["start","complete","validate","retire-failed"],"discoveryCommits":0,"result":"discovery.retirement-failed"}
+  ]
+}

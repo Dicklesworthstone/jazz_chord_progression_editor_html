@@ -326,6 +326,7 @@ export type StudioContinuationSectionView = Readonly<{
   /** The exact stored symbol the options follow. */
   afterLabel: string;
   suggestions: readonly StudioSuggestionRowView[];
+  contextNote?: string;
 }>;
 
 /**

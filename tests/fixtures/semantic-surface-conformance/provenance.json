@@ -1,0 +1,20 @@
+{
+  "schema":"changes.fixtures.semantic-surface-provenance.v1",
+  "authoredAt":"2026-09-07",
+  "authoredBy":"CodexWorkflow",
+  "authority":"definition-derived-independent-fixtures",
+  "productionOutputUsed":false,
+  "generatedExpectations":false,
+  "humanMusicianReviewClaimed":false,
+  "sources":[
+    {"id":"SS-DEGREE-ARITHMETIC","source":"docs/REBUILD_PLAN.md#104-spelling-algorithm","scope":"letter motion plus major-scale semitone offsets and explicit degree alterations","judgmentBearing":false},
+    {"id":"SS-CONTEXT-CONTAINMENT","source":"docs/REBUILD_PLAN.md#113-roman-numeral-readings","scope":"literal pitch-class subset and separately exact spelling agreement; no inferred tonal truth","judgmentBearing":false},
+    {"id":"SS-H0-SPELLING-SELECTED","source":"tests/fixtures/harmony-analysis/literal-fact-cases.json","cases":["H0-LITERAL-002","H0-LITERAL-003","H0-LITERAL-004","H0-LITERAL-005","H0-LITERAL-008"],"scope":"accepted spelling/altered-realization fixtures are independent of the new dispatch implementation","judgmentBearing":false},
+    {"id":"SS-TRIAD-RELATIONS","source":"docs/THEORY_IDEA_WIZARD.md#14-nonfunctionalcommon-tone-transformation-atlas","scope":"explicit C-major P/L/R semitone replacement and common-tone arithmetic only","judgmentBearing":false},
+    {"id":"SS-EXACT-TIME","source":"docs/REBUILD_PLAN.md#43-musical-time-is-beats-not-seconds","scope":"exact 7/8 measure sum and rational split; no invented four-beat events","judgmentBearing":false},
+    {"id":"SS-A0-PUBLICATION","source":"docs/DISCOVERY_EXECUTION_CONTRACT.md#application-scheduling-and-apply","scope":"one Apply/Undo transaction and zero preview/save-marker effects","judgmentBearing":false},
+    {"id":"SS-AUDITED-DISPATCH","source":"git:86aee23","scope":"source inventory observation; neither symbol presence nor prior closed Beads establish musical capability","judgmentBearing":false}
+  ],
+  "corpusRules":{"eachOwningEngineRetainsIndependentLawProof":true,"hashDoesNotApproveUpstreamMusic":true,"noCopiedProductionExpectedResults":true,"fullAtlasReviewRemainsD0":true},
+  "proofBoundaries":{"specificationOnly":true,"sourceMutationRequiredLater":true,"nativeAppleLaneRequired":true,"humanListeningSeparate":true,"noReleaseApproval":true}
+}
