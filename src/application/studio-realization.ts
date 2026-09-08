@@ -16,7 +16,7 @@
  * states below, and it never invents a refusal that a downstream package
  * already owns.
  */
-import type { ChordEventId, ValidatedDocument } from "../domain";
+import { documentsSemanticallyEqual, type ChordEventId, type ValidatedDocument } from "../domain";
 import {
   PLAYBACK_PLAN_REALIZATION_SCHEMA,
   type PlaybackRealizationBinding,
@@ -211,9 +211,21 @@ export function buildStudioRealizations(
   document: ValidatedDocument,
 ): StudioRealizationResult {
   const memoized = REALIZATION_MEMO.get(document);
-  if (memoized !== undefined) return memoized;
+  const previous = mostRecentDocument?.deref();
+  if (memoized !== undefined) {
+    if (previous !== document) mostRecentDocument = new WeakRef(document);
+    return memoized;
+  }
+  const previousResult = previous === undefined ? undefined : REALIZATION_MEMO.get(previous);
+  if (previous !== undefined && previousResult !== undefined &&
+      documentsSemanticallyEqual({ ...document, playback: previous.playback }, previous)) {
+    REALIZATION_MEMO.set(document, previousResult);
+    mostRecentDocument = new WeakRef(document);
+    return previousResult;
+  }
   const built = realizeDocument(document);
   REALIZATION_MEMO.set(document, built);
+  mostRecentDocument = new WeakRef(document);
   return built;
 }
 
@@ -227,19 +239,23 @@ export function buildStudioRealizations(
  * literally, that made clicking a chord in the ten-chord starter chart block
  * the page for ~0.7 s before a note sounded.
  *
- * The key is the document object, not its id or a revision counter, and that
- * is the whole safety argument: a `ValidatedDocument` is deeply frozen and
- * every edit publishes a new one, so identical keys mean byte-identical
- * input to a pure function. An id-and-revision key would be weaker in both
- * directions — it could collide across two documents that share an id, and
- * it would make the determinism proof tautological by answering the second
- * build from the first build's cache. Entries are weakly held, so a
- * superseded document's realizations are collected with it.
+ * A ValidatedDocument is deeply frozen, so an identical object is always a
+ * safe hit. Publication also clones the chart after playback-only changes.
+ * Realization never reads playback: reuse the most recent result when the
+ * existing domain equality oracle finds every other persisted field exactly
+ * equal, including source spelling, ordered stored pitches and negative zero.
+ * IDs alone cannot establish equality. This conservative comparison also
+ * invalidates on title, tempo and other non-playback edits.
+ *
+ * Only one previous document is considered; its weak reference adds no strong
+ * retention to the identity memo. Garbage collection may cause recomputation
+ * but cannot change the result. The equality walk is bounded by F2's limits.
  */
 const REALIZATION_MEMO = new WeakMap<
   ValidatedDocument,
   StudioRealizationResult
 >();
+let mostRecentDocument: WeakRef<ValidatedDocument> | undefined;
 
 function realizeDocument(document: ValidatedDocument): StudioRealizationResult {
   const realizations = new Map<ChordEventId, PlaybackRealizationBinding>();
