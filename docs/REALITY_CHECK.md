@@ -1,5 +1,14 @@
 # Changes reality check — 2026-09-08
 
+**Subsequent evidence-retention incident:** during the next implementation task,
+an admission test fixture omitted Playwright's `outputDir`, and its default
+cleanup removed the ignored `test-results/` tree. Raw A and loop-final packets
+referenced below are consequently unavailable; their values remain historical
+observations recorded in this report and Beads, not currently retained raw proof.
+The fixture is being corrected under `jcpe-browser-suite-admission-0nyi` and its
+new evidence/tools are isolated under `.tmp/`. Tracked source and evidence were
+untouched. This notice supersedes raw-retention statements in the dated snapshot.
+
 Changes is a useful working studio with substantial editing, playback, recovery,
 interchange and voicing foundations. It is not yet the complete, independently
 proved harmonic-discovery system described by its plans. Since September 4,
