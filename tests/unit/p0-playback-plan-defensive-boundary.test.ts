@@ -78,6 +78,7 @@ const PLAYBACK_PRODUCTION_FILE_NAMES = Object.freeze([
   "compile-playback-plan.ts",
   "index.ts",
   "playback-plan-contract.ts",
+  "project-playback-loop.ts",
 ] as const);
 
 const FORBIDDEN_THEORY_RUNTIME_CALLS = new Set([
@@ -1916,4 +1917,20 @@ describe("P0 defensive loop accounting and layer ownership", () => {
     }
     expect(publicBarrelFindings(publicBarrel)).toEqual([]);
   });
+
+  for (const [injectedSource, finding] of [
+    ['import { resolveChord } from "../theory";', "runtime-theory-import"],
+    ['import type { Hidden } from "../theory/private";', "deep-theory-import:../theory/private"],
+    ["resolveChord(chord);", "runtime-theory-call:resolveChord"],
+  ] as const) {
+    test(`loop projection retains the ownership restriction: ${finding}`, async () => {
+      const fileName = "project-playback-loop.ts";
+      const source = await readFile(new URL(`../../src/playback/${fileName}`, import.meta.url), "utf8");
+      expect(PLAYBACK_PRODUCTION_FILE_NAMES).toContain(fileName);
+      expect(playbackOwnershipFindings([{ fileName, sourceFile: parseSource(fileName, source) }])).toEqual([]);
+      expect(playbackOwnershipFindings([{
+        fileName, sourceFile: parseSource(fileName, `${injectedSource}\n${source}`),
+      }])).toEqual([`${fileName}:${finding}`]);
+    });
+  }
 });
