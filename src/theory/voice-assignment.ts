@@ -1634,19 +1634,20 @@ function compareCandidatePaths(
   return compareNumber(left.pathLength, right.pathLength);
 }
 
+const ALIGNMENT_COMPARISON_AXES = Object.freeze([
+  "alignmentCost",
+  "commonTonesLost",
+  "guideTonesLost",
+  "gapCount",
+  "negativeExactSustains",
+  "negativeSpelledPitchContinuities",
+] as const);
+
 function compareCandidates(
   left: AlignmentCandidate,
   right: AlignmentCandidate,
 ): -1 | 0 | 1 {
-  const axes = Object.freeze([
-    "alignmentCost",
-    "commonTonesLost",
-    "guideTonesLost",
-    "gapCount",
-    "negativeExactSustains",
-    "negativeSpelledPitchContinuities",
-  ] as const);
-  for (const axis of axes) {
+  for (const axis of ALIGNMENT_COMPARISON_AXES) {
     const comparison = compareNumber(left[axis], right[axis]);
     if (comparison !== 0) return comparison;
   }
@@ -1711,14 +1712,14 @@ function matchFacts(
     source.degree !== null &&
     target.degree !== null &&
     sameChordDegree(source.degree, target.degree);
-  return Object.freeze({
+  return {
     exactMidiIdentity,
     pitchClassIdentity,
     spelledPitchClassIdentity: spelledPitchClass,
     spelledPitchIdentity: spelledPitch,
     degreeIdentity,
     guideToneContinuity,
-  });
+  };
 }
 
 function recordMatchFacts(
@@ -1910,6 +1911,9 @@ function enterAllowed(maps: LockMaps, targetOrdinal: number): boolean {
   return required(maps.targetToSource, targetOrdinal) === null;
 }
 
+/** Private DP records never escape alignment. Keep their readonly types and
+ * freeze the detached chosen path at publication, rather than freezing every
+ * losing candidate and temporary identity fact in the inner search loop. */
 function matchCandidate(
   predecessor: CellRecord,
   source: UnassignedVoice,
@@ -1918,7 +1922,7 @@ function matchCandidate(
   targetOrdinal: number,
   facts: MatchFacts,
 ): AlignmentCandidate {
-  return Object.freeze({
+  return {
     alignmentCost:
       predecessor.alignmentCost + Math.abs(target.midi - source.midi),
     commonTonesLost:
@@ -1933,15 +1937,15 @@ function matchCandidate(
       (facts.spelledPitchIdentity ? 1 : 0),
     pathLength: predecessor.pathLength + 1,
     predecessor,
-    step: Object.freeze({ kind: "match", sourceOrdinal, targetOrdinal }),
-  });
+    step: { kind: "match", sourceOrdinal, targetOrdinal },
+  };
 }
 
 function gapCandidate(
   predecessor: CellRecord,
   step: VoiceAssignmentOperationStep,
 ): AlignmentCandidate {
-  return Object.freeze({
+  return {
     alignmentCost: predecessor.alignmentCost + VOICE_ASSIGNMENT_GAP_COST,
     commonTonesLost: predecessor.commonTonesLost,
     guideTonesLost: predecessor.guideTonesLost,
@@ -1951,12 +1955,12 @@ function gapCandidate(
       predecessor.negativeSpelledPitchContinuities,
     pathLength: predecessor.pathLength + 1,
     predecessor,
-    step: Object.freeze(step),
-  });
+    step,
+  };
 }
 
 function selectedCell(candidate: AlignmentCandidate): PathCell {
-  return Object.freeze({ ...candidate });
+  return { ...candidate };
 }
 
 function preferCandidate(

@@ -58,8 +58,11 @@ test("a removed armed section refuses Play until Undo restores the exact section
     expect(controller.playProgression(gesture).ok).toBe(true);
     await until(() => controller.getSnapshot().transport.status === "playing");
     const loop = audio.inspect().transport.loop;
-    expect(loop === null ? null : [Number(loop.start.numerator), Number(loop.start.denominator), Number(loop.end.numerator), Number(loop.end.denominator)])
-      .toEqual([4, 1, 8, 1]);
+    const bounds: readonly number[] | null = loop === null ? null : [
+      loop.start.numerator, loop.start.denominator,
+      loop.end.numerator, loop.end.denominator,
+    ];
+    expect(bounds).toEqual([4, 1, 8, 1]);
   } finally { await audio.transportService.submitTransportCommand({ commandRequestId: 999, payload: { kind: "dispose-transport", reason: "page-teardown" } }); }
 }, 30_000);
 

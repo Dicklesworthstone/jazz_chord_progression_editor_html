@@ -30,6 +30,7 @@ for (const mode of ["file", "http"] as const) for (const width of [1280, 390]) t
     test.setTimeout(60_000);
     const errors: string[] = [], pageErrors: string[] = [], requests: { url: string; allowed: boolean }[] = [];
     const stages: { name: string; snapshot: Awaited<ReturnType<typeof snapshot>> }[] = [];
+    let completed = false;
     const url = mode === "file" ? pathToFileURL(path).href : httpUrl;
     page.on("console", message => { if (message.type() === "error" || message.type() === "warning") errors.push(message.text()); });
     page.on("pageerror", error => { pageErrors.push(error.message); });
@@ -45,17 +46,20 @@ for (const mode of ["file", "http"] as const) for (const width of [1280, 390]) t
       expect(await page.evaluate(() => matchMedia("(prefers-reduced-motion: reduce)").matches)).toBe(true);
       await page.locator("#studio-transport-loop").click();
       await page.locator("#studio-transport-play").click();
-      await expect.poll(async () => (await snapshot(page)).view.transport.status).toBe("playing");
+      await expect.poll(() => page.evaluate(() => window.__JCPE_LOOP__.snapshot().view.transport.status)).toBe("playing");
       const started = await observe("play");
       const plan = started.bindings[0]?.plan; if (!plan) throw new Error("Missing actual plan handoff");
       expect(plan.loopTicks).toEqual({ start: 0, end: 7680 });
       expect(plan.events.some(event => event.midiPitches.length === 1)).toBe(true);
       expect(plan.events.some(event => event.midiPitches.length > 1 && event.durationTicks < 960)).toBe(true);
       const last = plan.events.at(-1); if (!last) throw new Error("Missing last arranged event");
-      await expect.poll(async () => {
-        const value = await snapshot(page);
-        return new Set(value.audio.engine.debugEvents.filter(e => e.kind === "voice-attack" && e.eventId === last.eventId).map(e => e.scheduledTimeSeconds)).size;
-      }, { timeout: 15_000 }).toBeGreaterThanOrEqual(3);
+      // Poll only the scalar being checked. Transferring the entire voice
+      // history on every poll can consume seconds in the browser protocol
+      // and delay the very control interaction this test needs to observe.
+      await expect.poll(() => page.evaluate(eventId => {
+        const value = window.__JCPE_LOOP__.snapshot();
+        return new Set(value.audio.engine.debugEvents.filter(e => e.kind === "voice-attack" && e.eventId === eventId).map(e => e.scheduledTimeSeconds)).size;
+      }, last.eventId), { timeout: 15_000 }).toBeGreaterThanOrEqual(3);
       const repeated = await observe("three-passes");
       for (const event of plan.events) {
         const attacks = repeated.audio.engine.debugEvents.filter(e => e.kind === "voice-attack" && e.eventId === event.eventId);
@@ -74,7 +78,7 @@ for (const mode of ["file", "http"] as const) for (const width of [1280, 390]) t
       }
       expect(repeated.view.revision).toBe(before.view.revision); expect(repeated.view.history).toEqual(before.view.history);
       await page.getByTestId("section-loop-loop-section-1").click();
-      await expect.poll(async () => (await snapshot(page)).audio.transport.loop?.start.numerator).toBe(4);
+      await expect.poll(() => page.evaluate(() => window.__JCPE_LOOP__.snapshot().audio.transport.loop?.start.numerator)).toBe(4);
       const section = await observe("section");
       const sectionPlan = section.bindings.at(-1)?.plan; if (!sectionPlan) throw new Error("Missing live section binding");
       expect(sectionPlan.events.every(e => e.sectionId === "loop-section-1")).toBe(true);
@@ -84,16 +88,16 @@ for (const mode of ["file", "http"] as const) for (const width of [1280, 390]) t
       const settings = page.getByRole("button", { name: /Sound settings/ }).filter({ visible: true });
       if (!(await page.getByRole("combobox", { name: "Groove", exact: true }).filter({ visible: true }).count()) && await settings.count()) await settings.first().click();
       await page.getByRole("combobox", { name: "Groove", exact: true }).filter({ visible: true }).first().selectOption("bossa-nova@1");
-      await expect.poll(async () => (await snapshot(page)).bindings.at(-1)?.action).toBe("groove");
+      await expect.poll(() => page.evaluate(() => window.__JCPE_LOOP__.snapshot().bindings.at(-1)?.action)).toBe("groove");
       const groove = await observe("live-groove");
       const groovePlan = groove.bindings.at(-1)?.plan; if (!groovePlan) throw new Error("Missing groove binding");
       expect(groovePlan.loopTicks).toEqual(sectionPlan.loopTicks); expect(groovePlan.events).not.toEqual(sectionPlan.events);
       expect(groovePlan.events.some(e => e.midiPitches.length === 1)).toBe(true);
       await page.getByRole("combobox", { name: "Instrument", exact: true }).filter({ visible: true }).first().selectOption("vibraphone");
-      await expect.poll(async () => (await snapshot(page)).audio.transport.instrumentId).toBe("vibraphone");
+      await expect.poll(() => page.evaluate(() => window.__JCPE_LOOP__.snapshot().audio.transport.instrumentId)).toBe("vibraphone");
       const close = page.getByRole("button", { name: /^Close / }).filter({ visible: true }); if (await close.count()) await close.first().click();
       await page.locator("#studio-transport-stop").click();
-      await expect.poll(async () => (await snapshot(page)).outcomes.filter(o => o.action === "stop").length).toBeGreaterThan(0);
+      await expect.poll(() => page.evaluate(() => window.__JCPE_LOOP__.snapshot().outcomes.filter(o => o.action === "stop").length)).toBeGreaterThan(0);
       const stopped = await observe("stopped");
       const stop = [...stopped.outcomes].reverse().find(o => o.action === "stop")?.outcome;
       expect(stop?.termination).toBe("receipt"); if (stop?.termination === "receipt") expect(stop.noFutureAttackPostcondition).toBe(true);
@@ -107,8 +111,15 @@ for (const mode of ["file", "http"] as const) for (const width of [1280, 390]) t
       expect(disposed.audio.engine.registryIndexCounts.totalReferences).toBe(0); expect(disposed.nativeListeners).toBe(0);
       expect(disposed.outcomes.every(row => row.outcome.termination === "receipt")).toBe(true);
       expect(errors).toEqual([]); expect(pageErrors).toEqual([]); expect(requests.filter(r => !r.allowed)).toEqual([]);
+      completed = true;
     } finally {
-      if (!page.isClosed()) await observe("final");
+      // Success already records the fully asserted disposed snapshot. On a
+      // failure retain a final observation where possible, and still attach
+      // the preceding evidence if the browser/context has already stopped.
+      if (!completed && !page.isClosed()) {
+        try { await observe("final"); }
+        catch (error) { errors.push(`Failure snapshot unavailable: ${error instanceof Error ? error.message : String(error)}`); }
+      }
       await info.attach("loop-arrangement-evidence", { body: JSON.stringify({ schema: "changes.loop-arrangement.native.v1", mode, width,
         sha256, sourceDigest: process.env["JCPE_LOOP_INPUT_DIGEST"], browser: browser.version(), node: process.version,
         retry: info.retry, errors, pageErrors, requests, stages }), contentType: "application/json" });

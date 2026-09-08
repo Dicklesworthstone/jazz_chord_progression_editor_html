@@ -34,7 +34,6 @@ const HARNESS_PATH_ENV = "JCPE_U2_EVIDENCE_HARNESS_PATH";
 const HARNESS_SHA256_ENV = "JCPE_U2_EVIDENCE_HARNESS_SHA256";
 const INPUT_DIGEST_ENV = "JCPE_U2_EVIDENCE_INPUT_DIGEST";
 const HARNESS_DOCUMENT_URL = "https://u2-inspector.evidence.localhost/";
-const STATUS_POLL_TIMEOUT_MS = 15_000;
 
 const CHART_TEXT = "| Cmaj7 | Fmaj7 | Dm7 G7 | Cmaj7 | Em7 A7 | Dm7 G7 | Cmaj7 | Cmaj7 |";
 
