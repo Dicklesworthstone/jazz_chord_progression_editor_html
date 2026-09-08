@@ -32,8 +32,11 @@ or human-acceptance task.
   - [ ] Review the pinned Rust toolchain and plucked_v2 cancellation changes with the owner.
   - [ ] Build the correct WASM and refresh every affected exact-input acceptance replay.
   - [ ] Pass unchanged model, instrument-quality and real playback/recovery gates.
-- [ ] Repair actual-suite admission (`jcpe-browser-suite-admission-0nyi`).
-  - [ ] Write independent idle-cache-path/active-suite refusal twins first.
+- [ ] Repair actual-suite admission (`jcpe-browser-suite-admission-0nyi`, claimed CodexRuntime).
+  - [x] Write independent idle-cache-path/active-suite refusal twins first (15 process vectors, ancestor and orphan cases).
+  - [ ] Implement native Node-owned atomic admission shared by supported launchers; remove substring-only checks.
+  - [ ] Prove two simultaneous real-process entrants, wrapper reaping, normal/error release and planted negatives.
+  - [ ] Pass targeted tests, full typecheck/lint and one honest aggregate invocation.
   - [ ] Preserve foreign processes and prove atomic admission, child lifetime and cleanup.
   - [ ] Run one honest aggregate and retain its actual next failure or complete result.
 - [ ] Repair29 publication findings through np17's existing owned leaf and named gates.
