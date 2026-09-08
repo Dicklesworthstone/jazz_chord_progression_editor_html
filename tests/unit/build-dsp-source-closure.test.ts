@@ -88,17 +88,20 @@ describe("DSP source-closure ledger", () => {
     expect(comparison.recordedClosureSha256).toBe("a".repeat(64));
   });
 
-  test("comparator reports ledger-absent for a pre-ledger pin (the current checked-in module)", async () => {
+  test("comparator reports ledger-absent for an independently authored pre-ledger module", async () => {
+    const live = await computeDspSourceClosure();
+    const preLedger = 'export const CONCERT_GRAND_WASM_SHA256 = "' + "0".repeat(64) + '";';
+    expect(compareDspSourceClosure(preLedger, live)).toEqual({ outcome: "ledger-absent" });
+  });
+
+  test("the checked-in payload ledger matches every live DSP source and toolchain pin", async () => {
     const live = await computeDspSourceClosure();
     const checkedIn = await Bun.file(
       "src/audio/wasm/concert-grand-wasm.ts",
     ).text();
-    /* This assertion is INTENTIONALLY bound to the current repository state:
-     * when the payload is next re-pinned with the ledger included, this
-     * expectation must flip to "match" (or "drift" if sources moved again) in
-     * the same change — forcing the re-pin to acknowledge the ledger. */
-    expect(compareDspSourceClosure(checkedIn, live).outcome).toBe(
-      "ledger-absent",
-    );
+    expect(compareDspSourceClosure(checkedIn, live)).toEqual({
+      outcome: "match",
+      closureSha256: live.closureSha256,
+    });
   });
 });

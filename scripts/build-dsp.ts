@@ -198,7 +198,7 @@ async function run(): Promise<void> {
 
   const rustcVersion = (
     await new Response(
-      Bun.spawn(["rustc", "--version"], { stdout: "pipe" }).stdout,
+      Bun.spawn(["rustc", "--version"], { cwd: crateDir, stdout: "pipe" }).stdout,
     ).text()
   ).trim();
 

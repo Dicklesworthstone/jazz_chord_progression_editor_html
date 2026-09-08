@@ -1454,6 +1454,33 @@ function createAudioEngineInternal(
    * here blocks the scheduler and makes an already-late attack miss its own
    * deadline; cooperative preparation is the only path allowed to compute
    * the buffer. */
+  function cachedPluckedBufferForWindow(
+    recipe: AudioRenderedInstrumentRecipe,
+    requestedSeconds: number,
+    keyForSeconds: (seconds: number) => string,
+  ): AudioBufferPort | null {
+    const seconds = bucketRenderSecondsForRecipe(requestedSeconds, recipe);
+    const cache = recipeBufferCache(recipe.id);
+    const cached = touchRenderedBufferEntry(cache, keyForSeconds(seconds));
+    if (cached !== undefined) return cached.buffer;
+
+    // Subtracting absolute audio-clock endpoints can move an exact prepared
+    // boundary a few ULPs into the next bucket. The renderer rounds its window
+    // to PCM frames. Reuse only the adjacent bucket when both windows name
+    // the same frame count at that buffer's actual physical sample rate.
+    // Attack/release times and every other cache-key field remain unchanged;
+    // a genuinely longer response still requires its own prepared buffer.
+    const index = PLUCKED_RENDER_SECONDS_BUCKETS.findIndex(bucket => bucket === seconds);
+    const previousSeconds = PLUCKED_RENDER_SECONDS_BUCKETS[index - 1];
+    if (previousSeconds === undefined) return null;
+    const previousKey = keyForSeconds(previousSeconds);
+    const previous = cache.get(previousKey);
+    if (previous === undefined ||
+        Math.round(requestedSeconds * previous.buffer.sampleRate) !==
+          Math.round(previousSeconds * previous.buffer.sampleRate)) return null;
+    return touchRenderedBufferEntry(cache, previousKey)?.buffer ?? null;
+  }
+
   function cachedRenderedChordBufferFor(
     recipe: AudioRenderedInstrumentRecipe,
     voices: readonly RenderedChordVoice[],
@@ -1462,10 +1489,8 @@ function createAudioEngineInternal(
     if (voices.length < 2) return null;
     const chordRenderer = rendererForAlgorithm(recipe.renderer.algorithmId);
     if (chordRenderer?.renderChord === undefined) return null;
-    const seconds = bucketRenderSecondsForRecipe(requestedSeconds, recipe);
-    const key = renderedChordBufferKey(recipe, chordRenderer, voices, seconds);
-    const cached = touchRenderedBufferEntry(recipeBufferCache(recipe.id), key);
-    return cached?.buffer ?? null;
+    return cachedPluckedBufferForWindow(recipe, requestedSeconds, seconds =>
+      renderedChordBufferKey(recipe, chordRenderer, voices, seconds));
   }
 
   /** One-note PLK2 attacks obey the same cache-only deadline law as chords.
@@ -1477,16 +1502,13 @@ function createAudioEngineInternal(
     voice: RenderedChordVoice,
     requestedSeconds: number,
   ): AudioBufferPort | null {
-    const seconds = bucketRenderSecondsForRecipe(requestedSeconds, recipe);
-    const key = renderedBufferKey(
+    return cachedPluckedBufferForWindow(recipe, requestedSeconds, seconds => renderedBufferKey(
       recipe.id,
       voice.midiPitch,
       voice.velocity,
       seconds,
       voice.physicalGesture,
-    );
-    const cached = touchRenderedBufferEntry(recipeBufferCache(recipe.id), key);
-    return cached?.buffer ?? null;
+    ));
   }
 
   let reportedContextState: AudioContextStatePort | "absent" = "absent";
