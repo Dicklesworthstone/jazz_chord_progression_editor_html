@@ -61,6 +61,9 @@ for (const viewport of [{ width: 1280, height: 720 }, { width: 390, height: 844 
         if (scenario === "edit-during-search" || scenario === "stop-during-search") {
           await page.getByRole("button", { name: "Long search", exact: true }).click();
           await expect.poll(() => page.evaluate(() => window.__JCPE_DISCOVERY__.snapshot().job.status)).toBe("running");
+          // Running precedes the first MessageChannel turn. Exercise input
+          // during actual search work, not the startup scheduling interval.
+          await expect.poll(() => page.evaluate(() => window.__JCPE_DISCOVERY__.snapshot().expansions)).toBeGreaterThan(0);
           await page.getByLabel("Scratch note", { exact: true }).fill("Input remains responsive");
           const busy = await observe("busy");
           expect(busy.inputWhileBusy).toBe(true); expect(busy.expansions).toBeGreaterThan(0);
