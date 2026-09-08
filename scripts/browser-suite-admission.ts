@@ -13,16 +13,23 @@ export type SuiteProcess = Readonly<{
 
 export function isBrowserSuiteProcess(argv: readonly string[]): boolean {
   const executable = basename(argv[0] ?? "");
-  if (/^(?:node|nodejs|bun)$/u.test(executable) &&
-      !argv.some(arg => ["-e", "--eval", "-p", "--print"].includes(arg))) {
-    for (let index = 1; index < argv.length; index += 1) {
-      const arg = argv[index] ?? "", rest = argv.slice(index + 1);
-      if (/(?:^|\/)(?:@playwright\/test|playwright)\/cli\.js$/u.test(arg)) return rest[0] === "test";
-      if (/(?:^|\/)run-playwright\.ts$/u.test(arg)) return rest[0] === "test";
-      if (/(?:^|\/)run-node-tool\.ts$/u.test(arg)) return rest[0] === "playwright" && rest[1] === "test";
-      if (/(?:^|\/)check-predeploy-playback\.ts$/u.test(arg)) return true;
-      if (/\/playwright\/lib\/common\/process\.js$/u.test(arg)) return true;
+  if (/^(?:node|nodejs)$/u.test(executable)) {
+    let index = 1;
+    const valueFlags = new Set(["-r", "--require", "--import", "--loader", "--experimental-loader",
+      "--conditions", "-C", "--env-file", "--env-file-if-exists", "--inspect-port"]);
+    while ((argv[index] ?? "").startsWith("-")) {
+      const arg = argv[index++] ?? "";
+      if (["-e", "--eval", "-p", "--print"].includes(arg)) return false;
+      if (arg === "--") break;
+      if (valueFlags.has(arg)) index += 1;
     }
+    // Inspect the program being executed, not a CLI path passed as data to
+    // our admission bootstrap. Counting waiting bootstraps/Bun wrappers as
+    // active suites would cause two honest contenders to refuse each other.
+    const arg = argv[index] ?? "", rest = argv.slice(index + 1);
+    if (/(?:^|\/)(?:@playwright\/test|playwright)\/cli\.js$/u.test(arg)) return rest[0] === "test";
+    if (/(?:^|\/)check-predeploy-playback\.ts$/u.test(arg)) return true;
+    if (/\/playwright\/lib\/(?:common\/process|worker\/workerProcessEntry)\.js$/u.test(arg)) return true;
   }
   // Reparented browser children still consume the lane after a runner dies.
   // Cache paths and --remote-debugging-pipe alone also occur in unrelated tools.
@@ -57,7 +64,8 @@ export async function browserProcessSnapshot(): Promise<SuiteProcess[]> {
           const before = first.slice(first.lastIndexOf(")") + 2).split(" ");
           const after = last.slice(last.lastIndexOf(")") + 2).split(" ");
           // A PID can exit and be reused between reads. No stale identity is admitted.
-          if (before[19] !== after[19] || after[0] === "Z" || argv.length === 0) return undefined;
+          if (before[19] !== after[19]) throw new Error(`BROWSER_SUITE_IDENTITY_CHANGED: process ${id} was reused during inventory; run again after it settles`);
+          if (after[0] === "Z" || argv.length === 0) return undefined;
           const parentPid = Number(after[1]), started = after[19];
           if (!Number.isSafeInteger(parentPid) || started === undefined) throw new Error(`Malformed process stat: ${id}`);
           return { pid: Number(id), parentPid, started, argv };
@@ -85,6 +93,9 @@ export async function assertBrowserLaneFree(): Promise<void> {
 }
 
 export async function acquireBrowserSuite(port = BROWSER_SUITE_PORT): Promise<Readonly<{ port: number; release(): Promise<void> }>> {
+  if (Object.hasOwn(process.versions, "bun") || !/^(?:22|24|26)\./u.test(process.versions.node)) {
+    throw new Error("BROWSER_SUITE_NODE: acquisition requires real Node 22, 24 or 26");
+  }
   // The actual Node suite process owns this socket, not a parent Bun wrapper.
   // The kernel releases it on normal exit, errors and SIGKILL, without PID reuse
   // hazards. Admission of cooperating launchers is atomic; visible external
@@ -92,7 +103,7 @@ export async function acquireBrowserSuite(port = BROWSER_SUITE_PORT): Promise<Re
   // program starting after the scan cannot be serialized by this protocol.
   const server = createServer(socket => socket.destroy());
   await new Promise<void>((resolve, reject) => {
-    server.once("error", error => reject(new Error(`BROWSER_SUITE_BUSY: cannot acquire host lane ${String(port)}; wait for its owner. ${error.message}`)));
+    server.once("error", error => { reject(new Error(`BROWSER_SUITE_BUSY: cannot acquire host lane ${String(port)}; wait for its owner. ${error.message}`)); });
     server.listen({ port, host: "127.0.0.1", exclusive: true }, resolve);
   });
   const release = (): Promise<void> => new Promise((resolve, reject) => {

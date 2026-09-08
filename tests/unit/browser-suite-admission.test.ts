@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { isBrowserSuiteProcess, unrelatedBrowserSuites } from "../../scripts/browser-suite-admission";
+import { rejects } from "node:assert/strict";
+import { acquireBrowserSuite, isBrowserSuiteProcess, unrelatedBrowserSuites } from "../../scripts/browser-suite-admission";
 import { PROCESS_CASES } from "../fixtures/browser-suite-admission/processes";
 
 describe("browser suite admission identity", () => {
@@ -27,4 +28,13 @@ describe("browser suite admission identity", () => {
     const orphan = { pid: 20, parentPid: 1, started: "123", argv: ["node", "/r/node_modules/playwright/lib/common/process.js"] };
     expect(unrelatedBrowserSuites([orphan], 99)).toEqual([orphan]);
   });
+  test("arguments to the admission bootstrap are not an already executing CLI", () => {
+    expect(isBrowserSuiteProcess(["node", "/r/test-results/browser-suite-runner-a/runner.mjs",
+      "/r/node_modules/@playwright/test/cli.js", "test"])).toBe(false);
+  });
+
+  test("Bun cannot acquire the real Node browser lane", async () => {
+    await rejects(acquireBrowserSuite(), /BROWSER_SUITE_NODE/u);
+  });
+
 });

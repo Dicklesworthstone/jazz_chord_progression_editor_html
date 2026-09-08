@@ -1,4 +1,4 @@
-import { mkdtemp, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { findRealNode } from "./toolchain-doctor";
 
@@ -29,10 +29,10 @@ export async function runNodeTool(
     if (!built.success || built.outputs.length !== 1 || output === undefined) {
       throw new Error(`BROWSER_SUITE_BUILD: ${built.logs.map(log => log.message).join("\n")}`);
     }
-    // Keep the exact launcher beside test evidence. Unique directories avoid
+    // Keep the exact launcher outside Playwright's default output cleanup. Unique directories avoid
     // concurrent writers and remain ignored; no shared source file is rewritten.
-    await import("node:fs/promises").then(fs => fs.mkdir("test-results", { recursive: true }));
-    const directory = await mkdtemp(resolve("test-results/browser-suite-runner-"));
+    await mkdir(".tmp", { recursive: true });
+    const directory = await mkdtemp(resolve(".tmp/browser-suite-runner-"));
     const runner = resolve(directory, "runner.mjs");
     await writeFile(runner, await output.text());
     launch = [runtime.path, runner, resolve(entrypoint), ...args];
