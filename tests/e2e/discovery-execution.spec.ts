@@ -43,8 +43,8 @@ for (const viewport of [{ width: 1280, height: 720 }, { width: 390, height: 844 
         const actual = await snapshot(page); observations.push({ phase, actual }); return actual;
       };
       const retired = async (): Promise<void> => {
-        await expect.poll(async () => (await snapshot(page)).audio.engine.progressionNonreleasingVoiceCount).toBe(0);
-        await expect.poll(async () => (await snapshot(page)).audio.engine.previewNonreleasingVoiceCount).toBe(0);
+        await expect.poll(() => page.evaluate(() => window.__JCPE_DISCOVERY__.snapshot().audio.engine.progressionNonreleasingVoiceCount)).toBe(0);
+        await expect.poll(() => page.evaluate(() => window.__JCPE_DISCOVERY__.snapshot().audio.engine.previewNonreleasingVoiceCount)).toBe(0);
       };
       let booted = false;
       try {
@@ -53,14 +53,14 @@ for (const viewport of [{ width: 1280, height: 720 }, { width: 390, height: 844 
         const before = await observe("before");
         expect(before.revision).toBe(5); expect(before.historyEntries).toBe(2);
         await page.getByRole("button", { name: "Play & preview", exact: true }).click();
-        await expect.poll(async () => (await snapshot(page)).audio.engine.previewNonreleasingVoiceCount).toBeGreaterThan(0);
-        await expect.poll(async () => (await snapshot(page)).audio.engine.progressionNonreleasingVoiceCount).toBeGreaterThan(0);
+        await expect.poll(() => page.evaluate(() => window.__JCPE_DISCOVERY__.snapshot().audio.engine.previewNonreleasingVoiceCount)).toBeGreaterThan(0);
+        await expect.poll(() => page.evaluate(() => window.__JCPE_DISCOVERY__.snapshot().audio.engine.progressionNonreleasingVoiceCount)).toBeGreaterThan(0);
         const playing = await observe("playing");
         expect(playing.native.contexts).toBe(1); expect(playing.errors).toEqual([]);
 
         if (scenario === "edit-during-search" || scenario === "stop-during-search") {
           await page.getByRole("button", { name: "Long search", exact: true }).click();
-          await expect.poll(async () => (await snapshot(page)).job.status).toBe("running");
+          await expect.poll(() => page.evaluate(() => window.__JCPE_DISCOVERY__.snapshot().job.status)).toBe("running");
           await page.getByLabel("Scratch note", { exact: true }).fill("Input remains responsive");
           const busy = await observe("busy");
           expect(busy.inputWhileBusy).toBe(true); expect(busy.expansions).toBeGreaterThan(0);
@@ -69,7 +69,14 @@ for (const viewport of [{ width: 1280, height: 720 }, { width: 390, height: 844 
             await page.getByLabel("Chart title", { exact: true }).fill("An edit during discovery");
             await page.getByRole("button", { name: "Edit title", exact: true }).click();
           } else await page.getByRole("button", { name: "Stop", exact: true }).click();
-          await expect.poll(async () => (await snapshot(page)).startResult?.ok === true && (await snapshot(page)).job.status === "finished").toBe(true);
+          // Poll the unchanged predicate in one browser turn. Transferring two
+          // multi-megabyte journals exhausted the polling deadline even when
+          // both snapshots already said stale/finished. Named observations
+          // below still retain the complete journal and all evidence fields.
+          await expect.poll(() => page.evaluate(() => {
+            const current = window.__JCPE_DISCOVERY__.snapshot();
+            return current.startResult?.ok === true && current.job.status === "finished";
+          })).toBe(true);
           const ended = await observe("search-ended");
           expect(ended.startResult?.ok && ended.startResult.result.kind).toBe(scenario === "edit-during-search" ? "stale" : "cancelled");
           expect(ended.expansions).toBeLessThan(16384);
@@ -82,13 +89,13 @@ for (const viewport of [{ width: 1280, height: 720 }, { width: 390, height: 844 
         } else {
           if (scenario !== "apply-undo") await page.getByLabel("Hold Apply after real Stop", { exact: true }).check();
           await page.getByRole("button", { name: "Find option", exact: true }).click();
-          await expect.poll(async () => (await snapshot(page)).job.status).toBe("ready");
+          await expect.poll(() => page.evaluate(() => window.__JCPE_DISCOVERY__.snapshot().job.status)).toBe("ready");
           const ready = await observe("ready");
           expect(ready.expansions).toBe(3); expect(ready.startResult?.ok && ready.startResult.result.kind).toBe("complete");
           expect(ready.documentBytes).toBe(before.documentBytes); expect(ready.historyEntries).toBe(2);
           await page.getByRole("button", { name: "Apply option", exact: true }).click();
           if (scenario !== "apply-undo") {
-            await expect.poll(async () => (await snapshot(page)).native.retirementHeld).toBe(true);
+            await expect.poll(() => page.evaluate(() => window.__JCPE_DISCOVERY__.snapshot().native.retirementHeld)).toBe(true);
             await retired();
             const held = await observe("retirement-held");
             expect(held.job.publicationAttempts).toBe(1); expect(held.job.retainedBytes).toBeGreaterThan(0);
@@ -103,7 +110,7 @@ for (const viewport of [{ width: 1280, height: 720 }, { width: 390, height: 844 
             }
             await page.getByRole("button", { name: "Continue Apply", exact: true }).click();
           }
-          await expect.poll(async () => (await snapshot(page)).applyResult?.kind).toBe(
+          await expect.poll(() => page.evaluate(() => window.__JCPE_DISCOVERY__.snapshot().applyResult?.kind)).toBe(
             scenario === "apply-undo" ? "committed" : scenario === "edit-during-retirement" ? "stale" : "cancelled");
           const applied = await observe("apply-ended");
           expect(applied.revision).toBe(scenario === "stop-during-retirement" ? 5 : 6);
@@ -131,7 +138,7 @@ for (const viewport of [{ width: 1280, height: 720 }, { width: 390, height: 844 
       } finally {
         if (booted) {
           await page.evaluate(async () => { await window.__JCPE_DISCOVERY__.dispose(); });
-          await expect.poll(async () => (await snapshot(page)).job.publicationAttempts).toBe(0);
+          await expect.poll(() => page.evaluate(() => window.__JCPE_DISCOVERY__.snapshot().job.publicationAttempts)).toBe(0);
           const cleaned = await observe("disposed");
           await writeFile(info.outputPath("observations.json"), JSON.stringify({ schema: "changes.evidence.discovery-native.v1",
             runId, scenario, viewport, browserName, browserVersion: browser.version(), nodeVersion: process.version,
