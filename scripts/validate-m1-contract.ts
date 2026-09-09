@@ -16,6 +16,7 @@
 import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { checkKeyAmbiguity, type KeyAmbiguityFamily } from "./m1-key-ambiguity-reference";
 
 import {
   M1_AUTOMATION_CONTRACT_SCHEMA,
@@ -1442,6 +1443,7 @@ const FAMILY_FILES = [
   "classification-cases.json",
   "segmentation-cases.json",
   "key-cases.json",
+  "key-ambiguity-cases.json",
   "rerank-cases.json",
   "groove-cases.json",
   "transfer-cases.json",
@@ -1477,6 +1479,9 @@ for (const file of FAMILY_FILES) {
 checkClassification(families["classification-cases"] as ClassificationFamily);
 checkSegmentation(families["segmentation-cases"] as SegmentationFamily);
 checkKeys(families["key-cases"] as KeyFamily);
+for (const detail of checkKeyAmbiguity(families["key-ambiguity-cases"] as KeyAmbiguityFamily)) {
+  fail("key-ambiguity", "key-ambiguity-cases.json", detail);
+}
 checkRerank(families["rerank-cases"] as RerankFamily);
 checkGroove(families["groove-cases"] as GrooveFamily);
 checkTransfer(families["transfer-cases"] as TransferFamily);

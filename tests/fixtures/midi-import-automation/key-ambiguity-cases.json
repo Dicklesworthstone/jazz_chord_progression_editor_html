@@ -1,0 +1,301 @@
+{
+  "schema": "changes.import.key-ambiguity-fixtures.v1",
+  "provenance": "Original synthetic integer histograms; expected scores and tied sets independently computed from the two literal profile rows, never from production inference. Uniform minor total 40 vs major 37; adding one unit at C gives 48 vs 47. Repeated supports have periods 2, 4 and 3. Every case requires all twelve rotations and inverse rotations.",
+  "cases": [
+    {
+      "name": "zero-mass",
+      "masses": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "score": null,
+      "runnerUpScore": null,
+      "tiedKeys": []
+    },
+    {
+      "name": "uniform-all-tonics",
+      "masses": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "score": 40,
+      "runnerUpScore": 40,
+      "tiedKeys": [
+        {
+          "tonicPitchClass": 0,
+          "mode": "minor"
+        },
+        {
+          "tonicPitchClass": 1,
+          "mode": "minor"
+        },
+        {
+          "tonicPitchClass": 2,
+          "mode": "minor"
+        },
+        {
+          "tonicPitchClass": 3,
+          "mode": "minor"
+        },
+        {
+          "tonicPitchClass": 4,
+          "mode": "minor"
+        },
+        {
+          "tonicPitchClass": 5,
+          "mode": "minor"
+        },
+        {
+          "tonicPitchClass": 6,
+          "mode": "minor"
+        },
+        {
+          "tonicPitchClass": 7,
+          "mode": "minor"
+        },
+        {
+          "tonicPitchClass": 8,
+          "mode": "minor"
+        },
+        {
+          "tonicPitchClass": 9,
+          "mode": "minor"
+        },
+        {
+          "tonicPitchClass": 10,
+          "mode": "minor"
+        },
+        {
+          "tonicPitchClass": 11,
+          "mode": "minor"
+        }
+      ]
+    },
+    {
+      "name": "whole-tone-symmetry",
+      "masses": [
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0
+      ],
+      "score": 22,
+      "runnerUpScore": 22,
+      "tiedKeys": [
+        {
+          "tonicPitchClass": 1,
+          "mode": "minor"
+        },
+        {
+          "tonicPitchClass": 3,
+          "mode": "minor"
+        },
+        {
+          "tonicPitchClass": 5,
+          "mode": "minor"
+        },
+        {
+          "tonicPitchClass": 7,
+          "mode": "minor"
+        },
+        {
+          "tonicPitchClass": 9,
+          "mode": "minor"
+        },
+        {
+          "tonicPitchClass": 11,
+          "mode": "minor"
+        }
+      ]
+    },
+    {
+      "name": "augmented-cross-mode-symmetry",
+      "masses": [
+        1,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      "score": 14,
+      "runnerUpScore": 14,
+      "tiedKeys": [
+        {
+          "tonicPitchClass": 0,
+          "mode": "major"
+        },
+        {
+          "tonicPitchClass": 4,
+          "mode": "major"
+        },
+        {
+          "tonicPitchClass": 8,
+          "mode": "major"
+        },
+        {
+          "tonicPitchClass": 1,
+          "mode": "minor"
+        },
+        {
+          "tonicPitchClass": 5,
+          "mode": "minor"
+        },
+        {
+          "tonicPitchClass": 9,
+          "mode": "minor"
+        }
+      ]
+    },
+    {
+      "name": "diminished-symmetry",
+      "masses": [
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      "score": 17,
+      "runnerUpScore": 17,
+      "tiedKeys": [
+        {
+          "tonicPitchClass": 0,
+          "mode": "minor"
+        },
+        {
+          "tonicPitchClass": 3,
+          "mode": "minor"
+        },
+        {
+          "tonicPitchClass": 6,
+          "mode": "minor"
+        },
+        {
+          "tonicPitchClass": 9,
+          "mode": "minor"
+        }
+      ]
+    },
+    {
+      "name": "single-pitch-cross-mode-tie",
+      "masses": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "score": 8,
+      "runnerUpScore": 8,
+      "tiedKeys": [
+        {
+          "tonicPitchClass": 0,
+          "mode": "major"
+        },
+        {
+          "tonicPitchClass": 0,
+          "mode": "minor"
+        }
+      ]
+    },
+    {
+      "name": "unique-major",
+      "masses": [
+        8,
+        0,
+        4,
+        0,
+        6,
+        5,
+        0,
+        7,
+        0,
+        4,
+        0,
+        3
+      ],
+      "score": 211,
+      "runnerUpScore": 196,
+      "tiedKeys": [
+        {
+          "tonicPitchClass": 0,
+          "mode": "major"
+        }
+      ]
+    },
+    {
+      "name": "one-unit-near-tie",
+      "masses": [
+        2,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "score": 48,
+      "runnerUpScore": 47,
+      "tiedKeys": [
+        {
+          "tonicPitchClass": 0,
+          "mode": "minor"
+        }
+      ]
+    }
+  ]
+}

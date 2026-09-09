@@ -451,6 +451,29 @@ export type M1KeyInference = Readonly<{
   runnerUpScore: number;
 }> | null;
 
+/** Amendment #3: full evidence and the separately selected interpretation. */
+export type M1KeyChoice = Readonly<{
+  tonicPitchClass: PitchClass;
+  mode: "major" | "minor";
+}>;
+
+export type M1KeyEvidence = (NonNullable<M1KeyInference> & Readonly<{
+  tiedKeys: readonly M1KeyChoice[];
+}>) | null;
+
+export type M1KeySelection = Readonly<{
+  keySelection: M1KeyChoice | null;
+  keySelectionSource: "inferred" | "override" | "none";
+}>;
+
+export const M1_KEY_AMBIGUITY_POLICY = Object.freeze({
+  automaticSelection: "unique-optimum-only",
+  transpositionLaw: "all-maxima-set",
+  unresolvedFallback: "m0-ranking-and-spelling",
+  candidateLimit: 24,
+  scoreMultiplications: 288,
+} as const);
+
 export type M1GrooveChoice = Readonly<{
   grooveStyleId: string;
   row: number;
@@ -480,7 +503,7 @@ export type M1AlternativeChoice = Readonly<{
 }>;
 
 /**
- * The frozen three-override set (doc §12). Overrides re-run the pipeline
+ * The frozen override set (doc §12, including amendment #3 key choice). Overrides re-run the pipeline
  * on the retained decoded model and never touch the document; quantization
  * grid and destination/section-name overrides are deferred, not lost.
  */
@@ -488,6 +511,7 @@ export type M1ImportOverrides = Readonly<{
   excludedTrackIndices: readonly number[];
   alternativeChoices: readonly M1AlternativeChoice[];
   grooveStyleId: GrooveStyleId | null;
+  key?: M1KeyChoice | null;
 }>;
 
 export const M1_EMPTY_IMPORT_OVERRIDES: M1ImportOverrides = Object.freeze({

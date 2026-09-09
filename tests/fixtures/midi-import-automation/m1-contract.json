@@ -27,6 +27,10 @@
       "sha256": "60ab44679ffdd26a7a536243ff59bb0a952c45cec35c13e21f63747ae5a62961"
     },
     {
+      "file": "key-ambiguity-cases.json",
+      "sha256": "784497b46c207c2b6ceba61ec8f5d78e0f082f564c8456f404bbb5913a8c1f07"
+    },
+    {
       "file": "rerank-cases.json",
       "sha256": "5de0aec3195962d6341601a64909266d14eeb5a020435187b42a7fae88cf144f"
     },

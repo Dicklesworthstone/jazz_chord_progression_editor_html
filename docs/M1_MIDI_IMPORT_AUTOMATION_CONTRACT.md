@@ -1,6 +1,7 @@
-# M1 — Automated MIDI Import Contract (proposed)
+# M1 — Automated MIDI Import Contract
 
-Status: **proposed** (spec phase of bead `jcpe-ionn`, epic `jcpe-765f`).
+Status: **frozen specification with amendment #3** (`jcpe-ionn`, epic `jcpe-765f`).
+Package acceptance and human listening remain separate from the specification.
 This is an **additive amendment** layered over the frozen M0 import contract
 (`src/export/midi-import-contract.ts`). Nothing in M0 is removed or altered:
 the strict total decoder, the salvage vocabulary, the refusal codes, the
@@ -178,13 +179,77 @@ Over the whole eligible stream (all spans' histograms summed), score the 24
 candidate keys (12 major, 12 minor) with the frozen integer profiles
 `M1_MAJOR_KEY_PROFILE` / `M1_MINOR_KEY_PROFILE` (contract module):
 `score(key) = Σ_pc totalMass(pc) · profile[(pc − tonic) mod 12]`.
-Highest score wins; ties break **major before minor**, then ascending tonic
-pitch class. The result is a `KeyContext` (tonic spelled per
-`M1_KEY_TONIC_SPELLINGS`, the flat-preferring table extended with the
-sharp-side exceptions listed in the module).
+Retain **every** maximum-score key in `tiedKeys`, ordered major before
+minor then ascending tonic pitch class for deterministic presentation. The
+legacy `tonicPitchClass` and `mode` fields name the first entry only; they
+are not certainty evidence. Zero eligible mass returns null, not 24 keys.
+`score` and `runnerUpScore` retain their original meanings (second candidate
+score, including ties). No score is a probability or listening judgment.
 
-Transposition equivariance is a law: shifting every input key by `k`
-semitones yields the transposed winner and identical tie-break behavior.
+Transposition equivariance applies to the **set** of tied keys: rotating
+masses by `k` rotates every tied tonic by `k`, preserving mode and scores.
+Presentation order is re-sorted after rotation and need not be equivariant.
+For a unique optimum, the single winner is equivariant as before. Uniform
+nonzero masses are unchanged by rotation: their 12 minor optima prove that
+an unqualified equivariant single winner is impossible. Preserve that
+counterexample and all valid unique-winner tests.
+
+#### Amendment #3: explicit key selection and uncertainty
+
+This amendment freezes the request/result/trace/UI contract. Production
+and native proof are required in addition to the independent specification
+fixtures; specification evidence alone does not certify the runtime repair.
+
+`M1KeyChoice` is `{ tonicPitchClass: PitchClass, mode: "major" | "minor" }`.
+`M1KeyEvidence` is null or the existing inference fields plus immutable
+`tiedKeys: readonly M1KeyChoice[]`. Non-null evidence has 1–24 distinct keys,
+all and only maxima. The plan retains this evidence independently of
+`keySelection: M1KeyChoice | null` and
+`keySelectionSource: "inferred" | "override" | "none"`.
+
+The request adds optional `key: M1KeyChoice | null` to `M1ImportOverrides`;
+missing/null means Automatic. A valid explicit choice selects any of the 24
+keys, even one outside the tied set. An invalid tonic/mode is dropped with
+an `invalid-key-override` trace decision, never clamped or repaired; normal
+automatic selection then applies. Without a valid override, exactly one
+maximum selects it; multiple maxima or zero mass select nothing. Track
+exclusions recompute evidence; explicit key choice persists until cleared.
+Selecting another file, discarding, or starting another batch clears it with
+the other overrides. Every override update preserves unrelated overrides.
+
+Only `keySelection` supplies contextual ranking, spelling and transfer.
+With no selection, retain M0 ranking/spelling and withhold the global key;
+do not fall through to the first tied entry. `keySpelled` derives from the
+selection using the reviewed spelling table. A starter may receive a unique
+inferred or explicitly chosen key; an occupied chart's key stays unchanged
+in both cases. Replanning mutates no document/history. The existing commit
+envelope, stated undo count and exact rollback laws still apply.
+
+The infer-key trace retains the mass digest, 24 scored candidates and all
+tied keys as individual `tied-key` decisions (outcome `<pc>/<mode>`), plus
+one `key-selection` decision naming the selected key or `none`, with reason
+`unique optimum`, `user override`, `ambiguous key`, or `zero eligible mass`.
+An invalid override adds its drop decision. Evidence is never replaced by
+the user's choice. Work remains 288 score multiplications and at most 24
+retained candidates; selection is a bounded scan, never a wall-time cutoff.
+
+The result card shows a unique key as “Suggested key”, an explicit choice
+as “Key chosen by you”, and ties as “Ambiguous key: N tied choices; no key
+will be applied automatically.” Advanced lists every tied spelling/mode and
+offers an accessible Key select with Automatic plus all 24 reviewed keys.
+Clearing the choice restores the ambiguity and withholding explanation.
+The occupied-destination explanation remains explicit. Do not say the app
+“heard” a key, invent confidence percentages, or hide ambiguity in the trace.
+
+Independent proof must include uniform, whole-tone, augmented, diminished,
+cross-mode ties, zero mass, unique optimum and one-score-unit near-tie;
+every case runs all 12 rotations and inverse rotations. Mutation controls
+must catch lost/extra ties, wrong mode, changed score, selecting a tied
+presentation entry, ignoring/repairing an override and loss on inverse
+rotation. Existing byte-pinned families remain unchanged. Native pipeline
+and browser proof must cover trace/card/Key control, clear, track exclusion,
+alternative/groove preservation, file/batch reset, starter/occupied transfer,
+Add and exact Undo. Musical listening remains separate human evidence.
 
 ### 4.2 Alternative re-ranking
 
@@ -204,7 +269,7 @@ degree set (F♯ major spells pc 5 as E♯, never F). In minor, the raised sixth
 and raised seventh share their natural degree's letter (F♯ and G♯ in A minor,
 never G♭ or A♭). Chromatic pitch classes fall back to the frozen M0 canonical
 flat table, as does any spelling that would need a triple accidental. When
-key inference is impossible (zero eligible mass), M0 spelling and ranking
+no key is selected (zero eligible mass or unresolved ties), M0 spelling and ranking
 apply unchanged.
 
 Proof obligations: all-24-keys fixture matrix; equivariance sweep; re-rank
@@ -220,7 +285,7 @@ Applied at commit, per this frozen truth table:
 |---|---|---|
 | tempo (file's first tempo entry, rounded per `makeTempoBpm`) | applied | **not** applied, stated |
 | meter (file's first meter entry) | applied | not applied, stated; explicit-duration fragments still refuse per A0 law and the card must predict that refusal *before* Add |
-| key (inferred, §4.1) | applied | not applied, stated |
+| key selection (unique inference or explicit override, §4.1) | applied only when selected; unresolved ties/zero mass withheld, stated | not applied, stated |
 | title (first non-empty track name of track 0, else file stem) | applied | not applied |
 | groove (§6) | applied | applied **only if** the document's stored groove is the canonical-absent default; an explicit user groove is never overridden, stated |
 
@@ -373,7 +438,8 @@ deterministic outcome — never a throw.
   family inventory with SHA-256 digests.
 - `classification-cases.json` — M1-ROLE positive/near-miss/adversarial.
 - `segmentation-cases.json` — M1-SEG spans, splits, silence, pickup, depth.
-- `key-cases.json` — M1-KEY winners, ties, equivariance pairs, spellings.
+- `key-cases.json` — preserved legacy presentation winners, ties, unique-winner equivariance and spellings.
+- `key-ambiguity-cases.json` — amendment #3 full tied sets, symmetric and near-tie masses, rotations/inverses and selection refusal controls.
 - `rerank-cases.json` — M1-KEY §4.2 orderings over M0 alternative lists.
 - `groove-cases.json` — M1-GROOVE per-row positives, near-misses, order.
 - `transfer-cases.json` — M1-XFER truth table + prediction + markers.
@@ -412,6 +478,7 @@ M1ImportOverrides = {
     span: { measureIndex: number, startTick: number },
     alternativeOrdinal: number,              // 0 = the automatic choice
   }[],                                       // ≤ M1_MAX_ALTERNATIVE_CHOICES
+  key?: M1KeyChoice | null,                 // amendment #3; null = Automatic
   grooveStyleId: GrooveStyleId | null,       // null = the automatic match
 }
 ```
