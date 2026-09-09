@@ -226,6 +226,61 @@ final class FrankenJazzUITests: XCTestCase {
         ).firstMatch.exists)
     }
 
+    func testMyChartsKeepsSearchesAndExposesEverySnapshotAction() throws {
+        let documentActions = app.buttons["Document actions"].firstMatch
+        XCTAssertTrue(documentActions.waitForExistence(timeout: 3))
+        documentActions.tap()
+
+        let openMyCharts = app.buttons["open-my-charts"]
+        XCTAssertTrue(openMyCharts.waitForExistence(timeout: 3))
+        XCTAssertTrue(openMyCharts.isHittable)
+        openMyCharts.tap()
+
+        let keep = app.buttons["my-charts-keep-current"]
+        XCTAssertTrue(keep.waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["No charts are kept yet"].exists)
+        keep.tap()
+        XCTAssertTrue(app.staticTexts.matching(
+            NSPredicate(format: "label CONTAINS 'explicit snapshot'")
+        ).firstMatch.waitForExistence(timeout: 3))
+
+        let search = app.searchFields.firstMatch
+        XCTAssertTrue(search.waitForExistence(timeout: 3))
+        search.tap()
+        search.typeText("Midnight")
+        XCTAssertTrue(app.staticTexts["Midnight laboratory"].waitForExistence(timeout: 3))
+        if app.keyboards.buttons["Search"].exists {
+            app.keyboards.buttons["Search"].tap()
+        }
+
+        let duplicate = app.buttons["my-charts-duplicate-selected"]
+        for _ in 0..<8 where !duplicate.isHittable { app.swipeUp() }
+        XCTAssertTrue(duplicate.waitForExistence(timeout: 3))
+        XCTAssertTrue(duplicate.isHittable)
+        XCTAssertTrue(app.buttons["my-charts-open-selected"].exists)
+        XCTAssertTrue(app.textFields["my-charts-rename-field"].exists)
+        XCTAssertTrue(app.buttons["Replace with current chart…"].exists)
+        XCTAssertTrue(app.buttons["Remove kept copy…"].exists)
+
+        duplicate.tap()
+        let actionMessage = app.descendants(matching: .any)["my-charts-action-feedback"]
+        XCTAssertTrue(actionMessage.waitForExistence(timeout: 3))
+        XCTAssertTrue(actionMessage.label.contains("fresh chart, bar, and chord identities"))
+
+        let open = app.buttons["my-charts-open-selected"]
+        for _ in 0..<4 where !open.isHittable { app.swipeUp() }
+        open.tap()
+        XCTAssertTrue(app.alerts.firstMatch.waitForExistence(timeout: 3))
+        XCTAssertTrue(app.alerts.buttons["Open chart"].exists)
+        XCTAssertTrue(app.alerts.buttons["Cancel"].exists)
+
+        let proof = XCTAttachment(screenshot: app.screenshot())
+        proof.name = "FrankenJazz iPhone My Charts complete actions"
+        proof.lifetime = .keepAlways
+        add(proof)
+        app.alerts.buttons["Cancel"].tap()
+    }
+
     func testChordInspectorExposesPersistedChordNoteEditor() throws {
         let firstChord = app.buttons.matching(
             NSPredicate(format: "label BEGINSWITH 'Measure 1, Cmaj9'")

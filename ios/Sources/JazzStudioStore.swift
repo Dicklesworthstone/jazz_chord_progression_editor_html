@@ -61,6 +61,7 @@ final class JazzStudioStore: ObservableObject {
     @Published private(set) var continuationIssue: String?
 
     let audio = JazzAudioEngine()
+    let myCharts: JazzMyChartsStore
 
     private var undoStack: [JazzChart] = []
     private var redoStack: [JazzChart] = []
@@ -77,10 +78,13 @@ final class JazzStudioStore: ObservableObject {
 
     init(
         recovery: JazzRecoveryStore = JazzRecoveryStore(),
-        theoryBridge: JazzTheoryBridge? = nil
+        theoryBridge: JazzTheoryBridge? = nil,
+        myCharts: JazzMyChartsStore? = nil
     ) {
         self.recovery = recovery
         self.theoryBridge = theoryBridge ?? JazzTheoryBridge()
+        let resetsUITestState = ProcessInfo.processInfo.arguments.contains("-ui-testing-reset")
+        self.myCharts = myCharts ?? JazzMyChartsStore(resetForUITesting: resetsUITestState)
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         encoder.dateEncodingStrategy = .iso8601
         decoder.dateDecodingStrategy = .iso8601
@@ -723,6 +727,26 @@ final class JazzStudioStore: ObservableObject {
             guard importFence.owns(importToken, currentRevision: revision) else { return }
             notice = "Import refused: \(error.localizedDescription)"
         }
+    }
+
+    /// Opens an exact kept snapshot through the studio's single document
+    /// replacement owner so playback, history, recovery, and selection cannot
+    /// drift apart. The revision fence binds the user's confirmation.
+    func openKeptChart(_ kept: JazzChart, expectedRevision: Int) {
+        guard revision == expectedRevision else {
+            myCharts.reportStaleOpen()
+            return
+        }
+        do {
+            try JazzDocumentValidator.validate(kept)
+        } catch {
+            notice = "Open refused: the kept chart no longer passes document validation. Your current chart is unchanged."
+            return
+        }
+        commit(kept, notice: "Opened kept chart “\(kept.title)”. Undo returns to the prior chart.")
+        draftText = kept.chartText
+        selectedChordID = kept.measures.first?.chords.first?.id
+        isDocumentPresented = false
     }
 
     private func applyParsedDraft(_ parsed: ParsedChart) {
