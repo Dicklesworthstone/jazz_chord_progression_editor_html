@@ -63,6 +63,14 @@ struct FrankenJazzApp: App {
                 Button("Stop") { store.audio.stop() }
                     .keyboardShortcut(".", modifiers: .command)
                 Toggle("Loop Chart", isOn: Binding(get: { store.audio.loops }, set: { store.audio.loops = $0 }))
+                Toggle(
+                    "One-Bar Count-In",
+                    isOn: Binding(get: { store.audio.countInEnabled }, set: store.audio.setCountInEnabled)
+                )
+                Toggle(
+                    "Metronome",
+                    isOn: Binding(get: { store.audio.metronomeEnabled }, set: store.audio.setMetronomeEnabled)
+                )
             }
             CommandMenu("Harmony") {
                 Button("Transpose Up a Semitone") { store.transpose(1) }

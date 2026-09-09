@@ -3,6 +3,13 @@ import Foundation
 
 @MainActor
 final class JazzAudioEngine: ObservableObject {
+    struct TransportClickPlan: Equatable, Sendable {
+        var leadInBeats: Double
+        var chartPhaseBeat: Double
+        var firstChartClickOffsetBeats: Double?
+        var firstChartClickIsAccent: Bool
+    }
+
     enum ChordStepDirection {
         case previous
         case next
@@ -24,6 +31,9 @@ final class JazzAudioEngine: ObservableObject {
     @Published var loops = false
     @Published private(set) var masterVolume = 0.78
     @Published private(set) var isMuted = false
+    @Published private(set) var countInEnabled = false
+    @Published private(set) var metronomeEnabled = false
+    @Published private(set) var isCountingIn = false
 
     private let engine = AVAudioEngine()
     private let player = AVAudioPlayerNode()
@@ -31,14 +41,22 @@ final class JazzAudioEngine: ObservableObject {
     /// therefore coexist with progression playback without seeking, pausing,
     /// replacing, or completing the main transport's scheduled buffer.
     private let previewPlayer = AVAudioPlayerNode()
+    /// Clicks own a third node so transport practice controls never rewrite
+    /// the chart render or interrupt inspector-note ownership.
+    private let clickPlayer = AVAudioPlayerNode()
     private var buffer: AVAudioPCMBuffer?
     private var scheduledBuffer: AVAudioPCMBuffer?
     private var scheduledPreviewBuffer: AVAudioPCMBuffer?
+    private var scheduledLeadInBuffer: AVAudioPCMBuffer?
+    private var scheduledClickBar: AVAudioPCMBuffer?
+    private var scheduledClickDelay: AVAudioPCMBuffer?
+    private var scheduledClickTail: AVAudioPCMBuffer?
     private var events: [PlaybackEvent] = []
     private var tempo = 120.0
     private var timer: Timer?
     private var playbackStart = Date()
     private var startingBeat = 0.0
+    private var activeLeadInBeats = 0.0
     private var generation = 0
     private var renderRequest = 0
     private var previewGeneration = 0
@@ -51,8 +69,10 @@ final class JazzAudioEngine: ObservableObject {
     init() {
         engine.attach(player)
         engine.attach(previewPlayer)
+        engine.attach(clickPlayer)
         engine.connect(player, to: engine.mainMixerNode, format: nil)
         engine.connect(previewPlayer, to: engine.mainMixerNode, format: nil)
+        engine.connect(clickPlayer, to: engine.mainMixerNode, format: nil)
         applyMixerVolume()
         previewPlayer.volume = 0.82
     }
@@ -65,6 +85,7 @@ final class JazzAudioEngine: ObservableObject {
         timer?.invalidate()
         player.stop()
         previewPlayer.stop()
+        clickPlayer.stop()
         engine.stop()
     }
 
@@ -121,7 +142,7 @@ final class JazzAudioEngine: ObservableObject {
         let signature = JazzAudioRenderer.signature(for: chart)
         let start = min(max(0, fromBeat), totalBeats)
         if buffer != nil, cacheSignature == signature {
-            startPlayer(atBeat: start)
+            startPlayer(atBeat: start, includeCountIn: true)
             return
         }
         state = .preparing
@@ -147,7 +168,7 @@ final class JazzAudioEngine: ObservableObject {
             }
             self.buffer = pcm
             self.cacheSignature = signature
-            self.startPlayer(atBeat: start)
+            self.startPlayer(atBeat: start, includeCountIn: true)
         }
     }
 
@@ -155,6 +176,7 @@ final class JazzAudioEngine: ObservableObject {
         guard state == .playing else { return }
         updatePlayhead()
         player.pause()
+        clickPlayer.pause()
         timer?.invalidate()
         state = .paused
     }
@@ -170,7 +192,14 @@ final class JazzAudioEngine: ObservableObject {
         cancelMainRender()
         timer?.invalidate()
         player.stop()
+        clickPlayer.stop()
         stopPreview()
+        scheduledLeadInBuffer = nil
+        scheduledClickBar = nil
+        scheduledClickDelay = nil
+        scheduledClickTail = nil
+        activeLeadInBeats = 0
+        isCountingIn = false
         playheadBeat = 0
         activeChordID = nil
         state = .ready
@@ -211,6 +240,39 @@ final class JazzAudioEngine: ObservableObject {
     func toggleMute() {
         isMuted.toggle()
         applyMixerVolume()
+    }
+
+    func setCountInEnabled(_ enabled: Bool) {
+        countInEnabled = enabled
+    }
+
+    func setMetronomeEnabled(_ enabled: Bool) {
+        metronomeEnabled = enabled
+        guard state == .playing, !isCountingIn else { return }
+        updatePlayhead()
+        clickPlayer.stop()
+        scheduledClickBar = nil
+        scheduledClickDelay = nil
+        scheduledClickTail = nil
+        guard enabled else { return }
+        _ = scheduleClicks(startBeat: playheadBeat, includeCountIn: false)
+    }
+
+    nonisolated static func transportClickPlan(
+        startBeat: Double,
+        countInEnabled: Bool,
+        metronomeEnabled: Bool
+    ) -> TransportClickPlan {
+        let safeStart = startBeat.isFinite ? max(0, startBeat) : 0
+        let phase = safeStart.truncatingRemainder(dividingBy: 4)
+        let roundedUp = ceil(safeStart - 0.000_001)
+        let nextBeat = max(safeStart, roundedUp)
+        return TransportClickPlan(
+            leadInBeats: countInEnabled ? 4 : 0,
+            chartPhaseBeat: phase,
+            firstChartClickOffsetBeats: metronomeEnabled ? nextBeat - safeStart : nil,
+            firstChartClickIsAccent: metronomeEnabled && Int(nextBeat.rounded()) % 4 == 0
+        )
     }
 
     /// Plays one bounded inspector note without touching any main-transport
@@ -324,7 +386,7 @@ final class JazzAudioEngine: ObservableObject {
         }
     }
 
-    private func startPlayer(atBeat beat: Double) {
+    private func startPlayer(atBeat beat: Double, includeCountIn: Bool = false) {
         guard let buffer else {
             state = .failed("No rendered chart is available.")
             return
@@ -336,6 +398,7 @@ final class JazzAudioEngine: ObservableObject {
             generation += 1
             try configureSession()
             player.stop()
+            clickPlayer.stop()
             let seconds = beat * 60 / tempo
             let startFrame = AVAudioFramePosition(seconds * buffer.format.sampleRate)
             let available = max(0, AVAudioFramePosition(buffer.frameLength) - startFrame)
@@ -350,6 +413,24 @@ final class JazzAudioEngine: ObservableObject {
                 return
             }
             scheduledBuffer = playable
+            let clickPlan = Self.transportClickPlan(
+                startBeat: beat,
+                countInEnabled: includeCountIn && countInEnabled,
+                metronomeEnabled: metronomeEnabled
+            )
+            activeLeadInBeats = clickPlan.leadInBeats
+            scheduledLeadInBuffer = nil
+            if activeLeadInBeats > 0 {
+                let leadInFrames = AVAudioFrameCount(
+                    (activeLeadInBeats * 60 / tempo * buffer.format.sampleRate).rounded()
+                )
+                guard let silence = makeSilence(format: buffer.format, frameCount: leadInFrames) else {
+                    state = .failed("The count-in buffer could not be prepared.")
+                    return
+                }
+                scheduledLeadInBuffer = silence
+                player.scheduleBuffer(silence, at: nil)
+            }
             let scheduledGeneration = generation
             player.scheduleBuffer(playable, at: nil) { [weak self] in
                 Task { @MainActor in
@@ -359,13 +440,68 @@ final class JazzAudioEngine: ObservableObject {
             }
             startingBeat = beat
             playheadBeat = beat
+            isCountingIn = activeLeadInBeats > 0
+            activeChordID = isCountingIn ? nil : events.last(where: { $0.startBeat <= beat })?.chordID
             playbackStart = Date()
+            guard scheduleClicks(startBeat: beat, includeCountIn: activeLeadInBeats > 0) else {
+                state = .failed("The metronome could not be prepared.")
+                return
+            }
             player.play()
             state = .playing
             installTimer()
         } catch {
             state = .failed(error.localizedDescription)
         }
+    }
+
+    private func makeSilence(format: AVAudioFormat, frameCount: AVAudioFrameCount) -> AVAudioPCMBuffer? {
+        guard frameCount > 0,
+              let silence = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount)
+        else { return nil }
+        silence.frameLength = frameCount
+        return silence
+    }
+
+    private func scheduleClicks(startBeat: Double, includeCountIn: Bool) -> Bool {
+        guard includeCountIn || metronomeEnabled else { return true }
+        guard let rendered = JazzAudioRenderer.renderTransportClickBar(tempoBPM: tempo),
+              let bar = makePCM(rendered)
+        else { return false }
+        scheduledClickBar = bar
+        scheduledClickDelay = nil
+        scheduledClickTail = nil
+
+        if includeCountIn {
+            clickPlayer.scheduleBuffer(bar, at: nil)
+        }
+        if metronomeEnabled {
+            let plan = Self.transportClickPlan(
+                startBeat: startBeat,
+                countInEnabled: false,
+                metronomeEnabled: true
+            )
+            if let delayBeats = plan.firstChartClickOffsetBeats, delayBeats > 0 {
+                let delayFrames = AVAudioFrameCount(
+                    (delayBeats * 60 / tempo * bar.format.sampleRate).rounded()
+                )
+                guard let delay = makeSilence(format: bar.format, frameCount: delayFrames) else { return false }
+                scheduledClickDelay = delay
+                clickPlayer.scheduleBuffer(delay, at: nil)
+            }
+            let firstClickBeat = startBeat + (plan.firstChartClickOffsetBeats ?? 0)
+            let phase = firstClickBeat.truncatingRemainder(dividingBy: 4)
+            let phaseFrame = AVAudioFrameCount(
+                (phase * 60 / tempo * bar.format.sampleRate).rounded()
+            )
+            if phaseFrame > 0, let tail = slice(bar, startingAt: phaseFrame) {
+                scheduledClickTail = tail
+                clickPlayer.scheduleBuffer(tail, at: nil)
+            }
+            clickPlayer.scheduleBuffer(bar, at: nil, options: .loops)
+        }
+        clickPlayer.play()
+        return true
     }
 
     private func slice(_ source: AVAudioPCMBuffer, startingAt start: AVAudioFrameCount) -> AVAudioPCMBuffer? {
@@ -391,8 +527,14 @@ final class JazzAudioEngine: ObservableObject {
 
     private func updatePlayhead() {
         guard state == .playing else { return }
-        playheadBeat = min(totalBeats, startingBeat + Date().timeIntervalSince(playbackStart) * tempo / 60)
-        updateActiveChord()
+        let elapsedBeats = Date().timeIntervalSince(playbackStart) * tempo / 60
+        isCountingIn = elapsedBeats < activeLeadInBeats
+        playheadBeat = min(totalBeats, startingBeat + max(0, elapsedBeats - activeLeadInBeats))
+        if isCountingIn {
+            activeChordID = nil
+        } else {
+            updateActiveChord()
+        }
     }
 
     private func updateActiveChord() {
@@ -402,6 +544,9 @@ final class JazzAudioEngine: ObservableObject {
     private func finishedNaturally() {
         guard state == .playing else { return }
         timer?.invalidate()
+        clickPlayer.stop()
+        activeLeadInBeats = 0
+        isCountingIn = false
         if loops, totalBeats > 0 {
             startPlayer(atBeat: 0)
         } else {

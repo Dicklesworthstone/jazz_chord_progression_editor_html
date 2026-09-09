@@ -10,6 +10,9 @@ enum JazzAudioRenderer {
     private static let sampleRate = 24_000.0
     private static let maximumSeconds = 12.0 * 60.0
     private static let cancellationQuantumFrames = 2_048
+    static let transportClickAccentMIDIPitch = 88
+    static let transportClickBeatMIDIPitch = 81
+    static let transportClickGateSeconds = 0.06
 
     private struct StereoBuffer {
         var left: [Float]
@@ -101,6 +104,37 @@ enum JazzAudioRenderer {
             into: &stereo,
             cancellation: cancellation
         ), normalize(&stereo, cancellation: cancellation) else { return nil }
+        return JazzRenderedAudio(left: stereo.left, right: stereo.right, sampleRate: sampleRate)
+    }
+
+    /// One bounded 4/4 bar of the original transport's vibraphone clicks.
+    /// The engine loops or queues this tiny bar instead of allocating a
+    /// chart-length metronome track.
+    nonisolated static func renderTransportClickBar(tempoBPM: Double) -> JazzRenderedAudio? {
+        guard tempoBPM.isFinite, (30...320).contains(tempoBPM) else { return nil }
+        let beatSeconds = 60 / tempoBPM
+        let frameCount = Int(ceil(4 * beatSeconds * sampleRate))
+        guard frameCount > 0 else { return nil }
+        var stereo = StereoBuffer(
+            left: [Float](repeating: 0, count: frameCount),
+            right: [Float](repeating: 0, count: frameCount)
+        )
+        for beat in 0..<4 {
+            let accent = beat == 0
+            guard mixNote(
+                NoteRequest(
+                    midi: accent ? transportClickAccentMIDIPitch : transportClickBeatMIDIPitch,
+                    velocity: accent ? 0.50 : 0.32,
+                    start: Int(Double(beat) * beatSeconds * sampleRate),
+                    duration: transportClickGateSeconds,
+                    tone: .vibraphone,
+                    pan: 0
+                ),
+                into: &stereo,
+                cancellation: nil
+            ) else { return nil }
+        }
+        guard normalize(&stereo, cancellation: nil) else { return nil }
         return JazzRenderedAudio(left: stereo.left, right: stereo.right, sampleRate: sampleRate)
     }
 

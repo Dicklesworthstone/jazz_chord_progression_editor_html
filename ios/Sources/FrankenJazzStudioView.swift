@@ -1185,6 +1185,8 @@ private struct TransportBar: View {
                     progressSlider
                 }
                 HStack(spacing: 8) {
+                    countInControl
+                    metronomeControl
                     loopControl
                     muteControl
                     volumeControl
@@ -1194,6 +1196,8 @@ private struct TransportBar: View {
                     transportButtons
                     playheadSummary
                     progressSlider.frame(maxWidth: .infinity)
+                    countInControl
+                    metronomeControl
                     loopControl
                     muteControl
                     volumeControl.frame(width: 120)
@@ -1294,6 +1298,44 @@ private struct TransportBar: View {
         .accessibilityValue(store.audio.loops ? "On" : "Off")
     }
 
+    private var countInControl: some View {
+        Button { store.audio.setCountInEnabled(!store.audio.countInEnabled) } label: {
+            Text("1·2")
+                .font(.system(size: JazzTheme.size(11), weight: .black, design: .rounded))
+                .frame(width: 42, height: 42)
+                .background(store.audio.countInEnabled ? JazzTheme.cyan.opacity(0.18) : JazzTheme.raised, in: Circle())
+                .overlay(Circle().stroke(store.audio.countInEnabled ? JazzTheme.cyan.opacity(0.70) : Color.clear))
+        }
+        .buttonStyle(.plain)
+        .frame(width: 44, height: 44)
+        .contentShape(Rectangle())
+        .foregroundStyle(store.audio.countInEnabled ? JazzTheme.cyan : JazzTheme.secondary)
+        .disabled(store.audio.isPreparing || store.audio.isCountingIn)
+        .accessibilityIdentifier("transport-count-in")
+        .accessibilityLabel("One-bar count-in")
+        .accessibilityHint("Plays four clicks before the next Play or Restart")
+        .accessibilityValue(store.audio.countInEnabled ? "On" : "Off")
+    }
+
+    private var metronomeControl: some View {
+        Button { store.audio.setMetronomeEnabled(!store.audio.metronomeEnabled) } label: {
+            Image(systemName: "metronome")
+                .font(.system(size: JazzTheme.size(14), weight: .bold))
+                .frame(width: 42, height: 42)
+                .background(store.audio.metronomeEnabled ? JazzTheme.brass.opacity(0.22) : JazzTheme.raised, in: Circle())
+                .overlay(Circle().stroke(store.audio.metronomeEnabled ? JazzTheme.brass.opacity(0.72) : Color.clear))
+        }
+        .buttonStyle(.plain)
+        .frame(width: 44, height: 44)
+        .contentShape(Rectangle())
+        .foregroundStyle(store.audio.metronomeEnabled ? JazzTheme.brass : JazzTheme.secondary)
+        .disabled(store.audio.isPreparing || store.audio.isCountingIn)
+        .accessibilityIdentifier("transport-metronome")
+        .accessibilityLabel("Metronome")
+        .accessibilityHint("Plays a click on every beat while the chart plays")
+        .accessibilityValue(store.audio.metronomeEnabled ? "On" : "Off")
+    }
+
     private var muteControl: some View {
         Button { store.audio.toggleMute() } label: {
             Image(systemName: store.audio.isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
@@ -1344,6 +1386,7 @@ private struct TransportBar: View {
     }
 
     private var activeSymbol: String {
+        if store.audio.isCountingIn { return "Count-in…" }
         guard let id = store.audio.activeChordID else {
             switch store.audio.state {
             case .preparing: return "Forging audio…"

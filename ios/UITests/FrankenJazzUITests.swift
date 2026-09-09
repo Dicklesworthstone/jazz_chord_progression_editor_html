@@ -125,13 +125,23 @@ final class FrankenJazzUITests: XCTestCase {
         let loop = app.buttons["transport-loop"]
         let mute = app.buttons["transport-mute"]
         let volume = app.sliders["transport-master-volume"]
+        let countIn = app.buttons["transport-count-in"]
+        let metronome = app.buttons["transport-metronome"]
 
-        for control in [previous, playPause, stop, restart, next, loop, mute] {
+        for control in [previous, playPause, stop, restart, next, countIn, metronome, loop, mute] {
             XCTAssertTrue(control.waitForExistence(timeout: 3))
             XCTAssertTrue(app.windows.firstMatch.frame.intersects(control.frame))
         }
         XCTAssertTrue(volume.waitForExistence(timeout: 3))
         XCTAssertTrue(volume.isHittable)
+
+        XCTAssertEqual(countIn.value as? String, "Off")
+        countIn.tap()
+        XCTAssertEqual(countIn.value as? String, "On")
+
+        XCTAssertEqual(metronome.value as? String, "Off")
+        metronome.tap()
+        XCTAssertEqual(metronome.value as? String, "On")
 
         // These state-only gestures exercise the real transport controls but
         // cannot schedule audio. Next makes Previous legitimately actionable.

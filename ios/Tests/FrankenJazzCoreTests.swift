@@ -5,6 +5,61 @@ import FrankenJazzDSP
 
 final class FrankenJazzCoreTests: XCTestCase {
     @MainActor
+    func testNativeCountInAndMetronomePlansMatchOriginalFourFourPolicy() {
+        let fresh = JazzAudioEngine.transportClickPlan(
+            startBeat: 0,
+            countInEnabled: true,
+            metronomeEnabled: true
+        )
+        XCTAssertEqual(fresh.leadInBeats, 4)
+        XCTAssertEqual(fresh.chartPhaseBeat, 0)
+        XCTAssertEqual(fresh.firstChartClickOffsetBeats, 0)
+        XCTAssertTrue(fresh.firstChartClickIsAccent)
+
+        let midBar = JazzAudioEngine.transportClickPlan(
+            startBeat: 5.25,
+            countInEnabled: false,
+            metronomeEnabled: true
+        )
+        XCTAssertEqual(midBar.leadInBeats, 0)
+        XCTAssertEqual(midBar.chartPhaseBeat, 1.25)
+        XCTAssertEqual(midBar.firstChartClickOffsetBeats, 0.75)
+        XCTAssertFalse(midBar.firstChartClickIsAccent)
+
+        let almostDownbeat = JazzAudioEngine.transportClickPlan(
+            startBeat: 7.8,
+            countInEnabled: false,
+            metronomeEnabled: true
+        )
+        XCTAssertEqual(almostDownbeat.firstChartClickOffsetBeats ?? -1, 0.2, accuracy: 0.000_001)
+        XCTAssertTrue(almostDownbeat.firstChartClickIsAccent)
+
+        let silent = JazzAudioEngine.transportClickPlan(
+            startBeat: .nan,
+            countInEnabled: false,
+            metronomeEnabled: false
+        )
+        XCTAssertNil(silent.firstChartClickOffsetBeats)
+    }
+
+    func testNativeTransportClickBarIsBoundedAudiblePCMWithStrongerDownbeat() throws {
+        let rendered = try XCTUnwrap(JazzAudioRenderer.renderTransportClickBar(tempoBPM: 120))
+        XCTAssertEqual(rendered.sampleRate, 24_000)
+        XCTAssertEqual(rendered.left.count, 48_000)
+        XCTAssertEqual(rendered.left.count, rendered.right.count)
+
+        let framesPerBeat = 12_000
+        let energy = (0..<4).map { beat in
+            rendered.left[(beat * framesPerBeat)..<min((beat * framesPerBeat) + 1_440, rendered.left.count)]
+                .reduce(0.0) { $0 + Double($1 * $1) }
+        }
+        XCTAssertGreaterThan(energy[0], energy[1])
+        XCTAssertGreaterThan(energy[1], 0)
+        XCTAssertNil(JazzAudioRenderer.renderTransportClickBar(tempoBPM: 0))
+        XCTAssertNil(JazzAudioRenderer.renderTransportClickBar(tempoBPM: .infinity))
+    }
+
+    @MainActor
     func testNativeTransportStepsRestartsAndPreservesVolumeAcrossMuteWithoutAudioOutput() throws {
         let parsed = try JazzTheory.parseChart("| Cmaj7:1 Dm7:1 G7:2 |")
         let chart = JazzChart(title: "Transport boundaries", measures: parsed.measures)
@@ -39,6 +94,10 @@ final class FrankenJazzCoreTests: XCTestCase {
 
         engine.loops = true
         XCTAssertTrue(engine.loops)
+        engine.setCountInEnabled(true)
+        engine.setMetronomeEnabled(true)
+        XCTAssertTrue(engine.countInEnabled)
+        XCTAssertTrue(engine.metronomeEnabled)
 
         // A cold restart must enter the real render path at beat zero. Stop it
         // immediately, before the detached renderer can configure audio.
