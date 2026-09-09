@@ -8,11 +8,17 @@ Consumer: the user and Codex executing the 2026-09-04 request to implement the r
 - [x] Implement application-owned local reads: one to five files, 4 MiB per file, 8 MiB total, serial decode, at most five bounded M0 previews retained; no auto-commit.
 - [x] Deterministic score: baseline30; tempo40–320 +15/otherwise−25; sounding duration≥150s +15/≥60s +10/shorter−15; ≥5 sounding tracks +10; ≥3 channels +5; percussion +8; ≥20 low notes +10; ≥half attack groups with three pitch classes +7. Exact duration tiers, first-to-last-note span, stable picker-order ties. These are arrangement heuristics, not musical quality or proof of completeness.
 - [x] Wire multi-file picker, recommendation, selectable alternatives, per-factor explanations, cancellation, and stale-result suppression into the existing preview/Add workflow.
-- [ ] Author and run independent byte fixtures: score thresholds, tempo changes, leading silence, transposition, invalid candidates, duplicate names, stable ties, all-invalid, sequential work and byte/count bounds.
-- [ ] Prove cancellation before read, during read and during decode; late results never publish or launch the next file.
-- [ ] Run unchanged M0/M1 regressions, complete type/lint/build/static checks, and actual source mutation checks.
-- [ ] Exercise generated artifact in Chromium/Firefox/WebKit at desktop and phone widths: multi-file recommendation, alternate choice, Add/Undo, limits, and clean diagnostics with network blocked.
-- [ ] Record exact results in Beads, close only on passing feature gates, rebuild/recheck source snapshot, and commit explicit paths. Deployment remains subject to the separate human listening gate.
+- [x] Author and run independent byte fixtures: score thresholds, tempo changes, leading silence, transposition, invalid candidates, duplicate names, stable ties, all-invalid, sequential work and byte/count bounds.
+- [x] Prove cancellation before read, during read and during decode; late results never publish or launch the next file.
+- [x] Run unchanged M0/M1 regressions, complete type/lint/build/static checks, and actual source mutation checks.
+- [x] Exercise generated artifact in Chromium/Firefox/WebKit at desktop and phone widths: multi-file recommendation, alternate choice, Add/Undo, limits, and clean diagnostics with network blocked.
+- [x] Record exact results in Beads, close only on passing feature gates, rebuild/recheck source snapshot, and commit explicit paths. Deployment remains subject to the separate human listening gate.
+
+Evidence (2026-09-09 UTC): implementation `630ae06`/`b82bc8e`, final cancellation/UI proof `1bd322d`, stale audition witnesses corrected in `23dd4ad` against X1 §8 (16 pitches and first-use initialization); no production audio change. Final `bun test tests/unit/midi-import-*.test.ts tests/unit/studio-midi-import-automation.test.ts tests/unit/m1-import-*.test.ts tests/integration/m1-automatic-import.test.ts tests/integration/midi-import-batch.test.ts`:172pass/0fail/1791assertions, including nine batch cases. The first broader run was169/2; its failures were retained, not hidden. The independent multitrack fixture initially repeated tempo metadata across tracks and refused; corrected to one tempo track before proof.
+
+`bun run typecheck`, `bun run lint`, guarded `bun run build`, and `bun run verify:standalone` pass. Four actual source mutants (tie ordering, sixth-file admission, exact60s boundary, cancellation removal) each fail their designated original assertions; control9/0. `bun scripts/run-playwright.ts test tests/e2e/midi-import-batch.spec.ts tests/e2e/m0-midi-import.spec.ts tests/e2e/m1-midi-import-auto.spec.ts tests/e2e/m1-midi-import-advanced.spec.ts`:51/0 in144898.204ms. Final standalone36/0 in49685.454ms. Final batch-only rerun after lint-correcting the delayed-read fixture:6/0 in24643.585ms; no retries/skips/flaky cases, all six explicit diagnostics/request records clean. Full final typed lint passes; scoped final e2e typechecking passes. All1706 frozen inputs remained unchanged through final36+6 proof, digest `b22329534455bb4b48e4ccd45d50568e3d1340aff24e81b69ed278c9eff03f75`.
+
+Root/dist/immediate-precommit rebuild:8434061bytes, SHA256 `d5a109ace6c77cd84f6a17ec86baf8d4bec5528e837367384c383fa590ae23f5`. Raw reports/logs and consolidated diagnostics remain under ignored `.tmp/jcpe-batch-*`; mutation copies never edited production source. This is solo verification, not an independent-person signoff. No deployment, full-project acceptance, M1 owner-listening, or completion of the broader15-idea campaign is claimed.
 
 ## Admission and discovery polling repaired; DSP source drift next
 
@@ -779,4 +785,4 @@ Statuses below are the campaign-start snapshot. Use br show and br ready before 
 - [ ] `jcpe-milestone-advanced-craft-ulj.9.2` — G9/build: Implement the complete production package (open; P2; unassigned)
 - [ ] `jcpe-milestone-advanced-craft-ulj.9.3` — G9/verify: Prove conformance, integration, and evidence (open; P2; unassigned)
 - [ ] `jcpe-dsp-flute-c7-44k1-regime-c4p1` — Flute MIDI 93/96 at 44.1/48 kHz: sub-14-sample jets refuse fractional tuning (regime flips) (open; P4; unassigned)
-- [ ] `jcpe-zw47` — Batch local MIDI import: score user-supplied candidate files and auto-select the best (in_progress; P4; CodexRuntime)
+- [x] `jcpe-zw47` — Batch local MIDI import: score user-supplied candidate files and auto-select the best (closed; P4; CodexRuntime; 1bd322d)
