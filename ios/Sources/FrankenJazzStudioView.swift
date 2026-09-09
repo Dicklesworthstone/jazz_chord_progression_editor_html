@@ -1192,15 +1192,32 @@ private struct TransportBar: View {
                     volumeControl
                 }
             } else {
-                HStack(spacing: 12) {
-                    transportButtons
-                    playheadSummary
-                    progressSlider.frame(maxWidth: .infinity)
-                    countInControl
-                    metronomeControl
-                    loopControl
-                    muteControl
-                    volumeControl.frame(width: 120)
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 12) {
+                        transportButtons
+                        playheadSummary
+                        progressSlider.frame(maxWidth: .infinity)
+                        countInControl
+                        metronomeControl
+                        loopControl
+                        muteControl
+                        volumeControl.frame(width: 120)
+                    }
+                    VStack(spacing: 7) {
+                        HStack(spacing: 10) {
+                            transportButtons
+                            playheadSummary
+                            progressSlider.frame(maxWidth: .infinity)
+                        }
+                        HStack(spacing: 10) {
+                            countInControl
+                            metronomeControl
+                            loopControl
+                            muteControl
+                            volumeControl.frame(width: 150)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                    }
                 }
             }
         }

@@ -202,7 +202,10 @@ final class FrankenJazzUITests: XCTestCase {
         for element in [libraryAction, title, play, documents] {
             XCTAssertTrue(element.waitForExistence(timeout: 5))
             XCTAssertTrue(element.isHittable, "Every primary expanded-workspace control must be visibly reachable.")
-            XCTAssertTrue(window.frame.contains(element.frame), "No primary expanded-workspace control may be clipped outside the actual app window.")
+            XCTAssertTrue(
+                window.frame.contains(element.frame),
+                "\(element.identifier) at \(element.frame) must fit inside the app window at \(window.frame)."
+            )
         }
 
         let workspaceProof = XCTAttachment(screenshot: app.screenshot())
