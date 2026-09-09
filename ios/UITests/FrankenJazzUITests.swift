@@ -116,6 +116,44 @@ final class FrankenJazzUITests: XCTestCase {
         add(proof)
     }
 
+    func testCompactTransportExposesEveryEverydayControlWithoutPlayingAudio() throws {
+        let previous = app.buttons["transport-previous-chord"]
+        let playPause = app.buttons["transport-play-pause"]
+        let stop = app.buttons["transport-stop"]
+        let restart = app.buttons["transport-restart"]
+        let next = app.buttons["transport-next-chord"]
+        let loop = app.buttons["transport-loop"]
+        let mute = app.buttons["transport-mute"]
+        let volume = app.sliders["transport-master-volume"]
+
+        for control in [previous, playPause, stop, restart, next, loop, mute] {
+            XCTAssertTrue(control.waitForExistence(timeout: 3))
+            XCTAssertTrue(app.windows.firstMatch.frame.intersects(control.frame))
+        }
+        XCTAssertTrue(volume.waitForExistence(timeout: 3))
+        XCTAssertTrue(volume.isHittable)
+
+        // These state-only gestures exercise the real transport controls but
+        // cannot schedule audio. Next makes Previous legitimately actionable.
+        XCTAssertTrue(next.isHittable)
+        next.tap()
+        XCTAssertTrue(previous.isEnabled)
+        XCTAssertTrue(previous.isHittable)
+
+        XCTAssertEqual(loop.value as? String, "Off")
+        loop.tap()
+        XCTAssertEqual(loop.value as? String, "On")
+
+        XCTAssertEqual(mute.label, "Mute")
+        mute.tap()
+        XCTAssertEqual(mute.label, "Unmute")
+
+        let proof = XCTAttachment(screenshot: app.screenshot())
+        proof.name = "FrankenJazz complete compact transport"
+        proof.lifetime = .keepAlways
+        add(proof)
+    }
+
     func testInspectorPianoExposesRealHittableKeysWithoutPlayingAudio() throws {
         let firstChord = app.buttons.matching(
             NSPredicate(format: "label BEGINSWITH 'Measure 1, Cmaj9'")

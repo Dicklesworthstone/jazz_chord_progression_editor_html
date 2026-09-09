@@ -3,6 +3,11 @@ import Foundation
 
 @MainActor
 final class JazzAudioEngine: ObservableObject {
+    enum ChordStepDirection {
+        case previous
+        case next
+    }
+
     enum State: Equatable {
         case ready
         case preparing
@@ -17,6 +22,8 @@ final class JazzAudioEngine: ObservableObject {
     @Published private(set) var activeChordID: UUID?
     @Published private(set) var previewIssue: String?
     @Published var loops = false
+    @Published private(set) var masterVolume = 0.78
+    @Published private(set) var isMuted = false
 
     private let engine = AVAudioEngine()
     private let player = AVAudioPlayerNode()
@@ -46,7 +53,7 @@ final class JazzAudioEngine: ObservableObject {
         engine.attach(previewPlayer)
         engine.connect(player, to: engine.mainMixerNode, format: nil)
         engine.connect(previewPlayer, to: engine.mainMixerNode, format: nil)
-        engine.mainMixerNode.outputVolume = 0.78
+        applyMixerVolume()
         previewPlayer.volume = 0.82
     }
 
@@ -169,6 +176,43 @@ final class JazzAudioEngine: ObservableObject {
         state = .ready
     }
 
+    func restart(chart: JazzChart) {
+        play(chart: chart, fromBeat: 0)
+    }
+
+    /// Move to an adjacent authored chord boundary. A stopped transport stays
+    /// stopped; a running or paused transport follows the same seek/resume law
+    /// as the playback rail.
+    func stepChord(_ direction: ChordStepDirection, chart: JazzChart) {
+        guard let beat = chordTargetBeat(direction, chart: chart) else { return }
+        events = JazzTheory.compilePlayback(chart)
+        totalBeats = chart.durationBeats
+        seek(toBeat: beat)
+    }
+
+    func chordTargetBeat(_ direction: ChordStepDirection, chart: JazzChart) -> Double? {
+        let starts = JazzTheory.compilePlayback(chart).map(\.startBeat)
+        let epsilon = 0.000_001
+        switch direction {
+        case .previous:
+            // Mid-chord Previous returns to that chord's attack; pressing it
+            // again from the attack reaches the preceding change.
+            return starts.last(where: { $0 < playheadBeat - epsilon })
+        case .next:
+            return starts.first(where: { $0 > playheadBeat + epsilon })
+        }
+    }
+
+    func setMasterVolume(_ volume: Double) {
+        masterVolume = min(1, max(0, volume.isFinite ? volume : 0.78))
+        applyMixerVolume()
+    }
+
+    func toggleMute() {
+        isMuted.toggle()
+        applyMixerVolume()
+    }
+
     /// Plays one bounded inspector note without touching any main-transport
     /// field. Rendering remains off the main actor; rapid taps retire stale
     /// results before they can schedule themselves.
@@ -251,13 +295,21 @@ final class JazzAudioEngine: ObservableObject {
     }
 
     func seek(to fraction: Double) {
-        let beat = min(max(0, fraction), 1) * totalBeats
+        seek(toBeat: min(max(0, fraction), 1) * totalBeats)
+    }
+
+    func seek(toBeat beat: Double) {
+        let beat = min(max(0, beat), totalBeats)
         if state == .playing || state == .paused {
             startPlayer(atBeat: beat)
         } else {
             playheadBeat = beat
             updateActiveChord()
         }
+    }
+
+    private func applyMixerVolume() {
+        engine.mainMixerNode.outputVolume = isMuted ? 0 : Float(masterVolume)
     }
 
     private func configureSession() throws {

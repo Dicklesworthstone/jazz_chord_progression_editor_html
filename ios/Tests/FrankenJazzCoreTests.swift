@@ -4,6 +4,51 @@ import FrankenJazzDSP
 @testable import FrankenJazz
 
 final class FrankenJazzCoreTests: XCTestCase {
+    @MainActor
+    func testNativeTransportStepsRestartsAndPreservesVolumeAcrossMuteWithoutAudioOutput() throws {
+        let parsed = try JazzTheory.parseChart("| Cmaj7:1 Dm7:1 G7:2 |")
+        let chart = JazzChart(title: "Transport boundaries", measures: parsed.measures)
+        let engine = JazzAudioEngine()
+
+        XCTAssertNil(engine.chordTargetBeat(.previous, chart: chart))
+        XCTAssertEqual(engine.chordTargetBeat(.next, chart: chart), 1)
+
+        engine.stepChord(.next, chart: chart)
+        XCTAssertEqual(engine.playheadBeat, 1)
+        XCTAssertEqual(engine.state, .ready, "Stepping a stopped chart must never begin playback.")
+        XCTAssertEqual(engine.chordTargetBeat(.previous, chart: chart), 0)
+        XCTAssertEqual(engine.chordTargetBeat(.next, chart: chart), 2)
+
+        engine.seek(toBeat: 1.5)
+        XCTAssertEqual(engine.chordTargetBeat(.previous, chart: chart), 1)
+        XCTAssertEqual(engine.chordTargetBeat(.next, chart: chart), 2)
+
+        engine.setMasterVolume(0.35)
+        engine.toggleMute()
+        XCTAssertTrue(engine.isMuted)
+        XCTAssertEqual(engine.masterVolume, 0.35)
+        engine.setMasterVolume(2)
+        XCTAssertEqual(engine.masterVolume, 1)
+        engine.setMasterVolume(-2)
+        XCTAssertEqual(engine.masterVolume, 0)
+        engine.setMasterVolume(.nan)
+        XCTAssertEqual(engine.masterVolume, 0.78)
+        engine.toggleMute()
+        XCTAssertFalse(engine.isMuted)
+        XCTAssertEqual(engine.masterVolume, 0.78, "Mute must not overwrite the user's stored gain.")
+
+        engine.loops = true
+        XCTAssertTrue(engine.loops)
+
+        // A cold restart must enter the real render path at beat zero. Stop it
+        // immediately, before the detached renderer can configure audio.
+        engine.restart(chart: chart)
+        XCTAssertEqual(engine.state, .preparing)
+        engine.stop()
+        XCTAssertEqual(engine.state, .ready)
+        XCTAssertEqual(engine.playheadBeat, 0)
+    }
+
     func testNativeInstrumentCatalogMatchesEveryOriginalInstrument() throws {
         let expected: [(String, String)] = [
             ("mellow-keys", "Mellow Keys"),

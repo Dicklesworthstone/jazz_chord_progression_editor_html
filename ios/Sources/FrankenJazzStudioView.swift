@@ -1178,16 +1178,25 @@ private struct TransportBar: View {
     var body: some View {
         VStack(spacing: 7) {
             if compact {
-                HStack(spacing: 10) { transportButtons; playheadSummary }
-                progressSlider
+                HStack(spacing: 6) { transportButtons }
+                    .frame(maxWidth: .infinity)
+                HStack(spacing: 10) {
+                    playheadSummary
+                    progressSlider
+                }
+                HStack(spacing: 8) {
+                    loopControl
+                    muteControl
+                    volumeControl
+                }
             } else {
                 HStack(spacing: 12) {
                     transportButtons
                     playheadSummary
                     progressSlider.frame(maxWidth: .infinity)
-                    Toggle(isOn: Binding(get: { store.audio.loops }, set: { store.audio.loops = $0 })) { Image(systemName: "repeat") }
-                        .toggleStyle(.button)
-                        .accessibilityLabel("Loop chart")
+                    loopControl
+                    muteControl
+                    volumeControl.frame(width: 120)
                 }
             }
         }
@@ -1198,6 +1207,19 @@ private struct TransportBar: View {
     }
 
     @ViewBuilder private var transportButtons: some View {
+        Button { store.audio.stepChord(.previous, chart: store.chart) } label: {
+            Image(systemName: "backward.end.fill")
+                .frame(width: 34, height: 42)
+        }
+        .buttonStyle(.plain)
+        .frame(width: 44, height: 44)
+        .contentShape(Rectangle())
+        .foregroundStyle(JazzTheme.text)
+        .disabled(store.audio.chordTargetBeat(.previous, chart: store.chart) == nil || store.audio.isPreparing)
+        .opacity(store.audio.chordTargetBeat(.previous, chart: store.chart) == nil ? 0.34 : 1)
+        .accessibilityIdentifier("transport-previous-chord")
+        .accessibilityLabel("Previous chord")
+
         Button { store.audio.toggle(chart: store.chart) } label: {
             ZStack {
                 Circle().fill(store.audio.isPreparing ? JazzTheme.violet : JazzTheme.brass).frame(width: 48, height: 48)
@@ -1211,6 +1233,7 @@ private struct TransportBar: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(store.audio.isPlaying ? "Pause" : store.audio.isPreparing ? "Preparing local audio" : "Play")
+        .accessibilityIdentifier("transport-play-pause")
 
         Button { store.audio.stop() } label: {
             Image(systemName: "stop.fill")
@@ -1221,7 +1244,82 @@ private struct TransportBar: View {
         }
         .foregroundStyle(JazzTheme.coral)
         .buttonStyle(.plain)
+        .frame(width: 44, height: 44)
+        .contentShape(Rectangle())
         .accessibilityLabel("Stop and return to the beginning")
+        .accessibilityIdentifier("transport-stop")
+
+        Button { store.audio.restart(chart: store.chart) } label: {
+            Image(systemName: "arrow.counterclockwise")
+                .font(.system(size: JazzTheme.size(14), weight: .bold))
+                .frame(width: 38, height: 42)
+                .background(JazzTheme.raised, in: Circle())
+        }
+        .foregroundStyle(JazzTheme.cyan)
+        .buttonStyle(.plain)
+        .frame(width: 44, height: 44)
+        .contentShape(Rectangle())
+        .disabled(store.audio.isPreparing)
+        .accessibilityIdentifier("transport-restart")
+        .accessibilityLabel("Restart from the beginning")
+
+        Button { store.audio.stepChord(.next, chart: store.chart) } label: {
+            Image(systemName: "forward.end.fill")
+                .frame(width: 34, height: 42)
+        }
+        .buttonStyle(.plain)
+        .frame(width: 44, height: 44)
+        .contentShape(Rectangle())
+        .foregroundStyle(JazzTheme.text)
+        .disabled(store.audio.chordTargetBeat(.next, chart: store.chart) == nil || store.audio.isPreparing)
+        .opacity(store.audio.chordTargetBeat(.next, chart: store.chart) == nil ? 0.34 : 1)
+        .accessibilityIdentifier("transport-next-chord")
+        .accessibilityLabel("Next chord")
+    }
+
+    private var loopControl: some View {
+        Button { store.audio.loops.toggle() } label: {
+            Image(systemName: "repeat")
+                .font(.system(size: JazzTheme.size(14), weight: .bold))
+                .frame(width: 42, height: 42)
+                .background(store.audio.loops ? JazzTheme.brass.opacity(0.22) : JazzTheme.raised, in: Circle())
+                .overlay(Circle().stroke(store.audio.loops ? JazzTheme.brass.opacity(0.72) : Color.clear))
+        }
+        .buttonStyle(.plain)
+        .frame(width: 44, height: 44)
+        .contentShape(Rectangle())
+        .foregroundStyle(store.audio.loops ? JazzTheme.brass : JazzTheme.secondary)
+        .accessibilityIdentifier("transport-loop")
+        .accessibilityLabel("Loop the whole chart")
+        .accessibilityValue(store.audio.loops ? "On" : "Off")
+    }
+
+    private var muteControl: some View {
+        Button { store.audio.toggleMute() } label: {
+            Image(systemName: store.audio.isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                .font(.system(size: JazzTheme.size(14), weight: .bold))
+                .frame(width: 42, height: 42)
+                .background(store.audio.isMuted ? JazzTheme.coral.opacity(0.16) : JazzTheme.raised, in: Circle())
+        }
+        .buttonStyle(.plain)
+        .frame(width: 44, height: 44)
+        .contentShape(Rectangle())
+        .foregroundStyle(store.audio.isMuted ? JazzTheme.coral : JazzTheme.secondary)
+        .accessibilityIdentifier("transport-mute")
+        .accessibilityLabel(store.audio.isMuted ? "Unmute" : "Mute")
+        .accessibilityValue(store.audio.isMuted ? "Muted" : "Sound on")
+    }
+
+    private var volumeControl: some View {
+        Slider(
+            value: Binding(get: { store.audio.masterVolume }, set: store.audio.setMasterVolume),
+            in: 0...1,
+            step: 0.05
+        )
+        .frame(minWidth: compact ? 120 : 90, minHeight: 44)
+        .accessibilityIdentifier("transport-master-volume")
+        .accessibilityLabel("Master volume")
+        .accessibilityValue("\(Int((store.audio.masterVolume * 100).rounded())) percent")
     }
 
     private var playheadSummary: some View {
@@ -1238,7 +1336,11 @@ private struct TransportBar: View {
     }
 
     private var progressSlider: some View {
-        PlaybackRail(progress: store.audio.progress, active: store.audio.isPlaying, seek: store.audio.seek)
+        PlaybackRail(
+            progress: store.audio.progress,
+            active: store.audio.isPlaying,
+            seek: { store.audio.seek(to: $0) }
+        )
     }
 
     private var activeSymbol: String {
