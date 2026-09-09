@@ -37,6 +37,11 @@ Support directory.
   import; accepted named MIDI stacks retain their exact pitches as editable
   Manual voicings, with reported salvage for conventional DAW note-state quirks;
 - actual `.frankenjazz`, `.txt`, and `.mid` exports through the system share sheet;
+- a searchable My Charts repertoire of explicit snapshots with revision-bound
+  open, rename, duplicate, replace, remove, and selected-chart export actions;
+- deterministic bounded native collection backups with strict hostile-input
+  refusal and a no-write restore preview that classifies additions, identicals,
+  and conflicts before one explicit atomic merge;
 - iPhone sheets, iPad split workspaces, keyboard shortcuts, and a freely
   resizable three-column Mac Catalyst studio.
 
