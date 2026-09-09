@@ -469,3 +469,75 @@ describe("double-import determinism", () => {
     }
   });
 });
+
+
+function placementChart(): StudioController {
+  const studio = controller();
+  const text = "[Intro]\n| Dm7 |\n[Outro]\n| G7 |";
+  const parsed = studio.previewChartText(text);
+  expect(studio.setQuickEntryDraft(text, { kind: "document-end" }, parsed.status, parsed.issueCodes).ok).toBe(true);
+  expect(studio.applyQuickEntryPreview().ok).toBe(true);
+  return studio;
+}
+
+test("M1 placement keeps imports at each stable boundary and Undo/redo restores exact facts", async () => {
+  const preview = await readPreview(SETTINGS_FILE, "Placed.mid");
+  for (const position of [0, 1, 2, null]) {
+    const studio = placementChart();
+    const sections = studio.getSnapshot().sections;
+    const beforeIds = sections.map((section) => section.id);
+    const before = canonical(documentFacts(studio));
+    const beforeSectionId = position === null ? null : sections[position]?.id;
+    if (beforeSectionId === undefined) throw new Error("Missing independent placement boundary");
+    const result = service().commitAutomatic(studio, preview, beforeSectionId);
+    expect(result.committed).toBe(true);
+    const afterIds = studio.getSnapshot().sections.map((section) => section.id);
+    const insertedIds = afterIds.filter((id) => !beforeIds.includes(id));
+    expect(insertedIds.length).toBeGreaterThan(0);
+    const slot = position ?? beforeIds.length;
+    expect(afterIds).toEqual([...beforeIds.slice(0, slot), ...insertedIds, ...beforeIds.slice(slot)]);
+    const after = canonical(documentFacts(studio));
+    for (let index = 0; index < result.undoCount; index += 1) expect(studio.undo().ok).toBe(true);
+    expect(canonical(documentFacts(studio))).toBe(before);
+    for (let index = 0; index < result.undoCount; index += 1) expect(studio.redo().ok).toBe(true);
+    expect(canonical(documentFacts(studio))).toBe(after);
+  }
+});
+
+test("M1 placement keeps long chunks together before unrelated trailing material", async () => {
+  const studio = placementChart();
+  const before = canonical(documentFacts(studio));
+  const sections = studio.getSnapshot().sections;
+  const target = sections[sections.length - 1];
+  if (target === undefined) throw new Error("Missing Outro");
+  const preview = await readPreview(LONG_FILE, "Long placement.mid");
+  expect(preview.automation?.chunkTexts.length).toBeGreaterThan(1);
+  const result = service().commitAutomatic(studio, preview, target.id);
+  expect(result.committed).toBe(true);
+  const after = studio.getSnapshot().sections;
+  expect(after[after.length - 1]?.id).toBe(target.id);
+  expect(after[after.length - 1]?.measures.map((measure) => measure.events.map((event) => event.id))).toEqual(target.measures.map((measure) => measure.events.map((event) => event.id)));
+  const originalIds = new Set(sections.map((section) => section.id));
+  expect(after.filter((section) => !originalIds.has(section.id)).flatMap((section) => section.measures).length).toBe(640);
+  for (let index = 0; index < result.undoCount; index += 1) expect(studio.undo().ok).toBe(true);
+  expect(canonical(documentFacts(studio))).toBe(before);
+});
+
+test("M1 placement refuses stale targets before commands and rolls back later chunk refusal", async () => {
+  const studio = placementChart();
+  const preview = await readPreview(SETTINGS_FILE, "Refused.mid");
+  const before = canonical(documentFacts(studio));
+  const missing = service().commitAutomatic(studio, preview, "missing-section");
+  expect(missing.reason).toBe("no-destination");
+  expect(missing.undoCount).toBe(0);
+  expect(missing.steps).toEqual([]);
+  expect(canonical(documentFacts(studio))).toBe(before);
+  const automation = preview.automation;
+  const target = studio.getSnapshot().sections[1];
+  if (automation === null || target === undefined) throw new Error("Missing placement fixture");
+  const broken = { ...preview, automation: { ...automation, chunkTexts: [...automation.chunkTexts, "| Zzz9!! |\n"] } };
+  const refused = service().commitAutomatic(studio, broken, target.id);
+  expect(refused.reason).toBe("rolled-back");
+  expect(refused.rolledBackCount).toBeGreaterThan(0);
+  expect(canonical(documentFacts(studio))).toBe(before);
+});

@@ -2,6 +2,16 @@
 
 Consumer: the user and Codex executing the 2026-09-04 request to implement the reality-check backlog and GitHub voice-leading issue #2. Gate: do not declare this campaign complete while a requested item remains unresolved. Observed defect: the audit found 51 closed records with unfulfilled obligations. Retirement: retire this checklist when the campaign is complete; lasting commands/results belong on the Beads. This inventory is process and earns no implementation credit.
 
+## M1 import placement — jcpe-qyyn continuation (CyanCove)
+
+- [x] Confirm live ownership, read envelope/atomic insertion laws and reserve affected paths.
+- [x] Specify stable before-section placement, unchanged default, stale-target refusal and import-local continuation of chunks.
+- [ ] Prove pre-feature failure with independently specified controller/decoder cases.
+- [ ] Wire service placement and Advanced selection/reset without changing source music.
+- [ ] Pass positional/chunk/rollback/stale-target tests and full remote checks.
+- [ ] Pass native placement/reset/Add/Undo and existing M1 browser cases.
+- [ ] Verify final artifact/source, commit and record proof. Matched-groove audition remains open.
+
 ## M1 chord-change detail — jcpe-qyyn continuation (CyanCove)
 
 - [x] Reconcile ownership and read M1 midpoint/mass laws; reserve only affected files.

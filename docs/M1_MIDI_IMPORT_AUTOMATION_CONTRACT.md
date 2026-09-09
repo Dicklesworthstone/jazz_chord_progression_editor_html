@@ -583,3 +583,32 @@ invalid input, clear/restore and actual-decoder replanning. Native proof must
 show refusal recovery without re-choosing bytes, preserved names/other overrides,
 new-file reset, Add and Undo. Destination placement and matched-groove audition
 remain required by the original Bead.
+
+
+### Amendment #6: import placement (jcpe-qyyn)
+
+Advanced may select End of chart (the unchanged default) or a stable existing
+section before which to insert. Placement belongs to the application envelope,
+not the musical inference overrides: it never changes decoded notes, imported
+section names, chart text, grid, or groove choice. Selecting it does not edit
+the document. New files/candidates and Discard reset placement to the end.
+
+The automatic commit accepts an optional `beforeSectionId`; null/omitted means
+document end. Resolve an explicit ID against the live snapshot before issuing
+any settings or staging commands. A missing ID refuses `no-destination` with
+zero issued commands; never silently retarget. The UI keeps a missing selection
+visible and tells the user to choose another destination.
+
+The first chunk inserts at that document boundary. Each later chunk continues
+at the end of the last section created by this import, including marker-derived
+sections, never the chart's unrelated last section. Track newly allocated stable
+section IDs after each chunk; existing sections retain identity and content.
+Work is bounded by the existing16 chunks and document section bound. No new
+mutation channel, replacement, destructive overwrite, or musical search is added.
+Settings transfer still uses the original pre-import chart facts. The existing
+stated Undo count, redo and rollback laws apply at every selected boundary.
+
+Proof covers beginning/middle/default-end placement, a long multi-chunk import
+in front of existing material, missing/stale targets without mutation, actual
+decoder/controller paths, failed later chunks with rollback, new-file reset,
+and native Advanced Add/Undo in all three browser engines.
