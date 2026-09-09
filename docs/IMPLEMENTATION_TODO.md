@@ -2,6 +2,24 @@
 
 Consumer: the user and Codex executing the 2026-09-04 request to implement the reality-check backlog and GitHub voice-leading issue #2. Gate: do not declare this campaign complete while a requested item remains unresolved. Observed defect: the audit found 51 closed records with unfulfilled obligations. Retirement: retire this checklist when the campaign is complete; lasting commands/results belong on the Beads. This inventory is process and earns no implementation credit.
 
+## M1 tied-key semantics — jcpe-ionn (CodexRuntime, closed; implementation `97aed83`)
+
+- [x] Recover live ownership and reproduce the uniform-mass counterexample through production inference; preserve zero-mass and unique-winner controls.
+- [x] Specify full tied evidence, separate effective selection, explicit Key override, trace/card wording, occupied-chart preservation and bounded work before production changes.
+- [x] Author additive independent symmetric, cross-mode, unique and one-unit near-tie fixtures; preserve every pre-existing family and trace-golden byte pin.
+- [x] Validate every fixture through all12 rotations and inverses, with corrupted-evidence and selection mutation controls; run contract statics/type/lint.
+- [x] Bind full evidence and effective key selection into actual M1 planning; preserve M0 fallback for unresolved ties.
+- [x] Wire application transfer and UI Key choice/clear, honest ambiguity card and trace; preserve unrelated overrides and reset on file/batch changes.
+- [x] Prove decoded-file pipeline, starter/occupied settings, clear/replan, Add/exact Undo and unchanged M0/M1 behavior.
+- [x] Prove actual browser trace/card/override paths in three engines and desktop/phone layouts; inspect errors, requests and retries.
+- [x] Run named complete gates, update actual runtime audit, review changes and close only the fulfilled phase; build/deploy remain separately gated.
+
+Evidence (2026-09-09 UTC): specification `9ff4de5`, implementation `97aed83`. `bun scripts/validate-m1-contract.ts`:10 families,0 findings; all10 preceding fixture/trace pins unchanged. `bun scripts/verify-m1-evidence.ts`:35 tests,0 failures/skips,11 pins,6 deterministic decoded goldens and unchanged input closure. The expanded import regression command (M0/M1 unit, automatic integration, batch integration and new ambiguity contract/integration suites) passes184 tests with2382 assertions. New production proof includes all12 actual rotated SMFs, full tied evidence, withheld/explicit key transfer, invalid override drop, occupied-chart preservation and exact document Undo.
+
+`bun scripts/run-playwright.ts test tests/e2e/m1-key-ambiguity.spec.ts tests/e2e/midi-import-batch.spec.ts tests/e2e/m0-midi-import.spec.ts tests/e2e/m1-midi-import-auto.spec.ts tests/e2e/m1-midi-import-advanced.spec.ts`:57/0 in170433.391ms, no skips/retries/flaky results; all57 result records and six new request/console/page-error attachments inspected. Initial new-six run failed only because its post-Add fixture did not reopen Advanced; those failed traces are retained and the reset assertion remains. Corrected new-six run6/0 in22906.622ms. Four isolated actual pipeline-source mutants (drop ties, persist first tie, ignore explicit key, admit pc12) fail the designated unchanged assertions; control2/0. Six independent fixture-corruption controls also reject lost/extra keys, mode, scores and ordering.
+
+Full `bun run typecheck` and `bun run lint` pass. `bun run verify:standalone`:36/0 in48248.934ms, no skips/retries; all1712 frozen inputs remain unchanged throughout this final gate (digest `7b7226817288b3c2c19d7542277d734cbb384147f4196d8fd7453c0cce83d92e`). During the preceding57-browser run, only the M1 evidence runner's command-list cleanup changed; application, test and artifact bytes stayed fixed, and that named evidence gate was rerun. Final guarded rebuild/static check reproduces the tested8436607-byte artifact SHA256 `dc69260de2b5a2befa7a0c1b2ff37ab8adfe807c2c874dd8b24705667435b3c3`, byte-identical to dist. Raw ledgers, mutation copies, diagnostics and failures are retained in ignored `.tmp/m1-key-*` plus the ordinary named-gate output. Only the tied-key/specification task closes: parent M1 build/acceptance, source-note review and human listening remain open. No deployment or later aggregate-gate pass is claimed.
+
 ## M0 setup timeout — jcpe-1416 (CodexRuntime)
 
 - [x] Inspect original saved native trace: three Undo stability waits consume532ms,4377ms,1650ms; teardown begins during setup before file selection. A quiet passing rerun is not the fix.
@@ -662,7 +680,7 @@ Statuses below are the campaign-start snapshot. Use br show and br ready before 
 - [x] `jcpe-discovery-execution-proof-gdcw.2` — Discovery execution build (closed;55608ae; exact gates recorded in Beads)
 - [x] `jcpe-discovery-execution-proof-gdcw.3` — Discovery execution verification (closed;6dd9ee3; exact named gates in Beads)
 - [ ] `jcpe-espf` — HUMAN: audition Upright Bass + Concert Vibes on the live studio (jcpe-1miv acceptance) (open; P1; unassigned)
-- [ ] `jcpe-ionn` — M1/spec: Freeze the automated-import laws — track roles, harmonic-rhythm segmentation, contextual resolution, settings transfer, groove match (open; P1; ubuntu)
+- [x] `jcpe-ionn` — M1/spec: Freeze automated-import laws and reconcile tied-key evidence (closed; P1; CodexRuntime; `9ff4de5`/`97aed83`)
 - [ ] `jcpe-ios-quality-verification-uo47` — FrankenJazz iOS: quality, honesty, and recorded verification (in_progress; P1; unassigned)
 - [ ] `jcpe-j4hj` — Instrument selection requires manual refresh: newly selected physical instruments do not take effect live (in_progress; P1; SwiftBridge)
 - [ ] `jcpe-milestone-advanced-craft-ulj` — Epic: Advanced Craft — routes, constraints, reharmonization, and practice (open; P1; unassigned)

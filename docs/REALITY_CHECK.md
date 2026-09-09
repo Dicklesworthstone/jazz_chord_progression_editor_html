@@ -1,5 +1,7 @@
 # Changes reality check — 2026-09-08
 
+**September 9 M1 repair (`9ff4de5`/`97aed83`):** the tied-key contradiction below is resolved by full-set equivariance and unique-only automatic selection. The actual importer now discloses ties, retains the original presentation counterexample, and offers an explicit Key override; unresolved ties withhold key transfer. Independent rotated fixtures, actual decoder/controller/Undo proof,57 import browser cases and36 standalone cases pass. The M1 specification task closes; broader M1 acceptance, source-note review and human listening remain open. The dated observations below are retained as history; this update is not a new full-audit or release claim.
+
 **Subsequent evidence-retention incident:** during the next implementation task,
 an admission test fixture omitted Playwright's `outputDir`, and its default
 cleanup removed the ignored `test-results/` tree. Raw A and loop-final packets

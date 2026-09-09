@@ -42,7 +42,7 @@ acceptance gates, and [`ios/README.md`](ios/README.md) for build instructions.
 
 ## What works today
 
-This table describes the repository build at `1bd322d`, including batch MIDI comparison. September 8 checks of both
+This table describes the repository build at `97aed83`, including batch MIDI comparison and explicit tied-key review. September 8 checks of both
 [jazzchords.org](https://jazzchords.org/) and its
 [Vercel mirror](https://changes-jazz-progression-studio.vercel.app/) recorded the
 older committed artifact from `11ef504`. Both boot and play in desktop and phone
@@ -60,7 +60,7 @@ problems have been resolved; deployment freshness is a separate requirement.
 | Exact voicings | Choose and audition alternatives, keep a Frozen realization, or edit up to 16 exact Manual notes in the chord inspector; complete U2 package proof remains open |
 | Playback | One persistent Web Audio graph, serialized transport with loop/seek/pause/live mix, 7 grooves, and 15 instruments spanning physical models (clarinet, flute, four plucked strings), the hybrid concert grand, and CC0-sampled bass/vibes — every shipping model gated by the model-acceptance ledger |
 | Progression library | 27 library entries plus the starter chart, with a machine-checked provenance law |
-| MIDI import | Compare up to five local `.mid` candidates with explained, deterministic rankings; inspect any candidate before Add. Includes a Rust SMF parser in WASM, salvage ledger, per-track preview/overrides, and automated groove matching (M0 shipped; M1 owner-listening gate open) |
+| MIDI import | Compare up to five local `.mid` candidates with explained, deterministic rankings; inspect any candidate before Add. Tied keys remain explicit and do not transfer automatically; Advanced offers a key choice. Includes a Rust SMF parser in WASM, salvage ledger, per-track preview/overrides, and automated groove matching (M0 shipped; M1 owner-listening gate open) |
 | Recovery | Best-effort IndexedDB with localStorage fallback, revision-bound writes, automatic current recovery when startup is untouched, Keep/Discard for conflicts, previous-copy fallback, and visible storage failures |
 | Chart import | Local Changes/legacy JSON files and pasted data get a bounded preview before replacement; migration reports disclose retained data, confirmation retires playback, and imported document IDs survive recovery |
 | JSON export | **Export JSON** prepares and validates a portable chart, then **Download JSON** hands it to the browser; only exact successful delivery advances the export marker |
