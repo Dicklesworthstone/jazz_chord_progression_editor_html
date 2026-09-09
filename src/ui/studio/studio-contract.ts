@@ -605,6 +605,8 @@ export type StudioMidiImportView = Readonly<{
 }>;
 
 export type StudioMidiImportOverridesView = Readonly<{
+  sectionNameOverrides: readonly Readonly<{ startMeasureIndex: number; name: string }>[];
+  sections: readonly Readonly<{ startMeasureIndex: number; name: string; overrideName: string | null }>[];
   tracks: readonly Readonly<{
     index: number;
     label: string;

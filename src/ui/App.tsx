@@ -1098,6 +1098,12 @@ function midiImportOverridesView(
   }
   const excluded = new Set(overridesState.excludedTrackIndices);
   return Object.freeze({
+    sectionNameOverrides: overridesState.sectionNames ?? [],
+    sections: Object.freeze((automation?.sections ?? []).map((section) => Object.freeze({
+      startMeasureIndex: section.startMeasureIndex,
+      name: section.name,
+      overrideName: overridesState.sectionNames?.find((choice) => choice.startMeasureIndex === section.startMeasureIndex)?.name ?? null,
+    }))),
     tracks: Object.freeze(
       (automation === null
         ? decoded.model.tracks.map((_, index) => ({
@@ -3047,6 +3053,7 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
           cancelMidiAudition();
           const absolute: M1ImportOverrides = Object.freeze({
             key: midiImportKeyChoice(next.key),
+            sectionNames: Object.freeze((next.sectionNames ?? []).slice(0, 64).map((choice) => Object.freeze({ ...choice }))),
             excludedTrackIndices: Object.freeze([...next.excludedTrackIndices]),
             alternativeChoices: Object.freeze(
               next.alternativeChoices.map((choice) =>

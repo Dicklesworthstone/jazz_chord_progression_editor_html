@@ -505,13 +505,14 @@ export type M1AlternativeChoice = Readonly<{
 /**
  * The frozen override set (doc §12, including amendment #3 key choice). Overrides re-run the pipeline
  * on the retained decoded model and never touch the document; quantization
- * grid and destination/section-name overrides are deferred, not lost.
+ * grid and destination placement overrides are deferred, not lost.
  */
 export type M1ImportOverrides = Readonly<{
   excludedTrackIndices: readonly number[];
   alternativeChoices: readonly M1AlternativeChoice[];
   grooveStyleId: GrooveStyleId | null;
   key?: M1KeyChoice | null;
+  sectionNames?: readonly Readonly<{ startMeasureIndex: number; name: string }>[];
 }>;
 
 export const M1_EMPTY_IMPORT_OVERRIDES: M1ImportOverrides = Object.freeze({

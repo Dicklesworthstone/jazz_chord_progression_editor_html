@@ -1459,6 +1459,25 @@ export function planAutomationImport(
     sectionStarts.set(0, firstName);
   }
 
+  const sectionNameDecisions: M1TraceDecision[] = [];
+  const renamedSections = new Set<number>();
+  for (const choice of (overrides.sectionNames ?? []).slice(0, 64)) {
+    const valid = Number.isInteger(choice.startMeasureIndex) &&
+      sectionStarts.has(choice.startMeasureIndex) &&
+      !renamedSections.has(choice.startMeasureIndex) &&
+      choice.name.trim().length > 0 && countCodePoints(choice.name) <= 256 &&
+      !/[\u0000-\u001f\u007f\u2028\u2029]/u.test(choice.name);
+    if (valid) {
+      sectionStarts.set(choice.startMeasureIndex, choice.name);
+      renamedSections.add(choice.startMeasureIndex);
+    }
+    sectionNameDecisions.push({
+      subject: `section-at-measure-${String(choice.startMeasureIndex)}`,
+      outcome: valid ? "section-name-override" : "dropped-section-name",
+      reason: valid ? "user override" : "invalid, stale, or duplicate section name",
+    });
+  }
+
   const byMeasure = new Map<number, M1AutomationSpanReading[]>();
   for (const reading of readings) {
     const list = byMeasure.get(reading.span.measureIndex) ?? [];
@@ -1626,11 +1645,11 @@ export function planAutomationImport(
         writtenChords: writtenChordCount,
       },
       bounded(
-        sectionRanges.map((range) => ({
+        [...sectionRanges.map((range) => ({
           subject: range.name,
           outcome: `starts-at-measure-${String(range.start)}`,
           reason: "M1-FORM",
-        })),
+        })), ...sectionNameDecisions],
       ),
     ),
   );

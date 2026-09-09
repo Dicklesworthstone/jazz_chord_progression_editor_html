@@ -20,6 +20,7 @@ import {
   M1_GROOVE_OVERRIDE_EVIDENCE,
   M1_GROOVE_OVERRIDE_ROW,
 } from "../../src/export/midi-import-automation";
+import { batchChordFile } from "../support/midi-batch-fixtures";
 import { createStudioMidiImport } from "../../src/application/studio-midi-import";
 import {
   hexToBytes,
@@ -220,5 +221,42 @@ describe("M1-OVR end-to-end over real decoded bytes", () => {
     expect(JSON.stringify(cleared.automation)).toBe(
       JSON.stringify(preview.automation),
     );
+  });
+});
+
+
+describe("M1 section-name overrides", () => {
+  test("renames only section text, preserving notes through all12 transpositions and clear", async () => {
+    for (let transpose = 0; transpose < 12; transpose += 1) {
+      const importer = service();
+      const original = await importer.readFile("Original.mid", batchChordFile({ transpose }));
+      const named = importer.replanWithOverrides(original, {
+        ...M1_EMPTY_IMPORT_OVERRIDES, sectionNames: [{ startMeasureIndex: 0, name: "Bridge ] \\ 🎵" }],
+      });
+      expect(named.automation?.sections[0]?.name).toBe("Bridge ] \\ 🎵");
+      expect(named.automation?.chartText.split("\n").slice(1)).toEqual(original.automation?.chartText.split("\n").slice(1));
+      expect(named.automation?.readings).toEqual(original.automation?.readings);
+      expect(named.decoded).toBe(original.decoded);
+      expect(named.automation?.chunkTexts.join("")).toBe(named.automation?.chartText);
+      expect(JSON.stringify(named.trace)).toContain("section-name-override");
+      expect(importer.replanWithOverrides(named, M1_EMPTY_IMPORT_OVERRIDES).automation).toEqual(original.automation);
+    }
+  });
+
+  test("rejects invalid and stale names without repairing them; first valid duplicate wins", async () => {
+    const importer = service();
+    const original = await importer.readFile("Original.mid", batchChordFile());
+    for (const name of [" ", "a\nb", "a\rb", "a\u2028b", "x".repeat(257)]) {
+      const next = importer.replanWithOverrides(original, { ...M1_EMPTY_IMPORT_OVERRIDES,
+        sectionNames: [{ startMeasureIndex: 0, name }],
+      });
+      expect(next.automation?.chartText).toBe(original.automation?.chartText);
+      expect(JSON.stringify(next.trace)).toContain("dropped-section-name");
+    }
+    const next = importer.replanWithOverrides(original, { ...M1_EMPTY_IMPORT_OVERRIDES,
+      sectionNames: [{ startMeasureIndex: 99, name: "Stale" }, { startMeasureIndex: 0, name: "First" }, { startMeasureIndex: 0, name: "Second" }],
+    });
+    expect(next.automation?.sections[0]?.name).toBe("First");
+    expect(next.automation?.sections).toHaveLength(1);
   });
 });

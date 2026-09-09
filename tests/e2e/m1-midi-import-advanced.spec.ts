@@ -431,3 +431,43 @@ test("M1-ADV-005 the Advanced overrides re-plan the pending import: picker chang
     throw error;
   }
 });
+
+
+test("M1-ADV-006 section names survive other overrides, clear, reset on file choice and land with Add", async ({ page }, testInfo) => {
+  const ledger = makeLedger("m1-adv-006-section-names", testInfo);
+  const diagnostics = captureDiagnostics(page);
+  try {
+    await openStudio(page);
+    await chooseFile(page, "two-chords.mid", requireGolden("M0-GLD-002").bytesHex);
+    await page.getByTestId("midi-import-advanced-summary").click();
+    const name = page.getByTestId("midi-import-section-name-0");
+    const chart = page.getByTestId("midi-import-chart-text");
+    const original = await chart.textContent();
+    await name.fill("Bridge 🎵");
+    await name.press("Tab");
+    await expect(chart).toContainText("[Bridge 🎵]");
+    await page.getByTestId("midi-import-groove-override").selectOption("bossa-nova@1");
+    await expect(name).toHaveValue("Bridge 🎵");
+    const include = page.getByTestId("midi-import-track-include").first();
+    await include.uncheck();
+    await include.check();
+    await expect(name).toHaveValue("Bridge 🎵");
+    await name.fill("");
+    await name.press("Tab");
+    await expect(chart).toHaveText(original ?? "");
+    await name.fill("New name");
+    await name.press("Tab");
+    await chooseFile(page, "another.mid", requireGolden("M0-GLD-002").bytesHex);
+    await expect(name).toHaveValue("");
+    await name.fill("Imported bridge");
+    await name.press("Tab");
+    await page.locator("#studio-midi-import-commit-rail").click();
+    await expect(page.getByTestId("section-name-field").filter({ visible: true }).last()).toHaveValue("Imported bridge");
+    ledger.log("committed-name", { name: "Imported bridge" });
+    expectCleanDiagnostics(diagnostics);
+    await ledger.flush("passed", diagnostics);
+  } catch (error) {
+    await ledger.flush("failed", diagnostics);
+    throw error;
+  }
+});

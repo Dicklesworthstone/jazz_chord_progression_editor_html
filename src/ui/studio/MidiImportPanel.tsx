@@ -39,6 +39,7 @@ export type MidiImportPanelProps = Readonly<{
     }>[];
     key?: Readonly<{ tonicPitchClass: number; mode: "major" | "minor" }> | null;
     grooveStyleId: string | null;
+    sectionNames?: readonly Readonly<{ startMeasureIndex: number; name: string }>[];
   }>) => void;
   /** Opens the ⌘K command lane — the paste-chart-text route lives there. */
   onOpenCommandLane?: (() => void) | undefined;
@@ -80,6 +81,7 @@ export function MidiImportPanel({
               },
               alternativeOrdinal: span.chosenOrdinal,
             })),
+    sectionNames: overrides?.sectionNameOverrides ?? [],
     key: overrides?.keyOverride ?? null,
     grooveStyleId: overrides === null ? null : overrides.grooveOverrideId,
   });
@@ -325,6 +327,23 @@ export function MidiImportPanel({
               data-testid="midi-import-overrides"
             >
               <p class="studio-midi-import__label">Overrides</p>
+              {overrides.sections.map((section) => (
+                <label class="studio-midi-import__override-select" key={`section-${String(section.startMeasureIndex)}`}>
+                  <span>Section name · bar {String(section.startMeasureIndex + 1)}</span>
+                  <input type="text" maxLength={256}
+                    data-testid={`midi-import-section-name-${String(section.startMeasureIndex)}`}
+                    value={section.overrideName ?? ""} placeholder={section.name}
+                    onChange={(event) => {
+                      const name = event.currentTarget.value;
+                      const current = currentOverrides();
+                      onOverridesChange({ ...current, sectionNames: [
+                        ...current.sectionNames.filter((choice) => choice.startMeasureIndex !== section.startMeasureIndex),
+                        ...(name.trim().length === 0 ? [] : [{ startMeasureIndex: section.startMeasureIndex, name }]),
+                      ] });
+                    }} />
+                  <span>Leave blank to use the MIDI section name.</span>
+                </label>
+              ))}
               {overrides.tiedKeyLabels.length > 1 ? <p data-testid="midi-import-key-ties">Tied keys: {overrides.tiedKeyLabels.join(", ")}</p> : null}
               <label class="studio-midi-import__override-groove">
                 <span>Key</span>

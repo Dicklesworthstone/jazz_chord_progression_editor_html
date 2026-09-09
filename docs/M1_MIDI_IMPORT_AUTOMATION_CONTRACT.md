@@ -459,15 +459,13 @@ rows.
 
 ## 12. Advanced overrides (law M1-OVR, amendment #2, jcpe-qyyn, 2026-08-06)
 
-The Advanced disclosure may override three — and exactly three — automatic
-decisions. Every override re-runs the pipeline **on the retained decoded
+The Advanced disclosure overrides the automatic decisions enumerated below. Every override re-runs the pipeline **on the retained decoded
 model** (never on re-read bytes, never on the emitted chart text), and the
 re-planned preview replaces the pending one atomically: the result card,
 the chart text, the chunk plan, and the trace all restate the overridden
 world. Overrides never touch the document; the commit envelope (§7) lands
-whatever the pending plan says, exactly as before. The quantization-grid
-and destination/section-name overrides remain deferred (recorded here so
-they are not lost).
+whatever the pending plan says, exactly as before. The quantization-grid and destination placement overrides remain deferred.
+Section naming is covered by amendment #4 below.
 
 The frozen override set:
 
@@ -478,6 +476,7 @@ M1ImportOverrides = {
     span: { measureIndex: number, startTick: number },
     alternativeOrdinal: number,              // 0 = the automatic choice
   }[],                                       // ≤ M1_MAX_ALTERNATIVE_CHOICES
+  sectionNames?: readonly { startMeasureIndex: number, name: string }[],
   key?: M1KeyChoice | null,                 // amendment #3; null = Automatic
   grooveStyleId: GrooveStyleId | null,       // null = the automatic match
 }
@@ -526,3 +525,26 @@ out-of-range drop); alternative cases pinning applied ordinals, the
 stale-key drop, and the over-range drop; groove cases pinning the
 short-circuit over every decision row it can shadow; a determinism
 double-run; and mutation controls for each law.
+
+
+### Amendment #4: retained-model section naming (jcpe-qyyn)
+
+Advanced may rename any pending section by its zero-based start-measure index.
+Names contain 1–256 Unicode code points, are not whitespace-only, and contain
+no ASCII controls, DEL, or Unicode line/paragraph separators. Preserve valid
+names exactly; escape brackets and backslashes using the existing chart grammar.
+Only the first64 entries are considered. A stale index, invalid name or duplicate
+of an already accepted index is dropped and recorded as `dropped-section-name`
+in the plan trace. The first valid entry for each index wins. Accepted entries
+emit `section-name-override`. No entries means the existing trace stays unchanged.
+
+Names apply to section metadata, chart text and every chunk header. They do not
+move boundaries, alter notes, change document title, or change destination.
+Clearing a field removes its override and restores the name from the retained
+MIDI model. Other overrides preserve names; choosing another file or candidate
+resets them with the existing override state. Add uses the existing undo envelope.
+
+Proof: independent MIDI across12 transpositions, unchanged chord bodies and
+readings, escaping, clear/restore, invalid/stale/duplicate controls, plus native
+Advanced rename/clear/new-file and Add/Undo checks. This amendment does not
+complete grid selection, placement or matched-groove audition obligations.
