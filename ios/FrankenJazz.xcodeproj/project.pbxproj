@@ -21,9 +21,11 @@
 		607D4B95638C8821CC099EF9 /* JazzPianoAttackLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB092A5B7BF06AE0973E818C /* JazzPianoAttackLayer.swift */; };
 		61B64CC6929000FBD8B3A773 /* JazzRenderCancellation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26ED610E63DE1D26169E4287 /* JazzRenderCancellation.swift */; };
 		681DC907725193E744477345 /* vibraphone-samples.pcm in Resources */ = {isa = PBXBuildFile; fileRef = A8FD8DAA43854C47916963F1 /* vibraphone-samples.pcm */; };
+		6831A0A8EF5478585C81405E /* JazzMyChartsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F3EFF8B9FB61ED1C0552885 /* JazzMyChartsStore.swift */; };
 		6E80AA3A77E0BF7970C4DA54 /* FrankenJazzDSP.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = BA804229AB340DD8AC479702 /* FrankenJazzDSP.xcframework */; };
 		7231E9F74C7E9448D11C2E7F /* piano-attack-samples.pcm in Resources */ = {isa = PBXBuildFile; fileRef = 131F553EF40C35291F6A380D /* piano-attack-samples.pcm */; };
 		9EE58EDFAC86B08170A29FA5 /* FrankenJazzStudioView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FA325F7DCBDACFF4927C2CD /* FrankenJazzStudioView.swift */; };
+		A7AF84CA4CC91FAE0A730DA0 /* JazzMyChartsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AFF381CC146E03742F91A28 /* JazzMyChartsTests.swift */; };
 		B081518AC1AF93724F01D61A /* FrankenJazzTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EEEB0929ABCA3C303443F4B /* FrankenJazzTheme.swift */; };
 		BD2C0B696CE48E2464C26B05 /* JazzAudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5107E1D753E6FDBF3E25BB15 /* JazzAudioEngine.swift */; };
 		BDA6B3D0463084169E782FD9 /* FrankenJazzUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B0098B8D5669EE9A7C05387 /* FrankenJazzUITests.swift */; };
@@ -63,11 +65,13 @@
 		2FA325F7DCBDACFF4927C2CD /* FrankenJazzStudioView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrankenJazzStudioView.swift; sourceTree = "<group>"; };
 		36D63379B10C57704EA5F87B /* MIDIFileWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MIDIFileWriter.swift; sourceTree = "<group>"; };
 		3C97A5F7A7B1ADCC36D72AE2 /* JazzSampledInstrumentRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JazzSampledInstrumentRenderer.swift; sourceTree = "<group>"; };
+		4AFF381CC146E03742F91A28 /* JazzMyChartsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JazzMyChartsTests.swift; sourceTree = "<group>"; };
 		5107E1D753E6FDBF3E25BB15 /* JazzAudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JazzAudioEngine.swift; sourceTree = "<group>"; };
 		51A3FB0B84F37CCE3F7A64F2 /* JazzModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JazzModels.swift; sourceTree = "<group>"; };
 		5B36857E86A6B6E8A006752C /* FrankenJazzCoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrankenJazzCoreTests.swift; sourceTree = "<group>"; };
 		5D4CBE25FB8B8E4FCFDAF547 /* FrankenJazzTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = FrankenJazzTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5EEEB0929ABCA3C303443F4B /* FrankenJazzTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrankenJazzTheme.swift; sourceTree = "<group>"; };
+		7F3EFF8B9FB61ED1C0552885 /* JazzMyChartsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JazzMyChartsStore.swift; sourceTree = "<group>"; };
 		7FFB48E18896C5FF3574A2E5 /* frankenjazz-theory-bridge.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = "frankenjazz-theory-bridge.js"; sourceTree = "<group>"; };
 		825B81230B067CABEC6549E2 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		82C195442D5307014EC8CA82 /* FrankenJazzApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrankenJazzApp.swift; sourceTree = "<group>"; };
@@ -148,6 +152,7 @@
 				8D12733B30A45D0C4948E1C9 /* JazzAudioRenderer.swift */,
 				98BBBEC7A8F2B138F43DC722 /* JazzLibrary.swift */,
 				51A3FB0B84F37CCE3F7A64F2 /* JazzModels.swift */,
+				7F3EFF8B9FB61ED1C0552885 /* JazzMyChartsStore.swift */,
 				148984B9D46867EB3A44F280 /* JazzPhysicalInstrumentRenderer.swift */,
 				BB092A5B7BF06AE0973E818C /* JazzPianoAttackLayer.swift */,
 				26ED610E63DE1D26169E4287 /* JazzRenderCancellation.swift */,
@@ -180,6 +185,7 @@
 			isa = PBXGroup;
 			children = (
 				5B36857E86A6B6E8A006752C /* FrankenJazzCoreTests.swift */,
+				4AFF381CC146E03742F91A28 /* JazzMyChartsTests.swift */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -335,6 +341,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				103FE59C04BFA84D6F6B4490 /* FrankenJazzCoreTests.swift in Sources */,
+				A7AF84CA4CC91FAE0A730DA0 /* JazzMyChartsTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -349,6 +356,7 @@
 				542726B64130A8542A15DCD1 /* JazzAudioRenderer.swift in Sources */,
 				322702B5C1D1850D26FD3255 /* JazzLibrary.swift in Sources */,
 				13E7725387EF66F685604568 /* JazzModels.swift in Sources */,
+				6831A0A8EF5478585C81405E /* JazzMyChartsStore.swift in Sources */,
 				EF2F846322B58EDAD59D8573 /* JazzPhysicalInstrumentRenderer.swift in Sources */,
 				607D4B95638C8821CC099EF9 /* JazzPianoAttackLayer.swift in Sources */,
 				61B64CC6929000FBD8B3A773 /* JazzRenderCancellation.swift in Sources */,

@@ -1317,6 +1317,312 @@ private struct PlaybackRail: View {
     }
 }
 
+private enum MyChartsConfirmation: Identifiable {
+    case open(record: JazzKeptChart, studioRevision: Int)
+    case replace(record: JazzKeptChart, chart: JazzChart, generation: UInt64, studioRevision: Int)
+    case remove(record: JazzKeptChart, generation: UInt64)
+
+    var id: String {
+        switch self {
+        case let .open(record, _): "open-\(record.id)"
+        case let .replace(record, _, _, _): "replace-\(record.id)"
+        case let .remove(record, _): "remove-\(record.id)"
+        }
+    }
+}
+
+private struct MyChartsView: View {
+    @ObservedObject var store: JazzStudioStore
+    @ObservedObject private var library: JazzMyChartsStore
+    @State private var titleDraft = ""
+    @State private var confirmation: MyChartsConfirmation?
+
+    init(store: JazzStudioStore) {
+        self.store = store
+        _library = ObservedObject(wrappedValue: store.myCharts)
+    }
+
+    var body: some View {
+        ZStack {
+            JazzForgeBackground()
+            ScrollView {
+                LazyVStack(spacing: 14) {
+                    introduction
+                    collectionStatus
+                    keptCharts
+                    if let selected = library.selected {
+                        selectedChart(selected)
+                    }
+                }
+                .frame(maxWidth: 620)
+                .padding(18)
+                .frame(maxWidth: .infinity)
+            }
+            .scrollIndicators(.hidden)
+        }
+        .navigationTitle("My Charts")
+        .navigationBarTitleDisplayMode(.inline)
+        .searchable(text: $library.search, prompt: "Search title or key")
+        .safeAreaInset(edge: .bottom, spacing: 0) { actionFeedback }
+        .onChange(of: library.selectedID) { _, _ in
+            titleDraft = library.selected?.chart.title ?? ""
+        }
+        .alert(item: $confirmation, content: confirmationAlert)
+    }
+
+    @ViewBuilder
+    private var actionFeedback: some View {
+        if let message = library.message {
+            Label(
+                message,
+                systemImage: library.messageIsError ? "exclamationmark.triangle.fill" : "checkmark.circle.fill"
+            )
+            .font(.system(size: JazzTheme.size(10.5), weight: .semibold, design: .rounded))
+            .foregroundStyle(library.messageIsError ? JazzTheme.coral : JazzTheme.emerald)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(.ultraThinMaterial)
+            .overlay(alignment: .top) {
+                Rectangle()
+                    .fill((library.messageIsError ? JazzTheme.coral : JazzTheme.emerald).opacity(0.35))
+                    .frame(height: 1)
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(message)
+            .accessibilityIdentifier("my-charts-action-feedback")
+        }
+    }
+
+    private var introduction: some View {
+        JazzPanel(accent: JazzTheme.emerald) {
+            VStack(alignment: .leading, spacing: 12) {
+                JazzSectionLabel(number: "08", title: "Your repertoire", tint: JazzTheme.emerald)
+                Text("Keep charts you want to return to")
+                    .font(.system(size: JazzTheme.size(20), weight: .black, design: .rounded))
+                    .foregroundStyle(JazzTheme.text)
+                Text("Keep captures the complete published chart now—including durations, annotations, instrument, and exact voicings. Later edits do not silently change that copy.")
+                    .font(.system(size: JazzTheme.size(11.5), design: .rounded))
+                    .foregroundStyle(JazzTheme.secondary)
+                Button { library.keep(store.chart) } label: {
+                    Label("Keep current chart", systemImage: "bookmark.fill")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(JazzPrimaryButtonStyle(tint: JazzTheme.emerald))
+                .disabled(library.recoveredFromPrevious)
+                .accessibilityIdentifier("my-charts-keep-current")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var collectionStatus: some View {
+        JazzPanel(accent: library.messageIsError ? JazzTheme.coral : JazzTheme.cyan, padding: 13) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .firstTextBaseline) {
+                    Label(
+                        "\(library.records.count) of \(JazzMyChartsPersistence.maximumRecords) charts",
+                        systemImage: library.recoveredFromPrevious ? "exclamationmark.shield.fill" : "internaldrive.fill"
+                    )
+                    .font(.system(size: JazzTheme.size(11.5), weight: .bold, design: .rounded))
+                    .foregroundStyle(library.recoveredFromPrevious ? JazzTheme.coral : JazzTheme.cyan)
+                    Spacer()
+                    Text(String(format: "%.2f of 32 MiB", Double(library.collectionBytes) / 1_048_576))
+                        .font(.system(size: JazzTheme.size(9.5), weight: .semibold, design: .monospaced))
+                        .foregroundStyle(JazzTheme.secondary)
+                }
+                Text("Collection version \(library.generation) · kept privately on this device")
+                    .font(.system(size: JazzTheme.size(9.5), design: .monospaced))
+                    .foregroundStyle(JazzTheme.secondary)
+                if let message = library.message {
+                    Text(message)
+                        .font(.system(size: JazzTheme.size(11), weight: .semibold, design: .rounded))
+                        .foregroundStyle(library.messageIsError ? JazzTheme.coral : JazzTheme.text)
+                        .accessibilityIdentifier("my-charts-message")
+                }
+                Button { library.reload() } label: {
+                    Label("Refresh collection", systemImage: "arrow.clockwise")
+                }
+                .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.cyan))
+            }
+        }
+    }
+
+    private var keptCharts: some View {
+        JazzPanel(accent: JazzTheme.brass) {
+            VStack(alignment: .leading, spacing: 12) {
+                JazzSectionLabel(number: "09", title: "Kept charts", tint: JazzTheme.brass)
+                if library.records.isEmpty {
+                    Label("No charts are kept yet", systemImage: "music.note.house")
+                        .font(.system(size: JazzTheme.size(13), weight: .semibold, design: .rounded))
+                        .foregroundStyle(JazzTheme.secondary)
+                        .frame(maxWidth: .infinity, minHeight: 72)
+                } else if library.filteredRecords.isEmpty {
+                    Text("No chart title or key matches this search.")
+                        .font(.system(size: JazzTheme.size(12), design: .rounded))
+                        .foregroundStyle(JazzTheme.secondary)
+                        .frame(maxWidth: .infinity, minHeight: 72)
+                } else {
+                    ForEach(library.filteredRecords) { record in
+                        Button { library.select(record.id) } label: {
+                            HStack(spacing: 12) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(record.chart.title)
+                                        .font(.system(size: JazzTheme.size(15), weight: .bold, design: .rounded))
+                                        .foregroundStyle(JazzTheme.text)
+                                        .lineLimit(2)
+                                    Text("\(record.chart.key.rawValue) · \(record.chart.barCount) bars · \(record.chart.chordCount) changes")
+                                        .font(.system(size: JazzTheme.size(10.5), weight: .semibold, design: .monospaced))
+                                        .foregroundStyle(JazzTheme.secondary)
+                                    Text(record.updatedAt.formatted(date: .abbreviated, time: .shortened))
+                                        .font(.system(size: JazzTheme.size(10), design: .rounded))
+                                        .foregroundStyle(JazzTheme.secondary)
+                                }
+                                Spacer(minLength: 8)
+                                Image(systemName: library.selectedID == record.id ? "checkmark.circle.fill" : "chevron.right")
+                                    .foregroundStyle(library.selectedID == record.id ? JazzTheme.emerald : JazzTheme.brass)
+                            }
+                            .padding(13)
+                            .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
+                            .background(
+                                (library.selectedID == record.id ? JazzTheme.emerald : JazzTheme.raised).opacity(0.10),
+                                in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            )
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    .stroke(
+                                        (library.selectedID == record.id ? JazzTheme.emerald : JazzTheme.stroke).opacity(0.65),
+                                        lineWidth: 1
+                                    )
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("my-charts-row-\(record.id.uuidString)")
+                        .accessibilityLabel("\(record.chart.title), key \(record.chart.key.rawValue), \(record.chart.barCount) bars")
+                        .accessibilityValue(library.selectedID == record.id ? "Selected" : "Not selected")
+                    }
+                }
+            }
+        }
+    }
+
+    private func selectedChart(_ record: JazzKeptChart) -> some View {
+        JazzPanel(accent: JazzTheme.violet) {
+            VStack(alignment: .leading, spacing: 13) {
+                JazzSectionLabel(number: "10", title: "Selected copy", tint: JazzTheme.violet)
+                Text(record.chart.title)
+                    .font(.system(size: JazzTheme.size(18), weight: .black, design: .rounded))
+                    .foregroundStyle(JazzTheme.text)
+                Button {
+                    confirmation = .open(record: record, studioRevision: store.revision)
+                } label: {
+                    Label("Open chart…", systemImage: "arrow.up.forward.app.fill")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(JazzPrimaryButtonStyle(tint: JazzTheme.violet))
+                .accessibilityIdentifier("my-charts-open-selected")
+
+                VStack(spacing: 9) {
+                    Button {
+                        library.duplicate(recordID: record.id, expectedGeneration: library.generation)
+                    } label: {
+                        Label("Duplicate with fresh identities", systemImage: "plus.square.on.square")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.emerald))
+                    .disabled(library.recoveredFromPrevious)
+                    .accessibilityIdentifier("my-charts-duplicate-selected")
+
+                    Button {
+                        confirmation = .replace(
+                            record: record,
+                            chart: store.chart,
+                            generation: library.generation,
+                            studioRevision: store.revision
+                        )
+                    } label: {
+                        Label("Replace with current chart…", systemImage: "arrow.triangle.2.circlepath")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.brass))
+                    .disabled(library.recoveredFromPrevious)
+
+                    Button {
+                        confirmation = .remove(record: record, generation: library.generation)
+                    } label: {
+                        Label("Remove kept copy…", systemImage: "trash")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.coral))
+                    .disabled(library.recoveredFromPrevious)
+                }
+
+                Divider().overlay(JazzTheme.stroke)
+                TextField("Kept chart title", text: $titleDraft)
+                    .textFieldStyle(.roundedBorder)
+                    .disabled(library.recoveredFromPrevious)
+                    .accessibilityIdentifier("my-charts-rename-field")
+                Button {
+                    library.rename(
+                        recordID: record.id,
+                        title: titleDraft,
+                        expectedGeneration: library.generation
+                    )
+                } label: {
+                    Label("Rename kept copy", systemImage: "pencil")
+                }
+                .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.cyan))
+                .disabled(library.recoveredFromPrevious)
+                Text("Rename changes only this kept snapshot. Your open chart keeps its own title.")
+                    .font(.system(size: JazzTheme.size(10.5), design: .rounded))
+                    .foregroundStyle(JazzTheme.secondary)
+            }
+        }
+    }
+
+    private func confirmationAlert(_ request: MyChartsConfirmation) -> Alert {
+        switch request {
+        case let .open(record, studioRevision):
+            Alert(
+                title: Text("Open \(record.chart.title)?"),
+                message: Text("This replaces the chart being edited as one undoable action. The kept copy stays unchanged."),
+                primaryButton: .destructive(Text("Open chart")) {
+                    guard store.revision == studioRevision else {
+                        library.reportStaleOpen()
+                        return
+                    }
+                    store.openKeptChart(record.chart, expectedRevision: studioRevision)
+                },
+                secondaryButton: .cancel()
+            )
+        case let .replace(record, chart, generation, studioRevision):
+            Alert(
+                title: Text("Replace kept copy?"),
+                message: Text("Replace “\(record.chart.title)” with the confirmed current chart? The chart being edited stays unchanged."),
+                primaryButton: .destructive(Text("Replace copy")) {
+                    library.replace(
+                        recordID: record.id,
+                        with: chart,
+                        expectedGeneration: generation,
+                        expectedStudioRevision: studioRevision,
+                        currentStudioRevision: store.revision
+                    )
+                },
+                secondaryButton: .cancel()
+            )
+        case let .remove(record, generation):
+            Alert(
+                title: Text("Remove kept copy?"),
+                message: Text("Remove “\(record.chart.title)” from My Charts? The chart being edited and recovery stay unchanged."),
+                primaryButton: .destructive(Text("Remove copy")) {
+                    library.remove(recordID: record.id, expectedGeneration: generation)
+                },
+                secondaryButton: .cancel()
+            )
+        }
+    }
+}
+
 private struct DocumentCenterView: View {
     @ObservedObject var store: JazzStudioStore
     @Environment(\.dismiss) private var dismiss
@@ -1329,9 +1635,23 @@ private struct DocumentCenterView: View {
             ScrollView {
                 VStack(spacing: 14) {
                     JazzAppIdentity()
+                    JazzPanel(accent: JazzTheme.emerald) {
+                        VStack(alignment: .leading, spacing: 12) {
+                            JazzSectionLabel(number: "08", title: "My Charts", tint: JazzTheme.emerald)
+                            Text("Build a private, searchable repertoire of complete chart snapshots on this device.")
+                                .font(.system(size: JazzTheme.size(11.5), design: .rounded))
+                                .foregroundStyle(JazzTheme.secondary)
+                            NavigationLink { MyChartsView(store: store) } label: {
+                                Label("Open My Charts", systemImage: "music.note.house.fill")
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(JazzPrimaryButtonStyle(tint: JazzTheme.emerald))
+                            .accessibilityIdentifier("open-my-charts")
+                        }
+                    }
                     JazzPanel(accent: JazzTheme.cyan) {
                         VStack(alignment: .leading, spacing: 14) {
-                            JazzSectionLabel(number: "08", title: "Open", tint: JazzTheme.cyan)
+                            JazzSectionLabel(number: "09", title: "Open", tint: JazzTheme.cyan)
                             Button { importing = true } label: {
                                 Label("Import a chart, text, or MIDI file", systemImage: "folder.badge.plus")
                                     .frame(maxWidth: .infinity)
@@ -1349,7 +1669,7 @@ private struct DocumentCenterView: View {
                     }
                     JazzPanel(accent: JazzTheme.brass) {
                         VStack(alignment: .leading, spacing: 12) {
-                            JazzSectionLabel(number: "09", title: "Export real files", tint: JazzTheme.brass)
+                            JazzSectionLabel(number: "10", title: "Export real files", tint: JazzTheme.brass)
                             ForEach(ExportKind.allCases) { kind in
                                 if let url = exportURLs[kind] {
                                     ShareLink(item: url) {
@@ -1370,7 +1690,7 @@ private struct DocumentCenterView: View {
                     }
                     JazzPanel(accent: JazzTheme.violet) {
                         VStack(alignment: .leading, spacing: 9) {
-                            JazzSectionLabel(number: "10", title: "Privacy", tint: JazzTheme.violet)
+                            JazzSectionLabel(number: "11", title: "Privacy", tint: JazzTheme.violet)
                             Label("No account, analytics, telemetry, upload, or third-party AI service", systemImage: "lock.shield.fill")
                                 .font(.system(size: JazzTheme.size(12.5), weight: .semibold, design: .rounded))
                                 .foregroundStyle(JazzTheme.text)
