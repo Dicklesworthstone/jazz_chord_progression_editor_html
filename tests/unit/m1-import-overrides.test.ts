@@ -260,3 +260,39 @@ describe("M1 section-name overrides", () => {
     expect(next.automation?.sections).toHaveLength(1);
   });
 });
+
+
+test("section naming keeps two marker boundaries and uses escaped headers", async () => {
+  const base = batchChordFile({ bars: 2 });
+  const marker = (text: string) => [0, 255, 6, text.length, ...new TextEncoder().encode(text)];
+  const events = [...marker("Intro"), ...base.slice(22, 62), ...marker("Bridge"), ...base.slice(62)];
+  const bytes = Uint8Array.from([...base.slice(0, 18), (events.length >>> 24) & 255, (events.length >>> 16) & 255, (events.length >>> 8) & 255, events.length & 255, ...events]);
+  const importer = service();
+  const original = await importer.readFile("Markers.mid", bytes);
+  expect(original.automation?.sections.map((section) => section.startMeasureIndex)).toEqual([0, 1]);
+  const next = importer.replanWithOverrides(original, { ...M1_EMPTY_IMPORT_OVERRIDES,
+    sectionNames: [{ startMeasureIndex: 1, name: "B]" }],
+  });
+  expect(next.automation?.sections.map((section) => [section.startMeasureIndex, section.name])).toEqual([[0, "Intro"], [1, "B]"]]);
+  expect(next.automation?.chartText).toContain("[B\\]]");
+  expect(next.automation?.readings).toEqual(original.automation?.readings);
+});
+
+
+test("section naming bounds work at64 entries and256 Unicode code points", async () => {
+  const importer = service();
+  const original = await importer.readFile("Bound.mid", batchChordFile());
+  const stale = Array.from({ length: 64 }, (_, i) => ({ startMeasureIndex: i + 1, name: "Stale" }));
+  const bounded = importer.replanWithOverrides(original, { ...M1_EMPTY_IMPORT_OVERRIDES,
+    sectionNames: [...stale, { startMeasureIndex: 0, name: "Beyond bound" }],
+  });
+  expect(bounded.automation?.chartText).toBe(original.automation?.chartText);
+  const record = bounded.automation?.trace.find((entry) => entry.stage === "plan");
+  expect(record?.workCounters["sectionNameOverrides"]).toBe(64);
+  expect(record?.workCounters["sectionNameOverridesPastBound"]).toBe(1);
+  const name = "🎵".repeat(256);
+  const valid = importer.replanWithOverrides(original, { ...M1_EMPTY_IMPORT_OVERRIDES, sectionNames: [{ startMeasureIndex: 0, name }] });
+  expect(valid.automation?.sections[0]?.name).toBe(name);
+  const tooLong = importer.replanWithOverrides(original, { ...M1_EMPTY_IMPORT_OVERRIDES, sectionNames: [{ startMeasureIndex: 0, name: name + "a" }] });
+  expect(tooLong.automation?.chartText).toBe(original.automation?.chartText);
+});

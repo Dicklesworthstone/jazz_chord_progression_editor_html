@@ -4336,7 +4336,13 @@
   color: var(--text-primary);
 }
 
-.studio-midi-import__overrides select {
+.studio-midi-import__overrides .studio-midi-import__section-name {
+  display: grid;
+  align-items: stretch;
+}
+
+.studio-midi-import__overrides select,
+.studio-midi-import__overrides input[type="text"] {
   min-inline-size: 0;
   max-inline-size: 100%;
   min-block-size: var(--control-min-block);

@@ -533,7 +533,10 @@ Advanced may rename any pending section by its zero-based start-measure index.
 Names contain 1–256 Unicode code points, are not whitespace-only, and contain
 no ASCII controls, DEL, or Unicode line/paragraph separators. Preserve valid
 names exactly; escape brackets and backslashes using the existing chart grammar.
-Only the first64 entries are considered. A stale index, invalid name or duplicate
+Only the first64 entries are considered; UTF-16 length above512 is rejected
+before scanning a name. The plan trace reports processed and excess entry
+counts when any entries are supplied, bounding name validation to64 ×512
+code units. A stale index, invalid name or duplicate
 of an already accepted index is dropped and recorded as `dropped-section-name`
 in the plan trace. The first valid entry for each index wins. Accepted entries
 emit `section-name-override`. No entries means the existing trace stays unchanged.

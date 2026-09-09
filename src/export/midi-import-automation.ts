@@ -1465,8 +1465,11 @@ export function planAutomationImport(
     const valid = Number.isInteger(choice.startMeasureIndex) &&
       sectionStarts.has(choice.startMeasureIndex) &&
       !renamedSections.has(choice.startMeasureIndex) &&
-      choice.name.trim().length > 0 && countCodePoints(choice.name) <= 256 &&
-      !/[\u0000-\u001f\u007f\u2028\u2029]/u.test(choice.name);
+      choice.name.length <= 512 && choice.name.trim().length > 0 && countCodePoints(choice.name) <= 256 &&
+      Array.from(choice.name).every((character) => {
+        const code = character.codePointAt(0) ?? 0;
+        return code >= 32 && code !== 127 && code !== 0x2028 && code !== 0x2029;
+      });
     if (valid) {
       sectionStarts.set(choice.startMeasureIndex, choice.name);
       renamedSections.add(choice.startMeasureIndex);
@@ -1643,6 +1646,10 @@ export function planAutomationImport(
         measures: bounds.length,
         chunks: chunkTexts.length,
         writtenChords: writtenChordCount,
+        ...(sectionNameDecisions.length === 0 ? {} : {
+          sectionNameOverrides: sectionNameDecisions.length,
+          sectionNameOverridesPastBound: Math.max(0, (overrides.sectionNames?.length ?? 0) - 64),
+        }),
       },
       bounded(
         [...sectionRanges.map((range) => ({

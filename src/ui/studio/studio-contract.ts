@@ -773,6 +773,7 @@ export type StudioShellCallbacks = Readonly<{
     }>[];
     key?: Readonly<{ tonicPitchClass: number; mode: "major" | "minor" }> | null;
     grooveStyleId: string | null;
+    sectionNames?: readonly Readonly<{ startMeasureIndex: number; name: string }>[];
   }>) => void;
   /** Open the MIDI export preview for the current validated chart. */
   onOpenMidiExport: () => void;

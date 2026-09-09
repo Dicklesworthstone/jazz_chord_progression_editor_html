@@ -459,11 +459,20 @@ test("M1-ADV-006 section names survive other overrides, clear, reset on file cho
     await name.press("Tab");
     await chooseFile(page, "another.mid", requireGolden("M0-GLD-002").bytesHex);
     await expect(name).toHaveValue("");
+    await expect(page.getByTestId("midi-import-advanced")).not.toHaveAttribute("open");
+    await page.getByTestId("midi-import-advanced-summary").click();
     await name.fill("Imported bridge");
     await name.press("Tab");
     await page.locator("#studio-midi-import-commit-rail").click();
     await expect(page.getByTestId("section-name-field").filter({ visible: true }).last()).toHaveValue("Imported bridge");
     ledger.log("committed-name", { name: "Imported bridge" });
+    const status = await page.getByTestId("midi-import-status").first().textContent();
+    const count = /as (?:one|(\d+)) edit/.exec(status ?? "");
+    expect(count).not.toBeNull();
+    const undoCount = count?.[1] === undefined ? 1 : Number.parseInt(count[1], 10);
+    for (let i = 0; i < undoCount; i += 1) await page.locator("#studio-undo").click();
+    expect(await page.getByTestId("section-name-field").evaluateAll((inputs) => inputs.map((input) => (input as HTMLInputElement).value))).not.toContain("Imported bridge");
+    await expect(page.locator(".studio-chord-card")).toHaveCount(0);
     expectCleanDiagnostics(diagnostics);
     await ledger.flush("passed", diagnostics);
   } catch (error) {

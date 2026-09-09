@@ -328,7 +328,7 @@ export function MidiImportPanel({
             >
               <p class="studio-midi-import__label">Overrides</p>
               {overrides.sections.map((section) => (
-                <label class="studio-midi-import__override-select" key={`section-${String(section.startMeasureIndex)}`}>
+                <label class="studio-midi-import__section-name" key={`section-${String(section.startMeasureIndex)}`}>
                   <span>Section name · bar {String(section.startMeasureIndex + 1)}</span>
                   <input type="text" maxLength={256}
                     data-testid={`midi-import-section-name-${String(section.startMeasureIndex)}`}

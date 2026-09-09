@@ -2,6 +2,17 @@
 
 Consumer: the user and Codex executing the 2026-09-04 request to implement the reality-check backlog and GitHub voice-leading issue #2. Gate: do not declare this campaign complete while a requested item remains unresolved. Observed defect: the audit found 51 closed records with unfulfilled obligations. Retirement: retire this checklist when the campaign is complete; lasting commands/results belong on the Beads. This inventory is process and earns no implementation credit.
 
+## M1 section naming — jcpe-qyyn continuation (CyanCove)
+
+- [x] Recover current ownership and reserve source/test paths; no peer Agent Mail registrations or messages.
+- [x] Specify bounded per-section names keyed by start measure, exact preservation/escaping, invalid/stale/duplicate drops, and clear/reset behavior.
+- [x] Wire retained-model planning, chunk headers, trace decisions and Advanced section-name fields; preserve names across other overrides and temporary all-excluded refusal.
+- [x] Add actual-decoder transposition, invalid-name, clear/restore and two-marker boundary tests, plus native rename/clear/file-reset/Add/Undo proof.
+- [x] Final RCH Bun1.3.14/Node26:27pass/0fail/383assertions, full typecheck/lint/build pass. Pre-feature8081514 plus new independent tests:3 expected behavioral failures (8 unrelated tests explicitly filtered). Bound64/256 tests and original overrides/audition/commit regressions pass.
+- [x] Native Advanced/Automatic:30pass/0fail/0skip/0retry in94.699s across Chromium/Firefox/WebKit, including320px/no-overflow/unique-ID/axe and actual rename/clear/new-file/reset/exclusion/Add/Undo. Original27pass/3fail setup run retained: replacement file collapses Advanced; reopen it before typing. No product/assertion/timeout relaxation.
+- [x] RCH final e2e TypeScript/ESLint check passes after setup correction; M1 contract10families/0findings and guarded rebuild pass. Artifact8438628bytes SHA256 `80da06bdf62bbe1ff314895080dcf12ce77bacacad713ab3d87fc7768fa99d29`, root/dist identical; build manifest source digest independently matches local source, and319 source hashes/mtimes remain unchanged.
+- [x] Prepare verified source and generated artifact for commit; preserve initial748991c from the concurrent process. Grid/destination placement and matched-groove audition remain open on the original Bead. Fresh solo review; raw logs and all failures retained under ignored `.tmp/cyancove/sections-*`.
+
 ## M1 excluded-track audition repair — jcpe-qyyn (CyanCove, reopened)
 
 - [x] Reconcile Agent Mail, current Beads database, recent commits and CASS availability before claiming. No other registered peers; CASS lexical fuel exhausted and no matching workspace in its local archive.
