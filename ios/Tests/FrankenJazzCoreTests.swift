@@ -4,6 +4,89 @@ import FrankenJazzDSP
 @testable import FrankenJazz
 
 final class FrankenJazzCoreTests: XCTestCase {
+    func testNativeChordPaletteMatchesOriginalVocabularyAndEveryPairParses() throws {
+        XCTAssertEqual(JazzChordPalette.roots.map(\.symbol), [
+            "C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"
+        ])
+        XCTAssertEqual(JazzChordPalette.qualities.map(\.suffix), [
+            "maj7", "m7", "7", "6/9", "add9", "m9", "m7b5", "dim7", "sus4", "13", "7b9", "maj7#11"
+        ])
+
+        for root in JazzChordPalette.roots {
+            for quality in JazzChordPalette.qualities {
+                let symbol = JazzChordPalette.symbol(root: root, quality: quality)
+                let measure = try JazzChordPalette.validatedMeasure(
+                    root: root,
+                    quality: quality,
+                    existingMeasureCount: 0
+                )
+                XCTAssertEqual(measure.chords.map(\.symbol), [symbol])
+                XCTAssertEqual(measure.chords.map(\.beats), [4])
+                XCTAssertNotNil(JazzTheory.parseChord(symbol, in: .c), symbol)
+            }
+        }
+
+        XCTAssertThrowsError(
+            try JazzChordPalette.validatedMeasure(
+                root: JazzChordPalette.roots[0],
+                quality: JazzChordPalette.qualities[0],
+                existingMeasureCount: JazzTheory.maximumMeasures
+            )
+        ) { error in
+            XCTAssertEqual(error as? JazzChordPaletteIssue, .measureLimit(JazzTheory.maximumMeasures))
+        }
+    }
+
+    @MainActor
+    func testNativeChordPaletteAppendIsOneUndoableOwnedMutationWithoutAudioOutput() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FrankenJazzPaletteTests-" + UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let recovery = JazzRecoveryStore(directory: directory)
+        recovery.save(JazzChart(
+            title: "Palette proof",
+            key: .eb,
+            tempoBPM: 147,
+            groove: .bossaNova,
+            instrument: .concertVibes,
+            voicingFamily: .spread,
+            measures: [JazzMeasure(chords: [
+                JazzChordEvent(symbol: "Ebmaj7", annotation: "Keep me", manualMIDIPitches: [51, 55, 58, 62])
+            ])]
+        ))
+        let store = JazzStudioStore(recovery: recovery)
+        let before = store.chart
+        let beforeRevision = store.revision
+        let oldMeasureIDs = before.measures.map(\.id)
+        let oldChordIDs = before.measures.flatMap(\.chords).map(\.id)
+        let root = try XCTUnwrap(JazzChordPalette.roots.first { $0.id == "f-sharp" })
+        let quality = try XCTUnwrap(JazzChordPalette.qualities.first { $0.id == "m7b5" })
+
+        XCTAssertNil(store.appendPaletteChord(root: root, quality: quality))
+        XCTAssertEqual(store.chart.measures.count, before.measures.count + 1)
+        XCTAssertEqual(Array(store.chart.measures.dropLast()).map(\.id), oldMeasureIDs)
+        XCTAssertEqual(Array(store.chart.measures.dropLast()).flatMap(\.chords).map(\.id), oldChordIDs)
+        XCTAssertEqual(store.chart.measures.last?.chords.map(\.symbol), ["F#m7b5"])
+        XCTAssertEqual(store.chart.measures.last?.chords.map(\.beats), [4])
+        XCTAssertEqual(store.chart.title, before.title)
+        XCTAssertEqual(store.chart.key, before.key)
+        XCTAssertEqual(store.chart.tempoBPM, before.tempoBPM)
+        XCTAssertEqual(store.chart.groove, before.groove)
+        XCTAssertEqual(store.chart.instrument, before.instrument)
+        XCTAssertEqual(store.chart.voicingFamily, before.voicingFamily)
+        XCTAssertEqual(store.selectedChord?.symbol, "F#m7b5")
+        XCTAssertEqual(store.revision, beforeRevision + 1)
+        XCTAssertTrue(store.canUndo)
+        XCTAssertTrue(store.draftText.hasSuffix("| F#m7b5 |"))
+
+        store.undo()
+        XCTAssertEqual(store.chart, before)
+        XCTAssertTrue(store.canRedo)
+        store.redo()
+        XCTAssertEqual(store.chart.measures.last?.chords.first?.symbol, "F#m7b5")
+    }
+
     @MainActor
     func testNativeCountInAndMetronomePlansMatchOriginalFourFourPolicy() {
         let fresh = JazzAudioEngine.transportClickPlan(

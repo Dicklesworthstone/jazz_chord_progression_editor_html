@@ -314,6 +314,88 @@ struct JazzChart: Identifiable, Codable, Equatable, Sendable {
     var chartText: String { JazzTheory.formatChartText(measures) }
 }
 
+struct JazzChordPaletteRoot: Identifiable, Equatable, Sendable {
+    let id: String
+    let symbol: String
+    let label: String
+}
+
+struct JazzChordPaletteQuality: Identifiable, Equatable, Sendable {
+    let id: String
+    let suffix: String
+    let label: String
+}
+
+enum JazzChordPaletteIssue: LocalizedError, Equatable {
+    case measureLimit(Int)
+    case invalidGeneratedSymbol(String)
+
+    var errorDescription: String? {
+        switch self {
+        case let .measureLimit(limit):
+            "The chart already has its maximum of \(limit) bars. No chord was added."
+        case let .invalidGeneratedSymbol(symbol):
+            "\(symbol) is not accepted by the native chord grammar. No chord was added."
+        }
+    }
+}
+
+/// The original studio's touch palette vocabulary. Display labels keep proper
+/// accidental glyphs while the generated symbol uses the parser's plain-text
+/// spelling, exactly like typing the same chord into Quick Entry.
+enum JazzChordPalette {
+    static let roots: [JazzChordPaletteRoot] = [
+        .init(id: "c", symbol: "C", label: "C"),
+        .init(id: "d-flat", symbol: "Db", label: "D♭"),
+        .init(id: "d", symbol: "D", label: "D"),
+        .init(id: "e-flat", symbol: "Eb", label: "E♭"),
+        .init(id: "e", symbol: "E", label: "E"),
+        .init(id: "f", symbol: "F", label: "F"),
+        .init(id: "f-sharp", symbol: "F#", label: "F♯"),
+        .init(id: "g", symbol: "G", label: "G"),
+        .init(id: "a-flat", symbol: "Ab", label: "A♭"),
+        .init(id: "a", symbol: "A", label: "A"),
+        .init(id: "b-flat", symbol: "Bb", label: "B♭"),
+        .init(id: "b", symbol: "B", label: "B")
+    ]
+
+    static let qualities: [JazzChordPaletteQuality] = [
+        .init(id: "maj7", suffix: "maj7", label: "maj7"),
+        .init(id: "m7", suffix: "m7", label: "m7"),
+        .init(id: "dom7", suffix: "7", label: "7"),
+        .init(id: "six-nine", suffix: "6/9", label: "6/9"),
+        .init(id: "add9", suffix: "add9", label: "add9"),
+        .init(id: "m9", suffix: "m9", label: "m9"),
+        .init(id: "m7b5", suffix: "m7b5", label: "m7♭5"),
+        .init(id: "dim7", suffix: "dim7", label: "dim7"),
+        .init(id: "sus4", suffix: "sus4", label: "sus4"),
+        .init(id: "thirteen", suffix: "13", label: "13"),
+        .init(id: "seven-flat9", suffix: "7b9", label: "7♭9"),
+        .init(id: "maj7-sharp11", suffix: "maj7#11", label: "maj7♯11")
+    ]
+
+    static func symbol(root: JazzChordPaletteRoot, quality: JazzChordPaletteQuality) -> String {
+        root.symbol + quality.suffix
+    }
+
+    static func validatedMeasure(
+        root: JazzChordPaletteRoot,
+        quality: JazzChordPaletteQuality,
+        existingMeasureCount: Int
+    ) throws -> JazzMeasure {
+        guard existingMeasureCount < JazzTheory.maximumMeasures else {
+            throw JazzChordPaletteIssue.measureLimit(JazzTheory.maximumMeasures)
+        }
+        let generated = symbol(root: root, quality: quality)
+        guard let parsed = try? JazzTheory.parseChart("| \(generated) |"),
+              parsed.measures.count == 1,
+              parsed.measures[0].chords.count == 1 else {
+            throw JazzChordPaletteIssue.invalidGeneratedSymbol(generated)
+        }
+        return parsed.measures[0]
+    }
+}
+
 struct ParsedChart: Equatable, Sendable {
     var measures: [JazzMeasure]
     var normalizedText: String

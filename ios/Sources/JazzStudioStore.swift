@@ -525,6 +525,36 @@ final class JazzStudioStore: ObservableObject {
         }
     }
 
+    /// Add one complete four-beat bar from the original touch palette. The
+    /// palette is only a safer spelling surface: its symbol still has to pass
+    /// the same parser as Quick Entry, and publication stays one ordinary
+    /// store mutation with the same Undo/recovery/audio ownership.
+    @discardableResult
+    func appendPaletteChord(
+        root: JazzChordPaletteRoot,
+        quality: JazzChordPaletteQuality
+    ) -> String? {
+        let measure: JazzMeasure
+        do {
+            measure = try JazzChordPalette.validatedMeasure(
+                root: root,
+                quality: quality,
+                existingMeasureCount: chart.measures.count
+            )
+        } catch {
+            let message = error.localizedDescription
+            notice = message
+            return message
+        }
+
+        audio.stop()
+        mutate { $0.measures.append(measure) }
+        selectedChordID = measure.chords.first?.id
+        let symbol = JazzChordPalette.symbol(root: root, quality: quality)
+        notice = "Added \(symbol) as a new final bar. Undo removes it."
+        return nil
+    }
+
     func duplicateSelectedChord() {
         guard let location = selectedLocation else { return }
         guard canDuplicateSelectedChord else {

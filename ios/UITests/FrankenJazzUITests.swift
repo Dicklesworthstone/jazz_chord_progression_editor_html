@@ -11,6 +11,14 @@ final class FrankenJazzUITests: XCTestCase {
         app.launch()
     }
 
+    private func revealAboveTransport(_ element: XCUIElement, maximumSwipes: Int = 10) {
+        let transport = app.buttons["transport-play-pause"]
+        for _ in 0..<maximumSwipes {
+            guard !element.isHittable || element.frame.maxY >= transport.frame.minY - 8 else { return }
+            app.swipeUp()
+        }
+    }
+
     func testRealPlaybackAndChordInspectorPath() throws {
         let play = app.buttons["Play"]
         XCTAssertTrue(play.waitForExistence(timeout: 3))
@@ -112,6 +120,44 @@ final class FrankenJazzUITests: XCTestCase {
 
         let proof = XCTAttachment(screenshot: app.screenshot())
         proof.name = "FrankenJazz touch undo and redo"
+        proof.lifetime = .keepAlways
+        add(proof)
+    }
+
+    func testChordPaletteBuildsARealUndoableBarWithoutPlayingAudio() throws {
+        let toggle = app.buttons["quick-entry-toggle"]
+        XCTAssertTrue(toggle.waitForExistence(timeout: 3))
+        revealAboveTransport(toggle)
+        XCTAssertTrue(toggle.isHittable)
+        toggle.tap()
+
+        let root = app.buttons["chord-palette-root-d-flat"]
+        let quality = app.buttons["chord-palette-quality-m7b5"]
+        XCTAssertTrue(root.waitForExistence(timeout: 3))
+        revealAboveTransport(root)
+        XCTAssertTrue(root.isHittable)
+        XCTAssertGreaterThanOrEqual(root.frame.width, 44)
+        XCTAssertGreaterThanOrEqual(root.frame.height, 44)
+        root.tap()
+        expectation(for: NSPredicate(format: "value == 'Selected'"), evaluatedWith: root)
+        waitForExpectations(timeout: 2)
+
+        XCTAssertTrue(quality.waitForExistence(timeout: 3))
+        revealAboveTransport(quality)
+        XCTAssertTrue(quality.isHittable)
+        XCTAssertGreaterThanOrEqual(quality.frame.width, 44)
+        XCTAssertGreaterThanOrEqual(quality.frame.height, 44)
+        XCTAssertEqual(quality.label, "Add Dbm7b5 as a new bar")
+        quality.tap()
+
+        let added = app.buttons.matching(
+            NSPredicate(format: "label BEGINSWITH 'Measure 9, Dbm7b5'")
+        ).firstMatch
+        XCTAssertTrue(added.waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["undo-chart-change"].isEnabled)
+
+        let proof = XCTAttachment(screenshot: app.screenshot())
+        proof.name = "FrankenJazz original chord palette parity"
         proof.lifetime = .keepAlways
         add(proof)
     }

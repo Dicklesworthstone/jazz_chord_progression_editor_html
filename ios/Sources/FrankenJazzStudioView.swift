@@ -357,13 +357,14 @@ private struct ChartEditorView: View {
                         HStack {
                             JazzSectionLabel(number: "03", title: "Quick entry", tint: JazzTheme.violet)
                             Spacer()
-                            Text(quickEntryExpanded ? "Done" : "Edit chart")
+                            Text(quickEntryExpanded ? "Done" : "Build or edit")
                                 .font(.system(size: JazzTheme.size(12), weight: .semibold, design: .rounded))
                             Image(systemName: quickEntryExpanded ? "chevron.up" : "chevron.down")
                         }
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .accessibilityIdentifier("quick-entry-toggle")
                 } else {
                     HStack {
                         JazzSectionLabel(number: "03", title: "Quick entry", tint: JazzTheme.violet)
@@ -374,6 +375,7 @@ private struct ChartEditorView: View {
                     }
                 }
                 if quickEntryExpanded || !compact {
+                    ChordPaletteView(store: store)
                     TextEditor(text: Binding(get: { store.draftText }, set: store.setDraft))
                         .focused($editorFocused)
                         .font(.system(size: JazzTheme.size(15), weight: .medium, design: .monospaced))
@@ -437,6 +439,89 @@ private struct ChartEditorView: View {
         .font(.system(size: JazzTheme.size(10.5), weight: .medium, design: .rounded))
         .foregroundStyle(JazzTheme.secondary)
         .padding(.bottom, 6)
+    }
+}
+
+private struct ChordPaletteView: View {
+    @ObservedObject var store: JazzStudioStore
+    @State private var selectedRootID = "c"
+
+    private var selectedRoot: JazzChordPaletteRoot {
+        JazzChordPalette.roots.first(where: { $0.id == selectedRootID })
+            ?? JazzChordPalette.roots[0]
+    }
+
+    private let qualityColumns = [
+        GridItem(.adaptive(minimum: 68, maximum: 104), spacing: 8)
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Label("Chord palette", systemImage: "square.grid.3x3.fill")
+                    .font(.system(size: JazzTheme.size(13), weight: .bold, design: .rounded))
+                    .foregroundStyle(JazzTheme.paper)
+                Spacer()
+                Text("Tap a quality to add a bar")
+                    .font(.system(size: JazzTheme.size(9.5), weight: .medium, design: .rounded))
+                    .foregroundStyle(JazzTheme.secondary)
+            }
+
+            ScrollView(.horizontal) {
+                HStack(spacing: 7) {
+                    ForEach(JazzChordPalette.roots) { root in
+                        Button {
+                            selectedRootID = root.id
+                        } label: {
+                            Text(root.label)
+                                .font(.system(size: JazzTheme.size(13), weight: .bold, design: .rounded))
+                                .frame(minWidth: 44, minHeight: 44)
+                                .padding(.horizontal, 5)
+                                .foregroundStyle(root.id == selectedRootID ? JazzTheme.background : JazzTheme.text)
+                                .background(
+                                    root.id == selectedRootID ? JazzTheme.brass : JazzTheme.raised,
+                                    in: RoundedRectangle(cornerRadius: 11)
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 11)
+                                        .stroke(root.id == selectedRootID ? JazzTheme.brass : JazzTheme.stroke)
+                                )
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("chord-palette-root-\(root.id)")
+                        .accessibilityLabel("Palette root \(root.label)")
+                        .accessibilityValue(root.id == selectedRootID ? "Selected" : "Not selected")
+                    }
+                }
+            }
+            .scrollIndicators(.hidden)
+
+            LazyVGrid(columns: qualityColumns, spacing: 8) {
+                ForEach(JazzChordPalette.qualities) { quality in
+                    let symbol = JazzChordPalette.symbol(root: selectedRoot, quality: quality)
+                    Button {
+                        store.appendPaletteChord(root: selectedRoot, quality: quality)
+                    } label: {
+                        Text(quality.label)
+                            .font(.system(size: JazzTheme.size(11.5), weight: .bold, design: .rounded))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.72)
+                            .frame(maxWidth: .infinity, minHeight: 44)
+                            .foregroundStyle(JazzTheme.violet)
+                            .background(JazzTheme.raised, in: RoundedRectangle(cornerRadius: 11))
+                            .overlay(RoundedRectangle(cornerRadius: 11).stroke(JazzTheme.violet.opacity(0.34)))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("chord-palette-quality-\(quality.id)")
+                    .accessibilityLabel("Add \(symbol) as a new bar")
+                }
+            }
+        }
+        .padding(12)
+        .background(JazzTheme.editorSurface.opacity(0.78), in: RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(JazzTheme.violet.opacity(0.34)))
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("chord-palette")
     }
 }
 
