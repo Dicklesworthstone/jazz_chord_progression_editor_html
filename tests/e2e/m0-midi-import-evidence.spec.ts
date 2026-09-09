@@ -1,13 +1,42 @@
 import { expect, test, type Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 
 import {
   cards,
   captureDiagnostics,
   expectCleanDiagnostics,
-  openStudio,
 } from "./u1-chart-kit";
+
+test.use({ userAgent: "OpenAI File Downloader, XaiImageApiFetch/1.0" });
+
+/**
+ * M0 needs the real seeded studio unwound to empty history, not a mouse
+ * actionability proof. The saved WebKit failure spent 6.56s waiting for Undo
+ * to be visually stable before selecting any MIDI bytes. Activate the same
+ * native button by keyboard, preserving the seed and empty-history witnesses.
+ * The shared U1 mouse helper and every import assertion/deadline stay intact.
+ */
+async function openStudio(page: Page): Promise<void> {
+  const started = performance.now();
+  await page.goto(pathToFileURL(join(process.cwd(), "jazz_chord_progression_editor.html")).href, { waitUntil: "load" });
+  await expect(page.locator('[data-app-ready="true"]')).toBeVisible();
+  await expect(cards(page).first()).toBeVisible();
+  const seeded = performance.now();
+  const undo = page.locator("#studio-undo");
+  let presses = 0;
+  while (presses < 6 && await undo.isEnabled()) {
+    await undo.press("Enter");
+    presses++;
+  }
+  await expect(cards(page)).toHaveCount(0);
+  await expect(undo).toBeDisabled();
+  await test.info().attach("m0-setup", {
+    body: JSON.stringify({ navigationAndSeedMs: seeded - started, undoMs: performance.now() - seeded, presses, emptyChart: true, emptyHistory: true }),
+    contentType: "application/json",
+  });
+}
 
 /**
  * M0 wasm-boundary evidence for bead jcpe-v3c2.3, in three real engines.

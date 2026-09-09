@@ -2,6 +2,16 @@
 
 Consumer: the user and Codex executing the 2026-09-04 request to implement the reality-check backlog and GitHub voice-leading issue #2. Gate: do not declare this campaign complete while a requested item remains unresolved. Observed defect: the audit found 51 closed records with unfulfilled obligations. Retirement: retire this checklist when the campaign is complete; lasting commands/results belong on the Beads. This inventory is process and earns no implementation credit.
 
+## M0 setup timeout — jcpe-1416 (CodexRuntime)
+
+- [x] Inspect original saved native trace: three Undo stability waits consume532ms,4377ms,1650ms; teardown begins during setup before file selection. A quiet passing rerun is not the fix.
+- [x] Claim the ready leaf; preserve original parent contract, authored MIDI bytes, starter witness, empty chart/history, import/refusal/recovery assertions and30s/5s deadlines.
+- [x] Scope keyboard activation of the same real Undo button to M0 evidence; leave shared U1 mouse setup unchanged. Record boot/Undo phase timings, never use them as musical cutoffs.
+- [ ] Prove the mechanism in three native engines: continuously moving Undo rejects ordinary mouse actionability, while actual keyboard activation establishes the same empty prerequisites and malformed/valid-file recovery. A wrong-key mutation must fail setup.
+- [ ] Run the original complete M0 evidence gate (163 production tests,18 native cases) with input hashes and complete diagnostics.
+- [ ] Run relevant type/lint/static checks and the unchanged aggregate; report its next actual gate, including human requirements without waiver.
+- [ ] Freshly review gate diffs, record exact results, close only with original acceptance fulfilled, and commit/push explicit paths. This is verification setup repair, not a new musical feature or deployment acceptance.
+
 ## Batch local MIDI comparison — jcpe-zw47 (CodexRuntime)
 
 - [x] Claim the independent ready leaf and read existing M0/M1 contracts and composition.
