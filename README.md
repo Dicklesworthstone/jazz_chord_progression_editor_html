@@ -42,7 +42,7 @@ acceptance gates, and [`ios/README.md`](ios/README.md) for build instructions.
 
 ## What works today
 
-This table describes the repository build at `a50e471`. September 8 checks of both
+This table describes the repository build at `1bd322d`, including batch MIDI comparison. September 8 checks of both
 [jazzchords.org](https://jazzchords.org/) and its
 [Vercel mirror](https://changes-jazz-progression-studio.vercel.app/) recorded the
 older committed artifact from `11ef504`. Both boot and play in desktop and phone
