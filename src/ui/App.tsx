@@ -344,6 +344,7 @@ export type AppActions = Readonly<{
     midiPitch: number,
     gesture: StudioAudioGesture,
   ) => StudioControllerActionResult;
+  releasePreviewPitches: StudioController["releasePreviewPitches"];
   /** Sound one voiced pitch set through the same lane (M1 audition). */
   previewPitches: (
     midiPitches: readonly number[],
@@ -1825,7 +1826,8 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
   /*
    * jcpe-qyyn audition: presentation-only. The timers fire the same
    * click-preview action a pointer press fires; cancelling clears them
-   * before the next step sounds. Any commit, discard, or new file cancels.
+   * before the next step sounds and release its exact controller owner.
+   * Any commit, discard, override, new file or unmount cancels pending preparation.
    */
   const [midiAuditioning, setMidiAuditioning] = useState(false);
   /* M1-OVR: the absolute override set for the pending preview. */
@@ -1849,8 +1851,14 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
       window.clearTimeout(timer);
     }
     midiAuditionTimers.current = [];
+    void actions.releasePreviewPitches();
     setMidiAuditioning(false);
   };
+  useEffect(() => () => {
+    for (const timer of midiAuditionTimers.current) window.clearTimeout(timer);
+    midiAuditionTimers.current = [];
+    void actions.releasePreviewPitches();
+  }, [actions.releasePreviewPitches]);
   const [rovingFocusId, setRovingFocusId] = useState<string | null>(null);
   const [editRefusal, setEditRefusal] = useState<
     StudioShellView["chart"]["editRefusal"]
@@ -3115,10 +3123,7 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
           const last = steps[steps.length - 1];
           midiAuditionTimers.current.push(
             window.setTimeout(
-              () => {
-                midiAuditionTimers.current = [];
-                setMidiAuditioning(false);
-              },
+              cancelMidiAudition,
               (last?.atMs ?? 0) + 1_400,
             ),
           );
@@ -3960,6 +3965,7 @@ export function StudioRoot({
         previewChord: controller.previewChord,
         previewPitch: controller.previewPitch,
         previewPitches: controller.previewPitches,
+        releasePreviewPitches: controller.releasePreviewPitches,
         inspector: controller,
         readTransportPlayheadLabel: controller.readTransportPlayheadLabel,
         readTransportAnalysisFrame: controller.readTransportAnalysisFrame,

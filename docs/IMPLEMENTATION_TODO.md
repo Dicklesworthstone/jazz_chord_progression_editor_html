@@ -2,6 +2,16 @@
 
 Consumer: the user and Codex executing the 2026-09-04 request to implement the reality-check backlog and GitHub voice-leading issue #2. Gate: do not declare this campaign complete while a requested item remains unresolved. Observed defect: the audit found 51 closed records with unfulfilled obligations. Retirement: retire this checklist when the campaign is complete; lasting commands/results belong on the Beads. This inventory is process and earns no implementation credit.
 
+## M1 audition lifecycle and matched groove — jcpe-qyyn (CyanCove)
+
+- [x] Trace current source-note timers, controller preparation generations and isolated X1 preview ownership.
+- [x] Prove Stop retires sounding audition voices and cancels preparation in flight; recorded real adapter calls contain no cancelled audition start. A newer keyboard preview survives stale cancellation. Revision/ready transport remain unchanged; no playing-band acceptance claimed.
+- [x] Wire cancellation into Stop, replacement, overrides, Add, Discard, normal completion and component cleanup using the existing exact-owner release path.
+- [x] RCH hz2, Bun1.3.14/Node26:38 focused tests/621 assertions,73 M1 evidence tests, full typecheck/lint/guarded build pass. Native import suites:36 pass across Chromium/Firefox/WebKit,112389.469ms, each one attempt; zero skips/flakes/failures. Browser checks prove UI lifecycle, not acoustic output. Missing remote TypeScript cache and test closure-flag lint failures were fixed; original logs retained.
+- [ ] Build a private validated import document and compile the selected groove with explicit bounded duration and deterministic identities; do not mutate the destination chart.
+- [ ] Schedule the immutable groove through the preview owner with bounded lookahead, preserving onset, gate and velocity; expose preparation/refusal truthfully.
+- [ ] Prove groove timing, cancellation, replacement and unchanged destination through independent fixtures and real browser/audio adapters; retain original Bead open until complete.
+
 ## M1 import placement — jcpe-qyyn continuation (CyanCove)
 
 - [x] Confirm live ownership, read envelope/atomic insertion laws and reserve affected paths.
@@ -22,7 +32,7 @@ Consumer: the user and Codex executing the 2026-09-04 request to implement the r
 - [x] Pass RCH grid/override/audition/automatic regression (31 tests, 522 assertions), expanded M1 evidence gate (66 tests, 11 pins, 6 goldens), full type/lint and guarded build checks with Bun 1.3.14/Node 26 on hz2. Added previously omitted M1 suites to the evidence input closure; no gate was weakened.
 - [x] Prove native grid/name/refusal/new-file/Add/Undo behavior and existing Automatic/Advanced desktop/320px/a11y cases: 33 passed across Chromium/Firefox/WebKit in 101353.897 ms; zero skips, retries, failures or flaky cases. Logs: `.tmp/cyancove/grid-browser*`.
 - [x] Prepare verified source/artifact for commit: final RCH rebuild and M1 contract (10 families, zero findings) passed; all319 source hashes/mtimes unchanged, root/dist identical at8439813 bytes, SHA256 `ae777eb05de83a16f48c5e774d04c7bef5c475b7d939f96da31bd8b69205cf3b`. Raw failures and solo review retained under `.tmp/cyancove/grid-*`.
-- [ ] Finish destination placement and matched-groove audition before closing the original Bead; no deployment or human-listening acceptance claimed.
+- [ ] Finish matched-groove audition before closing the original Bead; destination placement is complete; no deployment or human-listening acceptance claimed.
 
 ## M1 section naming — jcpe-qyyn continuation (CyanCove)
 
@@ -43,7 +53,7 @@ Consumer: the user and Codex executing the 2026-09-04 request to implement the r
 - [x] Prove lower/upper exclusion, duplicates and invalid indices, all-excluded refusal, re-inclusion and determinism across all12 transpositions: RCH `bun test tests/unit/m1-import-audition.test.ts`,6pass/0fail/142assertions.
 - [x] RCH Bun1.3.14: audition/overrides/automatic integration23pass/0fail/278assertions; full `bun run typecheck`, `bun run lint`, `bun run build` exit0 on real Node26. Guarded artifact8436713bytes, SHA256 `2705cc512a1a7f4edf5853e70a2283b11d2376c88b79f494143b65757f375fa9`, root/dist identical;319 source hashes and mtimes unchanged.
 - [x] Native `m1-midi-import-auto.spec.ts`:12pass/0fail/0skip/0retry across Chromium/Firefox/WebKit in42.1s, actual generated artifact; unchanged Add/Undo/settings/refusal/audition lifecycle assertions and clean page/console diagnostics. This suite proves UI lifecycle, not exact audible exclusion pitches; those have real-decoder/service proof above.
-- [ ] Finish the original Advanced grid/destination and matched-groove audition obligations before closing `jcpe-qyyn`. This source-note exclusion fix does not satisfy those deferred promises.
+- [ ] Finish matched-groove audition before closing `jcpe-qyyn`; the Advanced grid/destination obligations are now complete. This source-note exclusion fix does not satisfy those deferred promises.
 
 Final pre-commit RCH contract validation:10 families/0findings; guarded rebuild reproduces the exact browser-tested artifact above. The first repeat build stopped on a missing worker dependency symlink; task-local setup restored it and the unchanged build passed. Fresh solo review; no independent-person signoff.
 
