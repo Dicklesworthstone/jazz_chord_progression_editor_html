@@ -15,6 +15,9 @@ import {
   type MidiSalvageReport,
   type SmfDecodeFrame,
   planAutomationImport,
+  automationTonicSpelling,
+  isAutomationKeyChoice,
+  type M1KeyChoice,
   completeImportTrace,
   traceRecord,
   type M1AutomationPlan,
@@ -50,6 +53,23 @@ export const MAX_MIDI_IMPORT_DRAFT_CODE_POINTS = 4_096;
 
 /* Re-exported so runtime consumers stay off the export-layer deep path. */
 export type { M1ImportOverrides } from "../export";
+
+export const MIDI_IMPORT_KEY_OPTIONS = Object.freeze(
+  (["major", "minor"] as const).flatMap((mode) =>
+    ([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] as const).map((tonicPitchClass) => {
+      const spelling = automationTonicSpelling(tonicPitchClass, mode);
+      const accidental = spelling.alter === 0 ? "" : spelling.alter < 0 ? "b" : "#";
+      return Object.freeze({ id: `${String(tonicPitchClass)}/${mode}`,
+        label: `${spelling.step}${accidental} ${mode}`,
+        key: Object.freeze({ tonicPitchClass, mode }),
+      });
+    }),
+  ),
+);
+
+export function midiImportKeyChoice(value: unknown): M1KeyChoice | null {
+  return isAutomationKeyChoice(value) ? Object.freeze({ ...value }) : null;
+}
 
 export type MidiImportPreview = Readonly<{
   fileName: string;
@@ -643,7 +663,7 @@ export function createStudioMidiImport(
         });
       }
       const keySpelled = automation.keySpelled;
-      const key = automation.key;
+      const key = automation.keySelection;
       if (key !== null && keySpelled !== null) {
         if (
           !issue("key", () =>
@@ -666,7 +686,7 @@ export function createStudioMidiImport(
           });
         }
       } else {
-        withheld("key", "No key could be inferred from this file.");
+        withheld("key", automation.key === null ? "No key could be inferred from this file." : "Ambiguous key; choose a key in Advanced to apply one.");
       }
       const title = sectionNameFor(preview.fileName);
       if (before.title === title) {

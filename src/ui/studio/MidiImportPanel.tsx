@@ -37,6 +37,7 @@ export type MidiImportPanelProps = Readonly<{
       span: Readonly<{ measureIndex: number; startTick: number }>;
       alternativeOrdinal: number;
     }>[];
+    key?: Readonly<{ tonicPitchClass: number; mode: "major" | "minor" }> | null;
     grooveStyleId: string | null;
   }>) => void;
   /** Opens the ⌘K command lane — the paste-chart-text route lives there. */
@@ -79,6 +80,7 @@ export function MidiImportPanel({
               },
               alternativeOrdinal: span.chosenOrdinal,
             })),
+    key: overrides?.keyOverride ?? null,
     grooveStyleId: overrides === null ? null : overrides.grooveOverrideId,
   });
   const headingId = `studio-midi-import-heading-${context}`;
@@ -323,6 +325,19 @@ export function MidiImportPanel({
               data-testid="midi-import-overrides"
             >
               <p class="studio-midi-import__label">Overrides</p>
+              {overrides.tiedKeyLabels.length > 1 ? <p data-testid="midi-import-key-ties">Tied keys: {overrides.tiedKeyLabels.join(", ")}</p> : null}
+              <label class="studio-midi-import__override-groove">
+                <span>Key</span>
+                <select data-testid="midi-import-key-override"
+                  id={`studio-midi-import-key-override-${context}`}
+                  value={overrides.keyOverride === null ? "" : `${String(overrides.keyOverride.tonicPitchClass)}/${overrides.keyOverride.mode}`}
+                  onChange={(event) => { onOverridesChange({ ...currentOverrides(),
+                    key: overrides.keyOptions.find((option) => option.id === event.currentTarget.value)?.key ?? null,
+                  }); }}>
+                  <option value="">Automatic</option>
+                  {overrides.keyOptions.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+                </select>
+              </label>
               <ul class="studio-midi-import__override-tracks">
                 {overrides.tracks.map((track) => (
                   <li key={`track-${String(track.index)}`}>

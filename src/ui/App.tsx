@@ -67,6 +67,8 @@ import {
   type StudioImportView,
   type StudioLocalReplacementService,
   type StudioLocalReplacementView,
+  MIDI_IMPORT_KEY_OPTIONS,
+  midiImportKeyChoice,
 } from "../application/runtime";
 import {
   GROOVE_STYLE_IDS,
@@ -1018,7 +1020,7 @@ function midiImportAutoView(
       value: `${String(automation.initialMeter.numerator)}/${String(automation.initialMeter.beatUnit)} from the file`,
     }),
   ];
-  const key = automation.key;
+  const key = automation.keySelection;
   const keySpelled = automation.keySpelled;
   if (key !== null && keySpelled !== null) {
     const accidental =
@@ -1026,10 +1028,15 @@ function midiImportAutoView(
     cardLines.push(
       Object.freeze({
         id: "auto-key",
-        label: "Key",
-        value: `${keySpelled.step}${accidental} ${key.mode}, heard across the whole file`,
+        label: automation.keySelectionSource === "override" ? "Key chosen by you" : "Suggested key",
+        value: `${keySpelled.step}${accidental} ${key.mode}`,
       }),
     );
+  }
+  if (key === null && automation.key !== null) {
+    cardLines.push(Object.freeze({ id: "auto-key", label: "Ambiguous key",
+      value: `${String(automation.key.tiedKeys.length)} tied choices; no key will be applied automatically.`,
+    }));
   }
   const notes: string[] = [];
   if (automation.unwrittenSpanCount > 0) {
@@ -1084,7 +1091,8 @@ function midiImportOverridesView(
   if (
     automation === null &&
     overridesState.excludedTrackIndices.length === 0 &&
-    overridesState.grooveStyleId === null
+    overridesState.grooveStyleId === null &&
+    overridesState.key == null
   ) {
     return null;
   }
@@ -1131,6 +1139,10 @@ function midiImportOverridesView(
     ),
     grooveOptions: Object.freeze(grooveOptions.map((o) => Object.freeze({ ...o }))),
     grooveOverrideId: overridesState.grooveStyleId,
+    keyOptions: MIDI_IMPORT_KEY_OPTIONS,
+    keyOverride: overridesState.key ?? null,
+    tiedKeyLabels: Object.freeze((automation?.key?.tiedKeys ?? []).map((candidate) =>
+      MIDI_IMPORT_KEY_OPTIONS.find((option) => option.key.tonicPitchClass === candidate.tonicPitchClass && option.key.mode === candidate.mode)?.label ?? "Unknown key")),
   });
 }
 
@@ -3034,6 +3046,7 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
           if (midiPreview === null) return;
           cancelMidiAudition();
           const absolute: M1ImportOverrides = Object.freeze({
+            key: midiImportKeyChoice(next.key),
             excludedTrackIndices: Object.freeze([...next.excludedTrackIndices]),
             alternativeChoices: Object.freeze(
               next.alternativeChoices.map((choice) =>

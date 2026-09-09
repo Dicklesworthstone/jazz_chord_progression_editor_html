@@ -16,6 +16,9 @@ import {
 import {
   type M1GrooveChoice,
   type M1KeyInference,
+  type M1KeyEvidence,
+  type M1KeyChoice,
+  type M1KeySelection,
   type M1Rational,
   type M1Span,
   type M1TrackClassification,
@@ -59,6 +62,9 @@ import type { PitchClass, SpelledPitchClass } from "../domain";
 export type {
   M1AlternativeChoice,
   M1ImportOverrides,
+  M1KeyChoice,
+  M1KeyEvidence,
+  M1KeySelection,
   M1ImportTrace,
   M1SpanKey,
   M1TraceDecision,
@@ -426,12 +432,13 @@ export function totalPitchClassMass(
 
 export function inferAutomationKey(
   masses: readonly number[],
-): M1KeyInference {
+): M1KeyEvidence {
   if (masses.every((mass) => mass === 0)) return null;
   let best:
     | Readonly<{ tonic: number; mode: "major" | "minor"; score: number }>
     | null = null;
   let runnerUpScore = 0;
+  let tiedKeys: M1KeyChoice[] = [];
   for (const mode of ["major", "minor"] as const) {
     const profile =
       mode === "major" ? M1_MAJOR_KEY_PROFILE : M1_MINOR_KEY_PROFILE;
@@ -440,6 +447,9 @@ export function inferAutomationKey(
       for (let pc = 0; pc < 12; pc += 1) {
         score += (masses[pc] ?? 0) * (profile[(pc - tonic + 12) % 12] ?? 0);
       }
+      const choice = Object.freeze({ tonicPitchClass: tonic as M1KeyChoice["tonicPitchClass"], mode });
+      if (best === null || score > best.score) tiedKeys = [choice];
+      else if (score === best.score) tiedKeys.push(choice);
       if (best === null) {
         best = { tonic, mode, score };
         continue;
@@ -462,7 +472,17 @@ export function inferAutomationKey(
     mode: best.mode,
     score: best.score,
     runnerUpScore,
+    tiedKeys: Object.freeze(tiedKeys),
   });
+}
+
+/** Validate a key override without clamping tonics or repairing modes. */
+export function isAutomationKeyChoice(value: unknown): value is M1KeyChoice {
+  if (typeof value !== "object" || value === null) return false;
+  const pc: unknown = Reflect.get(value, "tonicPitchClass");
+  const mode: unknown = Reflect.get(value, "mode");
+  return typeof pc === "number" && Number.isInteger(pc) && pc >= 0 && pc < 12 &&
+    (mode === "major" || mode === "minor");
 }
 
 /** Tonic spelling under the frozen mode tables. */
@@ -891,7 +911,9 @@ export type M1AutomationPlan = Readonly<{
   classifications: readonly M1TrackClassification[];
   spans: readonly M1Span[];
   readings: readonly M1AutomationSpanReading[];
-  key: M1KeyInference;
+  key: M1KeyEvidence;
+  keySelection: M1KeySelection["keySelection"];
+  keySelectionSource: M1KeySelection["keySelectionSource"];
   keySpelled: SpelledPitchClass | null;
   groove: M1GrooveChoice;
   sections: readonly M1AutomationSection[];
@@ -1149,20 +1171,28 @@ export function planAutomationImport(
 
   const masses = totalPitchClassMass(ppq, value.model.meterMap, roleTracks);
   const key = inferAutomationKey(masses);
+  const validOverride = isAutomationKeyChoice(overrides.key);
+  const keySelection = validOverride
+    ? Object.freeze({ ...overrides.key })
+    : key?.tiedKeys.length === 1 ? key.tiedKeys[0] ?? null : null;
+  const keySelectionSource = validOverride ? "override" : keySelection === null ? "none" : "inferred";
   trace.push(
-    traceRecord("infer-key", masses, { candidates: 24 }, [
-      {
-        subject: "key",
-        outcome:
-          key === null ? "none" : `${String(key.tonicPitchClass)}/${key.mode}`,
+    traceRecord("infer-key", masses, { candidates: 24, scoreMultiplications: 288, retainedCandidates: key?.tiedKeys.length ?? 0 }, [
+      ...(key?.tiedKeys ?? []).map((candidate) => ({
+        subject: "tied-key", outcome: `${String(candidate.tonicPitchClass)}/${candidate.mode}`,
         reason: "highest frozen-profile score",
+      })),
+      ...(overrides.key != null && !validOverride ? [{
+        subject: "key-override", outcome: "invalid-key-override", reason: "invalid tonic or mode; override dropped",
+      }] : []),
+      {
+        subject: "key-selection",
+        outcome: keySelection === null ? "none" : `${String(keySelection.tonicPitchClass)}/${keySelection.mode}`,
+        reason: validOverride ? "user override" : key === null ? "zero eligible mass" : keySelection === null ? "ambiguous key" : "unique optimum",
       },
     ]),
   );
-  const keyForSpelling =
-    key === null
-      ? null
-      : { tonicPitchClass: key.tonicPitchClass, mode: key.mode };
+  const keyForSpelling = keySelection;
 
   const readings: M1AutomationSpanReading[] = [];
   for (const span of spans) {
@@ -1635,10 +1665,12 @@ export function planAutomationImport(
       spans,
       readings: frozenReadings,
       key,
+      keySelection,
+      keySelectionSource,
       keySpelled:
-        key === null
+        keySelection === null
           ? null
-          : automationTonicSpelling(key.tonicPitchClass, key.mode),
+          : automationTonicSpelling(keySelection.tonicPitchClass, keySelection.mode),
       groove,
       sections: Object.freeze(
         sectionRanges.map((range) =>

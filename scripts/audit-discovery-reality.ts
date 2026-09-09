@@ -58,7 +58,8 @@ const symmetricMass = Array.from({ length: 12 }, () => 1);
 const symmetricKey = inferAutomationKey(symmetricMass);
 const shiftedSymmetricKey = inferAutomationKey(symmetricMass.map((_, pc) => symmetricMass[(pc + 11) % 12] ?? 0));
 if (symmetricKey === null || shiftedSymmetricKey === null) throw new Error("Nonzero audit mass must have a ranked key under M1 v1");
-check("m1-tied-equivariance-contract", "M1's unqualified winner-equivariance promise conflicts with absolute tonic tie-breaking on a rotation-invariant histogram", (symmetricKey.tonicPitchClass + 1) % 12, shiftedSymmetricKey.tonicPitchClass);
+check("m1-tied-presentation-counterexample", "Absolute presentation order remains non-equivariant on the rotation-invariant histogram; amendment 3 makes no single-winner claim", false, (symmetricKey.tonicPitchClass + 1) % 12 === shiftedSymmetricKey.tonicPitchClass);
+check("m1-tied-equivariance-contract", "Amendment 3 preserves all twelve minor maxima instead of treating the absolute presentation winner as unique", Array.from({ length: 12 }, (_, tonicPitchClass) => ({ tonicPitchClass, mode: "minor" })), shiftedSymmetricKey.tiedKeys);
 
 for (const operation of ["deriveLiteralFacts", "analyzeChordInContext", "enumerateChordScaleOptions"]) {
   check(`h0-${operation}`, "The reviewed H0 callable exists at the public theory boundary", "function", typeof Reflect.get(theory, operation));

@@ -138,6 +138,8 @@ export {
   auditionMidiImportPreview,
   createStudioMidiImport,
   unavailableMidiImportPreview,
+  MIDI_IMPORT_KEY_OPTIONS,
+  midiImportKeyChoice,
 } from "./studio-midi-import";
 export type {
   M1ImportOverrides,

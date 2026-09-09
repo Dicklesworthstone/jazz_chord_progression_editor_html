@@ -620,6 +620,9 @@ export type StudioMidiImportOverridesView = Readonly<{
   }>[];
   grooveOptions: readonly Readonly<{ id: string; label: string }>[];
   grooveOverrideId: string | null;
+  keyOptions: readonly Readonly<{ id: string; label: string; key: Readonly<{ tonicPitchClass: number; mode: "major" | "minor" }> }>[];
+  keyOverride: Readonly<{ tonicPitchClass: number; mode: "major" | "minor" }> | null;
+  tiedKeyLabels: readonly string[];
 }>;
 
 /**
@@ -766,6 +769,7 @@ export type StudioShellCallbacks = Readonly<{
       span: Readonly<{ measureIndex: number; startTick: number }>;
       alternativeOrdinal: number;
     }>[];
+    key?: Readonly<{ tonicPitchClass: number; mode: "major" | "minor" }> | null;
     grooveStyleId: string | null;
   }>) => void;
   /** Open the MIDI export preview for the current validated chart. */
