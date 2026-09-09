@@ -139,7 +139,7 @@ describe("previewPitches lane", () => {
     return { controller: creation.controller, audio };
   }
 
-  test("refuses without an audio port, on empty sets, and past ten pitches", () => {
+  test("refuses without an audio port, on empty sets, and past sixteen pitches", () => {
     const creation = createStudioController({});
     if (!creation.ok) throw new Error("controller refused");
     expect(creation.controller.previewPitches([60, 64, 67], GESTURE).ok).toBe(
@@ -149,7 +149,7 @@ describe("previewPitches lane", () => {
     expect(controller.previewPitches([], GESTURE).ok).toBe(false);
     expect(
       controller.previewPitches(
-        [40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50],
+        Array.from({ length: 17 }, (_, index) => 40 + index),
         GESTURE,
       ).ok,
     ).toBe(false);
@@ -158,7 +158,7 @@ describe("previewPitches lane", () => {
 
   test("sounds a voiced set through the preview lane without touching state", async () => {
     const { controller, audio } = audibleStudio();
-    const before = controller.getSnapshot();
+    const cold = controller.getSnapshot();
     const result = controller.previewPitches(CMAJ7, GESTURE);
     expect(result.ok).toBe(true);
     const start = Date.now();
@@ -170,8 +170,17 @@ describe("previewPitches lane", () => {
       }
     };
     expect(await untilPreviewVoices()).toBeGreaterThan(0);
+    // X1 §8 permits 1–16 pitches in a ready transport. First use also
+    // initializes the graph; that readiness transition is not a progression.
+    const before = controller.getSnapshot();
+    expect(cold.transport.status).toBe("unavailable");
+    expect(before.transport.status).toBe("ready");
+    expect(before.revision).toBe(cold.revision);
+    expect(controller.previewPitches(Array.from({ length: 16 }, (_, index) => 48 + index), GESTURE).ok).toBe(true);
     const after = controller.getSnapshot();
     expect(after.revision).toBe(before.revision);
     expect(after.transport.status).toBe(before.transport.status);
+    expect(after.transport.playheadBeatLabel).toBe(before.transport.playheadBeatLabel);
+    controller.stopProgression();
   });
 });
