@@ -118,4 +118,15 @@ describe("local MIDI comparison over the real embedded M0 decoder and M1 planner
       expect(stages).toEqual(phase === "before" ? [] : [0]);
     }
   });
+  test("progress observers may cancel reentrantly, including the final notification", async () => {
+    for (const cancelAt of [0, 1]) {
+      let live = true;
+      let reads = 0;
+      const local = file("one.mid");
+      const result = await compareMidiFiles([{ ...local, arrayBuffer: () => { reads++; return local.arrayBuffer(); } }], service.readFile,
+        () => live, (completed) => { if (completed === cancelAt) live = false; });
+      expect(result).toBeNull();
+      expect(reads).toBe(cancelAt);
+    }
+  });
 });

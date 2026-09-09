@@ -151,10 +151,10 @@ export function MidiImportPanel({
       </p>
 
       {view.batch?.pending === true ? (
-        <button type="button" onClick={onDiscard}>Cancel comparison</button>
+        <button class="studio-midi-import__batch-action" type="button" onClick={onDiscard}>Cancel comparison</button>
       ) : null}
       {(view.batch?.candidates.length ?? 0) > 0 ? (
-        <div data-testid="midi-import-candidates">
+        <div class="studio-midi-import__candidates" data-testid="midi-import-candidates">
           <p>Arrangement comparison: higher scores favor longer, fuller arrangements, not musical quality. Ties keep file order. Choose any candidate to inspect it.</p>
           <ul>
             {view.batch?.candidates.map((candidate) => (
@@ -164,7 +164,7 @@ export function MidiImportPanel({
                   data-testid={`midi-import-candidate-${String(candidate.ordinal)}`}
                   aria-pressed={candidate.selected}
                   disabled={!candidate.canInspect}
-                  onClick={() => onSelectCandidate(candidate.ordinal)}
+                  onClick={() => { onSelectCandidate(candidate.ordinal); }}
                 >
                   {candidate.fileName}{candidate.recommended ? " · Recommended" : ""}
                   {candidate.score === null ? "" : ` · ${String(candidate.score)} points`}
@@ -177,7 +177,7 @@ export function MidiImportPanel({
               </li>
             ))}
           </ul>
-          <button type="button" onClick={onDiscard}>Discard comparison</button>
+          <button class="studio-midi-import__batch-action" type="button" onClick={onDiscard}>Discard comparison</button>
         </div>
       ) : null}
 

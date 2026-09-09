@@ -55,12 +55,12 @@ export function scoreMidiCandidate(value: MidiImportValue): MidiCandidateScore {
   let tempo = 500_000;
   let tick = 0;
   let duration = 0n;
-  let unusualTempo = false;
+  let unusualTempoSegments = 0;
   const segment = (end: number): void => {
     const start = Math.max(tick, first);
     if (end > start) {
       duration += BigInt(end - start) * BigInt(tempo);
-      if (tempo < 187_500 || tempo > 1_500_000) unusualTempo = true;
+      if (tempo < 187_500 || tempo > 1_500_000) unusualTempoSegments++;
     }
   };
   for (const entry of value.model.tempoMap) {
@@ -70,8 +70,8 @@ export function scoreMidiCandidate(value: MidiImportValue): MidiCandidateScore {
     tempo = entry.microsecondsPerQuarter;
   }
   segment(last);
-  score += unusualTempo ? -25 : 15;
-  reasons.push(unusualTempo ? "Tempo outside 40–320 BPM (−25)." : "Tempo within 40–320 BPM (+15).");
+  score += unusualTempoSegments > 0 ? -25 : 15;
+  reasons.push(unusualTempoSegments > 0 ? "Tempo outside 40–320 BPM (−25)." : "Tempo within 40–320 BPM (+15).");
   const second = BigInt(value.model.header.division) * 1_000_000n;
   const durationPoints = duration >= 150n * second ? 15 : duration >= 60n * second ? 10 : -15;
   score += durationPoints;
@@ -119,6 +119,7 @@ export async function compareMidiFiles(
   for (const [ordinal, file] of selected.entries()) {
     if (!isCurrent()) return null;
     onProgress(ordinal, selected.length);
+    if (!isCurrent()) return null;
     let preview: MidiImportPreview | null = null;
     let problem: string | null = null;
     try {
@@ -145,5 +146,6 @@ export async function compareMidiFiles(
   }
   if (!isCurrent()) return null;
   onProgress(selected.length, selected.length);
+  if (!isCurrent()) return null;
   return Object.freeze({ candidates: Object.freeze(candidates), recommendedOrdinal: best?.ordinal ?? null, problem: null, bytesRead });
 }
