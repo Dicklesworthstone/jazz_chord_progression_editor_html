@@ -259,6 +259,40 @@ requires zero later attacks across rapid play/stop cycles.
   `ready`, `playing`, or `paused`. Stop also retires previews; preview
   release never retires progression voices.
 
+### 8.1 Bounded performed preview (M1 amendment, 2026-09-09)
+
+`start-preview` may additionally carry `previewPlan`, an immutable P0-shaped
+performed plan binding. This replaces the single-sonority schedule, not the
+progression binding. Admission validates the entire sequence before retiring
+an existing preview: 1–256 events, at most64 quarter-note beats, legal ordered
+integer ticks, pitch/velocity/gate bounds, no loop and matching document ID.
+It preserves every performed onset, gate and velocity and uses the plan tempo.
+No invalid sequence falls back to fixed-gate chords or literal playback.
+
+A separate preview-owner lookahead uses the existing audio clock and timing
+policy. It schedules each event once, never all future sources up front. The
+preview owns its captured generation even if chart playback advances its own.
+Its timer is removed on exact release, replacement, global Stop, fault,
+interruption, disposal and natural completion. Completion waits through the
+last planned gate; reverb tails follow X0. A late tick preserves gate duration
+using the normal immediate-start margin. A mid-sequence engine refusal retires
+that preview and exposes a failed preview status without rewriting chart
+transport status. Display polling may observe status, but never schedule notes.
+
+M1 compiles at most the first4 imported bars (and refuses above64 beats or256
+performed events), using a private real import and F2/F3 publication, canonical
+ephemeral IDs, the source meter/rounded import tempo and the chosen groove.
+The destination document, selection, groove, playhead and undo history are not
+changed. The source-pitch audition derivation remains a comparison utility;
+it is not evidence of matched-groove playback.
+
+Proof: independently timed preview fixtures cover positive/negative admission,
+transposition, gates/velocities, later horizons, completion and cancellation,
+including stale release and progression isolation. M1 tests cover real SMF
+import, private publication, determinism, bounded extraction and groove
+selection. Native browser checks cover the surfaced preparation/refusal and
+Stop/Discard lifecycle; human listening remains separately gated.
+
 ## 9. Notifications and the application projection
 
 Every settled status change publishes exactly one

@@ -11,3 +11,4 @@ export * from "./midi-import-contract";
 export * from "./midi-salvage";
 export * from "./midi-salvage-contract";
 export { prepareBrowserJsonDownload } from "./browser-json-download";
+export { M1_MAX_IMPORT_CHUNKS, M1_CHUNK_CODE_POINT_LIMIT } from "./midi-import-automation-contract";

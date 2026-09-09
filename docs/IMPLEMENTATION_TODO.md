@@ -8,9 +8,12 @@ Consumer: the user and Codex executing the 2026-09-04 request to implement the r
 - [x] Prove Stop retires sounding audition voices and cancels preparation in flight; recorded real adapter calls contain no cancelled audition start. A newer keyboard preview survives stale cancellation. Revision/ready transport remain unchanged; no playing-band acceptance claimed.
 - [x] Wire cancellation into Stop, replacement, overrides, Add, Discard, normal completion and component cleanup using the existing exact-owner release path.
 - [x] RCH hz2, Bun1.3.14/Node26:38 focused tests/621 assertions,73 M1 evidence tests, full typecheck/lint/guarded build pass. Native import suites:36 pass across Chromium/Firefox/WebKit,112389.469ms, each one attempt; zero skips/flakes/failures. Browser checks prove UI lifecycle, not acoustic output. Missing remote TypeScript cache and test closure-flag lint failures were fixed; original logs retained.
-- [ ] Build a private validated import document and compile the selected groove with explicit bounded duration and deterministic identities; do not mutate the destination chart.
-- [ ] Schedule the immutable groove through the preview owner with bounded lookahead, preserving onset, gate and velocity; expose preparation/refusal truthfully.
-- [ ] Prove groove timing, cancellation, replacement and unchanged destination through independent fixtures and real browser/audio adapters; retain original Bead open until complete.
+- [x] Extract at most4 bars using real T0 measure ranges, import them in a private composition, canonicalize ephemeral IDs through F2/F3 and compile the selected performance groove. Source meter/rounded import tempo survive; the destination never enters this path.
+- [x] Schedule the immutable groove through the existing preview owner and audio-clock lookahead; preserve onset/gate/velocity and prepare matching physical gestures. Bound256 events/64 beats; refuse invalid sequences before replacement. UI reports preparation and refusal, and polls completion without scheduling notes.
+- [x] Focused regression23/23: all12 roots, exact tick/velocity assertions, independent voiced fixture, malformed inputs, concurrent band preservation, natural end, interruption/disposal and stale replacement. Preserve the initial fixture/type/formatter failures under `.tmp/cyancove/groove-*`.
+- [x] RCH hz2, Bun1.3.14/Node26:87 M1 tests/10 files/11 pins/6 goldens/0 findings;49 transport interruption/replacement/Stop/engine/late-attack tests with428 assertions. Full typecheck/lint and guarded build pass; final E2E tsc/lint and M1 contract pass. Missing public bounds exports and duplicate-import lint corrected without weakening tests.
+- [x] Native Automatic+Advanced:39 passed in133945.02ms across Chromium/Firefox/WebKit, each one passed attempt, zero skipped/flaky/unexpected. Real Organ and Concert Grand sources start within the groove, reach zero sounding/future sources after Stop/Discard, and have no later Stop attacks; destination digest and tempo unchanged. Existing320px/axe/console/page gates pass.
+- [x] Final guarded reproduction matches browser-tested artifact:8448887 bytes, SHA256 `f429c6da1371ede22015a8c95742f2795f96e30b7c79a2e6ebfee4e91b7ede66`; all320 source hashes/mtimes unchanged. Pre-feature3f3c118 plus independent test overlay fails on old fixed gate. Fresh solo acceptance review complete, not independent-person signoff; raw failures/results and bounded honesty review remain in ignored `.tmp/cyancove/groove-*`. Original implementation scope complete; human listening/release acceptance remain separate.
 
 ## M1 import placement — jcpe-qyyn continuation (CyanCove)
 
@@ -21,7 +24,7 @@ Consumer: the user and Codex executing the 2026-09-04 request to implement the r
 - [x] RCH Bun1.3.14/Node26:35 focused tests/596 assertions,70 M1 evidence tests,11 pins/6 goldens; full typecheck/lint/build pass. Placement covers manual and automatic paths, every boundary,640-bar chunks and refusal rollback.
 - [x] Native Automatic+Advanced:36 passed in112178.65ms across Chromium/Firefox/WebKit; zero skips/flakes/retries. Covers stale target disappearance/Redo restoration and exact existing chord IDs. Browser-discovered lost section names fixed by committing on input; retained the original failing reports and strengthened the name assertion.
 - [x] Prepare verified source/artifact for commit: final M1 evidence70/70, E2E type/lint, M1 contract10 families/0 findings and guarded rebuild pass. All319 source hashes/mtimes unchanged; root/dist identical at8441177 bytes, SHA256 `5932358f69d7d70de47a2be7fe51e82995af4ba331508b89feb1a42f16539e47`. Preserve concurrent spec/fixture commit135f99a.
-- [ ] Complete matched-groove audition before closing the original Bead. No deployment or human-listening acceptance claimed.
+- [x] Matched-groove audition completed with the proof recorded above. No deployment or human-listening acceptance claimed.
 
 ## M1 chord-change detail — jcpe-qyyn continuation (CyanCove)
 
@@ -32,7 +35,7 @@ Consumer: the user and Codex executing the 2026-09-04 request to implement the r
 - [x] Pass RCH grid/override/audition/automatic regression (31 tests, 522 assertions), expanded M1 evidence gate (66 tests, 11 pins, 6 goldens), full type/lint and guarded build checks with Bun 1.3.14/Node 26 on hz2. Added previously omitted M1 suites to the evidence input closure; no gate was weakened.
 - [x] Prove native grid/name/refusal/new-file/Add/Undo behavior and existing Automatic/Advanced desktop/320px/a11y cases: 33 passed across Chromium/Firefox/WebKit in 101353.897 ms; zero skips, retries, failures or flaky cases. Logs: `.tmp/cyancove/grid-browser*`.
 - [x] Prepare verified source/artifact for commit: final RCH rebuild and M1 contract (10 families, zero findings) passed; all319 source hashes/mtimes unchanged, root/dist identical at8439813 bytes, SHA256 `ae777eb05de83a16f48c5e774d04c7bef5c475b7d939f96da31bd8b69205cf3b`. Raw failures and solo review retained under `.tmp/cyancove/grid-*`.
-- [ ] Finish matched-groove audition before closing the original Bead; destination placement is complete; no deployment or human-listening acceptance claimed.
+- [x] Matched-groove audition completed with the proof recorded above. No deployment or human-listening acceptance claimed.
 
 ## M1 section naming — jcpe-qyyn continuation (CyanCove)
 
@@ -53,7 +56,7 @@ Consumer: the user and Codex executing the 2026-09-04 request to implement the r
 - [x] Prove lower/upper exclusion, duplicates and invalid indices, all-excluded refusal, re-inclusion and determinism across all12 transpositions: RCH `bun test tests/unit/m1-import-audition.test.ts`,6pass/0fail/142assertions.
 - [x] RCH Bun1.3.14: audition/overrides/automatic integration23pass/0fail/278assertions; full `bun run typecheck`, `bun run lint`, `bun run build` exit0 on real Node26. Guarded artifact8436713bytes, SHA256 `2705cc512a1a7f4edf5853e70a2283b11d2376c88b79f494143b65757f375fa9`, root/dist identical;319 source hashes and mtimes unchanged.
 - [x] Native `m1-midi-import-auto.spec.ts`:12pass/0fail/0skip/0retry across Chromium/Firefox/WebKit in42.1s, actual generated artifact; unchanged Add/Undo/settings/refusal/audition lifecycle assertions and clean page/console diagnostics. This suite proves UI lifecycle, not exact audible exclusion pitches; those have real-decoder/service proof above.
-- [ ] Finish matched-groove audition before closing `jcpe-qyyn`; the Advanced grid/destination obligations are now complete. This source-note exclusion fix does not satisfy those deferred promises.
+- [x] Matched-groove audition completed with the proof recorded above. No deployment or human-listening acceptance claimed.
 
 Final pre-commit RCH contract validation:10 families/0findings; guarded rebuild reproduces the exact browser-tested artifact above. The first repeat build stopped on a missing worker dependency symlink; task-local setup restored it and the unchanged build passed. Fresh solo review; no independent-person signoff.
 

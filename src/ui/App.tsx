@@ -25,7 +25,7 @@ import {
   STUDIO_AUDIO_GESTURE_SEQUENCE_STRIDE,
   STARTER_CHART,
   type LoadProgressionLibraryEntryResult,
-  auditionMidiImportPreview,
+  auditionMidiImportGroove,
   compareMidiFiles,
   type MidiImportBatch,
   type MidiImportLocalFile,
@@ -345,6 +345,8 @@ export type AppActions = Readonly<{
     gesture: StudioAudioGesture,
   ) => StudioControllerActionResult;
   releasePreviewPitches: StudioController["releasePreviewPitches"];
+  auditionMidiImport: (preview: MidiImportPreview, gesture: StudioAudioGesture) => ReturnType<StudioController["previewPlaybackPlan"]>;
+  readPreviewPlaybackStatus: StudioController["readPreviewPlaybackStatus"];
   /** Sound one voiced pitch set through the same lane (M1 audition). */
   previewPitches: (
     midiPitches: readonly number[],
@@ -1824,10 +1826,8 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
   }> | null>(null);
   const [midiImportNotice, setMidiImportNotice] = useState<string | null>(null);
   /*
-   * jcpe-qyyn audition: presentation-only. The timers fire the same
-   * click-preview action a pointer press fires; cancelling clears them
-   * before the next step sounds and release its exact controller owner.
-   * Any commit, discard, override, new file or unmount cancels pending preparation.
+   * Audio schedules the immutable groove plan. This timer only reads its
+   * status; commit, discard, override, new file and unmount cancel the owner.
    */
   const [midiAuditioning, setMidiAuditioning] = useState(false);
   /* M1-OVR: the absolute override set for the pending preview. */
@@ -1846,15 +1846,19 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
     });
   };
   const midiAuditionTimers = useRef<number[]>([]);
+  const midiAuditionGeneration = useRef(0);
   const cancelMidiAudition = (): void => {
+    midiAuditionGeneration.current += 1;
     for (const timer of midiAuditionTimers.current) {
       window.clearTimeout(timer);
     }
     midiAuditionTimers.current = [];
     void actions.releasePreviewPitches();
     setMidiAuditioning(false);
+    if (midiAuditioning) setMidiImportNotice("Audition stopped. Your chart is unchanged.");
   };
   useEffect(() => () => {
+    midiAuditionGeneration.current += 1;
     for (const timer of midiAuditionTimers.current) window.clearTimeout(timer);
     midiAuditionTimers.current = [];
     void actions.releasePreviewPitches();
@@ -3110,24 +3114,36 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
             return;
           }
           if (midiPreview === null) return;
-          const steps = auditionMidiImportPreview(midiPreview);
-          if (steps.length === 0) return;
+          const generation = ++midiAuditionGeneration.current;
           const gesture = nextAudioGesture("trusted-pointer");
-          for (const step of steps) {
-            midiAuditionTimers.current.push(
-              window.setTimeout(() => {
-                actions.previewPitches(step.midiPitches, gesture);
-              }, step.atMs),
-            );
-          }
-          const last = steps[steps.length - 1];
-          midiAuditionTimers.current.push(
-            window.setTimeout(
-              cancelMidiAudition,
-              (last?.atMs ?? 0) + 1_400,
-            ),
-          );
           setMidiAuditioning(true);
+          setMidiImportNotice("Preparing the first four bars with the chosen groove…");
+          void actions.auditionMidiImport(midiPreview,gesture).then(result => {
+            if (generation !== midiAuditionGeneration.current) return;
+            if (!result.ok) {
+              cancelMidiAudition();
+              setMidiImportNotice(result.message);
+              return;
+            }
+            setMidiImportNotice("Auditioning the first bars with the chosen groove and file tempo. Your chart is unchanged.");
+            const poll = (): void => {
+              if (generation !== midiAuditionGeneration.current) return;
+              const status = actions.readPreviewPlaybackStatus();
+              if (status.status !== "running") {
+                cancelMidiAudition();
+                setMidiImportNotice(status.status === "failed"
+                  ? "The audio engine could not finish this audition. Try another instrument; your chart is unchanged."
+                  : "Audition finished. Your chart is unchanged.");
+                return;
+              }
+              midiAuditionTimers.current = [window.setTimeout(poll,100)];
+            };
+            poll();
+          }).catch(() => {
+            if (generation !== midiAuditionGeneration.current) return;
+            cancelMidiAudition();
+            setMidiImportNotice("The audition could not be prepared. Your chart is unchanged.");
+          });
         },
         onQuickEntryClear: () => {
           // A refusal here is surfaced, never presented as a success. The
@@ -3966,6 +3982,8 @@ export function StudioRoot({
         previewPitch: controller.previewPitch,
         previewPitches: controller.previewPitches,
         releasePreviewPitches: controller.releasePreviewPitches,
+        readPreviewPlaybackStatus: controller.readPreviewPlaybackStatus,
+        auditionMidiImport: (preview,gesture) => auditionMidiImportGroove(controller,midiImportService,preview,gesture),
         inspector: controller,
         readTransportPlayheadLabel: controller.readTransportPlayheadLabel,
         readTransportAnalysisFrame: controller.readTransportAnalysisFrame,
