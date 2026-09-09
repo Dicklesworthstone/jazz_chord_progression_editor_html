@@ -196,8 +196,179 @@ final class JazzMyChartsTests: XCTestCase {
         XCTAssertTrue(library.records.isEmpty)
     }
 
+    func testNativeBackupIsDeterministicIDOrderedAndRoundTripsEveryChartField() throws {
+        let directory = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let persistence = JazzMyChartsPersistence(directory: directory)
+        let first = JazzKeptChart(
+            id: try XCTUnwrap(UUID(uuidString: "00000000-0000-0000-0000-000000000002")),
+            updatedAt: Date(timeIntervalSince1970: 1_725_000_000.125),
+            chart: makeChart(title: "Second by ID")
+        )
+        let second = JazzKeptChart(
+            id: try XCTUnwrap(UUID(uuidString: "00000000-0000-0000-0000-000000000001")),
+            updatedAt: Date(timeIntervalSince1970: 1_725_000_001.250),
+            chart: makeChart(title: "First by ID")
+        )
+
+        let encoded = try JazzMyChartsBackupCodec.encode([first, second])
+        let decoded = try JazzMyChartsBackupCodec.decode(encoded, persistence: persistence)
+
+        XCTAssertLessThan(encoded.count, JazzMyChartsBackupCodec.maximumBackupBytes)
+        XCTAssertEqual(decoded.map(\.id), [second.id, first.id])
+        XCTAssertEqual(decoded.map(\.chart), [second.chart, first.chart])
+        XCTAssertEqual(
+            decoded.map { ISO8601DateFormatter.withFractionalSeconds.string(from: $0.updatedAt) },
+            [second, first].map { ISO8601DateFormatter.withFractionalSeconds.string(from: $0.updatedAt) }
+        )
+        XCTAssertEqual(try JazzMyChartsBackupCodec.encode(decoded), encoded)
+
+        let selected = try JazzMyChartsBackupCodec.selectedChartData(first.chart)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        XCTAssertEqual(try decoder.decode(JazzChart.self, from: selected), first.chart)
+    }
+
+    func testBackupDecoderRejectsHostileOuterAndEmbeddedJSONWithoutPartialAcceptance() throws {
+        let directory = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let persistence = JazzMyChartsPersistence(directory: directory)
+        let record = JazzKeptChart(
+            id: try XCTUnwrap(UUID(uuidString: "10000000-0000-0000-0000-000000000001")),
+            updatedAt: Date(timeIntervalSince1970: 1_725_000_000),
+            chart: makeChart(title: "Validated")
+        )
+        let valid = try JazzMyChartsBackupCodec.encode([record])
+
+        var bom = Data([0xEF, 0xBB, 0xBF])
+        bom.append(valid)
+        assertBackupRefused(bom, persistence: persistence, as: .invalidBackup)
+        assertBackupRefused(Data([0x7B, 0x22, 0x78, 0x22, 0x3A, 0x22, 0xFF, 0x22, 0x7D]), persistence: persistence, as: .invalidBackup)
+
+        let escapedDuplicate = Data(
+            #"{"schema":"frankenjazz.my-charts.backup.v1","schem\u0061":"frankenjazz.my-charts.backup.v1","records":[]}"#.utf8
+        )
+        assertBackupRefused(escapedDuplicate, persistence: persistence, as: .invalidBackup)
+
+        let unknownField = try mutateBackup(valid) { root in root["unexpected"] = true }
+        assertBackupRefused(unknownField, persistence: persistence, as: .invalidBackup)
+
+        let duplicateRecord = try JazzMyChartsBackupCodec.encode([record, record])
+        assertBackupRefused(duplicateRecord, persistence: persistence, as: .invalidBackup)
+
+        let noncanonicalDocument = try mutateBackupDocument(valid) { " \($0)" }
+        assertBackupRefused(noncanonicalDocument, persistence: persistence, as: .invalidBackup)
+
+        let futureDocument = try mutateBackupDocument(valid) {
+            $0.replacingOccurrences(of: JazzChart.schema, with: "frankenjazz.chart.v999")
+        }
+        assertBackupRefused(futureDocument, persistence: persistence, as: .invalidBackup)
+
+        let invalidDocument = try mutateBackupDocument(valid) { documentText in
+            var document = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(documentText.utf8)) as? [String: Any])
+            document["title"] = ""
+            let data = try JSONSerialization.data(withJSONObject: document, options: [.sortedKeys])
+            return try XCTUnwrap(String(data: data, encoding: .utf8))
+        }
+        assertBackupRefused(invalidDocument, persistence: persistence, as: .invalidBackup)
+
+        let tooDeep = Data((String(repeating: "[", count: 33) + "0" + String(repeating: "]", count: 33)).utf8)
+        assertBackupRefused(tooDeep, persistence: persistence, as: .invalidBackup)
+
+        let tooLarge = Data(count: JazzMyChartsBackupCodec.maximumBackupBytes + 1)
+        assertBackupRefused(tooLarge, persistence: persistence, as: .backupLimit)
+    }
+
+    @MainActor
+    func testRestorePreviewClassifiesAndRequiresExplicitConflictChoiceThenCommitsOnce() throws {
+        let directory = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let persistence = JazzMyChartsPersistence(directory: directory)
+        let library = JazzMyChartsStore(persistence: persistence)
+        XCTAssertTrue(library.keep(makeChart(title: "Identical local")))
+        XCTAssertTrue(library.keep(makeChart(title: "Conflicting local")))
+        let identicalLocal = library.records[0]
+        let conflictLocal = library.records[1]
+        let baseGeneration = library.generation
+
+        let identicalIncoming = JazzKeptChart(
+            id: identicalLocal.id,
+            updatedAt: identicalLocal.updatedAt.addingTimeInterval(500),
+            chart: identicalLocal.chart
+        )
+        let conflictIncoming = JazzKeptChart(
+            id: conflictLocal.id,
+            updatedAt: conflictLocal.updatedAt.addingTimeInterval(500),
+            chart: makeChart(title: "Conflicting backup")
+        )
+        let addition = JazzKeptChart(chart: makeChart(title: "Backup addition"))
+
+        library.prepareRestore(data: try JazzMyChartsBackupCodec.encode([
+            conflictIncoming, addition, identicalIncoming,
+        ]))
+        let preview = try XCTUnwrap(library.restorePreview)
+        XCTAssertEqual(preview.additions, 1)
+        XCTAssertEqual(preview.identical, 1)
+        XCTAssertEqual(preview.conflicts.count, 1)
+        XCTAssertFalse(preview.isResolved)
+        XCTAssertFalse(library.confirmRestore())
+        XCTAssertEqual(library.generation, baseGeneration)
+
+        library.chooseRestoreConflict(recordID: conflictLocal.id, choice: .backup)
+        XCTAssertTrue(library.restorePreview?.isResolved == true)
+        XCTAssertTrue(library.confirmRestore())
+        XCTAssertNil(library.restorePreview)
+        XCTAssertEqual(library.generation, baseGeneration + 1)
+        XCTAssertEqual(library.records.count, 3)
+        XCTAssertEqual(library.records.first(where: { $0.id == identicalLocal.id })?.updatedAt, identicalLocal.updatedAt)
+        XCTAssertEqual(library.records.first(where: { $0.id == conflictLocal.id })?.chart.title, "Conflicting backup")
+        XCTAssertEqual(library.records.first(where: { $0.id == addition.id })?.chart, addition.chart)
+    }
+
+    @MainActor
+    func testRestoreLocalChoiceCancelPendingGuardAndStalePreviewNeverWrite() throws {
+        let directory = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let persistence = JazzMyChartsPersistence(directory: directory)
+        let first = JazzMyChartsStore(persistence: persistence)
+        XCTAssertTrue(first.keep(makeChart(title: "Local authority")))
+        let local = try XCTUnwrap(first.records.first)
+        let incoming = JazzKeptChart(
+            id: local.id,
+            updatedAt: local.updatedAt.addingTimeInterval(100),
+            chart: makeChart(title: "Backup candidate")
+        )
+        let backup = try JazzMyChartsBackupCodec.encode([incoming])
+
+        first.prepareRestore(data: backup)
+        XCTAssertNil(first.prepareBackup())
+        XCTAssertEqual(first.message, JazzMyChartsIssue.operationPending.errorDescription)
+        XCTAssertNil(first.prepareSelectedChartExport())
+        XCTAssertEqual(first.message, JazzMyChartsIssue.operationPending.errorDescription)
+        XCTAssertFalse(first.keep(makeChart(title: "Blocked while previewing")))
+        XCTAssertEqual(first.records.count, 1)
+        first.chooseRestoreConflict(recordID: local.id, choice: .local)
+        XCTAssertTrue(first.confirmRestore())
+        XCTAssertEqual(first.records[0].chart.title, "Local authority")
+
+        first.prepareRestore(data: backup)
+        first.cancelRestore()
+        XCTAssertNil(first.restorePreview)
+        XCTAssertEqual(try persistence.read().records[0].chart.title, "Local authority")
+
+        first.prepareRestore(data: backup)
+        let second = JazzMyChartsStore(persistence: persistence)
+        XCTAssertTrue(second.keep(makeChart(title: "Concurrent addition")))
+        first.chooseRestoreConflict(recordID: local.id, choice: .backup)
+        XCTAssertFalse(first.confirmRestore())
+        XCTAssertEqual(first.message, JazzMyChartsIssue.conflict.errorDescription)
+        let committed = try persistence.read()
+        XCTAssertEqual(committed.records.count, 2)
+        XCTAssertEqual(committed.records.first(where: { $0.id == local.id })?.chart.title, "Local authority")
+    }
+
     private func makeChart(title: String) -> JazzChart {
-        JazzChart(
+        var chart = JazzChart(
             title: title,
             key: .eb,
             tempoBPM: 146,
@@ -222,10 +393,60 @@ final class JazzMyChartsTests: XCTestCase {
                 JazzMeasure(chords: [JazzChordEvent(symbol: "Ebmaj9", beats: 4)]),
             ]
         )
+        chart.updatedAt = Date(timeIntervalSince1970: 1_725_000_000)
+        return chart
+    }
+
+    private func assertBackupRefused(
+        _ data: Data,
+        persistence: JazzMyChartsPersistence,
+        as expected: JazzMyChartsIssue,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertThrowsError(
+            try JazzMyChartsBackupCodec.decode(data, persistence: persistence),
+            file: file,
+            line: line
+        ) { error in
+            XCTAssertEqual(error as? JazzMyChartsIssue, expected, file: file, line: line)
+        }
+    }
+
+    private func mutateBackup(
+        _ data: Data,
+        mutation: (inout [String: Any]) throws -> Void
+    ) throws -> Data {
+        var root = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        try mutation(&root)
+        return try JSONSerialization.data(withJSONObject: root, options: [.sortedKeys])
+    }
+
+    private func mutateBackupDocument(
+        _ data: Data,
+        mutation: (String) throws -> String
+    ) throws -> Data {
+        try mutateBackup(data) { root in
+            var records = try XCTUnwrap(root["records"] as? [[String: Any]])
+            var first = try XCTUnwrap(records.first)
+            let document = try XCTUnwrap(first["documentText"] as? String)
+            first["documentText"] = try mutation(document)
+            records[0] = first
+            root["records"] = records
+        }
     }
 
     private func temporaryDirectory() -> URL {
         FileManager.default.temporaryDirectory
             .appendingPathComponent("FrankenJazz-MyCharts-Tests-\(UUID().uuidString)", isDirectory: true)
+    }
+}
+
+private extension ISO8601DateFormatter {
+    static var withFractionalSeconds: ISO8601DateFormatter {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        return formatter
     }
 }
