@@ -565,6 +565,7 @@ export function StudioShell({
               sheetOpen={activeSheet === "library"}
               midiImport={view.midiImport}
               onMidiImportChooseFile={callbacks.onMidiImportChooseFile}
+              onMidiImportSelectCandidate={callbacks.onMidiImportSelectCandidate}
               onMidiImportCommit={shellCallbacks.onMidiImportCommit}
               onMidiImportDiscard={callbacks.onMidiImportDiscard}
               onMidiImportAudition={callbacks.onMidiImportAudition}
@@ -924,6 +925,7 @@ export function StudioShell({
                   headingId={`${sheetId}-title`}
                   midiImport={view.midiImport}
                   onMidiImportChooseFile={callbacks.onMidiImportChooseFile}
+              onMidiImportSelectCandidate={callbacks.onMidiImportSelectCandidate}
                   onMidiImportCommit={shellCallbacks.onMidiImportCommit}
                   onMidiImportDiscard={callbacks.onMidiImportDiscard}
                   onMidiImportAudition={callbacks.onMidiImportAudition}

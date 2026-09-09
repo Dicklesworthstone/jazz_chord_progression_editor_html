@@ -6,7 +6,7 @@ import type { StudioMidiImportView } from "./studio-contract";
  *
  * Local files only: the runtime boundary forbids every network capability, so
  * the one way a file enters is a `<input type="file">` the person operates and
- * a `FileReader` on that gesture. Nothing is fetched, and the decoder itself
+ * an application-owned local read on that gesture. Nothing is fetched, and the decoder itself
  * lives behind an application service — this surface dispatches an intent and
  * renders what comes back.
  *
@@ -24,7 +24,8 @@ import type { StudioMidiImportView } from "./studio-contract";
 export type MidiImportPanelProps = Readonly<{
   context: "rail" | "sheet";
   view: StudioMidiImportView;
-  onChooseFile: (file: File) => void;
+  onChooseFile: (files: readonly File[]) => void;
+  onSelectCandidate: (ordinal: number) => void;
   onCommit: () => void;
   onDiscard: () => void;
   /** Toggle the bounded pre-Add audition of the file's own first bars. */
@@ -46,6 +47,7 @@ export function MidiImportPanel({
   context,
   view,
   onChooseFile,
+  onSelectCandidate,
   onCommit,
   onDiscard,
   onAudition,
@@ -92,8 +94,8 @@ export function MidiImportPanel({
       <p class="studio-kicker">Import</p>
       <h3 id={headingId}>Import a MIDI file</h3>
       <p class="studio-midi-import__hint" id={`${fieldId}-hint`}>
-        The file is read on this device and never uploaded. Nothing is added to
-        the chart until you press Add.
+        Choose up to five candidates (4 MiB each, 8 MiB total) to compare on
+        this device. Nothing is uploaded or added to the chart until you press Add.
       </p>
       {/*
         The dashed drop-zone treatment wraps the REAL file input: the label
@@ -102,7 +104,7 @@ export function MidiImportPanel({
       */}
       <label class="studio-midi-import__choose" for={fieldId}>
         <span class="studio-midi-import__choose-copy">Choose a MIDI file</span>
-        <span class="studio-midi-import__choose-hint">Standard MIDI file</span>
+        <span class="studio-midi-import__choose-hint">Standard MIDI files · up to five</span>
         {/*
           The input fills the drop zone invisibly, so the GENUINE control is
           the 44px+ target the size law measures — not a clipped 1px proxy
@@ -116,10 +118,12 @@ export function MidiImportPanel({
           data-testid="midi-import-file"
           id={fieldId}
           onChange={(event) => {
-            const chosen = event.currentTarget.files?.[0];
-            if (chosen === undefined) return;
+            const chosen = Array.from(event.currentTarget.files ?? []);
+            if (chosen.length === 0) return;
             onChooseFile(chosen);
+            event.currentTarget.value = "";
           }}
+          multiple
           type="file"
         />
       </label>
@@ -145,6 +149,37 @@ export function MidiImportPanel({
       >
         {view.statusLabel}
       </p>
+
+      {view.batch?.pending === true ? (
+        <button type="button" onClick={onDiscard}>Cancel comparison</button>
+      ) : null}
+      {(view.batch?.candidates.length ?? 0) > 0 ? (
+        <div data-testid="midi-import-candidates">
+          <p>Arrangement comparison: higher scores favor longer, fuller arrangements, not musical quality. Ties keep file order. Choose any candidate to inspect it.</p>
+          <ul>
+            {view.batch?.candidates.map((candidate) => (
+              <li key={candidate.ordinal}>
+                <button
+                  type="button"
+                  data-testid={`midi-import-candidate-${String(candidate.ordinal)}`}
+                  aria-pressed={candidate.selected}
+                  disabled={!candidate.canInspect}
+                  onClick={() => onSelectCandidate(candidate.ordinal)}
+                >
+                  {candidate.fileName}{candidate.recommended ? " · Recommended" : ""}
+                  {candidate.score === null ? "" : ` · ${String(candidate.score)} points`}
+                </button>
+                {candidate.problem === null ? null : <p>{candidate.problem}</p>}
+                <details>
+                  <summary>Why this score?</summary>
+                  <ul>{candidate.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>
+                </details>
+              </li>
+            ))}
+          </ul>
+          <button type="button" onClick={onDiscard}>Discard comparison</button>
+        </div>
+      ) : null}
 
       {view.refusal === null ? null : (
         <div

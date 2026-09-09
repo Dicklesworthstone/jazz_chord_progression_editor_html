@@ -244,6 +244,7 @@ function ResponsiveStaleOwnerHarness() {
   };
   const callbacks: StudioShellCallbacks = {
     onMidiImportChooseFile: () => undefined,
+    onMidiImportSelectCandidate: () => undefined,
     onMidiImportCommit: () => undefined,
     onMidiImportDiscard: () => undefined,
     onMidiImportAudition: () => undefined,

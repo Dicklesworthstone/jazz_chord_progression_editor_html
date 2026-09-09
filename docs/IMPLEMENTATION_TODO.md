@@ -2,6 +2,18 @@
 
 Consumer: the user and Codex executing the 2026-09-04 request to implement the reality-check backlog and GitHub voice-leading issue #2. Gate: do not declare this campaign complete while a requested item remains unresolved. Observed defect: the audit found 51 closed records with unfulfilled obligations. Retirement: retire this checklist when the campaign is complete; lasting commands/results belong on the Beads. This inventory is process and earns no implementation credit.
 
+## Batch local MIDI comparison — jcpe-zw47 (CodexRuntime)
+
+- [x] Claim the independent ready leaf and read existing M0/M1 contracts and composition.
+- [x] Implement application-owned local reads: one to five files, 4 MiB per file, 8 MiB total, serial decode, at most five bounded M0 previews retained; no auto-commit.
+- [x] Deterministic score: baseline30; tempo40–320 +15/otherwise−25; sounding duration≥150s +15/≥60s +10/shorter−15; ≥5 sounding tracks +10; ≥3 channels +5; percussion +8; ≥20 low notes +10; ≥half attack groups with three pitch classes +7. Exact duration tiers, first-to-last-note span, stable picker-order ties. These are arrangement heuristics, not musical quality or proof of completeness.
+- [x] Wire multi-file picker, recommendation, selectable alternatives, per-factor explanations, cancellation, and stale-result suppression into the existing preview/Add workflow.
+- [ ] Author and run independent byte fixtures: score thresholds, tempo changes, leading silence, transposition, invalid candidates, duplicate names, stable ties, all-invalid, sequential work and byte/count bounds.
+- [ ] Prove cancellation before read, during read and during decode; late results never publish or launch the next file.
+- [ ] Run unchanged M0/M1 regressions, complete type/lint/build/static checks, and actual source mutation checks.
+- [ ] Exercise generated artifact in Chromium/Firefox/WebKit at desktop and phone widths: multi-file recommendation, alternate choice, Add/Undo, limits, and clean diagnostics with network blocked.
+- [ ] Record exact results in Beads, close only on passing feature gates, rebuild/recheck source snapshot, and commit explicit paths. Deployment remains subject to the separate human listening gate.
+
 ## Admission and discovery polling repaired; DSP source drift next
 
 - [x] `jcpe-browser-suite-admission-0nyi`: atomic admission and the follow-up Playwright1.61 worker classification are proved. Aggregate release acceptance remains separate and red.
@@ -767,4 +779,4 @@ Statuses below are the campaign-start snapshot. Use br show and br ready before 
 - [ ] `jcpe-milestone-advanced-craft-ulj.9.2` — G9/build: Implement the complete production package (open; P2; unassigned)
 - [ ] `jcpe-milestone-advanced-craft-ulj.9.3` — G9/verify: Prove conformance, integration, and evidence (open; P2; unassigned)
 - [ ] `jcpe-dsp-flute-c7-44k1-regime-c4p1` — Flute MIDI 93/96 at 44.1/48 kHz: sub-14-sample jets refuse fractional tuning (regime flips) (open; P4; unassigned)
-- [ ] `jcpe-zw47` — Batch local MIDI import: score user-supplied candidate files and auto-select the best (open; P4; unassigned)
+- [ ] `jcpe-zw47` — Batch local MIDI import: score user-supplied candidate files and auto-select the best (in_progress; P4; CodexRuntime)

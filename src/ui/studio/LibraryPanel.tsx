@@ -63,7 +63,8 @@ export type LibraryPanelContentProps = Readonly<{
   quickEntry: StudioQuickEntryView;
   midiImport: StudioMidiImportView;
   playback: StudioPlaybackSettingsView;
-  onMidiImportChooseFile: (file: File) => void;
+  onMidiImportChooseFile: (files: readonly File[]) => void;
+  onMidiImportSelectCandidate: (ordinal: number) => void;
   onMidiImportCommit: () => void;
   onMidiImportDiscard: () => void;
   onMidiImportAudition: () => void;
@@ -683,6 +684,7 @@ export function LibraryPanelContent({
   midiImport,
   playback,
   onMidiImportChooseFile,
+  onMidiImportSelectCandidate,
   onMidiImportCommit,
   onMidiImportDiscard,
   onMidiImportAudition,
@@ -729,6 +731,7 @@ export function LibraryPanelContent({
         <MidiImportPanel
           context={context}
           onChooseFile={onMidiImportChooseFile}
+          onSelectCandidate={onMidiImportSelectCandidate}
           onCommit={onMidiImportCommit}
           onDiscard={onMidiImportDiscard}
           onAudition={onMidiImportAudition}
@@ -894,7 +897,8 @@ export type LibraryPanelProps = Readonly<{
   quickEntry: StudioQuickEntryView;
   midiImport: StudioMidiImportView;
   playback: StudioPlaybackSettingsView;
-  onMidiImportChooseFile: (file: File) => void;
+  onMidiImportChooseFile: (files: readonly File[]) => void;
+  onMidiImportSelectCandidate: (ordinal: number) => void;
   onMidiImportCommit: () => void;
   onMidiImportDiscard: () => void;
   onMidiImportAudition: () => void;
@@ -923,6 +927,7 @@ export function LibraryPanel({
   midiImport,
   playback,
   onMidiImportChooseFile,
+  onMidiImportSelectCandidate,
   onMidiImportCommit,
   onMidiImportDiscard,
   onMidiImportAudition,
@@ -962,6 +967,7 @@ export function LibraryPanel({
             headingId={headingId}
             midiImport={midiImport}
             onMidiImportChooseFile={onMidiImportChooseFile}
+            onMidiImportSelectCandidate={onMidiImportSelectCandidate}
             onMidiImportCommit={onMidiImportCommit}
             onMidiImportDiscard={onMidiImportDiscard}
             onMidiImportAudition={onMidiImportAudition}

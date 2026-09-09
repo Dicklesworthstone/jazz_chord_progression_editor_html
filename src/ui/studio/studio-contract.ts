@@ -557,6 +557,20 @@ export type StudioMidiImportAutoView = Readonly<{
 }>;
 
 export type StudioMidiImportView = Readonly<{
+  batch?: Readonly<{
+    pending: boolean;
+    candidates: readonly Readonly<{
+      ordinal: number;
+      fileName: string;
+      score: number | null;
+      reasons: readonly string[];
+      problem: string | null;
+      recommended: boolean;
+      selected: boolean;
+      canInspect: boolean;
+    }>[];
+  }>;
+
   /** False when the composition root wired no decoder into this session. */
   available: boolean;
   statusLabel: string;
@@ -730,7 +744,8 @@ export type StudioShellCallbacks = Readonly<{
   onLoadLibraryEntry: (entryId: string, focusOwnerId?: string) => void;
   onQuickEntryClear: () => void;
   /** Read a local file the caller picked. No network, ever. */
-  onMidiImportChooseFile: (file: File) => void;
+  onMidiImportChooseFile: (files: readonly File[]) => void;
+  onMidiImportSelectCandidate: (ordinal: number) => void;
   /** Land the previewed import as one ordinary undoable edit. */
   onMidiImportCommit: () => void;
   /** Drop the preview without touching the document. */

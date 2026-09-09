@@ -26,6 +26,9 @@ import {
   STARTER_CHART,
   type LoadProgressionLibraryEntryResult,
   auditionMidiImportPreview,
+  compareMidiFiles,
+  type MidiImportBatch,
+  type MidiImportLocalFile,
   type M1ImportOverrides,
   type MidiImportAutoCommitResult,
   type MidiImportCommitResult,
@@ -286,6 +289,11 @@ export type AppActions = Readonly<{
     fileName: string,
     bytes: Uint8Array,
   ) => Promise<MidiImportPreview>;
+  compareMidiFiles: (
+    files: readonly MidiImportLocalFile[],
+    isCurrent: () => boolean,
+    onProgress: (completed: number, total: number) => void,
+  ) => Promise<MidiImportBatch | null>;
   commitMidiImport: (
     preview: MidiImportPreview,
   ) => MidiImportCommitResult | null;
@@ -1768,6 +1776,11 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
   const [midiPreview, setMidiPreview] = useState<MidiImportPreview | null>(
     null,
   );
+  const [midiBatch, setMidiBatch] = useState<MidiImportBatch | null>(null);
+  const [midiSelectedOrdinal, setMidiSelectedOrdinal] = useState<number | null>(null);
+  const [midiReading, setMidiReading] = useState(false);
+  const midiReadGeneration = useRef(0);
+  useEffect(() => () => { midiReadGeneration.current++; }, []);
   /*
    * The U7 MIDI export workflow session. The pinned preview model is the
    * only thing the dialog renders; every phase transition re-checks the
@@ -2447,14 +2460,26 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
     tempoFeedback,
     shareFeedback,
     shareCopied,
-  }, insertionPlan, draftPreview, livePlayheadLabel, continuation, detailView, midiImportView(
+  }, insertionPlan, draftPreview, livePlayheadLabel, continuation, detailView, { ...midiImportView(
     actions.midiImportAvailable,
     midiPreview,
     midiImportNotice,
     midiAuditioning,
     midiOverrides,
     snapshot.performance.options,
-  ), midiExportView(midiExportSession), (eventId) => actions.readEventAnalysis(eventId)?.roman ?? null);
+  ), batch: {
+    pending: midiReading,
+    candidates: midiBatch === null || midiBatch.candidates.length < 2 ? [] : midiBatch.candidates.map((candidate) => ({
+      ordinal: candidate.ordinal,
+      fileName: candidate.fileName,
+      score: candidate.ranking?.score ?? null,
+      reasons: candidate.ranking?.reasons ?? [],
+      problem: candidate.problem,
+      recommended: candidate.ordinal === midiBatch.recommendedOrdinal,
+      selected: candidate.ordinal === midiSelectedOrdinal,
+      canInspect: candidate.preview !== null,
+    })),
+  } }, midiExportView(midiExportSession), (eventId) => actions.readEventAnalysis(eventId)?.roman ?? null);
 
   /*
    * jcpe-7she: the independent ear compares what the tap heard with the
@@ -2907,45 +2932,40 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
             nextAudioGesture("trusted-pointer"),
           );
         },
-        /*
-         * A local file, read on a user gesture with FileReader. The runtime
-         * boundary forbids every network capability, so there is no other way
-         * a file can arrive and no other way it should: nothing is uploaded,
-         * nothing is fetched, and the bytes go straight to the application
-         * service that owns the decoder.
-         */
-        onMidiImportChooseFile: (file) => {
+        onMidiImportChooseFile: (files) => {
           cancelMidiAudition();
           clearMidiOverrides();
           setMidiPreview(null);
-          setMidiImportNotice(`Reading ${file.name}…`);
-          const reader = new FileReader();
-          reader.onerror = () => {
-            setMidiImportNotice(
-              `${file.name} could not be read from this device.`,
-            );
-          };
-          reader.onload = () => {
-            const buffer = reader.result;
-            if (!(buffer instanceof ArrayBuffer)) {
-              setMidiImportNotice(
-                `${file.name} could not be read from this device.`,
-              );
-              return;
-            }
-            void actions
-              .readMidiFile(file.name, new Uint8Array(buffer))
-              .then((preview) => {
-                setMidiImportNotice(null);
-                setMidiPreview(preview);
-              })
-              .catch(() => {
-                setMidiImportNotice(
-                  `${file.name} could not be decoded on this device.`,
-                );
-              });
-          };
-          reader.readAsArrayBuffer(file);
+          setMidiBatch(null);
+          setMidiSelectedOrdinal(null);
+          setMidiReading(true);
+          const generation = ++midiReadGeneration.current;
+          const current = () => generation === midiReadGeneration.current;
+          void actions.compareMidiFiles(files, current, (completed, total) => {
+            setMidiImportNotice(`Comparing MIDI files: ${String(completed)} of ${String(total)}…`);
+          }).then((batch) => {
+            if (!current() || batch === null) return;
+            setMidiReading(false);
+            setMidiBatch(batch);
+            const ordinal = batch.recommendedOrdinal ?? (batch.candidates.length === 1 ? 0 : null);
+            setMidiSelectedOrdinal(ordinal);
+            const chosen = ordinal === null ? null : batch.candidates[ordinal];
+            setMidiPreview(chosen?.preview ?? null);
+            setMidiImportNotice(batch.problem ?? (chosen?.preview != null ? null : chosen?.problem ?? "No candidate has importable chords. Inspect the results or choose other files."));
+          }).catch(() => {
+            if (!current()) return;
+            setMidiReading(false);
+            setMidiImportNotice("The MIDI files could not be compared on this device.");
+          });
+        },
+        onMidiImportSelectCandidate: (ordinal) => {
+          const candidate = midiBatch?.candidates[ordinal];
+          if (candidate?.preview == null || midiReading) return;
+          cancelMidiAudition();
+          clearMidiOverrides();
+          setMidiSelectedOrdinal(ordinal);
+          setMidiPreview(candidate.preview);
+          setMidiImportNotice(null);
         },
         onMidiImportCommit: () => {
           if (midiPreview === null) return;
@@ -2961,6 +2981,7 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
             if (auto.committed) {
               quickEntryTargetIsExplicit.current = false;
               setMidiPreview(null);
+              setMidiBatch(null);
               setMidiImportNotice(
                 auto.undoCount === 1
                   ? `${midiPreview.fileName} was added as one edit. Undo returns the chart.`
@@ -2981,6 +3002,7 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
           if (result.committed) {
             quickEntryTargetIsExplicit.current = false;
             setMidiPreview(null);
+            setMidiBatch(null);
             setMidiImportNotice(
               `${midiPreview.fileName} was added as one edit. Undo returns the chart.`,
             );
@@ -2999,6 +3021,10 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
           );
         },
         onMidiImportDiscard: () => {
+          midiReadGeneration.current++;
+          setMidiReading(false);
+          setMidiBatch(null);
+          setMidiSelectedOrdinal(null);
           cancelMidiAudition();
           clearMidiOverrides();
           setMidiPreview(null);
@@ -3851,6 +3877,14 @@ export function StudioRoot({
                 unavailableMidiImportPreview(fileName, bytes.byteLength),
               )
             : midiImportService.readFile(fileName, bytes),
+        compareMidiFiles: (files, isCurrent, onProgress) => compareMidiFiles(
+          files,
+          (name, bytes) => midiImportService === null
+            ? Promise.resolve(unavailableMidiImportPreview(name, bytes.byteLength))
+            : midiImportService.readFile(name, bytes),
+          isCurrent,
+          onProgress,
+        ),
         commitMidiImport: (preview) =>
           midiImportService === null
             ? null

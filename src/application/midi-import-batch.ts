@@ -131,7 +131,7 @@ export async function compareMidiFiles(
         preview = await readFile(file.name, new Uint8Array(buffer));
         if (!isCurrent()) return null;
         if (preview.decoded === null || (preview.automation === null && preview.blockedReason !== null)) {
-          problem = preview.blockedReason ?? preview.refusal?.message ?? "No importable chords were found.";
+          problem = preview.blockedReason ?? preview.refusal?.code ?? "No importable chords were found.";
         }
       }
     } catch {

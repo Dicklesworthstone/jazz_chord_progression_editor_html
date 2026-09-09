@@ -43,6 +43,7 @@ function RailFocusHarness() {
         overrides: null,
       }),
       onMidiImportChooseFile: () => undefined,
+    onMidiImportSelectCandidate: () => undefined,
       onMidiImportCommit: () => undefined,
       onMidiImportDiscard: () => undefined,
       onMidiImportAudition: () => undefined,

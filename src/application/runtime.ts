@@ -173,3 +173,6 @@ export { createStudioExactShare, type StudioExactShareService, type StudioExactS
 export { decodeSharedStartup } from "./exact-share";
 export { applyExactSharedStartup } from "./exact-share-startup";
 export { createStudioMyCharts, type StudioMyChartsService, type StudioMyChartsView } from "./studio-my-charts";
+
+export { compareMidiFiles } from "./midi-import-batch";
+export type { MidiImportBatch, MidiImportLocalFile } from "./midi-import-batch";
