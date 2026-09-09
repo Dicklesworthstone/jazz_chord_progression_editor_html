@@ -25,6 +25,7 @@ import {
   type StudioAudioPort,
 } from "../../src/application/studio-audio";
 import { createFakeAudioPlatform } from "../../src/test-support/fake-audio-platform";
+import { batchChordFile } from "../support/midi-batch-fixtures";
 import { realDecodeFrame } from "../support/midi-import-test-kit";
 
 setDefaultTimeout(120_000);
@@ -99,6 +100,38 @@ describe("audition derivation", () => {
     expect(steps[0]?.midiPitches).toEqual(CMAJ7);
     expect(steps[1]?.midiPitches).toEqual(FMIN7);
     expect(steps[2]?.midiPitches).toEqual(G7);
+  });
+
+  test("track exclusions govern audition across all transpositions and can be undone", async () => {
+    for (let transpose = 0; transpose < 12; transpose += 1) {
+      const bytes = Uint8Array.from([
+        77, 84, 104, 100, 0, 0, 0, 6, 0, 1, 0, 2, 1, 224,
+        ...batchChordFile({ transpose }).slice(14),
+        ...batchChordFile({ transpose: transpose + 12, channel: 1, omitTempo: true }).slice(14),
+      ]);
+      const importer = service();
+      const original = await importer.readFile("two-octaves.mid", bytes);
+      const lower = [60, 64, 67, 71].map((pitch) => pitch + transpose);
+      const both = [...lower, ...lower.map((pitch) => pitch + 12)];
+      expect(auditionMidiImportPreview(original)[0]?.midiPitches).toEqual(both);
+      const replan = (excludedTrackIndices: readonly number[]) =>
+        importer.replanWithOverrides(original, {
+          excludedTrackIndices, alternativeChoices: [], grooveStyleId: null,
+        });
+      const excluded = replan([1, 1, -1, 2, 0.5]);
+      expect(excluded.automation?.excludedTrackIndices).toEqual([1]);
+      expect(Object.isFrozen(excluded.automation?.excludedTrackIndices)).toBe(true);
+      expect(excluded.automation?.classifications).toEqual(original.automation?.classifications);
+      expect(excluded.decoded).toBe(original.decoded);
+      expect(auditionMidiImportPreview(excluded)[0]?.midiPitches).toEqual(lower);
+      expect(auditionMidiImportPreview(replan([1]))).toEqual(auditionMidiImportPreview(excluded));
+      expect(auditionMidiImportPreview(replan([0]))[0]?.midiPitches).toEqual(lower.map((pitch) => pitch + 12));
+      expect(auditionMidiImportPreview(replan([0, 1]))).toEqual([]);
+      const restored = importer.replanWithOverrides(excluded, {
+        excludedTrackIndices: [], alternativeChoices: [], grooveStyleId: null,
+      });
+      expect(auditionMidiImportPreview(restored)).toEqual(auditionMidiImportPreview(original));
+    }
   });
 
   test("is deterministic and bounded", async () => {

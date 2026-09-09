@@ -490,7 +490,10 @@ is treated exactly as role `silent`. Excluding every contributing track
 yields the ordinary `import.automation_nothing_to_write` refusal, never a
 special case. An out-of-range index is dropped, with a trace decision. The
 classify trace record carries one `excluded` decision per applied index
-(`reason: "user override"`).
+(`reason: "user override"`). The immutable automation plan carries the
+sanitized, sorted, unique `excludedTrackIndices` so source-pitch audition
+applies the same exclusions without rewriting the original classifications.
+Removing an exclusion restores that track to audition on the next re-plan.
 
 **Alternative choice.** A choice names a span by its exact
 `(measureIndex, startTick)` identity in the RE-PLANNED span set and an

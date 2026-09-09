@@ -236,9 +236,10 @@ export function auditionMidiImportPreview(
   const ppq = decoded.model.header.division;
   if (ppq <= 0) return Object.freeze([]);
   const msPerTick = automation.initialTempoMicroseconds / (1_000 * ppq);
+  const excludedTracks = new Set(automation.excludedTrackIndices);
   const eligibleTracks = decoded.model.tracks.filter((_, index) => {
     const role = automation.classifications[index]?.role;
-    return role !== "percussion" && role !== "silent";
+    return !excludedTracks.has(index) && role !== "percussion" && role !== "silent";
   });
   const steps: MidiImportAuditionStep[] = [];
   let firstTick: number | null = null;

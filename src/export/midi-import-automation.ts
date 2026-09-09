@@ -909,6 +909,8 @@ export type M1AutomationSection = Readonly<{
 
 export type M1AutomationPlan = Readonly<{
   classifications: readonly M1TrackClassification[];
+  /** Sanitized source-track exclusions, shared by planning and audition. */
+  excludedTrackIndices: readonly number[];
   spans: readonly M1Span[];
   readings: readonly M1AutomationSpanReading[];
   key: M1KeyEvidence;
@@ -1662,6 +1664,7 @@ export function planAutomationImport(
     ok: true,
     plan: Object.freeze({
       classifications,
+      excludedTrackIndices: Object.freeze([...excludedTracks].sort((a, b) => a - b)),
       spans,
       readings: frozenReadings,
       key,

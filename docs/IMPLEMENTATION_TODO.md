@@ -2,6 +2,20 @@
 
 Consumer: the user and Codex executing the 2026-09-04 request to implement the reality-check backlog and GitHub voice-leading issue #2. Gate: do not declare this campaign complete while a requested item remains unresolved. Observed defect: the audit found 51 closed records with unfulfilled obligations. Retirement: retire this checklist when the campaign is complete; lasting commands/results belong on the Beads. This inventory is process and earns no implementation credit.
 
+## M1 excluded-track audition repair — jcpe-qyyn (CyanCove, reopened)
+
+- [x] Reconcile Agent Mail, current Beads database, recent commits and CASS availability before claiming. No other registered peers; CASS lexical fuel exhausted and no matching workspace in its local archive.
+- [x] Reproduce excluded upper-track notes still sounding through the real decoder/service. Pinned RCH Bun1.3.14 reproduction fails with four unwanted upper notes.
+- [x] Carry sanitized immutable exclusions in the automation plan and apply them to source-pitch audition without changing original classifications or decoded notes.
+- [x] Prove lower/upper exclusion, duplicates and invalid indices, all-excluded refusal, re-inclusion and determinism across all12 transpositions: RCH `bun test tests/unit/m1-import-audition.test.ts`,6pass/0fail/142assertions.
+- [x] RCH Bun1.3.14: audition/overrides/automatic integration23pass/0fail/278assertions; full `bun run typecheck`, `bun run lint`, `bun run build` exit0 on real Node26. Guarded artifact8436713bytes, SHA256 `2705cc512a1a7f4edf5853e70a2283b11d2376c88b79f494143b65757f375fa9`, root/dist identical;319 source hashes and mtimes unchanged.
+- [x] Native `m1-midi-import-auto.spec.ts`:12pass/0fail/0skip/0retry across Chromium/Firefox/WebKit in42.1s, actual generated artifact; unchanged Add/Undo/settings/refusal/audition lifecycle assertions and clean page/console diagnostics. This suite proves UI lifecycle, not exact audible exclusion pitches; those have real-decoder/service proof above.
+- [ ] Finish the original Advanced grid/destination and matched-groove audition obligations before closing `jcpe-qyyn`. This source-note exclusion fix does not satisfy those deferred promises.
+
+Final pre-commit RCH contract validation:10 families/0findings; guarded rebuild reproduces the exact browser-tested artifact above. The first repeat build stopped on a missing worker dependency symlink; task-local setup restored it and the unchanged build passed. Fresh solo review; no independent-person signoff.
+
+Raw reproduction, failed SSH attempt and pinned regression logs: ignored `.tmp/cyancove/`. No test assertions, timeouts, retries or release gates were relaxed. M1 build `jcpe-upbz` remains assigned to its existing owner pending clarification; no deployment or full acceptance is claimed.
+
 ## M1 tied-key semantics — jcpe-ionn (CodexRuntime, closed; implementation `97aed83`)
 
 - [x] Recover live ownership and reproduce the uniform-mass counterexample through production inference; preserve zero-mass and unique-winner controls.
