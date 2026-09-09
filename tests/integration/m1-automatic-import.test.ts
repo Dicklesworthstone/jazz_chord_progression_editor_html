@@ -541,3 +541,26 @@ test("M1 placement refuses stale targets before commands and rolls back later ch
   expect(refused.rolledBackCount).toBeGreaterThan(0);
   expect(canonical(documentFacts(studio))).toBe(before);
 });
+
+
+test("M1 placement also governs the manual fallback as one undoable edit", async () => {
+  const studio = placementChart();
+  const preview = await readPreview(SETTINGS_FILE, "Manual placement.mid");
+  const before = canonical(documentFacts(studio));
+  const sections = studio.getSnapshot().sections;
+  const target = sections[1];
+  if (target === undefined) throw new Error("Missing manual placement target");
+  const result = service().commit(studio, preview, target.id);
+  expect(result.committed).toBe(true);
+  const afterIds = studio.getSnapshot().sections.map((section) => section.id);
+  const originalIds = sections.map((section) => section.id);
+  const insertedIds = afterIds.filter((id) => !originalIds.includes(id));
+  expect(insertedIds).toHaveLength(1);
+  expect(afterIds).toEqual([...originalIds.slice(0, 1), ...insertedIds, ...originalIds.slice(1)]);
+  expect(studio.undo().ok).toBe(true);
+  expect(canonical(documentFacts(studio))).toBe(before);
+  const refused = service().commit(studio, preview, "missing-section");
+  expect(refused.reason).toBe("no-destination");
+  expect(refused.staged).toBeNull();
+  expect(canonical(documentFacts(studio))).toBe(before);
+});

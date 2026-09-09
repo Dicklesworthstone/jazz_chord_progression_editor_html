@@ -6,11 +6,12 @@ Consumer: the user and Codex executing the 2026-09-04 request to implement the r
 
 - [x] Confirm live ownership, read envelope/atomic insertion laws and reserve affected paths.
 - [x] Specify stable before-section placement, unchanged default, stale-target refusal and import-local continuation of chunks.
-- [ ] Prove pre-feature failure with independently specified controller/decoder cases.
-- [ ] Wire service placement and Advanced selection/reset without changing source music.
-- [ ] Pass positional/chunk/rollback/stale-target tests and full remote checks.
-- [ ] Pass native placement/reset/Add/Undo and existing M1 browser cases.
-- [ ] Verify final artifact/source, commit and record proof. Matched-groove audition remains open.
+- [x] Pre-feature f7b669a with only the three independently specified placement tests fails3/3 (wrong position, trailing-chunk destination, missing target wrongly committed) on RCH hz3; no production changes in that overlay.
+- [x] Wire automatic and retained manual placement through existing atomic commands, import-local chunk continuation, and Advanced selection/reset/stale-target feedback without changing source music.
+- [x] RCH Bun1.3.14/Node26:35 focused tests/596 assertions,70 M1 evidence tests,11 pins/6 goldens; full typecheck/lint/build pass. Placement covers manual and automatic paths, every boundary,640-bar chunks and refusal rollback.
+- [x] Native Automatic+Advanced:36 passed in112178.65ms across Chromium/Firefox/WebKit; zero skips/flakes/retries. Covers stale target disappearance/Redo restoration and exact existing chord IDs. Browser-discovered lost section names fixed by committing on input; retained the original failing reports and strengthened the name assertion.
+- [x] Prepare verified source/artifact for commit: final M1 evidence70/70, E2E type/lint, M1 contract10 families/0 findings and guarded rebuild pass. All319 source hashes/mtimes unchanged; root/dist identical at8441177 bytes, SHA256 `5932358f69d7d70de47a2be7fe51e82995af4ba331508b89feb1a42f16539e47`. Preserve concurrent spec/fixture commit135f99a.
+- [ ] Complete matched-groove audition before closing the original Bead. No deployment or human-listening acceptance claimed.
 
 ## M1 chord-change detail — jcpe-qyyn continuation (CyanCove)
 
