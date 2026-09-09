@@ -464,7 +464,8 @@ model** (never on re-read bytes, never on the emitted chart text), and the
 re-planned preview replaces the pending one atomically: the result card,
 the chart text, the chunk plan, and the trace all restate the overridden
 world. Overrides never touch the document; the commit envelope (§7) lands
-whatever the pending plan says, exactly as before. The quantization-grid and destination placement overrides remain deferred.
+whatever the pending plan says, exactly as before. Destination placement remains deferred; segmentation-grid control is covered
+by amendment #5.
 Section naming is covered by amendment #4 below.
 
 The frozen override set:
@@ -476,6 +477,7 @@ M1ImportOverrides = {
     span: { measureIndex: number, startTick: number },
     alternativeOrdinal: number,              // 0 = the automatic choice
   }[],                                       // ≤ M1_MAX_ALTERNATIVE_CHOICES
+  grid?: "bar" | "half-bar" | "quarter-bar" | null,
   sectionNames?: readonly { startMeasureIndex: number, name: string }[],
   key?: M1KeyChoice | null,                 // amendment #3; null = Automatic
   grooveStyleId: GrooveStyleId | null,       // null = the automatic match
@@ -551,3 +553,33 @@ Proof: independent MIDI across12 transpositions, unchanged chord bodies and
 readings, escaping, clear/restore, invalid/stale/duplicate controls, plus native
 Advanced rename/clear/new-file and Add/Undo checks. This amendment does not
 complete grid selection, placement or matched-groove audition obligations.
+
+
+### Amendment #5: chord-change detail (jcpe-qyyn)
+
+The optional `grid` override caps §3.2 splitting depth: `bar` at0,
+`half-bar` at1, `quarter-bar` at2. Null/omitted means Automatic, the existing
+quarter-bar depth2 law. This is a segmentation limit, not quantization:
+source note ticks, spelling and durations stay untouched. A sustained chord
+still remains a single span at every setting; no setting forces extra splits.
+Exact odd-tick midpoints still put the remainder on the left. Span masses,
+presence, bass selection, resolution and explicit durations use the unchanged
+laws at the selected span boundaries. Coarser limits can merge harmonies and
+can therefore produce an ordinary nothing-to-write refusal.
+
+Replan on the retained decoded model. Re-key alternative choices against the
+new span identities with the existing stale-choice drop law. Keep other
+overrides and allow restoring Automatic even after a nothing-to-write refusal.
+New files/candidates reset the grid with all other overrides. The segment trace
+records explicit valid choices as `grid-override` and invalid choices as
+`dropped-grid`, before per-span details so long-file trace truncation preserves
+the chosen setting; invalid input uses Automatic. With null/omitted input, every
+pre-existing trace stays unchanged. Explicit choices report maximum depth and
+maximum spans per measure (1,2,4); existing deterministic bounds never increase.
+
+Independent proof covers whole/half/quarter boundaries on a churning bar,
+unchanged sustained material, all12 transpositions, odd-tick partitions,
+invalid input, clear/restore and actual-decoder replanning. Native proof must
+show refusal recovery without re-choosing bytes, preserved names/other overrides,
+new-file reset, Add and Undo. Destination placement and matched-groove audition
+remain required by the original Bead.

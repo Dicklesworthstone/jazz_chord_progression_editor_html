@@ -1092,12 +1092,13 @@ function midiImportOverridesView(
     automation === null &&
     overridesState.excludedTrackIndices.length === 0 &&
     overridesState.grooveStyleId === null &&
-    overridesState.key == null
+    overridesState.key == null && overridesState.grid == null
   ) {
     return null;
   }
   const excluded = new Set(overridesState.excludedTrackIndices);
   return Object.freeze({
+    grid: overridesState.grid ?? null,
     sectionNameOverrides: overridesState.sectionNames ?? [],
     sections: Object.freeze((automation?.sections ?? []).map((section) => Object.freeze({
       startMeasureIndex: section.startMeasureIndex,
@@ -3053,6 +3054,7 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
           cancelMidiAudition();
           const absolute: M1ImportOverrides = Object.freeze({
             key: midiImportKeyChoice(next.key),
+            grid: next.grid === "bar" || next.grid === "half-bar" || next.grid === "quarter-bar" ? next.grid : null,
             sectionNames: Object.freeze((next.sectionNames ?? []).slice(0, 64).map((choice) => Object.freeze({ ...choice }))),
             excludedTrackIndices: Object.freeze([...next.excludedTrackIndices]),
             alternativeChoices: Object.freeze(

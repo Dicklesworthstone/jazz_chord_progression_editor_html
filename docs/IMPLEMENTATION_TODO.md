@@ -2,6 +2,17 @@
 
 Consumer: the user and Codex executing the 2026-09-04 request to implement the reality-check backlog and GitHub voice-leading issue #2. Gate: do not declare this campaign complete while a requested item remains unresolved. Observed defect: the audit found 51 closed records with unfulfilled obligations. Retirement: retire this checklist when the campaign is complete; lasting commands/results belong on the Beads. This inventory is process and earns no implementation credit.
 
+## M1 chord-change detail — jcpe-qyyn continuation (CyanCove)
+
+- [x] Reconcile ownership and read M1 midpoint/mass laws; reserve only affected files.
+- [x] Specify explicit depth caps0/1/2 with exact midpoint timing, unchanged Automatic, no forced splits, bounded work and refusal recovery.
+- [x] Author independent four-triad SMF and pure span fixtures; reproduce ignored grid on pre-featurec5fe12f.
+- [x] Wire retained-model grid planning/trace and Advanced control, preserving other overrides and allowing Automatic after a coarse refusal.
+- [x] Pass RCH grid/override/audition/automatic regression (31 tests, 522 assertions), expanded M1 evidence gate (66 tests, 11 pins, 6 goldens), full type/lint and guarded build checks with Bun 1.3.14/Node 26 on hz2. Added previously omitted M1 suites to the evidence input closure; no gate was weakened.
+- [x] Prove native grid/name/refusal/new-file/Add/Undo behavior and existing Automatic/Advanced desktop/320px/a11y cases: 33 passed across Chromium/Firefox/WebKit in 101353.897 ms; zero skips, retries, failures or flaky cases. Logs: `.tmp/cyancove/grid-browser*`.
+- [x] Prepare verified source/artifact for commit: final RCH rebuild and M1 contract (10 families, zero findings) passed; all319 source hashes/mtimes unchanged, root/dist identical at8439813 bytes, SHA256 `ae777eb05de83a16f48c5e774d04c7bef5c475b7d939f96da31bd8b69205cf3b`. Raw failures and solo review retained under `.tmp/cyancove/grid-*`.
+- [ ] Finish destination placement and matched-groove audition before closing the original Bead; no deployment or human-listening acceptance claimed.
+
 ## M1 section naming — jcpe-qyyn continuation (CyanCove)
 
 - [x] Recover current ownership and reserve source/test paths; no peer Agent Mail registrations or messages.

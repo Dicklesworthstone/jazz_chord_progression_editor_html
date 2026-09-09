@@ -504,10 +504,11 @@ export type M1AlternativeChoice = Readonly<{
 
 /**
  * The frozen override set (doc §12, including amendment #3 key choice). Overrides re-run the pipeline
- * on the retained decoded model and never touch the document; quantization
- * grid and destination placement overrides are deferred, not lost.
+ * on the retained decoded model and never touch the document. Destination
+ * placement remains deferred; grid limits only segmentation depth.
  */
 export type M1ImportOverrides = Readonly<{
+  grid?: "bar" | "half-bar" | "quarter-bar" | null;
   excludedTrackIndices: readonly number[];
   alternativeChoices: readonly M1AlternativeChoice[];
   grooveStyleId: GrooveStyleId | null;

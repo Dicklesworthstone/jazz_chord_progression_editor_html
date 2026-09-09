@@ -329,9 +329,11 @@ export function computeAutomationSpans(
   ppq: number,
   meterMap: readonly SmfMeterEntry[],
   tracks: readonly M1RoleTrack[],
+  grid: M1ImportOverrides["grid"] = null,
 ):
   | Readonly<{ ok: true; spans: readonly M1Span[] }>
   | Readonly<{ ok: false; refusal: M1MeasureLawRefusal }> {
+  const maxDepth = grid === "bar" ? 0 : grid === "half-bar" ? 1 : M1_MAX_SEGMENT_DEPTH;
   const minSounding = Math.floor(ppq / M1_MIN_SOUNDING_PPQ_DIVISOR);
   let horizon = 0;
   for (const track of tracks) {
@@ -356,7 +358,7 @@ export function computeAutomationSpans(
     );
     const present = presentClasses(mass);
     const silent = present.length === 0;
-    if (!silent && depth < M1_MAX_SEGMENT_DEPTH) {
+    if (!silent && depth < maxDepth) {
       const mid = startTick + Math.ceil((endTick - startTick) / 2);
       if (mid > startTick && mid < endTick) {
         const left = presentClasses(
@@ -1130,10 +1132,13 @@ export function planAutomationImport(
       notes: track.notes,
     }),
   );
+  const grid = overrides.grid === "bar" || overrides.grid === "half-bar" || overrides.grid === "quarter-bar" ? overrides.grid : null;
+  const maxDepth = grid === "bar" ? 0 : grid === "half-bar" ? 1 : M1_MAX_SEGMENT_DEPTH;
   const spansResult = computeAutomationSpans(
     ppq,
     value.model.meterMap,
     roleTracks,
+    grid,
   );
   if (!spansResult.ok) {
     trace.push(
@@ -1158,15 +1163,19 @@ export function planAutomationImport(
     traceRecord(
       "segment",
       spans,
-      { spans: spans.length },
+      { spans: spans.length, ...(overrides.grid == null ? {} : { maxDepth, maxSpansPerMeasure: 2 ** maxDepth }) },
       bounded(
-        spans.map((span) => ({
+        [...(overrides.grid == null ? [] : [{
+          subject: "grid",
+          outcome: grid === null ? "dropped-grid" : "grid-override",
+          reason: grid === null ? "Unknown grid; using Automatic." : grid,
+        }]), ...spans.map((span) => ({
           subject: `measure-${String(span.measureIndex)}@${String(span.startTick)}`,
           outcome: span.silent
             ? "silent"
             : `present:${span.presentPitchClasses.map(String).join("+")}`,
           reason: `depth ${String(span.depth)}`,
-        })),
+        }))],
       ),
     ),
   );

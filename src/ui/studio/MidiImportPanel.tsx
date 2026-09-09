@@ -39,6 +39,7 @@ export type MidiImportPanelProps = Readonly<{
     }>[];
     key?: Readonly<{ tonicPitchClass: number; mode: "major" | "minor" }> | null;
     grooveStyleId: string | null;
+    grid?: "bar" | "half-bar" | "quarter-bar" | null;
     sectionNames?: readonly Readonly<{ startMeasureIndex: number; name: string }>[];
   }>) => void;
   /** Opens the ⌘K command lane — the paste-chart-text route lives there. */
@@ -81,6 +82,7 @@ export function MidiImportPanel({
               },
               alternativeOrdinal: span.chosenOrdinal,
             })),
+    grid: overrides?.grid ?? null,
     sectionNames: overrides?.sectionNameOverrides ?? [],
     key: overrides?.keyOverride ?? null,
     grooveStyleId: overrides === null ? null : overrides.grooveOverrideId,
@@ -327,6 +329,20 @@ export function MidiImportPanel({
               data-testid="midi-import-overrides"
             >
               <p class="studio-midi-import__label">Overrides</p>
+              <label class="studio-midi-import__section-name">
+                <span>Chord-change detail</span>
+                <select data-testid="midi-import-grid" value={overrides.grid ?? ""}
+                  onChange={(event) => {
+                    const value = event.currentTarget.value;
+                    onOverridesChange({ ...currentOverrides(), grid: value === "bar" || value === "half-bar" || value === "quarter-bar" ? value : null });
+                  }}>
+                  <option value="">Automatic · up to four per bar</option>
+                  <option value="bar">One chord per bar</option>
+                  <option value="half-bar">Up to two chords per bar</option>
+                  <option value="quarter-bar">Up to four chords per bar</option>
+                </select>
+                <span>Fewer splits can merge harmonies. Original MIDI timing stays intact.</span>
+              </label>
               {overrides.sections.map((section) => (
                 <label class="studio-midi-import__section-name" key={`section-${String(section.startMeasureIndex)}`}>
                   <span>Section name · bar {String(section.startMeasureIndex + 1)}</span>

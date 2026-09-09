@@ -1,4 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
+import { midiGridFixture } from "../support/midi-grid-fixture";
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -473,6 +474,54 @@ test("M1-ADV-006 section names survive other overrides, clear, reset on file cho
     for (let i = 0; i < undoCount; i += 1) await page.locator("#studio-undo").click();
     expect(await page.getByTestId("section-name-field").evaluateAll((inputs) => inputs.map((input) => (input as HTMLInputElement).value))).not.toContain("Imported bridge");
     await expect(page.locator(".studio-chord-card")).toHaveCount(0);
+    expectCleanDiagnostics(diagnostics);
+    await ledger.flush("passed", diagnostics);
+  } catch (error) {
+    await ledger.flush("failed", diagnostics);
+    throw error;
+  }
+});
+
+
+test("M1-ADV-007 grid refusal restores without rereading, retains names, resets and adds with Undo", async ({ page }, testInfo) => {
+  const ledger = makeLedger("m1-adv-007-grid", testInfo);
+  const diagnostics = captureDiagnostics(page);
+  try {
+    await openStudio(page);
+    const bytes = Buffer.from(midiGridFixture()).toString("hex");
+    await chooseFile(page, "Grid.mid", bytes);
+    await page.getByTestId("midi-import-advanced-summary").click();
+    const grid = page.getByTestId("midi-import-grid");
+    const name = page.getByTestId("midi-import-section-name-0");
+    const chart = page.getByTestId("midi-import-chart-text");
+    await name.fill("Keep this name");
+    await name.press("Tab");
+    const named = await chart.textContent();
+    await grid.selectOption("bar");
+    await expect(page.getByTestId("midi-import-auto")).toHaveCount(0);
+    await expect(grid).toBeVisible();
+    await expect(grid).toHaveValue("bar");
+    await grid.selectOption("quarter-bar");
+    await expect(chart).toHaveText(named ?? "");
+    await expect(name).toHaveValue("Keep this name");
+    await grid.selectOption("half-bar");
+    await expect(grid).toHaveValue("half-bar");
+    await grid.selectOption("");
+    await expect(chart).toHaveText(named ?? "");
+    await chooseFile(page, "New grid.mid", bytes);
+    await expect(grid).toHaveValue("");
+    await expect(name).toHaveValue("");
+    await page.getByTestId("midi-import-advanced-summary").click();
+    await grid.selectOption("quarter-bar");
+    await page.locator("#studio-midi-import-commit-rail").click();
+    await expect(page.locator(".studio-chord-card")).toHaveCount(4);
+    const status = await page.getByTestId("midi-import-status").first().textContent();
+    const match = /as (?:one|(\d+)) edit/.exec(status ?? "");
+    expect(match).not.toBeNull();
+    const count = match?.[1] === undefined ? 1 : Number.parseInt(match[1], 10);
+    for (let index = 0; index < count; index += 1) await page.locator("#studio-undo").click();
+    await expect(page.locator(".studio-chord-card")).toHaveCount(0);
+    ledger.log("grid-add-and-undo", { count });
     expectCleanDiagnostics(diagnostics);
     await ledger.flush("passed", diagnostics);
   } catch (error) {

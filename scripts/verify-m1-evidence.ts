@@ -71,6 +71,13 @@ const INPUT_CLOSURE = Object.freeze([
   "tests/e2e/m1-midi-import-advanced.spec.ts",
   "tests/e2e/m1-midi-import-auto.spec.ts",
   "tests/support/midi-import-test-kit.ts",
+  "tests/support/midi-grid-fixture.ts",
+  "tests/support/midi-batch-fixtures.ts",
+  `${FIXTURE_DIR}/override-cases.json`,
+  "tests/unit/m1-import-grid.test.ts",
+  "tests/unit/m1-import-overrides.test.ts",
+  "tests/unit/m1-import-audition.test.ts",
+  "tests/integration/m1-automatic-import.test.ts",
   "tests/unit/midi-import-automation-contract.test.ts",
   "tests/unit/midi-import-automation.test.ts",
 ] as const);
