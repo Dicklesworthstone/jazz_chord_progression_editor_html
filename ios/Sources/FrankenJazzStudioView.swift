@@ -1331,11 +1331,29 @@ private enum MyChartsConfirmation: Identifiable {
     }
 }
 
+private enum MyChartsExportKind {
+    case selectedChart
+    case collectionBackup
+
+    var successLabel: String {
+        switch self {
+        case .selectedChart: "the selected chart"
+        case .collectionBackup: "the collection backup"
+        }
+    }
+}
+
 private struct MyChartsView: View {
     @ObservedObject var store: JazzStudioStore
     @ObservedObject private var library: JazzMyChartsStore
     @State private var titleDraft = ""
     @State private var confirmation: MyChartsConfirmation?
+    @State private var importingBackup = false
+    @State private var exporting = false
+    @State private var exportDocument: JazzExportDocument?
+    @State private var exportContentType = UTType.json
+    @State private var exportFilename = "FrankenJazz My Charts"
+    @State private var exportKind = MyChartsExportKind.collectionBackup
 
     init(store: JazzStudioStore) {
         self.store = store
@@ -1349,10 +1367,14 @@ private struct MyChartsView: View {
                 LazyVStack(spacing: 14) {
                     introduction
                     collectionStatus
+                    if let preview = library.restorePreview {
+                        restorePreview(preview)
+                    }
                     keptCharts
                     if let selected = library.selected {
                         selectedChart(selected)
                     }
+                    portableCopies
                 }
                 .frame(maxWidth: 620)
                 .padding(18)
@@ -1368,29 +1390,61 @@ private struct MyChartsView: View {
             titleDraft = library.selected?.chart.title ?? ""
         }
         .alert(item: $confirmation, content: confirmationAlert)
+        .fileExporter(
+            isPresented: $exporting,
+            document: exportDocument,
+            contentType: exportContentType,
+            defaultFilename: exportFilename
+        ) { result in
+            library.finishExport(result, label: exportKind.successLabel)
+            exportDocument = nil
+        }
+        .fileImporter(
+            isPresented: $importingBackup,
+            allowedContentTypes: [.json],
+            allowsMultipleSelection: false
+        ) { result in
+            guard case let .success(urls) = result, let url = urls.first else { return }
+            Task { await library.prepareRestore(from: url) }
+        }
+        .onDisappear {
+            if library.hasPendingRestore { library.cancelRestore() }
+        }
     }
 
     @ViewBuilder
     private var actionFeedback: some View {
         if let message = library.message {
-            Label(
-                message,
-                systemImage: library.messageIsError ? "exclamationmark.triangle.fill" : "checkmark.circle.fill"
-            )
-            .font(.system(size: JazzTheme.size(10.5), weight: .semibold, design: .rounded))
-            .foregroundStyle(library.messageIsError ? JazzTheme.coral : JazzTheme.emerald)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
+            HStack(spacing: 10) {
+                Image(systemName: library.messageIsError ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
+                    .foregroundStyle(library.messageIsError ? JazzTheme.coral : JazzTheme.emerald)
+                    .accessibilityHidden(true)
+                Text(message)
+                .font(.system(size: JazzTheme.size(10.5), weight: .semibold, design: .rounded))
+                .foregroundStyle(library.messageIsError ? JazzTheme.coral : JazzTheme.emerald)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityIdentifier("my-charts-action-feedback")
+
+                Button { library.dismissMessage() } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: JazzTheme.size(18), weight: .semibold))
+                        .foregroundStyle(JazzTheme.secondary)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Dismiss message")
+                .accessibilityIdentifier("my-charts-dismiss-feedback")
+            }
+            .padding(.leading, 16)
+            .padding(.trailing, 6)
+            .padding(.vertical, 4)
             .background(.ultraThinMaterial)
             .overlay(alignment: .top) {
                 Rectangle()
                     .fill((library.messageIsError ? JazzTheme.coral : JazzTheme.emerald).opacity(0.35))
                     .frame(height: 1)
             }
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(message)
-            .accessibilityIdentifier("my-charts-action-feedback")
         }
     }
 
@@ -1409,7 +1463,7 @@ private struct MyChartsView: View {
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(JazzPrimaryButtonStyle(tint: JazzTheme.emerald))
-                .disabled(library.recoveredFromPrevious)
+                .disabled(collectionLocked)
                 .accessibilityIdentifier("my-charts-keep-current")
             }
         }
@@ -1444,6 +1498,7 @@ private struct MyChartsView: View {
                     Label("Refresh collection", systemImage: "arrow.clockwise")
                 }
                 .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.cyan))
+                .disabled(library.hasPendingRestore)
             }
         }
     }
@@ -1497,6 +1552,7 @@ private struct MyChartsView: View {
                             }
                         }
                         .buttonStyle(.plain)
+                        .disabled(library.hasPendingRestore)
                         .accessibilityIdentifier("my-charts-row-\(record.id.uuidString)")
                         .accessibilityLabel("\(record.chart.title), key \(record.chart.key.rawValue), \(record.chart.barCount) bars")
                         .accessibilityValue(library.selectedID == record.id ? "Selected" : "Not selected")
@@ -1520,9 +1576,18 @@ private struct MyChartsView: View {
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(JazzPrimaryButtonStyle(tint: JazzTheme.violet))
+                .disabled(library.hasPendingRestore)
                 .accessibilityIdentifier("my-charts-open-selected")
 
                 VStack(spacing: 9) {
+                    Button { requestSelectedExport(record) } label: {
+                        Label("Export selected chart", systemImage: "doc.badge.arrow.up")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.violet))
+                    .disabled(collectionLocked)
+                    .accessibilityIdentifier("my-charts-export-selected")
+
                     Button {
                         library.duplicate(recordID: record.id, expectedGeneration: library.generation)
                     } label: {
@@ -1530,7 +1595,7 @@ private struct MyChartsView: View {
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.emerald))
-                    .disabled(library.recoveredFromPrevious)
+                    .disabled(collectionLocked)
                     .accessibilityIdentifier("my-charts-duplicate-selected")
 
                     Button {
@@ -1545,7 +1610,7 @@ private struct MyChartsView: View {
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.brass))
-                    .disabled(library.recoveredFromPrevious)
+                    .disabled(collectionLocked)
 
                     Button {
                         confirmation = .remove(record: record, generation: library.generation)
@@ -1554,13 +1619,13 @@ private struct MyChartsView: View {
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.coral))
-                    .disabled(library.recoveredFromPrevious)
+                    .disabled(collectionLocked)
                 }
 
                 Divider().overlay(JazzTheme.stroke)
                 TextField("Kept chart title", text: $titleDraft)
                     .textFieldStyle(.roundedBorder)
-                    .disabled(library.recoveredFromPrevious)
+                    .disabled(collectionLocked)
                     .accessibilityIdentifier("my-charts-rename-field")
                 Button {
                     library.rename(
@@ -1572,12 +1637,141 @@ private struct MyChartsView: View {
                     Label("Rename kept copy", systemImage: "pencil")
                 }
                 .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.cyan))
-                .disabled(library.recoveredFromPrevious)
+                .disabled(collectionLocked)
                 Text("Rename changes only this kept snapshot. Your open chart keeps its own title.")
                     .font(.system(size: JazzTheme.size(10.5), design: .rounded))
                     .foregroundStyle(JazzTheme.secondary)
             }
         }
+    }
+
+    private var portableCopies: some View {
+        JazzPanel(accent: JazzTheme.cyan) {
+            VStack(alignment: .leading, spacing: 12) {
+                JazzSectionLabel(number: "11", title: "Portable native copies", tint: JazzTheme.cyan)
+                Text("Export the whole displayed collection or prepare a bounded restore preview. Native backups preserve FrankenJazz chart data but do not claim the web studio’s E0 interchange schema.")
+                    .font(.system(size: JazzTheme.size(11), design: .rounded))
+                    .foregroundStyle(JazzTheme.secondary)
+                Button(action: requestBackupExport) {
+                    Label("Export collection backup", systemImage: "externaldrive.badge.plus")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(JazzPrimaryButtonStyle(tint: JazzTheme.cyan))
+                .disabled(collectionLocked)
+                .accessibilityIdentifier("my-charts-export-backup")
+
+                Button { importingBackup = true } label: {
+                    Label("Restore from native backup…", systemImage: "arrow.down.doc.fill")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.brass))
+                .disabled(collectionLocked)
+                .accessibilityIdentifier("my-charts-restore-backup")
+                Text("Selecting a file changes nothing until you review every addition and conflict, then confirm one atomic merge.")
+                    .font(.system(size: JazzTheme.size(10), design: .rounded))
+                    .foregroundStyle(JazzTheme.secondary)
+            }
+        }
+    }
+
+    private func restorePreview(_ preview: JazzMyChartsRestorePreview) -> some View {
+        JazzPanel(accent: JazzTheme.brass) {
+            VStack(alignment: .leading, spacing: 12) {
+                JazzSectionLabel(number: "R", title: "Restore preview", tint: JazzTheme.brass)
+                Text("\(preview.additions) additions · \(preview.identical) already identical · \(preview.conflicts.count) conflicts")
+                    .font(.system(size: JazzTheme.size(13), weight: .bold, design: .rounded))
+                    .foregroundStyle(JazzTheme.text)
+                Text("No collection bytes have changed. Timestamps never choose a winner.")
+                    .font(.system(size: JazzTheme.size(10.5), design: .rounded))
+                    .foregroundStyle(JazzTheme.secondary)
+
+                ForEach(preview.conflicts) { conflict in
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Choose the version for \(conflict.localTitle)")
+                            .font(.system(size: JazzTheme.size(12), weight: .bold, design: .rounded))
+                            .foregroundStyle(JazzTheme.text)
+                        restoreChoice(
+                            title: "Keep local copy: \(conflict.localTitle)",
+                            selected: conflict.choice == .local,
+                            tint: JazzTheme.emerald
+                        ) {
+                            library.chooseRestoreConflict(recordID: conflict.recordID, choice: .local)
+                        }
+                        restoreChoice(
+                            title: "Use backup copy: \(conflict.backupTitle)",
+                            selected: conflict.choice == .backup,
+                            tint: JazzTheme.brass
+                        ) {
+                            library.chooseRestoreConflict(recordID: conflict.recordID, choice: .backup)
+                        }
+                    }
+                    .padding(12)
+                    .background(JazzTheme.raised.opacity(0.72), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                }
+
+                Button { library.confirmRestore() } label: {
+                    Label("Confirm one-step restore", systemImage: "checkmark.shield.fill")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(JazzPrimaryButtonStyle(tint: JazzTheme.emerald))
+                .disabled(!preview.isResolved)
+                .accessibilityIdentifier("my-charts-confirm-restore")
+
+                Button { library.cancelRestore() } label: {
+                    Label("Cancel restore", systemImage: "xmark.circle")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.coral))
+                .accessibilityIdentifier("my-charts-cancel-restore")
+            }
+        }
+    }
+
+    private func restoreChoice(
+        title: String,
+        selected: Bool,
+        tint: Color,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 9) {
+                Image(systemName: selected ? "largecircle.fill.circle" : "circle")
+                Text(title).multilineTextAlignment(.leading)
+                Spacer(minLength: 0)
+            }
+            .frame(maxWidth: .infinity, minHeight: 42, alignment: .leading)
+        }
+        .buttonStyle(JazzSecondaryButtonStyle(tint: tint))
+        .accessibilityValue(selected ? "Selected" : "Not selected")
+    }
+
+    private var collectionLocked: Bool {
+        library.recoveredFromPrevious || library.hasPendingRestore
+    }
+
+    private func requestBackupExport() {
+        guard let data = library.prepareBackup() else { return }
+        exportDocument = JazzExportDocument(data: data)
+        exportContentType = .json
+        exportFilename = "FrankenJazz My Charts v\(library.generation).frankenjazz-library"
+        exportKind = .collectionBackup
+        exporting = true
+    }
+
+    private func requestSelectedExport(_ record: JazzKeptChart) {
+        guard let data = library.prepareSelectedChartExport() else { return }
+        exportDocument = JazzExportDocument(data: data)
+        exportContentType = .frankenJazz
+        exportFilename = safeFilename(record.chart.title)
+        exportKind = .selectedChart
+        exporting = true
+    }
+
+    private func safeFilename(_ title: String) -> String {
+        let safe = title
+            .replacingOccurrences(of: #"[/:]"#, with: "-", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return safe.isEmpty ? "FrankenJazz chart" : safe
     }
 
     private func confirmationAlert(_ request: MyChartsConfirmation) -> Alert {

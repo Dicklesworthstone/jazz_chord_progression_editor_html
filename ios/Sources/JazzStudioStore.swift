@@ -868,7 +868,7 @@ final class JazzStudioStore: ObservableObject {
 }
 
 struct JazzExportDocument: FileDocument {
-    static var readableContentTypes: [UTType] { [.frankenJazz] }
+    static var readableContentTypes: [UTType] { [.frankenJazz, .json] }
     let data: Data
 
     init(data: Data) { self.data = data }

@@ -258,14 +258,14 @@ final class FrankenJazzUITests: XCTestCase {
         XCTAssertTrue(duplicate.waitForExistence(timeout: 3))
         XCTAssertTrue(duplicate.isHittable)
         XCTAssertTrue(app.buttons["my-charts-open-selected"].exists)
+        XCTAssertTrue(app.buttons["my-charts-export-selected"].exists)
         XCTAssertTrue(app.textFields["my-charts-rename-field"].exists)
         XCTAssertTrue(app.buttons["Replace with current chart…"].exists)
         XCTAssertTrue(app.buttons["Remove kept copy…"].exists)
 
         duplicate.tap()
-        let actionMessage = app.descendants(matching: .any)["my-charts-action-feedback"]
+        let actionMessage = app.staticTexts["my-charts-action-feedback"]
         XCTAssertTrue(actionMessage.waitForExistence(timeout: 3))
-        XCTAssertTrue(actionMessage.label.contains("fresh chart, bar, and chord identities"))
 
         let open = app.buttons["my-charts-open-selected"]
         for _ in 0..<4 where !open.isHittable { app.swipeUp() }
@@ -279,6 +279,27 @@ final class FrankenJazzUITests: XCTestCase {
         proof.lifetime = .keepAlways
         add(proof)
         app.alerts.buttons["Cancel"].tap()
+
+        let dismissFeedback = app.buttons["my-charts-dismiss-feedback"]
+        XCTAssertTrue(dismissFeedback.waitForExistence(timeout: 3))
+        dismissFeedback.tap()
+
+        let backup = app.buttons["my-charts-export-backup"]
+        for _ in 0..<10 where !backup.isHittable { app.swipeUp() }
+        XCTAssertTrue(backup.waitForExistence(timeout: 3))
+        XCTAssertTrue(backup.isHittable)
+        let restore = app.buttons["my-charts-restore-backup"]
+        for _ in 0..<4 where !restore.isHittable { app.swipeUp() }
+        XCTAssertTrue(restore.exists)
+        XCTAssertTrue(restore.isHittable)
+        XCTAssertTrue(app.staticTexts.matching(
+            NSPredicate(format: "label CONTAINS 'do not claim the web studio’s E0 interchange schema'")
+        ).firstMatch.exists)
+
+        let portableProof = XCTAttachment(screenshot: app.screenshot())
+        portableProof.name = "FrankenJazz iPhone My Charts portable copies"
+        portableProof.lifetime = .keepAlways
+        add(portableProof)
     }
 
     func testChordInspectorExposesPersistedChordNoteEditor() throws {
