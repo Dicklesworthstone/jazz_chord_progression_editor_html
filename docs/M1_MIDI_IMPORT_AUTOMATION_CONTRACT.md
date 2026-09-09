@@ -593,7 +593,7 @@ not the musical inference overrides: it never changes decoded notes, imported
 section names, chart text, grid, or groove choice. Selecting it does not edit
 the document. New files/candidates and Discard reset placement to the end.
 
-The automatic commit accepts an optional `beforeSectionId`; null/omitted means
+Both automatic and retained manual commit accept an optional `beforeSectionId`; null/omitted means
 document end. Resolve an explicit ID against the live snapshot before issuing
 any settings or staging commands. A missing ID refuses `no-destination` with
 zero issued commands; never silently retarget. The UI keeps a missing selection

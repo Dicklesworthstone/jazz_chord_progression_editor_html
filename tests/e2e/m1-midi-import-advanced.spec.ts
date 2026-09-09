@@ -496,6 +496,7 @@ test("M1-ADV-007 grid refusal restores without rereading, retains names, resets 
     const chart = page.getByTestId("midi-import-chart-text");
     await name.fill("Keep this name");
     await name.press("Tab");
+    await expect(chart).toContainText("Keep this name");
     const named = await chart.textContent();
     await grid.selectOption("bar");
     await expect(page.getByTestId("midi-import-auto")).toHaveCount(0);
@@ -522,6 +523,63 @@ test("M1-ADV-007 grid refusal restores without rereading, retains names, resets 
     for (let index = 0; index < count; index += 1) await page.locator("#studio-undo").click();
     await expect(page.locator(".studio-chord-card")).toHaveCount(0);
     ledger.log("grid-add-and-undo", { count });
+    expectCleanDiagnostics(diagnostics);
+    await ledger.flush("passed", diagnostics);
+  } catch (error) {
+    await ledger.flush("failed", diagnostics);
+    throw error;
+  }
+});
+
+
+test("M1-ADV-008 destination persists through overrides, resets, and inserts before an existing section with Undo", async ({ page }, testInfo) => {
+  const ledger = makeLedger("m1-adv-008-destination", testInfo);
+  const diagnostics = captureDiagnostics(page);
+  try {
+    await openStudio(page);
+    const cards = page.locator(".studio-chord-card");
+    const bytes = Buffer.from(midiGridFixture()).toString("hex");
+    await chooseFile(page, "Intro.mid", bytes);
+    await page.locator("#studio-midi-import-commit-rail").click();
+    await expect(cards).toHaveCount(4);
+    await chooseFile(page, "Outro.mid", bytes);
+    await page.locator("#studio-midi-import-commit-rail").click();
+    await expect(cards).toHaveCount(8);
+    const originalIds = await cards.evaluateAll((nodes) => nodes.map((node) => node.getAttribute("data-chord-id")));
+    await chooseFile(page, "Placed.mid", bytes);
+    await page.getByTestId("midi-import-advanced-summary").click();
+    const destination = page.getByTestId("midi-import-destination");
+    const target = await destination.locator("option").filter({ hasText: "Outro" }).getAttribute("value");
+    if (target === null) throw new Error("Missing independent Outro target");
+    await destination.selectOption(target);
+    await page.getByTestId("midi-import-grid").selectOption("quarter-bar");
+    await expect(destination).toHaveValue(target);
+    await chooseFile(page, "New placement.mid", bytes);
+    await expect(destination).toHaveValue("");
+    await page.getByTestId("midi-import-advanced-summary").click();
+    await destination.selectOption(target);
+    await page.locator("#studio-undo").click();
+    await expect(cards).toHaveCount(4);
+    await expect(destination.locator("option:checked")).toHaveText("Selected section no longer exists");
+    await page.locator("#studio-midi-import-commit-rail").click();
+    await expect(page.getByTestId("midi-import-status").first()).toContainText("selected destination no longer exists");
+    await expect(cards).toHaveCount(4);
+    await page.locator("#studio-redo").click();
+    await expect(cards).toHaveCount(8);
+    await page.locator("#studio-midi-import-commit-rail").click();
+    await expect(cards).toHaveCount(12);
+    const afterIds = await cards.evaluateAll((nodes) => nodes.map((node) => node.getAttribute("data-chord-id")));
+    expect(afterIds.slice(0, 4)).toEqual(originalIds.slice(0, 4));
+    expect(afterIds.slice(8)).toEqual(originalIds.slice(4));
+    expect(afterIds.slice(4, 8).some((id) => originalIds.includes(id))).toBe(false);
+    const status = await page.getByTestId("midi-import-status").first().textContent();
+    const match = /as (?:one|(\d+)) edit/.exec(status ?? "");
+    expect(match).not.toBeNull();
+    const count = match?.[1] === undefined ? 1 : Number.parseInt(match[1], 10);
+    for (let index = 0; index < count; index += 1) await page.locator("#studio-undo").click();
+    await expect(cards).toHaveCount(8);
+    expect(await cards.evaluateAll((nodes) => nodes.map((node) => node.getAttribute("data-chord-id")))).toEqual(originalIds);
+    ledger.log("placement-add-and-undo", { target, count, originalIds, afterIds });
     expectCleanDiagnostics(diagnostics);
     await ledger.flush("passed", diagnostics);
   } catch (error) {

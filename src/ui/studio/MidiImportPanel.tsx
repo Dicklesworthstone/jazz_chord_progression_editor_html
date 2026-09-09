@@ -40,6 +40,7 @@ export type MidiImportPanelProps = Readonly<{
     key?: Readonly<{ tonicPitchClass: number; mode: "major" | "minor" }> | null;
     grooveStyleId: string | null;
     grid?: "bar" | "half-bar" | "quarter-bar" | null;
+    beforeSectionId?: string | null;
     sectionNames?: readonly Readonly<{ startMeasureIndex: number; name: string }>[];
   }>) => void;
   /** Opens the ⌘K command lane — the paste-chart-text route lives there. */
@@ -83,6 +84,7 @@ export function MidiImportPanel({
               alternativeOrdinal: span.chosenOrdinal,
             })),
     grid: overrides?.grid ?? null,
+    beforeSectionId: overrides?.beforeSectionId ?? null,
     sectionNames: overrides?.sectionNameOverrides ?? [],
     key: overrides?.keyOverride ?? null,
     grooveStyleId: overrides === null ? null : overrides.grooveOverrideId,
@@ -329,6 +331,22 @@ export function MidiImportPanel({
               data-testid="midi-import-overrides"
             >
               <p class="studio-midi-import__label">Overrides</p>
+              {overrides.destinationSections !== undefined && (
+                <label class="studio-midi-import__section-name">
+                  <span>Insert before</span>
+                  <select data-testid="midi-import-destination" value={overrides.beforeSectionId ?? ""}
+                    onChange={(event) => { onOverridesChange({ ...currentOverrides(), beforeSectionId: event.currentTarget.value || null }); }}>
+                    <option value="">End of chart</option>
+                    {overrides.beforeSectionId != null && !overrides.destinationSections.some((section) => section.id === overrides.beforeSectionId) && (
+                      <option value={overrides.beforeSectionId} disabled>Selected section no longer exists</option>
+                    )}
+                    {overrides.destinationSections.map((section, index) => (
+                      <option key={section.id} value={section.id}>{String(index + 1)} · {section.name || "Untitled section"}</option>
+                    ))}
+                  </select>
+                  <span>Imported sections keep their names. Existing sections stay intact.</span>
+                </label>
+              )}
               <label class="studio-midi-import__section-name">
                 <span>Chord-change detail</span>
                 <select data-testid="midi-import-grid" value={overrides.grid ?? ""}
@@ -349,7 +367,7 @@ export function MidiImportPanel({
                   <input type="text" maxLength={256}
                     data-testid={`midi-import-section-name-${String(section.startMeasureIndex)}`}
                     value={section.overrideName ?? ""} placeholder={section.name}
-                    onChange={(event) => {
+                    onInput={(event) => {
                       const name = event.currentTarget.value;
                       const current = currentOverrides();
                       onOverridesChange({ ...current, sectionNames: [

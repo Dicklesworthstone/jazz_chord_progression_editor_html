@@ -43,8 +43,8 @@ import type {
  * decode produces a PREVIEW: per-sonority candidates, their alternatives, the
  * literal pitch sets nothing could name, and the exact chart text an insert
  * would write. Nothing enters the document until the caller commits, and the
- * commit is ONE ordinary undoable edit: a single named section staged at the
- * document end, which is the one placement the atomic runner satisfies with a
+ * commit is ONE ordinary undoable edit: a single named section staged at a
+ * document boundary, where the atomic runner satisfies the gesture with a
  * single `apply-edit-plan` command whatever the destination chart already
  * holds.
  */
@@ -156,6 +156,7 @@ export type StudioMidiImportService = Readonly<{
   commit: (
     controller: StudioController,
     preview: MidiImportPreview,
+    beforeSectionId?: string | null,
   ) => MidiImportCommitResult;
   /**
    * Lands the automatic plan: chunked insert, then settings transfer per the
@@ -165,6 +166,7 @@ export type StudioMidiImportService = Readonly<{
   commitAutomatic: (
     controller: StudioController,
     preview: MidiImportPreview,
+    beforeSectionId?: string | null,
   ) => MidiImportAutoCommitResult;
   /**
    * Re-plans the pending preview under M1-OVR overrides on the RETAINED
@@ -456,6 +458,7 @@ export function createStudioMidiImport(
   const commit = (
     controller: StudioController,
     preview: MidiImportPreview,
+    beforeSectionId: string | null = null,
   ): MidiImportCommitResult => {
     const plan = preview.plan;
     if (plan === null || preview.blockedReason !== null) {
@@ -475,7 +478,7 @@ export function createStudioMidiImport(
      * measure, and the import would then cost two presses of Undo.
      */
     const snapshot = controller.getSnapshot();
-    if (snapshot.sections.length === 0) {
+    if (snapshot.sections.length === 0 || (beforeSectionId !== null && !snapshot.sections.some((section) => section.id === beforeSectionId))) {
       return Object.freeze({
         committed: false,
         reason: "no-destination" as const,
@@ -486,7 +489,7 @@ export function createStudioMidiImport(
     const previewStatus = controller.previewChartText(plan.chartText);
     const staged = controller.setQuickEntryDraft(
       plan.chartText,
-      { kind: "document-end" },
+      beforeSectionId === null ? { kind: "document-end" } : { kind: "before-section", sectionId: beforeSectionId },
       previewStatus.status,
       previewStatus.issueCodes,
     );
@@ -510,6 +513,7 @@ export function createStudioMidiImport(
   const commitAutomatic = (
     controller: StudioController,
     preview: MidiImportPreview,
+    beforeSectionId: string | null = null,
   ): MidiImportAutoCommitResult => {
     const automation = preview.automation;
     if (automation === null || automation.chunkTexts.length === 0) {
@@ -522,7 +526,7 @@ export function createStudioMidiImport(
       });
     }
     const before = controller.getSnapshot();
-    if (before.sections.length === 0) {
+    if (before.sections.length === 0 || (beforeSectionId !== null && !before.sections.some((section) => section.id === beforeSectionId))) {
       return Object.freeze({
         committed: false,
         reason: "no-destination" as const,
@@ -567,26 +571,16 @@ export function createStudioMidiImport(
       });
     };
 
-    /*
-     * The insert stage: every chunk in order. The first chunk carries the
-     * section header, so `document-end` lands it as one command. Later
-     * chunks are bare measures continuing that section: at `document-end`
-     * they would need a synthesized section and split into two commands,
-     * which the atomic runner rightly refuses, so each one aims at the
-     * LIVE last section's end — the append boundary of the section the
-     * previous chunk just extended (marker-derived sections included,
-     * because the snapshot is re-read after every chunk).
-     */
+    /* Continue within this import, never within an unrelated trailing section. */
     const insertChunks = (): MidiImportAutoCommitResult | null => {
+      let continuationSectionId: string | null = null;
       for (const [chunkIndex, chunkText] of automation.chunkTexts.entries()) {
-        const lastSection =
-          controller.getSnapshot().sections[
-            controller.getSnapshot().sections.length - 1
-          ];
-        const target =
-          chunkIndex === 0 || lastSection === undefined
+        const priorIds = new Set(controller.getSnapshot().sections.map((section) => section.id));
+        const target = chunkIndex === 0 || continuationSectionId === null
+          ? beforeSectionId === null
             ? ({ kind: "document-end" } as const)
-            : ({ kind: "section-end", sectionId: lastSection.id } as const);
+            : ({ kind: "before-section", sectionId: beforeSectionId } as const)
+          : ({ kind: "section-end", sectionId: continuationSectionId } as const);
         const previewStatus = controller.previewChartText(chunkText);
         const staged = controller.setQuickEntryDraft(
           chunkText,
@@ -605,6 +599,9 @@ export function createStudioMidiImport(
               ? "The chart refused this piece of the import."
               : "The import text could not be staged.",
           });
+        }
+        for (const section of controller.getSnapshot().sections) {
+          if (!priorIds.has(section.id)) continuationSectionId = section.id;
         }
         issuedCount += 1;
         steps.push({ step: "insert", outcome: "applied", reason: null });

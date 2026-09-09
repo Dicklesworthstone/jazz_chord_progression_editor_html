@@ -298,6 +298,7 @@ export type AppActions = Readonly<{
   ) => Promise<MidiImportBatch | null>;
   commitMidiImport: (
     preview: MidiImportPreview,
+    beforeSectionId?: string | null,
   ) => MidiImportCommitResult | null;
   /**
    * The M1 automatic envelope: chunked insert, settings transfer, groove —
@@ -305,6 +306,7 @@ export type AppActions = Readonly<{
    */
   commitMidiImportAutomatic: (
     preview: MidiImportPreview,
+    beforeSectionId?: string | null,
   ) => MidiImportAutoCommitResult | null;
   /** M1-OVR: re-plan the pending preview on the retained bytes. */
   replanMidiImport: (
@@ -1078,6 +1080,8 @@ function midiImportOverridesView(
   preview: MidiImportPreview,
   overridesState: M1ImportOverrides,
   grooveOptions: readonly Readonly<{ id: string; label: string }>[],
+  beforeSectionId: string | null,
+  destinationSections: readonly Readonly<{ id: string; name: string }>[],
 ): StudioMidiImportOverridesView | null {
   const automation = preview.automation;
   const decoded = preview.decoded;
@@ -1099,6 +1103,8 @@ function midiImportOverridesView(
   const excluded = new Set(overridesState.excludedTrackIndices);
   return Object.freeze({
     grid: overridesState.grid ?? null,
+    beforeSectionId,
+    destinationSections,
     sectionNameOverrides: overridesState.sectionNames ?? [],
     sections: Object.freeze((automation?.sections ?? []).map((section) => Object.freeze({
       startMeasureIndex: section.startMeasureIndex,
@@ -1160,6 +1166,8 @@ function midiImportView(
   auditioning: boolean,
   overridesState: M1ImportOverrides,
   grooveOptions: readonly Readonly<{ id: string; label: string }>[],
+  beforeSectionId: string | null,
+  destinationSections: readonly Readonly<{ id: string; name: string }>[],
 ): StudioMidiImportView {
   if (!available) {
     return Object.freeze({
@@ -1344,7 +1352,7 @@ function midiImportView(
       (plan !== null && preview.blockedReason === null),
     traceJson: JSON.stringify(preview.trace, null, 1),
     auditioning,
-    overrides: midiImportOverridesView(preview, overridesState, grooveOptions),
+    overrides: midiImportOverridesView(preview, overridesState, grooveOptions, beforeSectionId, destinationSections),
   });
 }
 
@@ -1826,7 +1834,9 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
     alternativeChoices: Object.freeze([]),
     grooveStyleId: null,
   });
+  const [midiBeforeSectionId, setMidiBeforeSectionId] = useState<string | null>(null);
   const clearMidiOverrides = (): void => {
+    setMidiBeforeSectionId(null);
     setMidiOverrides({
       excludedTrackIndices: Object.freeze([]),
       alternativeChoices: Object.freeze([]),
@@ -2486,6 +2496,8 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
     midiAuditioning,
     midiOverrides,
     snapshot.performance.options,
+    midiBeforeSectionId,
+    snapshot.sections,
   ), batch: {
     pending: midiReading,
     candidates: midiBatch === null || midiBatch.candidates.length < 2 ? [] : midiBatch.candidates.map((candidate) => ({
@@ -2995,7 +3007,7 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
            * single-insert path remains for previews with no automatic plan.
            */
           if (midiPreview.automation !== null) {
-            const auto = actions.commitMidiImportAutomatic(midiPreview);
+            const auto = actions.commitMidiImportAutomatic(midiPreview, midiBeforeSectionId);
             if (auto === null) return;
             if (auto.committed) {
               quickEntryTargetIsExplicit.current = false;
@@ -3012,11 +3024,11 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
             setMidiImportNotice(
               auto.reason === "rolled-back"
                 ? `That import was not added${failed?.reason === null || failed === undefined ? "" : `: ${failed.reason}`} Everything it had changed was undone.`
-                : "That import was not added.",
+                : auto.reason === "no-destination" ? "The selected destination no longer exists. Choose another destination in Advanced." : "That import was not added.",
             );
             return;
           }
-          const result = actions.commitMidiImport(midiPreview);
+          const result = actions.commitMidiImport(midiPreview, midiBeforeSectionId);
           if (result === null) return;
           if (result.committed) {
             quickEntryTargetIsExplicit.current = false;
@@ -3034,8 +3046,9 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
                 ? result.staged
                 : null;
           setMidiImportNotice(
-            refused === null
-              ? "That import was not added."
+            result.reason === "no-destination"
+              ? "The selected destination no longer exists. Choose another destination in Advanced."
+              : refused === null ? "That import was not added."
               : `${refused.refusal.message} ${refused.refusal.recoveryAction}`,
           );
         },
@@ -3050,6 +3063,7 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
           setMidiImportNotice(null);
         },
         onMidiImportOverridesChange: (next) => {
+          setMidiBeforeSectionId(next.beforeSectionId ?? null);
           if (midiPreview === null) return;
           cancelMidiAudition();
           const absolute: M1ImportOverrides = Object.freeze({
@@ -3907,14 +3921,14 @@ export function StudioRoot({
           isCurrent,
           onProgress,
         ),
-        commitMidiImport: (preview) =>
+        commitMidiImport: (preview, beforeSectionId) =>
           midiImportService === null
             ? null
-            : midiImportService.commit(controller, preview),
-        commitMidiImportAutomatic: (preview) =>
+            : midiImportService.commit(controller, preview, beforeSectionId),
+        commitMidiImportAutomatic: (preview, beforeSectionId) =>
           midiImportService === null
             ? null
-            : midiImportService.commitAutomatic(controller, preview),
+            : midiImportService.commitAutomatic(controller, preview, beforeSectionId),
         replanMidiImport: (preview, overrides) =>
           midiImportService === null
             ? null
