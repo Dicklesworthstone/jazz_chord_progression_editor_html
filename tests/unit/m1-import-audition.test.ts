@@ -165,11 +165,20 @@ describe("previewPitches lane", () => {
   function audibleStudio(): {
     controller: StudioController;
     audio: StudioAudioPort;
+    starts: string[];
   } {
     const audio = createStudioAudio(createFakeAudioPlatform().platform);
-    const creation = createStudioController({ audio });
+    const starts: string[] = [];
+    const port: StudioAudioPort = Object.freeze({
+      ...audio,
+      startPreview(...args: Parameters<StudioAudioPort["startPreview"]>) {
+        starts.push(args[1]);
+        return audio.startPreview(...args);
+      },
+    });
+    const creation = createStudioController({ audio: port });
     if (!creation.ok) throw new Error("controller refused");
-    return { controller: creation.controller, audio };
+    return { controller: creation.controller, audio, starts };
   }
 
   test("refuses without an audio port, on empty sets, and past sixteen pitches", () => {
@@ -187,6 +196,84 @@ describe("previewPitches lane", () => {
       ).ok,
     ).toBe(false);
     expect(controller.previewPitches([60, 200], GESTURE).ok).toBe(false);
+  });
+
+  test("cancel audition prevents initialization or preparation from sounding later", async () => {
+    const { controller, audio, starts } = audibleStudio();
+    const before = controller.getSnapshot();
+    expect(controller.previewPitches(CMAJ7, GESTURE).ok).toBe(true);
+    expect((await controller.releasePreviewPitches()).ok).toBe(true);
+    // A newer preview is the success twin: initialization is shared and must
+    // still finish, while the cancelled generation can never submit voices.
+    expect(controller.previewPitch(72, GESTURE).ok).toBe(true);
+    const deadline = Date.now() + 8_000;
+    while (audio.inspect().engine.previewNonreleasingVoiceCount === 0 && Date.now() < deadline)
+      await new Promise(resolve => setTimeout(resolve, 25));
+    expect(audio.inspect().engine.previewNonreleasingVoiceCount).toBe(1);
+    expect(starts).toHaveLength(1);
+    expect(starts[0]).not.toContain("audition-");
+    // A stale audition cancellation cannot retire the newer keyboard preview.
+    expect((await controller.releasePreviewPitches()).ok).toBe(true);
+    expect(audio.inspect().engine.previewNonreleasingVoiceCount).toBe(1);
+    expect(controller.getSnapshot().revision).toBe(before.revision);
+    controller.stopProgression();
+  });
+
+  test("cancel while exact instrument preparation is pending cannot submit a late preview", async () => {
+    const audio = createStudioAudio(createFakeAudioPlatform().platform);
+    let unblock: (() => void) | undefined;
+    const preparation = { entered: false };
+    const starts: string[] = [];
+    const waiting = new Promise<void>(resolve => { unblock = resolve; });
+    const port: StudioAudioPort = Object.freeze({
+      ...audio,
+      startPreview(...args: Parameters<StudioAudioPort["startPreview"]>) {
+        starts.push(args[1]);
+        return audio.startPreview(...args);
+      },
+      async prepareInstrument(...args: Parameters<StudioAudioPort["prepareInstrument"]>) {
+        preparation.entered = true;
+        await waiting;
+        return audio.prepareInstrument(...args);
+      },
+    });
+    const creation = createStudioController({ audio: port });
+    if (!creation.ok) throw new Error("controller refused");
+    const controller = creation.controller;
+    expect(controller.previewPitches(CMAJ7, GESTURE).ok).toBe(true);
+    const deadline = Date.now() + 8_000;
+    while (!preparation.entered && Date.now() < deadline)
+      await new Promise(resolve => setTimeout(resolve, 25));
+    expect(preparation.entered).toBe(true);
+    expect((await controller.releasePreviewPitches()).ok).toBe(true);
+    unblock?.();
+    // Queue a real replacement behind the released preparation. Its receipt
+    // proves the cancelled request has drained, rather than relying on sleep.
+    expect(controller.previewPitch(72, GESTURE).ok).toBe(true);
+    while (audio.inspect().engine.previewNonreleasingVoiceCount === 0 && Date.now() < deadline)
+      await new Promise(resolve => setTimeout(resolve, 25));
+    expect(audio.inspect().engine.previewNonreleasingVoiceCount).toBe(1);
+    expect(starts).toHaveLength(1);
+    expect(starts[0]).not.toContain("audition-");
+    expect((await controller.releasePreviewPitches()).ok).toBe(true);
+    expect(audio.inspect().engine.previewNonreleasingVoiceCount).toBe(1);
+    controller.stopProgression();
+  });
+
+  test("cancel retires the exact sounding audition and is idempotent", async () => {
+    const { controller, audio } = audibleStudio();
+    expect(controller.previewPitches(CMAJ7, GESTURE).ok).toBe(true);
+    const deadline = Date.now() + 8_000;
+    while (audio.inspect().engine.previewNonreleasingVoiceCount === 0 && Date.now() < deadline)
+      await new Promise(resolve => setTimeout(resolve, 25));
+    expect(audio.inspect().engine.previewNonreleasingVoiceCount).toBe(CMAJ7.length);
+    const before = controller.getSnapshot();
+    expect((await controller.releasePreviewPitches()).ok).toBe(true);
+    expect(audio.inspect().engine.previewNonreleasingVoiceCount).toBe(0);
+    expect((await controller.releasePreviewPitches()).ok).toBe(true);
+    expect(controller.getSnapshot().revision).toBe(before.revision);
+    expect(controller.getSnapshot().transport).toEqual(before.transport);
+    controller.stopProgression();
   });
 
   test("sounds a voiced set through the preview lane without touching state", async () => {

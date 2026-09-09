@@ -893,6 +893,8 @@ export interface StudioController {
     midiPitches: readonly number[],
     gesture: StudioAudioGesture,
   ) => StudioControllerActionResult;
+  /** Retire only this lane's latest owner, including pending preparation. */
+  readonly releasePreviewPitches: () => Promise<StudioInspectorResult<void>>;
   /**
    * Display-only live playhead label in the exact-beat format the transport
    * view already uses. The UI's animation frame reads this while the transport
@@ -6409,6 +6411,18 @@ function makeStudioComposition(
     );
   };
 
+  let pitchSetPreviewGeneration: number | null = null;
+  const releasePreviewPitches = (): Promise<StudioInspectorResult<void>> => {
+    const generation = pitchSetPreviewGeneration;
+    pitchSetPreviewGeneration = null;
+    if (generation === null || generation !== previewOrdinal)
+      return Promise.resolve(Object.freeze({ ok: true, value: undefined }));
+    supersedePreviewPreparation();
+    if (audioPort !== null && previewSubmission?.generation === generation)
+      return releaseSubmittedPreview(audioPort, previewSubmission);
+    return Promise.resolve(Object.freeze({ ok: true, value: undefined }));
+  };
+
   /**
    * Preview an arbitrary voiced pitch set through the same click-preview
    * lane a chart chord uses (jcpe-qyyn audition): validate every pitch,
@@ -6463,6 +6477,7 @@ function makeStudioComposition(
     const instrumentId = state.document.playback.instrumentId;
     previewOrdinal += 1;
     const generation = previewOrdinal;
+    pitchSetPreviewGeneration = generation;
     const previewId = `x1:preview:audition-${String(generation)}`;
     const port = audioPort;
     const documentId = state.document.id;
@@ -7185,6 +7200,7 @@ function makeStudioComposition(
     previewChord,
     previewPitch,
     previewPitches,
+    releasePreviewPitches,
     readInspector,
     readInspectorDraft,
     readInspectorManualDraft,
