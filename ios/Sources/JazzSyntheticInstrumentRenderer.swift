@@ -169,9 +169,15 @@ enum JazzSyntheticInstrumentRenderer {
             }
             let filtered = filter.process(value)
             let velocityGain = pow(Double(midiVelocity) / 127, 1.5)
-            let driven = filtered * amplitude * envelope.outputLevel
-                * normalizationGain * velocityGain
-            samples[frame] = Float(driven / (1 + abs(driven) * 0.35))
+            // Match the browser voice topology: individual voices remain
+            // linear through their recipe/output/velocity gains. Nonlinear
+            // control belongs once, after every voice has met at the shared
+            // master bus; applying it here changes the instrument itself and
+            // prevents simultaneous notes from driving the master together.
+            samples[frame] = Float(
+                filtered * amplitude * envelope.outputLevel
+                    * normalizationGain * velocityGain
+            )
         }
         guard cancellation?.isCancelled != true else { return nil }
         return JazzSyntheticRender(

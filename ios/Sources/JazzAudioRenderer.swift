@@ -81,7 +81,7 @@ enum JazzAudioRenderer {
         guard cancellation?.isCancelled != true,
               mixChanges(chart, into: &stereo, cancellation: cancellation),
               mixGroove(chart, into: &stereo, cancellation: cancellation),
-              normalize(&stereo, cancellation: cancellation)
+              validateFinite(stereo, cancellation: cancellation)
         else { return nil }
         return JazzRenderedAudio(left: stereo.left, right: stereo.right, sampleRate: sampleRate)
     }
@@ -112,7 +112,7 @@ enum JazzAudioRenderer {
             ),
             into: &stereo,
             cancellation: cancellation
-        ), normalize(&stereo, cancellation: cancellation) else { return nil }
+        ), validateFinite(stereo, cancellation: cancellation) else { return nil }
         return JazzRenderedAudio(left: stereo.left, right: stereo.right, sampleRate: sampleRate)
     }
 
@@ -173,7 +173,7 @@ enum JazzAudioRenderer {
                 ) else { return nil }
             }
         }
-        guard normalize(&stereo, cancellation: cancellation) else { return nil }
+        guard validateFinite(stereo, cancellation: cancellation) else { return nil }
         return JazzRenderedAudio(left: stereo.left, right: stereo.right, sampleRate: sampleRate)
     }
 
@@ -206,7 +206,7 @@ enum JazzAudioRenderer {
                 cancellation: nil
             ) else { return nil }
         }
-        guard normalize(&stereo, cancellation: nil) else { return nil }
+        guard validateFinite(stereo, cancellation: nil) else { return nil }
         return JazzRenderedAudio(left: stereo.left, right: stereo.right, sampleRate: sampleRate)
     }
 
@@ -387,21 +387,13 @@ enum JazzAudioRenderer {
         return true
     }
 
-    private static func normalize(
-        _ stereo: inout StereoBuffer,
+    private static func validateFinite(
+        _ stereo: StereoBuffer,
         cancellation: JazzRenderCancellationToken?
     ) -> Bool {
-        var peak: Float = 0
         for index in stereo.left.indices {
             guard shouldContinue(cancellation, atFrame: index) else { return false }
-            peak = max(peak, abs(stereo.left[index]), abs(stereo.right[index]))
-        }
-        guard peak > 0.92 else { return cancellation?.isCancelled != true }
-        let gain = 0.92 / peak
-        for index in stereo.left.indices {
-            guard shouldContinue(cancellation, atFrame: index) else { return false }
-            stereo.left[index] *= gain
-            stereo.right[index] *= gain
+            guard stereo.left[index].isFinite, stereo.right[index].isFinite else { return false }
         }
         return cancellation?.isCancelled != true
     }

@@ -729,6 +729,27 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertNotEqual(quietFM.samples, loudFM.samples, "FM index and amplitude must follow MIDI velocity, not post-mix gain.")
     }
 
+    func testSyntheticVoicesStayLinearUntilTheSharedMasterBus() throws {
+        for tone in [InstrumentTone.mellowKeys, .electricPiano, .vibraphone, .warmPad, .analogPoly, .organ] {
+            let full = try XCTUnwrap(JazzSyntheticInstrumentRenderer.render(
+                tone: tone, midi: 60, midiVelocity: 96, normalizationGain: 1,
+                sampleRate: 24_000, duration: 0.4
+            ))
+            let half = try XCTUnwrap(JazzSyntheticInstrumentRenderer.render(
+                tone: tone, midi: 60, midiVelocity: 96, normalizationGain: 0.5,
+                sampleRate: 24_000, duration: 0.4
+            ))
+            XCTAssertEqual(full.samples.count, half.samples.count)
+            for frame in stride(from: 0, to: full.samples.count, by: 97) {
+                XCTAssertEqual(
+                    half.samples[frame], full.samples[frame] * 0.5,
+                    accuracy: 0.000_001,
+                    "\(tone.displayName) frame \(frame) must not be clipped before the master bus."
+                )
+            }
+        }
+    }
+
     func testSelectedVoicingPreviewRendersSimultaneouslyWithoutAudioOutput() throws {
         for tone in InstrumentTone.allCases {
             let rendered = try XCTUnwrap(JazzAudioRenderer.renderPreviewChord(
