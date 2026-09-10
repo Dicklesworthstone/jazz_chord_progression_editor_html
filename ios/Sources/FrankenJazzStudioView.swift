@@ -705,7 +705,10 @@ private struct MeasureCard: View {
                     .disabled(store.chart.measures.count == 1)
                 } label: {
                     Image(systemName: "ellipsis.circle")
-                        .frame(width: 44, height: 44)
+                        // Leave real margin above the 44-point accessibility floor;
+                        // exact-point frames can round infinitesimally below 44 in
+                        // XCTest's cross-process coordinate conversion.
+                        .frame(width: 48, height: 48)
                         .contentShape(Rectangle())
                 }
                 .accessibilityLabel("Actions for bar \(index + 1)")
