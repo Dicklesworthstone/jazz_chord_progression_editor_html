@@ -75,3 +75,19 @@ test("note preview passes exact occurrences and its stale release cannot cancel 
     expect(c.readApplicationState().document).toBe(before.document);expect(c.readApplicationState().history).toBe(before.history);
   }finally{await audio.transportService.submitTransportCommand({commandRequestId:999,payload:{kind:"dispose-transport",reason:"page-teardown"}});}
 },30000);
+
+test("a source edit cancels pending note-first preparation before it can attack",async()=>{
+ const f=loopArrangementFixture(),audio=createStudioAudio(createFakeAudioPlatform().platform);
+ let enter:(()=>void)|undefined,finish:(()=>void)|undefined,starts=0;
+ const entered=new Promise<void>(resolve=>{enter=resolve;}),hold=new Promise<void>(resolve=>{finish=resolve;});
+ const port:StudioAudioPort={...audio,async prepareInstrument(...args){enter?.();await hold;return audio.prepareInstrument(...args);},startPreview(...args){starts+=1;return audio.startPreview(...args);}};
+ const c=createStudioCompositionOverState(f.state,f.dependencies,{audio:port});
+ try{
+  expect(c.controller.previewNoteFirst("C4 E4 G4",{kind:"trusted-keyboard",trusted:true,sequence:1}).ok).toBe(true);
+  await entered;expect(c.controller.setTitle("Changed during preparation").ok).toBe(true);
+  if(finish===undefined)throw new Error("No preparation latch");finish();
+  // Drain the real async preparation continuation, not a synthetic attack path.
+  for(let i=0;i<20;i++)await new Promise(resolve=>setTimeout(resolve,10));
+  expect(starts).toBe(0);expect(audio.inspect().engine.previewNonreleasingVoiceCount).toBe(0);
+ }finally{finish?.();await audio.transportService.submitTransportCommand({commandRequestId:999,payload:{kind:"dispose-transport",reason:"page-teardown"}});}
+},30000);

@@ -92,3 +92,25 @@ test("recipe files are bounded before reading and late reads cannot replace newe
  expect(service.read().importDraft).toBeNull();
  await service.previewRecipeFile({size:100,text:()=>Promise.reject(new Error("read failed"))});expect(service.read().message).toContain("could not be read");
 });
+
+test("Stop waits for retirement, exposes refusal, and cannot overwrite newer work",async()=>{
+ const {createStudioComping}=await import("../../src/application/studio-comping");
+ const f=loopArrangementFixture();
+ for(const outcome of ["success","refusal","throw","superseded"]){
+  let finish:((result:{ok:true;value:undefined}|{ok:false;code:string;message:string})=>void)|undefined;
+  let reject:((error:Error)=>void)|undefined;
+  const service=createStudioComping({readDocument:()=>f.state.document,readRevision:()=>f.state.revision,subscribeSource:()=>()=>{},
+   preview:()=>Promise.resolve({ok:true,value:undefined}),release:()=>new Promise((resolve,fail)=>{finish=resolve;reject=fail;}),
+   hashBytes:()=>Promise.resolve("a".repeat(64)),startDelivery:()=>({completion:Promise.resolve(cleanup)}),prepareRecipeDownload:()=>()=>true});
+  const stopping=service.stop();
+  expect(service.read().message).not.toContain("preparation stopped");
+  if(outcome==="superseded")await service.hear({kind:"trusted-keyboard",trusted:true,sequence:1});
+  if(finish===undefined||reject===undefined)throw new Error("No pending retirement");
+  if(outcome==="throw")reject(new Error("retirement failed"));
+  else finish(outcome==="success"?{ok:true,value:undefined}:{ok:false,code:"audio.retirement_failed",message:"Release failed. Use Stop to retire audio."});
+  await stopping;
+  if(outcome==="success")expect(service.read().message).toContain("preparation stopped");
+  else if(outcome==="superseded")expect(service.read().message).toContain("Playing one pass");
+  else {expect(service.read().state).toBe("refused");expect(service.read().message).toContain("Use Stop");}
+ }
+});
