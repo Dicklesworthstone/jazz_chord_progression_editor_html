@@ -538,6 +538,22 @@ private struct NativeSectionHeader: View {
             .accessibilityLabel("Voice leading at section \(section.name)")
             .accessibilityValue(section.voiceLeadingBoundary.label)
 
+            Menu {
+                Button { store.transposeSection(section.id, semitones: -1) } label: {
+                    Label("Down one semitone", systemImage: "arrow.down")
+                }
+                Button { store.transposeSection(section.id, semitones: 1) } label: {
+                    Label("Up one semitone", systemImage: "arrow.up")
+                }
+            } label: {
+                Image(systemName: "music.note")
+                    .frame(width: 44, height: 44)
+                    .background(JazzTheme.raised, in: Circle())
+            }
+            .accessibilityIdentifier("section-transpose-\(section.id.uuidString)")
+            .accessibilityLabel("Transpose section \(section.name)")
+            .accessibilityHint("Changes only this section; exact stored voicings stay at their saved pitches.")
+
             Button { store.toggleSectionLoop(section.id) } label: {
                 Image(systemName: "repeat")
                     .frame(width: 44, height: 44)

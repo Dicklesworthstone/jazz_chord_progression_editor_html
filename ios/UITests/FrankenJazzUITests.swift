@@ -186,6 +186,40 @@ final class FrankenJazzUITests: XCTestCase {
         add(proof)
     }
 
+    func testNamedSectionTransposeChangesOnlyThatSectionWithoutPlayingAudio() throws {
+        app.terminate()
+        app.launchArguments.append("-ui-testing-sections")
+        app.launch()
+
+        let transpose = app.buttons["Transpose section B"]
+        XCTAssertTrue(transpose.waitForExistence(timeout: 3))
+        revealAboveTransport(transpose)
+        XCTAssertTrue(transpose.isHittable)
+        XCTAssertGreaterThanOrEqual(transpose.frame.width, 44)
+        XCTAssertGreaterThanOrEqual(transpose.frame.height, 44)
+        transpose.tap()
+
+        let up = app.buttons["Up one semitone"]
+        XCTAssertTrue(up.waitForExistence(timeout: 2))
+        up.tap()
+
+        XCTAssertTrue(app.buttons.matching(
+            NSPredicate(format: "label BEGINSWITH 'Measure 1, Cmaj7'")
+        ).firstMatch.exists)
+        XCTAssertTrue(app.buttons.matching(
+            NSPredicate(format: "label BEGINSWITH 'Measure 3, G#7'")
+        ).firstMatch.waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts[
+            "Transposed section B up 1 semitone."
+        ].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["undo-chart-change"].isEnabled)
+
+        let proof = XCTAttachment(screenshot: app.screenshot())
+        proof.name = "FrankenJazz section-scoped transpose"
+        proof.lifetime = .keepAlways
+        add(proof)
+    }
+
     func testLeadSheetCreatesAndRemovesNamedSectionsWithoutChartSyntax() throws {
         let barThreeActions = app.buttons["Actions for bar 3"]
         XCTAssertTrue(barThreeActions.waitForExistence(timeout: 3))

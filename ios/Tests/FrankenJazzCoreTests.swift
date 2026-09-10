@@ -183,6 +183,61 @@ final class FrankenJazzCoreTests: XCTestCase {
     }
 
     @MainActor
+    func testSectionTransposeIsScopedUndoableAndKeepsExactVoicings() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FrankenJazzSectionTransposeTests-" + UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let measures = [
+            JazzMeasure(chords: [JazzChordEvent(symbol: "Cmaj7")]),
+            JazzMeasure(chords: [JazzChordEvent(symbol: "Dm7")]),
+            JazzMeasure(chords: [JazzChordEvent(symbol: "G7/B", manualMIDIPitches: [47, 53, 59, 65])]),
+            JazzMeasure(chords: [JazzChordEvent(symbol: "Cmaj7", beats: 1.5), JazzChordEvent(symbol: "E7", beats: 2.5)])
+        ]
+        let sectionA = JazzChartSection(name: "A", annotation: "Stay", startMeasureID: measures[0].id)
+        let sectionB = JazzChartSection(
+            name: "B",
+            annotation: "Lift",
+            startMeasureID: measures[2].id,
+            voiceLeadingBoundary: .continue
+        )
+        let source = JazzChart(
+            title: "Scoped transpose",
+            key: .c,
+            measures: measures,
+            sections: [sectionA, sectionB]
+        )
+        let recovery = JazzRecoveryStore(directory: directory)
+        recovery.save(source)
+        let store = JazzStudioStore(recovery: recovery)
+        let before = store.chart
+        let revision = store.revision
+
+        store.transposeSection(sectionB.id, semitones: 1)
+
+        XCTAssertEqual(store.chart.key, .c)
+        XCTAssertEqual(store.chart.measures[0...1].flatMap(\.chords).map(\.symbol), ["Cmaj7", "Dm7"])
+        XCTAssertEqual(store.chart.measures[2...3].flatMap(\.chords).map(\.symbol), ["G#7/C", "C#maj7", "F7"])
+        XCTAssertEqual(store.chart.measures[3].chords.map(\.beats), [1.5, 2.5])
+        XCTAssertEqual(store.chart.measures[2].chords[0].manualMIDIPitches, [47, 53, 59, 65])
+        XCTAssertEqual(store.chart.sections, [sectionA, sectionB])
+        XCTAssertEqual(store.notice, "Transposed section B up 1 semitone. 1 stored voicing stayed at its exact pitches.")
+        XCTAssertEqual(store.revision, revision + 1)
+
+        store.undo()
+        XCTAssertEqual(store.chart, before)
+        store.redo()
+        XCTAssertEqual(store.chart.measures[2...3].flatMap(\.chords).map(\.symbol), ["G#7/C", "C#maj7", "F7"])
+
+        let after = store.chart
+        let afterRevision = store.revision
+        store.transposeSection(UUID(), semitones: -1)
+        XCTAssertEqual(store.chart, after)
+        XCTAssertEqual(store.revision, afterRevision)
+        XCTAssertEqual(store.notice, "That section no longer has any changes to transpose.")
+    }
+
+    @MainActor
     func testTextFileImportPreservesNamedSections() async throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("FrankenJazzSectionImportTests-" + UUID().uuidString, isDirectory: true)

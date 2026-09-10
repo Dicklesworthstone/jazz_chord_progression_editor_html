@@ -307,6 +307,43 @@ final class JazzStudioStore: ObservableObject {
         }
     }
 
+    func transposeSection(_ sectionID: UUID, semitones: Int) {
+        guard semitones != 0,
+              let group = chart.sectionGroups.first(where: { $0.section?.id == sectionID }),
+              let section = group.section,
+              !group.indexedMeasures.isEmpty else {
+            notice = "That section no longer has any changes to transpose."
+            return
+        }
+
+        let measureIndices = group.indexedMeasures.map(\.offset)
+        let storedCount = measureIndices.reduce(into: 0) { count, measureIndex in
+            count += chart.measures[measureIndex].chords.filter {
+                $0.frozenMIDIPitches != nil || $0.manualMIDIPitches != nil
+            }.count
+        }
+        let preferFlats = chart.key.prefersFlats
+        audio.stop()
+        mutate { chart in
+            for measureIndex in measureIndices {
+                for chordIndex in chart.measures[measureIndex].chords.indices {
+                    let old = chart.measures[measureIndex].chords[chordIndex].symbol
+                    chart.measures[measureIndex].chords[chordIndex].symbol = JazzTheory.transpose(
+                        symbol: old,
+                        semitones: semitones,
+                        preferFlats: preferFlats
+                    )
+                }
+            }
+        }
+        let distance = abs(semitones)
+        let direction = semitones > 0 ? "up" : "down"
+        let storedNotice = storedCount == 0
+            ? ""
+            : " \(storedCount) stored voicing\(storedCount == 1 ? "" : "s") stayed at its exact pitches."
+        notice = "Transposed section \(section.name) \(direction) \(distance) semitone\(distance == 1 ? "" : "s")." + storedNotice
+    }
+
     func sectionStarting(at measureID: UUID) -> JazzChartSection? {
         chart.sections?.first(where: { $0.startMeasureID == measureID })
     }
