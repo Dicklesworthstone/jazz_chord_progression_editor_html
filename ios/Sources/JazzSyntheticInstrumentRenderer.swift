@@ -86,14 +86,16 @@ enum JazzSyntheticInstrumentRenderer {
     static func render(
         tone: InstrumentTone,
         midi: Int,
-        velocityGain: Double,
+        midiVelocity: Int,
+        normalizationGain: Double,
         sampleRate: Double,
         duration: Double,
         cancellation: JazzRenderCancellationToken? = nil
     ) -> JazzSyntheticRender? {
         guard let recipe = recipe(for: tone),
               (21...108).contains(midi),
-              velocityGain.isFinite, velocityGain > 0,
+              (1...127).contains(midiVelocity),
+              normalizationGain.isFinite, normalizationGain > 0,
               sampleRate.isFinite, (8_000...192_000).contains(sampleRate),
               duration.isFinite, duration > 0
         else { return nil }
@@ -130,9 +132,10 @@ enum JazzSyntheticInstrumentRenderer {
                 let modulationProgress = min(1, time / fm.decaySeconds)
                 let modulationIndex = fm.peakIndex
                     * pow(max(0.000_001, fm.sustainIndex / fm.peakIndex), modulationProgress)
+                let velocityProgress = Double(midiVelocity - 1) / 126
                 let velocityScale = fm.velocityIndexScaleMinimum
                     + (fm.velocityIndexScaleMaximum - fm.velocityIndexScaleMinimum)
-                    * min(1, max(0, velocityGain))
+                    * velocityProgress
                 let instantaneousFrequency = frequency * fm.carrier.frequencyRatio
                     + sin(modulatorPhase) * modulatorFrequency * modulationIndex * velocityScale
                 carrierPhase += 2 * Double.pi * instantaneousFrequency / sampleRate
@@ -165,8 +168,16 @@ enum JazzSyntheticInstrumentRenderer {
                 )
             }
             let filtered = filter.process(value)
-            let driven = filtered * amplitude * envelope.outputLevel * velocityGain
-            samples[frame] = Float(driven / (1 + abs(driven) * 0.35))
+            let velocityGain = pow(Double(midiVelocity) / 127, 1.5)
+            // Match the browser voice topology: individual voices remain
+            // linear through their recipe/output/velocity gains. Nonlinear
+            // control belongs once, after every voice has met at the shared
+            // master bus; applying it here changes the instrument itself and
+            // prevents simultaneous notes from driving the master together.
+            samples[frame] = Float(
+                filtered * amplitude * envelope.outputLevel
+                    * normalizationGain * velocityGain
+            )
         }
         guard cancellation?.isCancelled != true else { return nil }
         return JazzSyntheticRender(

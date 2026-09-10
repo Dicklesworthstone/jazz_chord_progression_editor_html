@@ -265,6 +265,7 @@ final class FrankenJazzUITests: XCTestCase {
         let loop = app.buttons["transport-loop"]
         let mute = app.buttons["transport-mute"]
         let volume = app.sliders["transport-master-volume"]
+        let reverb = app.sliders["transport-reverb-amount"]
         let countIn = app.buttons["transport-count-in"]
         let metronome = app.buttons["transport-metronome"]
 
@@ -274,6 +275,8 @@ final class FrankenJazzUITests: XCTestCase {
         }
         XCTAssertTrue(volume.waitForExistence(timeout: 3))
         XCTAssertTrue(volume.isHittable)
+        XCTAssertTrue(reverb.waitForExistence(timeout: 3))
+        XCTAssertTrue(reverb.isHittable)
 
         XCTAssertEqual(countIn.value as? String, "Off")
         countIn.tap()
@@ -311,7 +314,7 @@ final class FrankenJazzUITests: XCTestCase {
         XCTAssertTrue(firstChord.waitForExistence(timeout: 3))
         firstChord.tap()
 
-        let instruction = app.staticTexts["Tap any key to hear it"]
+        let instruction = app.staticTexts["Press, glide, or play several keys"]
         let middleC = app.buttons["piano-key-60"]
         let chordPreview = app.buttons["preview-selected-chord"]
         for _ in 0..<8 where !middleC.isHittable { app.swipeUp() }

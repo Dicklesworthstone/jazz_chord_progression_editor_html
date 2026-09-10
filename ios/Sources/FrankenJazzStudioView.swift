@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import UniformTypeIdentifiers
 
 struct FrankenJazzStudioView: View {
@@ -704,7 +705,10 @@ private struct MeasureCard: View {
                     .disabled(store.chart.measures.count == 1)
                 } label: {
                     Image(systemName: "ellipsis.circle")
-                        .frame(width: 44, height: 44)
+                        // Leave real margin above the 44-point accessibility floor;
+                        // exact-point frames can round infinitesimally below 44 in
+                        // XCTest's cross-process coordinate conversion.
+                        .frame(width: 48, height: 48)
                         .contentShape(Rectangle())
                 }
                 .accessibilityLabel("Actions for bar \(index + 1)")
@@ -1010,7 +1014,7 @@ private struct ChordInspectorView: View {
                         .foregroundStyle(JazzTheme.text)
                 }
                 HStack(spacing: 6) {
-                    Label("Tap any key to hear it", systemImage: "hand.tap")
+                    Label("Press, glide, or play several keys", systemImage: "hand.tap")
                     Spacer(minLength: 8)
                     Text(store.chart.instrument.displayName)
                 }
@@ -1032,7 +1036,8 @@ private struct ChordInspectorView: View {
                     highlightedMIDIPitches: exactPitches,
                     accent: JazzTheme.cyan,
                     instrumentName: store.chart.instrument.displayName,
-                    onKeyPress: store.previewKey
+                    onKeyPress: store.previewKey,
+                    onActiveKeysChanged: store.previewKeys
                 )
                 .frame(height: 96)
                 if let issue = store.audio.previewIssue {
@@ -1312,6 +1317,8 @@ private struct MiniPiano: View {
     let accent: Color
     let instrumentName: String
     let onKeyPress: (Int) -> Void
+    let onActiveKeysChanged: (Set<Int>) -> Void
+    @State private var activeTouchMIDIs = Set<Int>()
 
     private let whiteWidth: CGFloat = 46
     private let whiteSpacing: CGFloat = 1
@@ -1344,7 +1351,7 @@ private struct MiniPiano: View {
                         Button { onKeyPress(midi) } label: {
                             ZStack(alignment: .bottom) {
                                 RoundedRectangle(cornerRadius: 5)
-                                    .fill(highlightedMIDIPitches.contains(midi) ? accent.opacity(0.88) : JazzTheme.paper)
+                                    .fill(whiteKeyColor(midi))
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 5)
                                             .stroke(JazzTheme.background.opacity(0.45), lineWidth: 1)
@@ -1367,7 +1374,9 @@ private struct MiniPiano: View {
                     Button { onKeyPress(midi) } label: {
                         RoundedRectangle(cornerRadius: 4)
                             .fill(
-                                highlightedMIDIPitches.contains(midi)
+                                activeTouchMIDIs.contains(midi)
+                                    ? accent
+                                    : highlightedMIDIPitches.contains(midi)
                                     ? JazzTheme.brass
                                     : Color(red: 0.055, green: 0.05, blue: 0.07)
                             )
@@ -1390,6 +1399,21 @@ private struct MiniPiano: View {
                 }
             }
             .frame(width: keyboardWidth, height: 96, alignment: .leading)
+            .overlay {
+                PianoMultiTouchSurface(
+                    whitePitches: whitePitches,
+                    blackPitches: blackPitches,
+                    whiteWidth: whiteWidth,
+                    whiteSpacing: whiteSpacing,
+                    blackTouchWidth: blackTouchWidth,
+                    onActiveKeysChanged: { pitches in
+                        guard pitches != activeTouchMIDIs else { return }
+                        activeTouchMIDIs = pitches
+                        onActiveKeysChanged(pitches)
+                    }
+                )
+                .accessibilityHidden(true)
+            }
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Playable chord keyboard")
@@ -1406,9 +1430,132 @@ private struct MiniPiano: View {
             : noteName(midi)
     }
 
+    private func whiteKeyColor(_ midi: Int) -> Color {
+        if activeTouchMIDIs.contains(midi) { return accent }
+        return highlightedMIDIPitches.contains(midi) ? accent.opacity(0.88) : JazzTheme.paper
+    }
+
     private func noteName(_ midi: Int) -> String {
         let names = ["C", "C♯", "D", "E♭", "E", "F", "F♯", "G", "A♭", "A", "B♭", "B"]
         return "\(names[(midi % 12 + 12) % 12])\(midi / 12 - 1)"
+    }
+}
+
+/// Geometry is kept separate from UIKit event ownership so the black-key-first
+/// hit law can be exercised without starting an audio device.
+struct JazzPianoTouchLayout {
+    var whitePitches: [Int]
+    var blackPitches: [Int]
+    var whiteWidth: CGFloat
+    var whiteSpacing: CGFloat
+    var blackTouchWidth: CGFloat
+
+    func midi(at point: CGPoint) -> Int? {
+        guard point.x >= 0, point.y >= 0, point.y <= 96 else { return nil }
+        if point.y <= 60 {
+            for midi in blackPitches {
+                let preceding = whitePitches.lazy.filter { $0 < midi }.count
+                let center = CGFloat(preceding) * (whiteWidth + whiteSpacing) - whiteSpacing / 2
+                if abs(point.x - center) <= blackTouchWidth / 2 { return midi }
+            }
+        }
+        let stride = whiteWidth + whiteSpacing
+        let index = Int(floor(point.x / stride))
+        guard whitePitches.indices.contains(index), point.x - CGFloat(index) * stride <= whiteWidth else {
+            return nil
+        }
+        return whitePitches[index]
+    }
+}
+
+private struct PianoMultiTouchSurface: UIViewRepresentable {
+    var whitePitches: [Int]
+    var blackPitches: [Int]
+    var whiteWidth: CGFloat
+    var whiteSpacing: CGFloat
+    var blackTouchWidth: CGFloat
+    var onActiveKeysChanged: (Set<Int>) -> Void
+
+    func makeUIView(context: Context) -> PianoTouchView {
+        let view = PianoTouchView()
+        view.isMultipleTouchEnabled = true
+        view.isAccessibilityElement = false
+        view.accessibilityElementsHidden = true
+        update(view)
+        return view
+    }
+
+    func updateUIView(_ uiView: PianoTouchView, context: Context) {
+        update(uiView)
+    }
+
+    private func update(_ view: PianoTouchView) {
+        view.layout = JazzPianoTouchLayout(
+            whitePitches: whitePitches,
+            blackPitches: blackPitches,
+            whiteWidth: whiteWidth,
+            whiteSpacing: whiteSpacing,
+            blackTouchWidth: blackTouchWidth
+        )
+        view.onActiveKeysChanged = onActiveKeysChanged
+    }
+}
+
+private final class PianoTouchView: UIView {
+    var layout = JazzPianoTouchLayout(
+        whitePitches: [], blackPitches: [], whiteWidth: 46,
+        whiteSpacing: 1, blackTouchWidth: 44
+    )
+    var onActiveKeysChanged: ((Set<Int>) -> Void)?
+    private var pitchByTouch = [ObjectIdentifier: Int]()
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        var ancestor = superview
+        while let current = ancestor {
+            if let scroll = current as? UIScrollView {
+                scroll.delaysContentTouches = false
+                break
+            }
+            ancestor = current.superview
+        }
+    }
+
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        update(touches)
+    }
+
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        update(touches)
+    }
+
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        remove(touches)
+    }
+
+    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+        remove(touches)
+    }
+
+    private func update(_ touches: Set<UITouch>) {
+        for touch in touches {
+            let identity = ObjectIdentifier(touch)
+            if let midi = layout.midi(at: touch.location(in: self)) {
+                pitchByTouch[identity] = midi
+            } else {
+                pitchByTouch.removeValue(forKey: identity)
+            }
+        }
+        publish()
+    }
+
+    private func remove(_ touches: Set<UITouch>) {
+        for touch in touches { pitchByTouch.removeValue(forKey: ObjectIdentifier(touch)) }
+        publish()
+    }
+
+    private func publish() {
+        onActiveKeysChanged?(Set(pitchByTouch.values))
     }
 }
 
@@ -1441,8 +1588,8 @@ private struct TransportBar: View {
                     metronomeControl
                     loopControl
                     muteControl
-                    volumeControl
                 }
+                mixControls
             } else {
                 ViewThatFits(in: .horizontal) {
                     HStack(spacing: 12) {
@@ -1466,7 +1613,7 @@ private struct TransportBar: View {
                             metronomeControl
                             loopControl
                             muteControl
-                            volumeControl.frame(width: 150)
+                            mixControls.frame(maxWidth: 330)
                         }
                         .frame(maxWidth: .infinity, alignment: .trailing)
                     }
@@ -1623,7 +1770,7 @@ private struct TransportBar: View {
 
     private var volumeControl: some View {
         Slider(
-            value: Binding(get: { store.audio.masterVolume }, set: store.audio.setMasterVolume),
+            value: Binding(get: { store.audio.masterVolume }, set: store.updateMasterVolume),
             in: 0...1,
             step: 0.05
         )
@@ -1631,6 +1778,33 @@ private struct TransportBar: View {
         .accessibilityIdentifier("transport-master-volume")
         .accessibilityLabel("Master volume")
         .accessibilityValue("\(Int((store.audio.masterVolume * 100).rounded())) percent")
+    }
+
+    private var reverbControl: some View {
+        Slider(
+            value: Binding(get: { store.audio.reverbAmount }, set: store.updateReverbAmount),
+            in: 0...1,
+            step: 0.05
+        )
+        .frame(minWidth: compact ? 112 : 90, minHeight: 44)
+        .tint(JazzTheme.cyan)
+        .accessibilityIdentifier("transport-reverb-amount")
+        .accessibilityLabel("Room amount")
+        .accessibilityHint("Blends the shared native jazz hall into playback and previews")
+        .accessibilityValue("\(Int((store.audio.reverbAmount * 100).rounded())) percent")
+    }
+
+    private var mixControls: some View {
+        HStack(spacing: 7) {
+            Image(systemName: "speaker.wave.2.fill")
+                .foregroundStyle(JazzTheme.brass)
+                .accessibilityHidden(true)
+            volumeControl
+            Image(systemName: "water.waves")
+                .foregroundStyle(JazzTheme.cyan)
+                .accessibilityHidden(true)
+            reverbControl
+        }
     }
 
     private var playheadSummary: some View {

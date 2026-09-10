@@ -22,6 +22,12 @@ enum JazzAudioRenderer {
     private struct NoteRequest {
         var midi: Int
         var velocity: Double
+        /// Original 1...127 performance velocity. Synthetic recipes use this
+        /// for both the Web Audio velocity curve and velocity-sensitive FM.
+        var midiVelocity: Int
+        /// Chord-wide headroom is independent of performance velocity in the
+        /// original engine (`outputLevel / sqrt(voiceCount)`).
+        var normalizationGain: Double
         var start: Int
         var duration: Double
         var tone: InstrumentTone
@@ -75,7 +81,7 @@ enum JazzAudioRenderer {
         guard cancellation?.isCancelled != true,
               mixChanges(chart, into: &stereo, cancellation: cancellation),
               mixGroove(chart, into: &stereo, cancellation: cancellation),
-              normalize(&stereo, cancellation: cancellation)
+              validateFinite(stereo, cancellation: cancellation)
         else { return nil }
         return JazzRenderedAudio(left: stereo.left, right: stereo.right, sampleRate: sampleRate)
     }
@@ -100,10 +106,13 @@ enum JazzAudioRenderer {
             right: [Float](repeating: 0, count: frameCount)
         )
         guard mixNote(
-            NoteRequest(midi: midi, velocity: 0.62, start: 0, duration: duration, tone: tone, pan: 0),
+            NoteRequest(
+                midi: midi, velocity: 0.62, midiVelocity: 96, normalizationGain: 1,
+                start: 0, duration: duration, tone: tone, pan: 0
+            ),
             into: &stereo,
             cancellation: cancellation
-        ), normalize(&stereo, cancellation: cancellation) else { return nil }
+        ), validateFinite(stereo, cancellation: cancellation) else { return nil }
         return JazzRenderedAudio(left: stereo.left, right: stereo.right, sampleRate: sampleRate)
     }
 
@@ -152,6 +161,8 @@ enum JazzAudioRenderer {
                     NoteRequest(
                         midi: midi,
                         velocity: 0.72 / sqrt(Double(pitches.count)),
+                        midiVelocity: 96,
+                        normalizationGain: 1 / sqrt(Double(pitches.count)),
                         start: 0,
                         duration: duration,
                         tone: tone,
@@ -162,7 +173,7 @@ enum JazzAudioRenderer {
                 ) else { return nil }
             }
         }
-        guard normalize(&stereo, cancellation: cancellation) else { return nil }
+        guard validateFinite(stereo, cancellation: cancellation) else { return nil }
         return JazzRenderedAudio(left: stereo.left, right: stereo.right, sampleRate: sampleRate)
     }
 
@@ -184,6 +195,8 @@ enum JazzAudioRenderer {
                 NoteRequest(
                     midi: accent ? transportClickAccentMIDIPitch : transportClickBeatMIDIPitch,
                     velocity: accent ? 0.50 : 0.32,
+                    midiVelocity: accent ? 80 : 60,
+                    normalizationGain: 1,
                     start: Int(Double(beat) * beatSeconds * sampleRate),
                     duration: transportClickGateSeconds,
                     tone: .vibraphone,
@@ -193,7 +206,7 @@ enum JazzAudioRenderer {
                 cancellation: nil
             ) else { return nil }
         }
-        guard normalize(&stereo, cancellation: nil) else { return nil }
+        guard validateFinite(stereo, cancellation: nil) else { return nil }
         return JazzRenderedAudio(left: stereo.left, right: stereo.right, sampleRate: sampleRate)
     }
 
@@ -236,6 +249,8 @@ enum JazzAudioRenderer {
                         NoteRequest(
                             midi: midi,
                             velocity: 0.72 / sqrt(Double(voiceCount)),
+                            midiVelocity: 96,
+                            normalizationGain: 1 / sqrt(Double(voiceCount)),
                             start: start,
                             duration: duration,
                             tone: chart.instrument,
@@ -251,6 +266,8 @@ enum JazzAudioRenderer {
                     NoteRequest(
                         midi: max(28, bass - 12),
                         velocity: 0.30,
+                        midiVelocity: 64,
+                        normalizationGain: 1,
                         start: start,
                         duration: min(duration, 0.58),
                         tone: .mellowKeys,
@@ -370,21 +387,13 @@ enum JazzAudioRenderer {
         return true
     }
 
-    private static func normalize(
-        _ stereo: inout StereoBuffer,
+    private static func validateFinite(
+        _ stereo: StereoBuffer,
         cancellation: JazzRenderCancellationToken?
     ) -> Bool {
-        var peak: Float = 0
         for index in stereo.left.indices {
             guard shouldContinue(cancellation, atFrame: index) else { return false }
-            peak = max(peak, abs(stereo.left[index]), abs(stereo.right[index]))
-        }
-        guard peak > 0.92 else { return cancellation?.isCancelled != true }
-        let gain = 0.92 / peak
-        for index in stereo.left.indices {
-            guard shouldContinue(cancellation, atFrame: index) else { return false }
-            stereo.left[index] *= gain
-            stereo.right[index] *= gain
+            guard stereo.left[index].isFinite, stereo.right[index].isFinite else { return false }
         }
         return cancellation?.isCancelled != true
     }
@@ -456,7 +465,8 @@ enum JazzAudioRenderer {
         if let rendered = JazzSyntheticInstrumentRenderer.render(
             tone: request.tone,
             midi: request.midi,
-            velocityGain: request.velocity,
+            midiVelocity: request.midiVelocity,
+            normalizationGain: request.normalizationGain,
             sampleRate: sampleRate,
             duration: request.duration,
             cancellation: cancellation

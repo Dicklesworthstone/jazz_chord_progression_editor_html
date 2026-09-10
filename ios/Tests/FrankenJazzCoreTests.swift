@@ -525,6 +525,27 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertFalse(engine.isMuted)
         XCTAssertEqual(engine.masterVolume, 0.78, "Mute must not overwrite the user's stored gain.")
 
+        let graph = engine.masterGraphSnapshot
+        XCTAssertEqual(graph.nodeIDs.first, "instrument-bus")
+        XCTAssertEqual(graph.nodeIDs.last, "destination")
+        XCTAssertTrue(graph.nodeIDs.contains("native-output-limiter"))
+        XCTAssertEqual(graph.dcBlockFrequencyHz, 24, accuracy: 0.01)
+        XCTAssertEqual(graph.lowShelfFrequencyHz, 180, accuracy: 0.01)
+        XCTAssertEqual(graph.lowShelfGainDB, 1.5, accuracy: 0.01)
+        XCTAssertEqual(graph.highShelfFrequencyHz, 6_000, accuracy: 0.01)
+        XCTAssertEqual(graph.highShelfGainDB, -1, accuracy: 0.01)
+        XCTAssertEqual(graph.dynamicsThresholdDB, -18)
+        XCTAssertEqual(graph.dynamicsAttackSeconds, 0.006)
+        XCTAssertEqual(graph.dynamicsReleaseSeconds, 0.18)
+        XCTAssertEqual(graph.maximumReverbSendGain, 0.28)
+        XCTAssertEqual(graph.safetyGain, 0.9, accuracy: 0.001)
+        engine.setReverbAmount(0.25)
+        XCTAssertEqual(engine.reverbAmount, 0.25)
+        XCTAssertEqual(engine.masterGraphSnapshot.reverbAmount, 0.25)
+        engine.setPlaybackMix(.originalDefault)
+        XCTAssertEqual(engine.masterVolume, 1)
+        XCTAssertEqual(engine.reverbAmount, 0.55)
+
         engine.loops = true
         XCTAssertTrue(engine.loops)
         engine.setCountInEnabled(true)
@@ -676,11 +697,11 @@ final class FrankenJazzCoreTests: XCTestCase {
         var fingerprints = Set<[UInt32]>()
         for tone in tones {
             let first = try XCTUnwrap(JazzSyntheticInstrumentRenderer.render(
-                tone: tone, midi: 60, velocityGain: 0.62,
+                tone: tone, midi: 60, midiVelocity: 96, normalizationGain: 1,
                 sampleRate: 24_000, duration: 0.4
             ))
             let second = try XCTUnwrap(JazzSyntheticInstrumentRenderer.render(
-                tone: tone, midi: 60, velocityGain: 0.62,
+                tone: tone, midi: 60, midiVelocity: 96, normalizationGain: 1,
                 sampleRate: 24_000, duration: 0.4
             ))
             XCTAssertEqual(first.algorithmID, "changes.audio.\(tone.originalID)@1")
@@ -693,9 +714,40 @@ final class FrankenJazzCoreTests: XCTestCase {
             XCTAssertTrue(fingerprints.insert(fingerprint).inserted, tone.displayName)
         }
         XCTAssertNil(JazzSyntheticInstrumentRenderer.render(
-            tone: .concertGrand, midi: 60, velocityGain: 0.62,
+            tone: .concertGrand, midi: 60, midiVelocity: 96, normalizationGain: 1,
             sampleRate: 24_000, duration: 0.4
         ))
+
+        let quietFM = try XCTUnwrap(JazzSyntheticInstrumentRenderer.render(
+            tone: .electricPiano, midi: 60, midiVelocity: 24, normalizationGain: 1,
+            sampleRate: 24_000, duration: 0.4
+        ))
+        let loudFM = try XCTUnwrap(JazzSyntheticInstrumentRenderer.render(
+            tone: .electricPiano, midi: 60, midiVelocity: 120, normalizationGain: 1,
+            sampleRate: 24_000, duration: 0.4
+        ))
+        XCTAssertNotEqual(quietFM.samples, loudFM.samples, "FM index and amplitude must follow MIDI velocity, not post-mix gain.")
+    }
+
+    func testSyntheticVoicesStayLinearUntilTheSharedMasterBus() throws {
+        for tone in [InstrumentTone.mellowKeys, .electricPiano, .vibraphone, .warmPad, .analogPoly, .organ] {
+            let full = try XCTUnwrap(JazzSyntheticInstrumentRenderer.render(
+                tone: tone, midi: 60, midiVelocity: 96, normalizationGain: 1,
+                sampleRate: 24_000, duration: 0.4
+            ))
+            let half = try XCTUnwrap(JazzSyntheticInstrumentRenderer.render(
+                tone: tone, midi: 60, midiVelocity: 96, normalizationGain: 0.5,
+                sampleRate: 24_000, duration: 0.4
+            ))
+            XCTAssertEqual(full.samples.count, half.samples.count)
+            for frame in stride(from: 0, to: full.samples.count, by: 97) {
+                XCTAssertEqual(
+                    half.samples[frame], full.samples[frame] * 0.5,
+                    accuracy: 0.000_001,
+                    "\(tone.displayName) frame \(frame) must not be clipped before the master bus."
+                )
+            }
+        }
     }
 
     func testSelectedVoicingPreviewRendersSimultaneouslyWithoutAudioOutput() throws {
@@ -711,6 +763,40 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertNil(JazzAudioRenderer.renderPreviewChord(midis: [], tone: .mellowKeys))
         XCTAssertNil(JazzAudioRenderer.renderPreviewChord(midis: [20, 60], tone: .mellowKeys))
         XCTAssertNil(JazzAudioRenderer.renderPreviewChord(midis: Array(48...58), tone: .mellowKeys))
+    }
+
+    func testPianoTouchLayoutPrefersBlackKeysAndSupportsGlideHitTesting() {
+        let layout = JazzPianoTouchLayout(
+            whitePitches: [60, 62, 64, 65, 67],
+            blackPitches: [61, 63, 66],
+            whiteWidth: 46,
+            whiteSpacing: 1,
+            blackTouchWidth: 44
+        )
+        XCTAssertEqual(layout.midi(at: CGPoint(x: 23, y: 80)), 60)
+        XCTAssertEqual(layout.midi(at: CGPoint(x: 46.5, y: 20)), 61, "A black key owns its overlapping upper hit region.")
+        XCTAssertEqual(layout.midi(at: CGPoint(x: 70, y: 80)), 62)
+        XCTAssertEqual(layout.midi(at: CGPoint(x: 93.5, y: 20)), 63)
+        XCTAssertNil(layout.midi(at: CGPoint(x: -1, y: 20)))
+        XCTAssertNil(layout.midi(at: CGPoint(x: 23, y: 97)))
+    }
+
+    func testKeyboardVoiceDeltaNeverRetriggersHeldFingers() {
+        let chord = JazzAudioEngine.keyboardVoiceDelta(
+            previous: [60],
+            next: [60, 64, 67]
+        )
+        XCTAssertEqual(chord.added, [64, 67])
+        XCTAssertEqual(chord.retained, [60])
+        XCTAssertEqual(chord.removed, [])
+
+        let glide = JazzAudioEngine.keyboardVoiceDelta(
+            previous: [60, 64, 67],
+            next: [62, 64, 67]
+        )
+        XCTAssertEqual(glide.added, [62])
+        XCTAssertEqual(glide.retained, [64, 67])
+        XCTAssertEqual(glide.removed, [60])
     }
 
     func testOriginalPlayableWindowsFoldWithoutMutatingInstrumentIdentity() throws {
@@ -1929,6 +2015,7 @@ final class FrankenJazzCoreTests: XCTestCase {
     func testNativeDocumentRoundTripsEverySetting() throws {
         let parsed = try JazzTheory.parseChart("| Bbmaj9 | Eb13 |")
         var chart = JazzChart(title: "Round trip", key: .bb, tempoBPM: 87, groove: .ballad, instrument: .vibraphone, voicingFamily: .open, measures: parsed.measures)
+        chart.playbackMix = JazzPlaybackMix(masterVolume: 0.65, reverbAmount: 0.35)
         chart.measures[0].chords[0].frozenMIDIPitches = [46, 53, 57, 60, 64]
         chart.updatedAt = Date(timeIntervalSince1970: 1_788_130_000)
         let encoder = JSONEncoder()
@@ -1937,6 +2024,13 @@ final class FrankenJazzCoreTests: XCTestCase {
         decoder.dateDecodingStrategy = .iso8601
         let decoded = try decoder.decode(JazzChart.self, from: encoder.encode(chart))
         XCTAssertEqual(decoded, chart)
+        XCTAssertEqual(decoded.effectivePlaybackMix, JazzPlaybackMix(masterVolume: 0.65, reverbAmount: 0.35))
+
+        var invalid = chart
+        invalid.playbackMix?.reverbAmount = 1.01
+        XCTAssertThrowsError(try JazzDocumentValidator.validate(invalid)) { error in
+            XCTAssertEqual(error as? JazzDocumentValidationIssue, .playbackMix)
+        }
     }
 
     func testLegacyDocumentWithoutFrozenVoicingStillDecodesAsAutomatic() throws {
@@ -1965,6 +2059,8 @@ final class FrankenJazzCoreTests: XCTestCase {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         let chart = try decoder.decode(JazzChart.self, from: Data(legacy.utf8))
+        XCTAssertNil(chart.playbackMix)
+        XCTAssertEqual(chart.effectivePlaybackMix, .originalDefault)
         XCTAssertNil(chart.measures[0].chords[0].frozenMIDIPitches)
         XCTAssertNoThrow(try JazzDocumentValidator.validate(chart))
     }
