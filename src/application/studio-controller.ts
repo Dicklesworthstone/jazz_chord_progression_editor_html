@@ -1520,6 +1520,7 @@ function makeStudioComposition(
     state = result.state;
     retireInspectorPreviewIfChanged();
     retirePadIfChanged();
+    retireNoteFirstIfChanged();
     if (state !== previousState) {
       snapshot = nextSnapshot;
       if (state.document !== previousState.document) {
@@ -7274,6 +7275,7 @@ function makeStudioComposition(
     state = next;
     retireInspectorPreviewIfChanged();
     retirePadIfChanged();
+    retireNoteFirstIfChanged();
     snapshot = nextSnapshot;
     if (next.document !== previous.document) {
       documentIndex = buildDocumentIndex(next.document, createWorkCounters());
@@ -7344,16 +7346,20 @@ function makeStudioComposition(
     return Object.freeze({id:generation,completion});
   };
 
-  let noteFirstPreviewGeneration:number|null=null;
+  let noteFirstPreviewOwner:Readonly<{document:AppState["document"];revision:number;generation:number}>|null=null;
+  const retireNoteFirstIfChanged=():void=>{
+    if(noteFirstPreviewOwner!==null&&(noteFirstPreviewOwner.document!==state.document||noteFirstPreviewOwner.revision!==state.revision))void releaseNoteFirst();
+  };
   const previewNoteFirst=(text:string,gesture:StudioAudioGesture):StudioControllerActionResult=>{
     const draft=readNoteFirst(text);
     if(!draft.analysis.ok)return editRefusal("preview-chord","u1.playback_refused",draft.analysis.message);
+    const owner={document:state.document,revision:state.revision,generation:previewOrdinal+1};
     const result=previewPitches(draft.analysis.midi,gesture);
-    if(result.ok)noteFirstPreviewGeneration=pitchSetPreviewGeneration;
+    if(result.ok&&owner.generation===pitchSetPreviewGeneration){noteFirstPreviewOwner=owner;retireNoteFirstIfChanged();}
     return result;
   };
   const releaseNoteFirst=():Promise<StudioInspectorResult<void>>=>{
-    const generation=noteFirstPreviewGeneration;noteFirstPreviewGeneration=null;
+    const generation=noteFirstPreviewOwner?.generation??null;noteFirstPreviewOwner=null;
     return generation!==null&&generation===pitchSetPreviewGeneration&&generation===previewOrdinal
       ?releasePreviewPitches():Promise.resolve({ok:true,value:undefined});
   };

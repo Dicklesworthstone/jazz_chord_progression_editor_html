@@ -4,10 +4,22 @@ import { Button } from "../primitives";
 import { Dialog } from "../overlays";
 
 function ExactQrPreview({service,view}:Readonly<{service:StudioExactShareService;view:StudioExactShareView}>){
-  const host=useRef<HTMLDivElement>(null),[width,setWidth]=useState(0);
-  useEffect(()=>{const element=host.current;if(element===null)return;const measure=():void=>{setWidth(Math.floor(element.getBoundingClientRect().width));};measure();const observer=new ResizeObserver(measure);observer.observe(element);return()=>{observer.disconnect();};},[]);
+  const host=useRef<HTMLDivElement>(null),[space,setSpace]=useState(0);
+  useEffect(()=>{
+    const element=host.current;if(element===null)return;
+    const dialog=element.closest<HTMLElement>(".ui-dialog");
+    const measure=():void=>{
+      // A scanner must see the whole code and quiet zone at once, even when
+      // the dialog scrolls on a short landscape screen or after rotation.
+      const style=dialog===null?null:getComputedStyle(dialog);
+      const height=dialog===null?window.innerHeight:dialog.clientHeight-parseFloat(style?.paddingTop??"0")-parseFloat(style?.paddingBottom??"0");
+      setSpace(Math.floor(Math.min(element.getBoundingClientRect().width,height)));
+    };
+    measure();const observer=new ResizeObserver(measure);observer.observe(element);if(dialog!==null)observer.observe(dialog);
+    return()=>{observer.disconnect();};
+  },[]);
   if(!view.qrAvailable)return null;
-  const qr=view.qr,extent=qr===null?0:qr.matrix.size+8,moduleSize=extent===0?0:Math.min(4,Math.floor(width/extent));
+  const qr=view.qr,extent=qr===null?0:qr.matrix.size+8,moduleSize=extent===0?0:Math.min(4,Math.floor(space/extent));
   return <div class="studio-exact-qr" ref={host}>
     <Button id="studio-exact-share-qr" label={view.qrPhase==="preparing"?"Preparing QR…":"Show QR"} onAction={()=>{void service.prepareQr();}} busy={view.qrPhase==="preparing"} disabled={view.qrPhase==="preparing"||view.url===null} density="comfortable" describedBy={[]} invalid={false} type="button" variant="secondary" />
     {view.qrMessage===null?null:<p role="status">{view.qrMessage}</p>}

@@ -8,7 +8,7 @@ const label=(p:Readonly<{step:string;alter:number;octave:number}>)=>`${p.step}${
 export function ChordPadsPanel({ports}:{ports:StudioChordPadsPorts}){
   const [result,setResult]=useState<StudioInspectorResult<StudioPadsView>|null>(null),[notice,setNotice]=useState(""),[held,setHeld]=useState<string|null>(null);
   const owner=useRef<Readonly<{id:number;eventId:string;input:number|"keyboard"|"tap"}>|null>(null),latest=useRef(ports);latest.current=ports;
-  const release=():void=>{const active=owner.current;owner.current=null;setHeld(null);if(active!==null){void latest.current.release(active.id);setNotice("Pad released. Instrument tails may decay.");}};
+  const release=():void=>{const active=owner.current;owner.current=null;setHeld(null);if(active!==null){void latest.current.release(active.id);setNotice("Pad release requested. Instrument tails may decay.");}};
   const releaseRef=useRef(release);releaseRef.current=release;
   useEffect(()=>{
     const hidden=()=>{if(document.hidden)releaseRef.current();},blur=()=>{releaseRef.current();};

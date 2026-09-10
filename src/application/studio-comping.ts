@@ -58,7 +58,15 @@ export function createStudioComping(ports:Readonly<{
     if(!result.ok)return fail(result.code==="comp.empty"?"No notes fall on the active slots. Your draft is retained; add a slot or choose another passage.":`This rhythm could not be prepared (${result.code}). Nothing was substituted.`);
     snapshot=Object.freeze({document,revision,result});return snapshot;
   };
-  const stop=async():Promise<void>=>{if(state==="delivering"){await ports.release();return;}clear();message="Rhythm audition and preparation stopped.";notify();await ports.release();};
+  const stop=async():Promise<void>=>{
+    if(state==="delivering"){await ports.release();return;}
+    clear();const token=generation;message="Releasing the rhythm audition…";notify();
+    try{
+      const result=await ports.release();if(token!==generation)return;
+      if(!result.ok){fail(result.message);return;}
+      message="Rhythm audition and preparation stopped.";notify();
+    }catch{if(token===generation)fail("Audio release could not be confirmed. Use Stop to retire audio.");}
+  };
   const hear=async(gesture:StudioAudioGesture):Promise<void>=>{
     if(state==="delivering")return;const s=getSnapshot();if(s===null)return;const token=++generation;state="idle";bytes=null;sha256=null;filename=null;
     message="Preparing the exact rhythm audition…";notify();

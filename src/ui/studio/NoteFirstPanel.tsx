@@ -55,7 +55,7 @@ export function NoteFirstPanel({ports}:{ports:StudioNoteFirstPorts}){
         </select></label>
         <p>The new bar goes at the end of that section with Manual voicing. One Undo removes it.</p>
         <button class="ui-button" type="button" disabled={!valid} onClick={e=>{const result=ports.hear(text,e.detail===0?"keyboard":"pointer");setNotice(result.ok?"Preview requested; your chart is unchanged.":result.refusal.message);}}>Hear exact notes</button>
-        <button class="ui-button" type="button" onClick={()=>{void ports.release();setNotice("Preview released.");}}>Release notes</button>
+        <button class="ui-button" type="button" onClick={()=>{void ports.release();setNotice("Preview release requested.");}}>Release notes</button>
         <button class="ui-button" type="button" disabled={!canAdd} onClick={()=>{
           if(draft===null)return;void ports.release();
           const result=ports.insert(draft.source,text,{name:choice==="custom"?null:choice,customLabel,acknowledgeEnharmonic:ack},section);
