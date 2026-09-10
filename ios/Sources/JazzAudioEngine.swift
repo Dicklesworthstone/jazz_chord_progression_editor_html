@@ -30,6 +30,12 @@ final class JazzAudioEngine: ObservableObject {
         var firstChartClickIsAccent: Bool
     }
 
+    struct KeyboardVoiceDelta: Equatable, Sendable {
+        var added: Set<Int>
+        var retained: Set<Int>
+        var removed: Set<Int>
+    }
+
     enum ChordStepDirection {
         case previous
         case next
@@ -63,6 +69,11 @@ final class JazzAudioEngine: ObservableObject {
     /// therefore coexist with progression playback without seeking, pausing,
     /// replacing, or completing the main transport's scheduled buffer.
     private let previewPlayer = AVAudioPlayerNode()
+    /// The visual piano is genuinely polyphonic: each newly pressed key gets
+    /// its own bounded one-shot player, so adding or gliding a finger never
+    /// restarts notes another finger is already holding. Ten voices matches
+    /// the public preview limit and keeps the persistent graph bounded.
+    private let keyboardPlayers = (0..<10).map { _ in AVAudioPlayerNode() }
     /// Clicks own a third node so transport practice controls never rewrite
     /// the chart render or interrupt inspector-note ownership.
     private let clickPlayer = AVAudioPlayerNode()
@@ -113,10 +124,18 @@ final class JazzAudioEngine: ObservableObject {
     private var renderCancellation: JazzRenderCancellationToken?
     private var previewRenderTask: Task<Void, Never>?
     private var previewCancellation: JazzRenderCancellationToken?
+    private var keyboardRenderTasks = [String: Task<Void, Never>]()
+    private var keyboardBuffers = [String: AVAudioPCMBuffer]()
+    private var keyboardBufferOrder = [String]()
+    private var activeKeyboardMIDIs = Set<Int>()
+    private var keyboardGeneration = 0
+    private var nextKeyboardPlayerIndex = 0
+    private let maximumKeyboardBufferCount = 96
 
     init() {
         engine.attach(player)
         engine.attach(previewPlayer)
+        for keyboardPlayer in keyboardPlayers { engine.attach(keyboardPlayer) }
         engine.attach(clickPlayer)
         engine.attach(instrumentBus)
         engine.attach(toneEQ)
@@ -132,6 +151,9 @@ final class JazzAudioEngine: ObservableObject {
         configurePersistentGraphParameters()
         engine.connect(player, to: instrumentBus, format: nil)
         engine.connect(previewPlayer, to: instrumentBus, format: nil)
+        for keyboardPlayer in keyboardPlayers {
+            engine.connect(keyboardPlayer, to: instrumentBus, format: nil)
+        }
         engine.connect(clickPlayer, to: instrumentBus, format: nil)
         engine.connect(instrumentBus, to: toneEQ, format: nil)
         engine.connect(
@@ -154,6 +176,7 @@ final class JazzAudioEngine: ObservableObject {
         applyMixerVolume()
         applyReverbAmount()
         previewPlayer.volume = 0.82
+        for keyboardPlayer in keyboardPlayers { keyboardPlayer.volume = 0.82 }
     }
 
     deinit {
@@ -161,9 +184,11 @@ final class JazzAudioEngine: ObservableObject {
         previewCancellation?.cancel()
         renderTask?.cancel()
         previewRenderTask?.cancel()
+        for task in keyboardRenderTasks.values { task.cancel() }
         timer?.invalidate()
         player.stop()
         previewPlayer.stop()
+        for keyboardPlayer in keyboardPlayers { keyboardPlayer.stop() }
         clickPlayer.stop()
         engine.stop()
     }
@@ -487,10 +512,92 @@ final class JazzAudioEngine: ObservableObject {
         }
     }
 
+    /// Updates the visual keyboard without replacing voices that are already
+    /// sounding. A quick tap is still allowed to finish its bounded release
+    /// tail after the finger lifts; only newly added pitches schedule audio.
+    func updateKeyboardPreview(midis: Set<Int>, tone: InstrumentTone) {
+        guard midis.count <= keyboardPlayers.count,
+              midis.allSatisfy({ (21...108).contains($0) }) else {
+            previewIssue = "The keyboard supports up to ten notes in the A0–C8 range."
+            return
+        }
+        let delta = Self.keyboardVoiceDelta(previous: activeKeyboardMIDIs, next: midis)
+        activeKeyboardMIDIs = midis
+        previewIssue = nil
+        for midi in delta.added.sorted() { playKeyboardOneShot(midi: midi, tone: tone) }
+    }
+
+    nonisolated static func keyboardVoiceDelta(
+        previous: Set<Int>,
+        next: Set<Int>
+    ) -> KeyboardVoiceDelta {
+        KeyboardVoiceDelta(
+            added: next.subtracting(previous),
+            retained: next.intersection(previous),
+            removed: previous.subtracting(next)
+        )
+    }
+
+    private func playKeyboardOneShot(midi: Int, tone: InstrumentTone) {
+        let key = "\(tone.originalID):\(midi)"
+        if let cached = keyboardBuffers[key] {
+            touchKeyboardCacheKey(key)
+            scheduleKeyboardBuffer(cached)
+            return
+        }
+        guard keyboardRenderTasks[key] == nil else { return }
+        let requestGeneration = keyboardGeneration
+        keyboardRenderTasks[key] = Task { [weak self] in
+            let rendered = await Task.detached(priority: .userInitiated) {
+                JazzAudioRenderer.renderPreviewChord(midis: [midi], tone: tone)
+            }.value
+            guard let self, self.keyboardGeneration == requestGeneration else { return }
+            self.keyboardRenderTasks[key] = nil
+            guard let rendered, let pcm = self.makePCM(rendered) else {
+                self.previewIssue = "That keyboard note could not be rendered safely."
+                return
+            }
+            self.insertKeyboardBuffer(pcm, for: key)
+            self.scheduleKeyboardBuffer(pcm)
+        }
+    }
+
+    private func scheduleKeyboardBuffer(_ pcm: AVAudioPCMBuffer) {
+        do {
+            try configureSession()
+            let player = keyboardPlayers[nextKeyboardPlayerIndex]
+            nextKeyboardPlayerIndex = (nextKeyboardPlayerIndex + 1) % keyboardPlayers.count
+            player.stop()
+            player.scheduleBuffer(pcm, at: nil)
+            player.play()
+        } catch {
+            previewIssue = "Keyboard preview is unavailable: \(error.localizedDescription)"
+        }
+    }
+
+    private func insertKeyboardBuffer(_ pcm: AVAudioPCMBuffer, for key: String) {
+        keyboardBuffers[key] = pcm
+        touchKeyboardCacheKey(key)
+        while keyboardBufferOrder.count > maximumKeyboardBufferCount {
+            let oldest = keyboardBufferOrder.removeFirst()
+            keyboardBuffers[oldest] = nil
+        }
+    }
+
+    private func touchKeyboardCacheKey(_ key: String) {
+        keyboardBufferOrder.removeAll { $0 == key }
+        keyboardBufferOrder.append(key)
+    }
+
     func stopPreview() {
         previewGeneration += 1
         cancelPreviewRender()
         previewPlayer.stop()
+        keyboardGeneration += 1
+        for task in keyboardRenderTasks.values { task.cancel() }
+        keyboardRenderTasks.removeAll(keepingCapacity: true)
+        activeKeyboardMIDIs.removeAll(keepingCapacity: true)
+        for keyboardPlayer in keyboardPlayers { keyboardPlayer.stop() }
         scheduledPreviewBuffer = nil
         previewIssue = nil
     }

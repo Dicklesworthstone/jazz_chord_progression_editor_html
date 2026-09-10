@@ -1014,7 +1014,7 @@ private struct ChordInspectorView: View {
                         .foregroundStyle(JazzTheme.text)
                 }
                 HStack(spacing: 6) {
-                    Label("Tap any key to hear it", systemImage: "hand.tap")
+                    Label("Press, glide, or play several keys", systemImage: "hand.tap")
                     Spacer(minLength: 8)
                     Text(store.chart.instrument.displayName)
                 }

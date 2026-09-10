@@ -760,6 +760,24 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertNil(layout.midi(at: CGPoint(x: 23, y: 97)))
     }
 
+    func testKeyboardVoiceDeltaNeverRetriggersHeldFingers() {
+        let chord = JazzAudioEngine.keyboardVoiceDelta(
+            previous: [60],
+            next: [60, 64, 67]
+        )
+        XCTAssertEqual(chord.added, [64, 67])
+        XCTAssertEqual(chord.retained, [60])
+        XCTAssertEqual(chord.removed, [])
+
+        let glide = JazzAudioEngine.keyboardVoiceDelta(
+            previous: [60, 64, 67],
+            next: [62, 64, 67]
+        )
+        XCTAssertEqual(glide.added, [62])
+        XCTAssertEqual(glide.retained, [64, 67])
+        XCTAssertEqual(glide.removed, [60])
+    }
+
     func testOriginalPlayableWindowsFoldWithoutMutatingInstrumentIdentity() throws {
         let expected: [InstrumentTone: ClosedRange<Int>] = [
             .mellowKeys: 21...108,
