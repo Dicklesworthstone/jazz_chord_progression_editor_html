@@ -824,7 +824,7 @@ final class JazzStudioStore: ObservableObject {
     private func exportData(kind: ExportKind) throws -> Data {
         switch kind {
         case .nativeJSON: try encoder.encode(chart)
-        case .chartText: Data(("# \(chart.title)\n# key \(chart.key.rawValue) · \(Int(chart.tempoBPM)) BPM · \(chart.groove.rawValue)\n\n" + chart.chartText + "\n").utf8)
+        case .chartText: JazzLeadSheetTextCodec.encode(chart)
         case .midi: MIDIFileWriter.makeFile(chart: chart)
         }
     }
@@ -848,12 +848,9 @@ final class JazzStudioStore: ObservableObject {
             let pathExtension = url.pathExtension.lowercased()
             if pathExtension == "txt" || pathExtension == "md" {
                 guard let text = String(data: data, encoding: .utf8) else { throw ImportError.notUTF8 }
-                let content = text.split(separator: "\n").filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("#") }.joined(separator: "\n")
-                let parsed = try JazzTheory.parseChart(content)
-                imported = JazzChart(
-                    title: url.deletingPathExtension().lastPathComponent,
-                    measures: parsed.measures,
-                    sections: parsed.sections
+                imported = try JazzLeadSheetTextCodec.decode(
+                    text,
+                    fallbackTitle: url.deletingPathExtension().lastPathComponent
                 )
                 importNotice = "Imported “\(imported.title)”."
             } else if pathExtension == "mid" || pathExtension == "midi" {
@@ -1108,6 +1105,147 @@ struct JazzExportDocument: FileDocument {
     }
 }
 
+enum JazzLeadSheetTextCodec {
+    static let marker = "FrankenJazz lead-sheet v2"
+
+    static func encode(_ chart: JazzChart) -> Data {
+        let title = chart.title.replacingOccurrences(of: "\n", with: " ")
+        let header = [
+            "# \(marker)",
+            "# title \(title)",
+            "# key \(chart.key.rawValue)",
+            "# tempo \(number(chart.tempoBPM)) BPM",
+            "# groove \(chart.groove.rawValue)",
+            "# instrument \(chart.instrument.rawValue)",
+            "# voicing \(chart.voicingFamily.rawValue)"
+        ].joined(separator: "\n")
+        return Data((header + "\n\n" + chart.chartText + "\n").utf8)
+    }
+
+    static func decode(_ text: String, fallbackTitle: String) throws -> JazzChart {
+        let lines = text.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+        let comments = lines.compactMap { line -> String? in
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard trimmed.hasPrefix("#") else { return nil }
+            return String(trimmed.dropFirst()).trimmingCharacters(in: .whitespaces)
+        }
+        let content = lines.filter {
+            !$0.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("#")
+        }.joined(separator: "\n")
+        let parsed = try JazzTheory.parseChart(content)
+
+        var title = fallbackTitle
+        var key = JazzKey.c
+        var tempo = 132.0
+        var groove = GrooveStyle.mediumSwing
+        var instrument = InstrumentTone.electricPiano
+        var voicing = VoicingFamily.balanced
+        var seen = Set<String>()
+        var hasExplicitTitle = false
+        var legacyIndex: Int?
+
+        for (index, comment) in comments.enumerated() where comment.hasPrefix("key ") && comment.contains(" · ") {
+            legacyIndex = index
+            break
+        }
+        if let legacyIndex {
+            let candidates = comments[..<legacyIndex].filter { !$0.isEmpty && $0 != marker }
+            if let legacyTitle = candidates.first {
+                guard legacyTitle.count <= 120 else { throw ImportError.invalidTextMetadata("title") }
+                title = legacyTitle
+            }
+        }
+
+        for comment in comments {
+            if comment == marker || comment.isEmpty { continue }
+            if comment.hasPrefix("title ") || comment == "title" {
+                try claim("title", in: &seen)
+                let value = value(after: "title ", in: comment)
+                guard !value.isEmpty, value.count <= 120 else { throw ImportError.invalidTextMetadata("title") }
+                title = value
+                hasExplicitTitle = true
+            } else if comment.hasPrefix("key ") && comment.contains(" · ") {
+                try claim("key", in: &seen)
+                try claim("tempo", in: &seen)
+                try claim("groove", in: &seen)
+                let parts = comment.split(separator: "·").map {
+                    $0.trimmingCharacters(in: .whitespaces)
+                }
+                guard parts.count == 3,
+                      parts[0].hasPrefix("key "),
+                      let parsedKey = JazzKey(rawValue: String(parts[0].dropFirst(4))),
+                      parts[1].hasSuffix(" BPM"),
+                      let parsedTempo = Double(parts[1].dropLast(4)),
+                      let parsedGroove = GrooveStyle(rawValue: parts[2]) else {
+                    throw ImportError.invalidTextMetadata("legacy settings line")
+                }
+                key = parsedKey
+                tempo = parsedTempo
+                groove = parsedGroove
+            } else if comment.hasPrefix("key ") || comment == "key" {
+                try claim("key", in: &seen)
+                guard let parsedKey = JazzKey(rawValue: value(after: "key ", in: comment)) else {
+                    throw ImportError.invalidTextMetadata("key")
+                }
+                key = parsedKey
+            } else if comment.hasPrefix("tempo ") || comment == "tempo" {
+                try claim("tempo", in: &seen)
+                let raw = value(after: "tempo ", in: comment)
+                guard raw.hasSuffix(" BPM"), let parsedTempo = Double(raw.dropLast(4)) else {
+                    throw ImportError.invalidTextMetadata("tempo")
+                }
+                tempo = parsedTempo
+            } else if comment.hasPrefix("groove ") || comment == "groove" {
+                try claim("groove", in: &seen)
+                guard let parsedGroove = GrooveStyle(rawValue: value(after: "groove ", in: comment)) else {
+                    throw ImportError.invalidTextMetadata("groove")
+                }
+                groove = parsedGroove
+            } else if comment.hasPrefix("instrument ") || comment == "instrument" {
+                try claim("instrument", in: &seen)
+                guard let parsedInstrument = InstrumentTone(rawValue: value(after: "instrument ", in: comment)) else {
+                    throw ImportError.invalidTextMetadata("instrument")
+                }
+                instrument = parsedInstrument
+            } else if comment.hasPrefix("voicing ") || comment == "voicing" {
+                try claim("voicing", in: &seen)
+                guard let parsedVoicing = VoicingFamily(rawValue: value(after: "voicing ", in: comment)) else {
+                    throw ImportError.invalidTextMetadata("voicing")
+                }
+                voicing = parsedVoicing
+            }
+        }
+
+        if !hasExplicitTitle, legacyIndex == nil { title = fallbackTitle }
+        return JazzChart(
+            title: title,
+            key: key,
+            tempoBPM: tempo,
+            groove: groove,
+            instrument: instrument,
+            voicingFamily: voicing,
+            measures: parsed.measures,
+            sections: parsed.sections
+        )
+    }
+
+    private static func value(after prefix: String, in line: String) -> String {
+        guard line.hasPrefix(prefix) else { return "" }
+        return String(line.dropFirst(prefix.count)).trimmingCharacters(in: .whitespaces)
+    }
+
+    private static func claim(_ field: String, in seen: inout Set<String>) throws {
+        guard seen.insert(field).inserted else { throw ImportError.invalidTextMetadata("duplicate \(field)") }
+    }
+
+    private static func number(_ value: Double) -> String {
+        if abs(value.rounded() - value) < 0.000_001 { return String(Int(value.rounded())) }
+        return String(format: "%.6f", locale: Locale(identifier: "en_US_POSIX"), value)
+            .replacingOccurrences(of: #"0+$"#, with: "", options: .regularExpression)
+            .replacingOccurrences(of: #"\.$"#, with: "", options: .regularExpression)
+    }
+}
+
 enum ExportKind: String, CaseIterable, Identifiable, Hashable {
     case nativeJSON = "FrankenJazz chart"
     case chartText = "Lead-sheet text"
@@ -1130,11 +1268,12 @@ enum ExportKind: String, CaseIterable, Identifiable, Hashable {
     }
 }
 
-enum ImportError: LocalizedError {
+enum ImportError: LocalizedError, Equatable {
     case tooLarge
     case notUTF8
     case invalidDocument
     case invalidMeasure(Int)
+    case invalidTextMetadata(String)
 
     var errorDescription: String? {
         switch self {
@@ -1142,6 +1281,7 @@ enum ImportError: LocalizedError {
         case .notUTF8: "The text file is not valid UTF-8."
         case .invalidDocument: "The file is not a valid FrankenJazz chart."
         case let .invalidMeasure(index): "Measure \(index) contains invalid timing or chord data."
+        case let .invalidTextMetadata(field): "The lead-sheet metadata has an invalid \(field). The current chart was not changed."
         }
     }
 }

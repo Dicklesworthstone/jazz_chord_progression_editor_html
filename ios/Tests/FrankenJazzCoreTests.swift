@@ -193,6 +193,7 @@ final class FrankenJazzCoreTests: XCTestCase {
             JazzMeasure(chords: [JazzChordEvent(symbol: "Cmaj7")])
         ]))
         let store = JazzStudioStore(recovery: recovery)
+        let before = store.chart
         let file = directory.appendingPathComponent("Rhythm Changes.txt")
         try Data("# exported metadata\n\n[A] \"Head\"\n| Bbmaj7 | G7 |\n[B]\n| Cm7 | F7 |\n".utf8)
             .write(to: file, options: .atomic)
@@ -206,6 +207,96 @@ final class FrankenJazzCoreTests: XCTestCase {
             store.chart.measures[0].id, store.chart.measures[2].id
         ])
         XCTAssertEqual(store.chart.chartText, "[A] \"Head\"\n| Bbmaj7 | G7 |\n[B]\n| Cm7 | F7 |")
+        XCTAssertTrue(store.canUndo)
+        store.undo()
+        XCTAssertEqual(store.chart, before)
+    }
+
+    func testLeadSheetTextCodecRoundTripsEveryRepresentableNativeSetting() throws {
+        let measures = [
+            JazzMeasure(chords: [
+                JazzChordEvent(symbol: "Ebmaj7", beats: 1.5),
+                JazzChordEvent(symbol: "Fm9", beats: 2.5)
+            ]),
+            JazzMeasure(chords: [JazzChordEvent(symbol: "Bb13/Eb")]),
+            JazzMeasure(chords: [JazzChordEvent(symbol: "Abmaj7#11")])
+        ]
+        let chart = JazzChart(
+            title: "Glass Changes",
+            key: .eb,
+            tempoBPM: 147.5,
+            groove: .syncopatedSixteenths,
+            instrument: .clarinet,
+            voicingFamily: .rootlessB,
+            measures: measures,
+            sections: [
+                JazzChartSection(name: "A", annotation: "Rubato", startMeasureID: measures[0].id),
+                JazzChartSection(name: "Bridge", annotation: "Lift", startMeasureID: measures[2].id)
+            ]
+        )
+
+        let data = JazzLeadSheetTextCodec.encode(chart)
+        let text = try XCTUnwrap(String(data: data, encoding: .utf8))
+        XCTAssertTrue(text.hasPrefix("# FrankenJazz lead-sheet v2\n# title Glass Changes\n"))
+        XCTAssertTrue(text.contains("# tempo 147.5 BPM"))
+        XCTAssertTrue(text.contains("# instrument Clarinet"))
+        XCTAssertTrue(text.contains("Ebmaj7:1.5 Fm9:2.5"))
+
+        let decoded = try JazzLeadSheetTextCodec.decode(text, fallbackTitle: "Wrong fallback")
+        XCTAssertEqual(decoded.title, chart.title)
+        XCTAssertEqual(decoded.key, chart.key)
+        XCTAssertEqual(decoded.tempoBPM, chart.tempoBPM)
+        XCTAssertEqual(decoded.groove, chart.groove)
+        XCTAssertEqual(decoded.instrument, chart.instrument)
+        XCTAssertEqual(decoded.voicingFamily, chart.voicingFamily)
+        XCTAssertEqual(decoded.measures.map { $0.chords.map(\.symbol) }, chart.measures.map { $0.chords.map(\.symbol) })
+        XCTAssertEqual(decoded.measures.map { $0.chords.map(\.beats) }, chart.measures.map { $0.chords.map(\.beats) })
+        XCTAssertEqual(decoded.sections?.map(\.name), ["A", "Bridge"])
+        XCTAssertEqual(decoded.sections?.map(\.annotation), ["Rubato", "Lift"])
+        XCTAssertEqual(decoded.chartText, chart.chartText)
+    }
+
+    func testLeadSheetTextCodecReadsLegacyAndMetadataFreeFiles() throws {
+        let legacy = try JazzLeadSheetTextCodec.decode(
+            "# Blue Pocket\n# key Eb · 147 BPM · Bossa nova\n\n| Fm9 | Bb13 |",
+            fallbackTitle: "legacy-file"
+        )
+        XCTAssertEqual(legacy.title, "Blue Pocket")
+        XCTAssertEqual(legacy.key, .eb)
+        XCTAssertEqual(legacy.tempoBPM, 147)
+        XCTAssertEqual(legacy.groove, .bossaNova)
+        XCTAssertEqual(legacy.instrument, .electricPiano)
+        XCTAssertEqual(legacy.voicingFamily, .balanced)
+
+        let plain = try JazzLeadSheetTextCodec.decode(
+            "# arranger note intentionally ignored\n| Dm7 G7 | Cmaj7 |",
+            fallbackTitle: "plain-file"
+        )
+        XCTAssertEqual(plain.title, "plain-file")
+        XCTAssertEqual(plain.key, .c)
+        XCTAssertEqual(plain.tempoBPM, 132)
+        XCTAssertEqual(plain.groove, .mediumSwing)
+    }
+
+    func testLeadSheetTextCodecRefusesMalformedClaimedMetadata() {
+        XCTAssertThrowsError(try JazzLeadSheetTextCodec.decode(
+            "# FrankenJazz lead-sheet v2\n# title Broken\n# key H\n| Cmaj7 |",
+            fallbackTitle: "broken"
+        )) { error in
+            XCTAssertEqual(error as? ImportError, .invalidTextMetadata("key"))
+        }
+        XCTAssertThrowsError(try JazzLeadSheetTextCodec.decode(
+            "# key C\n# key D\n| Cmaj7 |",
+            fallbackTitle: "duplicate"
+        )) { error in
+            XCTAssertEqual(error as? ImportError, .invalidTextMetadata("duplicate key"))
+        }
+        XCTAssertThrowsError(try JazzLeadSheetTextCodec.decode(
+            "# instrument Kazoo\n| Cmaj7 |",
+            fallbackTitle: "broken-instrument"
+        )) { error in
+            XCTAssertEqual(error as? ImportError, .invalidTextMetadata("instrument"))
+        }
     }
 
     func testNativeChordPaletteMatchesOriginalVocabularyAndEveryPairParses() throws {
