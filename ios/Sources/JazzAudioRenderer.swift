@@ -107,6 +107,65 @@ enum JazzAudioRenderer {
         return JazzRenderedAudio(left: stereo.left, right: stereo.right, sampleRate: sampleRate)
     }
 
+    /// Renders a bounded simultaneous chord through the same instrument route
+    /// as chart playback. This is still pure and never starts an audio device.
+    nonisolated static func renderPreviewChord(
+        midis: [Int],
+        tone: InstrumentTone,
+        duration: Double = 1.15,
+        cancellation: JazzRenderCancellationToken? = nil
+    ) -> JazzRenderedAudio? {
+        let pitches = Array(Set(midis)).sorted()
+        guard cancellation?.isCancelled != true,
+              (1...10).contains(pitches.count),
+              pitches.allSatisfy({ (21...108).contains($0) }),
+              duration.isFinite,
+              (0.08...3).contains(duration)
+        else { return nil }
+        let frameCount = Int((duration + 0.04) * sampleRate)
+        var stereo = StereoBuffer(
+            left: [Float](repeating: 0, count: frameCount),
+            right: [Float](repeating: 0, count: frameCount)
+        )
+        if let chord = JazzPhysicalInstrumentRenderer.renderChord(
+            tone: tone,
+            midis: pitches,
+            velocity: 96,
+            sampleRate: sampleRate,
+            maximumSeconds: duration,
+            cancellation: cancellation
+        ) {
+            guard mixPhysicalChord(
+                chord,
+                tone: tone,
+                voiceCount: pitches.count,
+                start: 0,
+                into: &stereo,
+                cancellation: cancellation
+            ) else { return nil }
+        } else {
+            for (index, midi) in pitches.enumerated() {
+                let pan = pitches.count == 1
+                    ? 0
+                    : Double(index) / Double(pitches.count - 1) * 0.7 - 0.35
+                guard mixNote(
+                    NoteRequest(
+                        midi: midi,
+                        velocity: 0.72 / sqrt(Double(pitches.count)),
+                        start: 0,
+                        duration: duration,
+                        tone: tone,
+                        pan: pan
+                    ),
+                    into: &stereo,
+                    cancellation: cancellation
+                ) else { return nil }
+            }
+        }
+        guard normalize(&stereo, cancellation: cancellation) else { return nil }
+        return JazzRenderedAudio(left: stereo.left, right: stereo.right, sampleRate: sampleRate)
+    }
+
     /// One bounded 4/4 bar of the original transport's vibraphone clicks.
     /// The engine loops or queues this tiny bar instead of allocating a
     /// chart-length metronome track.
@@ -394,6 +453,18 @@ enum JazzAudioRenderer {
         }
         guard cancellation?.isCancelled != true else { return false }
 
+        if let rendered = JazzSyntheticInstrumentRenderer.render(
+            tone: request.tone,
+            midi: request.midi,
+            velocityGain: request.velocity,
+            sampleRate: sampleRate,
+            duration: request.duration,
+            cancellation: cancellation
+        ) {
+            return mixSyntheticNote(rendered, request: request, into: &stereo, cancellation: cancellation)
+        }
+        guard cancellation?.isCancelled != true else { return false }
+
         let renderedMidi = request.tone.renderedMIDIPitch(for: request.midi)
         let frequency = 440 * pow(2, Double(renderedMidi - 69) / 12)
         let recipe = recipe(for: request.tone)
@@ -440,6 +511,25 @@ enum JazzAudioRenderer {
             stereo.left[request.start + frame] += Float(value * leftGain)
             stereo.right[request.start + frame] += Float(value * rightGain)
             decayLevel *= decayStep
+        }
+        return cancellation?.isCancelled != true
+    }
+
+    private static func mixSyntheticNote(
+        _ rendered: JazzSyntheticRender,
+        request: NoteRequest,
+        into stereo: inout StereoBuffer,
+        cancellation: JazzRenderCancellationToken?
+    ) -> Bool {
+        let frames = min(rendered.samples.count, stereo.left.count - request.start)
+        guard request.start >= 0, frames > 0 else { return true }
+        let leftGain = sqrt((1 - request.pan) * 0.5)
+        let rightGain = sqrt((1 + request.pan) * 0.5)
+        for frame in 0..<frames {
+            guard shouldContinue(cancellation, atFrame: frame) else { return false }
+            let value = Double(rendered.samples[frame])
+            stereo.left[request.start + frame] += Float(value * leftGain)
+            stereo.right[request.start + frame] += Float(value * rightGain)
         }
         return cancellation?.isCancelled != true
     }

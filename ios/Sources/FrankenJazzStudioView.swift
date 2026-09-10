@@ -1019,6 +1019,15 @@ private struct ChordInspectorView: View {
                 Text(store.chart.instrument.nativeAudioSourceNote)
                     .font(.system(size: JazzTheme.size(8.5), weight: .medium, design: .rounded))
                     .foregroundStyle(JazzTheme.secondary)
+                Button {
+                    store.previewSelectedChord()
+                } label: {
+                    Label("Hear this voicing", systemImage: "speaker.wave.2.fill")
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                }
+                .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.cyan))
+                .accessibilityIdentifier("preview-selected-chord")
+                .accessibilityHint("Plays every highlighted key together using \(store.chart.instrument.displayName).")
                 MiniPiano(
                     highlightedMIDIPitches: exactPitches,
                     accent: JazzTheme.cyan,
@@ -1347,7 +1356,7 @@ private struct MiniPiano: View {
                             }
                             .frame(width: whiteWidth, height: 96)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(PianoKeyPressStyle())
                         .accessibilityIdentifier("piano-key-\(midi)")
                         .accessibilityLabel(accessibilityLabel(for: midi))
                         .accessibilityHint("Plays this note using \(instrumentName).")
@@ -1369,7 +1378,7 @@ private struct MiniPiano: View {
                             .frame(width: blackVisualWidth, height: 60)
                             .shadow(color: .black.opacity(0.24), radius: 2, y: 2)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(PianoKeyPressStyle())
                     .frame(width: blackTouchWidth, height: 60)
                     .position(
                         x: CGFloat(precedingWhiteKeys) * (whiteWidth + whiteSpacing) - whiteSpacing / 2,
@@ -1400,6 +1409,17 @@ private struct MiniPiano: View {
     private func noteName(_ midi: Int) -> String {
         let names = ["C", "C♯", "D", "E♭", "E", "F", "F♯", "G", "A♭", "A", "B♭", "B"]
         return "\(names[(midi % 12 + 12) % 12])\(midi / 12 - 1)"
+    }
+}
+
+private struct PianoKeyPressStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .brightness(configuration.isPressed ? -0.12 : 0)
+            .scaleEffect(configuration.isPressed ? 0.965 : 1)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.08), value: configuration.isPressed)
     }
 }
 

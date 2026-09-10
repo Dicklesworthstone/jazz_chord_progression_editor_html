@@ -313,6 +313,7 @@ final class FrankenJazzUITests: XCTestCase {
 
         let instruction = app.staticTexts["Tap any key to hear it"]
         let middleC = app.buttons["piano-key-60"]
+        let chordPreview = app.buttons["preview-selected-chord"]
         for _ in 0..<8 where !middleC.isHittable { app.swipeUp() }
         XCTAssertTrue(instruction.waitForExistence(timeout: 3))
         XCTAssertTrue(middleC.waitForExistence(timeout: 3))
@@ -321,8 +322,11 @@ final class FrankenJazzUITests: XCTestCase {
         XCTAssertGreaterThanOrEqual(middleC.frame.height, 44)
         XCTAssertTrue(middleC.label.contains("C4"))
         XCTAssertTrue(app.staticTexts["FM Electric Piano"].exists)
+        XCTAssertTrue(chordPreview.exists)
+        XCTAssertTrue(chordPreview.isHittable)
+        XCTAssertEqual(chordPreview.label, "Hear this voicing")
 
-        // Do not tap: automated validation must never emit audible output.
+        // Do not tap either audio action: automated validation must never emit audible output.
         let proof = XCTAttachment(screenshot: app.screenshot())
         proof.name = "FrankenJazz playable inspector piano"
         proof.lifetime = .keepAlways

@@ -608,6 +608,111 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertNil(JazzAudioRenderer.renderPreview(midi: 109, tone: .concertGrand))
     }
 
+    func testSyntheticRecipeMetadataMatchesOriginalWebAudioContract() throws {
+        let expected: [InstrumentTone: JazzSyntheticInstrumentMetadata] = [
+            .mellowKeys: JazzSyntheticInstrumentMetadata(
+                algorithmID: "changes.audio.mellow-keys@1", topology: .additive,
+                outputLevel: 0.62, polyphonyLimit: 64, oscillatorCount: 3,
+                hasTransient: false, hasTremolo: false,
+                attackSeconds: 0.008, decaySeconds: 0.42, sustainLevel: 0.22, releaseSeconds: 0.55,
+                filterAttackHz: 2_100, filterPeakHz: 5_200, filterSustainHz: 2_100,
+                filterQ: 0.7, filterDecaySeconds: 0.45
+            ),
+            .electricPiano: JazzSyntheticInstrumentMetadata(
+                algorithmID: "changes.audio.fm-electric-piano@1", topology: .fmPair,
+                outputLevel: 0.48, polyphonyLimit: 48, oscillatorCount: 1,
+                hasTransient: false, hasTremolo: false,
+                attackSeconds: 0.003, decaySeconds: 0.85, sustainLevel: 0.14, releaseSeconds: 0.9,
+                filterAttackHz: 4_200, filterPeakHz: 9_000, filterSustainHz: 4_200,
+                filterQ: 0.5, filterDecaySeconds: 0.6
+            ),
+            .vibraphone: JazzSyntheticInstrumentMetadata(
+                algorithmID: "changes.audio.vibraphone@1", topology: .additive,
+                outputLevel: 0.5, polyphonyLimit: 48, oscillatorCount: 2,
+                hasTransient: true, hasTremolo: true,
+                attackSeconds: 0.002, decaySeconds: 1.4, sustainLevel: 0.45, releaseSeconds: 1.1,
+                filterAttackHz: 7_000, filterPeakHz: 12_000, filterSustainHz: 7_000,
+                filterQ: 0.3, filterDecaySeconds: 0.25
+            ),
+            .warmPad: JazzSyntheticInstrumentMetadata(
+                algorithmID: "changes.audio.warm-pad@1", topology: .additive,
+                outputLevel: 0.3, polyphonyLimit: 32, oscillatorCount: 3,
+                hasTransient: false, hasTremolo: false,
+                attackSeconds: 0.32, decaySeconds: 1.2, sustainLevel: 0.72, releaseSeconds: 1.8,
+                filterAttackHz: 900, filterPeakHz: 2_800, filterSustainHz: 1_600,
+                filterQ: 0.8, filterDecaySeconds: 1.4
+            ),
+            .analogPoly: JazzSyntheticInstrumentMetadata(
+                algorithmID: "changes.audio.analog-poly@1", topology: .additive,
+                outputLevel: 0.34, polyphonyLimit: 48, oscillatorCount: 3,
+                hasTransient: false, hasTremolo: false,
+                attackSeconds: 0.012, decaySeconds: 0.3, sustainLevel: 0.52, releaseSeconds: 0.65,
+                filterAttackHz: 700, filterPeakHz: 4_800, filterSustainHz: 1_300,
+                filterQ: 4.2, filterDecaySeconds: 0.32
+            ),
+            .organ: JazzSyntheticInstrumentMetadata(
+                algorithmID: "changes.audio.organ@1", topology: .additive,
+                outputLevel: 0.44, polyphonyLimit: 48, oscillatorCount: 5,
+                hasTransient: false, hasTremolo: true,
+                attackSeconds: 0.012, decaySeconds: 0.08, sustainLevel: 0.92, releaseSeconds: 0.14,
+                filterAttackHz: 7_500, filterPeakHz: 9_500, filterSustainHz: 7_500,
+                filterQ: 0.4, filterDecaySeconds: 0.1
+            )
+        ]
+        XCTAssertEqual(Set(expected.keys), Set(InstrumentTone.allCases.filter {
+            JazzSyntheticInstrumentRenderer.metadata(for: $0) != nil
+        }))
+        for (tone, metadata) in expected {
+            XCTAssertEqual(JazzSyntheticInstrumentRenderer.metadata(for: tone), metadata, tone.displayName)
+            XCTAssertEqual(tone.nativeAudioSourceNote, "Original Web Audio recipe, rendered natively")
+        }
+        for tone in InstrumentTone.allCases where expected[tone] == nil {
+            XCTAssertNil(JazzSyntheticInstrumentRenderer.metadata(for: tone), tone.displayName)
+        }
+    }
+
+    func testSyntheticRecipePCMIsFiniteDeterministicAndTopologyDistinctWithoutAudioOutput() throws {
+        let tones: [InstrumentTone] = [.mellowKeys, .electricPiano, .vibraphone, .warmPad, .analogPoly, .organ]
+        var fingerprints = Set<[UInt32]>()
+        for tone in tones {
+            let first = try XCTUnwrap(JazzSyntheticInstrumentRenderer.render(
+                tone: tone, midi: 60, velocityGain: 0.62,
+                sampleRate: 24_000, duration: 0.4
+            ))
+            let second = try XCTUnwrap(JazzSyntheticInstrumentRenderer.render(
+                tone: tone, midi: 60, velocityGain: 0.62,
+                sampleRate: 24_000, duration: 0.4
+            ))
+            XCTAssertEqual(first.algorithmID, "changes.audio.\(tone.originalID)@1")
+            XCTAssertEqual(first.samples, second.samples, tone.displayName)
+            XCTAssertEqual(first.samples.count, 9_600, tone.displayName)
+            XCTAssertTrue(first.samples.allSatisfy(\.isFinite), tone.displayName)
+            XCTAssertTrue(first.samples.contains { abs($0) > 0.0001 }, tone.displayName)
+            let fingerprint = stride(from: 101, to: first.samples.count, by: 311)
+                .map { first.samples[$0].bitPattern }
+            XCTAssertTrue(fingerprints.insert(fingerprint).inserted, tone.displayName)
+        }
+        XCTAssertNil(JazzSyntheticInstrumentRenderer.render(
+            tone: .concertGrand, midi: 60, velocityGain: 0.62,
+            sampleRate: 24_000, duration: 0.4
+        ))
+    }
+
+    func testSelectedVoicingPreviewRendersSimultaneouslyWithoutAudioOutput() throws {
+        for tone in InstrumentTone.allCases {
+            let rendered = try XCTUnwrap(JazzAudioRenderer.renderPreviewChord(
+                midis: [60, 64, 67, 71], tone: tone, duration: 0.18
+            ), tone.displayName)
+            XCTAssertEqual(rendered.left.count, rendered.right.count, tone.displayName)
+            XCTAssertTrue(rendered.left.allSatisfy(\.isFinite), tone.displayName)
+            XCTAssertTrue(rendered.right.allSatisfy(\.isFinite), tone.displayName)
+            XCTAssertTrue(rendered.left.contains { abs($0) > 0.0001 }, tone.displayName)
+        }
+        XCTAssertNil(JazzAudioRenderer.renderPreviewChord(midis: [], tone: .mellowKeys))
+        XCTAssertNil(JazzAudioRenderer.renderPreviewChord(midis: [20, 60], tone: .mellowKeys))
+        XCTAssertNil(JazzAudioRenderer.renderPreviewChord(midis: Array(48...58), tone: .mellowKeys))
+    }
+
     func testOriginalPlayableWindowsFoldWithoutMutatingInstrumentIdentity() throws {
         let expected: [InstrumentTone: ClosedRange<Int>] = [
             .mellowKeys: 21...108,

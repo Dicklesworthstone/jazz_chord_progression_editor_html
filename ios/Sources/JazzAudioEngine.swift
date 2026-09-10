@@ -330,6 +330,18 @@ final class JazzAudioEngine: ObservableObject {
             previewIssue = "That key is outside the supported A0–C8 range."
             return
         }
+        preview(midis: [midi], tone: tone)
+    }
+
+    /// Auditions one note or a simultaneous selected voicing without changing
+    /// the progression player, playhead, or transport generation.
+    func preview(midis: [Int], tone: InstrumentTone) {
+        let pitches = Array(Set(midis)).sorted()
+        guard (1...10).contains(pitches.count),
+              pitches.allSatisfy({ (21...108).contains($0) }) else {
+            previewIssue = "A preview needs 1–10 playable notes in the A0–C8 range."
+            return
+        }
         previewGeneration += 1
         let request = previewGeneration
         cancelPreviewRender()
@@ -340,7 +352,11 @@ final class JazzAudioEngine: ObservableObject {
         previewCancellation = cancellation
         previewRenderTask = Task { [weak self] in
             let rendered = await Task.detached(priority: .userInitiated) {
-                JazzAudioRenderer.renderPreview(midi: midi, tone: tone, cancellation: cancellation)
+                JazzAudioRenderer.renderPreviewChord(
+                    midis: pitches,
+                    tone: tone,
+                    cancellation: cancellation
+                )
             }.value
             guard let self,
                   self.previewGeneration == request,

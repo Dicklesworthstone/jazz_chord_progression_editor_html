@@ -206,8 +206,8 @@ enum InstrumentTone: String, CaseIterable, Codable, Identifiable, Sendable {
             "Original hybrid Yamaha C5 attack + Rust sustain"
         case .flute, .guitar, .bluesGuitar, .clarinet, .dreadnoughtGuitar, .ukulele:
             "Original Rust physical renderer"
-        default:
-            "Native synthesis"
+        case .mellowKeys, .electricPiano, .vibraphone, .warmPad, .analogPoly, .organ:
+            "Original Web Audio recipe, rendered natively"
         }
     }
 }
