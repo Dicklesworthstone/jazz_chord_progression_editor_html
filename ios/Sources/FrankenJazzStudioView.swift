@@ -661,6 +661,20 @@ private struct MeasureCard: View {
                     .accessibilityHidden(true)
                 }
                 Menu {
+                    if let section = store.sectionStarting(at: measure.id) {
+                        Button(role: .destructive) {
+                            store.removeSectionStarting(at: measure.id)
+                        } label: {
+                            Label("Remove section \(section.name)", systemImage: "rectangle.split.1x2")
+                        }
+                    } else {
+                        Button {
+                            store.startSection(at: measure.id)
+                        } label: {
+                            Label("Start section here", systemImage: "text.badge.plus")
+                        }
+                    }
+                    Divider()
                     Button {
                         store.insertMeasure(after: measure.id)
                     } label: {
@@ -674,9 +688,15 @@ private struct MeasureCard: View {
                     .disabled(store.chart.measures.count == 1)
                 } label: {
                     Image(systemName: "ellipsis.circle")
-                        .frame(width: 32, height: 32)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
                 .accessibilityLabel("Actions for bar \(index + 1)")
+                .accessibilityHint(
+                    store.sectionStarting(at: measure.id) == nil
+                        ? "Includes starting a named section here"
+                        : "Includes removing this section boundary"
+                )
             }
             HStack(spacing: 5) {
                 ForEach(measure.chords) { chord in

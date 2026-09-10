@@ -186,6 +186,42 @@ final class FrankenJazzUITests: XCTestCase {
         add(proof)
     }
 
+    func testLeadSheetCreatesAndRemovesNamedSectionsWithoutChartSyntax() throws {
+        let barThreeActions = app.buttons["Actions for bar 3"]
+        XCTAssertTrue(barThreeActions.waitForExistence(timeout: 3))
+        revealAboveTransport(barThreeActions)
+        XCTAssertTrue(barThreeActions.isHittable)
+        XCTAssertGreaterThanOrEqual(barThreeActions.frame.width, 44)
+        XCTAssertGreaterThanOrEqual(barThreeActions.frame.height, 44)
+        barThreeActions.tap()
+
+        let startSection = app.buttons["Start section here"]
+        XCTAssertTrue(startSection.waitForExistence(timeout: 2))
+        startSection.tap()
+
+        let sectionA = app.textFields.matching(NSPredicate(format: "value == 'A'")).firstMatch
+        let sectionB = app.textFields.matching(NSPredicate(format: "value == 'B'")).firstMatch
+        XCTAssertTrue(sectionA.waitForExistence(timeout: 3))
+        XCTAssertTrue(sectionB.waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["undo-chart-change"].isEnabled)
+        revealAboveTransport(sectionB)
+        XCTAssertTrue(sectionB.isHittable)
+
+        let proof = XCTAttachment(screenshot: app.screenshot())
+        proof.name = "FrankenJazz touch-created named sections"
+        proof.lifetime = .keepAlways
+        add(proof)
+
+        let boundaryActions = app.buttons["Actions for bar 3"]
+        revealAboveTransport(boundaryActions)
+        boundaryActions.tap()
+        let removeSection = app.buttons["Remove section B"]
+        XCTAssertTrue(removeSection.waitForExistence(timeout: 2))
+        removeSection.tap()
+        XCTAssertFalse(app.textFields.matching(NSPredicate(format: "value == 'B'")).firstMatch.exists)
+        XCTAssertTrue(app.textFields.matching(NSPredicate(format: "value == 'A'")).firstMatch.exists)
+    }
+
     func testCompactTransportExposesEveryEverydayControlWithoutPlayingAudio() throws {
         let previous = app.buttons["transport-previous-chord"]
         let playPause = app.buttons["transport-play-pause"]

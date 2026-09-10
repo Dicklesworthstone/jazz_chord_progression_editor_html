@@ -307,6 +307,52 @@ final class JazzStudioStore: ObservableObject {
         }
     }
 
+    func sectionStarting(at measureID: UUID) -> JazzChartSection? {
+        chart.sections?.first(where: { $0.startMeasureID == measureID })
+    }
+
+    func startSection(at measureID: UUID) {
+        guard let measureIndex = chart.measures.firstIndex(where: { $0.id == measureID }) else {
+            notice = "That bar is no longer in the chart."
+            return
+        }
+        guard sectionStarting(at: measureID) == nil else {
+            notice = "Bar \(measureIndex + 1) already starts a section."
+            return
+        }
+
+        audio.stop()
+        let existing = chart.sections ?? []
+        var additions: [JazzChartSection] = []
+        if existing.isEmpty, measureIndex > 0, let firstMeasureID = chart.measures.first?.id {
+            additions.append(JazzChartSection(name: "A", startMeasureID: firstMeasureID))
+        }
+        let namesInUse = Set(existing.map { $0.name.lowercased() } + additions.map { $0.name.lowercased() })
+        let name = Self.nextSectionName(namesInUse: namesInUse)
+        additions.append(JazzChartSection(name: name, startMeasureID: measureID))
+        mutate { chart in
+            chart.sections = existing + additions
+        }
+        notice = "Started section \(name) at bar \(measureIndex + 1)."
+    }
+
+    func removeSectionStarting(at measureID: UUID) {
+        guard let section = sectionStarting(at: measureID),
+              let measureIndex = chart.measures.firstIndex(where: { $0.id == measureID }) else {
+            notice = "That bar does not start a section."
+            return
+        }
+
+        audio.stop()
+        mutate { chart in
+            chart.sections?.removeAll(where: { $0.id == section.id })
+            if chart.sections?.isEmpty == true { chart.sections = nil }
+        }
+        notice = measureIndex == 0
+            ? "Removed section \(section.name); its bars are now the opening."
+            : "Removed section \(section.name); its bars joined the preceding section."
+    }
+
     func toggleSectionLoop(_ sectionID: UUID) {
         if loopedSectionID == sectionID {
             loopedSectionID = nil
@@ -804,7 +850,11 @@ final class JazzStudioStore: ObservableObject {
                 guard let text = String(data: data, encoding: .utf8) else { throw ImportError.notUTF8 }
                 let content = text.split(separator: "\n").filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("#") }.joined(separator: "\n")
                 let parsed = try JazzTheory.parseChart(content)
-                imported = JazzChart(title: url.deletingPathExtension().lastPathComponent, measures: parsed.measures)
+                imported = JazzChart(
+                    title: url.deletingPathExtension().lastPathComponent,
+                    measures: parsed.measures,
+                    sections: parsed.sections
+                )
                 importNotice = "Imported “\(imported.title)”."
             } else if pathExtension == "mid" || pathExtension == "midi" {
                 let title = url.deletingPathExtension().lastPathComponent
@@ -1017,6 +1067,16 @@ final class JazzStudioStore: ObservableObject {
 
     private func midiName(_ midi: Int) -> String {
         JazzTheory.noteName(midi % 12, flats: chart.key.prefersFlats) + String(midi / 12 - 1)
+    }
+
+    private static func nextSectionName(namesInUse: Set<String>) -> String {
+        for scalar in 65...90 {
+            let candidate = String(UnicodeScalar(scalar)!)
+            if !namesInUse.contains(candidate.lowercased()) { return candidate }
+        }
+        var number = namesInUse.count + 1
+        while namesInUse.contains("section \(number)") { number += 1 }
+        return "Section \(number)"
     }
 
     private static func chart(from entry: LibraryEntry, fallbackTempo: Double = 132) -> JazzChart {

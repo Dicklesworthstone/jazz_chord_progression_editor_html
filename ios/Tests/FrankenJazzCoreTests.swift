@@ -118,6 +118,96 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertEqual(store.chart, beforeDelete)
     }
 
+    @MainActor
+    func testVisualSectionBoundaryEditingPreservesMusicAndIsUndoable() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FrankenJazzSectionEditingTests-" + UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let measures = ["Cmaj7", "Dm7", "G7", "Cmaj7"].map {
+            JazzMeasure(chords: [JazzChordEvent(symbol: $0)])
+        }
+        let source = JazzChart(
+            title: "Visual sections",
+            key: .eb,
+            tempoBPM: 146,
+            groove: .bossaNova,
+            instrument: .concertVibes,
+            voicingFamily: .spread,
+            measures: measures
+        )
+        let recovery = JazzRecoveryStore(directory: directory)
+        recovery.save(source)
+        let store = JazzStudioStore(recovery: recovery)
+        let before = store.chart
+        let revision = store.revision
+
+        store.startSection(at: measures[2].id)
+
+        XCTAssertEqual(store.chart.sections?.map(\.name), ["A", "B"])
+        XCTAssertEqual(store.chart.sections?.map(\.startMeasureID), [measures[0].id, measures[2].id])
+        XCTAssertEqual(store.chart.measures, before.measures)
+        XCTAssertEqual(store.chart.title, before.title)
+        XCTAssertEqual(store.chart.key, before.key)
+        XCTAssertEqual(store.chart.tempoBPM, before.tempoBPM)
+        XCTAssertEqual(store.chart.groove, before.groove)
+        XCTAssertEqual(store.chart.instrument, before.instrument)
+        XCTAssertEqual(store.chart.voicingFamily, before.voicingFamily)
+        XCTAssertEqual(store.revision, revision + 1)
+        XCTAssertEqual(store.chart.sectionGroups.map { $0.indexedMeasures.count }, [2, 2])
+
+        let afterCreate = store.chart
+        store.startSection(at: measures[2].id)
+        XCTAssertEqual(store.chart, afterCreate)
+        XCTAssertEqual(store.revision, revision + 1)
+        XCTAssertEqual(store.notice, "Bar 3 already starts a section.")
+
+        store.undo()
+        XCTAssertEqual(store.chart, before)
+        store.redo()
+        XCTAssertEqual(store.chart.sections?.map(\.name), ["A", "B"])
+
+        store.removeSectionStarting(at: measures[2].id)
+        XCTAssertEqual(store.chart.sections?.map(\.name), ["A"])
+        XCTAssertEqual(store.chart.measures, before.measures)
+        XCTAssertEqual(store.chart.sectionGroups.map { $0.indexedMeasures.count }, [4])
+        XCTAssertEqual(store.notice, "Removed section B; its bars joined the preceding section.")
+        store.undo()
+        XCTAssertEqual(store.chart.sections?.map(\.name), ["A", "B"])
+
+        store.removeSectionStarting(at: measures[0].id)
+        XCTAssertEqual(store.chart.sections?.map(\.name), ["B"])
+        XCTAssertEqual(store.chart.sectionGroups.map { $0.indexedMeasures.count }, [2, 2])
+        XCTAssertEqual(store.chart.sectionGroups.first?.section, nil)
+        XCTAssertEqual(store.notice, "Removed section A; its bars are now the opening.")
+    }
+
+    @MainActor
+    func testTextFileImportPreservesNamedSections() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FrankenJazzSectionImportTests-" + UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let recovery = JazzRecoveryStore(directory: directory)
+        recovery.save(JazzChart(title: "Before import", measures: [
+            JazzMeasure(chords: [JazzChordEvent(symbol: "Cmaj7")])
+        ]))
+        let store = JazzStudioStore(recovery: recovery)
+        let file = directory.appendingPathComponent("Rhythm Changes.txt")
+        try Data("# exported metadata\n\n[A] \"Head\"\n| Bbmaj7 | G7 |\n[B]\n| Cm7 | F7 |\n".utf8)
+            .write(to: file, options: .atomic)
+
+        await store.importFile(file)
+
+        XCTAssertEqual(store.chart.title, "Rhythm Changes")
+        XCTAssertEqual(store.chart.sections?.map(\.name), ["A", "B"])
+        XCTAssertEqual(store.chart.sections?.map(\.annotation), ["Head", ""])
+        XCTAssertEqual(store.chart.sections?.map(\.startMeasureID), [
+            store.chart.measures[0].id, store.chart.measures[2].id
+        ])
+        XCTAssertEqual(store.chart.chartText, "[A] \"Head\"\n| Bbmaj7 | G7 |\n[B]\n| Cm7 | F7 |")
+    }
+
     func testNativeChordPaletteMatchesOriginalVocabularyAndEveryPairParses() throws {
         XCTAssertEqual(JazzChordPalette.roots.map(\.symbol), [
             "C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"
