@@ -1,0 +1,15 @@
+{
+  "meter": [4,4],
+  "bars": [["Cmaj7",1.5,"Dm7",2.5], [], ["G7",4]],
+  "cases": [
+    {"beat":0,"current":"Cmaj7","next":"Dm7","bar":1,"pulse":1},
+    {"beat":1.499,"current":"Cmaj7","next":"Dm7","bar":1,"pulse":2},
+    {"beat":1.5,"current":"Dm7","next":"Rest","bar":1,"pulse":2},
+    {"beat":4,"current":"Rest","next":"G7","bar":2,"pulse":1},
+    {"beat":7.5,"current":"Rest","next":"G7","bar":2,"pulse":4},
+    {"beat":8,"current":"G7","next":null,"bar":3,"pulse":1},
+    {"beat":12,"current":null,"next":null,"bar":null,"pulse":null},
+    {"beat":11,"loop":[0,12],"current":"G7","next":"Cmaj7","bar":3,"pulse":4},
+    {"beat":3,"loop":[1,4],"current":"Dm7","next":"Cmaj7","bar":1,"pulse":4}
+  ]
+}

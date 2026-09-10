@@ -1,0 +1,22 @@
+{
+  "ppq": 960,
+  "meter": [4,4],
+  "tempoBpm": 120,
+  "tempoMicroseconds": 500000,
+  "totalTicks": 3840,
+  "notes": [
+    {"role":"bass","event":"a","pitch":60,"start":0,"gate":960,"velocity":88,"channel":0},
+    {"role":"comp","event":"b","pitch":60,"start":0,"gate":1440,"velocity":64,"channel":1},
+    {"role":"comp","event":"b","pitch":60,"start":0,"gate":1440,"velocity":64,"channel":2},
+    {"role":"comp","event":"b","pitch":67,"start":0,"gate":1440,"velocity":64,"channel":1},
+    {"role":"bass","event":"c","pitch":60,"start":960,"gate":480,"velocity":103,"channel":0},
+    {"role":"comp","event":"d","pitch":64,"start":1440,"gate":456,"velocity":72,"channel":1}
+  ],
+  "noteOffBeforeOnAt960": ["off:a:60:0","on:c:60:0"],
+  "acceptedOverlappingUnisons": 15,
+  "refusedOverlappingUnisons": 16,
+  "allocatedChannels": [0,1,2,3,4,5,6,7,8,10,11,12,13,14,15],
+  "transpositionSemitones": 2,
+  "expectedTransposedPitches": [62,62,62,69,62,66],
+  "fractionalBeat": {"numerator":19,"denominator":40,"ticks":456}
+}

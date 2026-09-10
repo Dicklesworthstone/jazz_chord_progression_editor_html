@@ -1,0 +1,61 @@
+{
+  "status": "specified-not-implemented",
+  "productionOutputUsed": false,
+  "provenance": "Hand-authored before production; independent integer/rational arithmetic only. No song corpus or model output.",
+  "range": [3840, 19200],
+  "offStarts": 11520,
+  "tempo": 120,
+  "passStartsSeconds": [[2,1],[10,1],[18,1],[26,1]],
+  "countInSeconds": [[0,1],[1,2],[1,1],[3,2]],
+  "completionSeconds": [34,1],
+  "expandedTicks": 61440,
+  "events": [
+    {"id":"left-restarted","start":3840,"gate":936,"sourceStart":2880,"offset":960,"retained":true,"attack0":[2,1],"release0":[199,80]},
+    {"id":"second-bar","start":7680,"gate":1896,"sourceStart":7680,"offset":0,"retained":true,"attack0":[4,1],"release0":[399,80]},
+    {"id":"cross-off-tail","start":11040,"gate":936,"sourceStart":11040,"offset":0,"retained":true,"attack0":[23,4],"release0":[499,80]},
+    {"id":"last-in-tick","start":11519,"gate":1,"sourceStart":11519,"offset":0,"retained":true,"attack0":[11519,1920],"release0":[6,1]},
+    {"id":"first-out-tick","start":11520,"gate":936,"sourceStart":11520,"offset":0,"retained":false,"attack0":null,"release0":null},
+    {"id":"last-out-tick","start":19199,"gate":1,"sourceStart":19199,"offset":0,"retained":false,"attack0":null,"release0":null}
+  ],
+  "retainedIds": ["left-restarted","second-bar","cross-off-tail","last-in-tick"],
+  "retainedOccurrences": 16,
+  "suppressedOccurrences": 8,
+  "candidateVisits": 24,
+  "pitches": [{"step":"D","alter":-1,"octave":4},{"step":"C","alter":1,"octave":4},{"step":"D","alter":-1,"octave":4}],
+  "midi": [61,61,61],
+  "audible": [
+    {"now":[0,1],"state":"count-in","pass":0,"remaining":null},
+    {"now":[2,1],"state":"in","pass":0,"remaining":null},
+    {"now":[119,20],"state":"in","pass":0,"remaining":null},
+    {"now":[6,1],"state":"out-return","pass":0,"remaining":8},
+    {"now":[39,4],"state":"out-return","pass":0,"remaining":1},
+    {"now":[10,1],"state":"in","pass":1,"remaining":null},
+    {"now":[14,1],"state":"out-return","pass":1,"remaining":8},
+    {"now":[18,1],"state":"in","pass":2,"remaining":null},
+    {"now":[26,1],"state":"in","pass":3,"remaining":null},
+    {"now":[30,1],"state":"out-end","pass":3,"remaining":8},
+    {"now":[34,1],"state":"finished","pass":3,"remaining":null}
+  ],
+  "scopeEdges": [
+    {"id":"four-full","bars":4,"quarterTicks":3840,"aligned":true,"sameKey":true,"audible":true,"accepted":true},
+    {"id":"short-range","bars":3,"quarterTicks":3840,"aligned":true,"sameKey":true,"audible":true,"accepted":false},
+    {"id":"long-range","bars":5,"quarterTicks":3840,"aligned":true,"sameKey":true,"audible":true,"accepted":false},
+    {"id":"three-four","bars":4,"quarterTicks":2880,"aligned":true,"sameKey":true,"audible":true,"accepted":false},
+    {"id":"partial-boundary","bars":4,"quarterTicks":3840,"aligned":false,"sameKey":true,"audible":true,"accepted":false},
+    {"id":"key-cycle","bars":4,"quarterTicks":3840,"aligned":true,"sameKey":false,"audible":true,"accepted":false},
+    {"id":"silent-on-half","bars":4,"quarterTicks":3840,"aligned":true,"sameKey":true,"audible":false,"accepted":false}
+  ],
+  "lifetime": [
+    {"trigger":"resume at pass0 tick13440","expected":"out until pass1; no count-in or catch-up"},
+    {"trigger":"lookahead at 5.95 seconds","expected":"audible in; scheduling an off occurrence does not change display"},
+    {"trigger":"preview during off half","expected":"preview remains independently audible and owned"},
+    {"trigger":"source edit while preparing","expected":"no late readiness or attacks for old source"},
+    {"trigger":"source edit during off half","expected":"serialized retirement before ended status"},
+    {"trigger":"hidden then resume","expected":"same paused pass and phase; no hidden-time catch-up"},
+    {"trigger":"seek while active","expected":"require End; no silent phase reset"},
+    {"trigger":"restart","expected":"retire old generation then count-in and pass0"},
+    {"trigger":"Stop refusal","expected":"unresolved retirement remains visible; no false no-future-attacks receipt"},
+    {"trigger":"final off half","expected":"ends in label; no pass4 attack"}
+  ],
+  "mutationWitnesses": ["inclusive-off","absolute-phase","collapsed-silence","clipped-tail","replayed-out","global-mute","lookahead-label","stale-publication"]
+}

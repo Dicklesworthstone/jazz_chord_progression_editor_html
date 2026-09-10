@@ -1,0 +1,19 @@
+{
+ "schema":"changes.register-observations.fixtures.v1",
+ "cases":[
+  {"id":"ordinary-triad","notes":[["C",0,4],["E",0,4],["G",0,4]],"midi":[60,64,67],"min":60,"max":67,"span":7,"below":0,"unisons":[],"close":[]},
+  {"id":"low-pairs-exact-separations","notes":[["C",0,1],["D",-1,1],["E",0,1],["G",0,1]],"midi":[24,25,28,31],"min":24,"max":31,"span":7,"below":4,"unisons":[],"close":[[0,1,1],[0,2,4],[1,2,3],[2,3,3]]},
+  {"id":"c3-boundary-excluded","notes":[["B",0,2],["C",0,3]],"midi":[47,48],"min":47,"max":48,"span":1,"below":1,"unisons":[],"close":[]},
+  {"id":"both-below-c3","notes":[["B",-1,2],["B",0,2]],"midi":[46,47],"min":46,"max":47,"span":1,"below":2,"unisons":[],"close":[[0,1,1]]},
+  {"id":"four-semitones-included","notes":[["C",0,2],["E",0,2]],"midi":[36,40],"min":36,"max":40,"span":4,"below":2,"unisons":[],"close":[[0,1,4]]},
+  {"id":"five-semitones-excluded","notes":[["C",0,2],["F",0,2]],"midi":[36,41],"min":36,"max":41,"span":5,"below":2,"unisons":[],"close":[]},
+  {"id":"three-enharmonic-unisons","notes":[["D",-1,3],["D",-1,3],["C",1,3]],"midi":[49,49,49],"min":49,"max":49,"span":0,"below":0,"unisons":[[0,1,0],[0,2,0],[1,2,0]],"close":[]},
+  {"id":"octaves-are-not-unisons","notes":[["C",0,4],["C",0,5]],"midi":[60,72],"min":60,"max":72,"span":12,"below":0,"unisons":[],"close":[]},
+  {"id":"source-order-is-not-register-order","notes":[["G",0,3],["C",0,2],["E",0,2]],"midi":[55,36,40],"min":36,"max":55,"span":19,"below":2,"unisons":[],"close":[[1,2,4]]},
+  {"id":"b-sharp-at-c3","notes":[["B",1,2],["C",0,3]],"midi":[48,48],"min":48,"max":48,"span":0,"below":0,"unisons":[[0,1,0]],"close":[]},
+  {"id":"c-flat-below-c3","notes":[["C",-1,3],["B",0,2]],"midi":[47,47],"min":47,"max":47,"span":0,"below":2,"unisons":[[0,1,0]],"close":[]},
+  {"id":"singleton","notes":[["E",0,1]],"midi":[28],"min":28,"max":28,"span":0,"below":1,"unisons":[],"close":[]},
+  {"id":"midi-endpoints","notes":[["C",0,-1],["G",0,9]],"midi":[0,127],"min":0,"max":127,"span":127,"below":1,"unisons":[],"close":[]}
+ ],
+ "boundary":{"count":16,"note":["E",0,2],"midi":40,"pairs":120,"below":16,"span":0,"rejectedCount":17}
+}
