@@ -178,3 +178,5 @@ export { createStudioMyCharts, type StudioMyChartsService, type StudioMyChartsVi
 
 export { compareMidiFiles } from "./midi-import-batch";
 export type { MidiImportBatch, MidiImportLocalFile } from "./midi-import-batch";
+
+export { auditionMidiImportGroove } from "./studio-midi-audition";

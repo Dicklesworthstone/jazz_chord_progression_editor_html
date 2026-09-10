@@ -35,6 +35,9 @@ import {
   MAX_TRANSPORT_IMMEDIATE_START_MARGIN_SECONDS,
   MAX_TRANSPORT_LOOKAHEAD_SECONDS,
   MAX_TRANSPORT_PREVIEW_PITCHES,
+  MAX_TRANSPORT_PREVIEW_EVENTS,
+  MAX_TRANSPORT_PREVIEW_BEATS,
+  type TransportPreviewStatus,
   MAX_TRANSPORT_QUEUED_COMMANDS,
   MAX_TRANSPORT_TICK_INTERVAL_MS,
   MIN_TRANSPORT_LOOKAHEAD_SECONDS,
@@ -293,6 +296,39 @@ function planStructurallyValid(plan: UnknownPlan): boolean {
   return true;
 }
 
+/** Validate every scheduled scalar before any preview mutation. */
+function previewPlanValid(value: unknown): boolean {
+  if (!isRecord(value) || !bindingShapeValid(value)) return false;
+  const plan = value["plan"];
+  if (!isRecord(plan) || !Object.isFrozen(plan)) return false;
+  const events: unknown = plan["events"];
+  if (!Array.isArray(events) || !Object.isFrozen(events) || events.length === 0 || events.length > MAX_TRANSPORT_PREVIEW_EVENTS) return false;
+  const totalTicks = plan["totalTicks"];
+  const tempo = plan["tempoBpm"];
+  if (!planStructurallyValid(plan) || !planTempoInRange(plan) || plan["midiPpq"] !== MIDI_PPQ ||
+      typeof totalTicks !== "number" || totalTicks > MAX_TRANSPORT_PREVIEW_BEATS * MIDI_PPQ ||
+      typeof tempo !== "number" || plan["loop"] !== null || plan["loopTicks"] !== null ||
+      value["documentId"] !== plan["sourceDocumentId"]) return false;
+  const ids = new Set<string>();
+  const eventList: readonly unknown[] = events;
+  for (const event of eventList) {
+    if (!isRecord(event) || !Object.isFrozen(event)) return false;
+    const id = event["eventId"];
+    const gate = event["gateDurationTicks"];
+    const duration = event["durationTicks"];
+    const velocity = event["velocity"];
+    const pitches = event["midiPitches"];
+    if (typeof id !== "string" || ids.has(id)) return false;
+    ids.add(id);
+    if (!isPositiveSafeInteger(gate) || typeof duration !== "number" || gate > duration ||
+        gate * 60 / (tempo * MIDI_PPQ) < TRANSPORT_MIN_AUDIO_GATE_SECONDS ||
+        typeof velocity !== "number" || !Number.isInteger(velocity) || velocity < 1 || velocity > 127 ||
+        !Array.isArray(pitches) || !Object.isFrozen(pitches) ||
+        pitches.some((p:unknown) => typeof p !== "number" || !Number.isInteger(p) || p < 0 || p > 127)) return false;
+  }
+  return true;
+}
+
 function planTempoInRange(plan: Readonly<{ tempoBpm?: unknown }>): boolean {
   const tempo = plan.tempoBpm;
   return (
@@ -360,6 +396,7 @@ export function createTransportService(
   let physicalLookupPlan: PlaybackPlan | null = null;
   let physicalLookupInstrument: InstrumentId | null = null;
   let physicalLookupSampleRateHz: number | null = null;
+  let physicalLookupRevision: number | undefined;
   let physicalLookup = new Map<string, readonly ExpressiveVoiceGesture[]>();
   let timing: TransportTimingPolicy = Object.freeze({
     tickIntervalMs: 25,
@@ -377,6 +414,15 @@ export function createTransportService(
   let scheduled: ScheduledEventRecord[] = [];
   let activePreviewId: string | null = null;
   let activePreviewGeneration = 0;
+  let previewTimer: TransportTimerHandle | null = null;
+  let previewScheduleOwner: object | null = null;
+  let previewStatus: TransportPreviewStatus = Object.freeze({previewId:null,status:"idle",failureCode:null});
+  function clearPreviewTimer(): void {
+    previewScheduleOwner = null;
+    if (previewTimer !== null) platform.timer.clearInterval(previewTimer);
+    previewTimer = null;
+  }
+
   let viewDocumentId: DocumentId | null = null;
   let viewPlanRevision: number | null = null;
   let queueDepth = 0;
@@ -424,6 +470,8 @@ export function createTransportService(
   }
 
   function retireAll(): AudioEngineResult<AudioRetirementReceipt> {
+    clearPreviewTimer();
+    previewStatus = Object.freeze({previewId:null,status:"idle",failureCode:null});
     const result = platform.engine.retireAudioVoices({
       selector: { kind: "all" },
       reason: "all-notes-off",
@@ -479,8 +527,10 @@ export function createTransportService(
   function physicalGesturesForEvent(
     plan: PlaybackPlan,
     eventId: string,
+    selectedInstrument: InstrumentId = instrumentId,
+    revision: number | undefined = binding?.planRevision,
   ): readonly ExpressiveVoiceGesture[] {
-    const family = physicalFamilyForInstrumentId(instrumentId);
+    const family = physicalFamilyForInstrumentId(selectedInstrument);
     if (family === null) return Object.freeze([]);
     // Segment frame positions and fingerprints are only truthful at the rate
     // the engine actually renders. Before the engine context exists there is
@@ -495,21 +545,22 @@ export function createTransportService(
     }
     if (
       physicalLookupPlan !== plan ||
-      physicalLookupInstrument !== instrumentId ||
-      physicalLookupSampleRateHz !== contextSampleRateHz
+      physicalLookupInstrument !== selectedInstrument ||
+      physicalLookupSampleRateHz !== contextSampleRateHz ||
+      physicalLookupRevision !== revision
     ) {
       physicalLookupPlan = plan;
-      physicalLookupInstrument = instrumentId;
+      physicalLookupInstrument = selectedInstrument;
       physicalLookupSampleRateHz = contextSampleRateHz;
+      physicalLookupRevision = revision;
       physicalLookup = new Map();
-      const revision = binding?.planRevision;
       if (revision === undefined) return Object.freeze([]);
       const compiled = memoizedPhysicalRealization({
         plan,
         sourcePlanRevision: revision,
         instrumentFamily: family,
-        instrumentVersionId: `changes.physical.${instrumentId}.v2`,
-        parameterPackSha256: physicalParameterPackSha256(instrumentId),
+        instrumentVersionId: `changes.physical.${selectedInstrument}.v2`,
+        parameterPackSha256: physicalParameterPackSha256(selectedInstrument),
         sampleRateHz: contextSampleRateHz,
       });
       if (compiled.ok) {
@@ -685,6 +736,13 @@ export function createTransportService(
     const outgoing = generation;
     generation += 1;
     clearTimer();
+    clearPreviewTimer();
+    if (activePreviewId !== null) {
+      platform.engine.retireAudioVoices({selector:{kind:"preview",generation:activePreviewGeneration,previewId:activePreviewId},
+        reason:"preview-release",atTimeSeconds:platform.currentTimeSeconds()});
+      previewStatus = Object.freeze({previewId:activePreviewId,status:"failed",failureCode:TRANSPORT_INTERRUPTED_FAILURE_CODE});
+      activePreviewId = null;
+    }
     retireProgressionGeneration(outgoing);
     pausedBeat = beatNow;
     state = "interrupted";
@@ -1518,7 +1576,11 @@ export function createTransportService(
             "transport.instrument_unknown",
           );
         }
+        const sequence = payload.previewPlan;
+        if (sequence !== undefined && !previewPlanValid(sequence))
+          return refuse(commandRequestId, kind, "transport.preview_invalid");
         const now = platform.currentTimeSeconds();
+        clearPreviewTimer();
         if (activePreviewId !== null) {
           platform.engine.retireAudioVoices({
             selector: {
@@ -1530,6 +1592,69 @@ export function createTransportService(
             atTimeSeconds: now,
           });
           work.previewsReleased += 1;
+        }
+        previewStatus = Object.freeze({previewId:null,status:"idle",failureCode:null});
+        if (sequence !== undefined) {
+          activePreviewId = payload.previewId;
+          activePreviewGeneration = generation;
+          const scheduleOwner = Object.freeze({});
+          previewScheduleOwner = scheduleOwner;
+          const ownerGeneration = generation;
+          const ownerId = payload.previewId;
+          const plan = sequence.plan;
+          const previewInstrument = payload.instrumentId;
+          const previewRevision = sequence.planRevision;
+          let firstEngineRefusal: TransportCommandRefusal["engineRefusalCode"] = null;
+          const secondsPerTick = 60 / (plan.tempoBpm * MIDI_PPQ);
+          const anchor = now + startMarginSeconds;
+          let sequenceCursor = 0;
+          let lastRelease = anchor + plan.totalTicks * secondsPerTick;
+          previewStatus = Object.freeze({previewId:ownerId,status:"running",failureCode:null});
+          const failPreview = (code: string): void => {
+            clearPreviewTimer();
+            platform.engine.retireAudioVoices({selector:{kind:"preview",generation:ownerGeneration,previewId:ownerId},
+              reason:"preview-release",atTimeSeconds:platform.currentTimeSeconds()});
+            previewStatus = Object.freeze({previewId:ownerId,status:"failed",failureCode:code});
+          };
+          const schedulePreview = (): void => {
+            if (previewScheduleOwner !== scheduleOwner || activePreviewId !== ownerId || activePreviewGeneration !== ownerGeneration) return;
+            const engineState = platform.engine.inspectAudioEngine().state;
+            if (engineState === "suspended") { observeInterruption(); return; }
+            if (engineState !== "ready" && engineState !== "resuming") { failPreview("transport.engine_refusal"); return; }
+            const clock = platform.currentTimeSeconds();
+            const horizon = clock + timing.lookaheadSeconds;
+            while (sequenceCursor < plan.events.length) {
+              const event = plan.events[sequenceCursor];
+              if (event === undefined) break;
+              const intended = anchor + event.startTick * secondsPerTick;
+              if (intended > horizon) break;
+              const start = Math.max(intended, clock + startMarginSeconds);
+              const release = start + event.gateDurationTicks * secondsPerTick;
+              const gestures = physicalGesturesForEvent(plan,event.eventId,previewInstrument,previewRevision);
+              const voices = nonEmptyVoiceSpecs(event.midiPitches.map((midiPitch,index) => {
+                const physicalGesture = gestures[index];
+                return {voiceId:`${ownerId}:e${String(sequenceCursor)}:v${String(index)}`,midiPitch,velocity:event.velocity,
+                  ...(physicalGesture === undefined ? {} : {physicalGesture})};
+              }));
+              if (voices === null) { failPreview("transport.preview_invalid"); return; }
+              const attacked = platform.engine.attackAudioVoices({owner:{kind:"preview",generation:ownerGeneration,previewId:ownerId},
+                eventId:event.eventId,instrumentId:previewInstrument,startTimeSeconds:start,releaseTimeSeconds:release,
+                ...(startMarginSeconds > 0 ? {lateStartMarginSeconds:startMarginSeconds} : {}),voices});
+              if (!attacked.ok) { firstEngineRefusal = attacked.refusal.code; failPreview(attacked.refusal.code); return; }
+              sequenceCursor += 1;
+              lastRelease = Math.max(lastRelease,release);
+            }
+            if (sequenceCursor === plan.events.length && clock >= lastRelease) {
+              clearPreviewTimer();
+              previewStatus = Object.freeze({previewId:ownerId,status:"completed",failureCode:null});
+            }
+          };
+          schedulePreview();
+          if (previewStatus.status === "failed")
+            return refuse(commandRequestId,kind,"transport.engine_refusal",firstEngineRefusal);
+          previewTimer = platform.timer.setInterval(schedulePreview,timing.tickIntervalMs);
+          work.previewsStarted += 1;
+          return receipt(commandRequestId,kind,stateBefore,true);
         }
         const voices = nonEmptyVoiceSpecs(
           payload.midiPitches.map((midiPitch, index) => ({
@@ -1577,6 +1702,8 @@ export function createTransportService(
         ) {
           return refuse(commandRequestId, kind, "transport.preview_invalid");
         }
+        clearPreviewTimer();
+        previewStatus = Object.freeze({previewId:null,status:"idle",failureCode:null});
         platform.engine.retireAudioVoices({
           selector: {
             kind: "preview",
@@ -1644,6 +1771,8 @@ export function createTransportService(
       }
       case "dispose-transport": {
         clearTimer();
+        clearPreviewTimer();
+        previewStatus = Object.freeze({previewId:null,status:"idle",failureCode:null});
         if (state !== "locked" && state !== "fault") {
           generation += 1;
         }
@@ -1760,6 +1889,7 @@ export function createTransportService(
   return Object.freeze({
     submitTransportCommand,
     inspectTransport,
+    readPreviewStatus: () => previewStatus,
     readDisplayPlayheadBeat,
   });
 }

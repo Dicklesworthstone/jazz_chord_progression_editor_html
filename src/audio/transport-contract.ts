@@ -372,6 +372,8 @@ export type TransportCommandPayload =
       instrumentId: InstrumentId;
       midiPitches: readonly [MidiPitch, ...MidiPitch[]];
       gateSeconds: number;
+      /** Bounded immutable performed sequence, isolated from the chart binding. */
+      previewPlan?: TransportPlanBinding;
     }>
   | Readonly<{ kind: "release-preview"; previewId: string }>
   | Readonly<{ kind: "replace-plan"; binding: TransportPlanBinding | null }>
@@ -482,11 +484,20 @@ export type TransportPlatformPort = Readonly<{
   ) => void;
 }>;
 
+export const MAX_TRANSPORT_PREVIEW_EVENTS = 256;
+export const MAX_TRANSPORT_PREVIEW_BEATS = 64;
+export type TransportPreviewStatus = Readonly<{
+  previewId: string | null;
+  status: "idle" | "running" | "completed" | "failed";
+  failureCode: string | null;
+}>;
+
 export type TransportService = Readonly<{
   submitTransportCommand: (
     command: TransportCommand,
   ) => Promise<TransportCommandOutcome>;
   inspectTransport: () => TransportSnapshot;
+  readPreviewStatus: () => TransportPreviewStatus;
   /**
    * Display-only live playhead: the exact 960-PPQ-quantized beat the epoch
    * anchor implies at the audio clock's current reading, or the paused/run

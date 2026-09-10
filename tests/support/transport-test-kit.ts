@@ -37,6 +37,7 @@ export type FakeTransportTimer = Readonly<{
   port: TransportTimerPort;
   fire: (times?: number) => void;
   activeHandleCount: () => number;
+  captureCallbacks: () => readonly (() => void)[];
 }>;
 
 export function createFakeTransportTimer(): FakeTransportTimer {
@@ -60,6 +61,7 @@ export function createFakeTransportTimer(): FakeTransportTimer {
         for (const callback of [...callbacks.values()]) callback();
       }
     },
+    captureCallbacks: () => [...callbacks.values()],
     activeHandleCount(): number {
       return callbacks.size;
     },
@@ -74,6 +76,8 @@ export type RecordedAttack = Readonly<{
   startTimeSeconds: number;
   releaseTimeSeconds: number;
   voiceCount: number;
+  midiPitches: readonly number[];
+  velocities: readonly number[];
   physicalGestureCount: number;
   accepted: boolean;
 }>;
@@ -123,6 +127,8 @@ export function createTransportHarness(
           startTimeSeconds: request.startTimeSeconds,
           releaseTimeSeconds: request.releaseTimeSeconds,
           voiceCount: request.voices.length,
+          midiPitches: request.voices.map(v => v.midiPitch),
+          velocities: request.voices.map(v => v.velocity),
           physicalGestureCount: request.voices.filter(
             ({ physicalGesture }) => physicalGesture !== undefined,
           ).length,

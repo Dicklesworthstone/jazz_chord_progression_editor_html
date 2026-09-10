@@ -108,10 +108,16 @@ describe("X0 deterministic audio DSP", () => {
     }
   });
 
-  test("uses the analytic hold oracle when cancelAndHoldAtTime is absent", () => {
+  test.each([false, true])("anchors the analytic hold with native capability=%s", (nativeHold) => {
     const events: string[] = [];
     let value = 0.9;
     const parameter: AudioParamPort = {
+      ...(nativeHold ? {
+        cancelAndHoldAtTime(atTimeSeconds: number) {
+          events.push(`hold:${String(atTimeSeconds)}`);
+          return parameter;
+        },
+      } : {}),
       get value() {
         return value;
       },
@@ -141,7 +147,7 @@ describe("X0 deterministic audio DSP", () => {
     holdAudioParamAtTime(parameter, 5, 0.375, (count) => {
       work += count;
     });
-    expect(events).toEqual(["cancel:5", "set:0.375:5"]);
+    expect(events).toEqual([nativeHold ? "hold:5" : "cancel:5", "set:0.375:5"]);
     expect(parameter.value).toBe(0.375);
     expect(work).toBe(2);
   });

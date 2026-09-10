@@ -2,6 +2,8 @@ import { expect, test, type Page, type TestInfo } from "@playwright/test";
 import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { observeNativeSources } from "../support/u5-native-audio";
+import { batchChordFile } from "../support/midi-batch-fixtures";
 
 import {
   cards,
@@ -352,20 +354,24 @@ test.describe("M1 automatic import: the one-gesture default path", () => {
   });
 });
 
-test("M1-E2E-004 the pre-Add audition toggles, sounds nothing after Stop, and cancels on Discard", async ({
+for (const instrument of ["organ", "concert-grand"] as const) test(`M1-E2E-004 ${instrument}: pre-Add groove audition sounds, stops and cancels on Discard`, async ({
   page,
 }, testInfo) => {
-  const ledger = makeLedger("m1-e2e-004-audition", testInfo);
+  const ledger = makeLedger(`m1-e2e-004-audition-${instrument}`, testInfo);
   const diagnostics = captureDiagnostics(page);
   try {
     await openStudio(page);
     await chooseFile(
       page,
       "session-take.mid",
-      requireGolden("M0-GLD-002").bytesHex,
+      Buffer.from(batchChordFile({bars:4})).toString("hex"),
     );
     await expect(page.getByTestId("midi-import-auto")).toBeVisible();
 
+    await page.locator("#studio-transport-instrument").selectOption(instrument);
+    await observeNativeSources(page);
+    const before = await documentDigest(page);
+    const tempo = await page.locator("#studio-tempo-input-rail").inputValue();
     /* Hear-before-shipping: the audition control rides the result card. */
     const audition = page.getByTestId("midi-import-audition");
     await expect(audition).toBeVisible();
@@ -375,19 +381,35 @@ test("M1-E2E-004 the pre-Add audition toggles, sounds nothing after Stop, and ca
     await audition.click();
     await expect(audition).toHaveAttribute("aria-pressed", "true");
     await expect(audition).toContainText("Stop the audition");
-    ledger.log("started", {});
+    await expect.poll(() => page.evaluate(() => window.u5NativeSourceCounts?.().started ?? 0)).toBeGreaterThan(0);
+    const firstSources = await page.evaluate(() => window.u5NativeSourceCounts?.());
+    if (firstSources === undefined) throw new Error("NATIVE_SOURCE_OBSERVER_MISSING");
+    // At120 BPM the matched medium-swing groove schedules within the first
+    // two-second bar. A fixed one-sonority-per-bar audition cannot satisfy this.
+    await page.waitForTimeout(700);
+    const grooveSources = await page.evaluate(() => window.u5NativeSourceCounts?.());
+    expect(grooveSources?.started).toBeGreaterThan(firstSources.started);
+    ledger.log("started", {firstSources,grooveSources});
 
     /* A second press cancels immediately. */
     await audition.click();
     await expect(audition).toHaveAttribute("aria-pressed", "false");
-    ledger.log("stopped", {});
+    await expect.poll(() => page.evaluate(() => window.u5NativeSourceCounts?.())).toMatchObject({sounding:0,futureAttacks:0});
+    const stopped = await page.evaluate(() => window.u5NativeSourceCounts?.());
+    await page.waitForTimeout(1200);
+    expect(await page.evaluate(() => window.u5NativeSourceCounts?.())).toEqual(stopped);
+    expect(await documentDigest(page)).toBe(before);
+    await expect(page.locator("#studio-tempo-input-rail")).toHaveValue(tempo);
+    ledger.log("stopped", stopped);
 
     /* Discard cancels a running audition and drops the card with it. */
     await audition.click();
     await expect(audition).toHaveAttribute("aria-pressed", "true");
     await page.locator("#studio-midi-import-discard-rail").click();
     await expect(page.getByTestId("midi-import-auto")).toHaveCount(0);
-    ledger.log("discard-cancelled", {});
+    await expect.poll(() => page.evaluate(() => window.u5NativeSourceCounts?.())).toMatchObject({sounding:0,futureAttacks:0});
+    expect(await documentDigest(page)).toBe(before);
+    ledger.log("discard-cancelled", await page.evaluate(() => window.u5NativeSourceCounts?.()));
 
     expectCleanDiagnostics(diagnostics);
     await ledger.flush("passed", diagnostics);

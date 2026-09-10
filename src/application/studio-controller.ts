@@ -95,9 +95,12 @@ import {
   type ContinuationSuggestion,
   type ContinuationContextReading,
 } from "../theory";
-import type {
-  TransportCommandOutcome,
-  TransportPlanBinding,
+import {
+  MAX_TRANSPORT_PREVIEW_EVENTS,
+  MAX_TRANSPORT_PREVIEW_BEATS,
+  type TransportCommandOutcome,
+  type TransportPlanBinding,
+  type TransportPreviewStatus,
 } from "../audio";
 import type { StudioAudioGesture, StudioAudioPort } from "./studio-audio";
 import { buildPlaybackPreparationPlan } from "./playback-preparation-plan";
@@ -113,6 +116,7 @@ import {
   PLAYBACK_PLAN_FIXED_VELOCITY,
   PLAYBACK_PLAN_MIDI_PPQ,
   type PerformanceStyleId,
+  type PlaybackPlan,
 } from "../playback";
 import {
   createStudioBootstrap,
@@ -895,6 +899,8 @@ export interface StudioController {
   ) => StudioControllerActionResult;
   /** Retire only this lane's latest owner, including pending preparation. */
   readonly releasePreviewPitches: () => Promise<StudioInspectorResult<void>>;
+  readonly previewPlaybackPlan: (plan: PlaybackPlan, gesture: StudioAudioGesture) => Promise<StudioInspectorResult<void>>;
+  readonly readPreviewPlaybackStatus: () => TransportPreviewStatus;
   /**
    * Display-only live playhead label in the exact-beat format the transport
    * view already uses. The UI's animation frame reads this while the transport
@@ -6123,6 +6129,7 @@ function makeStudioComposition(
     previewId: string;
     midiPitches: readonly [MidiPitch, ...MidiPitch[]];
     gateSeconds?: number;
+    previewPlan?: TransportPlanBinding;
     notes: Parameters<StudioAudioPort["prepareInstrument"]>[1];
     mix: Readonly<{ masterVolume: number; reverbAmount: number }>;
   }>): Promise<StudioInspectorResult<void>> => {
@@ -6167,13 +6174,13 @@ function makeStudioComposition(
         if (request.generation !== previewOrdinal) return cancelled();
         if (!request.port.isInitialized()) return previewFailure("u2.preview_unavailable", "The audio engine is not ready.");
       }
-      const prepared = await request.port.prepareInstrument(request.instrumentId, request.notes);
+      const prepared = await request.port.prepareInstrument(request.instrumentId, request.notes, request.previewPlan);
       if (!prepared) return previewFailure("u2.preview_prepare_failed", "The instrument could not prepare these exact notes.");
       if (request.generation !== previewOrdinal) return cancelled();
       // A preview owns its instrument. It must never change the band's instrument or plan.
       previewSubmission = Object.freeze({ generation: request.generation, previewId: request.previewId });
       const started = await request.port.startPreview(nextTransportRequestId(), request.previewId,
-        request.instrumentId, request.midiPitches, request.gateSeconds ?? PREVIEW_GATE_SECONDS);
+        request.instrumentId, request.midiPitches, request.gateSeconds ?? PREVIEW_GATE_SECONDS, request.previewPlan);
       if (request.generation !== previewOrdinal) return cancelled();
       if (started.termination !== "receipt") {
         if (previewSubmission.generation === request.generation) previewSubmission = null;
@@ -6409,6 +6416,28 @@ function makeStudioComposition(
     return apply("preview-chord", (current) =>
       successResult(current, createWorkCounters(), "ephemeral-updated"),
     );
+  };
+
+  const readPreviewPlaybackStatus = (): TransportPreviewStatus =>
+    audioPort?.transportService.readPreviewStatus() ?? Object.freeze({previewId:null,status:"idle",failureCode:null});
+  const previewPlaybackPlan = async (plan: PlaybackPlan, gesture: StudioAudioGesture): Promise<StudioInspectorResult<void>> => {
+    if (audioPort === null) return previewFailure("u1.playback_unavailable","This build has no audio output.");
+    const first = plan.events[0];
+    if (first === undefined || plan.events.length > MAX_TRANSPORT_PREVIEW_EVENTS || plan.totalTicks > MAX_TRANSPORT_PREVIEW_BEATS * PLAYBACK_PLAN_MIDI_PPQ)
+      return previewFailure("m1.audition_limit","This excerpt exceeds the audition limit.");
+    previewOrdinal += 1;
+    const generation = previewOrdinal;
+    pitchSetPreviewGeneration = generation;
+    const secondsPerTick = 60 / (plan.tempoBpm * plan.midiPpq);
+    return startPreparedPreview({port:audioPort,gesture,documentId:state.document.id,planRevision:state.revision,
+      instrumentId:state.document.playback.instrumentId,generation,previewId:`x1:preview:audition-${String(generation)}`,
+      midiPitches:first.midiPitches,gateSeconds:first.gateDurationTicks * secondsPerTick,
+      previewPlan:Object.freeze({documentId:plan.sourceDocumentId,planRevision:0,plan}),
+      notes:plan.events.flatMap(event => event.midiPitches.map((midiPitch,voiceOrdinal) => ({
+        midiPitch,velocity:event.velocity,gateSeconds:event.gateDurationTicks * secondsPerTick,eventId:event.eventId,voiceOrdinal,
+      }))),
+      mix:Object.freeze({masterVolume:state.document.playback.masterVolume,reverbAmount:state.document.playback.reverbAmount}),
+    });
   };
 
   let pitchSetPreviewGeneration: number | null = null;
@@ -7201,6 +7230,8 @@ function makeStudioComposition(
     previewPitch,
     previewPitches,
     releasePreviewPitches,
+    previewPlaybackPlan,
+    readPreviewPlaybackStatus,
     readInspector,
     readInspectorDraft,
     readInspectorManualDraft,

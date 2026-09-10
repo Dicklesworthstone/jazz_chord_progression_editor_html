@@ -176,6 +176,7 @@ export type StudioAudioPort = Readonly<{
     instrumentId: InstrumentId,
     midiPitches: readonly [MidiPitch, ...MidiPitch[]],
     gateSeconds: number,
+    previewPlan?: TransportPlanBinding,
   ) => Promise<TransportCommandOutcome>;
   /** Retire exactly this preview; leave the band, playhead and newer previews alone. */
   releasePreview: (commandRequestId: number, previewId: string) => Promise<TransportCommandOutcome>;
@@ -641,6 +642,7 @@ export function createStudioAudio(
       instrumentId,
       midiPitches,
       gateSeconds,
+      previewPlan,
     ) =>
       submit(
         commandRequestId,
@@ -650,6 +652,7 @@ export function createStudioAudio(
           instrumentId,
           midiPitches,
           gateSeconds,
+          ...(previewPlan === undefined ? {} : {previewPlan}),
         }),
       ),
     releasePreview: async (commandRequestId, previewId) =>

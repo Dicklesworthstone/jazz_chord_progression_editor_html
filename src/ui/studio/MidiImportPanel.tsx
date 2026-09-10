@@ -242,10 +242,8 @@ export function MidiImportPanel({
           <p class="studio-midi-import__fact-value">{view.auto.headline}</p>
           {/*
             Hear before shipping (jcpe-qyyn): a bounded, cancelable series
-            of click-previews sounding the file's OWN first bars at its own
-            tempo — the harmony and rhythm skeleton, on this document's
-            instrument. The groove performance plays after Add, through the
-            real transport; the copy promises exactly what this plays.
+            scheduled performed events at the file tempo and chosen groove,
+            using an isolated preview owner on this document's instrument.
           */}
           <button
             aria-pressed={view.auditioning}
