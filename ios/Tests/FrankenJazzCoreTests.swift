@@ -744,6 +744,22 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertNil(JazzAudioRenderer.renderPreviewChord(midis: Array(48...58), tone: .mellowKeys))
     }
 
+    func testPianoTouchLayoutPrefersBlackKeysAndSupportsGlideHitTesting() {
+        let layout = JazzPianoTouchLayout(
+            whitePitches: [60, 62, 64, 65, 67],
+            blackPitches: [61, 63, 66],
+            whiteWidth: 46,
+            whiteSpacing: 1,
+            blackTouchWidth: 44
+        )
+        XCTAssertEqual(layout.midi(at: CGPoint(x: 23, y: 80)), 60)
+        XCTAssertEqual(layout.midi(at: CGPoint(x: 46.5, y: 20)), 61, "A black key owns its overlapping upper hit region.")
+        XCTAssertEqual(layout.midi(at: CGPoint(x: 70, y: 80)), 62)
+        XCTAssertEqual(layout.midi(at: CGPoint(x: 93.5, y: 20)), 63)
+        XCTAssertNil(layout.midi(at: CGPoint(x: -1, y: 20)))
+        XCTAssertNil(layout.midi(at: CGPoint(x: 23, y: 97)))
+    }
+
     func testOriginalPlayableWindowsFoldWithoutMutatingInstrumentIdentity() throws {
         let expected: [InstrumentTone: ClosedRange<Int>] = [
             .mellowKeys: 21...108,

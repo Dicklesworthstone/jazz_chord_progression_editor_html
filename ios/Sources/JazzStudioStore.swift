@@ -275,6 +275,14 @@ final class JazzStudioStore: ObservableObject {
         audio.preview(midi: midi, tone: chart.instrument)
     }
 
+    func previewKeys(_ midis: Set<Int>) {
+        // The bounded render already includes the instrument's release tail.
+        // Lifting the last finger must not cancel a quick tap before its
+        // asynchronous render can reach the shared graph.
+        guard !midis.isEmpty else { return }
+        audio.preview(midis: Array(midis), tone: chart.instrument)
+    }
+
     func previewSelectedChord() {
         audio.preview(midis: selectedMIDIPitches, tone: chart.instrument)
     }
