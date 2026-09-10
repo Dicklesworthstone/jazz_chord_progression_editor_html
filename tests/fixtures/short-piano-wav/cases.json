@@ -1,0 +1,13 @@
+{
+ "schema":"changes.short-piano-wav.fixtures.v1",
+ "timing":[
+  {"tempo":120,"startTick":0,"gateTicks":960,"startFrame":0,"gateFrames":16000},
+  {"tempo":120,"startTick":3840,"gateTicks":1920,"startFrame":64000,"gateFrames":32000},
+  {"tempo":90,"startTick":320,"gateTicks":640,"startFrame":7111,"gateFrames":14222},
+  {"tempo":137,"startTick":1,"gateTicks":1,"startFrame":15,"gateFrames":14}
+ ],
+ "pcm":{"left":[-1,-0.5,0,0.5,1],"right":[1,0.5,0,-0.5,-1],"interleavedInt16":[-32768,32767,-16384,16384,0,0,16384,-16384,32767,-32768],"dataBytes":20,"fileBytes":64},
+ "envelope":[{"index":0,"gate":100,"gain":0},{"index":32,"gate":100,"gain":0.5},{"index":64,"gate":100,"gain":1},{"index":100,"gate":100,"gain":1},{"index":3300,"gate":100,"gain":0.5},{"index":6499,"gate":100,"gain":0},{"index":6500,"gate":100,"gain":0}],
+ "mix":{"occurrences":[0.25,0.25],"sum":0.5,"peak":0.5,"gain":1},
+ "bounds":{"sampleRate":32000,"seconds":16,"tailFrames":6400,"maximumFrames":518400,"maximumNoteFrames":134400,"maximumWavBytes":2073644,"logicalBufferBytes":10444888,"bufferCeiling":10485760,"maximumNotes":64,"maximumEvents":32}
+}

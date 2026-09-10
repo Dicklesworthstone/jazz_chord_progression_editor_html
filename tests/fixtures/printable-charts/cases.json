@@ -1,0 +1,136 @@
+{
+  "geometry": [
+    {
+      "paper": "a4",
+      "width": 210,
+      "height": 297,
+      "column": 46.5,
+      "bottom": 285
+    },
+    {
+      "paper": "letter",
+      "width": 215.9,
+      "height": 279.4,
+      "column": 47.975,
+      "bottom": 267.4
+    }
+  ],
+  "durations": [
+    {
+      "numerator": 1,
+      "denominator": 3,
+      "text": "1/3 q"
+    },
+    {
+      "numerator": 7,
+      "denominator": 2,
+      "text": "7/2 q"
+    },
+    {
+      "numerator": 4,
+      "denominator": 1,
+      "text": "4/1 q"
+    }
+  ],
+  "escaping": [
+    {
+      "input": "A&B <C> \"D\" 'E'",
+      "xml": "A&amp;B &lt;C&gt; &quot;D&quot; &apos;E&apos;"
+    }
+  ],
+  "sourceSymbols": [
+    "Dbmaj7",
+    "C#maj7",
+    "Cmaj7/E",
+    "Custom <&>"
+  ],
+  "unsupported": [
+    "\u0000",
+    "\u0301",
+    "\u266f",
+    "\ud83c\udfb5"
+  ],
+  "bounds": {
+    "sections": 64,
+    "bars": 256,
+    "events": 1024,
+    "stringCodePoints": 512,
+    "sourceCodePoints": 16384,
+    "lines": 4096,
+    "pages": 32,
+    "svgBytes": 1048576
+  },
+  "layout": {
+    "margin": 12,
+    "top": 30,
+    "sectionHeight": 10,
+    "padding": 3,
+    "fontSize": 4,
+    "lineHeight": 5.2,
+    "minimumRowHeight": 20,
+    "roundingSlack": 1
+  },
+  "pagination": [
+    {
+      "paper": "a4",
+      "sectionBars": [
+        48
+      ],
+      "pages": 1
+    },
+    {
+      "paper": "a4",
+      "sectionBars": [
+        49
+      ],
+      "pages": 2
+    },
+    {
+      "paper": "letter",
+      "sectionBars": [
+        44
+      ],
+      "pages": 1
+    },
+    {
+      "paper": "letter",
+      "sectionBars": [
+        45
+      ],
+      "pages": 2
+    },
+    {
+      "paper": "a4",
+      "sectionBars": [
+        44,
+        1
+      ],
+      "pages": 2
+    },
+    {
+      "paper": "a4",
+      "sectionBars": [
+        40,
+        1
+      ],
+      "pages": 1
+    }
+  ],
+  "fontAdvances": {
+    "W": 0.954,
+    "C": 0.721,
+    "m": 0.861,
+    "a": 0.556,
+    "j": 0.25,
+    "7": 0.576,
+    " ": 0.2
+  },
+  "wrap": {
+    "input": "Cmaj7 Cmaj7 Cmaj7 Cmaj7 [4/1 q]",
+    "width": 39.5,
+    "lines": [
+      "Cmaj7 Cmaj7 Cmaj7 ",
+      "Cmaj7 [4/1 q]"
+    ]
+  }
+}

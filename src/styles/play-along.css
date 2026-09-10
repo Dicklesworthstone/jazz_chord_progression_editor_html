@@ -1,0 +1,28 @@
+.studio-play-along {
+  padding: 1rem;
+  margin: 0.75rem;
+  color: var(--text-primary);
+  background: var(--surface-chart);
+  border: 1px solid var(--border-default);
+  border-radius: 0.75rem;
+  text-align: center;
+  min-width: 0;
+}
+.studio-play-along__heading,
+.studio-play-along__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.studio-play-along__current {
+  font-size: clamp(2.5rem, 9vw, 6rem);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+  margin: 0.75rem 0;
+}
+.studio-play-along__next {
+  font-size: 1.4rem;
+  overflow-wrap: anywhere;
+}

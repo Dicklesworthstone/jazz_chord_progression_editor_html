@@ -24,7 +24,7 @@
  * quarter-note beats converted to ticks by integer arithmetic at PPQ 960;
  * there is no float, no wall time, no randomness, and no ambient input.
  */
-import { MIDI_PPQ } from "../../domain";
+import { MIDI_PPQ, type ChordEventId } from "../../domain";
 import type { PlaybackPlan } from "../playback-plan-contract";
 
 export const PERFORMANCE_PLAN_CONTRACT_SCHEMA =
@@ -1691,11 +1691,19 @@ export type CompContinuityEvidence = Readonly<{
   bottomMotion: number;
 }>;
 
+/** Explicit provenance travels beside the unchanged P0 plan, never in ID parsing. */
+export type PerformanceEventProvenance = Readonly<{
+  eventId: ChordEventId;
+  sourceEventId: ChordEventId;
+  role: PerformanceRole | "literal";
+}>;
+
 export type CompilePerformancePlanSuccess = Readonly<{
   ok: true;
   plan: PlaybackPlan;
   evidence: PerformancePlanWorkEvidence;
   compContinuity?: CompContinuityEvidence;
+  eventProvenance: readonly PerformanceEventProvenance[];
 }>;
 
 export type CompilePerformancePlanFailure = Readonly<{

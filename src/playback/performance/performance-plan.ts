@@ -1,3 +1,4 @@
+import { performanceVelocity } from "./performance-velocity";
 /**
  * The band-sketch performance compiler (bead jcpe-1gao).
  *
@@ -79,7 +80,6 @@ import {
 import { leadCompRegisters } from "./comp-continuity";
 import {
   PLAYBACK_EVENT_SCHEMA,
-  type PLAYBACK_PLAN_FIXED_VELOCITY,
   PLAYBACK_PLAN_MINIMUM_GATE_TICKS,
   PLAYBACK_PLAN_RELEASE_GAP_TICKS,
   type NonEmptyMidiPitches,
@@ -113,6 +113,7 @@ import {
   type PerformancePlanTermination,
   type PerformancePlanWorkEvidence,
   type PerformanceRole,
+  type PerformanceEventProvenance,
   type PerformanceStyle,
   type PerformanceStyleId,
   type PerformanceSwingRatio,
@@ -322,25 +323,6 @@ function gateTicksFor(durationTicks: number): number {
   return gate < PLAYBACK_PLAN_MINIMUM_GATE_TICKS
     ? PLAYBACK_PLAN_MINIMUM_GATE_TICKS
     : gate;
-}
-
-/**
- * A velocity that is not P0's single fixed value.
- *
- * P0 v1 declares `velocity: "fixed"` and types the field as the literal 96,
- * because the literal renderer has no dynamics to express. A performance does:
- * the whole point of a velocity contour is that the bass downbeat is not the
- * same weight as a comp stab. The values this layer emits stay inside the
- * 1..127 envelope P0's own velocity policy declares and inside the range the
- * audio engine validates, so the plan remains structurally indistinguishable
- * downstream. This is the one place the literal type is widened, and it is
- * widened deliberately rather than by leaking `unknown` through the module.
- */
-function performanceVelocity(
-  value: number,
-): typeof PLAYBACK_PLAN_FIXED_VELOCITY {
-  const clamped = value < 1 ? 1 : value > 127 ? 127 : Math.trunc(value);
-  return clamped as typeof PLAYBACK_PLAN_FIXED_VELOCITY;
 }
 
 type Voice = Readonly<{ spelled: SpelledPitch; midi: number }>;
@@ -857,6 +839,7 @@ export function compilePerformancePlan(
       ok: true,
       plan,
       evidence: evidence(counters, "identity"),
+      eventProvenance: Object.freeze(plan.events.map(event => Object.freeze({ eventId: event.eventId, sourceEventId: event.eventId, role: "literal" as const }))),
     });
   }
 
@@ -949,6 +932,7 @@ export function compilePerformancePlan(
   const emitted: PlaybackEvent[] = [];
   /** The role of `emitted[i]`, kept alongside so the self-check can read it. */
   const emittedRoles: PerformanceRole[] = [];
+  const eventProvenance: PerformanceEventProvenance[] = [];
   let previousBassMidi: number | null = null;
   /*
    * The bottom voice of the comp that sounded most recently, and the note the
@@ -1379,6 +1363,7 @@ export function compilePerformancePlan(
       }
 
       emittedRoles.push(draft.role);
+      eventProvenance.push(Object.freeze({ eventId, sourceEventId: source.eventId, role: draft.role }));
       emitted.push(
         Object.freeze({
           schema: PLAYBACK_EVENT_SCHEMA,
@@ -1544,6 +1529,7 @@ export function compilePerformancePlan(
     ok: true,
     plan: performance,
     evidence: evidence(counters, "complete"),
+    eventProvenance: Object.freeze(eventProvenance),
     ...(compContinuity === undefined ? {} : { compContinuity }),
   });
 }

@@ -1,3 +1,10 @@
+import {SongbookPanel} from "./SongbookPanel";
+import {PrintChartPanel,PrintOnlyDocument} from "./PrintChartPanel";
+import {WavExportPanel} from "./WavExportPanel";
+import {ChordPadsPanel} from "./ChordPadsPanel";
+import { CompingPanel } from "./CompingPanel";
+import { NoteFirstPanel } from "./NoteFirstPanel";
+import { PlayAlongDisplay } from "./PlayAlongDisplay";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 
 import { captureChartFocusScroll, restoreChartFocusScroll, type ChartFocusScroll } from "./chart-focus";
@@ -118,6 +125,13 @@ export function StudioShell({
   transport,
   annotations,
   midiExportAvailable,
+  chordPads,
+  noteFirst,
+  performedMidi,
+  comping,
+  wav,
+  printCharts,
+  songbook,
 }: StudioShellProps) {
   const [inspectorEventId, setInspectorEventId] = useState<string | null>(null);
   const openInspector = inspector?.selectedEventId == null ? undefined : () => {
@@ -337,12 +351,18 @@ export function StudioShell({
    */
   const [commandLaneOpen, setCommandLaneOpen] = useState(false);
   const [chartFocus, setChartFocus] = useState(false);
+  const [followPlayback, setFollowPlayback] = useState(false);
+  const exitFollow = useRef(false);
   const shellElement = useRef<HTMLDivElement>(null);
   const pendingFocusScroll = useRef<ChartFocusScroll | null>(null);
   useLayoutEffect(() => {
     const saved = pendingFocusScroll.current;
     pendingFocusScroll.current = null;
     if (saved !== null) restoreChartFocusScroll(saved);
+    if (exitFollow.current) {
+      exitFollow.current = false;
+      shellElement.current?.querySelector<HTMLButtonElement>("#studio-chart-focus-toggle")?.focus();
+    }
   }, [chartFocus]);
   /*
    * The Standards modal (jcpe-v2r-library-ulwb): the prototype's
@@ -527,6 +547,7 @@ export function StudioShell({
       data-library-collapsed={view.layout.libraryCollapsed ? "true" : "false"}
       data-harmony-collapsed={view.layout.harmonyCollapsed ? "true" : "false"}
     >
+      {printCharts == null ? null : <PrintOnlyDocument service={printCharts} />}
       <div id="studio-shell-background" class="studio-shell__background">
         <div class="studio-shell__frame" tabIndex={-1}>
           <a class="studio-skip-link" href="#workspace" id="skip-link" tabIndex={0}>
@@ -556,6 +577,14 @@ export function StudioShell({
               setStandardsOpen(true);
             }}
           />
+
+          {chartFocus && transport.readPlayAlong !== undefined ? (
+            followPlayback ? <PlayAlongDisplay read={transport.readPlayAlong} onStop={transport.onStop}
+              canStop={view.transport.audioState === "playing" || view.transport.audioState === "paused" || view.transport.previewStoppable === true}
+              onExit={() => { exitFollow.current = true; setFollowPlayback(false); setChartFocus(false); }} />
+              : <button class="ui-button studio-follow-playback" data-variant="secondary" type="button"
+                  onClick={() => { setFollowPlayback(true); }}>Follow playback</button>
+          ) : null}
 
           <div class="studio-recovery-region">{recoveryRegion}</div>
 
@@ -695,6 +724,7 @@ export function StudioShell({
             content={
               <MidiExportPanel
                 context="dialog"
+                performedMidi={performedMidi ?? null}
                 onBlockedEventActivate={callbacks.onMidiExportBlockedEventActivate}
                 onClose={callbacks.onMidiExportClose}
                 onDownload={callbacks.onMidiExportDownload}
@@ -809,6 +839,13 @@ export function StudioShell({
             busy={false}
             closeLabel="Close the command lane"
             content={
+              <>
+              {chordPads === undefined ? null : <ChordPadsPanel ports={chordPads} />}
+              {noteFirst === undefined ? null : <NoteFirstPanel ports={noteFirst} />}
+              {songbook == null ? null : <SongbookPanel service={songbook} />}
+              {printCharts == null ? null : <PrintChartPanel service={printCharts} />}
+              {wav == null ? null : <WavExportPanel service={wav} />}
+              {comping == null ? null : <CompingPanel ports={comping} />}
               <CommandLaneContent
                 quickEntry={view.quickEntry}
                 onDraftChange={callbacks.onQuickEntryDraftChange}
@@ -818,10 +855,11 @@ export function StudioShell({
                 }}
                 onClear={callbacks.onQuickEntryClear}
               />
+              </>
             }
             density="comfortable"
             describedBy={[]}
-            description="Type a chart fragment. The insert lands at the insertion point as one undoable step."
+            description="Start from notes or type a chart fragment. The insert lands at the insertion point as one undoable step."
             disabled={false}
             dismissibility={DISMISSIBLE}
             focusTargets={{
@@ -898,6 +936,7 @@ export function StudioShell({
                   <p class="studio-kicker">MIDI export</p>
                   <MidiExportPanel
                     context="sheet"
+                    performedMidi={performedMidi ?? null}
                     onBlockedEventActivate={callbacks.onMidiExportBlockedEventActivate}
                     onClose={callbacks.onMidiExportClose}
                     onDownload={callbacks.onMidiExportDownload}

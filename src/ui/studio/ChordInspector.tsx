@@ -1,3 +1,5 @@
+import {RegisterObservationsPanel} from "./RegisterObservationsPanel";
+import {GuitarPositionsPanel} from "./GuitarPositionsPanel";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import type {
   StudioController, StudioInspectorChange, StudioInspectorChoice, StudioInspectorPreview,
@@ -13,6 +15,8 @@ export type StudioInspectorPorts = Readonly<{
   selectedEventId: string | null;
   revision: number;
   read: StudioController["readInspector"];
+  readRegister?: StudioController["readRegister"];
+  readGuitar?: StudioController["readGuitar"];
   readDraft: StudioController["readInspectorDraft"];
   readManualDraft: StudioController["readInspectorManualDraft"];
   apply: StudioController["applyInspectorChange"];
@@ -243,6 +247,8 @@ export function ChordInspector({ eventId, ports, onClose, onContractRefusal }: R
           {base.unavailableChoices.map((item, index) => <p class="studio-inspector-unavailable" key={index}>{item.family}: {item.message}</p>)}
           {actionButton("Edit exact notes", () => { setAdvanced(true); setTab("Voicing"); setManualEditing(true); }, stale || base.detail.voicing.activePitches.length === 0 || dirty)}
         </section> : null}
+        {ports.readGuitar === undefined ? null : <GuitarPositionsPanel source={base.source} stale={stale || dirty}
+          read={ports.readGuitar} hear={input=>{hear({kind:"current"},input);}} release={cancelPreview} />}
         <button type="button" class="studio-inspector-button" aria-expanded={advanced} onClick={() => { leave(() => { setAdvanced(!advanced); }); }}>
           {advanced ? "Hide advanced controls" : "Advanced chord controls"}
         </button>
@@ -329,6 +335,7 @@ export function ChordInspector({ eventId, ports, onClose, onContractRefusal }: R
               {detail !== undefined && detail.harmony.scaleSuggestions.length === 0 ? <p>No compatible scale suggestion for these exact chord tones.</p> : null}
             </> : null}
             {tab === "Motion" ? <>
+              {ports.readRegister === undefined ? null : <RegisterObservationsPanel source={base.source} stale={stale || dirty} read={ports.readRegister} hear={input=>{hear({kind:"current"},input);}} release={cancelPreview} />}
               {detail === undefined ? null : [
                 { title: `From previous chord: ${detail.motion.previousChordSymbol ?? "none"}`, segment: detail.motion.incoming },
                 { title: `To next chord: ${detail.motion.nextChordSymbol ?? "none"}`, segment: detail.motion },

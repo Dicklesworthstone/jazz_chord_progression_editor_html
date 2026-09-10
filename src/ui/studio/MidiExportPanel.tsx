@@ -1,3 +1,5 @@
+import { PerformedMidiPanel } from "./PerformedMidiPanel";
+import type { StudioPerformedMidiService } from "../../application/runtime";
 import { Button } from "../primitives";
 import type { StudioMidiExportView } from "./studio-contract";
 
@@ -17,6 +19,7 @@ import type { StudioMidiExportView } from "./studio-contract";
  */
 export type MidiExportPanelProps = Readonly<{
   context: "dialog" | "sheet";
+  performedMidi?: StudioPerformedMidiService | null;
   view: StudioMidiExportView;
   onGenerate: () => void;
   onDownload: () => void;
@@ -53,6 +56,7 @@ function omissionSentence(reason: string): string {
 
 export function MidiExportPanel({
   context,
+  performedMidi,
   view,
   onGenerate,
   onDownload,
@@ -64,6 +68,7 @@ export function MidiExportPanel({
   const state = view.state ?? "preview";
   return (
     <div class="studio-midi-export" data-state={state}>
+      {performedMidi == null ? null : <PerformedMidiPanel service={performedMidi} context={context} />}
       <p
         aria-atomic="true"
         aria-live={view.refusal === null ? "polite" : "assertive"}

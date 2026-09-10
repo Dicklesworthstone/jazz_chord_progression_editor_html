@@ -1,0 +1,15 @@
+{
+  "positive": [
+    {"text":"A3 C4 E4 G4","midi":[57,60,64,67],"exactNames":["Am7","C6/A"]},
+    {"text":"C4 E4 G4","midi":[60,64,67],"exactNames":["C"]},
+    {"text":"A3 C4 E4 G4 A3","midi":[57,60,64,67,57],"exactNames":["Am7","C6/A"]},
+    {"text":"B3 D4 F4 Ab4","midi":[59,62,65,68],"exactNames":["Bdim7"],"enharmonicNames":["Ddim7/B","Fdim7/B","Abdim7/B"]},
+    {"text":"C#4 F4 G#4","midi":[61,65,68],"exactNames":[],"enharmonicNames":["C#","Db"]},
+    {"text":"C4 C#4 D4","midi":[60,61,62],"exactNames":[],"enharmonicNames":[]},
+    {"text":"B#3 E4 G4","midi":[60,64,67],"exactNames":[],"enharmonicNames":["C"]},
+    {"text":"B3 D4 F#4 A4","midi":[59,62,66,69],"exactNames":["Bm7","D6/B"],"transposedFrom":0,"semitones":2}
+  ],
+  "invalid": ["", "C4 C###4", "C-2", "G#9", "C", "H4", "C4 junk", "C4 C4 C4 C4 C4 C4 C4 C4 C4 C4 C4 C4 C4 C4 C4 C4 C4"],
+  "preservation": ["A3","C4","E4","G4","A3"],
+  "intervalSets": {"Am7":[0,3,7,10],"C6/A":[0,4,7,9],"Bdim7":[0,3,6,9]}
+}

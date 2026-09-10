@@ -1,0 +1,20 @@
+{
+  "authority": "Python zlib 1.3.1; RFC 1950 deflate wrapper; independent of browser CompressionStream",
+  "cases": [
+    {
+      "name": "literal-json-tokens",
+      "text": "{\"negativeZero\":-0,\"escaped\":\"\\u0041\",\"text\":\"Db/C# \ud83c\udfb5\"}",
+      "compressedHex": "789cab56ca4b4d4f2cc92c4b8d4a2dca57b2d235d0514a2d4e4e2c484d51b2528a293530303154d2512a49ad2801f25d92f49d95153eccefdbaa540b002ded1300",
+      "fragment": "#zdoc=3.eJyrVspLTU8sySxLjUotyley0jXQUUotTk4sSE1RslKKKTUwMDFU0lEqSa0oAfJdkvSdlRU-zO_bqlQLAC3tEwA",
+      "sha256": "6b30573609dd081d08649a02e3bc7b562ab5153b2160ed87ca427ab0ec2424b7"
+    }
+  ],
+  "bounds": {
+    "jsonUtf8": 6138,
+    "compressedBytes": 880,
+    "urlAscii": 1190,
+    "version": 28,
+    "quietModules": 4,
+    "minimumCssModule": 2
+  }
+}

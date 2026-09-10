@@ -127,6 +127,7 @@ export type {
   CompilePerformancePlanRequest,
   CompilePerformancePlanResult,
   CompilePerformancePlanSuccess,
+  PerformanceEventProvenance,
   ExactBeats,
   PerformanceBassSlot,
   PerformanceBassTone,
@@ -148,3 +149,5 @@ export type {
 export { compilePerformancePlan } from "./performance/performance-plan";
 
 export { projectPlaybackPlanLoop, type PlaybackLoopProjectionEvidence, type PlaybackLoopProjectionResult } from "./project-playback-loop";
+export { COMP_PRESETS, decodeCompRecipe, parseCompRecipe, compileAuthoredComping } from "./authored-comping";
+export type { CompRecipe, CompEvidence, CompResult } from "./authored-comping";

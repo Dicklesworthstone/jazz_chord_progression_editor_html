@@ -1,0 +1,10 @@
+{
+  "positive": [
+    {"file":"turnaround.crd","title":"Flat-side study","tempo":120,"comments":1,"bars":[[["Dbmaj7",2],["Ab7",2]],[["Gbmaj7",1],["Gbmaj7",2],["Dbmaj7",1]],[["Gbmaj7",1],["Gbmaj7",2],["Dbmaj7",1]],[["Ebm7",2],["Ab7",2]]]},
+    {"file":"transposed.crd","title":"Sharp-side study","tempo":null,"comments":0,"bars":[[["Dmaj7",2],["A7",2]],[["Gmaj7",1],["Gmaj7",2],["Dmaj7",1]],[["Gmaj7",1],["Gmaj7",2],["Dmaj7",1]],[["Em7",2],["A7",2]]]},
+    {"file":"reattack.crd","title":"Same sound, separate attacks","tempo":null,"comments":0,"bars":[[["C#",2],["Db",2]],[["Db",1],["Db",3]]]}
+  ],
+  "refusedLines":["| . . . . |","| / . . . |","| % . . . |","| %% . . . |","| C . . |","| C . . . . |","|: C . . . :|","| C~G . . . |","| C . . . |1","| S dn dn dn |","| Hmaj7 . . . |","| C . . . | margin"],
+  "limits":{"utf16":16384,"utf8":16384,"lines":512,"lineUnits":1024,"tokens":2048,"bars":128,"events":512,"symbolPoints":64},
+  "mutations":["dot-duration","slash-occurrence","repeat-spelling","unknown-directive"]
+}

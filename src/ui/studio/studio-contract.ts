@@ -1,3 +1,6 @@
+import type {StudioChordPadsPorts} from "./ChordPadsPanel";
+import type { StudioNoteFirstPorts } from "./NoteFirstPanel";
+import type { StudioPlayAlongView, StudioPerformedMidiService, StudioCompingService, StudioWavService, StudioPrintService, StudioSongbookService } from "../../application/runtime";
 import type { ComponentChildren } from "preact";
 import type { UiDiagnostic } from "../ui-contract";
 import type { StudioInspectorPorts } from "./ChordInspector";
@@ -874,6 +877,7 @@ export type StudioShellCallbacks = Readonly<{
  * is derived from the chart rather than from a bookmark or selection.
  */
 export type StudioTransportCallbacks = Readonly<{
+  readPlayAlong?: () => StudioPlayAlongView;
   /** False when the chart has no chord to play. */
   canPlay: boolean;
   onPlay: (source: "pointer" | "keyboard") => void;
@@ -978,6 +982,13 @@ export type StudioChartAnnotationPorts = Readonly<{
 }>;
 
 export type StudioShellProps = Readonly<{
+  chordPads?: StudioChordPadsPorts;
+  noteFirst?: StudioNoteFirstPorts;
+  wav?: StudioWavService | null;
+  printCharts?: StudioPrintService | null;
+  songbook?: StudioSongbookService | null;
+  performedMidi?: StudioPerformedMidiService | null;
+  comping?: Readonly<{service:StudioCompingService;hear:(input:"pointer"|"keyboard")=>Promise<void>|undefined}> | null;
   inspector?: StudioInspectorPorts;
   documentActions?: ComponentChildren;
   recoveryRegion?: ComponentChildren;

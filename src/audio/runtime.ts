@@ -20,3 +20,5 @@ export { createBrowserAudioPlatform } from "./browser-audio-platform";
  */
 export { loadSmfWasmDecoder } from "./smf-wasm";
 export type { SmfWasmDecode } from "./smf-wasm";
+
+export {createDryPianoRenderer} from "./dry-piano-render";
