@@ -799,6 +799,48 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertEqual(glide.removed, [60])
     }
 
+    func testColdKeyboardRenderCannotBecomeAGhostNoteAfterRelease() {
+        XCTAssertEqual(
+            JazzAudioEngine.keyboardRenderDisposition(
+                midi: 64,
+                requestedGeneration: 8,
+                currentGeneration: 8,
+                activeMIDIs: []
+            ),
+            .cacheOnly,
+            "A render completing after touch-up may warm the cache but must not schedule delayed audio."
+        )
+        XCTAssertEqual(
+            JazzAudioEngine.keyboardRenderDisposition(
+                midi: 64,
+                requestedGeneration: 8,
+                currentGeneration: 8,
+                activeMIDIs: [64]
+            ),
+            .schedule
+        )
+        XCTAssertEqual(
+            JazzAudioEngine.keyboardRenderDisposition(
+                midi: 64,
+                requestedGeneration: 7,
+                currentGeneration: 8,
+                activeMIDIs: [64]
+            ),
+            .discard,
+            "Stop and instrument-change generations retire even still-held stale renders."
+        )
+    }
+
+    func testKeyboardPrewarmPrioritizesChordTonesAndStaysBounded() {
+        XCTAssertEqual(
+            JazzAudioEngine.keyboardPrewarmOrder(
+                visibleMIDIs: [59, 60, 61, 64, 67, 109],
+                highlightedMIDIs: [64, 67, 72, 109]
+            ),
+            [64, 67, 59, 60, 61]
+        )
+    }
+
     func testOriginalPlayableWindowsFoldWithoutMutatingInstrumentIdentity() throws {
         let expected: [InstrumentTone: ClosedRange<Int>] = [
             .mellowKeys: 21...108,

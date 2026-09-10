@@ -279,6 +279,14 @@ final class JazzStudioStore: ObservableObject {
         audio.updateKeyboardPreview(midis: midis, tone: chart.instrument)
     }
 
+    func prewarmKeys(visibleMIDIs: Set<Int>, highlightedMIDIs: Set<Int>) {
+        audio.prewarmKeyboard(
+            visibleMIDIs: visibleMIDIs,
+            highlightedMIDIs: highlightedMIDIs,
+            tone: chart.instrument
+        )
+    }
+
     func previewSelectedChord() {
         audio.preview(midis: selectedMIDIPitches, tone: chart.instrument)
     }

@@ -36,6 +36,12 @@ final class JazzAudioEngine: ObservableObject {
         var removed: Set<Int>
     }
 
+    enum KeyboardRenderDisposition: Equatable, Sendable {
+        case discard
+        case cacheOnly
+        case schedule
+    }
+
     enum ChordStepDirection {
         case previous
         case next
@@ -125,6 +131,9 @@ final class JazzAudioEngine: ObservableObject {
     private var previewRenderTask: Task<Void, Never>?
     private var previewCancellation: JazzRenderCancellationToken?
     private var keyboardRenderTasks = [String: Task<Void, Never>]()
+    private var keyboardPrewarmTask: Task<Void, Never>?
+    private var keyboardPrewarmKey: String?
+    private var keyboardPrewarmRequest = 0
     private var keyboardBuffers = [String: AVAudioPCMBuffer]()
     private var keyboardBufferOrder = [String]()
     private var activeKeyboardMIDIs = Set<Int>()
@@ -185,6 +194,7 @@ final class JazzAudioEngine: ObservableObject {
         renderTask?.cancel()
         previewRenderTask?.cancel()
         for task in keyboardRenderTasks.values { task.cancel() }
+        keyboardPrewarmTask?.cancel()
         timer?.invalidate()
         player.stop()
         previewPlayer.stop()
@@ -538,28 +548,109 @@ final class JazzAudioEngine: ObservableObject {
         )
     }
 
+    nonisolated static func keyboardRenderDisposition(
+        midi: Int,
+        requestedGeneration: Int,
+        currentGeneration: Int,
+        activeMIDIs: Set<Int>
+    ) -> KeyboardRenderDisposition {
+        guard requestedGeneration == currentGeneration else { return .discard }
+        return activeMIDIs.contains(midi) ? .schedule : .cacheOnly
+    }
+
+    nonisolated static func keyboardPrewarmOrder(
+        visibleMIDIs: Set<Int>,
+        highlightedMIDIs: Set<Int>
+    ) -> [Int] {
+        let visible = visibleMIDIs.filter { (21...108).contains($0) }
+        let highlighted = Set(visible).intersection(highlightedMIDIs)
+        return highlighted.sorted() + Set(visible).subtracting(highlighted).sorted()
+    }
+
+    /// Builds the currently visible key buffers without starting the audio
+    /// engine. Chord tones go first, then the remaining keys are rendered one
+    /// at a time so opening the inspector cannot create a CPU spike.
+    func prewarmKeyboard(
+        visibleMIDIs: Set<Int>,
+        highlightedMIDIs: Set<Int>,
+        tone: InstrumentTone
+    ) {
+        let orderedMIDIs = Self.keyboardPrewarmOrder(
+            visibleMIDIs: visibleMIDIs,
+            highlightedMIDIs: highlightedMIDIs
+        )
+        guard !orderedMIDIs.isEmpty, orderedMIDIs.count <= 88 else { return }
+        keyboardPrewarmRequest += 1
+        let request = keyboardPrewarmRequest
+        let requestGeneration = keyboardGeneration
+        keyboardPrewarmTask?.cancel()
+        keyboardPrewarmKey = nil
+        keyboardPrewarmTask = Task { [weak self] in
+            for midi in orderedMIDIs {
+                guard let self,
+                      !Task.isCancelled,
+                      self.keyboardPrewarmRequest == request,
+                      self.keyboardGeneration == requestGeneration else { return }
+                let key = self.keyboardCacheKey(midi: midi, tone: tone)
+                if self.keyboardBuffers[key] != nil || self.keyboardRenderTasks[key] != nil { continue }
+                self.keyboardPrewarmKey = key
+                let rendered = await Task.detached(priority: .utility) {
+                    JazzAudioRenderer.renderPreviewChord(midis: [midi], tone: tone)
+                }.value
+                guard !Task.isCancelled,
+                      self.keyboardPrewarmRequest == request else { return }
+                self.keyboardPrewarmKey = nil
+                let disposition = Self.keyboardRenderDisposition(
+                    midi: midi,
+                    requestedGeneration: requestGeneration,
+                    currentGeneration: self.keyboardGeneration,
+                    activeMIDIs: self.activeKeyboardMIDIs
+                )
+                guard disposition != .discard,
+                      let rendered,
+                      let pcm = self.makePCM(rendered) else { continue }
+                self.insertKeyboardBuffer(pcm, for: key)
+                if disposition == .schedule { self.scheduleKeyboardBuffer(pcm) }
+            }
+            guard let self, self.keyboardPrewarmRequest == request else { return }
+            self.keyboardPrewarmKey = nil
+            self.keyboardPrewarmTask = nil
+        }
+    }
+
     private func playKeyboardOneShot(midi: Int, tone: InstrumentTone) {
-        let key = "\(tone.originalID):\(midi)"
+        let key = keyboardCacheKey(midi: midi, tone: tone)
         if let cached = keyboardBuffers[key] {
             touchKeyboardCacheKey(key)
             scheduleKeyboardBuffer(cached)
             return
         }
-        guard keyboardRenderTasks[key] == nil else { return }
+        guard keyboardRenderTasks[key] == nil, keyboardPrewarmKey != key else { return }
         let requestGeneration = keyboardGeneration
         keyboardRenderTasks[key] = Task { [weak self] in
             let rendered = await Task.detached(priority: .userInitiated) {
                 JazzAudioRenderer.renderPreviewChord(midis: [midi], tone: tone)
             }.value
-            guard let self, self.keyboardGeneration == requestGeneration else { return }
+            guard let self else { return }
             self.keyboardRenderTasks[key] = nil
+            let disposition = Self.keyboardRenderDisposition(
+                midi: midi,
+                requestedGeneration: requestGeneration,
+                currentGeneration: self.keyboardGeneration,
+                activeMIDIs: self.activeKeyboardMIDIs
+            )
+            guard disposition != .discard else { return }
             guard let rendered, let pcm = self.makePCM(rendered) else {
                 self.previewIssue = "That keyboard note could not be rendered safely."
                 return
             }
             self.insertKeyboardBuffer(pcm, for: key)
-            self.scheduleKeyboardBuffer(pcm)
+            if disposition == .schedule { self.scheduleKeyboardBuffer(pcm) }
         }
+    }
+
+    private func keyboardCacheKey(midi: Int, tone: InstrumentTone) -> String {
+        "\(tone.originalID):\(midi)"
     }
 
     private func scheduleKeyboardBuffer(_ pcm: AVAudioPCMBuffer) {
@@ -594,8 +685,12 @@ final class JazzAudioEngine: ObservableObject {
         cancelPreviewRender()
         previewPlayer.stop()
         keyboardGeneration += 1
+        keyboardPrewarmRequest += 1
         for task in keyboardRenderTasks.values { task.cancel() }
         keyboardRenderTasks.removeAll(keepingCapacity: true)
+        keyboardPrewarmTask?.cancel()
+        keyboardPrewarmTask = nil
+        keyboardPrewarmKey = nil
         activeKeyboardMIDIs.removeAll(keepingCapacity: true)
         for keyboardPlayer in keyboardPlayers { keyboardPlayer.stop() }
         scheduledPreviewBuffer = nil

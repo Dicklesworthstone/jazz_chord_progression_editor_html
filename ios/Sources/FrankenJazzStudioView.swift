@@ -1037,7 +1037,8 @@ private struct ChordInspectorView: View {
                     accent: JazzTheme.cyan,
                     instrumentName: store.chart.instrument.displayName,
                     onKeyPress: store.previewKey,
-                    onActiveKeysChanged: store.previewKeys
+                    onActiveKeysChanged: store.previewKeys,
+                    onPrewarmKeys: store.prewarmKeys
                 )
                 .frame(height: 96)
                 if let issue = store.audio.previewIssue {
@@ -1318,6 +1319,7 @@ private struct MiniPiano: View {
     let instrumentName: String
     let onKeyPress: (Int) -> Void
     let onActiveKeysChanged: (Set<Int>) -> Void
+    let onPrewarmKeys: (Set<Int>, Set<Int>) -> Void
     @State private var activeTouchMIDIs = Set<Int>()
 
     private let whiteWidth: CGFloat = 46
@@ -1417,6 +1419,15 @@ private struct MiniPiano: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Playable chord keyboard")
+        .task(id: prewarmIdentity) {
+            onPrewarmKeys(Set(whitePitches + blackPitches), highlightedMIDIPitches)
+        }
+    }
+
+    private var prewarmIdentity: String {
+        let visible = (whitePitches + blackPitches).map(String.init).joined(separator: ",")
+        let highlighted = highlightedMIDIPitches.sorted().map(String.init).joined(separator: ",")
+        return "\(instrumentName):\(visible):\(highlighted)"
     }
 
     private var keyboardWidth: CGFloat {
