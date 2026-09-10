@@ -314,7 +314,7 @@ final class FrankenJazzUITests: XCTestCase {
         XCTAssertTrue(firstChord.waitForExistence(timeout: 3))
         firstChord.tap()
 
-        let instruction = app.staticTexts["Tap any key to hear it"]
+        let instruction = app.staticTexts["Press, glide, or play several keys"]
         let middleC = app.buttons["piano-key-60"]
         let chordPreview = app.buttons["preview-selected-chord"]
         for _ in 0..<8 where !middleC.isHittable { app.swipeUp() }
