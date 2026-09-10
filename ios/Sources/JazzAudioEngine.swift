@@ -16,6 +16,8 @@ final class JazzAudioEngine: ObservableObject {
         var dynamicsReleaseSeconds: Double
         var maximumReverbSendGain: Double
         var reverbAmount: Double
+        var softClipDrive: Double
+        var softClipOversample: Int
         var safetyGain: Double
     }
 
@@ -100,13 +102,7 @@ final class JazzAudioEngine: ObservableObject {
         componentFlags: 0,
         componentFlagsMask: 0
     ))
-    private let outputLimiter = AVAudioUnitEffect(audioComponentDescription: AudioComponentDescription(
-        componentType: kAudioUnitType_Effect,
-        componentSubType: kAudioUnitSubType_PeakLimiter,
-        componentManufacturer: kAudioUnitManufacturer_Apple,
-        componentFlags: 0,
-        componentFlagsMask: 0
-    ))
+    private let softClip = JazzMakeSoftClipAudioUnit()
     private let safetyGain = AVAudioMixerNode()
     private var buffer: AVAudioPCMBuffer?
     private var scheduledBuffer: AVAudioPCMBuffer?
@@ -154,7 +150,7 @@ final class JazzAudioEngine: ObservableObject {
         engine.attach(reverbReturn)
         engine.attach(sumBus)
         engine.attach(dynamics)
-        engine.attach(outputLimiter)
+        engine.attach(softClip)
         engine.attach(safetyGain)
 
         configurePersistentGraphParameters()
@@ -179,8 +175,8 @@ final class JazzAudioEngine: ObservableObject {
         engine.connect(hall, to: reverbReturn, format: nil)
         engine.connect(reverbReturn, to: sumBus, format: nil)
         engine.connect(sumBus, to: dynamics, format: nil)
-        engine.connect(dynamics, to: outputLimiter, format: nil)
-        engine.connect(outputLimiter, to: safetyGain, format: nil)
+        engine.connect(dynamics, to: softClip, format: nil)
+        engine.connect(softClip, to: safetyGain, format: nil)
         engine.connect(safetyGain, to: engine.mainMixerNode, format: nil)
         applyMixerVolume()
         applyReverbAmount()
@@ -385,7 +381,7 @@ final class JazzAudioEngine: ObservableObject {
         MasterGraphSnapshot(
             nodeIDs: [
                 "instrument-bus", "dc-block+tone-eq", "dry-gain", "reverb-send",
-                "native-medium-hall", "reverb-return", "dynamics", "native-output-limiter", "safety-gain",
+                "native-medium-hall", "reverb-return", "dynamics", "native-tanh-soft-clip-2x", "safety-gain",
                 "master-gain", "destination"
             ],
             dcBlockFrequencyHz: Double(toneEQ.bands[0].frequency),
@@ -398,6 +394,8 @@ final class JazzAudioEngine: ObservableObject {
             dynamicsReleaseSeconds: 0.18,
             maximumReverbSendGain: 0.28,
             reverbAmount: reverbAmount,
+            softClipDrive: 1.5,
+            softClipOversample: 2,
             safetyGain: Double(safetyGain.outputVolume)
         )
     }
@@ -784,17 +782,6 @@ final class JazzAudioEngine: ObservableObject {
         AudioUnitSetParameter(
             dynamics.audioUnit, kDynamicsProcessorParam_ReleaseTime,
             kAudioUnitScope_Global, 0, 0.18, 0
-        )
-        // The browser uses a tanh waveshaper here. Apple's native graph uses
-        // its transparent peak limiter at the same position; unlike a stock
-        // distortion preset this preserves the instruments' intended color.
-        AudioUnitSetParameter(
-            outputLimiter.audioUnit, kLimiterParam_AttackTime,
-            kAudioUnitScope_Global, 0, 0.006, 0
-        )
-        AudioUnitSetParameter(
-            outputLimiter.audioUnit, kLimiterParam_DecayTime,
-            kAudioUnitScope_Global, 0, 0.06, 0
         )
         safetyGain.outputVolume = 0.9
     }

@@ -1,5 +1,6 @@
 import XCTest
 import UIKit
+import AVFoundation
 import FrankenJazzDSP
 @testable import FrankenJazz
 
@@ -528,7 +529,7 @@ final class FrankenJazzCoreTests: XCTestCase {
         let graph = engine.masterGraphSnapshot
         XCTAssertEqual(graph.nodeIDs.first, "instrument-bus")
         XCTAssertEqual(graph.nodeIDs.last, "destination")
-        XCTAssertTrue(graph.nodeIDs.contains("native-output-limiter"))
+        XCTAssertTrue(graph.nodeIDs.contains("native-tanh-soft-clip-2x"))
         XCTAssertEqual(graph.dcBlockFrequencyHz, 24, accuracy: 0.01)
         XCTAssertEqual(graph.lowShelfFrequencyHz, 180, accuracy: 0.01)
         XCTAssertEqual(graph.lowShelfGainDB, 1.5, accuracy: 0.01)
@@ -538,6 +539,8 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertEqual(graph.dynamicsAttackSeconds, 0.006)
         XCTAssertEqual(graph.dynamicsReleaseSeconds, 0.18)
         XCTAssertEqual(graph.maximumReverbSendGain, 0.28)
+        XCTAssertEqual(graph.softClipDrive, 1.5)
+        XCTAssertEqual(graph.softClipOversample, 2)
         XCTAssertEqual(graph.safetyGain, 0.9, accuracy: 0.001)
         engine.setReverbAmount(0.25)
         XCTAssertEqual(engine.reverbAmount, 0.25)
@@ -560,6 +563,69 @@ final class FrankenJazzCoreTests: XCTestCase {
         engine.stop()
         XCTAssertEqual(engine.state, .ready)
         XCTAssertEqual(engine.playheadBeat, 0)
+    }
+
+    func testNativeMasterSoftClipMatchesTheSourceCurveAndNamed2xKernel() {
+        XCTAssertEqual(JazzSoftClipShape(0), 0, accuracy: 0.000_001)
+        XCTAssertEqual(JazzSoftClipShape(1), 1, accuracy: 0.000_001)
+        XCTAssertEqual(JazzSoftClipShape(-1), -1, accuracy: 0.000_001)
+        XCTAssertEqual(
+            JazzSoftClipShape(4), 1, accuracy: 0.000_001,
+            "WaveShaper input is clamped to its curve domain."
+        )
+        XCTAssertEqual(JazzSoftClipShape(-0.42), -JazzSoftClipShape(0.42), accuracy: 0.000_001)
+
+        let webCurvePoint = Float(tanh(1.5 * 0.5) / tanh(1.5))
+        XCTAssertEqual(JazzSoftClipShape(0.5), webCurvePoint, accuracy: 0.000_001)
+        XCTAssertEqual(
+            JazzSoftClipOversampledPair(0, 0.5),
+            0.5 * (JazzSoftClipShape(0.25) + JazzSoftClipShape(0.5)),
+            accuracy: 0.000_001,
+            "The native 2x interpolation/decimation kernel is deterministic and independently recomputable."
+        )
+    }
+
+    func testNativeMasterSoftClipAudioUnitRendersItsActualKernelOffline() throws {
+        let format = try XCTUnwrap(
+            AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 2)
+        )
+        let source = AVAudioPlayerNode()
+        let effect = JazzMakeSoftClipAudioUnit()
+        let engine = AVAudioEngine()
+        engine.attach(source)
+        engine.attach(effect)
+        engine.connect(source, to: effect, format: format)
+        engine.connect(effect, to: engine.mainMixerNode, format: format)
+        try engine.enableManualRenderingMode(.offline, format: format, maximumFrameCount: 64)
+        defer {
+            engine.stop()
+            engine.disableManualRenderingMode()
+        }
+
+        let input = try XCTUnwrap(AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 64))
+        input.frameLength = 64
+        let inputChannels = try XCTUnwrap(input.floatChannelData)
+        for channel in 0..<2 {
+            for frame in 0..<64 {
+                inputChannels[channel][frame] = 0.5
+            }
+        }
+        source.scheduleBuffer(input)
+        try engine.start()
+        source.play()
+
+        let output = try XCTUnwrap(AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 64))
+        let status = try engine.renderOffline(64, to: output)
+        XCTAssertEqual(status, .success)
+        XCTAssertEqual(output.frameLength, 64)
+        let outputChannels = try XCTUnwrap(output.floatChannelData)
+        let first = JazzSoftClipOversampledPair(0, 0.5)
+        let steady = JazzSoftClipOversampledPair(0.5, 0.5)
+        for channel in 0..<2 {
+            XCTAssertEqual(outputChannels[channel][0], first, accuracy: 0.000_01)
+            XCTAssertEqual(outputChannels[channel][1], steady, accuracy: 0.000_01)
+            XCTAssertEqual(outputChannels[channel][63], steady, accuracy: 0.000_01)
+        }
     }
 
     func testNativeInstrumentCatalogMatchesEveryOriginalInstrument() throws {
