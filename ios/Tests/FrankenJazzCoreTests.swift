@@ -1,6 +1,7 @@
 import XCTest
 import UIKit
 import AVFoundation
+import CryptoKit
 import FrankenJazzDSP
 @testable import FrankenJazz
 
@@ -539,6 +540,10 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertEqual(graph.dynamicsAttackSeconds, 0.006)
         XCTAssertEqual(graph.dynamicsReleaseSeconds, 0.18)
         XCTAssertEqual(graph.maximumReverbSendGain, 0.28)
+        XCTAssertEqual(graph.impulseAlgorithmID, "changes.audio.impulse.hall-quartic-q15.v2")
+        XCTAssertEqual(graph.impulseSeed, 0x58403031)
+        XCTAssertEqual(graph.impulseDurationSeconds, 4)
+        XCTAssertEqual(graph.convolutionPartitionFrames, 1_024)
         XCTAssertEqual(graph.softClipDrive, 1.5)
         XCTAssertEqual(graph.softClipOversample, 2)
         XCTAssertEqual(graph.safetyGain, 0.9, accuracy: 0.001)
@@ -625,6 +630,147 @@ final class FrankenJazzCoreTests: XCTestCase {
             XCTAssertEqual(outputChannels[channel][0], first, accuracy: 0.000_01)
             XCTAssertEqual(outputChannels[channel][1], steady, accuracy: 0.000_01)
             XCTAssertEqual(outputChannels[channel][63], steady, accuracy: 0.000_01)
+        }
+    }
+
+    func testNativeHallImpulseMatchesTheSourceReferenceHashesAndObservations() throws {
+        let frames = 48_000 * 4
+        var left = [Float](repeating: 0, count: frames)
+        var right = [Float](repeating: 0, count: frames)
+        var observation = JazzImpulseObservation()
+        let wrote = left.withUnsafeMutableBufferPointer { leftBuffer in
+            right.withUnsafeMutableBufferPointer { rightBuffer in
+                JazzWriteDeterministicImpulse(
+                    48_000,
+                    leftBuffer.baseAddress!,
+                    rightBuffer.baseAddress!,
+                    UInt32(frames),
+                    &observation
+                )
+            }
+        }
+        XCTAssertTrue(wrote)
+        XCTAssertEqual(observation.samplesWritten, 384_000)
+        XCTAssertEqual(observation.peakQ15, 13_352)
+        XCTAssertEqual(observation.finalStateUint32, 0xd2e26364)
+        XCTAssertEqual(observation.predelayFrames, 960)
+        XCTAssertGreaterThan(observation.normalizationScale, 0)
+
+        func q15Bytes(_ channels: [[Float]], interleaved: Bool) -> Data {
+            var bytes = Data()
+            bytes.reserveCapacity(frames * channels.count * 2)
+            let append: (Float) -> Void = { sample in
+                let q15 = Int16((sample * 32_768).rounded(.towardZero))
+                let bits = UInt16(bitPattern: q15)
+                bytes.append(UInt8(truncatingIfNeeded: bits))
+                bytes.append(UInt8(truncatingIfNeeded: bits >> 8))
+            }
+            if interleaved {
+                for frame in 0..<frames {
+                    for channel in channels { append(channel[frame]) }
+                }
+            } else {
+                for sample in channels[0] { append(sample) }
+            }
+            return bytes
+        }
+        func digest(_ data: Data) -> String {
+            SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+        }
+        XCTAssertEqual(
+            digest(q15Bytes([left], interleaved: false)),
+            "f97dee335bf4a7308a2dff2c6b9a609cac4f345edc90aa3b1058f45c1d415394"
+        )
+        XCTAssertEqual(
+            digest(q15Bytes([right], interleaved: false)),
+            "7ff4c5a34a8848bc08148c821aac3d23940a3a94bba9c041615ce6e093795416"
+        )
+        XCTAssertEqual(
+            digest(q15Bytes([left, right], interleaved: true)),
+            "ee0449f080bc31f1a9710ec7a316e8e34fb7979421f1a56c6ffd55b667df2017"
+        )
+    }
+
+    func testNativeHallConvolutionAudioUnitRendersTheGeneratedImpulseOffline() throws {
+        let sampleRate = 48_000.0
+        let format = try XCTUnwrap(
+            AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 2)
+        )
+        let source = AVAudioPlayerNode()
+        let effect = JazzMakeDeterministicConvolutionAudioUnit()
+        let engine = AVAudioEngine()
+        engine.attach(source)
+        engine.attach(effect)
+        engine.connect(source, to: effect, format: format)
+        engine.connect(effect, to: engine.mainMixerNode, format: format)
+        try engine.enableManualRenderingMode(.offline, format: format, maximumFrameCount: 1_024)
+        defer {
+            engine.stop()
+            engine.disableManualRenderingMode()
+        }
+
+        let renderedFrameCount = Int(JazzConvolutionPartitionFrames()) * 4
+        let impulseInput = try XCTUnwrap(
+            AVAudioPCMBuffer(
+                pcmFormat: format,
+                frameCapacity: AVAudioFrameCount(renderedFrameCount)
+            )
+        )
+        impulseInput.frameLength = AVAudioFrameCount(renderedFrameCount)
+        let impulseChannels = try XCTUnwrap(impulseInput.floatChannelData)
+        impulseChannels[0][0] = 1
+        impulseChannels[1][0] = 1
+        source.scheduleBuffer(impulseInput)
+        try engine.start()
+        source.play()
+
+        let partitionFrames = Int(JazzConvolutionPartitionFrames())
+        var rendered = [[Float](), [Float]()]
+        for _ in 0..<(renderedFrameCount / partitionFrames) {
+            let output = try XCTUnwrap(
+                AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(partitionFrames))
+            )
+            XCTAssertEqual(
+                try engine.renderOffline(AVAudioFrameCount(partitionFrames), to: output),
+                .success
+            )
+            let channels = try XCTUnwrap(output.floatChannelData)
+            for channel in 0..<2 {
+                rendered[channel].append(
+                    contentsOf: UnsafeBufferPointer(start: channels[channel], count: Int(output.frameLength))
+                )
+            }
+        }
+
+        let impulseFrames = Int(sampleRate) * 4
+        var expectedLeft = [Float](repeating: 0, count: impulseFrames)
+        var expectedRight = [Float](repeating: 0, count: impulseFrames)
+        var observation = JazzImpulseObservation()
+        XCTAssertTrue(expectedLeft.withUnsafeMutableBufferPointer { leftBuffer in
+            expectedRight.withUnsafeMutableBufferPointer { rightBuffer in
+                JazzWriteDeterministicImpulse(
+                    sampleRate,
+                    leftBuffer.baseAddress!,
+                    rightBuffer.baseAddress!,
+                    UInt32(impulseFrames),
+                    &observation
+                )
+            }
+        })
+        let firstImpulseFrame = try XCTUnwrap(expectedLeft.firstIndex { abs($0) > 0 })
+        let firstRenderedFrame = try XCTUnwrap(rendered[0].firstIndex { abs($0) > 0.000_000_1 })
+        XCTAssertEqual(firstRenderedFrame, partitionFrames + firstImpulseFrame)
+        for offset in 0..<64 {
+            XCTAssertEqual(
+                rendered[0][firstRenderedFrame + offset],
+                expectedLeft[firstImpulseFrame + offset] * Float(observation.normalizationScale),
+                accuracy: 0.000_01
+            )
+            XCTAssertEqual(
+                rendered[1][firstRenderedFrame + offset],
+                expectedRight[firstImpulseFrame + offset] * Float(observation.normalizationScale),
+                accuracy: 0.000_01
+            )
         }
     }
 

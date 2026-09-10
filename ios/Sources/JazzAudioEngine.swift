@@ -16,6 +16,10 @@ final class JazzAudioEngine: ObservableObject {
         var dynamicsReleaseSeconds: Double
         var maximumReverbSendGain: Double
         var reverbAmount: Double
+        var impulseAlgorithmID: String
+        var impulseSeed: UInt32
+        var impulseDurationSeconds: Double
+        var convolutionPartitionFrames: Int
         var softClipDrive: Double
         var softClipOversample: Int
         var safetyGain: Double
@@ -92,7 +96,7 @@ final class JazzAudioEngine: ObservableObject {
     private let toneEQ = AVAudioUnitEQ(numberOfBands: 3)
     private let dryGain = AVAudioMixerNode()
     private let reverbSend = AVAudioMixerNode()
-    private let hall = AVAudioUnitReverb()
+    private let convolution = JazzMakeDeterministicConvolutionAudioUnit()
     private let reverbReturn = AVAudioMixerNode()
     private let sumBus = AVAudioMixerNode()
     private let dynamics = AVAudioUnitEffect(audioComponentDescription: AudioComponentDescription(
@@ -146,7 +150,7 @@ final class JazzAudioEngine: ObservableObject {
         engine.attach(toneEQ)
         engine.attach(dryGain)
         engine.attach(reverbSend)
-        engine.attach(hall)
+        engine.attach(convolution)
         engine.attach(reverbReturn)
         engine.attach(sumBus)
         engine.attach(dynamics)
@@ -171,8 +175,8 @@ final class JazzAudioEngine: ObservableObject {
             format: nil
         )
         engine.connect(dryGain, to: sumBus, format: nil)
-        engine.connect(reverbSend, to: hall, format: nil)
-        engine.connect(hall, to: reverbReturn, format: nil)
+        engine.connect(reverbSend, to: convolution, format: nil)
+        engine.connect(convolution, to: reverbReturn, format: nil)
         engine.connect(reverbReturn, to: sumBus, format: nil)
         engine.connect(sumBus, to: dynamics, format: nil)
         engine.connect(dynamics, to: softClip, format: nil)
@@ -381,7 +385,7 @@ final class JazzAudioEngine: ObservableObject {
         MasterGraphSnapshot(
             nodeIDs: [
                 "instrument-bus", "dc-block+tone-eq", "dry-gain", "reverb-send",
-                "native-medium-hall", "reverb-return", "dynamics", "native-tanh-soft-clip-2x", "safety-gain",
+                "hall-quartic-q15-v2-convolution", "reverb-return", "dynamics", "native-tanh-soft-clip-2x", "safety-gain",
                 "master-gain", "destination"
             ],
             dcBlockFrequencyHz: Double(toneEQ.bands[0].frequency),
@@ -394,6 +398,10 @@ final class JazzAudioEngine: ObservableObject {
             dynamicsReleaseSeconds: 0.18,
             maximumReverbSendGain: 0.28,
             reverbAmount: reverbAmount,
+            impulseAlgorithmID: "changes.audio.impulse.hall-quartic-q15.v2",
+            impulseSeed: 0x58403031,
+            impulseDurationSeconds: 4,
+            convolutionPartitionFrames: Int(JazzConvolutionPartitionFrames()),
             softClipDrive: 1.5,
             softClipOversample: 2,
             safetyGain: Double(safetyGain.outputVolume)
@@ -761,8 +769,6 @@ final class JazzAudioEngine: ObservableObject {
         bands[2].bypass = false
 
         dryGain.outputVolume = 1
-        hall.loadFactoryPreset(.mediumHall)
-        hall.wetDryMix = 100
         reverbReturn.outputVolume = 1
         AudioUnitSetParameter(
             dynamics.audioUnit, kDynamicsProcessorParam_Threshold,

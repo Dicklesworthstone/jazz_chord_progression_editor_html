@@ -51,6 +51,7 @@ targets:
     dependencies:
       - framework: FrankenJazzDSP.xcframework
         embed: false
+      - sdk: Accelerate.framework
     info:
       path: Sources/Info.plist
       properties:
