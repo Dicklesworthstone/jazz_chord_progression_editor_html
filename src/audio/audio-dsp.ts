@@ -55,10 +55,13 @@ export function holdAudioParamAtTime(
 ): void {
   if (parameter.cancelAndHoldAtTime !== undefined) {
     parameter.cancelAndHoldAtTime(atTimeSeconds);
-    recordParameterEvents(1);
-    return;
+  } else {
+    parameter.cancelScheduledValues(atTimeSeconds);
   }
-  parameter.cancelScheduledValues(atTimeSeconds);
+  // A native hold on a constant timeline need not insert an event at the
+  // hold time. Without this anchor, the next ramp can start at time zero
+  // (or the last event), jumping immediately to an interpolated gain.
+  // Retain native cancellation so an in-flight ramp keeps its earlier shape.
   parameter.setValueAtTime(analyticValue, atTimeSeconds);
   recordParameterEvents(2);
 }
