@@ -333,16 +333,40 @@ private struct ChartEditorView: View {
                     .accessibilityIdentifier("transpose-chart-up")
                     .accessibilityLabel("Transpose up one semitone")
                 }
-                LazyVGrid(columns: columns, spacing: 10) {
-                    ForEach(Array(store.chart.measures.enumerated()), id: \.element.id) { index, measure in
-                        MeasureCard(
-                            index: index,
-                            measure: measure,
-                            store: store,
-                            presentsInspector: presentsInspectorOnSelection
-                        )
+                if let sections = store.chart.sections, !sections.isEmpty {
+                    VStack(spacing: 12) {
+                        ForEach(store.chart.sectionGroups) { group in
+                            VStack(alignment: .leading, spacing: 9) {
+                                if let section = group.section {
+                                    NativeSectionHeader(section: section, store: store, compact: compact)
+                                } else {
+                                    Text("Opening bars")
+                                        .font(.system(size: JazzTheme.size(11), weight: .bold, design: .rounded))
+                                        .foregroundStyle(JazzTheme.secondary)
+                                }
+                                measureGrid(group.indexedMeasures)
+                            }
+                            .padding(10)
+                            .background(JazzTheme.editorSurface.opacity(0.54), in: RoundedRectangle(cornerRadius: 15))
+                            .overlay(RoundedRectangle(cornerRadius: 15).stroke(JazzTheme.stroke))
+                        }
                     }
+                } else {
+                    measureGrid(Array(store.chart.measures.enumerated()))
                 }
+            }
+        }
+    }
+
+    private func measureGrid(_ measures: [(offset: Int, element: JazzMeasure)]) -> some View {
+        LazyVGrid(columns: columns, spacing: 10) {
+            ForEach(measures, id: \.element.id) { item in
+                MeasureCard(
+                    index: item.offset,
+                    measure: item.element,
+                    store: store,
+                    presentsInspector: presentsInspectorOnSelection
+                )
             }
         }
     }
@@ -439,6 +463,93 @@ private struct ChartEditorView: View {
         .font(.system(size: JazzTheme.size(10.5), weight: .medium, design: .rounded))
         .foregroundStyle(JazzTheme.secondary)
         .padding(.bottom, 6)
+    }
+}
+
+private struct NativeSectionHeader: View {
+    let section: JazzChartSection
+    @ObservedObject var store: JazzStudioStore
+    let compact: Bool
+
+    private var isLooping: Bool { store.loopedSectionID == section.id }
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 9) { identity; metadata; controls }
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 9) { identity; Spacer(); controls }
+                metadata
+            }
+        }
+        .padding(.bottom, 2)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("chart-section-\(section.id.uuidString)")
+    }
+
+    private var identity: some View {
+        Text(section.name.prefix(2).uppercased())
+            .font(.system(size: JazzTheme.size(compact ? 14 : 15), weight: .black, design: .rounded))
+            .foregroundStyle(JazzTheme.background)
+            .frame(width: 44, height: 44)
+            .background(JazzTheme.emerald, in: RoundedRectangle(cornerRadius: 11))
+            .accessibilityHidden(true)
+    }
+
+    private var metadata: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            TextField("Section name", text: Binding(
+                get: { section.name },
+                set: { store.updateSectionName(section.id, name: $0) }
+            ))
+            .font(.system(size: JazzTheme.size(13), weight: .bold, design: .rounded))
+            .textFieldStyle(.plain)
+            .accessibilityIdentifier("section-name-\(section.id.uuidString)")
+            TextField("Section note", text: Binding(
+                get: { section.annotation },
+                set: { store.updateSectionAnnotation(section.id, annotation: $0) }
+            ))
+            .font(.system(size: JazzTheme.size(10.5), design: .rounded))
+            .foregroundStyle(JazzTheme.secondary)
+            .textFieldStyle(.plain)
+            .accessibilityIdentifier("section-note-\(section.id.uuidString)")
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var controls: some View {
+        HStack(spacing: 7) {
+            Menu {
+                ForEach(JazzSectionVoiceLeadingBoundary.allCases, id: \.self) { boundary in
+                    Button {
+                        store.updateSectionBoundary(section.id, boundary: boundary)
+                    } label: {
+                        if boundary == section.voiceLeadingBoundary {
+                            Label(boundary.label, systemImage: "checkmark")
+                        } else {
+                            Text(boundary.label)
+                        }
+                    }
+                }
+            } label: {
+                Image(systemName: section.voiceLeadingBoundary == .reset ? "arrow.down.to.line" : "point.forward.to.point.capsulepath")
+                    .frame(width: 44, height: 44)
+                    .background(JazzTheme.raised, in: Circle())
+            }
+            .accessibilityLabel("Voice leading at section \(section.name)")
+            .accessibilityValue(section.voiceLeadingBoundary.label)
+
+            Button { store.toggleSectionLoop(section.id) } label: {
+                Image(systemName: "repeat")
+                    .frame(width: 44, height: 44)
+                    .background(isLooping ? JazzTheme.brass.opacity(0.24) : JazzTheme.raised, in: Circle())
+                    .overlay(Circle().stroke(isLooping ? JazzTheme.brass : Color.clear))
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(isLooping ? JazzTheme.brass : JazzTheme.secondary)
+            .accessibilityIdentifier("section-loop-\(section.id.uuidString)")
+            .accessibilityLabel("Loop section \(section.name)")
+            .accessibilityValue(isLooping ? "On" : "Off")
+        }
     }
 }
 
@@ -1384,7 +1495,7 @@ private struct TransportBar: View {
     }
 
     private var loopControl: some View {
-        Button { store.audio.loops.toggle() } label: {
+        Button { store.toggleWholeChartLoop() } label: {
             Image(systemName: "repeat")
                 .font(.system(size: JazzTheme.size(14), weight: .bold))
                 .frame(width: 42, height: 42)

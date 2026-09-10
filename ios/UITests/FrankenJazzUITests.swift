@@ -162,6 +162,30 @@ final class FrankenJazzUITests: XCTestCase {
         add(proof)
     }
 
+    func testNamedSectionsAreVisibleEditableAndArmOnlyTheirOwnLoop() throws {
+        app.terminate()
+        app.launchArguments.append("-ui-testing-sections")
+        app.launch()
+
+        let sectionA = app.buttons["Loop section A"]
+        let sectionB = app.buttons["Loop section B"]
+        XCTAssertTrue(sectionA.waitForExistence(timeout: 3))
+        XCTAssertTrue(sectionB.waitForExistence(timeout: 3))
+        revealAboveTransport(sectionB)
+        XCTAssertGreaterThanOrEqual(sectionB.frame.width, 44)
+        XCTAssertGreaterThanOrEqual(sectionB.frame.height, 44)
+        sectionB.tap()
+        XCTAssertEqual(sectionB.value as? String, "On")
+        XCTAssertEqual(app.buttons["transport-loop"].value as? String, "Off")
+        XCTAssertTrue(app.textFields.matching(NSPredicate(format: "value == 'Head'")).firstMatch.exists)
+        XCTAssertTrue(app.textFields.matching(NSPredicate(format: "value == 'B'")).firstMatch.exists)
+
+        let proof = XCTAttachment(screenshot: app.screenshot())
+        proof.name = "FrankenJazz named section practice loop"
+        proof.lifetime = .keepAlways
+        add(proof)
+    }
+
     func testCompactTransportExposesEveryEverydayControlWithoutPlayingAudio() throws {
         let previous = app.buttons["transport-previous-chord"]
         let playPause = app.buttons["transport-play-pause"]

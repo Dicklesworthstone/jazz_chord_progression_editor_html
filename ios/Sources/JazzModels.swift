@@ -271,6 +271,47 @@ struct JazzMeasure: Identifiable, Codable, Equatable, Sendable {
     }
 }
 
+enum JazzSectionVoiceLeadingBoundary: String, CaseIterable, Codable, Sendable {
+    case reset
+    case `continue`
+
+    var label: String { self == .reset ? "Fresh voicing" : "Continue motion" }
+}
+
+struct JazzChartSection: Identifiable, Codable, Equatable, Sendable {
+    var id: UUID
+    var name: String
+    var annotation: String
+    var startMeasureID: UUID
+    var voiceLeadingBoundary: JazzSectionVoiceLeadingBoundary
+
+    init(
+        id: UUID = UUID(),
+        name: String,
+        annotation: String = "",
+        startMeasureID: UUID,
+        voiceLeadingBoundary: JazzSectionVoiceLeadingBoundary = .reset
+    ) {
+        self.id = id
+        self.name = name
+        self.annotation = annotation
+        self.startMeasureID = startMeasureID
+        self.voiceLeadingBoundary = voiceLeadingBoundary
+    }
+}
+
+struct JazzChartSectionGroup: Identifiable, Equatable, Sendable {
+    var id: String
+    var section: JazzChartSection?
+    var indexedMeasures: [(offset: Int, element: JazzMeasure)]
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.id == rhs.id && lhs.section == rhs.section &&
+            lhs.indexedMeasures.map(\.offset) == rhs.indexedMeasures.map(\.offset) &&
+            lhs.indexedMeasures.map(\.element) == rhs.indexedMeasures.map(\.element)
+    }
+}
+
 struct JazzChart: Identifiable, Codable, Equatable, Sendable {
     static let schema = "frankenjazz.chart.v1"
 
@@ -283,6 +324,9 @@ struct JazzChart: Identifiable, Codable, Equatable, Sendable {
     var instrument: InstrumentTone
     var voicingFamily: VoicingFamily
     var measures: [JazzMeasure]
+    /// Optional by design: v1 documents written before native section parity
+    /// decode with `nil` and retain their exact flat-bar representation.
+    var sections: [JazzChartSection]?
     var updatedAt: Date
 
     init(
@@ -293,7 +337,8 @@ struct JazzChart: Identifiable, Codable, Equatable, Sendable {
         groove: GrooveStyle = .mediumSwing,
         instrument: InstrumentTone = .electricPiano,
         voicingFamily: VoicingFamily = .balanced,
-        measures: [JazzMeasure]
+        measures: [JazzMeasure],
+        sections: [JazzChartSection]? = nil
     ) {
         schema = Self.schema
         self.id = id
@@ -304,6 +349,7 @@ struct JazzChart: Identifiable, Codable, Equatable, Sendable {
         self.instrument = instrument
         self.voicingFamily = voicingFamily
         self.measures = measures
+        self.sections = sections
         updatedAt = Date()
     }
 
@@ -311,7 +357,38 @@ struct JazzChart: Identifiable, Codable, Equatable, Sendable {
     var barCount: Int { measures.count }
     var durationBeats: Double { measures.reduce(0) { total, measure in total + measure.chords.reduce(0) { $0 + $1.beats } } }
 
-    var chartText: String { JazzTheory.formatChartText(measures) }
+    var chartText: String { JazzTheory.formatChartText(measures, sections: sections) }
+
+    var sectionGroups: [JazzChartSectionGroup] {
+        guard let sections, !sections.isEmpty else {
+            return [JazzChartSectionGroup(
+                id: "implicit",
+                section: nil,
+                indexedMeasures: Array(measures.enumerated())
+            )]
+        }
+        let indices = Dictionary(uniqueKeysWithValues: measures.enumerated().map { ($0.element.id, $0.offset) })
+        let ordered = sections.compactMap { section -> (JazzChartSection, Int)? in
+            indices[section.startMeasureID].map { (section, $0) }
+        }.sorted { $0.1 < $1.1 }
+        var groups: [JazzChartSectionGroup] = []
+        if let first = ordered.first, first.1 > 0 {
+            groups.append(JazzChartSectionGroup(
+                id: "implicit",
+                section: nil,
+                indexedMeasures: Array(measures[0..<first.1].enumerated()).map { ($0.offset, $0.element) }
+            ))
+        }
+        for (position, item) in ordered.enumerated() {
+            let end = position + 1 < ordered.count ? ordered[position + 1].1 : measures.count
+            groups.append(JazzChartSectionGroup(
+                id: item.0.id.uuidString,
+                section: item.0,
+                indexedMeasures: (item.1..<end).map { ($0, measures[$0]) }
+            ))
+        }
+        return groups
+    }
 }
 
 struct JazzChordPaletteRoot: Identifiable, Equatable, Sendable {
@@ -399,6 +476,7 @@ enum JazzChordPalette {
 struct ParsedChart: Equatable, Sendable {
     var measures: [JazzMeasure]
     var normalizedText: String
+    var sections: [JazzChartSection]? = nil
 }
 
 enum ChartParseIssue: LocalizedError, Equatable {
@@ -411,6 +489,8 @@ enum ChartParseIssue: LocalizedError, Equatable {
     case unsupportedChordSuffix(fragment: String, symbol: String, measure: Int)
     case invalidDuration(token: String, measure: Int)
     case invalidMeasureDuration(measure: Int)
+    case invalidSectionHeader(String)
+    case sectionWithoutMeasures(String)
 
     var errorDescription: String? {
         switch self {
@@ -423,6 +503,8 @@ enum ChartParseIssue: LocalizedError, Equatable {
         case let .unsupportedChordSuffix(fragment, symbol, measure): "‘\(symbol)’ in measure \(measure) uses the unsupported chord suffix ‘\(fragment)’; remove it or choose a supported quality."
         case let .invalidDuration(token, measure): "‘\(token)’ in measure \(measure) has an invalid beat duration. Use a positive value such as :2."
         case let .invalidMeasureDuration(measure): "The explicit durations in measure \(measure) must total exactly four beats."
+        case let .invalidSectionHeader(line): "‘\(line)’ is not a valid section header. Use [A] or [Bridge] \"optional note\"."
+        case let .sectionWithoutMeasures(name): "Section ‘\(name)’ needs at least one bar."
         }
     }
 }
@@ -479,6 +561,7 @@ enum JazzDocumentValidationIssue: LocalizedError, Equatable {
     case measureCount
     case duplicateMeasureID
     case duplicateChordID
+    case invalidSections
     case invalidMeasure(Int)
     case invalidChord(Int)
 
@@ -490,6 +573,7 @@ enum JazzDocumentValidationIssue: LocalizedError, Equatable {
         case .measureCount: "The chart must contain 1–\(JazzTheory.maximumMeasures) measures."
         case .duplicateMeasureID: "Two measures reuse the same stable identity."
         case .duplicateChordID: "Two chord events reuse the same stable identity."
+        case .invalidSections: "Section names, identities, order, or starting bars are invalid."
         case let .invalidMeasure(index): "Measure \(index) must contain 1–\(JazzTheory.maximumChordsPerMeasure) events totaling exactly four beats."
         case let .invalidChord(index): "A chord in measure \(index) contains an invalid symbol, duration, annotation, or stored voicing."
         }
@@ -543,6 +627,25 @@ enum JazzDocumentValidator {
                       JazzTheory.parseChord(chord.symbol, in: chart.key) != nil else {
                     throw JazzDocumentValidationIssue.invalidChord(index)
                 }
+            }
+        }
+        if let sections = chart.sections {
+            let measureIndices = Dictionary(uniqueKeysWithValues: chart.measures.enumerated().map { ($0.element.id, $0.offset) })
+            var sectionIDs = Set<UUID>()
+            var starts = Set<UUID>()
+            var priorIndex = -1
+            guard sections.count <= 64 else { throw JazzDocumentValidationIssue.invalidSections }
+            for section in sections {
+                guard sectionIDs.insert(section.id).inserted,
+                      starts.insert(section.startMeasureID).inserted,
+                      let index = measureIndices[section.startMeasureID],
+                      index > priorIndex,
+                      !section.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                      section.name.count <= 120,
+                      section.annotation.count <= 500 else {
+                    throw JazzDocumentValidationIssue.invalidSections
+                }
+                priorIndex = index
             }
         }
     }

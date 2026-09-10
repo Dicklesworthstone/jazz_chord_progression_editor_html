@@ -4,6 +4,120 @@ import FrankenJazzDSP
 @testable import FrankenJazz
 
 final class FrankenJazzCoreTests: XCTestCase {
+    func testNamedSectionsMatchOriginalSyntaxAndRoundTripWithoutFlattening() throws {
+        let source = "[A] \"Opening\"\n| Dm7 G7 | Cmaj7 |\n[Bridge]\n| Fmaj7 | E7 |"
+        let parsed = try JazzTheory.parseChart(source)
+
+        XCTAssertEqual(parsed.measures.map { $0.chords.map(\.symbol) }, [
+            ["Dm7", "G7"], ["Cmaj7"], ["Fmaj7"], ["E7"]
+        ])
+        XCTAssertEqual(parsed.sections?.map(\.name), ["A", "Bridge"])
+        XCTAssertEqual(parsed.sections?.map(\.annotation), ["Opening", ""])
+        XCTAssertEqual(parsed.sections?.map(\.startMeasureID), [parsed.measures[0].id, parsed.measures[2].id])
+        XCTAssertEqual(parsed.normalizedText, source)
+        XCTAssertEqual(try JazzTheory.parseChart(parsed.normalizedText).normalizedText, source)
+
+        let implicit = try JazzTheory.parseChart("| Dm7 G7 | Cmaj7 |")
+        XCTAssertNil(implicit.sections)
+        XCTAssertEqual(implicit.normalizedText, "| Dm7 G7 | Cmaj7 |")
+    }
+
+    func testSectionPlaybackWindowCannotLeakIntoAdjacentSections() {
+        let loop = JazzAudioEngine.SectionLoopRange(startBeat: 8, endBeat: 16)
+        XCTAssertEqual(
+            JazzAudioEngine.playbackWindow(requestedBeat: 0, totalBeats: 24, sectionLoop: loop),
+            .init(startBeat: 8, endBeat: 16)
+        )
+        XCTAssertEqual(
+            JazzAudioEngine.playbackWindow(requestedBeat: 12, totalBeats: 24, sectionLoop: loop),
+            .init(startBeat: 12, endBeat: 16)
+        )
+        XCTAssertEqual(
+            JazzAudioEngine.playbackWindow(requestedBeat: 20, totalBeats: 24, sectionLoop: loop),
+            .init(startBeat: 8, endBeat: 16)
+        )
+        XCTAssertEqual(
+            JazzAudioEngine.playbackWindow(requestedBeat: 20, totalBeats: 24, sectionLoop: nil),
+            .init(startBeat: 20, endBeat: 24)
+        )
+        XCTAssertNil(JazzAudioEngine.playbackWindow(requestedBeat: .nan, totalBeats: 24, sectionLoop: loop))
+    }
+
+    func testSectionBoundaryReallyControlsAutomaticVoiceLeading() throws {
+        let first = JazzMeasure(chords: [JazzChordEvent(symbol: "Cmaj7")])
+        let second = JazzMeasure(chords: [JazzChordEvent(symbol: "Bmaj7")])
+        let sectionA = JazzChartSection(name: "A", startMeasureID: first.id)
+        var sectionB = JazzChartSection(
+            name: "B",
+            startMeasureID: second.id,
+            voiceLeadingBoundary: .continue
+        )
+        var chart = JazzChart(title: "Boundary", measures: [first, second], sections: [sectionA, sectionB])
+        let continued = JazzTheory.compilePlayback(chart)
+        let plainB = try XCTUnwrap(JazzTheory.parseChord("Bmaj7", in: .c))
+        XCTAssertNotEqual(continued[1].midiPitches, JazzTheory.voicing(for: plainB, family: .balanced))
+        XCTAssertEqual(continued[1].midiPitches, [51, 54, 58, 59])
+
+        sectionB.voiceLeadingBoundary = .reset
+        chart.sections = [sectionA, sectionB]
+        let reset = JazzTheory.compilePlayback(chart)
+        XCTAssertEqual(reset[1].midiPitches, JazzTheory.voicing(for: plainB, family: .balanced))
+    }
+
+    func testOldNativeJSONWithoutSectionsStillDecodesAsTheSameFlatChart() throws {
+        let chart = JazzChart(title: "Old chart", measures: [
+            JazzMeasure(chords: [JazzChordEvent(symbol: "Cmaj7")])
+        ])
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let data = try encoder.encode(chart)
+        XCTAssertFalse(String(decoding: data, as: UTF8.self).contains("\"sections\""))
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let decoded = try decoder.decode(JazzChart.self, from: data)
+        XCTAssertNil(decoded.sections)
+        XCTAssertEqual(decoded.chartText, "| Cmaj7 |")
+        try JazzDocumentValidator.validate(decoded)
+    }
+
+    @MainActor
+    func testSectionLoopRangeAndBoundaryRepairStayOwnedByTheChartStore() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FrankenJazzSectionTests-" + UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let measures = ["Cmaj7", "Dm7", "G7", "Fmaj7"].map {
+            JazzMeasure(chords: [JazzChordEvent(symbol: $0)])
+        }
+        let first = JazzChartSection(name: "A", startMeasureID: measures[0].id)
+        let bridge = JazzChartSection(name: "B", annotation: "Lift", startMeasureID: measures[2].id)
+        let chart = JazzChart(title: "Sections", measures: measures, sections: [first, bridge])
+        let recovery = JazzRecoveryStore(directory: directory)
+        recovery.save(chart)
+        let store = JazzStudioStore(recovery: recovery)
+
+        XCTAssertEqual(store.sectionBeatRange(first.id), .init(startBeat: 0, endBeat: 8))
+        XCTAssertEqual(store.sectionBeatRange(bridge.id), .init(startBeat: 8, endBeat: 16))
+        store.toggleSectionLoop(bridge.id)
+        XCTAssertEqual(store.loopedSectionID, bridge.id)
+        XCTAssertEqual(store.audio.sectionLoopRange, .init(startBeat: 8, endBeat: 16))
+        XCTAssertFalse(store.audio.loops)
+        store.setWholeChartLoop(true)
+        XCTAssertNil(store.loopedSectionID)
+        XCTAssertNil(store.audio.sectionLoopRange)
+        XCTAssertTrue(store.audio.loops)
+
+        let beforeDelete = store.chart
+        store.select(measures[2].chords[0])
+        store.deleteMeasure(measures[2].id)
+        XCTAssertEqual(store.chart.sections?.last?.id, bridge.id)
+        XCTAssertEqual(store.chart.sections?.last?.startMeasureID, measures[3].id)
+        XCTAssertEqual(store.chart.sections?.last?.annotation, "Lift")
+        store.undo()
+        XCTAssertEqual(store.chart, beforeDelete)
+    }
+
     func testNativeChordPaletteMatchesOriginalVocabularyAndEveryPairParses() throws {
         XCTAssertEqual(JazzChordPalette.roots.map(\.symbol), [
             "C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"

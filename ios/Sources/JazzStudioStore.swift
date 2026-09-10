@@ -59,6 +59,7 @@ final class JazzStudioStore: ObservableObject {
     @Published private(set) var revision = 0
     @Published private(set) var continuationOptions: [JazzContinuationOption] = []
     @Published private(set) var continuationIssue: String?
+    @Published private(set) var loopedSectionID: UUID?
 
     let audio = JazzAudioEngine()
     let myCharts: JazzMyChartsStore
@@ -88,7 +89,17 @@ final class JazzStudioStore: ObservableObject {
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         encoder.dateEncodingStrategy = .iso8601
         decoder.dateDecodingStrategy = .iso8601
-        if ProcessInfo.processInfo.arguments.contains("-ui-testing-reset") {
+        if ProcessInfo.processInfo.arguments.contains("-ui-testing-sections") {
+            let parsed = try? JazzTheory.parseChart("[A] \"Head\"\n| Cmaj7 | Dm7 |\n[B]\n| G7 | Cmaj7 |")
+            let seed = JazzChart(
+                title: "Section practice",
+                measures: parsed?.measures ?? [JazzMeasure(chords: [JazzChordEvent(symbol: "Cmaj7")])],
+                sections: parsed?.sections
+            )
+            chart = seed
+            draftText = seed.chartText
+            selectedChordID = seed.measures.first?.chords.first?.id
+        } else if ProcessInfo.processInfo.arguments.contains("-ui-testing-reset") {
             let seed = Self.chart(from: JazzLibrary.starter)
             chart = seed
             draftText = seed.chartText
@@ -267,6 +278,67 @@ final class JazzStudioStore: ObservableObject {
         guard family != chart.voicingFamily else { return }
         audio.stop()
         mutate { $0.voicingFamily = family }
+    }
+
+    func updateSectionName(_ sectionID: UUID, name: String) {
+        let bounded = String(name.prefix(120)).trimmingCharacters(in: .newlines)
+        guard !bounded.trimmingCharacters(in: .whitespaces).isEmpty,
+              chart.sections?.first(where: { $0.id == sectionID })?.name != bounded else { return }
+        mutate(coalescing: "section-name-\(sectionID.uuidString)") { chart in
+            guard let index = chart.sections?.firstIndex(where: { $0.id == sectionID }) else { return }
+            chart.sections?[index].name = bounded
+        }
+    }
+
+    func updateSectionAnnotation(_ sectionID: UUID, annotation: String) {
+        let bounded = String(annotation.prefix(500)).trimmingCharacters(in: .newlines)
+        guard chart.sections?.first(where: { $0.id == sectionID })?.annotation != bounded else { return }
+        mutate(coalescing: "section-note-\(sectionID.uuidString)") { chart in
+            guard let index = chart.sections?.firstIndex(where: { $0.id == sectionID }) else { return }
+            chart.sections?[index].annotation = bounded
+        }
+    }
+
+    func updateSectionBoundary(_ sectionID: UUID, boundary: JazzSectionVoiceLeadingBoundary) {
+        guard chart.sections?.first(where: { $0.id == sectionID })?.voiceLeadingBoundary != boundary else { return }
+        mutate { chart in
+            guard let index = chart.sections?.firstIndex(where: { $0.id == sectionID }) else { return }
+            chart.sections?[index].voiceLeadingBoundary = boundary
+        }
+    }
+
+    func toggleSectionLoop(_ sectionID: UUID) {
+        if loopedSectionID == sectionID {
+            loopedSectionID = nil
+            audio.clearSectionLoop()
+            notice = "Section loop off."
+            return
+        }
+        guard let range = sectionBeatRange(sectionID) else {
+            notice = "That section no longer has a playable bar range."
+            return
+        }
+        loopedSectionID = sectionID
+        audio.setSectionLoop(startBeat: range.startBeat, endBeat: range.endBeat)
+        let name = chart.sections?.first(where: { $0.id == sectionID })?.name ?? "section"
+        notice = "Looping section \(name). Press Play to practice it."
+    }
+
+    func toggleWholeChartLoop() {
+        setWholeChartLoop(!audio.loops)
+    }
+
+    func setWholeChartLoop(_ enabled: Bool) {
+        loopedSectionID = nil
+        audio.clearSectionLoop()
+        audio.loops = enabled
+    }
+
+    func sectionBeatRange(_ sectionID: UUID) -> JazzAudioEngine.SectionLoopRange? {
+        guard let group = chart.sectionGroups.first(where: { $0.section?.id == sectionID }),
+              let first = group.indexedMeasures.first?.offset,
+              let last = group.indexedMeasures.last?.offset else { return nil }
+        return JazzAudioEngine.SectionLoopRange(startBeat: Double(first) * 4, endBeat: Double(last + 1) * 4)
     }
 
     func freezeSelectedVoicing() {
@@ -798,12 +870,26 @@ final class JazzStudioStore: ObservableObject {
             let id = measureIndex < chart.measures.count ? chart.measures[measureIndex].id : UUID()
             preserved.append(JazzMeasure(id: id, chords: chords))
         }
-        guard preserved != chart.measures else {
+        let parsedSections = parsed.sections?.enumerated().compactMap { position, section -> JazzChartSection? in
+            guard let parsedIndex = parsed.measures.firstIndex(where: { $0.id == section.startMeasureID }),
+                  preserved.indices.contains(parsedIndex) else { return nil }
+            var preservedSection = section
+            if let old = chart.sections, old.indices.contains(position) {
+                preservedSection.id = old[position].id
+                preservedSection.voiceLeadingBoundary = old[position].voiceLeadingBoundary
+            }
+            preservedSection.startMeasureID = preserved[parsedIndex].id
+            return preservedSection
+        }
+        guard preserved != chart.measures || parsedSections != chart.sections else {
             draftState = .current
             return
         }
         audio.stop()
-        mutate { $0.measures = preserved }
+        mutate {
+            $0.measures = preserved
+            $0.sections = parsedSections
+        }
         draftText = parsed.normalizedText
         draftState = .current
         if selectedChord == nil { selectedChordID = preserved.first?.chords.first?.id }
@@ -822,6 +908,7 @@ final class JazzStudioStore: ObservableObject {
     private func mutate(coalescing key: String? = nil, _ edit: (inout JazzChart) -> Void) {
         var next = chart
         edit(&next)
+        next.sections = repairedSections(in: next, from: chart)
         next.updatedAt = Date()
         guard next != chart else { return }
         let now = Date()
@@ -839,6 +926,8 @@ final class JazzStudioStore: ObservableObject {
 
     private func commit(_ next: JazzChart, notice: String?) {
         audio.stop()
+        loopedSectionID = nil
+        audio.clearSectionLoop()
         undoStack.append(chart)
         redoStack.removeAll(keepingCapacity: true)
         coalescingKey = nil
@@ -852,6 +941,7 @@ final class JazzStudioStore: ObservableObject {
         canRedo = !redoStack.isEmpty
         if let notice { self.notice = notice }
         if selectedChord == nil { selectedChordID = chart.measures.first?.chords.first?.id }
+        synchronizeSectionLoop()
         refreshContinuations()
         draftText = chart.chartText
         draftState = .current
@@ -861,6 +951,44 @@ final class JazzStudioStore: ObservableObject {
             try? await Task.sleep(for: .milliseconds(280))
             guard !Task.isCancelled, let self else { return }
             self.audio.prime(chart: self.chart)
+        }
+    }
+
+    private func repairedSections(in candidate: JazzChart, from previous: JazzChart) -> [JazzChartSection]? {
+        guard let sections = candidate.sections else { return nil }
+        let surviving = Set(candidate.measures.map(\.id))
+        let oldOrder = previous.measures.map(\.id)
+        let oldStarts = previous.sections ?? []
+        var repaired: [JazzChartSection] = []
+        for section in sections {
+            if surviving.contains(section.startMeasureID) {
+                repaired.append(section)
+                continue
+            }
+            guard let oldIndex = oldOrder.firstIndex(of: section.startMeasureID) else { continue }
+            let nextBoundary = oldStarts
+                .compactMap { oldOrder.firstIndex(of: $0.startMeasureID) }
+                .filter { $0 > oldIndex }
+                .min() ?? oldOrder.count
+            guard let replacement = oldOrder[oldIndex..<nextBoundary].first(where: surviving.contains) else { continue }
+            var moved = section
+            moved.startMeasureID = replacement
+            repaired.append(moved)
+        }
+        let indices = Dictionary(uniqueKeysWithValues: candidate.measures.enumerated().map { ($0.element.id, $0.offset) })
+        let ordered = repaired.sorted { (indices[$0.startMeasureID] ?? .max) < (indices[$1.startMeasureID] ?? .max) }
+        return ordered.isEmpty ? nil : ordered
+    }
+
+    private func synchronizeSectionLoop() {
+        guard let loopedSectionID else { return }
+        guard let range = sectionBeatRange(loopedSectionID) else {
+            self.loopedSectionID = nil
+            audio.clearSectionLoop()
+            return
+        }
+        if audio.sectionLoopRange != range {
+            audio.setSectionLoop(startBeat: range.startBeat, endBeat: range.endBeat)
         }
     }
 
@@ -893,7 +1021,14 @@ final class JazzStudioStore: ObservableObject {
 
     private static func chart(from entry: LibraryEntry, fallbackTempo: Double = 132) -> JazzChart {
         let parsed = (try? JazzTheory.parseChart(entry.chartText)) ?? ParsedChart(measures: [JazzMeasure(chords: [JazzChordEvent(symbol: "Cmaj7")])], normalizedText: "| Cmaj7 |")
-        return JazzChart(title: entry.title, key: entry.key, tempoBPM: entry.tempo ?? fallbackTempo, groove: entry.groove, measures: parsed.measures)
+        return JazzChart(
+            title: entry.title,
+            key: entry.key,
+            tempoBPM: entry.tempo ?? fallbackTempo,
+            groove: entry.groove,
+            measures: parsed.measures,
+            sections: parsed.sections
+        )
     }
 }
 

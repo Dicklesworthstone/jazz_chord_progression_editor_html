@@ -3,6 +3,10 @@ import Foundation
 
 @MainActor
 final class JazzAudioEngine: ObservableObject {
+    struct SectionLoopRange: Equatable, Sendable {
+        var startBeat: Double
+        var endBeat: Double
+    }
     struct TransportClickPlan: Equatable, Sendable {
         var leadInBeats: Double
         var chartPhaseBeat: Double
@@ -29,6 +33,7 @@ final class JazzAudioEngine: ObservableObject {
     @Published private(set) var activeChordID: UUID?
     @Published private(set) var previewIssue: String?
     @Published var loops = false
+    @Published private(set) var sectionLoopRange: SectionLoopRange?
     @Published private(set) var masterVolume = 0.78
     @Published private(set) var isMuted = false
     @Published private(set) var countInEnabled = false
@@ -57,6 +62,7 @@ final class JazzAudioEngine: ObservableObject {
     private var playbackStart = Date()
     private var startingBeat = 0.0
     private var activeLeadInBeats = 0.0
+    private var scheduledEndBeat = 0.0
     private var generation = 0
     private var renderRequest = 0
     private var previewGeneration = 0
@@ -205,6 +211,26 @@ final class JazzAudioEngine: ObservableObject {
         state = .ready
     }
 
+    func setSectionLoop(startBeat: Double, endBeat: Double) {
+        guard startBeat.isFinite, endBeat.isFinite, startBeat >= 0, endBeat > startBeat else { return }
+        loops = false
+        sectionLoopRange = SectionLoopRange(startBeat: startBeat, endBeat: endBeat)
+        if state == .playing {
+            startPlayer(atBeat: startBeat)
+        } else {
+            playheadBeat = startBeat
+            updateActiveChord()
+        }
+    }
+
+    func clearSectionLoop() {
+        let continuesPlaying = state == .playing
+        if continuesPlaying { updatePlayhead() }
+        let resumeBeat = playheadBeat
+        sectionLoopRange = nil
+        if continuesPlaying { startPlayer(atBeat: resumeBeat) }
+    }
+
     func restart(chart: JazzChart) {
         play(chart: chart, fromBeat: 0)
     }
@@ -273,6 +299,27 @@ final class JazzAudioEngine: ObservableObject {
             firstChartClickOffsetBeats: metronomeEnabled ? nextBeat - safeStart : nil,
             firstChartClickIsAccent: metronomeEnabled && Int(nextBeat.rounded()) % 4 == 0
         )
+    }
+
+    nonisolated static func playbackWindow(
+        requestedBeat: Double,
+        totalBeats: Double,
+        sectionLoop: SectionLoopRange?
+    ) -> SectionLoopRange? {
+        guard requestedBeat.isFinite, totalBeats.isFinite, totalBeats > 0 else { return nil }
+        if let sectionLoop,
+           sectionLoop.startBeat.isFinite,
+           sectionLoop.endBeat.isFinite,
+           sectionLoop.startBeat >= 0,
+           sectionLoop.startBeat < totalBeats,
+           sectionLoop.endBeat > sectionLoop.startBeat,
+           sectionLoop.endBeat <= totalBeats + 0.000_001 {
+            let start = requestedBeat >= sectionLoop.startBeat && requestedBeat < sectionLoop.endBeat
+                ? requestedBeat
+                : sectionLoop.startBeat
+            return SectionLoopRange(startBeat: start, endBeat: min(totalBeats, sectionLoop.endBeat))
+        }
+        return SectionLoopRange(startBeat: min(max(0, requestedBeat), totalBeats), endBeat: totalBeats)
     }
 
     /// Plays one bounded inspector note without touching any main-transport
@@ -399,22 +446,40 @@ final class JazzAudioEngine: ObservableObject {
             try configureSession()
             player.stop()
             clickPlayer.stop()
-            let seconds = beat * 60 / tempo
+            guard let window = Self.playbackWindow(
+                requestedBeat: beat,
+                totalBeats: totalBeats,
+                sectionLoop: sectionLoopRange
+            ) else {
+                state = .failed("The requested playback range is invalid.")
+                return
+            }
+            let effectiveBeat = window.startBeat
+            let seconds = effectiveBeat * 60 / tempo
             let startFrame = AVAudioFramePosition(seconds * buffer.format.sampleRate)
-            let available = max(0, AVAudioFramePosition(buffer.frameLength) - startFrame)
+            let endBeat = window.endBeat
+            let endFrame = min(
+                AVAudioFramePosition(buffer.frameLength),
+                AVAudioFramePosition((endBeat * 60 / tempo * buffer.format.sampleRate).rounded())
+            )
+            let available = max(0, endFrame - startFrame)
             guard available > 0 else {
                 playheadBeat = 0
                 state = .ready
                 return
             }
-            let playable = startFrame == 0 ? buffer : slice(buffer, startingAt: AVAudioFrameCount(startFrame))
+            let playable = slice(
+                buffer,
+                startingAt: AVAudioFrameCount(startFrame),
+                frameCount: AVAudioFrameCount(available)
+            )
             guard let playable else {
                 state = .failed("The selected playback position could not be prepared.")
                 return
             }
             scheduledBuffer = playable
             let clickPlan = Self.transportClickPlan(
-                startBeat: beat,
+                startBeat: effectiveBeat,
                 countInEnabled: includeCountIn && countInEnabled,
                 metronomeEnabled: metronomeEnabled
             )
@@ -438,12 +503,13 @@ final class JazzAudioEngine: ObservableObject {
                     self.finishedNaturally()
                 }
             }
-            startingBeat = beat
-            playheadBeat = beat
+            startingBeat = effectiveBeat
+            scheduledEndBeat = endBeat
+            playheadBeat = effectiveBeat
             isCountingIn = activeLeadInBeats > 0
-            activeChordID = isCountingIn ? nil : events.last(where: { $0.startBeat <= beat })?.chordID
+            activeChordID = isCountingIn ? nil : events.last(where: { $0.startBeat <= effectiveBeat })?.chordID
             playbackStart = Date()
-            guard scheduleClicks(startBeat: beat, includeCountIn: activeLeadInBeats > 0) else {
+            guard scheduleClicks(startBeat: effectiveBeat, includeCountIn: activeLeadInBeats > 0) else {
                 state = .failed("The metronome could not be prepared.")
                 return
             }
@@ -517,6 +583,23 @@ final class JazzAudioEngine: ObservableObject {
         return output
     }
 
+    private func slice(
+        _ source: AVAudioPCMBuffer,
+        startingAt start: AVAudioFrameCount,
+        frameCount: AVAudioFrameCount
+    ) -> AVAudioPCMBuffer? {
+        guard start < source.frameLength, frameCount > 0 else { return nil }
+        let count = min(frameCount, source.frameLength - start)
+        guard let output = AVAudioPCMBuffer(pcmFormat: source.format, frameCapacity: count),
+              let inputChannels = source.floatChannelData,
+              let outputChannels = output.floatChannelData else { return nil }
+        output.frameLength = count
+        for channel in 0..<Int(source.format.channelCount) {
+            outputChannels[channel].update(from: inputChannels[channel].advanced(by: Int(start)), count: Int(count))
+        }
+        return output
+    }
+
     private func installTimer() {
         timer?.invalidate()
         timer = Timer.scheduledTimer(withTimeInterval: 1 / 24, repeats: true) { [weak self] _ in
@@ -529,7 +612,7 @@ final class JazzAudioEngine: ObservableObject {
         guard state == .playing else { return }
         let elapsedBeats = Date().timeIntervalSince(playbackStart) * tempo / 60
         isCountingIn = elapsedBeats < activeLeadInBeats
-        playheadBeat = min(totalBeats, startingBeat + max(0, elapsedBeats - activeLeadInBeats))
+        playheadBeat = min(scheduledEndBeat, startingBeat + max(0, elapsedBeats - activeLeadInBeats))
         if isCountingIn {
             activeChordID = nil
         } else {
@@ -547,7 +630,9 @@ final class JazzAudioEngine: ObservableObject {
         clickPlayer.stop()
         activeLeadInBeats = 0
         isCountingIn = false
-        if loops, totalBeats > 0 {
+        if let sectionLoopRange {
+            startPlayer(atBeat: sectionLoopRange.startBeat)
+        } else if loops, totalBeats > 0 {
             startPlayer(atBeat: 0)
         } else {
             playheadBeat = totalBeats

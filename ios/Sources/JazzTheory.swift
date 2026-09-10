@@ -43,9 +43,43 @@ enum JazzTheory {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { throw ChartParseIssue.empty }
 
+        var sectionSpecs: [(name: String, annotation: String, measureIndex: Int)] = []
+        let sectionLines = trimmed.components(separatedBy: .newlines)
+        let hasSections = sectionLines.contains { $0.trimmingCharacters(in: .whitespaces).hasPrefix("[") }
+        var measureSource = trimmed
+        if hasSections {
+            var bodyMeasures: [String] = []
+            var measureCount = 0
+            var pendingSection: (name: String, annotation: String)?
+            for sourceLine in sectionLines {
+                let line = sourceLine.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !line.isEmpty else { continue }
+                if line.hasPrefix("[") {
+                    if let pendingSection { throw ChartParseIssue.sectionWithoutMeasures(pendingSection.name) }
+                    guard let declaration = parseSectionHeader(line) else {
+                        throw ChartParseIssue.invalidSectionHeader(line)
+                    }
+                    pendingSection = declaration
+                    continue
+                }
+                guard line.contains("|") else { throw ChartParseIssue.invalidSectionHeader(line) }
+                if let declaration = pendingSection {
+                    sectionSpecs.append((declaration.name, declaration.annotation, measureCount))
+                    pendingSection = nil
+                }
+                var pieces = line.split(separator: "|", omittingEmptySubsequences: false)
+                if pieces.first?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == true { pieces.removeFirst() }
+                if pieces.last?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == true { pieces.removeLast() }
+                measureCount += pieces.count
+                bodyMeasures.append(contentsOf: pieces.map(String.init))
+            }
+            if let pendingSection { throw ChartParseIssue.sectionWithoutMeasures(pendingSection.name) }
+            measureSource = "|" + bodyMeasures.joined(separator: "|") + "|"
+        }
+
         let rawMeasures: [Substring]
-        if trimmed.contains("|") {
-            var pieces = trimmed.split(separator: "|", omittingEmptySubsequences: false)
+        if measureSource.contains("|") {
+            var pieces = measureSource.split(separator: "|", omittingEmptySubsequences: false)
             if pieces.first?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == true {
                 pieces.removeFirst()
             }
@@ -55,7 +89,7 @@ enum JazzTheory {
             guard !pieces.isEmpty else { throw ChartParseIssue.empty }
             rawMeasures = pieces
         } else {
-            rawMeasures = [Substring(trimmed)]
+            rawMeasures = [Substring(measureSource)]
         }
         guard rawMeasures.count <= maximumMeasures else { throw ChartParseIssue.tooManyMeasures(limit: maximumMeasures) }
 
@@ -115,19 +149,61 @@ enum JazzTheory {
             }
             measures.append(JazzMeasure(chords: chords))
         }
-        let normalized = formatChartText(measures)
-        return ParsedChart(measures: measures, normalizedText: normalized)
+        let sections = sectionSpecs.isEmpty ? nil : sectionSpecs.map { spec in
+            JazzChartSection(
+                name: spec.name,
+                annotation: spec.annotation,
+                startMeasureID: measures[spec.measureIndex].id
+            )
+        }
+        let normalized = formatChartText(measures, sections: sections)
+        return ParsedChart(measures: measures, normalizedText: normalized, sections: sections)
     }
 
-    static func formatChartText(_ measures: [JazzMeasure]) -> String {
-        measures.map { measure in
+    static func formatChartText(_ measures: [JazzMeasure], sections: [JazzChartSection]? = nil) -> String {
+        let markers = Dictionary(uniqueKeysWithValues: (sections ?? []).map { ($0.startMeasureID, $0) })
+        let barFragments = measures.map { measure in
             let equalDuration = 4 / Double(measure.chords.count)
             let canUseImplicitDurations = measure.chords.allSatisfy { abs($0.beats - equalDuration) < 0.000_001 }
             let tokens = measure.chords.map { chord in
                 canUseImplicitDurations ? chord.symbol : "\(chord.symbol):\(formatBeatDuration(chord.beats))"
             }
             return "| " + tokens.joined(separator: " ") + " "
-        }.joined() + "|"
+        }
+        guard let sections, !sections.isEmpty else { return barFragments.joined() + "|" }
+
+        var lines: [String] = []
+        var currentBars: [String] = []
+        for (index, measure) in measures.enumerated() {
+            if let section = markers[measure.id] {
+                if !currentBars.isEmpty {
+                    lines.append(currentBars.joined() + "|")
+                    currentBars.removeAll(keepingCapacity: true)
+                }
+                let escaped = section.annotation
+                    .replacingOccurrences(of: "\\", with: "\\\\")
+                    .replacingOccurrences(of: "\"", with: "\\\"")
+                lines.append("[\(section.name)]" + (escaped.isEmpty ? "" : " \"\(escaped)\""))
+            }
+            currentBars.append(barFragments[index])
+        }
+        if !currentBars.isEmpty { lines.append(currentBars.joined() + "|") }
+        return lines.joined(separator: "\n")
+    }
+
+    private static func parseSectionHeader(_ line: String) -> (name: String, annotation: String)? {
+        guard line.first == "[", let close = line.firstIndex(of: "]") else { return nil }
+        let name = String(line[line.index(after: line.startIndex)..<close]).trimmingCharacters(in: .whitespaces)
+        guard !name.isEmpty, name.count <= 120 else { return nil }
+        let tail = line[line.index(after: close)...].trimmingCharacters(in: .whitespaces)
+        guard !tail.isEmpty else { return (name, "") }
+        guard tail.first == "\"", tail.last == "\"", tail.count >= 2 else { return nil }
+        let encoded = String(tail.dropFirst().dropLast())
+        let annotation = encoded
+            .replacingOccurrences(of: "\\\"", with: "\"")
+            .replacingOccurrences(of: "\\\\", with: "\\")
+        guard annotation.count <= 500 else { return nil }
+        return (name, annotation)
     }
 
     private static func formatBeatDuration(_ beats: Double) -> String {
@@ -320,27 +396,50 @@ enum JazzTheory {
     static func compilePlayback(_ chart: JazzChart) -> [PlaybackEvent] {
         var beat = 0.0
         var events: [PlaybackEvent] = []
+        let sectionBoundaries = Dictionary(uniqueKeysWithValues: (chart.sections ?? []).map {
+            ($0.startMeasureID, $0.voiceLeadingBoundary)
+        })
+        var previousPitches: [Int]?
         for measure in chart.measures {
+            if sectionBoundaries[measure.id] == .reset { previousPitches = nil }
             for chord in measure.chords {
                 if let description = parseChord(chord.symbol, in: chart.key) {
+                    let stored = chord.manualMIDIPitches ?? chord.frozenMIDIPitches
+                    let automatic = voicing(for: description, family: chart.voicingFamily)
+                    let pitches = stored ?? {
+                        guard chart.sections != nil, let previousPitches else { return automatic }
+                        return nearestOctaveVoicing(automatic, to: previousPitches)
+                    }()
                     events.append(
                         PlaybackEvent(
                             id: UUID(),
                             chordID: chord.id,
                             startBeat: beat,
                             durationBeats: chord.beats,
-                            midiPitches: chord.manualMIDIPitches
-                                ?? chord.frozenMIDIPitches
-                                ?? voicing(for: description, family: chart.voicingFamily),
+                            midiPitches: pitches,
                             permitsBassReinforcement: chord.manualMIDIPitches == nil
                                 && chord.frozenMIDIPitches == nil
                         )
                     )
+                    previousPitches = pitches
                 }
                 beat += chord.beats
             }
         }
         return events
+    }
+
+    private static func nearestOctaveVoicing(_ pitches: [Int], to previous: [Int]) -> [Int] {
+        guard !previous.isEmpty else { return pitches }
+        return pitches.map { pitch in
+            let pitchClass = (pitch % 12 + 12) % 12
+            return stride(from: 28 + ((pitchClass - 28) % 12 + 12) % 12, through: 92, by: 12)
+                .min { left, right in
+                    let leftDistance = previous.map { abs($0 - left) }.min() ?? .max
+                    let rightDistance = previous.map { abs($0 - right) }.min() ?? .max
+                    return (leftDistance, abs(left - pitch), left) < (rightDistance, abs(right - pitch), right)
+                } ?? pitch
+        }.sorted()
     }
 
     static func transpose(symbol: String, semitones: Int, preferFlats: Bool) -> String {

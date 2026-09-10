@@ -62,7 +62,7 @@ struct FrankenJazzApp: App {
                     .keyboardShortcut(.space, modifiers: [])
                 Button("Stop") { store.audio.stop() }
                     .keyboardShortcut(".", modifiers: .command)
-                Toggle("Loop Chart", isOn: Binding(get: { store.audio.loops }, set: { store.audio.loops = $0 }))
+                Toggle("Loop Chart", isOn: Binding(get: { store.audio.loops }, set: store.setWholeChartLoop))
                 Toggle(
                     "One-Bar Count-In",
                     isOn: Binding(get: { store.audio.countInEnabled }, set: store.audio.setCountInEnabled)
