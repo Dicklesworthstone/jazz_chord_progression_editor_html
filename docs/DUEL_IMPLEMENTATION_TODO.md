@@ -72,13 +72,19 @@ Package `jcpe-6ujg.5`. Spec `jcpe-6ujg.5.1` → build `jcpe-6ujg.5.2` → verify
 
 Package `jcpe-6ujg.6`. Spec `jcpe-6ujg.6.1` → build `jcpe-6ujg.6.2` → verify `jcpe-6ujg.6.3`.
 
-- [ ] Reconcile finite rehearsal owner and prerequisite acceptance
-- [ ] Specify four-bar passage repeated four times with 2-on/2-off mask
+- [x] Reconcile finite rehearsal owner and prerequisite acceptance — existing rehearsal build and U4 verification remain open; no ownership override.
+- [x] Specify four-bar passage repeated four times with 2-on/2-off mask — docs/BAND_DROPOUT.md and independent fixtures; `.6.1` closed.
 - [ ] Integrate occurrence masks preserving phase, releases and preview ownership
 - [ ] Add count-in, Stop and return display through existing transport
 - [ ] Verify real timing, pause/seek/replacement and no false grading claims
 - [ ] Pass focused tests, typecheck, lint/boundaries, artifact size and applicable real-browser gates.
 - [ ] Record independent acceptance and close all three phases before package.
+
+- [x] Check independent exact epochs, inclusive-boundary near miss, source-origin translation, tails, repeated spellings and countdown arithmetic.
+- [x] Pass specification-only RCH tests, test-project types and owned lint.
+- [ ] Complete the existing rehearsal/U4 prerequisites before claiming `.6.2`.
+- [ ] Replay these fixtures against actual production occurrence masking and kill all eight named source mutants.
+- [ ] Observe native return timing and independent preview ownership on real phones before acceptance.
 
 ## CC3: Touch chord pads
 
@@ -187,7 +193,7 @@ Package `jcpe-6ujg.13`. Spec `jcpe-6ujg.13.1` → build `jcpe-6ujg.13.2` → ver
 
 ## Current execution checkpoint
 
-2026-09-10 13:30 UTC: Thirteen finalists are implemented through eleven packages, now including exact QR sharing. QR `.10.2` has passed all named implementation gates; independent/physical-phone `.10.3` remains open. Dropout specification is next; its build still waits on rehearsal/U4. Ear training remains blocked by reopened G9 prerequisites. All independent verification leaves and package epics remain open.
+2026-09-10 13:30 UTC: Thirteen finalists are implemented through eleven packages, now including exact QR sharing. QR `.10.2` has passed all named implementation gates; independent/physical-phone `.10.3` remains open. Dropout specification `.6.1` is closed; its build still waits on rehearsal/U4. Ear training remains blocked by reopened G9 prerequisites. All independent verification leaves and package epics remain open.
 
 Current guarded root/dist SHA-256: `8a966d4e6f2af00f860936b01146606977cb93753f6e08f61441fd79aa2e30b9`, 8,620,607 bytes. All 359 source-file hashes checked before promotion. Shell headroom: 292,289 bytes; Atlas reservation: 524,288 bytes intact. No deployment or new implementation commits by this agent. Other contributors' work and earlier commits are preserved.
 
@@ -232,3 +238,16 @@ Historical print implementation checkpoint (superseded by closure below): shared
 
 
 QR implementation: 61 RCH tests/510 assertions, all project type checks, touched lint, source policy 344 files and guarded build; four killed semantic mutants with honest twin. Final proof logs: qr-built-gates.log, qr-final-proof.log, qr-clean-final-lint.log. Fifteen QR browser cases pass in 74,935.465ms (qr-final-browser-results.json), plus 18 unchanged old-share startup/download/native Play/Stop cases in 75,759.514ms against the candidate (qr-old-share-browser-results.json). All 33 receipts match the promoted hash, with zero skipped/unexpected/flaky cases and no page/console/forbidden-network errors. Actual pixels independently decoded by libzbar in all four rotations; native JSON matches byte-for-byte including negative zero. Every image rejects a missing quiet module; independent matrix-to-SVG reconstruction passes. Playwright WebKit's stylesheet-injecting screenshot preparation was replaced only in this test by a version-checked direct renderer snapshot protocol, preserving CSP and zero-error assertions. Prior failed capture/fragment-navigation diagnostics retained. Final test-only typing/braces cleanup passed e2e types/lint; production source remained unchanged. Phone/desktop visuals inspected. Physical camera/device/usability acceptance remains open; no deployment claim.
+2026-09-10 13:36 UTC: Dropout `.6.1` closed after RCH specification checks: 6 tests/95 assertions, test-project TypeScript and owned ESLint PASS (dropout-spec-final-gates.log). This is specification consistency only; no dropout runtime implementation or audio/mutation acceptance claimed. `.6.2` remains open behind `jcpe-rehearsal-session-6y2b.2`, itself behind `jcpe-milestone-reliable-studio-l3a.12.3` U4 verification and IvoryBluff's active U4 build. Ear-training `.12.1/.12.2` remain open behind reopened G9 spec/build; G9 requires G1/G2/G5/G6/G7/G8. All eleven implemented package verification leaves and all package epics remain open. The complete set of 15 finalists has not yet been delivered. No new source edits after QR artifact promotion; no commit/deployment. Aggregate release is not claimed: existing human listening/accessibility and feature device/reference-tool acceptance remain outstanding.
+
+
+### Fresh-eyes repair pass — jcpe-9fmt (2026-09-10)
+
+- [x] Reread new feature services, algorithms, UI wiring and shared preview lifetimes.
+- [x] Reproduce premature rhythm Stop success with delayed retirement.
+- [x] Reproduce a note-first attack after the source changes during preparation.
+- [x] Reproduce clipped QR geometry at 844 × 390 in Chromium.
+- [x] Implement receipt-aware Stop, source-bound note-first ownership, truthful release-request notices and QR sizing against both dialog dimensions.
+- [ ] Re-run independent regressions remotely, types, lint and source policy.
+- [ ] Rebuild generated artifact with source snapshot guard; run affected real browser regressions, including landscape QR pixel decoding.
+- [ ] Reread repairs and triage scanner output; record exact results and remaining limitations.
