@@ -1441,8 +1441,8 @@ private struct TransportBar: View {
                     metronomeControl
                     loopControl
                     muteControl
-                    volumeControl
                 }
+                mixControls
             } else {
                 ViewThatFits(in: .horizontal) {
                     HStack(spacing: 12) {
@@ -1466,7 +1466,7 @@ private struct TransportBar: View {
                             metronomeControl
                             loopControl
                             muteControl
-                            volumeControl.frame(width: 150)
+                            mixControls.frame(maxWidth: 330)
                         }
                         .frame(maxWidth: .infinity, alignment: .trailing)
                     }
@@ -1623,7 +1623,7 @@ private struct TransportBar: View {
 
     private var volumeControl: some View {
         Slider(
-            value: Binding(get: { store.audio.masterVolume }, set: store.audio.setMasterVolume),
+            value: Binding(get: { store.audio.masterVolume }, set: store.updateMasterVolume),
             in: 0...1,
             step: 0.05
         )
@@ -1631,6 +1631,33 @@ private struct TransportBar: View {
         .accessibilityIdentifier("transport-master-volume")
         .accessibilityLabel("Master volume")
         .accessibilityValue("\(Int((store.audio.masterVolume * 100).rounded())) percent")
+    }
+
+    private var reverbControl: some View {
+        Slider(
+            value: Binding(get: { store.audio.reverbAmount }, set: store.updateReverbAmount),
+            in: 0...1,
+            step: 0.05
+        )
+        .frame(minWidth: compact ? 112 : 90, minHeight: 44)
+        .tint(JazzTheme.cyan)
+        .accessibilityIdentifier("transport-reverb-amount")
+        .accessibilityLabel("Room amount")
+        .accessibilityHint("Blends the shared native jazz hall into playback and previews")
+        .accessibilityValue("\(Int((store.audio.reverbAmount * 100).rounded())) percent")
+    }
+
+    private var mixControls: some View {
+        HStack(spacing: 7) {
+            Image(systemName: "speaker.wave.2.fill")
+                .foregroundStyle(JazzTheme.brass)
+                .accessibilityHidden(true)
+            volumeControl
+            Image(systemName: "water.waves")
+                .foregroundStyle(JazzTheme.cyan)
+                .accessibilityHidden(true)
+            reverbControl
+        }
     }
 
     private var playheadSummary: some View {

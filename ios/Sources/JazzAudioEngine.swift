@@ -1,8 +1,24 @@
 import AVFoundation
+import AudioToolbox
 import Foundation
 
 @MainActor
 final class JazzAudioEngine: ObservableObject {
+    struct MasterGraphSnapshot: Equatable, Sendable {
+        var nodeIDs: [String]
+        var dcBlockFrequencyHz: Double
+        var lowShelfFrequencyHz: Double
+        var lowShelfGainDB: Double
+        var highShelfFrequencyHz: Double
+        var highShelfGainDB: Double
+        var dynamicsThresholdDB: Double
+        var dynamicsAttackSeconds: Double
+        var dynamicsReleaseSeconds: Double
+        var maximumReverbSendGain: Double
+        var reverbAmount: Double
+        var safetyGain: Double
+    }
+
     struct SectionLoopRange: Equatable, Sendable {
         var startBeat: Double
         var endBeat: Double
@@ -35,6 +51,7 @@ final class JazzAudioEngine: ObservableObject {
     @Published var loops = false
     @Published private(set) var sectionLoopRange: SectionLoopRange?
     @Published private(set) var masterVolume = 0.78
+    @Published private(set) var reverbAmount = 0.55
     @Published private(set) var isMuted = false
     @Published private(set) var countInEnabled = false
     @Published private(set) var metronomeEnabled = false
@@ -49,6 +66,31 @@ final class JazzAudioEngine: ObservableObject {
     /// Clicks own a third node so transport practice controls never rewrite
     /// the chart render or interrupt inspector-note ownership.
     private let clickPlayer = AVAudioPlayerNode()
+    /// One persistent native graph is shared by progression, metronome, and
+    /// inspector preview nodes. It is constructed once and never rebuilt for
+    /// instrument changes, seeks, or rapid keyboard touches.
+    private let instrumentBus = AVAudioMixerNode()
+    private let toneEQ = AVAudioUnitEQ(numberOfBands: 3)
+    private let dryGain = AVAudioMixerNode()
+    private let reverbSend = AVAudioMixerNode()
+    private let hall = AVAudioUnitReverb()
+    private let reverbReturn = AVAudioMixerNode()
+    private let sumBus = AVAudioMixerNode()
+    private let dynamics = AVAudioUnitEffect(audioComponentDescription: AudioComponentDescription(
+        componentType: kAudioUnitType_Effect,
+        componentSubType: kAudioUnitSubType_DynamicsProcessor,
+        componentManufacturer: kAudioUnitManufacturer_Apple,
+        componentFlags: 0,
+        componentFlagsMask: 0
+    ))
+    private let outputLimiter = AVAudioUnitEffect(audioComponentDescription: AudioComponentDescription(
+        componentType: kAudioUnitType_Effect,
+        componentSubType: kAudioUnitSubType_PeakLimiter,
+        componentManufacturer: kAudioUnitManufacturer_Apple,
+        componentFlags: 0,
+        componentFlagsMask: 0
+    ))
+    private let safetyGain = AVAudioMixerNode()
     private var buffer: AVAudioPCMBuffer?
     private var scheduledBuffer: AVAudioPCMBuffer?
     private var scheduledPreviewBuffer: AVAudioPCMBuffer?
@@ -76,10 +118,41 @@ final class JazzAudioEngine: ObservableObject {
         engine.attach(player)
         engine.attach(previewPlayer)
         engine.attach(clickPlayer)
-        engine.connect(player, to: engine.mainMixerNode, format: nil)
-        engine.connect(previewPlayer, to: engine.mainMixerNode, format: nil)
-        engine.connect(clickPlayer, to: engine.mainMixerNode, format: nil)
+        engine.attach(instrumentBus)
+        engine.attach(toneEQ)
+        engine.attach(dryGain)
+        engine.attach(reverbSend)
+        engine.attach(hall)
+        engine.attach(reverbReturn)
+        engine.attach(sumBus)
+        engine.attach(dynamics)
+        engine.attach(outputLimiter)
+        engine.attach(safetyGain)
+
+        configurePersistentGraphParameters()
+        engine.connect(player, to: instrumentBus, format: nil)
+        engine.connect(previewPlayer, to: instrumentBus, format: nil)
+        engine.connect(clickPlayer, to: instrumentBus, format: nil)
+        engine.connect(instrumentBus, to: toneEQ, format: nil)
+        engine.connect(
+            toneEQ,
+            to: [
+                AVAudioConnectionPoint(node: dryGain, bus: 0),
+                AVAudioConnectionPoint(node: reverbSend, bus: 0)
+            ],
+            fromBus: 0,
+            format: nil
+        )
+        engine.connect(dryGain, to: sumBus, format: nil)
+        engine.connect(reverbSend, to: hall, format: nil)
+        engine.connect(hall, to: reverbReturn, format: nil)
+        engine.connect(reverbReturn, to: sumBus, format: nil)
+        engine.connect(sumBus, to: dynamics, format: nil)
+        engine.connect(dynamics, to: outputLimiter, format: nil)
+        engine.connect(outputLimiter, to: safetyGain, format: nil)
+        engine.connect(safetyGain, to: engine.mainMixerNode, format: nil)
         applyMixerVolume()
+        applyReverbAmount()
         previewPlayer.volume = 0.82
     }
 
@@ -263,6 +336,37 @@ final class JazzAudioEngine: ObservableObject {
         applyMixerVolume()
     }
 
+    func setReverbAmount(_ amount: Double) {
+        reverbAmount = min(1, max(0, amount.isFinite ? amount : 0.55))
+        applyReverbAmount()
+    }
+
+    func setPlaybackMix(_ mix: JazzPlaybackMix) {
+        setMasterVolume(mix.masterVolume)
+        setReverbAmount(mix.reverbAmount)
+    }
+
+    var masterGraphSnapshot: MasterGraphSnapshot {
+        MasterGraphSnapshot(
+            nodeIDs: [
+                "instrument-bus", "dc-block+tone-eq", "dry-gain", "reverb-send",
+                "native-medium-hall", "reverb-return", "dynamics", "native-output-limiter", "safety-gain",
+                "master-gain", "destination"
+            ],
+            dcBlockFrequencyHz: Double(toneEQ.bands[0].frequency),
+            lowShelfFrequencyHz: Double(toneEQ.bands[1].frequency),
+            lowShelfGainDB: Double(toneEQ.bands[1].gain),
+            highShelfFrequencyHz: Double(toneEQ.bands[2].frequency),
+            highShelfGainDB: Double(toneEQ.bands[2].gain),
+            dynamicsThresholdDB: -18,
+            dynamicsAttackSeconds: 0.006,
+            dynamicsReleaseSeconds: 0.18,
+            maximumReverbSendGain: 0.28,
+            reverbAmount: reverbAmount,
+            safetyGain: Double(safetyGain.outputVolume)
+        )
+    }
+
     func toggleMute() {
         isMuted.toggle()
         applyMixerVolume()
@@ -435,6 +539,62 @@ final class JazzAudioEngine: ObservableObject {
 
     private func applyMixerVolume() {
         engine.mainMixerNode.outputVolume = isMuted ? 0 : Float(masterVolume)
+    }
+
+    private func applyReverbAmount() {
+        reverbSend.outputVolume = Float(reverbAmount * 0.28)
+    }
+
+    private func configurePersistentGraphParameters() {
+        let bands = toneEQ.bands
+        bands[0].filterType = .highPass
+        bands[0].frequency = 24
+        bands[0].bandwidth = 1
+        bands[0].bypass = false
+        bands[1].filterType = .lowShelf
+        bands[1].frequency = 180
+        bands[1].gain = 1.5
+        bands[1].bypass = false
+        bands[2].filterType = .highShelf
+        bands[2].frequency = 6_000
+        bands[2].gain = -1
+        bands[2].bypass = false
+
+        dryGain.outputVolume = 1
+        hall.loadFactoryPreset(.mediumHall)
+        hall.wetDryMix = 100
+        reverbReturn.outputVolume = 1
+        AudioUnitSetParameter(
+            dynamics.audioUnit, kDynamicsProcessorParam_Threshold,
+            kAudioUnitScope_Global, 0, -18, 0
+        )
+        // Apple's dynamics processor exposes headroom rather than a direct
+        // ratio/knee pair; 18 dB is the stable native adaptation of the web
+        // graph's 18 dB knee and 4:1 compression region.
+        AudioUnitSetParameter(
+            dynamics.audioUnit, kDynamicsProcessorParam_HeadRoom,
+            kAudioUnitScope_Global, 0, 18, 0
+        )
+        AudioUnitSetParameter(
+            dynamics.audioUnit, kDynamicsProcessorParam_AttackTime,
+            kAudioUnitScope_Global, 0, 0.006, 0
+        )
+        AudioUnitSetParameter(
+            dynamics.audioUnit, kDynamicsProcessorParam_ReleaseTime,
+            kAudioUnitScope_Global, 0, 0.18, 0
+        )
+        // The browser uses a tanh waveshaper here. Apple's native graph uses
+        // its transparent peak limiter at the same position; unlike a stock
+        // distortion preset this preserves the instruments' intended color.
+        AudioUnitSetParameter(
+            outputLimiter.audioUnit, kLimiterParam_AttackTime,
+            kAudioUnitScope_Global, 0, 0.006, 0
+        )
+        AudioUnitSetParameter(
+            outputLimiter.audioUnit, kLimiterParam_DecayTime,
+            kAudioUnitScope_Global, 0, 0.06, 0
+        )
+        safetyGain.outputVolume = 0.9
     }
 
     private func configureSession() throws {

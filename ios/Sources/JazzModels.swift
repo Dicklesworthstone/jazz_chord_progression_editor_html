@@ -312,6 +312,21 @@ struct JazzChartSectionGroup: Identifiable, Equatable, Sendable {
     }
 }
 
+/// Document-owned playback balance. Keeping this optional on `JazzChart`
+/// lets every v1 chart written before mix parity decode unchanged while new
+/// and edited charts round-trip the same two controls as the web document.
+struct JazzPlaybackMix: Codable, Equatable, Sendable {
+    static let originalDefault = Self(masterVolume: 1, reverbAmount: 0.55)
+
+    var masterVolume: Double
+    var reverbAmount: Double
+
+    init(masterVolume: Double, reverbAmount: Double) {
+        self.masterVolume = min(1, max(0, masterVolume.isFinite ? masterVolume : 1))
+        self.reverbAmount = min(1, max(0, reverbAmount.isFinite ? reverbAmount : 0.55))
+    }
+}
+
 struct JazzChart: Identifiable, Codable, Equatable, Sendable {
     static let schema = "frankenjazz.chart.v1"
 
@@ -323,6 +338,8 @@ struct JazzChart: Identifiable, Codable, Equatable, Sendable {
     var groove: GrooveStyle
     var instrument: InstrumentTone
     var voicingFamily: VoicingFamily
+    /// Optional for backwards-compatible decoding of native v1 documents.
+    var playbackMix: JazzPlaybackMix?
     var measures: [JazzMeasure]
     /// Optional by design: v1 documents written before native section parity
     /// decode with `nil` and retain their exact flat-bar representation.
@@ -337,6 +354,7 @@ struct JazzChart: Identifiable, Codable, Equatable, Sendable {
         groove: GrooveStyle = .mediumSwing,
         instrument: InstrumentTone = .electricPiano,
         voicingFamily: VoicingFamily = .balanced,
+        playbackMix: JazzPlaybackMix? = .originalDefault,
         measures: [JazzMeasure],
         sections: [JazzChartSection]? = nil
     ) {
@@ -348,6 +366,7 @@ struct JazzChart: Identifiable, Codable, Equatable, Sendable {
         self.groove = groove
         self.instrument = instrument
         self.voicingFamily = voicingFamily
+        self.playbackMix = playbackMix
         self.measures = measures
         self.sections = sections
         updatedAt = Date()
@@ -358,6 +377,7 @@ struct JazzChart: Identifiable, Codable, Equatable, Sendable {
     var durationBeats: Double { measures.reduce(0) { total, measure in total + measure.chords.reduce(0) { $0 + $1.beats } } }
 
     var chartText: String { JazzTheory.formatChartText(measures, sections: sections) }
+    var effectivePlaybackMix: JazzPlaybackMix { playbackMix ?? .originalDefault }
 
     var sectionGroups: [JazzChartSectionGroup] {
         guard let sections, !sections.isEmpty else {
@@ -558,6 +578,7 @@ enum JazzDocumentValidationIssue: LocalizedError, Equatable {
     case schema
     case title
     case tempo
+    case playbackMix
     case measureCount
     case duplicateMeasureID
     case duplicateChordID
@@ -570,6 +591,7 @@ enum JazzDocumentValidationIssue: LocalizedError, Equatable {
         case .schema: "The chart schema is not supported."
         case .title: "The chart title must contain 1–120 characters."
         case .tempo: "Tempo must be a finite value from 30 through 320 BPM."
+        case .playbackMix: "Master volume and room amount must each be finite values from zero through one."
         case .measureCount: "The chart must contain 1–\(JazzTheory.maximumMeasures) measures."
         case .duplicateMeasureID: "Two measures reuse the same stable identity."
         case .duplicateChordID: "Two chord events reuse the same stable identity."
@@ -588,6 +610,12 @@ enum JazzDocumentValidator {
         guard chart.schema == JazzChart.schema else { throw JazzDocumentValidationIssue.schema }
         guard !chart.title.isEmpty, chart.title.count <= 120 else { throw JazzDocumentValidationIssue.title }
         guard chart.tempoBPM.isFinite, (30...320).contains(chart.tempoBPM) else { throw JazzDocumentValidationIssue.tempo }
+        if let mix = chart.playbackMix {
+            guard mix.masterVolume.isFinite, (0...1).contains(mix.masterVolume),
+                  mix.reverbAmount.isFinite, (0...1).contains(mix.reverbAmount) else {
+                throw JazzDocumentValidationIssue.playbackMix
+            }
+        }
         guard !chart.measures.isEmpty, chart.measures.count <= JazzTheory.maximumMeasures else {
             throw JazzDocumentValidationIssue.measureCount
         }

@@ -118,6 +118,7 @@ final class JazzStudioStore: ObservableObject {
         audioChanges = audio.objectWillChange.sink { [weak self] _ in
             self?.objectWillChange.send()
         }
+        audio.setPlaybackMix(chart.effectivePlaybackMix)
         audio.prime(chart: chart)
         refreshContinuations()
     }
@@ -276,6 +277,26 @@ final class JazzStudioStore: ObservableObject {
 
     func previewSelectedChord() {
         audio.preview(midis: selectedMIDIPitches, tone: chart.instrument)
+    }
+
+    func updateMasterVolume(_ volume: Double) {
+        let mix = JazzPlaybackMix(
+            masterVolume: volume,
+            reverbAmount: chart.effectivePlaybackMix.reverbAmount
+        )
+        guard mix != chart.effectivePlaybackMix else { return }
+        audio.setMasterVolume(mix.masterVolume)
+        mutate(coalescing: "playback-master-volume") { $0.playbackMix = mix }
+    }
+
+    func updateReverbAmount(_ amount: Double) {
+        let mix = JazzPlaybackMix(
+            masterVolume: chart.effectivePlaybackMix.masterVolume,
+            reverbAmount: amount
+        )
+        guard mix != chart.effectivePlaybackMix else { return }
+        audio.setReverbAmount(mix.reverbAmount)
+        mutate(coalescing: "playback-reverb-amount") { $0.playbackMix = mix }
     }
 
     func updateVoicing(_ family: VoicingFamily) {
@@ -1034,6 +1055,7 @@ final class JazzStudioStore: ObservableObject {
         draftText = chart.chartText
         draftState = .current
         recovery.save(chart)
+        audio.setPlaybackMix(chart.effectivePlaybackMix)
         primeTask?.cancel()
         primeTask = Task { [weak self] in
             try? await Task.sleep(for: .milliseconds(280))
