@@ -306,6 +306,8 @@ export type ConcertGrandRenderer = Readonly<{
     velocity: number,
     sampleRateHz: number,
   ) => RenderedNotePcm | null;
+  /** Same approved hybrid PCM, serialized behind stateful cooperative work. */
+  renderNoteExclusive?: (midiPitch:number,velocity:number,sampleRateHz:number,maxSeconds:number,cancelled:()=>boolean)=>Promise<RenderedNotePcm|null>;
   /** Sample-free legacy sustain rendered in bounded yielded WASM steps. */
   renderSynthesizedNoteCooperatively?: (
     midiPitch: number,
@@ -2848,6 +2850,8 @@ async function instantiate(bytes?: Uint8Array): Promise<DspCore> {
       wasmSha256,
       attackSamplesSha256: PIANO_ATTACK_SAMPLES_SHA256,
       renderNote,
+      renderNoteExclusive:(midi:number,velocity:number,rate:number,seconds:number,cancelled:()=>boolean)=>
+        runCooperativeRuntimeExclusive(()=>Promise.resolve(cancelled()?null:renderNote(midi,velocity,rate,seconds))),
       renderSynthesizedNote,
       ...(renderSynthesizedNoteCooperatively === undefined
         ? {}

@@ -1,9 +1,21 @@
+import {createStudioSongbook,songbookDestinationRefusal,type StudioSongbookService,type SongbookSource} from "./studio-songbook";
+import {createStudioPrint,type StudioPrintService} from "./studio-print";
+import {createStudioWav,type StudioWavService} from "./studio-wav";
+import type {PrepareWavDownload,PrepareSvgDownload} from "../export";
+import {buildStudioPadCatalog,projectStudioPads,type StudioPadCatalog,type StudioPadsView} from "./studio-pads";
+import {readStudioRegister,type StudioRegisterView} from "./studio-register";
+import { createStudioComping, type StudioCompingService } from "./studio-comping";
+import {readStudioGuitar,type StudioGuitarView} from "./studio-guitar";
+import { readNoteFirstDraft, resolveNoteFirstChoice, type StudioNoteFirstSource, type StudioNoteFirstDraft, type StudioNoteFirstChoice } from "./studio-note-first";
+import { createStudioPerformedMidi, type StudioPerformedMidiService } from "./studio-performed-midi";
+import { buildPlayAlongTimeline, readPlayAlongTimeline, type StudioPlayAlongView } from "./studio-play-along";
 import { SETTLED_TRANSPORT_STATUS } from "./studio-transport-status";
 import {
   addBeatValues,
   compareBeatValues,
   DEFAULT_GROOVE_STYLE_ID,
   makeBeatDuration,
+  makeChordEvent,
   makeBeatPosition,
   makeBeatRange,
   makeInstrumentId,
@@ -27,6 +39,7 @@ import {
   type MidiPitch,
   type ParsedChordEvent,
   type MeasureId,
+  type Measure,
   type PlaybackSettings,
   type SectionId,
   type StoredGrooveStyleId,
@@ -38,6 +51,7 @@ import {
 } from "../domain";
 import {
   A0_U1_NEW_EVENT_POLICY_ID,
+  A0_U1_NEW_EVENT_AUTO_VOICING,
   A0_U1_RECOVERED_CHORD_LAYOUT_LOSS_ACKNOWLEDGEMENT,
   type ApplyEditPlanCommand,
   type AtomicEditPlanQuickEntrySnapshot,
@@ -87,6 +101,7 @@ import {
   deriveContinuationSuggestions,
   detectChartPhrases,
   parseChordSymbol,
+  decodeChordProGrid,
   resolutionOperations,
   type ChartChordDetail,
   type ChartEventAnalysis,
@@ -101,6 +116,7 @@ import {
   type TransportCommandOutcome,
   type TransportPlanBinding,
   type TransportPreviewStatus,
+  type DryPianoRenderPort,
 } from "../audio";
 import type { StudioAudioGesture, StudioAudioPort } from "./studio-audio";
 import { buildPlaybackPreparationPlan } from "./playback-preparation-plan";
@@ -505,6 +521,11 @@ export type StudioRailSide = "left" | "right";
 export type StudioControllerListener = () => void;
 
 export interface StudioController {
+  readonly readPads: (sectionId:string|null,page:number)=>StudioInspectorResult<StudioPadsView>;
+  readonly pressPad: (source:StudioInspectorSource,gesture:StudioAudioGesture,hold:boolean)=>Readonly<{id:number;completion:Promise<StudioInspectorResult<void>>}>;
+  readonly releasePad: (id?:number)=>Promise<StudioInspectorResult<void>>;
+  readonly readRegister: (source:StudioInspectorSource) => StudioInspectorResult<StudioRegisterView>;
+  readonly readGuitar: (source:StudioInspectorSource) => StudioInspectorResult<StudioGuitarView>;
   readonly readInspector: (eventId: string, policy?: AutoVoicingInput) => StudioInspectorResult<StudioInspectorView>;
   readonly readInspectorManualDraft: (source: StudioInspectorSource, pitches: readonly SpelledPitchInput[], bassPolicy: StoredBassPolicy) => ReturnType<typeof projectInspectorManualDraft>;
   readonly readInspectorDraft: (source: StudioInspectorSource, text: string, patch?: StudioInspectorStructurePatch, realize?: boolean) => StudioInspectorResult<StudioInspectorSymbolDraft>;
@@ -665,6 +686,11 @@ export interface StudioController {
     acknowledgement?: string,
     incompleteReason?: string | null,
   ) => StudioControllerActionResult;
+  readonly previewNoteFirst: (text:string,gesture:StudioAudioGesture) => StudioControllerActionResult;
+  readonly releaseNoteFirst: () => Promise<StudioInspectorResult<void>>;
+  readonly readNoteFirst: (text:string) => StudioNoteFirstDraft;
+  readonly insertSongbook: (source:SongbookSource,text:string,ack:boolean) => StudioControllerActionResult;
+  readonly insertNoteFirst: (source:StudioNoteFirstSource,text:string,choice:StudioNoteFirstChoice,sectionId:string) => StudioControllerActionResult;
   readonly insertMeasure: (
     sectionId: string,
     beforeMeasureId: string | null,
@@ -909,6 +935,7 @@ export interface StudioController {
    * Null when no audio port is wired.
    */
   readonly readTransportPlayheadLabel: () => string | null;
+  readonly readPlayAlong: () => StudioPlayAlongView;
   /** Display-only analyzer frame from the audio tap; null when unavailable. */
   readonly readTransportAnalysisFrame: () => StudioAnalysisFrame | null;
   /**
@@ -1286,6 +1313,12 @@ export type StudioControllerOptions = Readonly<{
    */
   midiExportHashBytes?: StudioMidiExportHashPort;
   midiExportDelivery?: StudioMidiExportDeliveryStart;
+  dryPianoRender?: DryPianoRenderPort;
+  prepareWavDownload?: PrepareWavDownload;
+  printReadyFont?: ()=>Promise<void>;
+  nativePrint?: ()=>void;
+  prepareSvgDownload?: PrepareSvgDownload;
+  prepareCompRecipeDownload?: (text:string,filename:string)=>()=>boolean;
 }>;
 
 /**
@@ -1324,6 +1357,11 @@ export type StudioComposition = Readonly<{
    * hash port or delivery adapter.
    */
   midiExport: StudioMidiExportService | null;
+  performedMidi: StudioPerformedMidiService | null;
+  wav: StudioWavService | null;
+  printCharts: StudioPrintService | null;
+  songbook: StudioSongbookService;
+  comping: StudioCompingService | null;
 }>;
 
 export type StudioCompositionCreationResult =
@@ -1481,6 +1519,7 @@ function makeStudioComposition(
     const previousState = state;
     state = result.state;
     retireInspectorPreviewIfChanged();
+    retirePadIfChanged();
     if (state !== previousState) {
       snapshot = nextSnapshot;
       if (state.document !== previousState.document) {
@@ -3657,6 +3696,49 @@ function makeStudioComposition(
       change.kind === "freeze" ? "Keep exact voicing" : change.kind === "auto" ? "Choose Auto voicing" : "Edit exact notes"),
       kind: "set-voicing", eventId: selected.value.id, voicing: prepared.value };
     return apply("edit-inspector", current => runDocumentCommand({ state: current, command, dependencies }));
+  };
+
+  const readNoteFirst = (text:string):StudioNoteFirstDraft => readNoteFirstDraft({documentId:state.document.id,revision:state.revision},text);
+  const insertSongbook=(source:SongbookSource,text:string,ack:unknown):StudioControllerActionResult=>{
+    const refuse=(message:string):StudioControllerActionResult=>editRefusal("insert-section","u1.target_missing",message,["songbook"]);
+    if(source.documentId!==state.document.id||source.revision!==state.revision)return refuse("The chart changed. Preview the song again.");
+    if(ack!==true)return refuse("Acknowledge the quarter-cell interpretation before adding.");
+    const decoded=decodeChordProGrid(text),message=songbookDestinationRefusal(state.document,decoded);
+    if(message!==null)return refuse(message);if(!decoded.ok)return refuse(decoded.message);
+    const sectionId=dependencies.stableIdFactory.next("section");if(!sectionId.ok)return refuse("A section identity could not be allocated.");
+    const measures:Measure[]=[];
+    for(const bar of decoded.grid.bars){
+      const measureId=dependencies.stableIdFactory.next("measure");if(!measureId.ok)return refuse("A measure identity could not be allocated.");
+      const events:ChordEvent[]=[];
+      for(const cell of bar){
+        const eventId=dependencies.stableIdFactory.next("event"),duration=makeBeatDuration({numerator:cell.quarters,denominator:1});
+        if(!eventId.ok||!duration.ok)return refuse("The imported event could not be allocated exactly.");
+        const event=makeChordEvent({id:eventId.value,chord:cell.chord,duration:duration.value,annotation:"",voicing:A0_U1_NEW_EVENT_AUTO_VOICING});
+        if(!event.ok)return refuse("A chord could not be validated with Balanced Auto voicing.");events.push(event.value);
+      }
+      const [first,...rest]=events;if(first===undefined)return refuse("An empty imported bar is unsupported.");
+      measures.push({id:measureId.value,events:[first,...rest],completion:{kind:"complete"}});
+    }
+    const command:InsertDocumentNodeCommand={...commandEnvelope("studio-songbook","Add ChordPro grid"),kind:"insert",insertion:{completionUpdates:[],nodeKind:"section",destination:{kind:"section",beforeSectionId:null},value:{id:sectionId.value,name:decoded.grid.title,annotation:"",keyOverride:null,voiceLeadingBoundary:"reset",measures}}};
+    return apply("insert-section",current=>runDocumentCommand({command,dependencies,state:current}));
+  };
+
+  const insertNoteFirst = (source:StudioNoteFirstSource,text:string,choice:StudioNoteFirstChoice,sectionId:string):StudioControllerActionResult => {
+    const refuse=(message:string):StudioControllerActionResult=>editRefusal("insert-measure","u1.target_missing",message,["noteFirst"]);
+    if(source.documentId!==state.document.id||source.revision!==state.revision)return refuse("The chart changed. Analyze these notes again before adding a bar.");
+    const section=documentIndex.sections.get(sectionId);
+    if(section===undefined)return refuse("Choose an existing destination section.");
+    const resolved=resolveNoteFirstChoice(text,choice);if(!resolved.ok)return refuse(resolved.message);
+    const measureId=dependencies.stableIdFactory.next("measure"),eventId=dependencies.stableIdFactory.next("event");
+    if(!measureId.ok||!eventId.ok)return refuse("Stable identities could not be allocated for this bar.");
+    const event=makeChordEvent({id:eventId.value,duration:measureCapacity(state.document.meter),annotation:"",chord:resolved.chord,
+      voicing:{mode:"manual",bassPolicy:"included",pitches:resolved.pitches}});
+    if(!event.ok)return refuse("The named chord and exact voicing could not be validated together.");
+    const command:InsertDocumentNodeCommand={...commandEnvelope("studio-note-first","Add bar from notes"),kind:"insert",insertion:{
+      completionUpdates:[],nodeKind:"measure",destination:{kind:"measure",sectionId:section.id,beforeMeasureId:null},
+      value:{id:measureId.value,completion:{kind:"complete"},events:[event.value]},
+    }};
+    return apply("insert-measure",current=>runDocumentCommand({command,dependencies,state:current}));
   };
 
   const insertMeasure = (
@@ -6111,6 +6193,27 @@ function makeStudioComposition(
       ? null
       : formatExactBeatLabel(audioPort.readPlayheadBeat());
 
+  let playAlongCache: Readonly<{ document: AppState["document"]; timeline: ReturnType<typeof buildPlayAlongTimeline> }> | null = null;
+  const readPlayAlong = (): StudioPlayAlongView => {
+    if (playAlongCache === null || playAlongCache.document !== state.document) {
+      playAlongCache = { document: state.document, timeline: buildPlayAlongTimeline(state.document) };
+    }
+    const timeline = playAlongCache.timeline;
+    const service = audioPort?.inspect().transport;
+    const run = activeRun;
+    const current = service !== undefined && service.documentId === state.document.id &&
+      (service.planRevision === state.revision || (run !== null && run.documentId === service.documentId &&
+        run.planRevision === service.planRevision && run.viewRevision === state.revision));
+    if (audioPort === null || service === undefined || !current ||
+        (service.state !== "playing" && service.state !== "paused" && service.state !== "ready")) {
+      return readPlayAlongTimeline(timeline, Number.NaN, null,
+        state.transport.status === "failed" ? "Playback unavailable" : "Press Play to follow the chart");
+    }
+    const beat = audioPort.readPlayheadBeat();
+    return readPlayAlongTimeline(timeline, beat.numerator / beat.denominator, service.loop,
+      service.state === "paused" ? "Paused" : service.state === "playing" ? "Play along" : "Starting position");
+  };
+
   let lastPlanPitchClasses: Map<string, readonly number[]> | null = null;
   const PREVIEW_GATE_SECONDS = 1.2;
   const supersedePreviewPreparation = (): void => {
@@ -7170,6 +7273,7 @@ function makeStudioComposition(
     }
     state = next;
     retireInspectorPreviewIfChanged();
+    retirePadIfChanged();
     snapshot = nextSnapshot;
     if (next.document !== previous.document) {
       documentIndex = buildDocumentIndex(next.document, createWorkCounters());
@@ -7209,6 +7313,51 @@ function makeStudioComposition(
     notifyListeners: notify,
   });
 
+  let padCache:Readonly<{document:AppState["document"];catalog:StudioPadCatalog}>|null=null;
+  let padOwner:Readonly<{source:StudioInspectorSource;generation:number}>|null=null;
+  const padCatalog=():StudioPadCatalog=>{
+    if(padCache===null||padCache.document!==state.document)padCache={document:state.document,catalog:buildStudioPadCatalog(state.document)};
+    return padCache.catalog;
+  };
+  const readPads=(sectionId:string|null,page:number):StudioInspectorResult<StudioPadsView>=>projectStudioPads(padCatalog(),state.document.id,state.revision,sectionId,page);
+  const releasePad=(id?:number):Promise<StudioInspectorResult<void>>=>{
+    const owner=padOwner;
+    if(owner===null||(id!==undefined&&id!==owner.generation))return Promise.resolve({ok:true,value:undefined});
+    padOwner=null;
+    return owner.generation===pitchSetPreviewGeneration&&owner.generation===previewOrdinal?releasePreviewPitches():Promise.resolve({ok:true,value:undefined});
+  };
+  const retirePadIfChanged=():void=>{
+    if(padOwner!==null&&(padOwner.source.documentId!==state.document.id||padOwner.source.revision!==state.revision))void releasePad(padOwner.generation);
+  };
+  const pressPad=(source:StudioInspectorSource,gesture:StudioAudioGesture,hold:boolean):Readonly<{id:number;completion:Promise<StudioInspectorResult<void>>}>=>{
+    const refused=(message:string)=>Object.freeze({id:0,completion:Promise.resolve(previewFailure("pads.unavailable",message))});
+    if(source.documentId!==state.document.id||source.revision!==state.revision)return refused("The chart changed. Reopen chord pads before playing.");
+    if(audioPort===null)return refused("This build has no audio output.");
+    const catalog=padCatalog();if(!catalog.ok)return refused(catalog.message);
+    const entry=catalog.entries.find(e=>e.event.eventId===source.eventId);if(entry===undefined)return refused("That chord is no longer available.");
+    previewOrdinal+=1;const generation=previewOrdinal,gateSeconds=hold?8:1.2;
+    pitchSetPreviewGeneration=generation;padOwner=Object.freeze({source:Object.freeze({...source}),generation});
+    const completion=startPreparedPreview({port:audioPort,gesture,documentId:state.document.id,planRevision:state.revision,instrumentId:state.document.playback.instrumentId,
+      generation,previewId:`x1:preview:pad-${String(generation)}`,midiPitches:entry.event.midiPitches,gateSeconds,
+      notes:entry.event.midiPitches.map(midiPitch=>({midiPitch,velocity:PLAYBACK_PLAN_FIXED_VELOCITY,gateSeconds})),
+      mix:{masterVolume:state.document.playback.masterVolume,reverbAmount:state.document.playback.reverbAmount}});
+    return Object.freeze({id:generation,completion});
+  };
+
+  let noteFirstPreviewGeneration:number|null=null;
+  const previewNoteFirst=(text:string,gesture:StudioAudioGesture):StudioControllerActionResult=>{
+    const draft=readNoteFirst(text);
+    if(!draft.analysis.ok)return editRefusal("preview-chord","u1.playback_refused",draft.analysis.message);
+    const result=previewPitches(draft.analysis.midi,gesture);
+    if(result.ok)noteFirstPreviewGeneration=pitchSetPreviewGeneration;
+    return result;
+  };
+  const releaseNoteFirst=():Promise<StudioInspectorResult<void>>=>{
+    const generation=noteFirstPreviewGeneration;noteFirstPreviewGeneration=null;
+    return generation!==null&&generation===pitchSetPreviewGeneration&&generation===previewOrdinal
+      ?releasePreviewPitches():Promise.resolve({ok:true,value:undefined});
+  };
+
   const controller: StudioController = Object.freeze({
     acknowledgeFocus,
     declareMeasureCompletion,
@@ -7217,6 +7366,14 @@ function makeStudioComposition(
     applyInlineSymbol,
     applyQuickEntryPreview,
     clearQuickEntry,
+    readPads,pressPad,releasePad,
+    readRegister:(source:StudioInspectorSource)=>readStudioRegister(state,source),
+    readGuitar:(source:StudioInspectorSource)=>readStudioGuitar(state,source),
+    previewNoteFirst,
+    releaseNoteFirst,
+    readNoteFirst,
+    insertNoteFirst,
+    insertSongbook,
     insertMeasure,
     insertSection,
     moveSelection,
@@ -7239,6 +7396,7 @@ function makeStudioComposition(
     previewInspector,
     releaseInspectorPreview,
     readTransportPlayheadLabel,
+    readPlayAlong,
     readTransportAnalysisFrame,
     readEventPitchClasses,
     readContinuationSuggestions,
@@ -7339,6 +7497,33 @@ function makeStudioComposition(
           startDelivery: options.midiExportDelivery,
         });
 
+  const performedMidi = options.midiExportHashBytes === undefined || options.midiExportDelivery === undefined ? null : createStudioPerformedMidi({
+    readDocument: () => state.document, readRevision: () => state.revision, readStyle: activePerformanceStyleId,
+    hashBytes: options.midiExportHashBytes, startDelivery: options.midiExportDelivery,
+  });
+
+  const wav=options.dryPianoRender===undefined||options.prepareWavDownload===undefined||options.midiExportHashBytes===undefined?null:createStudioWav({
+    readDocument:()=>state.document,readRevision:()=>state.revision,subscribeSource:controller.subscribe,
+    render:options.dryPianoRender,hashBytes:options.midiExportHashBytes,prepareDownload:options.prepareWavDownload,
+  });
+
+  const songbook=createStudioSongbook({readDocument:()=>state.document,readRevision:()=>state.revision,subscribeSource:controller.subscribe,insert:controller.insertSongbook});
+
+  const printCharts=options.printReadyFont===undefined||options.nativePrint===undefined||options.prepareSvgDownload===undefined?null:createStudioPrint({
+    readDocument:()=>state.document,readRevision:()=>state.revision,subscribeSource:controller.subscribe,
+    readyFont:options.printReadyFont,nativePrint:options.nativePrint,prepareDownload:options.prepareSvgDownload,
+  });
+
+  let compPreviewGeneration:number|null=null;
+  const comping = options.midiExportHashBytes === undefined || options.midiExportDelivery === undefined || options.prepareCompRecipeDownload === undefined ? null : createStudioComping({
+    readDocument:()=>state.document,readRevision:()=>state.revision,subscribeSource:controller.subscribe,
+    preview:(plan,gesture)=>{const pending=previewPlaybackPlan(plan,gesture);compPreviewGeneration=pitchSetPreviewGeneration;return pending;},
+    release:()=>{const generation=compPreviewGeneration;compPreviewGeneration=null;
+      return generation!==null&&generation===pitchSetPreviewGeneration&&generation===previewOrdinal
+        ?releasePreviewPitches():Promise.resolve({ok:true,value:undefined});},
+    hashBytes:options.midiExportHashBytes,startDelivery:options.midiExportDelivery,prepareRecipeDownload:options.prepareCompRecipeDownload,
+  });
+
   return Object.freeze({
     controller,
     interchangeOwner,
@@ -7346,6 +7531,11 @@ function makeStudioComposition(
     readApplicationState: () => state,
     allocateTransportCommandRequestId: nextTransportRequestId,
     midiExport,
+    performedMidi,
+    comping,
+    wav,
+    printCharts,
+    songbook,
   });
 }
 

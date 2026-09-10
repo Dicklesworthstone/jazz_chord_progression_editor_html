@@ -41,6 +41,12 @@
     >
     <meta name="twitter:image" content="https://jazzchords.org/og-image.png">
     <title>JazzChords.org — Jazz Chord Progression Studio</title>
+<!-- Bun 1.3.14 merges @page and its name in linked CSS. Keep these rules
+     in the hash-protected HTML style block; native PDF tests pin both sizes. -->
+<style>
+@page changes-a4 { size: A4; margin: 0; }
+@page changes-letter { size: Letter; margin: 0; }
+</style>
 <link rel="stylesheet" href="./styles/fonts.css">
 <link rel="stylesheet" href="./styles/tokens.css">
 <link rel="stylesheet" href="./styles/reset.css">
@@ -53,6 +59,8 @@
 <link rel="stylesheet" href="./styles/app.css">
 <link rel="stylesheet" href="./styles/studio.css">
 <link rel="stylesheet" href="./styles/responsive.css">
+<link rel="stylesheet" href="./styles/play-along.css">
+<link rel="stylesheet" href="./styles/instrument-tools.css">
 <script type="module" src="./main.tsx"></script>
   </head>
   <body>

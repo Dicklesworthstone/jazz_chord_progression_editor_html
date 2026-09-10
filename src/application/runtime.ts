@@ -180,3 +180,25 @@ export { compareMidiFiles } from "./midi-import-batch";
 export type { MidiImportBatch, MidiImportLocalFile } from "./midi-import-batch";
 
 export { auditionMidiImportGroove } from "./studio-midi-audition";
+
+export type { StudioPlayAlongView } from "./studio-play-along";
+
+export type { StudioPerformedMidiService, StudioPerformedMidiView } from "./studio-performed-midi";
+
+export type { StudioNoteFirstSource, StudioNoteFirstDraft, StudioNoteFirstChoice } from "./studio-note-first";
+
+export type {StudioGuitarView} from "./studio-guitar";
+
+export type { StudioCompingService, StudioCompingView } from "./studio-comping";
+
+export type {StudioRegisterView} from "./studio-register";
+
+export type {StudioPadsView} from "./studio-pads";
+
+export type {StudioWavService,StudioWavView} from "./studio-wav";
+
+export type {StudioPrintService,StudioPrintView,PrintPage,PrintPaper} from "./studio-print";
+
+export type {StudioSongbookService,SongbookView,SongbookSource} from "./studio-songbook";
+export {decodeSharedStartupWithQr} from "./qr-share";
+export type {ExactQr} from "./qr-share";

@@ -12,6 +12,7 @@ import {
 } from "preact/hooks";
 
 import {
+  type StudioPlayAlongView,
   type StudioExactShareService,
   type StudioExactShareView,
   type StudioMyChartsService,
@@ -59,6 +60,11 @@ import {
   type StudioMidiExportPreview,
   type StudioMidiExportPreviewResult,
   type StudioMidiExportService,
+  type StudioPerformedMidiService,
+  type StudioCompingService,
+  type StudioWavService,
+  type StudioPrintService,
+  type StudioSongbookService,
   type StudioRecoverySession,
   type StudioRecoverySessionView,
   type StudioLifecycleService,
@@ -317,6 +323,15 @@ export type AppActions = Readonly<{
    * The U7 MIDI export workflow service. A session whose composition wired
    * none hides the surface rather than offering a control that cannot work.
    */
+  readRegister?: StudioController["readRegister"];
+  readGuitar?: StudioController["readGuitar"];
+  chordPads?: Pick<StudioController,"readPads"|"pressPad"|"releasePad">;
+  noteFirst?: Pick<StudioController,"readNoteFirst"|"insertNoteFirst"|"previewNoteFirst"|"releaseNoteFirst">;
+  performedMidi?: StudioPerformedMidiService | null;
+  wav?: StudioWavService | null;
+  printCharts?: StudioPrintService | null;
+  songbook?: StudioSongbookService | null;
+  comping?: StudioCompingService | null;
   midiExportAvailable: boolean;
   midiExportOpenPreview: () => Promise<StudioMidiExportPreviewResult>;
   midiExportGenerate: (
@@ -334,6 +349,7 @@ export type AppActions = Readonly<{
    * transport state still arrives only through notifications.
    */
   readTransportPlayheadLabel: () => string | null;
+  readPlayAlong?: () => StudioPlayAlongView;
   /** Sound one chord immediately on selection (jcpe-gnyy). */
   previewChord: (
     eventId: string,
@@ -1768,6 +1784,8 @@ function feedbackFromRefusal(
 }
 
 export function App({ snapshot, actions, startupNotice, documentActions, recoveryRegion, onDraftInput, onShare }: AppProps) {
+  const noteFirstActions=actions.noteFirst;
+  const padActions=actions.chordPads;
   const [titleDraft, setTitleDraft] = useState(snapshot.title);
   const previousCommittedTitle = useRef(snapshot.title);
   const previousTitleDocumentId = useRef(snapshot.documentId);
@@ -2657,6 +2675,8 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
         selectedEventId: snapshot.bookmarks.selectionFocusEventId,
         revision: snapshot.revision,
         read: actions.inspector.readInspector,
+        ...(actions.readRegister === undefined ? {} : {readRegister:actions.readRegister}),
+        ...(actions.readGuitar === undefined ? {} : {readGuitar:actions.readGuitar}),
         readDraft: actions.inspector.readInspectorDraft,
         readManualDraft: actions.inspector.readInspectorManualDraft,
         apply: (source, change) => {
@@ -2672,6 +2692,20 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
       recoveryRegion={recoveryRegion}
       onDraftInput={onDraftInput}
       midiExportAvailable={actions.midiExportAvailable}
+      {...(noteFirstActions === undefined ? {} : { noteFirst: {
+        documentId:snapshot.documentId,revision:snapshot.revision,sections:snapshot.sections.map(s=>({id:s.id,name:s.name})),
+        read:noteFirstActions.readNoteFirst,insert:noteFirstActions.insertNoteFirst,release:noteFirstActions.releaseNoteFirst,
+        hear:(text:string,input:"pointer"|"keyboard")=>noteFirstActions.previewNoteFirst(text,nextAudioGesture(input==="keyboard"?"trusted-keyboard":"trusted-pointer")),
+      } })}
+      {...(padActions === undefined ? {} : {chordPads:{
+        documentId:snapshot.documentId,revision:snapshot.revision,read:padActions.readPads,release:padActions.releasePad,
+        press:(source:Parameters<StudioController["pressPad"]>[0],input:"pointer"|"keyboard",hold:boolean)=>padActions.pressPad(source,nextAudioGesture(input==="keyboard"?"trusted-keyboard":"trusted-pointer"),hold),
+      }})}
+      wav={actions.wav ?? null}
+      printCharts={actions.printCharts ?? null}
+      songbook={actions.songbook ?? null}
+      performedMidi={actions.performedMidi ?? null}
+      comping={actions.comping == null ? null : {service:actions.comping,hear:(input:"pointer"|"keyboard")=>actions.comping?.hear(nextAudioGesture(input==="keyboard"?"trusted-keyboard":"trusted-pointer"))}}
       view={view}
       annotations={{
         /* Display-only ports; a null result renders as absence. */
@@ -2694,6 +2728,7 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
         },
       }}
       transport={{
+        ...(actions.readPlayAlong === undefined ? {} : { readPlayAlong: actions.readPlayAlong }),
         canPlay: snapshot.chordCount > 0,
         onPause: () => {
           recordEditResult(actions.pauseProgression(), { kind: "delete" });
@@ -3752,6 +3787,11 @@ export type StudioRootProps = Readonly<{
    * means the surface is not offered at all.
    */
   midiExport?: StudioMidiExportService | null;
+  performedMidi?: StudioPerformedMidiService | null;
+  wav?: StudioWavService | null;
+  printCharts?: StudioPrintService | null;
+  songbook?: StudioSongbookService | null;
+  comping?: StudioCompingService | null;
   /** Absent means the recovery surface is not offered at all. */
   recovery?: StudioRecoverySession | null;
   lifecycle?: StudioLifecycleService | null;
@@ -3766,6 +3806,11 @@ export function StudioRoot({
   startupNotice,
   midiImport,
   midiExport,
+  performedMidi,
+  comping,
+  wav,
+  printCharts,
+  songbook,
   recovery,
   lifecycle,
   documentImport,
@@ -3954,6 +3999,15 @@ export function StudioRoot({
           midiImportService === null
             ? null
             : midiImportService.replanWithOverrides(preview, overrides),
+        readRegister:controller.readRegister,
+        readGuitar:controller.readGuitar,
+        chordPads: controller,
+        noteFirst: controller,
+        performedMidi: performedMidi ?? null,
+        comping: comping ?? null,
+        wav: wav ?? null,
+        printCharts: printCharts ?? null,
+        songbook: songbook ?? null,
         midiExportAvailable: midiExportService !== null,
         midiExportOpenPreview: () => {
           if (midiExportService === null) {
@@ -3986,6 +4040,7 @@ export function StudioRoot({
         auditionMidiImport: (preview,gesture) => auditionMidiImportGroove(controller,midiImportService,preview,gesture),
         inspector: controller,
         readTransportPlayheadLabel: controller.readTransportPlayheadLabel,
+        readPlayAlong: controller.readPlayAlong,
         readTransportAnalysisFrame: controller.readTransportAnalysisFrame,
         readEventPitchClasses: controller.readEventPitchClasses,
         readContinuationSuggestions: controller.readContinuationSuggestions,

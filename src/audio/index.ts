@@ -26,3 +26,5 @@ export type {
 } from "./physical-realization";
 export { createTransportService } from "./transport";
 export * from "./transport-contract";
+
+export type {DryPianoRenderPort,DryPianoResult,DryPianoEvidence} from "./dry-piano-render";

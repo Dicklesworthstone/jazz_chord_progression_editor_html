@@ -312,3 +312,12 @@ export type { CapturedDiscoveryValue } from "./discovery-data";
 export { createDiscoveryStepper, inspectMeasuredDiscoveryResult, isMeasuredDiscoveryResult } from "./discovery-execution";
 export type { DiscoveryEnumerationKernel, DiscoveryExpansionSink } from "./discovery-execution";
 export { DISCOVERY_EXECUTION_LIMITS, DISCOVERY_EXECUTION_SCHEMA, DISCOVERY_ENGINE_CEILINGS } from "./discovery-execution-contract";
+
+export { REVERSE_CHORD_TEMPLATES, type ReverseChordTemplate } from "./reverse-chord-templates";
+export { analyzeNoteFirst, type NoteFirstAnalysis, type NoteFirstCandidate } from "./note-first";
+
+export {findExactGuitarPositions,STANDARD_GUITAR_TUNING,type GuitarAssignment,type GuitarPosition,type GuitarPositionSearch} from "./guitar-positions";
+
+export {observeVoicingRegister,type RegisterObservations,type RegisterNote,type RegisterPair,type RegisterObservationResult} from "./register-observations";
+
+export {decodeChordProGrid,type ChordProGrid,type GridResult,type GridEvent,type GridEvidence} from "./chordpro-grid";

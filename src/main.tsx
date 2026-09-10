@@ -15,13 +15,14 @@ import {
   applicationHistoryRetainedByteEstimator,
   validateDocumentSemantics,
   decodeSharedStartup,
+  decodeSharedStartupWithQr,
   applyExactSharedStartup,
   createStudioExactShare,
   createStudioMyCharts,
   seedStarterChart,
 } from "./application/runtime";
 import { decodeDocumentShape } from "./domain";
-import { startPreparedExportDelivery, prepareBrowserJsonDownload } from "./export";
+import { startPreparedExportDelivery, prepareBrowserJsonDownload, prepareBrowserWavDownload, prepareBrowserSvgDownload, prepareBrowserPrintFont, activateBrowserPrint, compressBrowserBytes, inflateBrowserBytes } from "./export";
 import {
   createIndexedDbRecoveryAdapter,
   createLocalStorageRecoveryAdapter,
@@ -31,6 +32,7 @@ import {
 } from "./persistence";
 import {
   createBrowserAudioPlatform,
+  createDryPianoRenderer,
   loadSmfWasmDecoder,
 } from "./audio/runtime";
 import {
@@ -105,6 +107,12 @@ const creation = createStudioComposition({
       .map((byte) => byte.toString(16).padStart(2, "0"))
       .join("");
   },
+  prepareCompRecipeDownload: prepareBrowserJsonDownload,
+  prepareWavDownload: prepareBrowserWavDownload,
+  printReadyFont: prepareBrowserPrintFont,
+  nativePrint: activateBrowserPrint,
+  prepareSvgDownload: prepareBrowserSvgDownload,
+  dryPianoRender: createDryPianoRenderer(()=>new Promise(resolve=>setTimeout(resolve,0))),
   midiExportDelivery: createMidiExportDownloadStart({
     createObjectUrl: (blob) => URL.createObjectURL(blob),
     revokeObjectUrl: (url) => {
@@ -123,9 +131,10 @@ const creation = createStudioComposition({
 
 if (creation.ok) {
   const composition = creation.composition;
-  const { controller, midiExport } = composition;
+  const { controller, midiExport, performedMidi, comping, wav, printCharts, songbook } = composition;
   let startupNotice: string | null = null;
-  const shared = decodeSharedStartup(window.location.hash);
+  const startupFragment=window.location.hash;
+  const shared = decodeSharedStartup(startupFragment);
   const explicitShare = shared.ok || shared.code !== "share.fragment_absent";
   /*
    * A1 recovery wiring (l3a.2): the service over the real browser
@@ -218,6 +227,7 @@ if (creation.ok) {
 
   const sharing = createStudioExactShare({ composition, lifecycle,
     readLocation: () => window.location.href,
+    compress: compressBrowserBytes,
     writeClipboard: async (text) => { await navigator.clipboard.writeText(text); },
   });
   const myCharts = createStudioMyCharts({ composition, lifecycle, documentImport,
@@ -228,14 +238,15 @@ if (creation.ok) {
   // existing import service owns validation and the serialized one-step swap;
   // recovery cannot race it, and an invalid link never seeds a replacement demo.
   const finishStartup = async (): Promise<void> => {
-    if (shared.ok) {
-      const applied = shared.value.version === 2
-        ? await applyExactSharedStartup(composition, documentImport, shared.value.text)
-        : applySharedStartup(controller, shared.value.payload);
+    const resolvedShare=await decodeSharedStartupWithQr(startupFragment,inflateBrowserBytes);
+    if (resolvedShare.ok) {
+      const applied = resolvedShare.value.version === 2
+        ? await applyExactSharedStartup(composition, documentImport, resolvedShare.value.text)
+        : applySharedStartup(controller, resolvedShare.value.payload);
       if (!applied.applied) startupNotice = `The shared chart was not opened: ${applied.reason}`;
-      else if (shared.value.version === 1) startupNotice = "This older link omits exact voicings, annotations, section details and other settings. Sound can change between app versions.";
-    } else if (shared.code !== "share.fragment_absent") {
-      startupNotice = `The share link could not be read: ${shared.message}`;
+      else if (resolvedShare.value.version === 1) startupNotice = "This older link omits exact voicings, annotations, section details and other settings. Sound can change between app versions.";
+    } else if (resolvedShare.code !== "share.fragment_absent") {
+      startupNotice = `The share link could not be read: ${resolvedShare.message}`;
     }
     render(
       <StudioRoot
@@ -243,6 +254,11 @@ if (creation.ok) {
         sharing={sharing}
         controller={controller}
         midiExport={midiExport}
+        performedMidi={performedMidi}
+        comping={comping}
+        wav={wav}
+        printCharts={printCharts}
+        songbook={songbook}
         midiImport={midiImport}
         startupNotice={startupNotice}
         recovery={recoveryBinding}
