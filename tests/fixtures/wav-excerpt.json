@@ -1,0 +1,25 @@
+{
+  "provenance": "Hand-calculated quarter-note boundaries before implementing the WAV range selector; no production generator.",
+  "sections": [
+    {"id": "excerpt-a", "bars": [{"kind": "empty", "ticks": 3840}, {"kind": "pickup", "ticks": 320}, {"kind": "complete", "ticks": 3840}]},
+    {"id": "excerpt-b", "bars": [{"kind": "incomplete", "ticks": 2400}, {"kind": "empty", "ticks": 3840}, {"kind": "complete", "ticks": 3840}]}
+  ],
+  "accepted": [
+    {"name": "leading rest", "sectionId": null, "startBar": 1, "barCount": 1, "startTick": 0, "endTick": 3840},
+    {"name": "fractional pickup", "sectionId": null, "startBar": 2, "barCount": 1, "startTick": 3840, "endTick": 4160},
+    {"name": "across sections", "sectionId": null, "startBar": 3, "barCount": 3, "startTick": 4160, "endTick": 14240},
+    {"name": "section-relative later bars", "sectionId": "excerpt-b", "startBar": 2, "barCount": 2, "startTick": 10400, "endTick": 18080},
+    {"name": "four-bar maximum", "sectionId": null, "startBar": 3, "barCount": 4, "startTick": 4160, "endTick": 18080}
+  ],
+  "refused": [
+    {"sectionId": null, "startBar": 0, "barCount": 1},
+    {"sectionId": null, "startBar": 1.5, "barCount": 1},
+    {"sectionId": null, "startBar": 1, "barCount": 0},
+    {"sectionId": null, "startBar": 1, "barCount": 5},
+    {"sectionId": null, "startBar": 1, "barCount": 1.5},
+    {"sectionId": null, "startBar": 7, "barCount": 1},
+    {"sectionId": null, "startBar": 6, "barCount": 2},
+    {"sectionId": "excerpt-b", "startBar": 3, "barCount": 2},
+    {"sectionId": "missing", "startBar": 1, "barCount": 1}
+  ]
+}
