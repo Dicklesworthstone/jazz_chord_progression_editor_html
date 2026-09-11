@@ -70,3 +70,35 @@ browser proof covers entry, exact-name/enharmonic disclosure, real audition,
 Add/Undo/Redo, persistence, stale drafts, keyboard/320px and offline/no errors.
 Independent musical/player and applicable physical-device acceptance remain a
 separate verification leaf. This specification closes no implementation gate.
+
+## Tactile draft entry (COD1 extension)
+
+The one-octave keyboard adds occurrences to the same note-first draft. Choose
+an octave from -1 through 9 (initially 3) and Sharps or Flats for newly added
+black keys. The spelling selector never rewrites existing notes. MIDI-outside
+keys at the upper edge are disabled; typed input still supports uncommon and
+double accidentals. Twelve displayed keys, eleven octave choices and sixteen
+retained occurrences are hard bounds. Keys are native buttons with at least
+44 × 44 CSS-pixel targets; the keyboard scrolls locally on narrow screens.
+
+Each activation appends one occurrence, including a second copy of a note
+already present. An explicit Remove button targets one occurrence by index;
+Clear removes the draft, including invalid unfinished text. Append/remove
+refuse an invalid current draft without changing it. The existing parser and
+domain constructors validate every action; no second parser or pitch-class
+normalization is introduced. Whitespace and lexical case may normalize after
+an edit; spelling, octave, occurrence order and duplicates cannot change.
+
+Successful draft edits release only the note-first preview, refresh naming
+against the current source, and leave document/history/recovery untouched.
+They do not automatically sound. Hear exact notes, Add bar, Undo and Redo use
+the existing application owner. After a source edit the displayed draft stays
+stale until the user explicitly analyzes or edits it again. The keyboard does
+not inherit authority to publish an old analysis.
+
+Independent key/MIDI tables and occurrence/refusal examples are checked in at
+`tests/fixtures/note-first-keyboard/cases.json`. Tests must also cover the
+sixteenth/seventeenth occurrence, fractional/out-of-range indices, changed
+spelling affecting only later notes, source rebinding, real keyboard/touch
+activation, native audition and exact Add/Undo/Redo/JSON. No physical-phone
+latency or musical acceptance is inferred from automated browser checks.

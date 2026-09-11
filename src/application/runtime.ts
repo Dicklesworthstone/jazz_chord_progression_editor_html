@@ -202,3 +202,5 @@ export type {StudioPrintService,StudioPrintView,PrintPage,PrintPaper} from "./st
 export type {StudioSongbookService,SongbookView,SongbookSource} from "./studio-songbook";
 export {decodeSharedStartupWithQr} from "./qr-share";
 export type {ExactQr} from "./qr-share";
+
+export type {NoteFirstDraftEdit,NoteFirstKeyboard,NoteFirstKeyboardSpelling} from "./note-first-keyboard-contract";

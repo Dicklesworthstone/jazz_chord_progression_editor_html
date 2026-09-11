@@ -119,3 +119,14 @@
 
 .studio-exact-qr { width: 100%; margin-block: 1rem; }
 .studio-exact-qr__image { display: block; margin: 0.75rem auto; background: #fff; flex-shrink: 0; }
+
+.studio-note-keyboard__controls { display: flex; flex-wrap: wrap; gap: .75rem; }
+.studio-note-keyboard__controls label { flex: 1 1 8rem; }
+.studio-note-keyboard__scroll { max-width: 100%; overflow-x: auto; padding: 4px; }
+.studio-note-keyboard__keys { position: relative; width: 392px; height: 164px; }
+.studio-note-first .studio-note-keyboard__keys button { box-sizing: border-box; position: absolute; width: 56px; min-width: 56px; height: 156px; margin: 0; padding: 4px; border: 1px solid var(--key-black); border-radius: 0 0 5px 5px; color: var(--key-black); background: var(--key-white); display: flex; justify-content: center; align-items: flex-end; font-size: .8rem; }
+.studio-note-first .studio-note-keyboard__keys .is-black { z-index: 1; width: 44px; min-width: 44px; height: 100px; color: var(--key-white-lit); background: var(--key-black); }
+.studio-note-first .studio-note-keyboard__keys button:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 1px; }
+.studio-note-first .studio-note-keyboard__keys button:active { box-shadow: inset 0 -6px 0 var(--accent); }
+.studio-note-keyboard__notes { display: flex; flex-wrap: wrap; gap: .25rem; list-style: none; padding: 0; }
+.studio-note-first .studio-note-keyboard__notes button { margin: 0; }
