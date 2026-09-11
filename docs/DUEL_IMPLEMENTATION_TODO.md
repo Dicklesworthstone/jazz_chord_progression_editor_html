@@ -261,3 +261,40 @@ Scanner triage: retained before/after/detailed UBS logs in `.tmp/fresh-eyes/`. U
 Final browser proof: real Node 26 / Playwright 1.61.1 ran `test tests/e2e/studio-qr-share.spec.ts tests/e2e/studio-note-first.spec.ts tests/e2e/studio-comping.spec.ts tests/e2e/studio-pads.spec.ts --config .tmp/fresh-eyes/playwright.config.ts --workers 1` with all four artifact environment variables pointing at `.tmp/fresh-eyes/candidate.html`. `browser-results.json`: 60 expected, 0 skipped, 0 unexpected, 0 flaky, duration 263,851.426 ms. All 60 evidence attachments match the candidate hash and contain no page/console errors; request assertions prohibit runtime network. Both themes and the 844 × 390 QR case pass in all three engines; independent libzbar decodes actual renderer pixels and rejects the missing-quiet-module negative control. Native audio, exact Manual-note insertion/undo/reload, rhythm MIDI/recipe downloads and pad cancellation regressions pass.
 
 The source/test hash guard remained unchanged through completion. Promoted only the guarded remote build bytes: root artifact and `dist/index.html` SHA-256 `fb6bbd36dc4026d80aea26379be0efefd15100618088ea0ec3785e66314c47e1`, 8,621,237 bytes. Review repairs complete; no aggregate release, deployment, human listening/device acceptance, or clean UBS scan is claimed. The three unrelated untracked wrong-layer copies remain preserved for their owner.
+
+### COD1 tactile entry continuation (2026-09-10)
+
+Consumer: user-requested best-idea implementation; retire this checklist into
+the note-first feature record after implementation and acceptance.
+
+- [x] Select original COD1 tapping experience without bypassing blocked rehearsal/G9 owners.
+- [x] Specify octave/spelling, exact occurrence edits and 16-note limits; hand-author MIDI and spelling fixtures.
+- [x] Pass specification packet checks, then claim the implementation leaf.
+- [x] Implement application keyboard selector and atomic draft edits using existing theory/domain validation.
+- [x] Wire accessible on-screen keys, octave/spelling controls, occurrence removal and Clear.
+- [x] Prove exact typed/keyboard mixing, duplicate retention, invalid-draft refusal, source rebinding and native audition/Add/Undo/Redo.
+- [x] Pass RCH types/lint/source policy/guarded build and real Chromium/Firefox/WebKit phone-width cases; promote byte-identical artifact.
+- [x] Fresh reread and regression proof; retain physical/player acceptance under `.3.3`.
+
+Keyboard evidence (`.tmp/note-first-keyboard/`): `spec.log` passes the independently authored packet's 19 assertions and test-project types. `final-gates.log` passes 32 focused tests / 297 assertions, application types, owned ESLint with zero warnings, source policy (346 files), and the guarded build. All four TypeScript projects passed in `gates-fixed.log`; its subsequent lint failure identified an unnecessarily narrow runtime-validator parameter, corrected before the final gates. The earlier application-interface omission was also fixed. No compiler or lint rule was weakened.
+
+`mutants.log` records four actual production defects killed by behavioral assertions: deduplicating occurrences, removing the wrong occurrence, reversing flat spelling, and allowing a prepared audition to attack after a draft edit. Restored production passes the same integration suite: 4 tests / 120 assertions. Fixtures were hand-authored before production; mutation output did not regenerate expectations.
+
+Real Node 26 / Playwright ran `test tests/e2e/note-first-keyboard.spec.ts tests/e2e/studio-note-first.spec.ts --config .tmp/note-first-keyboard/playwright.config.ts --workers 1`, with `JCPE_KEYBOARD_ARTIFACT` and `JCPE_NOTE_FIRST_ARTIFACT` pointing at `candidate.html`. `browser-results.json`: 15 expected, zero skipped/unexpected/flaky, 76,163.419 ms. All 15 evidence attachments match SHA-256 `a954be1979b0b8d0ffb64faccc0751e428bf603a602611b0b13d4af0acb9df3a`, with no page/console errors or runtime network requests. Original tests also record permitted initial/reload navigation to the local artifact. Three engines cover 320px/desktop, native touch and keyboard activation, exact Add/Undo/Redo downloads, real audio, invalid input, octave limits, 16-note capacity, focus after removal, Axe and overflow. Chromium phone/dark and desktop/light screenshots were visually reviewed.
+
+The 361-file source hash map remained unchanged, including the exact file set, before promotion. Root and `dist/index.html` now contain the same guarded 8,626,490 bytes (5,253 bytes added; 286,406 bytes of shell headroom plus the untouched Atlas reserve). Verification retains the exact three-file transfer exclusion documented above for the unrelated wrong-layer UI copies; those files remain untouched and whole-worktree release readiness is not claimed. Implementation `.3.5` is complete; existing physical/player verification `.3.3`, package epics, dropout dependencies and reopened G9 remain open. No commit or deployment was performed for this extension.
+
+### Guitar positions while composing (COD1 + COD4, 2026-09-11)
+
+Consumer: the owner's continued implementation request. This extends the two
+working finalists; retire into their feature record after acceptance.
+
+- [x] Confirm that saved-chord guitar positions exist but drafts cannot use them.
+- [x] Specify draft/source authority and hand-author exact-position fixtures before implementation (`.4.4`).
+- [ ] Pass specification checks; claim `.4.5` only afterward.
+- [ ] Add pure application draft-position read with current-source and parser validation.
+- [ ] Share diagrams/tables with saved-chord view; add lazy draft disclosure and owned audition.
+- [ ] Prove live edits, exact unisons/spellings, no-position, stale hiding, selection reset and unchanged chart.
+- [ ] Run RCH focused tests, four TypeScript projects, owned lint/source policy and guarded build; kill four semantic mutants.
+- [ ] Run real-browser phone/desktop proof and existing guitar/note-first regressions, inspect screenshots, and promote only unchanged-source guarded bytes.
+- [ ] Fresh review and exact evidence; leave physical/player `.3.3` and `.4.3` open.
