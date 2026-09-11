@@ -2,6 +2,7 @@
 .bv/
 
 # Dependency and build output
+node_modules
 node_modules/
 dist/
 
@@ -44,3 +45,4 @@ Thumbs.db
 
 # Local debug probes and overflow-audit captures (not product fixtures).
 /tmp/
+.rch-tmp/

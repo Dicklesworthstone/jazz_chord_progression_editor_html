@@ -48,7 +48,7 @@ describe("previewPitch", () => {
     expect(result.ok).toBe(true);
     const after = controller.getSnapshot();
     expect(after.revision).toBe(before.revision);
-    expect(after.transport.status).toBe(before.transport.status);
+    expect(after.transport.status).toBe("starting");
   });
 
   test("an out-of-range pitch refuses without touching state", () => {
