@@ -1,0 +1,13 @@
+{
+  "provenance": "Hand-authored from standard tuning 40 45 50 55 59 64 and literal written octaves; no production output used.",
+  "cases": [
+    {"text":"E4 E4","midi":[64,64],"status":"positions","firstFrets":[null,null,null,null,5,0]},
+    {"text":"E4 Fb4","midi":[64,64],"status":"positions","firstFrets":[null,null,null,null,5,0]},
+    {"text":"E2 A2 D3 G3 B3 E4","midi":[40,45,50,55,59,64],"status":"positions","firstFrets":[0,0,0,0,0,0]},
+    {"text":"F2 Bb2 Eb3 Ab3 C4 F4","midi":[41,46,51,56,60,65],"status":"positions","firstFrets":[1,1,1,1,1,1]},
+    {"text":"E2 F2","midi":[40,41],"status":"no-position"},
+    {"text":"D#2","midi":[39],"status":"no-position"},
+    {"text":"E4 E4 E4 E4 E4 E4 E4","midi":[64,64,64,64,64,64,64],"status":"no-position"}
+  ],
+  "invalid": ["", "E4 F", "C###4", "G#9", "E4 <script>"]
+}

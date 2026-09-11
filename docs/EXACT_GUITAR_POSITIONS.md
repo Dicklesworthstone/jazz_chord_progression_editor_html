@@ -51,3 +51,29 @@ covers current Auto/Manual/Frozen authority and stale reads. Real Node browser
 proof covers displayed positions/table, exact native audition/release, unchanged
 history, keyboard, phone layout and absence of runtime requests/errors. Physical
 guitarist usability is an independent verification leaf, not an algorithm result.
+
+## Note-first draft preview (COD1 + COD4 integration)
+
+The same optional diagram/table is available before a note-first draft becomes
+a chart chord. An application read takes the draft's document ID, revision and
+literal text, refuses stale authority or invalid text, and passes the existing
+parser's exact ordered occurrences to the existing bounded guitar solver.
+The selected chart chord is never a substitute for the draft. No new tuning,
+search law, pitch repair, chart publication or automatic sound is introduced.
+
+Compute only while the draft's disclosure is open. A successful keyboard edit
+refreshes the open view; unfinished typed edits remove it until analyzed. A
+source change hides positions and audition until explicit reanalysis. Position
+selection resets for changed input and never edits notes. Reuse the saved-chord
+diagram/table presentation, retaining source-specific copy. Hear/release uses
+the note-first owner, preserving pending-preparation cancellation and unrelated
+previews. Closing the guitar disclosure releases only that owned audition.
+
+The checked-in note-first-guitar fixture packet is independently hand-written:
+literal unisons, enharmonic unisons, exact open strings and transposition twins,
+same-string conflicts, out-of-register pitches, seven occurrences and invalid
+text. Verify source binding and unchanged application state; independently
+reproject every displayed occurrence from string tuning plus fret. Real browser
+proof covers live draft changes, stale hiding, 320px/desktop, native audio,
+keyboard, exact Add/Undo/Redo and the existing saved-chord guitar path. Physical
+guitarist/device acceptance remains the existing separate verification phase.
