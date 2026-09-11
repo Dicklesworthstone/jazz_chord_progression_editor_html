@@ -286,8 +286,8 @@ The 361-file source hash map remained unchanged, including the exact file set, b
 
 ### Guitar positions while composing (COD1 + COD4, 2026-09-11)
 
-Consumer: the owner's continued implementation request. This extends the two
-working finalists; retire into their feature record after acceptance.
+Consumer: the owner's continued implementation request. This connects the two
+working finalists; retain physical/player acceptance under `.3.3` and `.4.3`.
 
 - [x] Confirm that saved-chord guitar positions exist but drafts cannot use them.
 - [x] Specify draft/source authority and hand-author exact-position fixtures before implementation (`.4.4`).
@@ -296,17 +296,82 @@ working finalists; retire into their feature record after acceptance.
 - [x] Share diagrams/tables with saved-chord view; add lazy draft disclosure and owned audition.
 - [x] Prove live edits, exact unisons/spellings, no-position, stale hiding, selection reset and unchanged chart.
 - [x] Run RCH focused tests, four TypeScript projects, owned lint/source policy and guarded build; kill four semantic mutants.
-- [ ] Run real-browser phone/desktop proof and existing guitar/note-first regressions, inspect screenshots, and promote only unchanged-source guarded bytes.
-- [ ] Fresh review and exact evidence; leave physical/player `.3.3` and `.4.3` open.
+- [x] Trace browser execution failures; repair missing worker audio infrastructure while retaining original assertions, timeouts and failed receipts.
+- [x] Find and fix the existing export/recovery defect exposed by the native regression suite, with an independently written failing test first.
+- [x] Prove marker-refresh success and refusal after newer edits, stale delivery and quota failure; rerun lifecycle/recovery regressions and source gates.
+- [x] Complete all 33 real-browser phone/desktop cases, including existing guitar/note-first regressions; inspect receipts/screenshots and promote only unchanged-source guarded bytes.
+- [x] Finish exact evidence and close `.4.5`; keep physical/player `.3.3` and `.4.3` open.
 
-Implementation checkpoint: RCH `final-gates.log` passes 52 focused tests / 912 assertions, all four strict TypeScript projects, owned ESLint, source policy (347 files), and guarded build. `mutants.log` kills actual duplicate collapse, occurrence reversal, ignored document identity and ignored revision; restored production passes 3 tests / 277 assertions. Initial test typing errors were corrected with explicit fixture-value/index validation, without changing expectations. Evidence lives in `.tmp/note-first-guitar/`.
+Source evidence lives in `.tmp/note-first-guitar/`. The independently authored
+specification packet passes 16 assertions. `recovery-gates-fixed.log` passes
+52 guitar/note-entry tests / 912 assertions plus 67 lifecycle/recovery tests /
+414 assertions: **119 tests / 1,326 assertions**, all four strict TypeScript
+projects, owned ESLint, source policy (347 files), and guarded Bun 1.3.14 build.
+Initial nullable/indexed test values were fixed with explicit validation, without
+changing expected values or weakening compiler/lint rules.
 
-Browser execution failures are retained: the first local run had 9 passes / 2 failures before stopping; the second, with the documented `LP_NUM_THREADS=4`, had 8 passes / 3 failures / 1 interrupted. Long workflows exhausted their unchanged 30-second total budget; traces show cumulative startup/UI time rather than a failed exact-note assertion. The renderer setting alone did not fix this local timing limitation. The same complete suite moved to hz2 through RCH. Chromium passed, but Firefox's existing and new audio checks exposed an absent worker audio server. PulseAudio and its native local null sink were installed; a separate real Node/native AudioContext preflight now passes in Chromium 149.0.7827.55, Firefox 151.0 and WebKit 26.5. This is an infrastructure correction, not a mock audio adapter or a physical listening claim. The first worker report remains at `test-results/draft-guitar-run/`; the first complete corrected-environment run at `test-results/draft-guitar-final/` passed 32/33. Its WebKit desktop failure was a test race: the trace records Export opening immediately after shell readiness, before the asynchronous recovery probe; the app correctly offered Keep after that session change. The regression now explicitly waits for “Recovered chart opened” before the unchanged exact-document comparison, as the dedicated recovery suite already does. A complete 33-case run with that synchronization fix is pending at `test-results/draft-guitar-verified/`. No assertion, timeout, retry count, CSP or browser matrix was relaxed.
+`mutants.log` kills actual duplicate collapse, occurrence reversal, ignored
+document identity and ignored revision; restored selector production passes
+3 tests / 277 assertions. That selector is unchanged in the rebuilt artifact.
+Native tests exercise real audio, storage and downloads; the small integration
+audio double proves ownership, not physical listening quality.
+
+Browser failures remain inspectable. The two local runs recorded 9 passes /
+2 failures before stopping, then 8 passes / 3 failures / 1 interrupted with the
+documented `LP_NUM_THREADS=4`. Long workflows exhausted the unchanged 30-second
+total budget. The renderer setting alone did not fix this local timing
+limitation; no local performance repair is claimed. The same complete suite
+moved to hz2 through RCH. Chromium passed, but Firefox's existing and new audio
+checks exposed an absent worker audio server. PulseAudio 17 with its native
+local `auto_null` sink fixed that prerequisite; a real Node/native AudioContext
+preflight passes in Chromium 149.0.7827.55, Firefox 151.0 and WebKit 26.5.
+This is an OS audio backend, not a mock Web Audio implementation. The first
+worker report remains at `test-results/draft-guitar-run/`.
+
+The first complete corrected-environment matrix (`draft-guitar-final`) was
+32/33. Its WebKit desktop reload failure initially appeared to be Export racing
+recovery, so the existing test was strengthened to await “Recovered chart
+opened” before its unchanged exact-document comparison. The next complete
+matrix (`draft-guitar-verified`) remained 32/33: that explanation was incomplete.
+Targeted native diagnostics (`draft-guitar-recovery-debug` and
+`draft-guitar-recovery-storage`) recorded no post-reload input and inspected real
+IndexedDB. The revision 6 recovery envelope still carried revision 5 `lastExport`
+beside a durable revision 6 export binding. The app correctly offered Keep for
+that mismatch; successful export had never queued a refreshed recovery envelope.
+
+`recovery-red.log` proves the new production lifecycle/A1 test failed before the
+fix: 23 pass / 1 failure, missing queued refresh. Successful marker persistence
+now queues the exact current document through existing recovery scheduling,
+only if its document ID and revision still match. A late storage completion
+cannot queue an older chart, and failed/stale exports queue nothing. The new
+positive and late-edit controls, existing negative controls, and cold-service
+startup checks pass in the 67-test recovery set. The complete matrix at `test-results/draft-guitar-recovery-fixed/` passes
+**33/33**, zero skipped/unexpected/flaky, in 220,902.453 ms. No assertion,
+timeout, retry count, CSP or browser matrix was relaxed.
+
+Verification retains the exact three-file transfer exclusion for unowned
+`src/application/ChordPadsPanel.tsx`, `src/application/ExactShareDialog.tsx`, and
+`src/application/NoteFirstPanel.tsx`. Those files remain untouched. Whole-tree
+release readiness, physical acceptance and deployment are not claimed.
 
 
-Recovery regression found during this feature's existing browser gate:
-- [x] Retain the 32/33 runs and strengthen reload synchronization without weakening the exact document comparison.
-- [x] Disprove the initial race-only explanation: a native event trace records no input after reload, and real IndexedDB shows revision 6 recovery with revision 5 `lastExport` beside a durable revision 6 export binding.
-- [x] Add a deterministic production lifecycle/A1 regression before the fix; RCH `recovery-red.log` is 23 pass / 1 expected failure (missing queued marker refresh).
-- [x] After successful marker storage, queue the exact current document/revision through existing recovery scheduling; guard against a newer edit or replacement and leave failed/stale delivery untouched.
-- [ ] Pass lifecycle/recovery regressions, types/lint/source policy and rebuilt artifact; rerun the complete 33 browser cases with the exact recovered-document assertion.
+Final browser command (RCH hz2, pinned real Node 26):
+`node node_modules/@playwright/test/cli.js test tests/e2e/note-first-guitar.spec.ts tests/e2e/studio-guitar.spec.ts tests/e2e/note-first-keyboard.spec.ts tests/e2e/studio-note-first.spec.ts --config test-results/draft-guitar-recovery-fixed/playwright.config.ts --workers 1`.
+The runner binds all four artifact environment variables to the same guarded
+candidate. All 33 machine-readable evidence attachments match SHA-256
+`3cd5aea9ee98647b44d5d4dbca6d8dd05a79c1d9f2b4eaa137e94412f0b168c9`;
+none records page/console errors or runtime network requests. Existing cases
+also record allowed initial/reload navigation to the local artifact. The matrix
+covers Chromium/Firefox/WebKit, 320px/desktop, dark/light presentation, touch and
+keyboard entry, exact duplicate/spelling tables, live edits, stale hiding,
+no-position boundaries, native audition/release, unchanged chart until Add,
+exact Add/Undo/Redo and automatic recovery downloads, Axe and overflow. Both
+Chromium screenshots were visually reviewed.
+
+The exact 362-file source set and hashes remained unchanged before promotion.
+Root HTML and `dist/index.html` now contain the same guarded **8,628,372 bytes**,
+1,882 bytes above the prior keyboard build, leaving 284,524 bytes of shell
+headroom plus the untouched 524,288-byte Atlas reserve. The corresponding
+standalone manifest is in `dist/`. Implementation `.4.5` is complete; physical
+verification `.3.3`/`.4.3`, package epics, dropout prerequisites and reopened G9
+remain open. No Git commit, push or deployment was performed by this session.
