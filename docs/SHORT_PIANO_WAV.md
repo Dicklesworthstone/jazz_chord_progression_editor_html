@@ -15,7 +15,8 @@ WASM f505035be85ea98cc6c6c71374a84448c65851aa7a4ca31e5720e71f336a6ca9,
 attack samples 08bc1a567e615e498baded37966eef2a13b2b34de288e301a833dd8460727980.
 These are worker observations, not a phone latency or memory claim.
 
-Admit a whole chart or one section containing 1–4 measures, at most 16 seconds,
+Admit a whole chart, one section, or an explicitly selected consecutive excerpt
+containing 1–4 measures, at most 16 seconds,
 32 attacks and 64 exact pitch occurrences. Full-context P0 source compilation
 is bounded to 32 sections, 128 measures and 128 source events before realization.
 Use its literal exact Manual/Frozen/current Auto notes, onset ticks and gate
@@ -24,6 +25,37 @@ MIDI pitches must be 21–108; each note gate at most 4 seconds. Refuse unsuppor
 pitches, invalid plans, empty audible passages, oversize passages and non-finite
 PCM without partial downloads, transposition or dropped voices. Section projection
 uses the existing exact P0 range operator and starts the selected range at zero.
+
+## Explicit bar excerpts (jcpe-6ujg.8.4 / .8.5)
+
+Whole chart/section remains the default. The user enables “Choose specific bars”
+and selects a one-based first bar and a count of 1–4 within that scope. Display
+both selected endpoints and available bar count. Enabling starts at bar 1 with
+up to four bars; changing chart/section resets this optional selection. Neither
+oversize defaults nor invalid ranges are silently shortened. Missing section,
+noninteger/out-of-bounds first bar/count and an end beyond the scope refuse.
+
+Resolve boundaries in the original document with domain rational arithmetic:
+empty bars consume meter capacity; pickups/incomplete bars consume their exact
+stored event sum. Chart-relative excerpts may cross section boundaries. Section
+bar numbers start at one but map to absolute document time. Compile full-context
+P0 once, then use its exact range projection; do not recompile a sliced document
+or change Auto context, Manual/Frozen pitch order/register/spelling/duplicates.
+Leading silence and original event IDs remain intact. Renderer offsets absolute
+ticks against the projected start, retaining existing gates, tail and budgets.
+
+An excerpt change cancels pending rendering/hashing and invalidates ready bytes.
+A cancelled job retains ownership until completion; no overlapping render starts.
+Source revision changes and panel closure retain the same cancellation behavior.
+Invalid source size refuses before timeline accumulation or P0 compilation.
+
+Independent pre-implementation ticks are in `tests/fixtures/wav-excerpt.json`.
+Build proof must include real PCM for a later excerpt, context-preserving plans,
+invalid-range refusal before renderer calls, source immutability and cancellation
+at rendering/hashing boundaries. Native downloads across all three browser
+engines at phone/desktop widths must decode the selected later bars and preserve
+leading silence, unchanged revision, cleanup and accessibility. Physical-phone
+memory/listening remains the original open `.8.3` verification gate.
 
 ## PCM and timing
 

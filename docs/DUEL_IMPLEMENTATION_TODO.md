@@ -375,3 +375,19 @@ headroom plus the untouched 524,288-byte Atlas reserve. The corresponding
 standalone manifest is in `dist/`. Implementation `.4.5` is complete; physical
 verification `.3.3`/`.4.3`, package epics, dropout prerequisites and reopened G9
 remain open. No Git commit, push or deployment was performed by this session.
+
+## Explicit short WAV excerpts (2026-09-11, CyanCove)
+
+- [x] Recover live Beads/Agent Mail/Git state and read WAV/timing/layer contracts.
+- [x] Identify observed gap: no way to select four later bars from a longer chart.
+- [x] Specify opt-in one-based chart/section bar ranges and unchanged audio limits.
+- [x] Author independent ticks for rests, fractional pickups, cross-section ranges.
+- [ ] Pass specification fixture gate; close `.8.4`, claim dependent build `.8.5`.
+- [ ] Implement bounded exact original-document range resolution and refusals.
+- [ ] Wire excerpt intents/view and accessible first-bar/count UI into existing WAV.
+- [ ] Preserve full-context P0, exact note occurrences, source state and dry route.
+- [ ] Test invalid ranges, source limits, rendering/hashing cancellation and stale bytes.
+- [ ] Decode actual later-excerpt PCM and browser downloads, retaining leading silence.
+- [ ] Run RCH focused tests/types/lint/source policy/guarded build and native browser matrix.
+- [ ] Fresh-eyes review, exact evidence and source-bound generated artifact promotion.
+- [ ] Close build only after named gates; leave `.8.3` physical memory/listening open.
