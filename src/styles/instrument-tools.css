@@ -73,7 +73,11 @@
 @media (min-width: 48rem) { .studio-pads__grid { grid-template-columns: repeat(4,minmax(0,1fr)); } }
 .studio-wav { min-width: 0; padding: .6rem; margin-block: .75rem; border: 1px solid var(--border-default); border-radius: .5rem; background: var(--surface-elevated); color: var(--text-primary); overflow-wrap: anywhere; }
 .studio-wav summary { min-height: 44px; padding-block: .5rem; font-weight: 650; cursor: pointer; }
-.studio-wav button, .studio-wav select { min-height: 44px; max-width: 100%; padding: .5rem; border: 1px solid var(--border-strong); border-radius: .4rem; background: var(--surface-app); color: var(--text-primary); font: inherit; }
+.studio-wav button, .studio-wav select, .studio-wav input[type="number"] { min-height: 44px; max-width: 100%; padding: .5rem; border: 1px solid var(--border-strong); border-radius: .4rem; background: var(--surface-app); color: var(--text-primary); font: inherit; }
+.studio-wav label { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; min-block-size: 44px; margin-block: .4rem; }
+.studio-wav fieldset { min-inline-size: 0; padding: .5rem; border: 1px solid var(--border-default); border-radius: .4rem; }
+.studio-wav input[type="number"] { inline-size: 6rem; min-inline-size: 0; }
+.studio-wav input[type="checkbox"] { inline-size: 1.25rem; block-size: 1.25rem; accent-color: var(--accent); }
 .studio-wav__actions { display: flex; flex-wrap: wrap; gap: .4rem; margin-block: .75rem; }
 .studio-wav progress { width: 100%; }
 .studio-wav :focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }

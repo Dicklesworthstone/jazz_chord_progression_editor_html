@@ -27,7 +27,7 @@ function setup(document=chart()){
   const plans:PlaybackPlan[]=[],downloads:Uint8Array[]=[];
   const render=createDryPianoRenderer(()=>Promise.resolve());
   const service=createStudioWav({readDocument:()=>document,readRevision:()=>1,subscribeSource:()=>()=>{},
-    render:async(plan,controls)=>{plans.push(plan);return render(plan,controls);},hashBytes:async bytes=>createHash("sha256").update(bytes).digest("hex"),
+    render:async(plan,controls)=>{plans.push(plan);return render(plan,controls);},hashBytes:bytes=>Promise.resolve(createHash("sha256").update(bytes).digest("hex")),
     prepareDownload:bytes=>()=>{downloads.push(bytes);return{issued:true,objectUrlsCreated:1,objectUrlsRevoked:1,outstandingOwnedResources:0};},
   });
   return{document,service,plans,downloads};
@@ -35,7 +35,7 @@ function setup(document=chart()){
 for(const row of fixture.accepted)test(`exact excerpt: ${row.name}`,()=>{
   const result=studioWavRange(chart(),row.sectionId,row);expect(result.ok).toBe(true);
   if(!result.ok||result.range===null)throw new Error("Missing range");
-  expect(beatValueToMidiTicks(result.range.start)).toBe(row.startTick);expect(beatValueToMidiTicks(result.range.end)).toBe(row.endTick);
+  expect(Number(beatValueToMidiTicks(result.range.start))).toBe(row.startTick);expect(Number(beatValueToMidiTicks(result.range.end))).toBe(row.endTick);
 });
 test("invalid ranges and oversize defaults refuse before any renderer call; no silent truncation",async()=>{
   const f=setup();expect(f.service.read().availableBars).toBe(6);await f.service.prepare();expect(f.service.read().state).toBe("refused");
@@ -54,8 +54,8 @@ test("later section excerpt renders real piano after leading silence and retains
   expect(data.subarray(44,44+64000*4).every(n=>n===0)).toBe(true);
   expect(data.subarray(44+64100*4,44+65000*4).some(n=>n!==0)).toBe(true);
   expect(JSON.stringify(f.document)).toBe(before);
-  expect(f.plans[0]?.loopTicks).toEqual({start:10400,end:18080});
-  expect(f.plans[0]?.events.map(e=>e.eventId)).toEqual(["excerpt-b-event-2"]);
+  expect(Number(f.plans[0]?.loopTicks?.start)).toBe(10400);expect(Number(f.plans[0]?.loopTicks?.end)).toBe(18080);
+  expect(f.plans[0]?.events.map(e=>String(e.eventId))).toEqual(["excerpt-b-event-2"]);
 });
 test("full-context projection retains exact frozen/manual occurrences and Auto context",async()=>{
   const original=chart();const first=original.sections[0];if(first===undefined)throw new Error("Missing section");
@@ -65,7 +65,7 @@ test("full-context projection retains exact frozen/manual occurrences and Auto c
     f.service.setExcerpt({startBar:3,barCount:4});await f.service.prepare();expect(f.service.read().state).toBe("ready");
     expect(f.plans[0]?.events).toEqual(full.plan.events.filter(e=>e.startTick>=4160).map((e,ordinal)=>({...e,ordinal})));
     const manual=f.plans[0]?.events.find(e=>e.eventId==="excerpt-b-event-0");
-    expect(manual?.midiPitches).toEqual([64,49,49,49]);expect(manual?.pitches.map(p=>`${p.step}${String(p.alter)}/${String(p.octave)}`)).toEqual(["E0/4","D-1/3","D-1/3","C1/3"]);
+    expect(manual?.midiPitches.map(Number)).toEqual([64,49,49,49]);expect(manual?.pitches.map(p=>`${p.step}${String(p.alter)}/${String(p.octave)}`)).toEqual(["E0/4","D-1/3","D-1/3","C1/3"]);
   }
 });
 test("short excerpts retain source compilation limits",async()=>{
