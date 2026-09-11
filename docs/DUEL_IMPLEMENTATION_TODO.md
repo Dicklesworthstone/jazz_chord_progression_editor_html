@@ -387,7 +387,57 @@ remain open. No Git commit, push or deployment was performed by this session.
 - [x] Wire excerpt intents/view and accessible first-bar/count UI into existing WAV.
 - [x] Preserve full-context P0, exact note occurrences, source state and dry route.
 - [x] Test invalid ranges, source limits, rendering/hashing cancellation and stale bytes.
-- [ ] Decode actual later-excerpt PCM and browser downloads, retaining leading silence.
-- [ ] Run RCH focused tests/types/lint/source policy/guarded build and native browser matrix.
-- [ ] Fresh-eyes review, exact evidence and source-bound generated artifact promotion.
-- [ ] Close build only after named gates; leave `.8.3` physical memory/listening open.
+- [x] Decode actual later-excerpt PCM and browser downloads, retaining leading silence.
+- [x] Run RCH focused tests/types/lint/source policy/guarded build and native browser matrix.
+- [x] Fresh-eyes review, exact evidence and source-bound generated artifact promotion.
+- [x] Close build `.8.5` after named gates; leave `.8.3` physical memory/listening open.
+
+2026-09-11 06:05 UTC: Explicit WAV excerpt implementation `.8.5` passes its named
+automated gates. Choose specific bars within a longer chart/section; full-context
+P0 retains exact spelling/register/order/duplicates and rational rests/pickups.
+Range edits cancel rendering/hashing and clear old downloads. Existing dry-piano
+limits, source immutability, and whole-chart/section defaults remain in force.
+
+Evidence: RCH hz2, Bun 1.3.14 and Node 26.0.0; `.tmp/wav-excerpt/gates-final.log`
+contains 30 tests / 225 assertions, zero failures, focused final types, owned lint,
+source policy 348 files / zero findings, and guarded build. All four type projects
+passed in `gates-typed.log`; changed test projects were rechecked after correcting
+the Promise-returning test hash port's lint issue. Four semantic mutations (wrong
+section offset, off-by-one start, dropped rest time, five-bar admission) were killed
+by actual failing assertions in `mutants.log`; source restoration was verified.
+
+Native results `test-results/wav-excerpt-restored/browser-results.json`: 24 passed,
+0 skipped/unexpected/flaky, retries 0; 139,029.256 ms. Chromium 149.0.7827.55,
+Firefox 151.0, WebKit 26.5; 320/1280 widths and light/dark. Every artifact-bound
+receipt has zero console/page errors and runtime network requests. Axe and overflow
+checks pass. Actual downloads independently decode to 537,644-byte stereo PCM16
+WAVs with 64,000 silent leading frames; chart bars 5–6 and section bars 2–3 are
+byte-identical. Existing whole-passage native WAV cases pass unchanged.
+
+Root/dist are byte-identical at SHA256
+`3f16acb3b339e13febaef0d9480a670303c298c822aa43755ca300922d2f7cc9`,
+8,631,170 bytes. All 363 scoped source file hashes matched before promotion;
+281,726 shell-budget bytes remain plus the reserved 524,288 Atlas bytes. The three
+pre-existing unowned application-layer UI copies remain untouched and excluded
+from scoped RCH transfer; this is not a whole-tree release/deployment claim.
+
+Failed evidence retained: initial fixture used unnormalized stored durations
+(corrected to exact 1/3, 5/2, 4/1 without changing expected ticks); branded-value test
+assertions needed explicit primitive projection; one async test adapter needed a
+Promise return; RCH admission needed stale-own-lease recovery. Initial browser run
+could not launch missing pinned executables (0 pass / 24 failures); restored the
+same browser versions into a task-owned cache and reran the full unchanged matrix.
+No assertion, timeout, retry, gate or acceptance requirement was relaxed.
+Fresh-eyes self-review and honesty inventory found no inflated completion or
+weakened gate. No deployment was performed. Original `.8.3` physical-phone
+memory/listening verification and parent epic remain open.
+
+## WAV excerpt production release (2026-09-11, jcpe-sho1)
+
+- [x] Recover exact tested artifact/source identity and claim release lane.
+- [ ] Rebuild matching bytes via RCH; commit only completed artifact/TODO/Beads and push.
+- [ ] Pass mandatory model acceptance, instrument quality, and native playback gates.
+- [ ] Upload committed HTML and share image to Cloudflare Pages and Vercel.
+- [ ] Poll both public hosts until their bytes match the committed artifact.
+- [ ] Verify live boot and WAV excerpt download at phone/desktop widths with real browsers.
+- [ ] Record host/commit/hash/evidence and close deployment task; retain physical acceptance limits.
