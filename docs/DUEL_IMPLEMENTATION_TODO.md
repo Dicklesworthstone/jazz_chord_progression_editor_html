@@ -291,10 +291,14 @@ working finalists; retire into their feature record after acceptance.
 
 - [x] Confirm that saved-chord guitar positions exist but drafts cannot use them.
 - [x] Specify draft/source authority and hand-author exact-position fixtures before implementation (`.4.4`).
-- [ ] Pass specification checks; claim `.4.5` only afterward.
-- [ ] Add pure application draft-position read with current-source and parser validation.
-- [ ] Share diagrams/tables with saved-chord view; add lazy draft disclosure and owned audition.
-- [ ] Prove live edits, exact unisons/spellings, no-position, stale hiding, selection reset and unchanged chart.
-- [ ] Run RCH focused tests, four TypeScript projects, owned lint/source policy and guarded build; kill four semantic mutants.
+- [x] Pass specification checks; claim `.4.5` only afterward.
+- [x] Add pure application draft-position read with current-source and parser validation.
+- [x] Share diagrams/tables with saved-chord view; add lazy draft disclosure and owned audition.
+- [x] Prove live edits, exact unisons/spellings, no-position, stale hiding, selection reset and unchanged chart.
+- [x] Run RCH focused tests, four TypeScript projects, owned lint/source policy and guarded build; kill four semantic mutants.
 - [ ] Run real-browser phone/desktop proof and existing guitar/note-first regressions, inspect screenshots, and promote only unchanged-source guarded bytes.
 - [ ] Fresh review and exact evidence; leave physical/player `.3.3` and `.4.3` open.
+
+Implementation checkpoint: RCH `final-gates.log` passes 52 focused tests / 912 assertions, all four strict TypeScript projects, owned ESLint, source policy (347 files), and guarded build. `mutants.log` kills actual duplicate collapse, occurrence reversal, ignored document identity and ignored revision; restored production passes 3 tests / 277 assertions. Initial test typing errors were corrected with explicit fixture-value/index validation, without changing expectations. Evidence lives in `.tmp/note-first-guitar/`.
+
+Browser execution failures are retained: the first local run had 9 passes / 2 failures before stopping; the second, with the documented `LP_NUM_THREADS=4`, had 8 passes / 3 failures / 1 interrupted. Long workflows exhausted their unchanged 30-second total budget; traces show cumulative startup/UI time rather than a failed exact-note assertion. The renderer setting alone did not fix this local timing limitation. The same complete suite moved to hz2 through RCH. Chromium passed, but Firefox's existing and new audio checks exposed an absent worker audio server. PulseAudio and its native local null sink were installed; a separate real Node/native AudioContext preflight now passes in Chromium 149.0.7827.55, Firefox 151.0 and WebKit 26.5. This is an infrastructure correction, not a mock audio adapter or a physical listening claim. The first worker report remains at `test-results/draft-guitar-run/`; the first complete corrected-environment run at `test-results/draft-guitar-final/` passed 32/33. Its WebKit desktop failure was a test race: the trace records Export opening immediately after shell readiness, before the asynchronous recovery probe; the app correctly offered Keep after that session change. The regression now explicitly waits for “Recovered chart opened” before the unchanged exact-document comparison, as the dedicated recovery suite already does. A complete 33-case run with that synchronization fix is pending at `test-results/draft-guitar-verified/`. No assertion, timeout, retry count, CSP or browser matrix was relaxed.
