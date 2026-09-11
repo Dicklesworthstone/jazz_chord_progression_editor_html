@@ -16,23 +16,18 @@ function Diagram({position,index}:{position:Position;index:number}){
     </g>)}
   </svg>;
 }
-export function GuitarPositionsPanel({source,stale,read,hear,release}:Readonly<{
-  source:StudioInspectorSource;stale:boolean;read:StudioController["readGuitar"];hear:(input:"pointer"|"keyboard")=>void;release:()=>void;
+const label=(p:Readonly<{step:string;alter:number;octave:number}>)=>`${p.step}${p.alter<0?"b".repeat(-p.alter):"#".repeat(p.alter)}${String(p.octave)}`;
+/** Shared literal diagram/table; choosing a position changes presentation only. */
+export function GuitarPositionResults({search,hear,release}:Readonly<{
+  search:StudioGuitarView["search"];hear:(input:"pointer"|"keyboard")=>void;release:()=>void;
 }>){
-  const [result,setResult]=useState<StudioInspectorResult<StudioGuitarView>|null>(null),[position,setPosition]=useState(0);
-  const invalidated=stale||(result?.ok===true&&(result.value.source.documentId!==source.documentId||result.value.source.revision!==source.revision||result.value.source.eventId!==source.eventId));
-  const search=result?.ok===true?result.value.search:null,selected=search?.positions[position];
-  const label=(p:Readonly<{step:string;alter:number;octave:number}>)=>`${p.step}${p.alter<0?"b".repeat(-p.alter):"#".repeat(p.alter)}${String(p.octave)}`;
-  return <details class="studio-guitar" onToggle={e=>{if(e.currentTarget.open){setResult(read(source));setPosition(0);}else release();}}>
-    <summary>On guitar — exact voicing</summary>
-    <section aria-label="Exact guitar positions">
-      <p>Saved chart voicing · standard tuning E2 A2 D3 G3 B3 E4 · frets 0–20. Positions preserve every note; they are not guaranteed comfortable fingerings.</p>
-      {invalidated?<p role="alert">The chart or draft changed. Close this view and reopen the current chord.</p>:result!==null&&!result.ok?<p role="alert">{result.message}</p>:search!==null?<>
+  const [selection,setSelection]=useState({search,index:0});
+  const position=selection.search===search?selection.index:0,selected=search.positions[position];
+  return <>
         <p role="status">{search.message}</p>
         <p class="studio-guitar-notes">{search.pitches.map(label).join(" · ")}</p>
-        {result?.ok===true&&result.value.externalBass?<p>The separate external slash bass is not included in these positions or this voicing audition.</p>:null}
         {selected===undefined?null:<>
-          <div class="studio-inspector-actions">{search.positions.map((_p,i)=><button class="studio-inspector-button" type="button" key={i} aria-pressed={i===position} onClick={()=>{setPosition(i);}}>Position {i+1}</button>)}</div>
+          <div class="studio-inspector-actions">{search.positions.map((_p,i)=><button class="studio-inspector-button" type="button" key={i} aria-pressed={i===position} onClick={()=>{setSelection({search,index:i});}}>Position {i+1}</button>)}</div>
           <p>Fretted span: {selected.span} · highest fret: {selected.highestFret}. Open circles sound open strings; × strings stay muted.</p>
           <Diagram position={selected} index={position} />
           <table><caption>Exact note occurrences for position {position+1}</caption><thead><tr><th scope="col">Note</th><th scope="col">String</th><th scope="col">Fret</th></tr></thead>
@@ -44,6 +39,21 @@ export function GuitarPositionsPanel({source,stale,read,hear,release}:Readonly<{
           </div>
           <p>Changing positions only changes the diagram. The exact notes and chart stay the same.</p>
         </>}
+  </>;
+}
+export function GuitarPositionsPanel({source,stale,read,hear,release}:Readonly<{
+  source:StudioInspectorSource;stale:boolean;read:StudioController["readGuitar"];hear:(input:"pointer"|"keyboard")=>void;release:()=>void;
+}>){
+  const [result,setResult]=useState<StudioInspectorResult<StudioGuitarView>|null>(null);
+  const invalidated=stale||(result?.ok===true&&(result.value.source.documentId!==source.documentId||result.value.source.revision!==source.revision||result.value.source.eventId!==source.eventId));
+  const search=result?.ok===true?result.value.search:null;
+  return <details class="studio-guitar" onToggle={e=>{if(e.currentTarget.open){setResult(read(source));}else release();}}>
+    <summary>On guitar — exact voicing</summary>
+    <section aria-label="Exact guitar positions">
+      <p>Saved chart voicing · standard tuning E2 A2 D3 G3 B3 E4 · frets 0–20. Positions preserve every note; they are not guaranteed comfortable fingerings.</p>
+      {invalidated?<p role="alert">The chart or draft changed. Close this view and reopen the current chord.</p>:result!==null&&!result.ok?<p role="alert">{result.message}</p>:search!==null?<>
+        {result?.ok===true&&result.value.externalBass?<p>The separate external slash bass is not included in these positions or this voicing audition.</p>:null}
+        <GuitarPositionResults search={search} hear={hear} release={release} />
       </>:null}
     </section>
   </details>;

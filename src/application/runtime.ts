@@ -204,3 +204,4 @@ export {decodeSharedStartupWithQr} from "./qr-share";
 export type {ExactQr} from "./qr-share";
 
 export type {NoteFirstDraftEdit,NoteFirstKeyboard,NoteFirstKeyboardSpelling} from "./note-first-keyboard-contract";
+export type {StudioNoteFirstGuitarView} from "./studio-guitar";

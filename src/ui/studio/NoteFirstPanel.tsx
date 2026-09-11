@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import {NoteFirstGuitarPanel} from "./NoteFirstGuitarPanel";
 import type { StudioController, StudioNoteFirstDraft, NoteFirstDraftEdit, NoteFirstKeyboardSpelling } from "../../application/runtime";
 
 export type StudioNoteFirstPorts=Readonly<{
@@ -7,6 +8,7 @@ export type StudioNoteFirstPorts=Readonly<{
   hear:(text:string,input:"pointer"|"keyboard")=>ReturnType<StudioController["previewNoteFirst"]>;
   release:StudioController["releaseNoteFirst"];
   keys:StudioController["readNoteFirstKeyboard"];edit:StudioController["editNoteFirst"];
+  guitar:StudioController["readNoteFirstGuitar"];
 }>;
 export function NoteFirstPanel({ports}:{ports:StudioNoteFirstPorts}){
   const [text,setText]=useState("");
@@ -72,6 +74,9 @@ export function NoteFirstPanel({ports}:{ports:StudioNoteFirstPorts}){
       {analysis?.ok?<>
         <p>Exact stored notes: <strong>{analysis.normalizedText}</strong></p>
         {stale?<p role="alert">The chart changed. Analyze again before adding these notes.</p>:null}
+        {draft===null?null:<NoteFirstGuitarPanel draft={draft} stale={stale} read={ports.guitar}
+          hear={input=>{const result=ports.hear(text,input);setNotice(result.ok?"Preview requested; your chart is unchanged.":result.refusal.message);}}
+          release={()=>{void ports.release();}} />}
         <fieldset><legend>Choose a reading</legend>
           {visibleNames.map(c=><label key={c.name} style={{display:"block",padding:"0.5rem 0",overflowWrap:"anywhere"}}>
             <input type="radio" name="note-first-choice" value={c.name} checked={choice===c.name} onChange={()=>{setChoice(c.name);setAck(false);}} />
