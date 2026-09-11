@@ -40,9 +40,9 @@ Package `jcpe-6ujg.2`. Spec `jcpe-6ujg.2.1` → build `jcpe-6ujg.2.2` → verify
 - [x] Verify native file downloads and injected activation/removal failures in Chromium, Firefox and WebKit at 320/1280 widths.
 - [x] Run focused MIDI regressions, strict types, lint/boundaries and guarded build through RCH; bind evidence to unchanged source.
 - [x] Repair observed full-lint crash on generated `.rch-tmp` Playwright cache by matching its existing Git exclusion; preserve every source rule.
-- [ ] Fresh review, commit owned fixes and record evidence; retain original external-player/physical-device acceptance on `.2.3`.
-- [ ] Rebuild immediately before committing; rerun unchanged model/quality and native-playback release gates against committed bytes.
-- [ ] Publish the repair to both hosts, poll for the committed hash and verify native MIDI download/failure/recovery at phone/desktop widths.
+- [x] Fresh review, commit owned fixes and record evidence; retain original external-player/physical-device acceptance on `.2.3`.
+- [x] Rebuild immediately before committing; rerun unchanged model/quality and native-playback release gates against committed bytes.
+- [x] Publish the repair to both hosts, poll for the committed hash and verify native MIDI download/failure/recovery at phone/desktop widths.
 
 
 The old adapter failed 8 of 11 independently authored fault witnesses. The repaired
@@ -72,6 +72,42 @@ same bytes and `bun run predeploy:check` passed 11 shipping models and nine
 rendered instruments with zero fail findings (warnings retained). Logs remain
 under `.tmp/midi-cleanup/`; final release-gate evidence is in
 `test-results/midi-cleanup-release-gates/`.
+
+
+Repair and tooling commits `ec794529dcc5350acca85596254bb709e1be7713` and
+`121e8ea` are pushed. Native release playback initially could not start on hz2
+because of transient memory pressure. The hz3 alternative stalled after its
+first instrument while disk utilization reached 100 percent; its owned browser
+and server were stopped and confirmed absent before using the recovered hz2.
+The interrupted run is not a pass. Its scratch launcher returned zero for a
+signal-terminated child, so the launcher was tightened to reject signals and
+require the complete semantic gate ledger. The checked-in gate, assertions and
+instrument count remain unchanged. Logs: `playback.log`, `playback-hz3.log` and
+`playback-hz2-recovered.log` under `.tmp/midi-cleanup/`.
+
+
+The recovered hz2 run passed the unchanged native playback gate for all 15
+instruments with zero console/page errors. Recovery enforcement stayed enabled;
+its PASS was explicitly vacuous because no refusal reproduced. Committed HTML
+and share-image bytes were then uploaded to both hosts. Both public URLs matched
+`git show ec794529dcc5350acca85596254bb709e1be7713:jazz_chord_progression_editor.html`
+on the first poll. Cloudflare deployment: `455591b9.jazz-chord-progression-editor-html.pages.dev`.
+Vercel: `dpl_DkwJCVgCKuZ1RgemjQ32bbNW3ZNa`, READY, production target. Evidence:
+`test-results/midi-cleanup-release/playback-gate.json`, `.tmp/midi-cleanup/upload.log`
+and `.tmp/midi-cleanup/host-hashes.json`.
+
+2026-09-11 20:46 UTC: Live Chromium 149.0.7827.55 passed 12/12 cases: two hosts
+at 320/1280 widths, normal download and injected click/removal failure followed
+by successful fresh preparation/download. Zero skipped/retried/flaky cases,
+console/page errors, unexpected requests or panel overflow. All twelve retained
+MIDI files are 1,166 bytes with SHA256
+`41b9c57d4a5b1dfe5c20f0e8d274696105d62c9e08d1cb0f84360fa74827442f`,
+matching each prepared artifact. Revision equality and URL/anchor accounting
+passed. Phone and desktop screenshots were inspected. No Cloudflare beacon
+error occurred in these sessions; this does not claim permanent removal of the
+platform injection. Reports: `test-results/midi-cleanup-live/host-{0,1}.json`;
+summary and screenshots under `.tmp/midi-cleanup/`. The repair is shipped;
+original independent acceptance remains open on `.2.3`.
 
 This is author-executed automated proof, not independent acceptance. `.2.3` and
 its package stay open for the original two external MIDI players/DAWs, independent
