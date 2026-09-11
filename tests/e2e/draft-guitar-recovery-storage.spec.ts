@@ -21,6 +21,12 @@ for(const width of [320,1280])test(`note-first exact audio and Manual bar roundt
   const errors:string[]=[],requests:{url:string;allowed:boolean}[]=[];
   page.on("pageerror",e=>errors.push(e.message));page.on("console",m=>{if(m.type()==="error")errors.push(m.text());});
   await page.route("**/*",async route=>{const allowed=route.request().isNavigationRequest()&&route.request().url()===url;requests.push({url:route.request().url(),allowed});if(allowed)await route.continue();else await route.abort();});
+  await page.addInitScript(()=>{
+    const events: unknown[]=[];(window as any).__recoveryEvents=events;
+    for(const type of ["input","change","focusin","click","keydown"]){document.addEventListener(type,event=>{
+      const target=event.target as HTMLElement;events.push({time:performance.now(),type,trusted:event.isTrusted,tag:target?.tagName,id:target?.id,html:target?.outerHTML?.slice(0,400)});
+    },true);}
+  });
   try{
     await page.setViewportSize({width,height:900});await page.goto(url);await expect(page.locator(".studio-shell")).toHaveAttribute("data-app-ready","true");
     const before=await exported(page);await observeNativeSources(page);
@@ -62,5 +68,5 @@ for(const width of [320,1280])test(`note-first exact audio and Manual bar roundt
     expect((await exported(page)).document).toEqual(after.document);
     expect(errors).toEqual([]);expect(requests.every(r=>r.allowed)).toBe(true);
     await info.attach("note-first-portable-document",{body:after.bytes,contentType:"application/json"});
-  }finally{await info.attach("note-first-evidence",{body:JSON.stringify({hash,width,browser:browser.version(),errors,requests}),contentType:"application/json"});}
+  }finally{await info.attach("recovery-native-events",{body:JSON.stringify(await page.evaluate(async()=>({storage:await new Promise(resolve=>{const req=indexedDB.open("changes-recovery");req.onerror=()=>resolve({error:"open"});req.onsuccess=()=>{const db=req.result;const t=db.transaction("recovery-envelopes","readonly"),store=t.objectStore("recovery-envelopes"),k=store.getAllKeys(),v=store.getAll();t.oncomplete=()=>{db.close();resolve(k.result.map((key,i)=>({key,value:v.result[i]})));};};}),events:(window as any).__recoveryEvents,url:location.href,title:document.querySelector("#studio-document-title")?.getAttribute("value"),body:document.body.innerText.slice(0,3000)}))),contentType:"application/json"});await info.attach("note-first-evidence",{body:JSON.stringify({hash,width,browser:browser.version(),errors,requests}),contentType:"application/json"});}
 });
