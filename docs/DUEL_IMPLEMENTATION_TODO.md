@@ -30,6 +30,55 @@ Package `jcpe-6ujg.2`. Spec `jcpe-6ujg.2.1` → build `jcpe-6ujg.2.2` → verify
 - [x] Pass focused tests, typecheck, lint/boundaries, artifact size and applicable real-browser gates — build jcpe-6ujg.2.2 closed with exact command/result evidence.
 - [ ] Record independent acceptance and close all three phases before package.
 
+### Performed MIDI verification: download failure cleanup (2026-09-11)
+
+- [x] Claim ready `.2.3`; read original contracts and coordinate shared adapter ownership.
+- [x] Identify URL/anchor leaks on synchronous activation exceptions and false cleanup success when anchor removal throws.
+- [x] Add independent failure witnesses for each allocation/activation/cleanup boundary plus successful immediate activation.
+- [x] Repair shared browser download cleanup without changing encoded MIDI or user-activation timing.
+- [x] Exercise performed-MIDI coordinator refusals and recovery through the actual adapter.
+- [x] Verify native file downloads and injected activation/removal failures in Chromium, Firefox and WebKit at 320/1280 widths.
+- [x] Run focused MIDI regressions, strict types, lint/boundaries and guarded build through RCH; bind evidence to unchanged source.
+- [x] Repair observed full-lint crash on generated `.rch-tmp` Playwright cache by matching its existing Git exclusion; preserve every source rule.
+- [ ] Fresh review, commit owned fixes and record evidence; retain original external-player/physical-device acceptance on `.2.3`.
+- [ ] Rebuild immediately before committing; rerun unchanged model/quality and native-playback release gates against committed bytes.
+- [ ] Publish the repair to both hosts, poll for the committed hash and verify native MIDI download/failure/recovery at phone/desktop widths.
+
+
+The old adapter failed 8 of 11 independently authored fault witnesses. The repaired
+adapter passed 183 focused MIDI/arrangement tests (4,791 assertions, 16 files),
+`bun run typecheck`, full `bun run lint` (348 source-policy files, zero findings),
+and the guarded `bun run build`, all via RCH hz2 with Bun 1.3.14 and Node 26.0.0.
+The final browser matrix passed 24/24: 18 performed-MIDI download/failure/recovery
+cases and six unchanged note-first/audio/storage round trips, three engines at
+320/1280 widths, zero skipped/retried/flaky cases or unexpected console/page/network
+errors. All 1,601 declared input hashes and local source mtimes remained unchanged.
+The guarded candidate is SHA256
+`687e5d1774639e8c8c4faff80476975f475e0b5e08e814c5b1b31a6d9ffbdef4`,
+8,631,443 bytes. Evidence: `.tmp/midi-cleanup/final.log` for focused/static gates;
+`test-results/midi-cleanup-settled/{browser-results,source-receipt}.json` and its
+native MIDI files, resource observations and browser version/error diagnostics.
+
+Earlier failed runs remain available: the new interceptor originally blocked its
+own file navigation (16/24 passed); after correcting that, WebKit exposed a startup
+race in revision capture (22/24 passed). The final tests wait for the existing
+completed-demo banner before recording the revision; all original revision and
+resource assertions remain. The observed generated-cache lint crash was fixed by
+excluding only the already Git-ignored `.rch-tmp`; existing recovery diagnostics
+were typed without changing their behavioral assertions. The first release-gate
+attempt was refused before execution by RCH worker memory pressure; this is not a
+release-gate pass. After pressure eased, the final guarded rebuild reproduced the
+same bytes and `bun run predeploy:check` passed 11 shipping models and nine
+rendered instruments with zero fail findings (warnings retained). Logs remain
+under `.tmp/midi-cleanup/`; final release-gate evidence is in
+`test-results/midi-cleanup-release-gates/`.
+
+This is author-executed automated proof, not independent acceptance. `.2.3` and
+its package stay open for the original two external MIDI players/DAWs, independent
+review and applicable physical-device evidence. The three pre-existing untracked
+application UI copies remain untouched and excluded from the candidate; this is
+not a claim that every in-flight file or every project acceptance gate passed.
+
 ## COD1: Note-first chord creation
 
 Package `jcpe-6ujg.3`. Spec `jcpe-6ujg.3.1` → build `jcpe-6ujg.3.2` → verify `jcpe-6ujg.3.3`.
