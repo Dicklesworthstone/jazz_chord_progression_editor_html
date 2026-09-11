@@ -299,6 +299,16 @@ export function createStudioLifecycle(options: Readonly<{
           exportedAt: handoff.marker.exportedAt, semanticDocumentHash: handoff.marker.semanticDocumentHash,
           artifactByteLength: handoff.artifact.byteLength, artifactSha256: selected.sha256,
         }, handoff.marker.revision);
+        if (stored.outcome === "recorded") {
+          // The chart may already have reached recovery before this export.
+          // Refresh its derived lastExport subset so an unchanged chart does
+          // not look like a conflicting copy at the next startup. A late
+          // storage completion must never queue a superseded document/revision.
+          const current = composition.readApplicationState();
+          if (current.document.id === handoff.marker.documentId && current.revision === handoff.marker.revision) {
+            recovery.noteMutation({ documentId: current.document.id, revision: current.revision, document: current.document });
+          }
+        }
         return stored.outcome === "recorded"
           ? { ok: true, outcome: "persisted", durability: "recovery-persisted" }
           : { ok: false, outcome: "failed", code: "recovery.marker_persistence_failed", durability: "pending-failed" };

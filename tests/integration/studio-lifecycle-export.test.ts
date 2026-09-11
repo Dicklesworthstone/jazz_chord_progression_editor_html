@@ -32,6 +32,28 @@ function harness(start?: (request: PreparedExportDeliveryRequest) => unknown, qu
 }
 
 describe("U5 canonical export through production encoder, registry, A0 CAS and A1 storage", () => {
+  test("export after a clean recovery refreshes its derived marker without another chart edit", async () => {
+    const h = harness(),before=h.composition.readApplicationState();
+    h.recovery.service.noteMutation({documentId:before.document.id,revision:before.revision,document:before.document});
+    await h.recovery.clock.advance(400);
+    expect(h.recovery.service.inspectRecovery().cleanRevision).toBe(before.revision);
+    await h.service.openExport();await h.service.deliverCanonicalExport();
+    expect(h.service.getSnapshot().phase).toBe("complete");
+    expect(h.recovery.service.inspectRecovery().pendingRevision).toBe(before.revision);
+    h.service.cancelLifecycleDialog();await h.recovery.clock.advance(400);
+    const cold=createRecoveryService({adapters:h.recovery.adapters.map(a=>a.port),clock:h.recovery.clock.port});
+    const report=await cold.readRecoveryCandidates({documentId:before.document.id,sessionEdited:false});
+    expect(report.disposition).toBe("open-current-automatically");
+    expect(report.conflictsWithExportMarker).toBe(false);
+    expect(report.current.envelope?.document).toEqual(before.document);
+    expect(report.current.envelope?.lastExport?.revision).toBe(before.revision);
+    const expectedHash=h.calls[0]?.binding.semanticDocumentHash;
+    if(expectedHash===undefined||expectedHash===null)throw new Error("MISSING_CANONICAL_HASH");
+    expect(report.current.envelope?.lastExport?.semanticDocumentHash).toBe(expectedHash);
+    expect(h.composition.readApplicationState().document).toBe(before.document);
+    expect(h.composition.readApplicationState().history).toBe(before.history);
+  });
+
   test("exact browser handoff exports the source chart and survives a fresh recovery service", async () => {
     const h = harness();
     const before = h.composition.readApplicationState();
@@ -57,6 +79,23 @@ describe("U5 canonical export through production encoder, registry, A0 CAS and A
       artifactByteLength: request.privateBytes.length, artifactSha256: await hashBytes(request.privateBytes) });
     h.service.cancelLifecycleDialog();
     expect(h.composition.readApplicationState().dialogs).toEqual([]);
+  });
+
+  test("a marker storage completion after a newer edit cannot queue its older recovery snapshot", async () => {
+    const h=harness();
+    let entered=():void=>{throw new Error("NO_STORAGE_ENTRY");},release=():void=>{throw new Error("NO_STORAGE_GATE");};
+    const started=new Promise<void>(resolve=>{entered=resolve;}),gate=new Promise<void>(resolve=>{release=resolve;});
+    const service=createStudioLifecycle({composition:h.composition,hashBytes,nowIso:()=>"2026-09-05T01:00:00.000Z",
+      recovery:{...h.recovery.service,recordExportBinding:async(binding,revision)=>{entered();await gate;return h.recovery.service.recordExportBinding(binding,revision);}},
+      startDelivery:request=>({completion:Promise.resolve(delivery(request))})});
+    await service.openExport();const pending=service.deliverCanonicalExport();await started;
+    expect(h.composition.replacementWorkflow.applyLifecycleIntent({kind:"pop-dialog",dialogId:"studio-lifecycle-export"}).ok).toBe(true);
+    expect(h.composition.controller.setTitle("Newer than the stored marker").ok).toBe(true);
+    const newer=h.composition.readApplicationState();release();await pending;
+    expect(h.recovery.service.inspectRecovery().work.exportBindingsRecorded).toBe(1);
+    expect(h.recovery.service.inspectRecovery().work.writesScheduled).toBe(0);
+    expect(h.composition.readApplicationState().document).toBe(newer.document);
+    expect(h.composition.readApplicationState().revision).toBe(newer.revision);
   });
 
   test("Cancel abandons the private preparation without downloading or moving a marker", async () => {
@@ -113,6 +152,7 @@ describe("U5 canonical export through production encoder, registry, A0 CAS and A
     await pending;
     expect(h.service.getSnapshot().message).toContain("export.marker_publication_stale");
     expect(h.recovery.service.inspectRecovery().work.exportBindingsRecorded).toBe(0);
+    expect(h.recovery.service.inspectRecovery().work.writesScheduled).toBe(0);
     expect(h.composition.readApplicationState().exportRevision).toBeNull();
     expect(h.composition.readApplicationState().dialogs).toEqual([]);
   });
@@ -145,6 +185,7 @@ describe("U5 canonical export through production encoder, registry, A0 CAS and A
     expect(state.exportRevision).toBe(state.revision);
     expect(h.recovery.service.inspectRecovery().exportBinding).toBeNull();
     expect(h.recovery.service.inspectRecovery().lastRefusal).toBe("recovery.quota_exceeded");
+    expect(h.recovery.service.inspectRecovery().work.writesScheduled).toBe(0);
   });
 });
 
