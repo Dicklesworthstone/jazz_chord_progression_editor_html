@@ -435,9 +435,50 @@ memory/listening verification and parent epic remain open.
 ## WAV excerpt production release (2026-09-11, jcpe-sho1)
 
 - [x] Recover exact tested artifact/source identity and claim release lane.
-- [ ] Rebuild matching bytes via RCH; commit only completed artifact/TODO/Beads and push.
-- [ ] Pass mandatory model acceptance, instrument quality, and native playback gates.
-- [ ] Upload committed HTML and share image to Cloudflare Pages and Vercel.
-- [ ] Poll both public hosts until their bytes match the committed artifact.
-- [ ] Verify live boot and WAV excerpt download at phone/desktop widths with real browsers.
-- [ ] Record host/commit/hash/evidence and close deployment task; retain physical acceptance limits.
+- [x] Rebuild matching bytes via RCH; commit only completed artifact/TODO/Beads and push.
+- [x] Pass mandatory model acceptance, instrument quality, and native playback gates.
+- [x] Upload committed HTML and share image to Cloudflare Pages and Vercel.
+- [x] Poll both public hosts until their bytes match the committed artifact.
+- [x] Verify live boot and WAV excerpt download at phone/desktop widths with real browsers.
+- [x] Record host/commit/hash/evidence and close deployment task; retain physical acceptance limits.
+
+2026-09-11 19:31 UTC: User-requested production release `jcpe-sho1` completed.
+Both `https://jazzchords.org/` and
+`https://changes-jazz-progression-studio.vercel.app/` serve committed artifact
+`ace028f1964f6d199f44304ce91f5fb47fae66d1`, SHA256
+`3f16acb3b339e13febaef0d9480a670303c298c822aa43755ca300922d2f7cc9`,
+8,631,170 bytes. Both matched on the first post-upload poll.
+Cloudflare deployment: `a3bd32bd.jazz-chord-progression-editor-html.pages.dev`.
+Vercel deployment: `dpl_3edpr5HWQhNMMWe5PtPztHXmWKvU`, READY, production alias set.
+
+Release gates used unchanged checked-in programs on RCH hz2, Bun 1.3.14 and
+real Node 26.0.0: guarded rebuild exactly matched the tested artifact;
+`bun run predeploy:check` passed all 11 shipping model rows and instrument
+quality (9 rendered instruments, zero fail findings; warning diagnostics retained).
+`node scripts/check-predeploy-playback.ts <committed-artifact> --json ...`
+passed all 15 instruments with zero console/page errors. Recovery enforcement
+remained enabled; its PASS was explicitly vacuous because no refusal reproduced.
+Evidence: `.tmp/wav-release/gates-corpus.log`,
+`test-results/instrument-quality/instrument-quality-v2.json`, and
+`test-results/wav-release/playback-gate.json`.
+
+Uploads used the same two committed public assets and targets as `bun run deploy`;
+the gates were executed remotely through RCH and authenticated uploads locally.
+Session-only launchers set the required HTTP User-Agent without editing gates,
+assertions, timing, or production code. The saved Wrangler login succeeded after
+the environment API token returned 10000; no global credentials were changed.
+The stale unmanaged RCH listener had no active/queued builds, ignored SIGTERM,
+and was terminated before the healthy listener resumed. The ignored UIowa corpus
+was restored to the worker from six locally SHA-verified manifest-pinned files.
+All failed infrastructure/prerequisite logs remain under `.tmp/wav-release/`.
+
+Live native Chromium 149.0.7827.55: 8/8 cases, two hosts x light/dark x 320/1280;
+zero skipped/retried/flaky cases, console/page errors, unexpected requests, axe
+violations, or panel overflow. Every real WAV download retained its independently
+expected 537,644 bytes and 64,000 silent leading frames. Chart bars 5–6 and section
+bars 2–3 were byte-identical on both sites, and chart revision stayed unchanged.
+Phone screenshots were inspected. Reports: `test-results/wav-release-live/host-0.json`
+and `host-1.json`; exact receipt summary `.tmp/wav-release/live-evidence-summary.json`.
+No Cloudflare beacon error occurred in these browser sessions; this does not claim
+the platform injection is permanently disabled. Original `.8.3` physical-device
+memory/listening verification remains open. No release gate was weakened or skipped.
