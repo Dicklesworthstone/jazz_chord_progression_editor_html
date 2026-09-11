@@ -42,3 +42,20 @@ test("unknown section and failed resource cleanup are explicit refusals",async()
  const f=setup("none",false);f.service.setPassage("missing");await f.service.prepare();expect(f.service.read().state).toBe("refused");expect(f.prepared()).toBe(0);
  f.service.setPassage(null);await f.service.prepare();f.service.download();expect(f.service.read().state).toBe("refused");expect(f.service.read().message).toContain("cleanup");expect(f.downloads.length).toBe(1);
 });
+
+for(const pause of ["render","hash"] as const){
+ test(`excerpt change during ${pause} clears bytes without overlapping the current job`,async()=>{
+  const f=setup(pause),pending=f.service.prepare();await f.paused;
+  f.service.setExcerpt({startBar:2,barCount:1});expect(f.service.read().busy).toBe(true);
+  await f.service.prepare();expect(f.prepared()).toBe(0);f.resume();await pending;
+  expect(f.service.read().state).toBe("idle");expect(f.service.read().sha256).toBeNull();
+  f.service.download();expect(f.downloads).toEqual([]);
+ });
+}
+test("ready excerpt changes invalidate the old file and section selection resets explicit bars",async()=>{
+ const f=setup();await f.service.prepare();expect(f.service.read().state).toBe("ready");
+ const choice={startBar:2,barCount:1};f.service.setExcerpt(choice);choice.startBar=1;
+ expect(f.service.read().excerpt).toEqual({startBar:2,barCount:1});expect(f.service.read().sha256).toBeNull();
+ f.service.download();expect(f.downloads).toEqual([]);await f.service.prepare();expect(f.service.read().byteLength).toBe(153644);
+ f.service.setPassage("loop-section-1");expect(f.service.read().excerpt).toBeNull();expect(f.service.read().availableBars).toBe(1);
+});
