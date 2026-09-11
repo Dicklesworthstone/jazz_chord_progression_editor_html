@@ -382,11 +382,11 @@ remain open. No Git commit, push or deployment was performed by this session.
 - [x] Identify observed gap: no way to select four later bars from a longer chart.
 - [x] Specify opt-in one-based chart/section bar ranges and unchanged audio limits.
 - [x] Author independent ticks for rests, fractional pickups, cross-section ranges.
-- [ ] Pass specification fixture gate; close `.8.4`, claim dependent build `.8.5`.
-- [ ] Implement bounded exact original-document range resolution and refusals.
-- [ ] Wire excerpt intents/view and accessible first-bar/count UI into existing WAV.
-- [ ] Preserve full-context P0, exact note occurrences, source state and dry route.
-- [ ] Test invalid ranges, source limits, rendering/hashing cancellation and stale bytes.
+- [x] Pass specification fixture gate (RCH hz2: 1 test, 12 assertions); close `.8.4`, claim dependent build `.8.5`.
+- [x] Implement bounded exact original-document range resolution and refusals.
+- [x] Wire excerpt intents/view and accessible first-bar/count UI into existing WAV.
+- [x] Preserve full-context P0, exact note occurrences, source state and dry route.
+- [x] Test invalid ranges, source limits, rendering/hashing cancellation and stale bytes.
 - [ ] Decode actual later-excerpt PCM and browser downloads, retaining leading silence.
 - [ ] Run RCH focused tests/types/lint/source policy/guarded build and native browser matrix.
 - [ ] Fresh-eyes review, exact evidence and source-bound generated artifact promotion.
