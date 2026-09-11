@@ -1,3 +1,5 @@
+import {readNoteFirstKeyboard,editNoteFirstText} from "./note-first-keyboard";
+import type {NoteFirstDraftEdit,NoteFirstKeyboard,NoteFirstKeyboardSpelling} from "./note-first-keyboard-contract";
 import {createStudioSongbook,songbookDestinationRefusal,type StudioSongbookService,type SongbookSource} from "./studio-songbook";
 import {createStudioPrint,type StudioPrintService} from "./studio-print";
 import {createStudioWav,type StudioWavService} from "./studio-wav";
@@ -5,7 +7,7 @@ import type {PrepareWavDownload,PrepareSvgDownload} from "../export";
 import {buildStudioPadCatalog,projectStudioPads,type StudioPadCatalog,type StudioPadsView} from "./studio-pads";
 import {readStudioRegister,type StudioRegisterView} from "./studio-register";
 import { createStudioComping, type StudioCompingService } from "./studio-comping";
-import {readStudioGuitar,type StudioGuitarView} from "./studio-guitar";
+import {readStudioGuitar,readNoteFirstGuitar,type StudioGuitarView,type StudioNoteFirstGuitarView} from "./studio-guitar";
 import { readNoteFirstDraft, resolveNoteFirstChoice, type StudioNoteFirstSource, type StudioNoteFirstDraft, type StudioNoteFirstChoice } from "./studio-note-first";
 import { createStudioPerformedMidi, type StudioPerformedMidiService } from "./studio-performed-midi";
 import { buildPlayAlongTimeline, readPlayAlongTimeline, type StudioPlayAlongView } from "./studio-play-along";
@@ -689,6 +691,9 @@ export interface StudioController {
   readonly previewNoteFirst: (text:string,gesture:StudioAudioGesture) => StudioControllerActionResult;
   readonly releaseNoteFirst: () => Promise<StudioInspectorResult<void>>;
   readonly readNoteFirst: (text:string) => StudioNoteFirstDraft;
+  readonly readNoteFirstGuitar: (source:StudioNoteFirstSource,text:string) => StudioInspectorResult<StudioNoteFirstGuitarView>;
+  readonly readNoteFirstKeyboard: (octave:number,spelling:NoteFirstKeyboardSpelling) => StudioInspectorResult<NoteFirstKeyboard>;
+  readonly editNoteFirst: (text:string,edit:NoteFirstDraftEdit) => StudioInspectorResult<StudioNoteFirstDraft>;
   readonly insertSongbook: (source:SongbookSource,text:string,ack:boolean) => StudioControllerActionResult;
   readonly insertNoteFirst: (source:StudioNoteFirstSource,text:string,choice:StudioNoteFirstChoice,sectionId:string) => StudioControllerActionResult;
   readonly insertMeasure: (
@@ -7375,6 +7380,13 @@ function makeStudioComposition(
     readPads,pressPad,releasePad,
     readRegister:(source:StudioInspectorSource)=>readStudioRegister(state,source),
     readGuitar:(source:StudioInspectorSource)=>readStudioGuitar(state,source),
+    readNoteFirstKeyboard,
+    readNoteFirstGuitar:(source:StudioNoteFirstSource,text:string)=>readNoteFirstGuitar(state,source,text),
+    editNoteFirst:(text:string,edit:NoteFirstDraftEdit):StudioInspectorResult<StudioNoteFirstDraft>=>{
+      const edited=editNoteFirstText(text,edit);if(!edited.ok)return edited;
+      void releaseNoteFirst();
+      return {ok:true,value:readNoteFirst(edited.value)};
+    },
     previewNoteFirst,
     releaseNoteFirst,
     readNoteFirst,

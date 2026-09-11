@@ -1,0 +1,27 @@
+{
+  "provenance":"Hand-authored scientific pitch and MIDI expectations for COD1 tactile entry; no production output used.",
+  "keys":[
+    {"octave":3,"sharps":["C3","C#3","D3","D#3","E3","F3","F#3","G3","G#3","A3","A#3","B3"],"flats":["C3","Db3","D3","Eb3","E3","F3","Gb3","G3","Ab3","A3","Bb3","B3"],"midi":[48,49,50,51,52,53,54,55,56,57,58,59]},
+    {"octave":-1,"sharps":["C-1","C#-1","D-1","D#-1","E-1","F-1","F#-1","G-1","G#-1","A-1","A#-1","B-1"],"flats":["C-1","Db-1","D-1","Eb-1","E-1","F-1","Gb-1","G-1","Ab-1","A-1","Bb-1","B-1"],"midi":[0,1,2,3,4,5,6,7,8,9,10,11]},
+    {"octave":9,"sharps":["C9","C#9","D9","D#9","E9","F9","F#9","G9","G#9","A9","A#9","B9"],"flats":["C9","Db9","D9","Eb9","E9","F9","Gb9","G9","Ab9","A9","Bb9","B9"],"midi":[120,121,122,123,124,125,126,127,null,null,null,null]}
+  ],
+  "columns":[0,1,1,2,2,3,4,4,5,5,6,6],
+  "black":[false,true,false,true,false,false,true,false,true,false,true,false],
+  "edits":[
+    {"input":"","kind":"append","note":"A3","output":"A3","midi":[57]},
+    {"input":"A3 C4 E4 G4","kind":"append","note":"A3","output":"A3 C4 E4 G4 A3","midi":[57,60,64,67,57]},
+    {"input":"C#4 F4 G#4","kind":"append","note":"Db4","output":"C#4 F4 G#4 Db4","midi":[61,65,68,61]},
+    {"input":"B#3 Cb4 F##4 Gbb4","kind":"append","note":"Bb3","output":"B#3 Cb4 F##4 Gbb4 Bb3","midi":[60,59,67,65,58]},
+    {"input":"A3 C4 A3 E4","kind":"remove","index":2,"output":"A3 C4 E4","midi":[57,60,64]},
+    {"input":"C4","kind":"remove","index":0,"output":"","midi":[]},
+    {"input":"invalid unfinished text","kind":"clear","output":"","midi":[]}
+  ],
+  "refusals":[
+    {"input":"C4 unfinished","kind":"append","note":"E4"},
+    {"input":"C4","kind":"append","note":"E4 G4"},
+    {"input":"C4","kind":"append","note":"G#9"},
+    {"input":"C4","kind":"remove","index":-1},
+    {"input":"C4","kind":"remove","index":1},
+    {"input":"C4 C4 C4 C4 C4 C4 C4 C4 C4 C4 C4 C4 C4 C4 C4 C4","kind":"append","note":"D4"}
+  ]
+}

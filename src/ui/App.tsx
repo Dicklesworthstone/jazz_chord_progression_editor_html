@@ -326,7 +326,7 @@ export type AppActions = Readonly<{
   readRegister?: StudioController["readRegister"];
   readGuitar?: StudioController["readGuitar"];
   chordPads?: Pick<StudioController,"readPads"|"pressPad"|"releasePad">;
-  noteFirst?: Pick<StudioController,"readNoteFirst"|"insertNoteFirst"|"previewNoteFirst"|"releaseNoteFirst">;
+  noteFirst?: Pick<StudioController,"readNoteFirst"|"insertNoteFirst"|"previewNoteFirst"|"releaseNoteFirst"|"readNoteFirstKeyboard"|"editNoteFirst"|"readNoteFirstGuitar">;
   performedMidi?: StudioPerformedMidiService | null;
   wav?: StudioWavService | null;
   printCharts?: StudioPrintService | null;
@@ -2695,6 +2695,7 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
       {...(noteFirstActions === undefined ? {} : { noteFirst: {
         documentId:snapshot.documentId,revision:snapshot.revision,sections:snapshot.sections.map(s=>({id:s.id,name:s.name})),
         read:noteFirstActions.readNoteFirst,insert:noteFirstActions.insertNoteFirst,release:noteFirstActions.releaseNoteFirst,
+        keys:noteFirstActions.readNoteFirstKeyboard,edit:noteFirstActions.editNoteFirst,guitar:noteFirstActions.readNoteFirstGuitar,
         hear:(text:string,input:"pointer"|"keyboard")=>noteFirstActions.previewNoteFirst(text,nextAudioGesture(input==="keyboard"?"trusted-keyboard":"trusted-pointer")),
       } })}
       {...(padActions === undefined ? {} : {chordPads:{
