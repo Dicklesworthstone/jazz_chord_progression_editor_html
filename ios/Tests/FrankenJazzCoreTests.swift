@@ -1710,6 +1710,193 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertGreaterThan(sixteenthDifference, 1)
     }
 
+    func testNativeGroovesBindTheSourcePerformanceStyleIdentities() {
+        XCTAssertEqual(JazzPerformancePlan.styleID(for: .ballad), "ballad-comp@1")
+        XCTAssertEqual(JazzPerformancePlan.styleID(for: .mediumSwing), "medium-swing@1")
+        XCTAssertEqual(JazzPerformancePlan.styleID(for: .bossaNova), "bossa-nova@1")
+        XCTAssertEqual(JazzPerformancePlan.styleID(for: .straightEighths), "straight-eighths@1")
+        XCTAssertEqual(JazzPerformancePlan.styleID(for: .syncopatedSixteenths), "syncopated-sixteenths@1")
+        XCTAssertEqual(JazzPerformancePlan.styleID(for: .uptempoSwing), "uptempo-swing@1")
+    }
+
+    func testMediumSwingCompilesWalkingBassAndCharlestonCompingGolden() throws {
+        let measures = try JazzTheory.parseChart("| Cmaj7 |").measures
+        let chart = JazzChart(title: "Schedule", tempoBPM: 120, groove: .mediumSwing, measures: measures)
+        let events = JazzPerformancePlan.compile(chart)
+
+        XCTAssertEqual(events.map(\.role), [.bass, .comp, .bass, .comp, .bass, .bass, .comp])
+        XCTAssertEqual(events.map(\.startTick), [0, 0, 960, 1_440, 1_920, 2_880, 3_360])
+        XCTAssertEqual(events.map(\.gateDurationTicks), [840, 408, 840, 408, 840, 840, 408])
+        XCTAssertEqual(events.filter { $0.role == .bass }.map(\.midiPitches), [[48], [43], [40], [43]])
+        XCTAssertEqual(events.filter { $0.role == .comp }.map(\.midiPitches), [[64, 67, 71], [64, 67, 71], [64, 67, 71]])
+        XCTAssertEqual(events.map(\.velocity), [94, 74, 82, 74, 88, 82, 80])
+
+        // Causal negative: the removed renderer produced one held chord plus
+        // generic percussion. The source contract requires two explicit roles
+        // and seven authored attacks for this one-bar witness.
+        XCTAssertEqual(Set(events.map(\.role)), Set([.bass, .comp]))
+        XCTAssertGreaterThan(events.count, JazzTheory.compilePlayback(chart).count)
+    }
+
+    func testEveryMidBarChordStatesBassAndHarmonyAtItsOwnArrival() throws {
+        let measures = try JazzTheory.parseChart("| Cmaj7:2 Dm7:2 |").measures
+        let chart = JazzChart(title: "Arrivals", tempoBPM: 120, groove: .mediumSwing, measures: measures)
+        let source = JazzTheory.compilePlayback(chart)
+        let events = JazzPerformancePlan.compile(chart)
+
+        for chord in source {
+            let start = Int(chord.startBeat * Double(JazzPerformancePlan.ppq))
+            let arrivals = events.filter { $0.chordID == chord.chordID && $0.startTick == start }
+            XCTAssertEqual(Set(arrivals.map(\.role)), Set([.bass, .comp]))
+            XCTAssertTrue(arrivals.first(where: { $0.role == .comp })?.midiPitches.count ?? 0 >= 3)
+        }
+    }
+
+    func testUptempoSwingDisplacesOnlyTheOffbeatEighth() throws {
+        let measures = try JazzTheory.parseChart("| Cmaj7 | Cmaj7 |").measures
+        let chart = JazzChart(title: "Swing", tempoBPM: 220, groove: .uptempoSwing, measures: measures)
+        let events = JazzPerformancePlan.compile(chart)
+        let secondBar = events.filter { $0.startTick >= 4 * JazzPerformancePlan.ppq }
+
+        XCTAssertTrue(secondBar.contains { $0.role == .bass && $0.startTick == 7_296 })
+        XCTAssertTrue(secondBar.contains { $0.role == .bass && $0.startTick == 4 * JazzPerformancePlan.ppq })
+        XCTAssertTrue(secondBar.contains { $0.role == .comp && $0.startTick == 5_376 })
+        XCTAssertTrue(secondBar.contains { $0.role == .comp && $0.startTick == 4 * JazzPerformancePlan.ppq + 3 * JazzPerformancePlan.ppq })
+    }
+
+    func testEveryGrooveScheduleIsDeterministicBoundedAndUsesOnlyWrittenHarmony() throws {
+        let measures = try JazzTheory.parseChart("| Cmaj9 | A7b9 | Dm11 | G13 | ").measures
+        let sourceChart = JazzChart(title: "Invariants", tempoBPM: 132, measures: measures)
+
+        for groove in GrooveStyle.allCases {
+            var chart = sourceChart
+            chart.groove = groove
+            let source = Dictionary(
+                uniqueKeysWithValues: JazzTheory.compilePlayback(chart).map { ($0.chordID, $0) }
+            )
+            let first = JazzPerformancePlan.compile(chart)
+            let second = JazzPerformancePlan.compile(chart)
+            XCTAssertEqual(first, second, groove.rawValue)
+            XCTAssertFalse(first.isEmpty, groove.rawValue)
+            XCTAssertEqual(Set(first.map(\.role)), Set([.bass, .comp]), groove.rawValue)
+
+            var seenRoleTicks = Set<String>()
+            for event in first {
+                XCTAssertGreaterThan(event.gateDurationTicks, 0, groove.rawValue)
+                XCTAssertGreaterThanOrEqual(event.startTick, 0, groove.rawValue)
+                XCTAssertLessThanOrEqual(
+                    event.startTick + event.gateDurationTicks,
+                    Int(chart.durationBeats * Double(JazzPerformancePlan.ppq)),
+                    groove.rawValue
+                )
+                XCTAssertTrue(seenRoleTicks.insert("\(event.role.rawValue)@\(event.startTick)").inserted)
+                let written = try XCTUnwrap(source[event.chordID])
+                let writtenPitchClasses = Set(written.midiPitches.map { (($0 % 12) + 12) % 12 })
+                XCTAssertTrue(
+                    Set(event.midiPitches.map { (($0 % 12) + 12) % 12 })
+                        .isSubset(of: writtenPitchClasses),
+                    "\(groove.rawValue): \(event.midiPitches) escaped \(written.midiPitches)"
+                )
+            }
+
+            for role in [JazzPerformanceRole.bass, .comp] {
+                let roleEvents = first.filter { $0.role == role }
+                for pair in zip(roleEvents, roleEvents.dropFirst()) {
+                    XCTAssertLessThanOrEqual(
+                        pair.0.startTick + pair.0.gateDurationTicks,
+                        pair.1.startTick,
+                        "\(groove.rawValue): \(role.rawValue) gates overlap"
+                    )
+                }
+            }
+        }
+    }
+
+    func testSlashBassRemainsTheFirstPerformanceBassPitchClass() throws {
+        let measures = try JazzTheory.parseChart("| Cmaj7/G | ").measures
+        let chart = JazzChart(title: "Slash", tempoBPM: 120, groove: .mediumSwing, measures: measures)
+        let source = try XCTUnwrap(JazzTheory.compilePlayback(chart).first)
+        let firstBass = try XCTUnwrap(
+            JazzPerformancePlan.compile(chart).first { $0.role == .bass }
+        )
+
+        XCTAssertEqual(firstBass.startTick, 0)
+        XCTAssertEqual(firstBass.midiPitches.first.map { $0 % 12 }, source.midiPitches.first.map { $0 % 12 })
+        XCTAssertEqual(firstBass.midiPitches.first.map { $0 % 12 }, JazzTheory.pitchClass(for: "G"))
+    }
+
+    func testCompContinuityFindsTheSourceWholePhraseOptimum() {
+        let chordID = UUID()
+        let input = [
+            JazzPerformanceEvent(
+                chordID: chordID, role: .comp, startTick: 0, gateDurationTicks: 792,
+                midiPitches: [48, 52, 55], velocity: 80
+            ),
+            JazzPerformanceEvent(
+                chordID: chordID, role: .comp, startTick: 960, gateDurationTicks: 792,
+                midiPitches: [59, 63, 66], velocity: 80
+            ),
+            JazzPerformanceEvent(
+                chordID: chordID, role: .comp, startTick: 1_920, gateDurationTicks: 792,
+                midiPitches: [58, 62, 65], velocity: 80
+            )
+        ]
+        let result = JazzPerformancePlan.leadCompRegisters(
+            in: input,
+            register: JazzPerformancePlan.CompRegister(low: 48, high: 71, ceiling: 73)
+        )
+
+        XCTAssertEqual(
+            result.map(\.midiPitches),
+            [[60, 64, 67], [59, 63, 66], [58, 62, 65]]
+        )
+    }
+
+    func testCompContinuityClearsEveryBassHeldDuringItsGate() {
+        let chordID = UUID()
+        let input = [
+            JazzPerformanceEvent(
+                chordID: chordID, role: .bass, startTick: 0, gateDurationTicks: 792,
+                midiPitches: [36], velocity: 80
+            ),
+            JazzPerformanceEvent(
+                chordID: chordID, role: .comp, startTick: 0, gateDurationTicks: 792,
+                midiPitches: [48, 52, 55, 59], velocity: 80
+            ),
+            JazzPerformanceEvent(
+                chordID: chordID, role: .bass, startTick: 480, gateDurationTicks: 792,
+                midiPitches: [48], velocity: 80
+            )
+        ]
+        let result = JazzPerformancePlan.leadCompRegisters(
+            in: input,
+            register: JazzPerformancePlan.CompRegister(low: 48, high: 71, ceiling: 73)
+        )
+
+        XCTAssertEqual(result[1].midiPitches, [60, 64, 67, 71])
+        XCTAssertGreaterThanOrEqual(result[1].midiPitches[0] - 48, 4)
+    }
+
+    func testCompContinuityDropsOnlyTheLowestVoiceWhenTheCeilingRequiresIt() {
+        let chordID = UUID()
+        let input = [
+            JazzPerformanceEvent(
+                chordID: chordID, role: .bass, startTick: 0, gateDurationTicks: 792,
+                midiPitches: [48], velocity: 80
+            ),
+            JazzPerformanceEvent(
+                chordID: chordID, role: .comp, startTick: 0, gateDurationTicks: 792,
+                midiPitches: [48, 55, 59, 64], velocity: 80
+            )
+        ]
+        let result = JazzPerformancePlan.leadCompRegisters(
+            in: input,
+            register: JazzPerformancePlan.CompRegister(low: 45, high: 68, ceiling: 73)
+        )
+
+        XCTAssertEqual(result[1].midiPitches, [55, 59, 64])
+    }
+
     @MainActor
     func testLibraryLoadAppliesCanonicalMetadataAndPreservesUnspecifiedTempo() throws {
         let store = JazzStudioStore()

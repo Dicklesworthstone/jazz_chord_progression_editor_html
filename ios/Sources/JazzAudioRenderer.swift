@@ -34,13 +34,6 @@ enum JazzAudioRenderer {
         var pan: Double
     }
 
-    private struct PercussionRequest {
-        var start: Int
-        var frequency: Double
-        var strength: Double
-        var duration: Double
-    }
-
     nonisolated static func signature(for chart: JazzChart) -> String {
         let chords = chart.measures.flatMap(\.chords)
         let changes = chords.map { chord -> String in
@@ -79,8 +72,7 @@ enum JazzAudioRenderer {
             right: [Float](repeating: 0, count: frameCount)
         )
         guard cancellation?.isCancelled != true,
-              mixChanges(chart, into: &stereo, cancellation: cancellation),
-              mixGroove(chart, into: &stereo, cancellation: cancellation),
+              mixPerformance(chart, into: &stereo, cancellation: cancellation),
               validateFinite(stereo, cancellation: cancellation)
         else { return nil }
         return JazzRenderedAudio(left: stereo.left, right: stereo.right, sampleRate: sampleRate)
@@ -210,37 +202,43 @@ enum JazzAudioRenderer {
         return JazzRenderedAudio(left: stereo.left, right: stereo.right, sampleRate: sampleRate)
     }
 
-    private static func mixChanges(
+    private static func mixPerformance(
         _ chart: JazzChart,
         into stereo: inout StereoBuffer,
         cancellation: JazzRenderCancellationToken?
     ) -> Bool {
-        for event in JazzTheory.compilePlayback(chart) {
+        for event in JazzPerformancePlan.compile(chart) {
             guard cancellation?.isCancelled != true else { return false }
-            let start = Int(event.startBeat * 60 / chart.tempoBPM * sampleRate)
-            let duration = min(
-                2.8,
-                max(0.16, event.durationBeats * 60 / chart.tempoBPM + 0.28)
+            let start = Int(
+                Double(event.startTick) / Double(JazzPerformancePlan.ppq)
+                    * 60 / chart.tempoBPM * sampleRate
+            )
+            let duration = max(
+                1 / sampleRate,
+                Double(event.gateDurationTicks) / Double(JazzPerformancePlan.ppq)
+                    * 60 / chart.tempoBPM
             )
             let voiceCount = max(1, event.midiPitches.count)
-            if let chord = JazzPhysicalInstrumentRenderer.renderChord(
-                tone: chart.instrument,
+            let tone: InstrumentTone = event.role == .bass ? .uprightBass : chart.instrument
+            if event.role == .comp, let chord = JazzPhysicalInstrumentRenderer.renderChord(
+                tone: tone,
                 midis: event.midiPitches,
-                velocity: 96,
+                velocity: event.velocity,
                 sampleRate: sampleRate,
                 maximumSeconds: duration,
                 cancellation: cancellation
             ) {
                 guard mixPhysicalChord(
                     chord,
-                    tone: chart.instrument,
+                    tone: tone,
                     voiceCount: voiceCount,
                     start: start,
                     into: &stereo,
                     cancellation: cancellation
                 ) else { return false }
             } else {
-                guard cancellation?.isCancelled != true else { return false }
+                let normalization = 1 / sqrt(Double(voiceCount))
+                let velocityGain = pow(Double(event.velocity) / 127, 1.5)
                 for (index, midi) in event.midiPitches.enumerated() {
                     let pan = voiceCount == 1
                         ? 0
@@ -248,12 +246,12 @@ enum JazzAudioRenderer {
                     guard mixNote(
                         NoteRequest(
                             midi: midi,
-                            velocity: 0.72 / sqrt(Double(voiceCount)),
-                            midiVelocity: 96,
-                            normalizationGain: 1 / sqrt(Double(voiceCount)),
+                            velocity: normalization * velocityGain,
+                            midiVelocity: event.velocity,
+                            normalizationGain: normalization,
                             start: start,
                             duration: duration,
-                            tone: chart.instrument,
+                            tone: tone,
                             pan: pan
                         ),
                         into: &stereo,
@@ -261,128 +259,6 @@ enum JazzAudioRenderer {
                     ) else { return false }
                 }
             }
-            if event.permitsBassReinforcement, let bass = event.midiPitches.first {
-                guard mixNote(
-                    NoteRequest(
-                        midi: max(28, bass - 12),
-                        velocity: 0.30,
-                        midiVelocity: 64,
-                        normalizationGain: 1,
-                        start: start,
-                        duration: min(duration, 0.58),
-                        tone: .mellowKeys,
-                        pan: -0.08
-                    ),
-                    into: &stereo,
-                    cancellation: cancellation
-                ) else { return false }
-            }
-        }
-        return true
-    }
-
-    private static func mixGroove(
-        _ chart: JazzChart,
-        into stereo: inout StereoBuffer,
-        cancellation: JazzRenderCancellationToken?
-    ) -> Bool {
-        let beatSeconds = 60 / chart.tempoBPM
-        var beat = 0.0
-        while beat < chart.durationBeats {
-            guard cancellation?.isCancelled != true else { return false }
-            let beatInBar = Int(beat) % 4
-            let start = Int(beat * beatSeconds * sampleRate)
-            switch chart.groove {
-            case .mediumSwing:
-                guard mixPercussion(
-                    PercussionRequest(
-                        start: start,
-                        frequency: beatInBar == 0 || beatInBar == 2 ? 190 : 265,
-                        strength: beatInBar == 0 ? 0.095 : 0.060,
-                        duration: 0.055
-                    ),
-                    into: &stereo,
-                    cancellation: cancellation
-                ) else { return false }
-                guard mixPercussion(
-                    PercussionRequest(
-                        start: Int((beat + 2.0 / 3.0) * beatSeconds * sampleRate),
-                        frequency: 410,
-                        strength: 0.035,
-                        duration: 0.035
-                    ),
-                    into: &stereo,
-                    cancellation: cancellation
-                ) else { return false }
-            case .uptempoSwing:
-                guard mixPercussion(
-                    PercussionRequest(
-                        start: start,
-                        frequency: beatInBar == 0 || beatInBar == 2 ? 205 : 305,
-                        strength: beatInBar == 0 ? 0.080 : 0.052,
-                        duration: 0.038
-                    ),
-                    into: &stereo,
-                    cancellation: cancellation
-                ) else { return false }
-                guard mixPercussion(
-                    PercussionRequest(
-                        start: Int((beat + 2.0 / 3.0) * beatSeconds * sampleRate),
-                        frequency: 520,
-                        strength: 0.030,
-                        duration: 0.024
-                    ),
-                    into: &stereo,
-                    cancellation: cancellation
-                ) else { return false }
-            case .ballad:
-                if beatInBar == 0 || beatInBar == 2 {
-                    guard mixPercussion(
-                        PercussionRequest(start: start, frequency: 145, strength: 0.032, duration: 0.075),
-                        into: &stereo,
-                        cancellation: cancellation
-                    ) else { return false }
-                }
-            case .bossaNova:
-                guard mixPercussion(
-                    PercussionRequest(
-                        start: start,
-                        frequency: beatInBar == 0 || beatInBar == 2 ? 105 : 620,
-                        strength: beatInBar == 0 ? 0.080 : 0.045,
-                        duration: 0.045
-                    ),
-                    into: &stereo,
-                    cancellation: cancellation
-                ) else { return false }
-            case .straightEighths:
-                guard mixPercussion(
-                    PercussionRequest(
-                        start: start,
-                        frequency: beatInBar == 0 ? 170 : 340,
-                        strength: beatInBar == 0 ? 0.065 : 0.038,
-                        duration: 0.038
-                    ),
-                    into: &stereo,
-                    cancellation: cancellation
-                ) else { return false }
-            case .syncopatedSixteenths:
-                let accents: [(offset: Double, strength: Double)] = beatInBar % 2 == 0
-                    ? [(0, 0.070), (0.75, 0.040)]
-                    : [(0, 0.042), (0.5, 0.034)]
-                for accent in accents {
-                    guard mixPercussion(
-                        PercussionRequest(
-                            start: Int((beat + accent.offset) * beatSeconds * sampleRate),
-                            frequency: accent.offset == 0 ? 180 : 680,
-                            strength: accent.strength,
-                            duration: 0.028
-                        ),
-                        into: &stereo,
-                        cancellation: cancellation
-                    ) else { return false }
-                }
-            }
-            beat += 1
         }
         return true
     }
@@ -398,40 +274,6 @@ enum JazzAudioRenderer {
         return cancellation?.isCancelled != true
     }
 
-    private static func mixPercussion(
-        _ request: PercussionRequest,
-        into stereo: inout StereoBuffer,
-        cancellation: JazzRenderCancellationToken?
-    ) -> Bool {
-        let frames = min(Int(request.duration * sampleRate), stereo.left.count - request.start)
-        guard request.start >= 0, frames > 0 else { return true }
-        let angle = 2 * Double.pi * request.frequency / sampleRate
-        let sineStep = sin(angle)
-        let cosineStep = cos(angle)
-        var sine = 0.0
-        var cosine = 1.0
-        let decayStep = exp(-8 / (request.duration * sampleRate))
-        var envelope = 1.0
-        var noise = UInt32(
-            truncatingIfNeeded: request.start &* 747_796_405 &+ Int(request.frequency)
-        ) | 1
-        for frame in 0..<frames {
-            guard shouldContinue(cancellation, atFrame: frame) else { return false }
-            noise ^= noise << 13
-            noise ^= noise >> 17
-            noise ^= noise << 5
-            let hiss = (Double(noise & 0xFFFF) / 32_767.5 - 1) * 0.22
-            let value = (sine + hiss) * envelope * request.strength
-            stereo.left[request.start + frame] += Float(value * 0.96)
-            stereo.right[request.start + frame] += Float(value)
-            let nextSine = sine * cosineStep + cosine * sineStep
-            cosine = cosine * cosineStep - sine * sineStep
-            sine = nextSine
-            envelope *= decayStep
-        }
-        return cancellation?.isCancelled != true
-    }
-
     private static func mixNote(
         _ request: NoteRequest,
         into stereo: inout StereoBuffer,
@@ -443,7 +285,7 @@ enum JazzAudioRenderer {
         if let rendered = JazzSampledInstrumentRenderer.render(
             tone: request.tone,
             midi: request.midi,
-            velocity: 96,
+            velocity: request.midiVelocity,
             sampleRate: sampleRate,
             maximumSeconds: request.duration
         ) {
@@ -453,7 +295,7 @@ enum JazzAudioRenderer {
         if let rendered = JazzPhysicalInstrumentRenderer.render(
             tone: request.tone,
             midi: request.midi,
-            velocity: 96,
+            velocity: request.midiVelocity,
             sampleRate: sampleRate,
             maximumSeconds: request.duration,
             cancellation: cancellation
@@ -585,7 +427,7 @@ enum JazzAudioRenderer {
             let release = frame >= frames - releaseFrames
                 ? Double(frames - frame) / Double(releaseFrames)
                 : 1
-            let gain = request.velocity * metadata.outputLevel * attack * release
+            let gain = request.normalizationGain * metadata.outputLevel * attack * release
             stereo.left[request.start + frame] += Float(Double(rendered.left[frame]) * gain)
             stereo.right[request.start + frame] += Float(Double(rendered.right[frame]) * gain)
         }
