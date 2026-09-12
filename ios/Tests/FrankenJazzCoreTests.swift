@@ -3344,6 +3344,44 @@ final class FrankenJazzCoreTests: XCTestCase {
     }
 
     @MainActor
+    func testContinuationPreviewPlanUsesCurrentInstrumentAndVoicingWithoutMutation() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FrankenJazzContinuationPreviewTests-" + UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let recovery = JazzRecoveryStore(directory: directory)
+        recovery.save(JazzChart(
+            title: "Cadence preview",
+            instrument: .concertVibes,
+            voicingFamily: .spread,
+            measures: try JazzTheory.parseChart("| Dm7 G7 |").measures
+        ))
+        let store = JazzStudioStore(recovery: recovery)
+        let dominant = try XCTUnwrap(store.chart.measures.first?.chords.last)
+        store.select(dominant)
+        let option = try XCTUnwrap(store.continuationOptions.first { $0.candidate.chordSymbol == "Cmaj7" })
+        let chartBefore = store.chart
+        let revisionBefore = store.revision
+        let selectionBefore = store.selectedChordID
+        let undoBefore = store.canUndo
+        let redoBefore = store.canRedo
+
+        let plan = try XCTUnwrap(store.continuationPreviewPlan(for: option))
+        let description = try XCTUnwrap(JazzTheory.parseChord("Cmaj7", in: store.chart.key))
+        XCTAssertEqual(plan.instrument, .concertVibes)
+        XCTAssertEqual(plan.midiPitches, JazzTheory.voicing(for: description, family: .spread))
+        XCTAssertEqual(store.chart, chartBefore)
+        XCTAssertEqual(store.revision, revisionBefore)
+        XCTAssertEqual(store.selectedChordID, selectionBefore)
+        XCTAssertEqual(store.canUndo, undoBefore)
+        XCTAssertEqual(store.canRedo, redoBefore)
+
+        store.updateTitle("Revision changed")
+        XCTAssertNil(store.continuationPreviewPlan(for: option), "A candidate from an older revision must never reach audio preview.")
+    }
+
+    @MainActor
     func testContinuationBridgeFailsClosedOnForeignEngineSchema() {
         let bridge = JazzTheoryBridge(script: """
         globalThis.FrankenJazzTheoryBridge = {

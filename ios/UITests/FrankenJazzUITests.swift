@@ -46,7 +46,14 @@ final class FrankenJazzUITests: XCTestCase {
         XCTAssertTrue(lab.waitForExistence(timeout: 3))
         XCTAssertTrue(app.staticTexts["G2 · BOUNDED"].exists)
         XCTAssertTrue(app.buttons["Use for next change"].firstMatch.exists)
+        let preview = app.buttons["preview-continuation-1"]
+        XCTAssertTrue(preview.exists)
+        XCTAssertTrue(preview.isHittable)
+        XCTAssertEqual(preview.label, "Hear Cmaj7")
+        XCTAssertGreaterThanOrEqual(preview.frame.height, 44)
 
+        // Do not tap Hear: this lane proves the audible choice is discoverable
+        // and hittable while keeping automated Simulator runs silent.
         let proof = XCTAttachment(screenshot: app.screenshot())
         proof.name = "FrankenJazz G2 continuation engine"
         proof.lifetime = .keepAlways

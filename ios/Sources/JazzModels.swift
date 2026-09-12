@@ -645,6 +645,11 @@ struct PlaybackEvent: Identifiable, Sendable {
     var permitsBassReinforcement: Bool
 }
 
+struct JazzContinuationPreviewPlan: Equatable {
+    var midiPitches: [Int]
+    var instrument: InstrumentTone
+}
+
 struct LibraryEntry: Identifiable, Hashable, Sendable {
     enum Provenance: String, Sendable {
         case publicDomain = "Public domain"

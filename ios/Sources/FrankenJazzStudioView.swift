@@ -1240,9 +1240,7 @@ private struct ChordInspectorView: View {
                             }
                             .font(.system(size: JazzTheme.size(8.5), weight: .semibold, design: .rounded))
                             .foregroundStyle(JazzTheme.secondary)
-                            Button("Use for next change") { store.applyContinuation(option) }
-                                .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.brass))
-                                .accessibilityHint("Applies this option as one undoable edit if the chart has not changed")
+                            continuationActions(option)
                         }
                         .padding(12)
                         .background(JazzTheme.raised, in: RoundedRectangle(cornerRadius: 14))
@@ -1253,6 +1251,42 @@ private struct ChordInspectorView: View {
             }
         }
         .accessibilityIdentifier("continuation-lab")
+    }
+
+    @ViewBuilder
+    private func continuationActions(_ option: JazzContinuationOption) -> some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 8) {
+                continuationPreviewButton(option)
+                continuationUseButton(option)
+            }
+            VStack(spacing: 8) {
+                continuationPreviewButton(option)
+                continuationUseButton(option)
+            }
+        }
+    }
+
+    private func continuationPreviewButton(_ option: JazzContinuationOption) -> some View {
+        Button { store.previewContinuation(option) } label: {
+            Label("Hear", systemImage: "speaker.wave.2.fill")
+                .lineLimit(1)
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.cyan))
+        .accessibilityIdentifier("preview-continuation-\(option.candidate.rank)")
+        .accessibilityLabel("Hear \(option.candidate.chordSymbol)")
+        .accessibilityHint("Previews this option with \(store.chart.instrument.displayName) without changing the chart")
+    }
+
+    private func continuationUseButton(_ option: JazzContinuationOption) -> some View {
+        Button { store.applyContinuation(option) } label: {
+            Text("Use for next change")
+                .lineLimit(1)
+                .frame(maxWidth: .infinity)
+        }
+            .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.brass))
+            .accessibilityHint("Applies this option as one undoable edit if the chart has not changed")
     }
 
     private func evidenceRow(_ label: String, _ text: String) -> some View {

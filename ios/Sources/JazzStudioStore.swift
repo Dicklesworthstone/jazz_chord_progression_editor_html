@@ -331,6 +331,31 @@ final class JazzStudioStore: ObservableObject {
         audio.preview(midis: selectedMIDIPitches, tone: chart.instrument)
     }
 
+    func continuationPreviewPlan(for option: JazzContinuationOption) -> JazzContinuationPreviewPlan? {
+        guard option.sourceRevision == revision,
+              continuationOptions.contains(option),
+              let description = JazzTheory.parseChord(option.candidate.chordSymbol, in: chart.key) else {
+            return nil
+        }
+        let pitches = JazzTheory.voicing(for: description, family: chart.voicingFamily)
+        guard !pitches.isEmpty else { return nil }
+        return JazzContinuationPreviewPlan(midiPitches: pitches, instrument: chart.instrument)
+    }
+
+    func previewContinuation(_ option: JazzContinuationOption) {
+        guard option.sourceRevision == revision,
+              continuationOptions.contains(option) else {
+            notice = "That suggestion is stale because the chart changed. Review the refreshed options."
+            refreshContinuations()
+            return
+        }
+        guard let plan = continuationPreviewPlan(for: option) else {
+            notice = "That continuation cannot be previewed by this native chart yet."
+            return
+        }
+        audio.preview(midis: plan.midiPitches, tone: plan.instrument)
+    }
+
     func updateMasterVolume(_ volume: Double) {
         let mix = JazzPlaybackMix(
             masterVolume: volume,
