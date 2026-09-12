@@ -20,6 +20,112 @@ private func readInt16LE(_ bytes: [UInt8], at offset: Int) -> Int16 {
     Int16(bitPattern: readUInt16LE(bytes, at: offset))
 }
 
+private enum TestSMFDecodeIssue: Error { case malformed }
+
+private struct TestSMFNote: Equatable {
+    var track: Int
+    var tick: Int
+    var isOn: Bool
+    var note: Int
+    var velocity: Int
+    var channel: Int
+}
+
+private struct TestSMFMeta: Equatable {
+    var track: Int
+    var tick: Int
+    var type: Int
+    var data: [UInt8]
+}
+
+private struct TestSMFProjection: Equatable {
+    var tick: Int
+    var isOn: Bool
+    var note: Int
+    var velocity: Int
+}
+
+private struct TestSMFFile {
+    var format: Int
+    var trackCount: Int
+    var ppq: Int
+    var notes: [TestSMFNote]
+    var metadata: [TestSMFMeta]
+}
+
+/// Independent cursor used only by tests; it shares no writer helpers.
+private func decodeTestSMF(_ data: Data) throws -> TestSMFFile {
+    let bytes = [UInt8](data)
+    var offset = 0
+    func take(_ count: Int) throws -> [UInt8] {
+        guard count >= 0, offset <= bytes.count - count else { throw TestSMFDecodeIssue.malformed }
+        defer { offset += count }
+        return Array(bytes[offset..<(offset + count)])
+    }
+    func word() throws -> Int {
+        let value = try take(2)
+        return Int(value[0]) << 8 | Int(value[1])
+    }
+    func dword() throws -> Int {
+        let value = try take(4)
+        return value.reduce(0) { ($0 << 8) | Int($1) }
+    }
+    func variable(until end: Int) throws -> Int {
+        var value = 0
+        for _ in 0..<4 {
+            guard offset < end else { throw TestSMFDecodeIssue.malformed }
+            let byte = bytes[offset]
+            offset += 1
+            value = value * 128 + Int(byte & 0x7F)
+            if byte & 0x80 == 0 { return value }
+        }
+        throw TestSMFDecodeIssue.malformed
+    }
+
+    guard String(decoding: try take(4), as: UTF8.self) == "MThd",
+          try dword() == 6 else { throw TestSMFDecodeIssue.malformed }
+    let format = try word()
+    let trackCount = try word()
+    let ppq = try word()
+    var notes: [TestSMFNote] = []
+    var metadata: [TestSMFMeta] = []
+    for track in 0..<trackCount {
+        guard String(decoding: try take(4), as: UTF8.self) == "MTrk" else {
+            throw TestSMFDecodeIssue.malformed
+        }
+        let length = try dword()
+        guard length >= 0, offset <= bytes.count - length else { throw TestSMFDecodeIssue.malformed }
+        let end = offset + length
+        var tick = 0
+        while offset < end {
+            tick += try variable(until: end)
+            guard offset < end else { throw TestSMFDecodeIssue.malformed }
+            let status = Int(bytes[offset])
+            offset += 1
+            switch status & 0xF0 {
+            case 0x80, 0x90:
+                let payload = try take(2)
+                notes.append(TestSMFNote(
+                    track: track, tick: tick,
+                    isOn: status & 0xF0 == 0x90 && payload[1] > 0,
+                    note: Int(payload[0]), velocity: Int(payload[1]), channel: status & 0x0F
+                ))
+            default:
+                guard status == 0xFF, offset < end else { throw TestSMFDecodeIssue.malformed }
+                let type = Int(bytes[offset])
+                offset += 1
+                let count = try variable(until: end)
+                metadata.append(TestSMFMeta(
+                    track: track, tick: tick, type: type, data: try take(count)
+                ))
+            }
+        }
+        guard offset == end else { throw TestSMFDecodeIssue.malformed }
+    }
+    guard offset == bytes.count else { throw TestSMFDecodeIssue.malformed }
+    return TestSMFFile(format: format, trackCount: trackCount, ppq: ppq, notes: notes, metadata: metadata)
+}
+
 final class FrankenJazzCoreTests: XCTestCase {
     func testDryWaveWriterEmitsExactStereoPCMHeaderAndSamples() throws {
         let rendered = JazzRenderedAudio(
@@ -2245,6 +2351,181 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertEqual(Array(data.suffix(4)), [0x00, 0xFF, 0x2F, 0x00])
         let declaredLength = data.dropFirst(18).prefix(4).reduce(0) { ($0 << 8) | Int($1) }
         XCTAssertEqual(declaredLength, data.count - 22)
+    }
+
+    func testPerformedMIDIUsesExactGrooveRolesGatesVelocitiesAndMarkers() throws {
+        let parsed = try JazzTheory.parseChart("| Cmaj7 Dm7 | G7 Cmaj7 |")
+        let section = JazzChartSection(name: "A", startMeasureID: parsed.measures[0].id)
+        let chart = JazzChart(
+            title: "Exact performance", tempoBPM: 120, groove: .mediumSwing,
+            instrument: .organ, measures: parsed.measures, sections: [section]
+        )
+        let plan = JazzPerformancePlan.compile(chart)
+        let file = try PerformedMIDIFileWriter.makeFile(chart: chart)
+        let decoded = try decodeTestSMF(file.data)
+
+        XCTAssertEqual(decoded.format, 1)
+        XCTAssertEqual(decoded.trackCount, 3)
+        XCTAssertEqual(decoded.ppq, JazzPerformancePlan.ppq)
+        XCTAssertEqual(file.attackCount, plan.count)
+        XCTAssertEqual(file.pitchCount, plan.reduce(0) { $0 + $1.midiPitches.count })
+        XCTAssertGreaterThan(file.bassLaneCount, 0)
+        XCTAssertGreaterThan(file.compLaneCount, 0)
+
+        let trackNames = decoded.metadata.filter { $0.type == 0x03 }
+            .map { String(decoding: $0.data, as: UTF8.self) }
+        XCTAssertEqual(trackNames, ["Exact performance", "Bass", "Comp"])
+        XCTAssertEqual(decoded.metadata.first(where: { $0.type == 0x51 })?.data, [0x07, 0xA1, 0x20])
+        XCTAssertEqual(decoded.metadata.first(where: { $0.type == 0x58 })?.data, [4, 2, 24, 8])
+        let markers = decoded.metadata.filter { $0.type == 0x06 }
+            .map { String(decoding: $0.data, as: UTF8.self) }
+        XCTAssertEqual(markers, ["[A]", "Cmaj7", "Dm7", "G7", "Cmaj7"])
+        XCTAssertEqual(decoded.metadata.filter { $0.type == 0x2F }.map(\.tick), [7_680, 7_680, 7_680])
+
+        func projections(role: JazzPerformanceRole, track: Int) -> [TestSMFProjection] {
+            let expected = plan.filter { $0.role == role }.flatMap { event in
+                event.midiPitches.flatMap { pitch in
+                    [
+                        TestSMFProjection(tick: event.startTick, isOn: true, note: pitch, velocity: event.velocity),
+                        TestSMFProjection(
+                            tick: event.startTick + event.gateDurationTicks,
+                            isOn: false, note: pitch, velocity: 0
+                        )
+                    ]
+                }
+            }
+            let actual = decoded.notes.filter { $0.track == track }.map {
+                TestSMFProjection(tick: $0.tick, isOn: $0.isOn, note: $0.note, velocity: $0.velocity)
+            }
+            func ordered(_ values: [TestSMFProjection]) -> [TestSMFProjection] {
+                values.sorted {
+                    ($0.tick, $0.isOn ? 1 : 0, $0.note, $0.velocity)
+                        < ($1.tick, $1.isOn ? 1 : 0, $1.note, $1.velocity)
+                }
+            }
+            XCTAssertEqual(ordered(actual), ordered(expected))
+            return actual
+        }
+        _ = projections(role: .bass, track: 1)
+        _ = projections(role: .comp, track: 2)
+    }
+
+    func testPerformedMIDIAllocatesDisjointSafeChannelsAndReusesAfterRelease() throws {
+        let chart = JazzChart(title: "Channels", measures: [
+            JazzMeasure(chords: [JazzChordEvent(symbol: "Cmaj7")])
+        ])
+        let touching = [
+            JazzPerformanceEvent(
+                chordID: chart.measures[0].chords[0].id, role: .bass,
+                startTick: 0, gateDurationTicks: 480, midiPitches: [60], velocity: 88
+            ),
+            JazzPerformanceEvent(
+                chordID: chart.measures[0].chords[0].id, role: .bass,
+                startTick: 480, gateDurationTicks: 240, midiPitches: [60], velocity: 103
+            ),
+            JazzPerformanceEvent(
+                chordID: chart.measures[0].chords[0].id, role: .comp,
+                startTick: 480, gateDurationTicks: 456, midiPitches: [60, 64], velocity: 72
+            )
+        ]
+        let file = try PerformedMIDIFileWriter.makeFile(chart: chart, events: touching)
+        let decoded = try decodeTestSMF(file.data)
+        let boundary = decoded.notes.filter { $0.track == 1 && $0.tick == 480 }
+
+        XCTAssertEqual(boundary.map(\.isOn), [false, true])
+        XCTAssertEqual(boundary.map(\.channel), [0, 0])
+        XCTAssertEqual(Set(decoded.notes.filter { $0.track == 1 }.map(\.channel)), [0])
+        XCTAssertEqual(Set(decoded.notes.filter { $0.track == 2 }.map(\.channel)), [1])
+        XCTAssertFalse(decoded.notes.contains { $0.channel == 9 })
+        XCTAssertEqual(file.bassLaneCount, 1)
+        XCTAssertEqual(file.compLaneCount, 1)
+    }
+
+    func testPerformedMIDIKeepsFifteenUnisonsAndRefusesSixteen() throws {
+        let chord = JazzChordEvent(symbol: "Cmaj7")
+        let chart = JazzChart(title: "Unisons", measures: [JazzMeasure(chords: [chord])])
+        func event(_ count: Int) -> JazzPerformanceEvent {
+            JazzPerformanceEvent(
+                chordID: chord.id, role: .comp, startTick: 0, gateDurationTicks: 480,
+                midiPitches: [Int](repeating: 60, count: count), velocity: 90
+            )
+        }
+
+        let accepted = try PerformedMIDIFileWriter.makeFile(chart: chart, events: [event(15)])
+        let decoded = try decodeTestSMF(accepted.data)
+        XCTAssertEqual(accepted.compLaneCount, 15)
+        XCTAssertEqual(decoded.notes.filter(\.isOn).map(\.channel), PerformedMIDIFileWriter.channels)
+        XCTAssertThrowsError(
+            try PerformedMIDIFileWriter.makeFile(chart: chart, events: [event(16)])
+        ) {
+            XCTAssertEqual($0 as? PerformedMIDIFileIssue, .channelCapacity)
+        }
+    }
+
+    func testPerformedMIDIIsDeterministicAndDoesNotReplaceEditableChordMIDI() throws {
+        let parsed = try JazzTheory.parseChart("| Cmaj7 | Fmaj7 | G7 | Cmaj7 |")
+        let chart = JazzChart(
+            title: "Two projections", tempoBPM: 132,
+            groove: .mediumSwing, measures: parsed.measures
+        )
+        let first = try PerformedMIDIFileWriter.makeFile(chart: chart)
+        let second = try PerformedMIDIFileWriter.makeFile(chart: chart)
+        let editable = MIDIFileWriter.makeFile(chart: chart)
+        let performedBytes = [UInt8](first.data)
+        let editableBytes = [UInt8](editable)
+
+        XCTAssertEqual(first.data, second.data)
+        XCTAssertNotEqual(first.data, editable)
+        XCTAssertEqual(Array(performedBytes[8...9]), [0, 1])
+        XCTAssertEqual(Array(editableBytes[8...9]), [0, 0])
+        XCTAssertGreaterThan(first.attackCount, JazzTheory.compilePlayback(chart).count)
+        XCTAssertEqual(ExportKind.midi.filenameSuffix, "")
+        XCTAssertEqual(ExportKind.performedMIDI.filenameSuffix, "-performed")
+    }
+
+    func testPerformedMIDIRefusesLimitsAndInvalidMetadataBeforeReturningBytes() throws {
+        let chord = JazzChordEvent(symbol: "Cmaj7")
+        let tooLong = JazzChart(
+            title: "Seventeen bars",
+            measures: (0..<17).map { _ in JazzMeasure(chords: [JazzChordEvent(symbol: "Cmaj7")]) }
+        )
+        XCTAssertThrowsError(try PerformedMIDIFileWriter.makeFile(chart: tooLong)) {
+            XCTAssertEqual($0 as? PerformedMIDIFileIssue, .durationExceeded(maximumBars: 16))
+        }
+
+        let chart = JazzChart(title: "Bounds", measures: [JazzMeasure(chords: [chord])])
+        XCTAssertThrowsError(try PerformedMIDIFileWriter.makeFile(chart: chart, events: [])) {
+            XCTAssertEqual($0 as? PerformedMIDIFileIssue, .emptyPerformance)
+        }
+        let event = JazzPerformanceEvent(
+            chordID: chord.id, role: .comp, startTick: 0,
+            gateDurationTicks: 1, midiPitches: [60], velocity: 80
+        )
+        XCTAssertThrowsError(try PerformedMIDIFileWriter.makeFile(
+            chart: chart,
+            events: [JazzPerformanceEvent](repeating: event, count: 1_025)
+        )) {
+            XCTAssertEqual($0 as? PerformedMIDIFileIssue, .eventLimit)
+        }
+        let overflowingTick = JazzPerformanceEvent(
+            chordID: chord.id, role: .comp, startTick: Int.max,
+            gateDurationTicks: 1, midiPitches: [60], velocity: 80
+        )
+        XCTAssertThrowsError(try PerformedMIDIFileWriter.makeFile(
+            chart: chart,
+            events: [overflowingTick]
+        )) {
+            XCTAssertEqual($0 as? PerformedMIDIFileIssue, .invalidEvent(index: 0))
+        }
+
+        let wideTitle = String(repeating: "é", count: 49)
+        let metadataHeavy = JazzChart(title: wideTitle, measures: [JazzMeasure(chords: [chord])])
+        XCTAssertThrowsError(try PerformedMIDIFileWriter.makeFile(
+            chart: metadataHeavy,
+            events: [event]
+        )) {
+            XCTAssertEqual($0 as? PerformedMIDIFileIssue, .invalidMetadata("chart title"))
+        }
     }
 
     func testNativeMIDIExportImportsBackIntoEditableChordEvents() throws {

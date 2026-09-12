@@ -2473,9 +2473,13 @@ private struct DocumentCenterView: View {
                                         }
                                         .frame(minHeight: 44)
                                     }
-                                    .buttonStyle(JazzSecondaryButtonStyle(tint: kind == .midi ? JazzTheme.brass : JazzTheme.emerald))
+                                    .buttonStyle(JazzSecondaryButtonStyle(tint: kind.isMIDI ? JazzTheme.brass : JazzTheme.emerald))
+                                    .accessibilityIdentifier(kind.accessibilityIdentifier)
                                 }
                             }
+                            Text("Editable chord MIDI keeps one held realized voicing per chart event for round-trip editing. Performed arrangement MIDI keeps the authored groove on separate Bass and Comp tracks, including exact onsets, gates, and velocities, for charts up to 16 bars. MIDI does not carry FrankenJazz instrument timbre, room/master processing, note spelling, or annotations.")
+                                .font(.system(size: JazzTheme.size(10.5), design: .rounded))
+                                .foregroundStyle(JazzTheme.secondary)
                             Divider().overlay(JazzTheme.brass.opacity(0.22))
                             Label("Dry performed audio", systemImage: "waveform.badge.plus")
                                 .font(.system(size: JazzTheme.size(13), weight: .bold, design: .rounded))
@@ -2484,7 +2488,7 @@ private struct DocumentCenterView: View {
                                 .font(.system(size: JazzTheme.size(10.5), design: .rounded))
                                 .foregroundStyle(JazzTheme.secondary)
                             waveExportControls
-                            Text("Exports are files—not pasted text. The FrankenJazz format preserves every chart setting; MIDI contains the current realized voicings.")
+                            Text("Exports are files—not pasted text. The FrankenJazz format preserves every chart setting; each MIDI option preserves its explicitly named musical projection.")
                                 .font(.system(size: JazzTheme.size(10.5), design: .rounded))
                                 .foregroundStyle(JazzTheme.secondary)
                         }

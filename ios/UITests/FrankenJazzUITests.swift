@@ -423,6 +423,18 @@ final class FrankenJazzUITests: XCTestCase {
             NSPredicate(format: "label CONTAINS 'exact Manual pitches'")
         ).firstMatch.exists)
 
+        let performedMIDI = app.buttons["export-performed-midi"]
+        for _ in 0..<8 where !performedMIDI.isHittable { app.swipeUp() }
+        XCTAssertTrue(performedMIDI.waitForExistence(timeout: 3))
+        XCTAssertTrue(performedMIDI.isHittable)
+        XCTAssertGreaterThanOrEqual(performedMIDI.frame.height, 44)
+        XCTAssertTrue(app.staticTexts.matching(
+            NSPredicate(format: "label CONTAINS 'separate Bass and Comp tracks'")
+        ).firstMatch.exists)
+        XCTAssertTrue(app.staticTexts.matching(
+            NSPredicate(format: "label CONTAINS 'does not carry FrankenJazz instrument timbre'")
+        ).firstMatch.exists)
+
         let prepareWave = app.buttons["prepare-dry-wave"]
         for _ in 0..<8 where !prepareWave.isHittable { app.swipeUp() }
         XCTAssertTrue(prepareWave.waitForExistence(timeout: 3))

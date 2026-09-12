@@ -898,7 +898,8 @@ final class JazzStudioStore: ObservableObject {
             .lowercased()
             .replacingOccurrences(of: #"[^a-z0-9]+"#, with: "-", options: .regularExpression)
             .trimmingCharacters(in: CharacterSet(charactersIn: "-"))
-        let base = slug.isEmpty ? "frankenjazz-chart" : slug
+        let root = slug.isEmpty ? "frankenjazz-chart" : slug
+        let base = root + kind.filenameSuffix
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(base).appendingPathExtension(kind.extensionName)
         do {
             let data = try exportData(kind: kind)
@@ -1005,6 +1006,7 @@ final class JazzStudioStore: ObservableObject {
         case .nativeJSON: try encoder.encode(chart)
         case .chartText: JazzLeadSheetTextCodec.encode(chart)
         case .midi: MIDIFileWriter.makeFile(chart: chart)
+        case .performedMIDI: try PerformedMIDIFileWriter.makeFile(chart: chart).data
         }
     }
 
@@ -1448,14 +1450,25 @@ enum JazzLeadSheetTextCodec {
 enum ExportKind: String, CaseIterable, Identifiable, Hashable {
     case nativeJSON = "FrankenJazz chart"
     case chartText = "Lead-sheet text"
-    case midi = "Standard MIDI File"
+    case midi = "Editable chord MIDI"
+    case performedMIDI = "Performed arrangement MIDI"
 
     var id: String { rawValue }
     var extensionName: String {
         switch self {
         case .nativeJSON: "frankenjazz"
         case .chartText: "txt"
-        case .midi: "mid"
+        case .midi, .performedMIDI: "mid"
+        }
+    }
+    var filenameSuffix: String { self == .performedMIDI ? "-performed" : "" }
+    var isMIDI: Bool { self == .midi || self == .performedMIDI }
+    var accessibilityIdentifier: String {
+        switch self {
+        case .nativeJSON: "export-frankenjazz"
+        case .chartText: "export-chart-text"
+        case .midi: "export-editable-midi"
+        case .performedMIDI: "export-performed-midi"
         }
     }
     var symbol: String {
@@ -1463,6 +1476,7 @@ enum ExportKind: String, CaseIterable, Identifiable, Hashable {
         case .nativeJSON: "doc.badge.gearshape"
         case .chartText: "doc.plaintext"
         case .midi: "pianokeys"
+        case .performedMIDI: "music.note.list"
         }
     }
 }
