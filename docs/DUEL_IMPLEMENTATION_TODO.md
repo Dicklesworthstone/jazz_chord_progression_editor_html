@@ -186,6 +186,7 @@ Package `jcpe-6ujg.7`. Spec `jcpe-6ujg.7.1` → build `jcpe-6ujg.7.2` → verify
 
 ## CC1: Short WAV export
 
+
 Package `jcpe-6ujg.8`. Spec `jcpe-6ujg.8.1` → build `jcpe-6ujg.8.2` → verify `jcpe-6ujg.8.3`.
 
 - [x] Prove bounded approved dry Concert Grand PCM route — 18 real feasibility renders; no live instrument/effect parity claim.
