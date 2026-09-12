@@ -113,6 +113,8 @@ export default tseslint.config(
          them double-reports every finding against a tree nobody releases. */
       ".claude/**",
       ".tmp/**",
+      /* RCH's TMPDIR contains generated Playwright transforms, not sources. */
+      ".rch-tmp/**",
       "blob-report/**",
       "coverage/**",
       "dist/**",
