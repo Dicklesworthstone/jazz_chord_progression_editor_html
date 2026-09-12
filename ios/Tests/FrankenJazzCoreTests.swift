@@ -277,6 +277,77 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertNil(JazzAudioEngine.playbackWindow(requestedBeat: .nan, totalBeats: 24, sectionLoop: loop))
     }
 
+    func testPlayAlongTimelineUsesExactHalfOpenBoundariesAndSectionIdentity() throws {
+        let first = JazzMeasure(chords: [
+            JazzChordEvent(symbol: "Cmaj7", beats: 2),
+            JazzChordEvent(symbol: "Dm7", beats: 2)
+        ])
+        let second = JazzMeasure(chords: [JazzChordEvent(symbol: "G7", beats: 4)])
+        let chart = JazzChart(
+            title: "Focus boundaries",
+            measures: [first, second],
+            sections: [JazzChartSection(name: "Bridge", startMeasureID: second.id)]
+        )
+
+        let spans = JazzPlayAlongTimeline.compile(chart)
+        XCTAssertEqual(spans.map(\.symbol), ["Cmaj7", "Dm7", "G7"])
+        XCTAssertEqual(spans.map(\.startBeat), [0, 2, 4])
+        XCTAssertEqual(spans.map(\.endBeat), [2, 4, 8])
+        XCTAssertEqual(spans.map(\.barNumber), [1, 1, 2])
+        XCTAssertEqual(spans.map(\.sectionName), [nil, nil, "Bridge"])
+
+        let beforeBoundary = JazzPlayAlongTimeline.snapshot(
+            spans: spans, beat: 1.999, totalBeats: chart.durationBeats
+        )
+        XCTAssertEqual(beforeBoundary.current?.symbol, "Cmaj7")
+        XCTAssertEqual(beforeBoundary.next?.symbol, "Dm7")
+
+        let atBoundary = JazzPlayAlongTimeline.snapshot(
+            spans: spans, beat: 2, totalBeats: chart.durationBeats
+        )
+        XCTAssertEqual(atBoundary.current?.symbol, "Dm7")
+        XCTAssertEqual(atBoundary.next?.symbol, "G7")
+
+        let ended = JazzPlayAlongTimeline.snapshot(
+            spans: spans, beat: 8, totalBeats: chart.durationBeats
+        )
+        XCTAssertNil(ended.current)
+        XCTAssertNil(ended.next)
+
+        let wrapped = JazzPlayAlongTimeline.snapshot(
+            spans: spans, beat: 8, totalBeats: chart.durationBeats, wrapsWholeChart: true
+        )
+        XCTAssertEqual(wrapped.current?.symbol, "Cmaj7")
+        XCTAssertEqual(wrapped.next?.symbol, "Dm7")
+    }
+
+    func testPlayAlongTimelineWrapsInsideSectionAndRefusesInvalidClock() {
+        let first = JazzMeasure(chords: [JazzChordEvent(symbol: "Cmaj7")])
+        let second = JazzMeasure(chords: [JazzChordEvent(symbol: "F7")])
+        let third = JazzMeasure(chords: [JazzChordEvent(symbol: "Bbmaj7")])
+        let chart = JazzChart(title: "Focus loop", measures: [first, second, third])
+        let spans = JazzPlayAlongTimeline.compile(chart)
+        let loop = 4.0..<12.0
+
+        let late = JazzPlayAlongTimeline.snapshot(
+            spans: spans, beat: 11.999, totalBeats: chart.durationBeats, loopRange: loop
+        )
+        XCTAssertEqual(late.current?.symbol, "Bbmaj7")
+        XCTAssertEqual(late.next?.symbol, "F7")
+
+        let wrapped = JazzPlayAlongTimeline.snapshot(
+            spans: spans, beat: 12, totalBeats: chart.durationBeats, loopRange: loop
+        )
+        XCTAssertEqual(wrapped.current?.symbol, "F7")
+        XCTAssertEqual(wrapped.next?.symbol, "Bbmaj7")
+
+        let invalidClock = JazzPlayAlongTimeline.snapshot(
+            spans: spans, beat: .nan, totalBeats: chart.durationBeats, loopRange: loop
+        )
+        XCTAssertNil(invalidClock.current)
+        XCTAssertNil(invalidClock.next)
+    }
+
     func testSectionBoundaryReallyControlsAutomaticVoiceLeading() throws {
         let first = JazzMeasure(chords: [JazzChordEvent(symbol: "Cmaj7")])
         let second = JazzMeasure(chords: [JazzChordEvent(symbol: "Bmaj7")])
