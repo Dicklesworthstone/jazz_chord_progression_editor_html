@@ -422,6 +422,22 @@ final class FrankenJazzUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts.matching(
             NSPredicate(format: "label CONTAINS 'exact Manual pitches'")
         ).firstMatch.exists)
+
+        let prepareWave = app.buttons["prepare-dry-wave"]
+        for _ in 0..<8 where !prepareWave.isHittable { app.swipeUp() }
+        XCTAssertTrue(prepareWave.waitForExistence(timeout: 3))
+        XCTAssertTrue(prepareWave.isHittable)
+        XCTAssertGreaterThanOrEqual(prepareWave.frame.height, 44)
+        XCTAssertTrue(app.staticTexts.matching(
+            NSPredicate(format: "label CONTAINS 'deliberately dry'")
+        ).firstMatch.exists)
+
+        // Do not tap Prepare: the product path is an offline render, but this
+        // UI lane remains a strict no-audio/no-render discoverability check.
+        let proof = XCTAttachment(screenshot: app.screenshot())
+        proof.name = "FrankenJazz dry performed WAV export"
+        proof.lifetime = .keepAlways
+        add(proof)
     }
 
     func testMyChartsKeepsSearchesAndExposesEverySnapshotAction() throws {

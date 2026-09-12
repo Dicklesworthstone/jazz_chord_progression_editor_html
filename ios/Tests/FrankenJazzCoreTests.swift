@@ -5,7 +5,133 @@ import CryptoKit
 import FrankenJazzDSP
 @testable import FrankenJazz
 
+private func readUInt16LE(_ bytes: [UInt8], at offset: Int) -> UInt16 {
+    UInt16(bytes[offset]) | UInt16(bytes[offset + 1]) << 8
+}
+
+private func readUInt32LE(_ bytes: [UInt8], at offset: Int) -> UInt32 {
+    UInt32(bytes[offset])
+        | UInt32(bytes[offset + 1]) << 8
+        | UInt32(bytes[offset + 2]) << 16
+        | UInt32(bytes[offset + 3]) << 24
+}
+
+private func readInt16LE(_ bytes: [UInt8], at offset: Int) -> Int16 {
+    Int16(bitPattern: readUInt16LE(bytes, at: offset))
+}
+
 final class FrankenJazzCoreTests: XCTestCase {
+    func testDryWaveWriterEmitsExactStereoPCMHeaderAndSamples() throws {
+        let rendered = JazzRenderedAudio(
+            left: [0, 0.5, -0.5],
+            right: [0.25, -0.25, 0],
+            sampleRate: 24_000
+        )
+        let wave = try JazzWaveFileWriter.makeFile(rendered)
+        let bytes = [UInt8](wave.data)
+
+        XCTAssertEqual(String(decoding: bytes[0..<4], as: UTF8.self), "RIFF")
+        XCTAssertEqual(readUInt32LE(bytes, at: 4), 48)
+        XCTAssertEqual(String(decoding: bytes[8..<12], as: UTF8.self), "WAVE")
+        XCTAssertEqual(String(decoding: bytes[12..<16], as: UTF8.self), "fmt ")
+        XCTAssertEqual(readUInt16LE(bytes, at: 20), 1)
+        XCTAssertEqual(readUInt16LE(bytes, at: 22), 2)
+        XCTAssertEqual(readUInt32LE(bytes, at: 24), 24_000)
+        XCTAssertEqual(readUInt32LE(bytes, at: 28), 96_000)
+        XCTAssertEqual(readUInt16LE(bytes, at: 32), 4)
+        XCTAssertEqual(readUInt16LE(bytes, at: 34), 16)
+        XCTAssertEqual(String(decoding: bytes[36..<40], as: UTF8.self), "data")
+        XCTAssertEqual(readUInt32LE(bytes, at: 40), 12)
+        XCTAssertEqual(readInt16LE(bytes, at: 44), 0)
+        XCTAssertEqual(readInt16LE(bytes, at: 46), 8_192)
+        XCTAssertEqual(readInt16LE(bytes, at: 48), 16_384)
+        XCTAssertEqual(readInt16LE(bytes, at: 50), -8_192)
+        XCTAssertEqual(readInt16LE(bytes, at: 52), -16_384)
+        XCTAssertEqual(readInt16LE(bytes, at: 54), 0)
+        XCTAssertEqual(wave.peakReductionGain, 1)
+    }
+
+    func testDryWaveWriterOnlyReducesOverRangePeaksAndIsDeterministic() throws {
+        let rendered = JazzRenderedAudio(left: [2, -2], right: [1, -1], sampleRate: 24_000)
+        let first = try JazzWaveFileWriter.makeFile(rendered)
+        let second = try JazzWaveFileWriter.makeFile(rendered)
+        let bytes = [UInt8](first.data)
+
+        XCTAssertEqual(first.data, second.data)
+        XCTAssertEqual(first.peakReductionGain, 0.49, accuracy: 0.000_000_1)
+        XCTAssertEqual(readInt16LE(bytes, at: 44), 32_112)
+        XCTAssertEqual(readInt16LE(bytes, at: 48), -32_113)
+        XCTAssertEqual(readInt16LE(bytes, at: 46), 16_056)
+        XCTAssertEqual(readInt16LE(bytes, at: 50), -16_056)
+    }
+
+    func testDryWaveWriterRefusesMalformedOrOverlongPCM() {
+        XCTAssertThrowsError(try JazzWaveFileWriter.makeFile(.init(left: [], right: [], sampleRate: 24_000))) {
+            XCTAssertEqual($0 as? JazzWaveFileIssue, .empty)
+        }
+        XCTAssertThrowsError(try JazzWaveFileWriter.makeFile(.init(left: [0], right: [], sampleRate: 24_000))) {
+            XCTAssertEqual($0 as? JazzWaveFileIssue, .channelLengthMismatch)
+        }
+        XCTAssertThrowsError(try JazzWaveFileWriter.makeFile(.init(left: [.nan], right: [0], sampleRate: 24_000))) {
+            XCTAssertEqual($0 as? JazzWaveFileIssue, .nonFiniteSample(channel: "left", frame: 0))
+        }
+        XCTAssertThrowsError(try JazzWaveFileWriter.makeFile(.init(left: [0], right: [0], sampleRate: 24_000.5))) {
+            XCTAssertEqual($0 as? JazzWaveFileIssue, .invalidSampleRate)
+        }
+        let frames = JazzWaveFileWriter.sampleRate * JazzWaveFileWriter.maximumDurationSeconds + 1
+        let overlong = [Float](repeating: 0, count: frames)
+        XCTAssertThrowsError(try JazzWaveFileWriter.makeFile(.init(left: overlong, right: overlong, sampleRate: 24_000))) {
+            XCTAssertEqual($0 as? JazzWaveFileIssue, .durationExceeded(maximumSeconds: 180))
+        }
+    }
+
+    func testWaveExportFenceRejectsEditsAndSupersededRequests() {
+        var fence = JazzWaveExportFence()
+        let first = fence.claim(revision: 4)
+        XCTAssertTrue(fence.owns(first, currentRevision: 4))
+        XCTAssertFalse(fence.owns(first, currentRevision: 5))
+
+        let second = fence.claim(revision: 4)
+        XCTAssertFalse(fence.owns(first, currentRevision: 4))
+        XCTAssertTrue(fence.owns(second, currentRevision: 4))
+        fence.invalidate()
+        XCTAssertFalse(fence.owns(second, currentRevision: 4))
+    }
+
+    func testDryWaveExporterUsesPerformedGrooveAndExactChartInstrument() throws {
+        let manual = JazzChordEvent(symbol: "Cmaj7", manualMIDIPitches: [48, 60, 64, 67, 71])
+        let measure = JazzMeasure(chords: [manual])
+        let straight = JazzChart(
+            title: "Straight",
+            tempoBPM: 240,
+            groove: .straightEighths,
+            instrument: .organ,
+            measures: [measure]
+        )
+        var syncopated = straight
+        syncopated.groove = .syncopatedSixteenths
+        var electric = straight
+        electric.instrument = .electricPiano
+
+        let straightWave = try JazzDryWaveExporter.makeFile(chart: straight)
+        let syncopatedWave = try JazzDryWaveExporter.makeFile(chart: syncopated)
+        let electricWave = try JazzDryWaveExporter.makeFile(chart: electric)
+
+        XCTAssertEqual(String(decoding: straightWave.data.prefix(4), as: UTF8.self), "RIFF")
+        XCTAssertNotEqual(straightWave.data, syncopatedWave.data)
+        XCTAssertNotEqual(straightWave.data, electricWave.data)
+        XCTAssertEqual(straightWave.sampleRate, 24_000)
+    }
+
+    func testDryWaveExporterRefusesOverlongChartBeforeRendering() throws {
+        let measures = (0..<24).map { _ in JazzMeasure(chords: [JazzChordEvent(symbol: "Cmaj7")]) }
+        let chart = JazzChart(title: "Too long", tempoBPM: 30, measures: measures)
+        XCTAssertGreaterThan(chart.durationBeats * 60 / chart.tempoBPM, 180)
+        XCTAssertThrowsError(try JazzDryWaveExporter.makeFile(chart: chart)) {
+            XCTAssertEqual($0 as? JazzWaveFileIssue, .durationExceeded(maximumSeconds: 180))
+        }
+    }
+
     func testNamedSectionsMatchOriginalSyntaxAndRoundTripWithoutFlattening() throws {
         let source = "[A] \"Opening\"\n| Dm7 G7 | Cmaj7 |\n[Bridge]\n| Fmaj7 | E7 |"
         let parsed = try JazzTheory.parseChart(source)

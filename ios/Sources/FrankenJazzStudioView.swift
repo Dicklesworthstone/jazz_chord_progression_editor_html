@@ -2476,6 +2476,14 @@ private struct DocumentCenterView: View {
                                     .buttonStyle(JazzSecondaryButtonStyle(tint: kind == .midi ? JazzTheme.brass : JazzTheme.emerald))
                                 }
                             }
+                            Divider().overlay(JazzTheme.brass.opacity(0.22))
+                            Label("Dry performed audio", systemImage: "waveform.badge.plus")
+                                .font(.system(size: JazzTheme.size(13), weight: .bold, design: .rounded))
+                                .foregroundStyle(JazzTheme.text)
+                            Text("Renders up to three minutes of this chart’s authored groove, upright-bass line, exact voicings, and selected instrument into a stereo WAV. It is deliberately dry: live room amount, master volume, dynamics, and soft clipping are not baked into the file.")
+                                .font(.system(size: JazzTheme.size(10.5), design: .rounded))
+                                .foregroundStyle(JazzTheme.secondary)
+                            waveExportControls
                             Text("Exports are files—not pasted text. The FrankenJazz format preserves every chart setting; MIDI contains the current realized voicings.")
                                 .font(.system(size: JazzTheme.size(10.5), design: .rounded))
                                 .foregroundStyle(JazzTheme.secondary)
@@ -2506,10 +2514,70 @@ private struct DocumentCenterView: View {
             }
         }
         .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+        .onDisappear {
+            if store.waveExportState == .preparing { store.cancelDryWaveExport() }
+        }
         .fileImporter(isPresented: $importing, allowedContentTypes: [.frankenJazz, .json, .plainText, .midi], allowsMultipleSelection: false) { result in
             guard case let .success(urls) = result, let url = urls.first else { return }
             Task { await store.importFile(url) }
         }
+    }
+
+    @ViewBuilder
+    private var waveExportControls: some View {
+        switch store.waveExportState {
+        case .idle:
+            Button { store.prepareDryWaveExport() } label: {
+                Label("Prepare dry performance WAV", systemImage: "waveform")
+                    .frame(maxWidth: .infinity, minHeight: 44)
+            }
+            .buttonStyle(JazzPrimaryButtonStyle(tint: JazzTheme.brass))
+            .accessibilityIdentifier("prepare-dry-wave")
+            .accessibilityHint("Creates a silent offline render to share; this does not play the chart.")
+        case .preparing:
+            HStack(spacing: 12) {
+                ProgressView()
+                    .tint(JazzTheme.brass)
+                    .accessibilityLabel("Preparing dry performance WAV")
+                Text("Rendering off-line…")
+                    .font(.system(size: JazzTheme.size(11), weight: .semibold, design: .rounded))
+                    .foregroundStyle(JazzTheme.text)
+                Spacer()
+                Button("Cancel") { store.cancelDryWaveExport() }
+                    .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.coral))
+            }
+            .frame(minHeight: 44)
+        case let .ready(url, durationSeconds, peakReductionGain):
+            ShareLink(item: url) {
+                HStack {
+                    Label("Share dry performance WAV", systemImage: "square.and.arrow.up")
+                    Spacer()
+                    Text(durationLabel(durationSeconds))
+                        .font(.system(size: JazzTheme.size(9), weight: .bold, design: .monospaced))
+                }
+                .frame(minHeight: 44)
+            }
+            .buttonStyle(JazzPrimaryButtonStyle(tint: JazzTheme.brass))
+            if peakReductionGain < 0.999_999 {
+                Text("Peak reduced by \(Int(((1 - peakReductionGain) * 100).rounded()))% to prevent clipping; quiet audio was not boosted.")
+                    .font(.system(size: JazzTheme.size(9.5), design: .rounded))
+                    .foregroundStyle(JazzTheme.secondary)
+            }
+            Button("Rebuild WAV") { store.prepareDryWaveExport() }
+                .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.emerald))
+        case let .failed(issue):
+            Label(issue, systemImage: "exclamationmark.triangle.fill")
+                .font(.system(size: JazzTheme.size(10.5), weight: .semibold, design: .rounded))
+                .foregroundStyle(JazzTheme.coral)
+                .accessibilityIdentifier("dry-wave-export-error")
+            Button("Try WAV again") { store.prepareDryWaveExport() }
+                .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.brass))
+        }
+    }
+
+    private func durationLabel(_ seconds: Double) -> String {
+        let total = max(0, Int(seconds.rounded()))
+        return String(format: "%d:%02d", total / 60, total % 60)
     }
 }
 
