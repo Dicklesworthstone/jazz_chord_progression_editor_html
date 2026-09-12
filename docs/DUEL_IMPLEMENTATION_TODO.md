@@ -184,8 +184,20 @@ Package `jcpe-6ujg.7`. Spec `jcpe-6ujg.7.1` → build `jcpe-6ujg.7.2` → verify
 - [x] Pass focused tests, typecheck, lint/boundaries, artifact size and applicable real-browser gates.
 - [ ] Record independent acceptance and close all three phases before package.
 
-## CC1: Short WAV export
+### Keyboard hold repair (2026-09-12, `jcpe-6ujg.7.3`)
 
+- [x] Claim the verification leaf, inspect its inherited contracts and reserve the pad UI, browser tests and this TODO.
+- [x] Identify cross-key release: Space/Enter and main/keypad Enter currently share one keyboard owner.
+- [x] Add real keyboard/native-audio regressions for all four owning/other-key orders, preserving document revision and rejecting extra attacks.
+- [x] Demonstrate those regressions fail against committed artifact `687e5d1774639e8c8c4faff80476975f475e0b5e08e814c5b1b31a6d9ffbdef4`: RCH Chromium 0 passed/4 expected diagnostic failures, each at the premature-release assertion; original diagnostics retained in `test-results/pad-key-baseline`.
+- [x] Preserve both key and physical code; release only that key's hold. Pointer ownership and bounded assistive click activation keep their existing paths.
+- [x] Pass RCH `bun test tests/unit/studio-pads.test.ts tests/integration/studio-pads.test.ts tests/integration/studio-inspector-commands.test.ts tests/integration/studio-comping.test.ts` (39 tests, 277 assertions), `bun run typecheck` (all four projects), `bun run lint` and `bun run build`.
+- [x] Pass all 27 native pad cases in Chromium 149.0.7827.55, Firefox 151.0 and WebKit 26.5 with 0 failures/skips/retries/flaky cases: `test-results/pad-key-fixed/browser-results.json`. This includes all four physical-key orders, pointer/cancellation/focus/page/tap behavior, 320/1280px, both themes and accessibility. Artifact `acf66ca16933a9afd40c125fb56d30a95d0d012aa5a6dfa4be58d7a17a5dccc5`, 8,631,505 bytes; 1,610 source/test/config hashes and mtimes unchanged.
+- [ ] Recheck source hashes/mtimes, commit explicit paths and push the verified repair.
+- [ ] Pass both deployment gates, publish committed bytes and verify both hosts in real browsers at desktop and phone widths.
+- [ ] Retain physical-phone, listening and independent acceptance as open; automated author verification cannot close this leaf.
+
+## CC1: Short WAV export
 
 Package `jcpe-6ujg.8`. Spec `jcpe-6ujg.8.1` → build `jcpe-6ujg.8.2` → verify `jcpe-6ujg.8.3`.
 
