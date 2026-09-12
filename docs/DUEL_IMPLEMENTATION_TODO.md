@@ -213,6 +213,19 @@ Package `jcpe-6ujg.8`. Spec `jcpe-6ujg.8.1` → build `jcpe-6ujg.8.2` → verify
 - [x] Pass focused tests, typecheck, lint/boundaries, artifact size and applicable real-browser gates — `.8.2` closed.
 - [ ] Record independent acceptance and close all three phases before package.
 
+### WAV chart-switch repair (2026-09-12, `jcpe-6ujg.8.3`)
+
+- [x] Claim the ready verification leaf and review the original WAV/excerpt/source-cancellation contracts.
+- [x] Identify old section/excerpt choices surviving a chart identity change, including before the first Prepare.
+- [x] Add source-switch witnesses for unprepared, ready, rendering and hashing phases, plus a same-chart edit success case.
+- [x] Add native import/switch/render/download coverage at 320/1280px with reused section IDs and independently checked WAV duration.
+- [x] Demonstrate the original source fails all four chart-switch witnesses while passing the same-chart control; the committed `acf66ca…dccc5` artifact fails all four new Chromium import cases at the stale passage selection. Evidence: `.tmp/wav-chart-switch/baseline.log` and `test-results/wav-chart-baseline`.
+- [x] Reset chart-owned choices on a new document identity, including before any prepared binding exists, while preserving single-render ownership and explicit same-chart selections.
+- [x] Run focused WAV/renderer/replacement regressions, types, lint/boundaries, guarded build and the full native WAV matrix through RCH — 42 tests / 301 assertions; 36 Chromium/Firefox/WebKit cases, zero unexpected/skipped/flaky results. Candidate `4820645651ed7271831a89f2be3fa0bfb38b44ea14c09b2477be668d110eeca0`, 8,631,590 bytes; evidence `.tmp/wav-chart-switch/fixed.log` and `test-results/wav-chart-fixed`.
+- [ ] Review unchanged source/artifact identity, record exact evidence, commit and push owned changes.
+- [ ] Deploy committed bytes through both existing gates and verify both production hosts.
+- [ ] Preserve original physical-phone memory/listening and independent acceptance as open.
+
 ## CC4: Compatible songbook import
 
 Package `jcpe-6ujg.9`. Spec `jcpe-6ujg.9.1` → build `jcpe-6ujg.9.2` → verify `jcpe-6ujg.9.3`.

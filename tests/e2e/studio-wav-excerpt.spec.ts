@@ -15,6 +15,29 @@ const chart={...fixture,title:"Choose later bars from a longer chart",tempoBpm:1
  {...section,id:"excerpt-later",name:"Later three",measures:[sounding("bar-4"),{...measure,id:"bar-5",completion:{kind:"empty"},events:[]},sounding("bar-6")]}
 ]};
 test.use({userAgent:"OpenAI File Downloader, XaiImageApiFetch/1.0",contextOptions:{reducedMotion:"reduce"}});
+for(const width of [320,1280])for(const prepared of [false,true])test(`changing charts resets WAV choices ${String(width)}px prepared=${String(prepared)}`,async({page,browser},info)=>{
+ const errors:string[]=[],requests:string[]=[];
+ page.on("pageerror",e=>errors.push(e.message));page.on("console",m=>{if(m.type()==="error")errors.push(m.text());});
+ await page.route("**/*",async route=>{if(route.request().isNavigationRequest()&&route.request().url()===url)await route.continue();else{requests.push(route.request().url());await route.abort();}});
+ try{
+  await page.setViewportSize({width,height:900});await page.goto(url);
+  const importChart=async(value:typeof chart)=>{await page.locator("#studio-import-chart").click();await page.locator("#studio-import-file").setInputFiles({name:"piano.changes.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify(value))});await page.locator("#studio-import-commit").click();await page.locator("#studio-import-confirm").click();await expect(page.locator("#studio-document-title")).toHaveValue(value.title);};
+  const open=async()=>{await page.locator("#studio-open-command-lane").click();await page.getByText("Download piano audio",{exact:true}).click();};
+  await importChart(chart);await observeNativeSources(page);await open();
+  const panel=page.getByRole("region",{name:"Dry piano WAV"}),passage=panel.getByRole("combobox",{name:"Piano passage"}),excerpt=panel.getByRole("checkbox",{name:"Choose specific bars"}),prepare=panel.getByRole("button",{name:"Prepare piano WAV",exact:true}),download=panel.getByRole("button",{name:"Download piano WAV",exact:true});
+  await passage.selectOption("excerpt-later");await excerpt.check();await panel.getByRole("combobox",{name:"Number of bars"}).selectOption("1");await panel.getByRole("spinbutton",{name:"First bar"}).fill("3");
+  if(prepared){await prepare.click();await expect(download).toBeEnabled();}
+  await page.getByRole("button",{name:"Close the command lane",exact:true}).click();
+  await importChart({...chart,id:"another-piano-chart",title:"Replacement piano chart",sections:[{...section,id:"excerpt-later",name:"Replacement section",measures:[sounding("replacement-1"),sounding("replacement-2")]}]});
+  const revision=await page.locator(".studio-document-status__revision").textContent();await open();
+  await expect(passage).toHaveValue("");await expect(excerpt).not.toBeChecked();await expect(panel).toContainText("2 bars in this passage");await expect(download).toBeDisabled();
+  await prepare.click();await expect(download).toBeEnabled();const digest=await panel.getAttribute("data-artifact-sha256");
+  const pending=page.waitForEvent("download");await download.click();const delivered=await pending;expect(await delivered.failure()).toBeNull();const bytes=readFileSync(await delivered.path());
+  expect(bytes.length).toBe(537644);expect(bytes.toString("ascii",0,4)).toBe("RIFF");expect(bytes.readUInt32LE(24)).toBe(32000);expect(bytes.readUInt32LE(40)).toBe(537600);expect(bytes.subarray(44+400,44+4000).some(n=>n!==0)).toBe(true);expect(createHash("sha256").update(bytes).digest("hex")).toBe(digest);
+  expect(await page.locator(".studio-document-status__revision").textContent()).toBe(revision);expect(await page.evaluate(()=>window.u5NativeSourceCounts?.())).toEqual({started:0,sounding:0,futureAttacks:0});expect(errors).toEqual([]);expect(requests).toEqual([]);
+  await info.attach("replacement-piano-wav",{body:bytes,contentType:"audio/wav"});
+ }finally{await info.attach("wav-chart-switch-evidence",{body:JSON.stringify({hash,width,prepared,browser:browser.version(),errors,requests,claim:"Native browser import/render/download; not physical-phone memory or listening acceptance"}),contentType:"application/json"});}
+});
 for(const theme of ["light","dark"] as const)for(const width of [320,1280])test(`later bar excerpt native WAV ${theme} ${String(width)}px`,async({page,browser},info)=>{
  const errors:string[]=[],requests:{url:string;allowed:boolean}[]=[];let renderMs=0;
  page.on("pageerror",e=>errors.push(e.message));page.on("console",m=>{if(m.type()==="error")errors.push(m.text());});
