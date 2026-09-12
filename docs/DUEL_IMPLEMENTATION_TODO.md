@@ -223,8 +223,8 @@ Package `jcpe-6ujg.8`. Spec `jcpe-6ujg.8.1` → build `jcpe-6ujg.8.2` → verify
 - [x] Reset chart-owned choices on a new document identity, including before any prepared binding exists, while preserving single-render ownership and explicit same-chart selections.
 - [x] Run focused WAV/renderer/replacement regressions, types, lint/boundaries, guarded build and the full native WAV matrix through RCH — 42 tests / 301 assertions; 36 Chromium/Firefox/WebKit cases, zero unexpected/skipped/flaky results. Candidate `4820645651ed7271831a89f2be3fa0bfb38b44ea14c09b2477be668d110eeca0`, 8,631,590 bytes; evidence `.tmp/wav-chart-switch/fixed.log` and `test-results/wav-chart-fixed`.
 - [x] Review all 1,610 source/test/script/config hashes and mtimes, preserve the three unrelated UI copies, and commit/push owned repair `9b0f7a11aed0c52fd3cc9114007ec43ffdd5a931`. Final RCH rebuild matches the tested bytes; 11 shipping model acceptance rows and nine-instrument quality gate pass (zero fail findings).
-- [ ] Deploy committed bytes through both existing gates and verify both production hosts.
-- [ ] Preserve original physical-phone memory/listening and independent acceptance as open.
+- [x] Deploy committed bytes after unchanged mandatory gates: 15/15 native Chromium starter-chart instruments pass; recovery check is enforced but vacuous (no reproducible refusal). Cloudflare `917da715` and Vercel `dpl_Ag6RaMM2qnxXLCX1ArC2jXVcb8o9` both match `48206456…eeca0` on the first poll. All 24 live 320/1280px Chromium/Firefox/WebKit import/switch/render/download cases pass with 24 independently decoded WAVs, no console/page errors, no extra requests and no skipped/flaky/retried cases. Evidence: `test-results/wav-chart-release`, `test-results/wav-chart-live`, `.tmp/wav-chart-switch/host-hashes.json` and `.tmp/wav-chart-switch/final-evidence-summary.json`.
+- [x] Preserve original physical-phone memory/cancellation/listening and independent acceptance as open on `.8.3`; return the verification leaf open/unassigned after this deployed repair. Author browser verification does not close those original gates.
 
 ## CC4: Compatible songbook import
 
