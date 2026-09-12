@@ -17,6 +17,7 @@ export function createStudioWav(ports:Readonly<{
   let state:StudioWavView["state"]="idle",busy=false,cancelled=false,message="Choose a short passage to render as dry piano.",sectionId:string|null=null;
   let done=0,total=0,byteLength=0,sha256:string|null=null,deliver:ReturnType<PrepareWavDownload>|null=null;
   let excerpt:StudioWavExcerpt|null=null;
+  let selectionDocumentId=ports.readDocument().id;
   let binding:Readonly<{document:ValidatedDocument;revision:number}>|null=null;
   const listeners=new Set<()=>void>(),notify=():void=>{for(const listener of listeners)listener();};
   const same=():boolean=>binding!==null&&binding.document===ports.readDocument()&&binding.revision===ports.readRevision();
@@ -47,7 +48,14 @@ export function createStudioWav(ports:Readonly<{
       notify();
     }
   };
-  ports.subscribeSource(()=>{if(binding===null||same())return;cancelled=true;clear();state=busy?"cancelling":"stale";message="The chart changed. Previous piano work is cancelled.";notify();});
+  ports.subscribeSource(()=>{
+    const documentId=ports.readDocument().id,chartChanged=documentId!==selectionDocumentId;
+    // Passage choices belong to a chart even before its first render. Shared
+    // section IDs in another chart cannot carry those choices forward.
+    if(chartChanged){selectionDocumentId=documentId;sectionId=null;excerpt=null;}
+    if(!chartChanged&&(binding===null||same()))return;
+    cancelled=true;clear();state=busy?"cancelling":"stale";message="The chart changed. Previous piano work is cancelled.";notify();
+  });
   return Object.freeze({read,subscribe:(listener:()=>void)=>{listeners.add(listener);return()=>{listeners.delete(listener);};},prepare,cancel,
     setPassage:(id:string|null)=>{cancel();sectionId=id;excerpt=null;message=busy?"Cancelling the previous passage…":"Passage updated. Prepare its dry piano notes.";notify();},
     setExcerpt:(value:StudioWavExcerpt|null)=>{cancel();excerpt=value===null?null:Object.freeze({startBar:value.startBar,barCount:value.barCount});message=busy?"Cancelling the previous passage…":"Bars updated. Prepare their dry piano notes.";notify();},

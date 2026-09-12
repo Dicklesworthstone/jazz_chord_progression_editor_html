@@ -36,40 +36,48 @@ export function createMidiExportDownloadStart(
       type: "audio/midi",
     });
     const url = dom.createObjectUrl(blob);
-    const anchor = dom.createAnchor();
-    anchor.href = url;
-    anchor.download = request.binding.filename;
-    dom.attachToDocument(anchor);
-    anchor.click();
-    return Object.freeze({
-      completion: Promise.resolve().then(() => {
-        let revoked = false;
-        let cleanupError: unknown = null;
-        try {
-          dom.revokeObjectUrl(url);
-          revoked = true;
-        } catch (error) {
-          cleanupError = error;
-        }
-        try {
-          anchor.remove();
-        } catch (error) {
-          cleanupError ??= error;
-        }
-        return Object.freeze({
+    let anchor: MidiExportDownloadAnchor | null = null;
+    const cleanup = () => {
+      let revoked = false, removed = anchor === null;
+      const errors: unknown[] = [];
+      try {
+        dom.revokeObjectUrl(url);
+        revoked = true;
+      } catch (error) {
+        errors.push(error);
+      }
+      try {
+        anchor?.remove();
+        removed = true;
+      } catch (error) {
+        errors.push(error);
+      }
+      return {
+        errors,
+        receipt: Object.freeze({
           objectUrlsCreated: 1,
           objectUrlsRevoked: revoked ? 1 : 0,
-          outstandingOwnedResources: revoked ? 0 : 1,
-          ...(cleanupError === null
-            ? {}
-            : {
-                error:
-                  cleanupError instanceof Error
-                    ? cleanupError.message
-                    : "unknown cleanup failure",
-              }),
-        });
-      }),
-    });
+          outstandingOwnedResources: Number(!revoked) + Number(!removed),
+          ...(errors.length === 0 ? {} : {
+            error: errors.map(error => error instanceof Error ? error.message : "unknown cleanup failure").join("; "),
+          }),
+        }),
+      };
+    };
+    try {
+      anchor = dom.createAnchor();
+      anchor.href = url;
+      anchor.download = request.binding.filename;
+      dom.attachToDocument(anchor);
+      // Keep activation in the original user gesture, before any microtask.
+      anchor.click();
+    } catch (error) {
+      const result = cleanup();
+      if (result.errors.length > 0) {
+        throw new AggregateError([error, ...result.errors], "MIDI download activation failed and cleanup was incomplete.", { cause: error });
+      }
+      throw error;
+    }
+    return Object.freeze({ completion: Promise.resolve().then(() => cleanup().receipt) });
   };
 }

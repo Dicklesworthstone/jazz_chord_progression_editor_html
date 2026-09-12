@@ -3,6 +3,41 @@ import {createHash} from "node:crypto";
 import {createStudioCompositionOverState} from "../../src/application/studio-controller";
 import {createDryPianoRenderer} from "../../src/audio/dry-piano-render";
 import {loopArrangementFixture} from "../support/loop-arrangement-fixture";
+import {createStudioWav} from "../../src/application/studio-wav";
+import {publishA0Candidate} from "../support/a0-application-fixture";
+
+for(const phase of ["unprepared","ready","render","hash"] as const)test(`chart switch resets WAV selection from ${phase} without reviving old work`,async()=>{
+ let document=loopArrangementFixture().state.document,revision=0,sourceChanged:()=>void=()=>{},release:()=>void=()=>{},arrive:()=>void=()=>{};
+ const reached=new Promise<void>(resolve=>{arrive=resolve;}),barrier=()=>new Promise<void>(resolve=>{release=resolve;arrive();});
+ let gated=false,prepared=0,active=0,maximumActive=0;const downloads:Uint8Array[]=[];
+ const render=createDryPianoRenderer(async()=>{if(phase==="render"&&!gated){gated=true;await barrier();}});
+ const service=createStudioWav({readDocument:()=>document,readRevision:()=>revision,subscribeSource:listener=>{sourceChanged=listener;return()=>{};},
+  render:async(plan,controls)=>{active++;maximumActive=Math.max(maximumActive,active);try{return await render(plan,controls);}finally{active--;}},
+  hashBytes:async bytes=>{if(phase==="hash"&&!gated){gated=true;await barrier();}return createHash("sha256").update(bytes).digest("hex");},
+  prepareDownload:bytes=>{prepared++;return()=>{downloads.push(bytes);return{issued:true,objectUrlsCreated:1,objectUrlsRevoked:1,outstandingOwnedResources:0};};},
+ });
+ service.setPassage("loop-section-1");service.setExcerpt({startBar:1,barCount:1});
+ let pending:Promise<void>|null=null;
+ if(phase==="ready")await service.prepare();
+ else if(phase==="render"||phase==="hash"){pending=service.prepare();await reached;}
+ const previouslyPrepared=prepared;
+ // Reused section IDs are deliberate: the old choice remains superficially
+ // valid in the new chart, but belongs to a different document identity.
+ document=publishA0Candidate({...document,id:"other-piano-chart",title:"Another chart"});revision++;sourceChanged();
+ const switched=service.read();service.download();
+ if(pending!==null){await service.prepare();expect(prepared).toBe(previouslyPrepared);release();await pending;}
+ expect(switched).toMatchObject({sectionId:null,excerpt:null,availableBars:2,sha256:null,byteLength:0,busy:pending!==null});
+ expect(downloads).toEqual([]);expect(service.read().busy).toBe(false);
+ await service.prepare();expect(service.read()).toMatchObject({state:"ready",byteLength:281644,sectionId:null,excerpt:null});
+ service.download();expect(downloads).toHaveLength(1);expect(maximumActive).toBe(1);expect(revision).toBe(1);
+});
+
+test("same-chart edits invalidate WAV bytes while preserving explicitly selected bars",async()=>{
+ const f=setup();f.service.setPassage("loop-section-1");f.service.setExcerpt({startBar:1,barCount:1});await f.service.prepare();
+ expect(f.composition.controller.setTitle("Renamed current chart").ok).toBe(true);
+ expect(f.service.read()).toMatchObject({state:"stale",sectionId:"loop-section-1",excerpt:{startBar:1,barCount:1},sha256:null,byteLength:0});
+ await f.service.prepare();expect(f.service.read()).toMatchObject({state:"ready",byteLength:153644});
+});
 function setup(pause:"none"|"render"|"hash"="none",cleanup=true){
  const f=loopArrangementFixture(),downloads:Uint8Array[]=[];let prepared=0,yields=0,release:(()=>void)|undefined,reached:(()=>void)|undefined;
  const paused=new Promise<void>(resolve=>{reached=resolve;});
