@@ -10,6 +10,7 @@ struct FrankenJazzStudioView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var focusModePresented = false
 #if DEBUG
     @State private var didApplyDebugLaunch = false
 #endif
@@ -22,6 +23,15 @@ struct FrankenJazzStudioView: View {
                     compactWorkspace
                 } else {
                     expandedWorkspace(width: proxy.size.width)
+                }
+                if focusModePresented {
+                    PlayAlongFocusView(store: store) {
+                        withAnimation(reduceMotion ? nil : .easeOut(duration: 0.18)) {
+                            focusModePresented = false
+                        }
+                    }
+                    .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.985)))
+                    .zIndex(10)
                 }
             }
         }
@@ -83,7 +93,9 @@ struct FrankenJazzStudioView: View {
                             .accessibilityLabel("Document actions")
                     }
                 }
-                .safeAreaInset(edge: .bottom, spacing: 0) { TransportBar(store: store, compact: true) }
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    TransportBar(store: store, compact: true) { presentFocusMode() }
+                }
         }
     }
 
@@ -103,7 +115,9 @@ struct FrankenJazzStudioView: View {
             }
             .padding(.horizontal, width > 1_250 ? 18 : 12)
             .padding(.top, 12)
-            .safeAreaInset(edge: .bottom, spacing: 0) { TransportBar(store: store, compact: false) }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                TransportBar(store: store, compact: false) { presentFocusMode() }
+            }
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     JazzAppearanceButton(selection: $appearance)
@@ -120,6 +134,12 @@ struct FrankenJazzStudioView: View {
             }
         }
         .navigationSplitViewStyle(.balanced)
+    }
+
+    private func presentFocusMode() {
+        withAnimation(reduceMotion ? nil : .easeOut(duration: 0.18)) {
+            focusModePresented = true
+        }
     }
 
     @ViewBuilder private var noticeBanner: some View {
@@ -1220,9 +1240,7 @@ private struct ChordInspectorView: View {
                             }
                             .font(.system(size: JazzTheme.size(8.5), weight: .semibold, design: .rounded))
                             .foregroundStyle(JazzTheme.secondary)
-                            Button("Use for next change") { store.applyContinuation(option) }
-                                .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.brass))
-                                .accessibilityHint("Applies this option as one undoable edit if the chart has not changed")
+                            continuationActions(option)
                         }
                         .padding(12)
                         .background(JazzTheme.raised, in: RoundedRectangle(cornerRadius: 14))
@@ -1233,6 +1251,42 @@ private struct ChordInspectorView: View {
             }
         }
         .accessibilityIdentifier("continuation-lab")
+    }
+
+    @ViewBuilder
+    private func continuationActions(_ option: JazzContinuationOption) -> some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 8) {
+                continuationPreviewButton(option)
+                continuationUseButton(option)
+            }
+            VStack(spacing: 8) {
+                continuationPreviewButton(option)
+                continuationUseButton(option)
+            }
+        }
+    }
+
+    private func continuationPreviewButton(_ option: JazzContinuationOption) -> some View {
+        Button { store.previewContinuation(option) } label: {
+            Label("Hear", systemImage: "speaker.wave.2.fill")
+                .lineLimit(1)
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.cyan))
+        .accessibilityIdentifier("preview-continuation-\(option.candidate.rank)")
+        .accessibilityLabel("Hear \(option.candidate.chordSymbol)")
+        .accessibilityHint("Previews this option with \(store.chart.instrument.displayName) without changing the chart")
+    }
+
+    private func continuationUseButton(_ option: JazzContinuationOption) -> some View {
+        Button { store.applyContinuation(option) } label: {
+            Text("Use for next change")
+                .lineLimit(1)
+                .frame(maxWidth: .infinity)
+        }
+            .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.brass))
+            .accessibilityHint("Applies this option as one undoable edit if the chart has not changed")
     }
 
     private func evidenceRow(_ label: String, _ text: String) -> some View {
@@ -1581,9 +1635,249 @@ private struct PianoKeyPressStyle: ButtonStyle {
     }
 }
 
+private struct PlayAlongFocusView: View {
+    @ObservedObject var store: JazzStudioStore
+    let onExit: () -> Void
+    @State private var spans: [JazzPlayAlongSpan]
+
+    init(store: JazzStudioStore, onExit: @escaping () -> Void) {
+        self.store = store
+        self.onExit = onExit
+        _spans = State(initialValue: JazzPlayAlongTimeline.compile(store.chart))
+    }
+
+    private var snapshot: JazzPlayAlongSnapshot {
+        JazzPlayAlongTimeline.snapshot(
+            spans: spans,
+            beat: store.audio.playheadBeat,
+            totalBeats: store.chart.durationBeats,
+            loopRange: store.audio.sectionLoopRange.map { $0.startBeat..<$0.endBeat },
+            wrapsWholeChart: store.audio.loops
+        )
+    }
+
+    private var hasEnded: Bool {
+        store.audio.state == .ready && !store.audio.loops && store.audio.sectionLoopRange == nil &&
+            store.audio.playheadBeat >= store.chart.durationBeats - 0.000_001
+    }
+
+    private var current: JazzPlayAlongSpan? { hasEnded ? nil : snapshot.current }
+
+    private var stateLabel: String {
+        if store.audio.isCountingIn { return "Count-in" }
+        if hasEnded { return "Chart ended" }
+        return switch store.audio.state {
+        case .ready: "Ready"
+        case .preparing: "Preparing local audio"
+        case .playing: "Playing"
+        case .paused: "Paused"
+        case .failed: "Audio unavailable"
+        }
+    }
+
+    private var stateColor: Color {
+        switch store.audio.state {
+        case .playing: JazzTheme.emerald
+        case .preparing: JazzTheme.violet
+        case .failed: JazzTheme.coral
+        case .ready, .paused: JazzTheme.brass
+        }
+    }
+
+    var body: some View {
+        ZStack {
+            JazzForgeBackground()
+            VStack(spacing: 0) {
+                header
+                ScrollView {
+                    VStack(spacing: 18) {
+                        status
+                        currentCard
+                        nextCard
+                        contextCard
+                    }
+                    .frame(maxWidth: 760)
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 20)
+                    .frame(maxWidth: .infinity)
+                }
+                .scrollIndicators(.hidden)
+                focusTransport
+            }
+        }
+        .onChange(of: store.revision) { _, _ in
+            spans = JazzPlayAlongTimeline.compile(store.chart)
+        }
+    }
+}
+
+private extension PlayAlongFocusView {
+    var header: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("FOCUS")
+                    .font(.system(size: JazzTheme.size(13), weight: .black, design: .monospaced))
+                    .tracking(2.2)
+                    .foregroundStyle(JazzTheme.violet)
+                Text(store.chart.title)
+                    .font(.system(size: JazzTheme.size(18), weight: .bold, design: .rounded))
+                    .foregroundStyle(JazzTheme.text)
+                    .lineLimit(1)
+            }
+            Spacer()
+            Button(action: onExit) {
+                Label("Exit", systemImage: "xmark")
+                    .font(.system(size: JazzTheme.size(14), weight: .bold, design: .rounded))
+                    .frame(minWidth: 72, minHeight: 44)
+            }
+            .buttonStyle(.bordered)
+            .tint(JazzTheme.violet)
+            .accessibilityIdentifier("focus-exit")
+            .accessibilityLabel("Exit Focus display")
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 12)
+        .background(.ultraThinMaterial)
+        .overlay(alignment: .bottom) {
+            Rectangle().fill(JazzTheme.violet.opacity(0.34)).frame(height: 1)
+        }
+    }
+
+    var status: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Circle().fill(stateColor).frame(width: 8, height: 8).padding(.top, 4)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(stateLabel)
+                    .font(.system(size: JazzTheme.size(12), weight: .bold, design: .monospaced))
+                if store.audio.isCountingIn { Text("Starting chord held in view") }
+                if case let .failed(message) = store.audio.state { Text(message).lineLimit(3) }
+            }
+            Spacer()
+        }
+        .foregroundStyle(JazzTheme.secondary)
+        .padding(.horizontal, 14)
+        .frame(minHeight: 44)
+        .background(JazzTheme.raised, in: Capsule())
+        .accessibilityIdentifier("focus-status")
+    }
+
+    var currentCard: some View {
+        JazzPanel(accent: JazzTheme.brass, padding: 20) {
+            VStack(spacing: 10) {
+                Text(hasEnded ? "COMPLETE" : store.audio.state == .ready ? "START" : "CURRENT")
+                    .font(.system(size: JazzTheme.size(12), weight: .black, design: .monospaced))
+                    .tracking(2)
+                    .foregroundStyle(JazzTheme.brass)
+                Text(current?.symbol ?? "—")
+                    .font(.system(size: JazzTheme.size(68), weight: .black, design: .serif))
+                    .minimumScaleFactor(0.38)
+                    .lineLimit(1)
+                    .foregroundStyle(JazzTheme.text)
+                    .frame(maxWidth: .infinity, minHeight: 92)
+                    .accessibilityIdentifier("focus-current-chord")
+                if let current {
+                    Text(location(for: current))
+                        .font(.system(size: JazzTheme.size(13), weight: .semibold, design: .rounded))
+                        .foregroundStyle(JazzTheme.secondary)
+                } else {
+                    Text("Press Restart or move the playhead to continue.")
+                        .font(.system(size: JazzTheme.size(13), design: .rounded))
+                        .foregroundStyle(JazzTheme.secondary)
+                }
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+
+    var nextCard: some View {
+        JazzPanel(accent: JazzTheme.cyan, padding: 16) {
+            HStack(spacing: 16) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("NEXT")
+                        .font(.system(size: JazzTheme.size(11), weight: .black, design: .monospaced))
+                        .tracking(1.8)
+                        .foregroundStyle(JazzTheme.cyan)
+                    Text(snapshot.next?.symbol ?? "End")
+                        .font(.system(size: JazzTheme.size(34), weight: .bold, design: .serif))
+                        .minimumScaleFactor(0.5)
+                        .lineLimit(1)
+                        .foregroundStyle(JazzTheme.text)
+                        .accessibilityIdentifier("focus-next-chord")
+                }
+                Spacer()
+                Image(systemName: snapshot.next == nil ? "checkmark.circle.fill" : "arrow.right.circle.fill")
+                    .font(.system(size: JazzTheme.size(28), weight: .semibold))
+                    .foregroundStyle(snapshot.next == nil ? JazzTheme.emerald : JazzTheme.cyan)
+            }
+        }
+    }
+
+    var contextCard: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 12) {
+                Label(beatLabel, systemImage: "metronome")
+                Spacer()
+                Text(loopLabel)
+            }
+            VStack(alignment: .leading, spacing: 5) {
+                Label(beatLabel, systemImage: "metronome")
+                Text(loopLabel)
+            }
+        }
+        .font(.system(size: JazzTheme.size(12), weight: .semibold, design: .rounded))
+        .foregroundStyle(JazzTheme.secondary)
+        .padding(.horizontal, 14)
+        .frame(minHeight: 44)
+        .background(JazzTheme.panel, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(JazzTheme.stroke))
+    }
+
+    var focusTransport: some View {
+        HStack(spacing: 12) {
+            Button { store.audio.stop() } label: {
+                Label("Stop", systemImage: "stop.fill").frame(maxWidth: .infinity, minHeight: 48)
+            }
+            .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.coral))
+            .accessibilityIdentifier("focus-stop")
+            Button { store.audio.toggle(chart: store.chart) } label: {
+                Label(
+                    store.audio.isPlaying ? "Pause" : "Play",
+                    systemImage: store.audio.isPlaying ? "pause.fill" : "play.fill"
+                )
+                .frame(maxWidth: .infinity, minHeight: 48)
+            }
+            .buttonStyle(JazzPrimaryButtonStyle(tint: JazzTheme.brass))
+            .disabled(store.audio.isPreparing)
+            .accessibilityIdentifier("focus-play-pause")
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 12)
+        .background(.ultraThinMaterial)
+        .overlay(alignment: .top) {
+            Rectangle().fill(JazzTheme.brass.opacity(0.28)).frame(height: 1)
+        }
+    }
+
+    var beatLabel: String {
+        guard let current else { return "End of chart" }
+        let barStartBeat = Double(current.barNumber - 1) * 4
+        let beat = min(4, max(1, Int(floor(store.audio.playheadBeat - barStartBeat)) + 1))
+        return "Bar \(current.barNumber) · beat \(beat) of 4"
+    }
+
+    var loopLabel: String {
+        store.audio.sectionLoopRange == nil ? (store.audio.loops ? "Chart loop" : "No loop") : "Section loop"
+    }
+
+    func location(for span: JazzPlayAlongSpan) -> String {
+        [span.sectionName, "Bar \(span.barNumber)"].compactMap { $0 }.joined(separator: " · ")
+    }
+}
+
 private struct TransportBar: View {
     @ObservedObject var store: JazzStudioStore
     let compact: Bool
+    let onFocus: () -> Void
 
     var body: some View {
         VStack(spacing: 7) {
@@ -1706,6 +2000,21 @@ private struct TransportBar: View {
         .opacity(store.audio.chordTargetBeat(.next, chart: store.chart) == nil ? 0.34 : 1)
         .accessibilityIdentifier("transport-next-chord")
         .accessibilityLabel("Next chord")
+
+        Button(action: onFocus) {
+            Image(systemName: "viewfinder")
+                .font(.system(size: JazzTheme.size(14), weight: .bold))
+                .frame(width: 42, height: 42)
+                .background(JazzTheme.violet.opacity(0.14), in: Circle())
+                .overlay(Circle().stroke(JazzTheme.violet.opacity(0.42)))
+        }
+        .foregroundStyle(JazzTheme.violet)
+        .buttonStyle(.plain)
+        .frame(width: 44, height: 44)
+        .contentShape(Rectangle())
+        .accessibilityIdentifier("transport-focus")
+        .accessibilityLabel("Open Focus play-along display")
+        .accessibilityHint("Shows the current and next chord in a large performance view")
     }
 
     private var loopControl: some View {
@@ -2473,10 +2782,22 @@ private struct DocumentCenterView: View {
                                         }
                                         .frame(minHeight: 44)
                                     }
-                                    .buttonStyle(JazzSecondaryButtonStyle(tint: kind == .midi ? JazzTheme.brass : JazzTheme.emerald))
+                                    .buttonStyle(JazzSecondaryButtonStyle(tint: kind.isMIDI ? JazzTheme.brass : JazzTheme.emerald))
+                                    .accessibilityIdentifier(kind.accessibilityIdentifier)
                                 }
                             }
-                            Text("Exports are files—not pasted text. The FrankenJazz format preserves every chart setting; MIDI contains the current realized voicings.")
+                            Text("Editable chord MIDI keeps one held realized voicing per chart event for round-trip editing. Performed arrangement MIDI keeps the authored groove on separate Bass and Comp tracks, including exact onsets, gates, and velocities, for charts up to 16 bars. MIDI does not carry FrankenJazz instrument timbre, room/master processing, note spelling, or annotations.")
+                                .font(.system(size: JazzTheme.size(10.5), design: .rounded))
+                                .foregroundStyle(JazzTheme.secondary)
+                            Divider().overlay(JazzTheme.brass.opacity(0.22))
+                            Label("Dry performed audio", systemImage: "waveform.badge.plus")
+                                .font(.system(size: JazzTheme.size(13), weight: .bold, design: .rounded))
+                                .foregroundStyle(JazzTheme.text)
+                            Text("Renders up to three minutes of this chart’s authored groove, upright-bass line, exact voicings, and selected instrument into a stereo WAV. It is deliberately dry: live room amount, master volume, dynamics, and soft clipping are not baked into the file.")
+                                .font(.system(size: JazzTheme.size(10.5), design: .rounded))
+                                .foregroundStyle(JazzTheme.secondary)
+                            waveExportControls
+                            Text("Exports are files—not pasted text. The FrankenJazz format preserves every chart setting; each MIDI option preserves its explicitly named musical projection.")
                                 .font(.system(size: JazzTheme.size(10.5), design: .rounded))
                                 .foregroundStyle(JazzTheme.secondary)
                         }
@@ -2506,10 +2827,70 @@ private struct DocumentCenterView: View {
             }
         }
         .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+        .onDisappear {
+            if store.waveExportState == .preparing { store.cancelDryWaveExport() }
+        }
         .fileImporter(isPresented: $importing, allowedContentTypes: [.frankenJazz, .json, .plainText, .midi], allowsMultipleSelection: false) { result in
             guard case let .success(urls) = result, let url = urls.first else { return }
             Task { await store.importFile(url) }
         }
+    }
+
+    @ViewBuilder
+    private var waveExportControls: some View {
+        switch store.waveExportState {
+        case .idle:
+            Button { store.prepareDryWaveExport() } label: {
+                Label("Prepare dry performance WAV", systemImage: "waveform")
+                    .frame(maxWidth: .infinity, minHeight: 44)
+            }
+            .buttonStyle(JazzPrimaryButtonStyle(tint: JazzTheme.brass))
+            .accessibilityIdentifier("prepare-dry-wave")
+            .accessibilityHint("Creates a silent offline render to share; this does not play the chart.")
+        case .preparing:
+            HStack(spacing: 12) {
+                ProgressView()
+                    .tint(JazzTheme.brass)
+                    .accessibilityLabel("Preparing dry performance WAV")
+                Text("Rendering off-line…")
+                    .font(.system(size: JazzTheme.size(11), weight: .semibold, design: .rounded))
+                    .foregroundStyle(JazzTheme.text)
+                Spacer()
+                Button("Cancel") { store.cancelDryWaveExport() }
+                    .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.coral))
+            }
+            .frame(minHeight: 44)
+        case let .ready(url, durationSeconds, peakReductionGain):
+            ShareLink(item: url) {
+                HStack {
+                    Label("Share dry performance WAV", systemImage: "square.and.arrow.up")
+                    Spacer()
+                    Text(durationLabel(durationSeconds))
+                        .font(.system(size: JazzTheme.size(9), weight: .bold, design: .monospaced))
+                }
+                .frame(minHeight: 44)
+            }
+            .buttonStyle(JazzPrimaryButtonStyle(tint: JazzTheme.brass))
+            if peakReductionGain < 0.999_999 {
+                Text("Peak reduced by \(Int(((1 - peakReductionGain) * 100).rounded()))% to prevent clipping; quiet audio was not boosted.")
+                    .font(.system(size: JazzTheme.size(9.5), design: .rounded))
+                    .foregroundStyle(JazzTheme.secondary)
+            }
+            Button("Rebuild WAV") { store.prepareDryWaveExport() }
+                .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.emerald))
+        case let .failed(issue):
+            Label(issue, systemImage: "exclamationmark.triangle.fill")
+                .font(.system(size: JazzTheme.size(10.5), weight: .semibold, design: .rounded))
+                .foregroundStyle(JazzTheme.coral)
+                .accessibilityIdentifier("dry-wave-export-error")
+            Button("Try WAV again") { store.prepareDryWaveExport() }
+                .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.brass))
+        }
+    }
+
+    private func durationLabel(_ seconds: Double) -> String {
+        let total = max(0, Int(seconds.rounded()))
+        return String(format: "%d:%02d", total / 60, total % 60)
     }
 }
 

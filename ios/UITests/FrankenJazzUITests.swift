@@ -46,7 +46,17 @@ final class FrankenJazzUITests: XCTestCase {
         XCTAssertTrue(lab.waitForExistence(timeout: 3))
         XCTAssertTrue(app.staticTexts["G2 · BOUNDED"].exists)
         XCTAssertTrue(app.buttons["Use for next change"].firstMatch.exists)
+        let preview = app.buttons["preview-continuation-1"]
+        XCTAssertTrue(preview.exists)
+        XCTAssertTrue(preview.isHittable)
+        XCTAssertTrue(preview.label.hasPrefix("Hear "))
+        let previewedSymbol = String(preview.label.dropFirst("Hear ".count))
+        XCTAssertFalse(previewedSymbol.isEmpty)
+        XCTAssertTrue(app.staticTexts[previewedSymbol].exists)
+        XCTAssertGreaterThanOrEqual(preview.frame.height, 44)
 
+        // Do not tap Hear: this lane proves the audible choice is discoverable
+        // and hittable while keeping automated Simulator runs silent.
         let proof = XCTAttachment(screenshot: app.screenshot())
         proof.name = "FrankenJazz G2 continuation engine"
         proof.lifetime = .keepAlways
@@ -262,6 +272,7 @@ final class FrankenJazzUITests: XCTestCase {
         let stop = app.buttons["transport-stop"]
         let restart = app.buttons["transport-restart"]
         let next = app.buttons["transport-next-chord"]
+        let focus = app.buttons["transport-focus"]
         let loop = app.buttons["transport-loop"]
         let mute = app.buttons["transport-mute"]
         let volume = app.sliders["transport-master-volume"]
@@ -269,7 +280,7 @@ final class FrankenJazzUITests: XCTestCase {
         let countIn = app.buttons["transport-count-in"]
         let metronome = app.buttons["transport-metronome"]
 
-        for control in [previous, playPause, stop, restart, next, countIn, metronome, loop, mute] {
+        for control in [previous, playPause, stop, restart, next, focus, countIn, metronome, loop, mute] {
             XCTAssertTrue(control.waitForExistence(timeout: 3))
             XCTAssertTrue(app.windows.firstMatch.frame.intersects(control.frame))
         }
@@ -305,6 +316,57 @@ final class FrankenJazzUITests: XCTestCase {
         proof.name = "FrankenJazz complete compact transport"
         proof.lifetime = .keepAlways
         add(proof)
+    }
+
+    func testFocusPlayAlongIsGlanceableAndDiscoverableWithoutPlayingAudio() throws {
+        let focus = app.buttons["transport-focus"]
+        let appearance = app.buttons["appearance-toggle"]
+        XCTAssertTrue(focus.waitForExistence(timeout: 3))
+        XCTAssertTrue(appearance.waitForExistence(timeout: 3))
+        let initialAppearance = appearance.label == "Switch to dark mode" ? "light" : "dark"
+        XCTAssertTrue(focus.isHittable)
+        XCTAssertGreaterThanOrEqual(focus.frame.width, 44)
+        XCTAssertGreaterThanOrEqual(focus.frame.height, 44)
+        focus.tap()
+
+        let current = app.staticTexts["focus-current-chord"]
+        let next = app.staticTexts["focus-next-chord"]
+        let stop = app.buttons["focus-stop"]
+        let playPause = app.buttons["focus-play-pause"]
+        let exit = app.buttons["focus-exit"]
+        for control in [current, next, stop, playPause, exit] {
+            XCTAssertTrue(control.waitForExistence(timeout: 3))
+            XCTAssertTrue(app.windows.firstMatch.frame.intersects(control.frame))
+        }
+        XCTAssertEqual(current.label, "Cmaj9")
+        XCTAssertNotEqual(next.label, "")
+        XCTAssertEqual(app.descendants(matching: .any)["focus-status"].label, "Ready")
+        XCTAssertTrue(stop.isHittable)
+        XCTAssertTrue(exit.isHittable)
+        XCTAssertGreaterThanOrEqual(stop.frame.height, 44)
+        XCTAssertGreaterThanOrEqual(exit.frame.height, 44)
+
+        // No audio action is tapped. This proof covers discoverability, layout,
+        // exact initial timeline projection, and escape controls only.
+        let proof = XCTAttachment(screenshot: app.screenshot())
+        proof.name = "FrankenJazz Focus play-along \(initialAppearance)"
+        proof.lifetime = .keepAlways
+        add(proof)
+
+        exit.tap()
+        XCTAssertTrue(focus.waitForExistence(timeout: 2))
+        appearance.tap()
+        focus.tap()
+        XCTAssertTrue(current.waitForExistence(timeout: 2))
+        XCTAssertTrue(stop.isHittable)
+        XCTAssertTrue(exit.isHittable)
+
+        let alternateAppearance = initialAppearance == "light" ? "dark" : "light"
+        let alternateProof = XCTAttachment(screenshot: app.screenshot())
+        alternateProof.name = "FrankenJazz Focus play-along \(alternateAppearance)"
+        alternateProof.lifetime = .keepAlways
+        add(alternateProof)
+        exit.tap()
     }
 
     func testInspectorPianoExposesRealHittableKeysWithoutPlayingAudio() throws {
@@ -422,6 +484,34 @@ final class FrankenJazzUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts.matching(
             NSPredicate(format: "label CONTAINS 'exact Manual pitches'")
         ).firstMatch.exists)
+
+        let performedMIDI = app.buttons["export-performed-midi"]
+        for _ in 0..<8 where !performedMIDI.isHittable { app.swipeUp() }
+        XCTAssertTrue(performedMIDI.waitForExistence(timeout: 3))
+        XCTAssertTrue(performedMIDI.isHittable)
+        XCTAssertGreaterThanOrEqual(performedMIDI.frame.height, 44)
+        XCTAssertTrue(app.staticTexts.matching(
+            NSPredicate(format: "label CONTAINS 'separate Bass and Comp tracks'")
+        ).firstMatch.exists)
+        XCTAssertTrue(app.staticTexts.matching(
+            NSPredicate(format: "label CONTAINS 'does not carry FrankenJazz instrument timbre'")
+        ).firstMatch.exists)
+
+        let prepareWave = app.buttons["prepare-dry-wave"]
+        for _ in 0..<8 where !prepareWave.isHittable { app.swipeUp() }
+        XCTAssertTrue(prepareWave.waitForExistence(timeout: 3))
+        XCTAssertTrue(prepareWave.isHittable)
+        XCTAssertGreaterThanOrEqual(prepareWave.frame.height, 44)
+        XCTAssertTrue(app.staticTexts.matching(
+            NSPredicate(format: "label CONTAINS 'deliberately dry'")
+        ).firstMatch.exists)
+
+        // Do not tap Prepare: the product path is an offline render, but this
+        // UI lane remains a strict no-audio/no-render discoverability check.
+        let proof = XCTAttachment(screenshot: app.screenshot())
+        proof.name = "FrankenJazz dry performed WAV export"
+        proof.lifetime = .keepAlways
+        add(proof)
     }
 
     func testMyChartsKeepsSearchesAndExposesEverySnapshotAction() throws {

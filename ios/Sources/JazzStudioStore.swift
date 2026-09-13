@@ -28,6 +28,38 @@ struct JazzImportFence {
     }
 }
 
+/// A prepared audio file is valid only for the exact chart revision and most
+/// recent request that produced it. This keeps a slow physical-model render
+/// from publishing after an edit or a newer Prepare tap.
+struct JazzWaveExportFence {
+    struct Token: Equatable {
+        let request: Int
+        let revision: Int
+    }
+
+    private var nextRequest = 0
+
+    mutating func claim(revision: Int) -> Token {
+        nextRequest &+= 1
+        return Token(request: nextRequest, revision: revision)
+    }
+
+    mutating func invalidate() {
+        nextRequest &+= 1
+    }
+
+    func owns(_ token: Token, currentRevision: Int) -> Bool {
+        token.request == nextRequest && token.revision == currentRevision
+    }
+}
+
+enum JazzWaveExportState: Equatable {
+    case idle
+    case preparing
+    case ready(url: URL, durationSeconds: Double, peakReductionGain: Double)
+    case failed(String)
+}
+
 enum JazzVoicingMode: Equatable {
     case automatic
     case frozen
@@ -60,6 +92,7 @@ final class JazzStudioStore: ObservableObject {
     @Published private(set) var continuationOptions: [JazzContinuationOption] = []
     @Published private(set) var continuationIssue: String?
     @Published private(set) var loopedSectionID: UUID?
+    @Published private(set) var waveExportState: JazzWaveExportState = .idle
 
     let audio = JazzAudioEngine()
     let myCharts: JazzMyChartsStore
@@ -71,6 +104,10 @@ final class JazzStudioStore: ObservableObject {
     private var draftTask: Task<Void, Never>?
     private var primeTask: Task<Void, Never>?
     private var importFence = JazzImportFence()
+    private var waveExportFence = JazzWaveExportFence()
+    private var waveExportTask: Task<Void, Never>?
+    private var waveExportCancellation: JazzRenderCancellationToken?
+    private var preparedWaveDirectoryURL: URL?
     private var audioChanges: AnyCancellable?
     private let recovery: JazzRecoveryStore
     private let theoryBridge: JazzTheoryBridge
@@ -126,6 +163,9 @@ final class JazzStudioStore: ObservableObject {
     deinit {
         draftTask?.cancel()
         primeTask?.cancel()
+        waveExportCancellation?.cancel()
+        waveExportTask?.cancel()
+        if let preparedWaveDirectoryURL { try? FileManager.default.removeItem(at: preparedWaveDirectoryURL) }
     }
 
     var selectedChord: JazzChordEvent? {
@@ -289,6 +329,31 @@ final class JazzStudioStore: ObservableObject {
 
     func previewSelectedChord() {
         audio.preview(midis: selectedMIDIPitches, tone: chart.instrument)
+    }
+
+    func continuationPreviewPlan(for option: JazzContinuationOption) -> JazzContinuationPreviewPlan? {
+        guard option.sourceRevision == revision,
+              continuationOptions.contains(option),
+              let description = JazzTheory.parseChord(option.candidate.chordSymbol, in: chart.key) else {
+            return nil
+        }
+        let pitches = JazzTheory.voicing(for: description, family: chart.voicingFamily)
+        guard !pitches.isEmpty else { return nil }
+        return JazzContinuationPreviewPlan(midiPitches: pitches, instrument: chart.instrument)
+    }
+
+    func previewContinuation(_ option: JazzContinuationOption) {
+        guard option.sourceRevision == revision,
+              continuationOptions.contains(option) else {
+            notice = "That suggestion is stale because the chart changed. Review the refreshed options."
+            refreshContinuations()
+            return
+        }
+        guard let plan = continuationPreviewPlan(for: option) else {
+            notice = "That continuation cannot be previewed by this native chart yet."
+            return
+        }
+        audio.preview(midis: plan.midiPitches, tone: plan.instrument)
     }
 
     func updateMasterVolume(_ volume: Double) {
@@ -858,7 +923,8 @@ final class JazzStudioStore: ObservableObject {
             .lowercased()
             .replacingOccurrences(of: #"[^a-z0-9]+"#, with: "-", options: .regularExpression)
             .trimmingCharacters(in: CharacterSet(charactersIn: "-"))
-        let base = slug.isEmpty ? "frankenjazz-chart" : slug
+        let root = slug.isEmpty ? "frankenjazz-chart" : slug
+        let base = root + kind.filenameSuffix
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(base).appendingPathExtension(kind.extensionName)
         do {
             let data = try exportData(kind: kind)
@@ -868,6 +934,71 @@ final class JazzStudioStore: ObservableObject {
             notice = "Export failed: \(error.localizedDescription)"
             return nil
         }
+    }
+
+    func prepareDryWaveExport() {
+        invalidateWaveExport(publishIdle: false)
+        let snapshot = chart
+        let token = waveExportFence.claim(revision: revision)
+        let cancellation = JazzRenderCancellationToken()
+        waveExportCancellation = cancellation
+        waveExportState = .preparing
+        let exportDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FrankenJazz-Wave-\(UUID().uuidString)", isDirectory: true)
+        let url = exportDirectory
+            .appendingPathComponent(waveExportFilename(for: snapshot.title))
+            .appendingPathExtension("wav")
+
+        waveExportTask = Task { [weak self] in
+            let result = await Task.detached(priority: .utility) { () -> Result<JazzWaveFile, Error> in
+                do {
+                    let wave = try JazzDryWaveExporter.makeFile(chart: snapshot, cancellation: cancellation)
+                    guard !cancellation.isCancelled else { return .failure(CancellationError()) }
+                    try FileManager.default.createDirectory(
+                        at: exportDirectory,
+                        withIntermediateDirectories: true
+                    )
+                    try wave.data.write(to: url, options: .atomic)
+                    return .success(wave)
+                } catch {
+                    return .failure(error)
+                }
+            }.value
+
+            guard let self else {
+                try? FileManager.default.removeItem(at: exportDirectory)
+                return
+            }
+            self.waveExportTask = nil
+            self.waveExportCancellation = nil
+            guard self.waveExportFence.owns(token, currentRevision: self.revision), !Task.isCancelled else {
+                try? FileManager.default.removeItem(at: exportDirectory)
+                return
+            }
+            switch result {
+            case let .success(wave):
+                self.preparedWaveDirectoryURL = exportDirectory
+                self.waveExportState = .ready(
+                    url: url,
+                    durationSeconds: wave.durationSeconds,
+                    peakReductionGain: wave.peakReductionGain
+                )
+                self.notice = "Dry performance WAV is ready to share."
+            case let .failure(error):
+                try? FileManager.default.removeItem(at: exportDirectory)
+                if error is CancellationError {
+                    self.waveExportState = .idle
+                } else {
+                    self.waveExportState = .failed(error.localizedDescription)
+                }
+            }
+        }
+    }
+
+    func cancelDryWaveExport() {
+        let wasPreparing = waveExportState == .preparing
+        invalidateWaveExport(publishIdle: true)
+        if wasPreparing { notice = "Dry WAV preparation cancelled." }
     }
 
     func requestSaveCopy() {
@@ -900,6 +1031,7 @@ final class JazzStudioStore: ObservableObject {
         case .nativeJSON: try encoder.encode(chart)
         case .chartText: JazzLeadSheetTextCodec.encode(chart)
         case .midi: MIDIFileWriter.makeFile(chart: chart)
+        case .performedMIDI: try PerformedMIDIFileWriter.makeFile(chart: chart).data
         }
     }
 
@@ -1057,6 +1189,7 @@ final class JazzStudioStore: ObservableObject {
     }
 
     private func finishStateChange(notice: String?) {
+        invalidateWaveExport(publishIdle: true)
         revision += 1
         canUndo = !undoStack.isEmpty
         canRedo = !redoStack.isEmpty
@@ -1074,6 +1207,24 @@ final class JazzStudioStore: ObservableObject {
             guard !Task.isCancelled, let self else { return }
             self.audio.prime(chart: self.chart)
         }
+    }
+
+    private func invalidateWaveExport(publishIdle: Bool) {
+        waveExportFence.invalidate()
+        waveExportCancellation?.cancel()
+        waveExportTask?.cancel()
+        waveExportTask = nil
+        waveExportCancellation = nil
+        if let preparedWaveDirectoryURL { try? FileManager.default.removeItem(at: preparedWaveDirectoryURL) }
+        preparedWaveDirectoryURL = nil
+        if publishIdle { waveExportState = .idle }
+    }
+
+    private func waveExportFilename(for title: String) -> String {
+        let bounded = String(title.prefix(80))
+            .replacingOccurrences(of: #"[/:]"#, with: "-", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return (bounded.isEmpty ? "FrankenJazz chart" : bounded) + " - dry performance"
     }
 
     private func repairedSections(in candidate: JazzChart, from previous: JazzChart) -> [JazzChartSection]? {
@@ -1324,14 +1475,25 @@ enum JazzLeadSheetTextCodec {
 enum ExportKind: String, CaseIterable, Identifiable, Hashable {
     case nativeJSON = "FrankenJazz chart"
     case chartText = "Lead-sheet text"
-    case midi = "Standard MIDI File"
+    case midi = "Editable chord MIDI"
+    case performedMIDI = "Performed arrangement MIDI"
 
     var id: String { rawValue }
     var extensionName: String {
         switch self {
         case .nativeJSON: "frankenjazz"
         case .chartText: "txt"
-        case .midi: "mid"
+        case .midi, .performedMIDI: "mid"
+        }
+    }
+    var filenameSuffix: String { self == .performedMIDI ? "-performed" : "" }
+    var isMIDI: Bool { self == .midi || self == .performedMIDI }
+    var accessibilityIdentifier: String {
+        switch self {
+        case .nativeJSON: "export-frankenjazz"
+        case .chartText: "export-chart-text"
+        case .midi: "export-editable-midi"
+        case .performedMIDI: "export-performed-midi"
         }
     }
     var symbol: String {
@@ -1339,6 +1501,7 @@ enum ExportKind: String, CaseIterable, Identifiable, Hashable {
         case .nativeJSON: "doc.badge.gearshape"
         case .chartText: "doc.plaintext"
         case .midi: "pianokeys"
+        case .performedMIDI: "music.note.list"
         }
     }
 }

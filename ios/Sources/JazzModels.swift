@@ -411,6 +411,96 @@ struct JazzChart: Identifiable, Codable, Equatable, Sendable {
     }
 }
 
+struct JazzPlayAlongSpan: Equatable, Sendable {
+    var chordID: UUID
+    var symbol: String
+    var sectionName: String?
+    var barNumber: Int
+    var startBeat: Double
+    var endBeat: Double
+}
+
+struct JazzPlayAlongSnapshot: Equatable, Sendable {
+    var current: JazzPlayAlongSpan?
+    var next: JazzPlayAlongSpan?
+}
+
+/// Pure, bounded projection for the native Focus display. Playback remains the
+/// sole clock and scheduling authority; this type only maps its published beat
+/// onto the validated document's exact half-open chord spans.
+enum JazzPlayAlongTimeline {
+    static func compile(_ chart: JazzChart) -> [JazzPlayAlongSpan] {
+        var sectionNames: [UUID: String] = [:]
+        for section in chart.sections ?? [] {
+            sectionNames[section.startMeasureID] = section.name
+        }
+        var activeSection: String?
+        var spans: [JazzPlayAlongSpan] = []
+        spans.reserveCapacity(chart.chordCount)
+        var chartBeat = 0.0
+        for (measureIndex, measure) in chart.measures.enumerated() {
+            if let sectionName = sectionNames[measure.id] { activeSection = sectionName }
+            var beatInMeasure = 0.0
+            for chord in measure.chords {
+                let start = chartBeat + beatInMeasure
+                let end = start + chord.beats
+                spans.append(JazzPlayAlongSpan(
+                    chordID: chord.id,
+                    symbol: chord.symbol,
+                    sectionName: activeSection,
+                    barNumber: measureIndex + 1,
+                    startBeat: start,
+                    endBeat: end
+                ))
+                beatInMeasure += chord.beats
+            }
+            chartBeat += beatInMeasure
+        }
+        return spans
+    }
+
+    static func snapshot(
+        spans: [JazzPlayAlongSpan],
+        beat: Double,
+        totalBeats: Double,
+        loopRange: Range<Double>? = nil,
+        wrapsWholeChart: Bool = false
+    ) -> JazzPlayAlongSnapshot {
+        guard beat.isFinite, totalBeats.isFinite, totalBeats > 0, !spans.isEmpty else {
+            return JazzPlayAlongSnapshot(current: nil, next: nil)
+        }
+        let validLoop = loopRange.flatMap { range -> Range<Double>? in
+            guard range.lowerBound.isFinite, range.upperBound.isFinite,
+                  range.lowerBound >= 0, range.lowerBound < range.upperBound,
+                  range.upperBound <= totalBeats + 0.000_001 else { return nil }
+            return range
+        }
+        let rangeStart = validLoop?.lowerBound ?? 0
+        let rangeEnd = validLoop?.upperBound ?? totalBeats
+        let wraps = validLoop != nil || wrapsWholeChart
+        let projectedBeat: Double
+        if wraps, beat >= rangeEnd || beat < rangeStart {
+            projectedBeat = rangeStart
+        } else {
+            projectedBeat = beat
+        }
+        guard projectedBeat >= rangeStart, projectedBeat < rangeEnd,
+              let currentIndex = spans.firstIndex(where: {
+                  $0.startBeat <= projectedBeat && projectedBeat < $0.endBeat &&
+                      $0.endBeat > rangeStart && $0.startBeat < rangeEnd
+              }) else {
+            return JazzPlayAlongSnapshot(current: nil, next: nil)
+        }
+        let current = spans[currentIndex]
+        let next = spans.dropFirst(currentIndex + 1).first(where: {
+            $0.startBeat >= current.endBeat - 0.000_001 && $0.startBeat < rangeEnd
+        }) ?? (wraps ? spans.first(where: {
+            $0.startBeat <= rangeStart && rangeStart < $0.endBeat
+        }) : nil)
+        return JazzPlayAlongSnapshot(current: current, next: next)
+    }
+}
+
 struct JazzChordPaletteRoot: Identifiable, Equatable, Sendable {
     let id: String
     let symbol: String
@@ -553,6 +643,11 @@ struct PlaybackEvent: Identifiable, Sendable {
     /// Automatic families may receive the renderer's quiet octave-bass color.
     /// Stored exact voicings must sound only their authored pitches.
     var permitsBassReinforcement: Bool
+}
+
+struct JazzContinuationPreviewPlan: Equatable {
+    var midiPitches: [Int]
+    var instrument: InstrumentTone
 }
 
 struct LibraryEntry: Identifiable, Hashable, Sendable {
