@@ -2,6 +2,16 @@
 
 Consumer: the user and Codex executing the 2026-09-04 request to implement the reality-check backlog and GitHub voice-leading issue #2. Gate: do not declare this campaign complete while a requested item remains unresolved. Observed defect: the audit found 51 closed records with unfulfilled obligations. Retirement: retire this checklist when the campaign is complete; lasting commands/results belong on the Beads. This inventory is process and earns no implementation credit.
 
+## Exact keyboard seeking — jcpe-exact-keyboard-seek-8vjx (CyanCove)
+
+- [x] Trace U4 §5.2: UI half-beat rounding changes fractional seek targets and spoken slider values.
+- [x] Capture a failing native regression against committed production bytes: Chromium expected 353/80, observed 9/2.
+- [x] Dispatch keyboard intents to application-owned exact rational arithmetic and retain the accepted playhead fraction.
+- [x] Prove fractional Arrow/bar/Page steps, exact Home/End and clamps, ready pending starts, refusal and document/history preservation: 4 tests, 123 assertions.
+- [x] Run RCH focused tests, typecheck/lint, native regression (3 browsers), existing U4 evidence (27 tests, 753 assertions and 3 browsers), and guarded build. Retain earlier disk-stalled browser attempts and original U0 token failures.
+- [ ] Fresh review, commit/push explicit owned paths, then deployment gates and real live verification.
+- [ ] Close only this defect with exact evidence; preserve U4 ownership and original human acceptance obligations.
+
 ## M1 audition lifecycle and matched groove — jcpe-qyyn (CyanCove)
 
 - [x] Trace current source-note timers, controller preparation generations and isolated X1 preview ownership.

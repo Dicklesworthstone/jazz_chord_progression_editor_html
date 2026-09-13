@@ -924,11 +924,11 @@ export type StudioTransportCallbacks = Readonly<{
    */
   onRestart: (source: "pointer" | "keyboard") => void;
   /**
-   * U4 exact seek from the slider's keyboard law: an exact rational beat
-   * (integers and half steps only — never a float approximation). Playing/
-   * paused seeks the run; ready positions the next run's start.
+   * Ready-state pointer positioning on the existing half-beat grid.
    */
   onSeekBeat: (numerator: number, denominator: number) => void;
+  /** Keyboard arithmetic belongs to the application and preserves exact beats. */
+  onSeekKey: (key: string, shiftKey: boolean) => void;
   /** U4 click toggles: ephemeral transport-session state, receipt-truth. */
   onCountInToggle: (enabled: boolean) => void;
   onMetronomeToggle: (enabled: boolean) => void;

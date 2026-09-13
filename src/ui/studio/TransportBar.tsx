@@ -329,6 +329,7 @@ export type TransportBarProps = Readonly<{
     | "readMixState"
     | "onRestart"
     | "onSeekBeat"
+    | "onSeekKey"
     | "onCountInToggle"
     | "onMetronomeToggle"
     | "readClickToggles"
@@ -498,26 +499,13 @@ export function TransportBar({
           key: string;
           shiftKey: boolean;
           preventDefault: () => void;
+          stopPropagation: () => void;
         }): void => {
+          event.stopPropagation();
           if (!sliderEnabled) return;
-          const bar = view.beatsPerBar;
-          let target: number | null = null;
-          if (event.key === "ArrowLeft") {
-            target = currentBeat - (event.shiftKey ? bar : 1);
-          } else if (event.key === "ArrowRight") {
-            target = currentBeat + (event.shiftKey ? bar : 1);
-          } else if (event.key === "PageDown") {
-            target = currentBeat - 4;
-          } else if (event.key === "PageUp") {
-            target = currentBeat + 4;
-          } else if (event.key === "Home") {
-            target = 0;
-          } else if (event.key === "End") {
-            target = totalBeats;
-          }
-          if (target === null) return;
+          if (!["ArrowLeft", "ArrowRight", "PageDown", "PageUp", "Home", "End"].includes(event.key)) return;
           event.preventDefault();
-          seekToBeatNumber(target);
+          callbacks.onSeekKey(event.key, event.shiftKey);
         };
         return (
           <div
@@ -531,7 +519,7 @@ export function TransportBar({
             aria-disabled={!sliderEnabled}
             aria-valuemax={totalBeats}
             aria-valuemin={0}
-            aria-valuenow={Math.round(currentBeat * 2) / 2}
+            aria-valuenow={currentBeat}
             aria-valuetext={
               view.audioState === "ready" && pendingStart !== null
                 ? `Next run starts at beat ${String(pendingStart)}`

@@ -300,6 +300,7 @@ export type StudioControllerAction =
   | "set-count-in"
   | "set-metronome"
   | "seek-to-beat"
+  | "seek-from-keyboard"
   | "step-chord-or-seek"
   | "play-section-run"
   | "seek-progression"
@@ -829,6 +830,11 @@ export interface StudioController {
    */
   readonly seekToBeat: (
     beat: BeatPosition,
+  ) => StudioControllerActionResult;
+  /** Resolve slider keys from the accepted exact playhead, never UI decimals. */
+  readonly seekFromKeyboard: (
+    key: string,
+    shiftKey: boolean,
   ) => StudioControllerActionResult;
   /**
    * U4 Shift+Space: arm the section loop (selection-owning or first section)
@@ -6061,6 +6067,57 @@ function makeStudioComposition(
     );
   };
 
+  const seekFromKeyboard = (
+    key: string,
+    shiftKey: boolean,
+  ): StudioControllerActionResult => {
+    const refuse = (message: string): StudioControllerActionResult =>
+      editRefusal("seek-from-keyboard", "u1.playback_refused", message);
+    if (!["ArrowLeft", "ArrowRight", "PageDown", "PageUp", "Home", "End"].includes(key)) {
+      return refuse("That key is not a transport seek command.");
+    }
+    const status = state.transport.status;
+    const run = activeRun;
+    let total: BeatPosition;
+    if (run !== null && (status === "playing" || status === "paused")) {
+      total = run.totalBeats;
+    } else if (status === "ready") {
+      const compiled = compileStudioPlaybackPlan(state.document);
+      if (!compiled.ok) return refuse(compiled.refusal.message);
+      if (!studioPlanIsPlayable(compiled.plan)) {
+        return refuse("Write at least one chord before seeking.");
+      }
+      total = compiled.plan.totalBeats;
+    } else {
+      return refuse("The transport is settling; seek is available again in a moment.");
+    }
+    const zero = makeBeatPosition({ numerator: 0, denominator: 1 });
+    if (!zero.ok) return refuse("The seek origin could not be expressed exactly.");
+    if (key === "Home") return seekToBeat(zero.value);
+    if (key === "End") return seekToBeat(total);
+    const origin = status === "ready"
+      ? (pendingRunStartBeat ?? state.transport.playhead)
+      : state.transport.playhead;
+    const current = compareBeatValues(origin, total) > 0 ? total : origin;
+    const pageStep = key === "PageUp" || key === "PageDown";
+    const wholeStep = makeBeatPosition({ numerator: pageStep ? 4 : 1, denominator: 1 });
+    if (!wholeStep.ok) return refuse("The seek step could not be expressed exactly.");
+    const step = shiftKey && !pageStep ? measureCapacity(state.document.meter) : wholeStep.value;
+    let target;
+    if (key === "ArrowLeft" || key === "PageDown") {
+      if (compareBeatValues(current, step) <= 0) return seekToBeat(zero.value);
+      target = subtractBeatValues(current, step);
+    } else {
+      const remaining = subtractBeatValues(total, current);
+      if (!remaining.ok) return refuse("The seek range could not be expressed exactly.");
+      if (compareBeatValues(step, remaining.value) >= 0) return seekToBeat(total);
+      target = addBeatValues(current, step);
+    }
+    if (!target.ok) return refuse("The seek position could not be expressed exactly.");
+    const beat = makeBeatPosition(target.value);
+    return beat.ok ? seekToBeat(beat.value) : refuse("The seek position could not be expressed exactly.");
+  };
+
   /**
    * U4 previous/next context law (l3a.12.2). A run exists: seek the playhead
    * to the adjacent event boundary (clamped at plan bounds, never wrapping).
@@ -7432,6 +7489,7 @@ function makeStudioComposition(
     readClickToggles,
     stepChordOrSeek,
     seekToBeat,
+    seekFromKeyboard,
     playSectionRun,
     readPendingRunStartBeats,
     readInstrumentBoundaryNotice,

@@ -257,6 +257,7 @@ export type AppActions = Readonly<{
   readClickToggles: StudioController["readClickToggles"];
   stepChordOrSeek: StudioController["stepChordOrSeek"];
   seekToBeat: StudioController["seekToBeat"];
+  seekFromKeyboard: StudioController["seekFromKeyboard"];
   playSectionRun: StudioController["playSectionRun"];
   readInstrumentBoundaryNotice: StudioController["readInstrumentBoundaryNotice"];
   readPendingRunStartBeats: StudioController["readPendingRunStartBeats"];
@@ -2862,6 +2863,9 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
           if (!beat.ok) return;
           recordEditResult(actions.seekToBeat(beat.value));
         },
+        onSeekKey: (key, shiftKey) => {
+          recordEditResult(actions.seekFromKeyboard(key, shiftKey));
+        },
         onCountInToggle: (enabled) => {
           recordEditResult(actions.setCountInEnabled(enabled));
         },
@@ -4058,6 +4062,7 @@ export function StudioRoot({
         readClickToggles: controller.readClickToggles,
         stepChordOrSeek: controller.stepChordOrSeek,
         seekToBeat: controller.seekToBeat,
+        seekFromKeyboard: controller.seekFromKeyboard,
         playSectionRun: controller.playSectionRun,
         readInstrumentBoundaryNotice: controller.readInstrumentBoundaryNotice,
         readPendingRunStartBeats: controller.readPendingRunStartBeats,

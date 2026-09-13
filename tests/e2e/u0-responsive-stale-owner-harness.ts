@@ -380,6 +380,7 @@ function ResponsiveStaleOwnerHarness() {
         readLoopRegion: () => null,
         onRestart: () => undefined,
         onSeekBeat: () => undefined,
+        onSeekKey: () => undefined,
         onCountInToggle: () => undefined,
         onMetronomeToggle: () => undefined,
         readClickToggles: () => ({
