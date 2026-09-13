@@ -44,6 +44,30 @@ enum GrooveStyle: String, CaseIterable, Codable, Identifiable, Sendable {
 
 }
 
+enum InstrumentFamily: String, CaseIterable, Identifiable, Sendable {
+    case keys = "Keys & organ"
+    case synthesizers = "Synthesizers"
+    case mallets = "Mallets"
+    case winds = "Winds"
+    case strings = "Strings & bass"
+
+    var id: String { rawValue }
+
+    var symbol: String {
+        switch self {
+        case .keys: "pianokeys"
+        case .synthesizers: "waveform"
+        case .mallets: "bell"
+        case .winds: "wind"
+        case .strings: "guitars"
+        }
+    }
+
+    var instruments: [InstrumentTone] {
+        InstrumentTone.allCases.filter { $0.family == self }
+    }
+}
+
 enum InstrumentTone: String, CaseIterable, Codable, Identifiable, Sendable {
     case mellowKeys = "Mellow keys"
     case electricPiano = "Electric piano"
@@ -101,6 +125,21 @@ enum InstrumentTone: String, CaseIterable, Codable, Identifiable, Sendable {
         case .clarinet: "Clarinet"
         case .dreadnoughtGuitar: "Steel Dreadnought"
         case .ukulele: "Re-entrant Ukulele"
+        }
+    }
+
+    var family: InstrumentFamily {
+        switch self {
+        case .mellowKeys, .electricPiano, .concertGrand, .organ:
+            .keys
+        case .warmPad, .analogPoly:
+            .synthesizers
+        case .vibraphone, .concertVibes:
+            .mallets
+        case .flute, .clarinet:
+            .winds
+        case .guitar, .uprightBass, .bluesGuitar, .dreadnoughtGuitar, .ukulele:
+            .strings
         }
     }
 
@@ -647,6 +686,11 @@ struct PlaybackEvent: Identifiable, Sendable {
 
 struct JazzContinuationPreviewPlan: Equatable {
     var midiPitches: [Int]
+    var instrument: InstrumentTone
+}
+
+struct JazzInstrumentPreviewPlan: Equatable {
+    var midiPitch: Int
     var instrument: InstrumentTone
 }
 

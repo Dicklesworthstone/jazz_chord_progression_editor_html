@@ -1123,6 +1123,41 @@ final class FrankenJazzCoreTests: XCTestCase {
         }
     }
 
+    func testInstrumentFamiliesPartitionTheCompleteOriginalCatalog() {
+        let families = InstrumentFamily.allCases
+        let grouped = families.flatMap(\.instruments)
+
+        XCTAssertEqual(families.count, 5)
+        XCTAssertEqual(grouped.count, InstrumentTone.allCases.count)
+        XCTAssertEqual(Set(grouped), Set(InstrumentTone.allCases))
+        XCTAssertEqual(Set(grouped).count, grouped.count, "An instrument must appear in exactly one rack family.")
+        for family in families {
+            XCTAssertFalse(family.instruments.isEmpty)
+            XCTAssertTrue(family.instruments.allSatisfy { $0.family == family })
+            XCTAssertNotNil(UIImage(systemName: family.symbol))
+        }
+    }
+
+    @MainActor
+    func testInstrumentAuditionPlanUsesRequestedToneWithoutMutatingDocumentState() {
+        let store = JazzStudioStore()
+        let chartBefore = store.chart
+        let revisionBefore = store.revision
+        let selectedChordBefore = store.selectedChordID
+        let canUndoBefore = store.canUndo
+        let canRedoBefore = store.canRedo
+
+        let plan = store.instrumentPreviewPlan(for: .dreadnoughtGuitar)
+
+        XCTAssertEqual(plan, JazzInstrumentPreviewPlan(midiPitch: 60, instrument: .dreadnoughtGuitar))
+        XCTAssertTrue(plan.instrument.originalPlayableMIDIRange.contains(plan.midiPitch))
+        XCTAssertEqual(store.chart, chartBefore)
+        XCTAssertEqual(store.revision, revisionBefore)
+        XCTAssertEqual(store.selectedChordID, selectedChordBefore)
+        XCTAssertEqual(store.canUndo, canUndoBefore)
+        XCTAssertEqual(store.canRedo, canRedoBefore)
+    }
+
     func testEveryInstrumentRendersFiniteDistinctNonSilentPreviewWithoutAudioOutput() throws {
         var fingerprints = Set<[UInt32]>()
         for tone in InstrumentTone.allCases {

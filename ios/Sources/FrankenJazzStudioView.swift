@@ -168,6 +168,7 @@ private struct ChartEditorView: View {
     let presentsInspectorOnSelection: Bool
     @FocusState private var editorFocused: Bool
     @State private var quickEntryExpanded = false
+    @State private var instrumentRackPresented = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var columns: [GridItem] {
@@ -192,6 +193,9 @@ private struct ChartEditorView: View {
         .scrollIndicators(.hidden)
         .scrollDismissesKeyboard(.interactively)
         .onTapGesture { editorFocused = false }
+        .sheet(isPresented: $instrumentRackPresented) {
+            NavigationStack { InstrumentRackView(store: store) }
+        }
     }
 
     private var documentHeader: some View {
@@ -221,6 +225,7 @@ private struct ChartEditorView: View {
                 VStack(spacing: 9) {
                     HStack(spacing: 8) { keyControl; tempoControl }
                     HStack(spacing: 8) { grooveControl; instrumentControl }
+                    instrumentRackButton
                 }
             }
         }
@@ -233,6 +238,7 @@ private struct ChartEditorView: View {
         Divider().overlay(.white.opacity(0.08)).frame(height: 31)
         grooveControl
         instrumentControl
+        instrumentRackButton
     }
 
     private var keyControl: some View {
@@ -296,6 +302,21 @@ private struct ChartEditorView: View {
             .padding(.horizontal, 8)
             .background(JazzTheme.raised, in: Capsule())
         }
+        .accessibilityIdentifier("instrument-quick-selector")
+        .accessibilityLabel("Current instrument")
+        .accessibilityValue(store.chart.instrument.displayName)
+    }
+
+    private var instrumentRackButton: some View {
+        Button { instrumentRackPresented = true } label: {
+            Label("All 15", systemImage: "square.grid.2x2")
+                .lineLimit(1)
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.cyan))
+        .accessibilityIdentifier("open-instrument-rack")
+        .accessibilityLabel("Browse all 15 instruments")
+        .accessibilityHint("Shows every original instrument, its native renderer, playable range, and audition controls")
     }
 
     private var chartCanvas: some View {
@@ -484,6 +505,149 @@ private struct ChartEditorView: View {
         .font(.system(size: JazzTheme.size(10.5), weight: .medium, design: .rounded))
         .foregroundStyle(JazzTheme.secondary)
         .padding(.bottom, 6)
+    }
+}
+
+private struct InstrumentRackView: View {
+    @ObservedObject var store: JazzStudioStore
+    @Environment(\.dismiss) private var dismiss
+
+    private let columns = [
+        GridItem(.adaptive(minimum: 265, maximum: 390), spacing: 12, alignment: .top)
+    ]
+
+    var body: some View {
+        ZStack {
+            JazzForgeBackground()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    introduction
+                    ForEach(InstrumentFamily.allCases) { family in
+                        familySection(family)
+                    }
+                }
+                .padding(16)
+                .frame(maxWidth: 940)
+                .frame(maxWidth: .infinity)
+            }
+            .scrollIndicators(.hidden)
+        }
+        .navigationTitle("Instrument rack")
+        .navigationBarTitleDisplayMode(.inline)
+        .presentationDetents([.large])
+        .presentationDragIndicator(.visible)
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
+        }
+        .onDisappear { store.audio.stopPreview() }
+    }
+
+    private var introduction: some View {
+        JazzPanel(accent: JazzTheme.brass, padding: 15) {
+            VStack(alignment: .leading, spacing: 7) {
+                HStack {
+                    JazzSectionLabel(number: "A1", title: "Original sound set", tint: JazzTheme.brass)
+                    Spacer()
+                    Text("15 INSTRUMENTS")
+                        .font(.system(size: JazzTheme.size(9), weight: .bold, design: .monospaced))
+                        .foregroundStyle(JazzTheme.secondary)
+                }
+                Text("Choose the voice used by the chart, or hear any instrument first without changing your selection.")
+                    .font(.system(size: JazzTheme.size(13), weight: .medium, design: .rounded))
+                    .foregroundStyle(JazzTheme.text)
+                Label("Every sound is rendered locally through the original engine path.", systemImage: "lock.shield")
+                    .font(.system(size: JazzTheme.size(10), weight: .medium, design: .rounded))
+                    .foregroundStyle(JazzTheme.secondary)
+            }
+        }
+    }
+
+    private func familySection(_ family: InstrumentFamily) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label(family.rawValue, systemImage: family.symbol)
+                .font(.system(size: JazzTheme.size(15), weight: .bold, design: .rounded))
+                .foregroundStyle(JazzTheme.cyan)
+                .accessibilityAddTraits(.isHeader)
+            LazyVGrid(columns: columns, alignment: .leading, spacing: 12) {
+                ForEach(family.instruments) { instrument in
+                    instrumentCard(instrument)
+                }
+            }
+        }
+        .accessibilityIdentifier("instrument-family-\(family.id)")
+    }
+
+    private func instrumentCard(_ instrument: InstrumentTone) -> some View {
+        let selected = instrument == store.chart.instrument
+        return JazzPanel(accent: selected ? JazzTheme.emerald : JazzTheme.cyan, padding: 13) {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .top, spacing: 11) {
+                    Image(systemName: instrument.symbol)
+                        .font(.system(size: JazzTheme.size(19), weight: .semibold))
+                        .foregroundStyle(selected ? JazzTheme.background : JazzTheme.cyan)
+                        .frame(width: 44, height: 44)
+                        .background(selected ? JazzTheme.emerald : JazzTheme.cyan.opacity(0.10), in: RoundedRectangle(cornerRadius: 12))
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(instrument.displayName)
+                            .font(.system(size: JazzTheme.size(16), weight: .bold, design: .rounded))
+                            .foregroundStyle(JazzTheme.text)
+                        Text(playableRangeLabel(instrument))
+                            .font(.system(size: JazzTheme.size(9.5), weight: .semibold, design: .monospaced))
+                            .foregroundStyle(JazzTheme.brass)
+                    }
+                    Spacer(minLength: 4)
+                    if selected {
+                        Label("Selected", systemImage: "checkmark.circle.fill")
+                            .labelStyle(.iconOnly)
+                            .foregroundStyle(JazzTheme.emerald)
+                            .accessibilityLabel("Selected instrument")
+                    }
+                }
+                Text(instrument.nativeAudioSourceNote)
+                    .font(.system(size: JazzTheme.size(10.5), weight: .medium, design: .rounded))
+                    .foregroundStyle(JazzTheme.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 8) { auditionButton(instrument); selectionButton(instrument, selected: selected) }
+                    VStack(spacing: 8) { auditionButton(instrument); selectionButton(instrument, selected: selected) }
+                }
+            }
+        }
+        .accessibilityIdentifier("instrument-card-\(instrument.originalID)")
+    }
+
+    private func auditionButton(_ instrument: InstrumentTone) -> some View {
+        Button { store.previewInstrument(instrument) } label: {
+            Label("Hear C4", systemImage: "speaker.wave.2.fill")
+                .frame(maxWidth: .infinity, minHeight: 44)
+        }
+        .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.cyan))
+        .accessibilityIdentifier("instrument-hear-\(instrument.originalID)")
+        .accessibilityLabel("Hear C4 on \(instrument.displayName)")
+        .accessibilityHint("Auditions this sound without changing the selected chart instrument")
+    }
+
+    @ViewBuilder
+    private func selectionButton(_ instrument: InstrumentTone, selected: Bool) -> some View {
+        Button { store.updateInstrument(instrument) } label: {
+            Label(selected ? "Selected" : "Use instrument", systemImage: selected ? "checkmark" : "arrow.right.circle")
+                .frame(maxWidth: .infinity, minHeight: 44)
+        }
+        .buttonStyle(JazzSecondaryButtonStyle(tint: selected ? JazzTheme.emerald : JazzTheme.brass))
+        .disabled(selected)
+        .accessibilityIdentifier("instrument-select-\(instrument.originalID)")
+        .accessibilityLabel(selected ? "\(instrument.displayName), selected" : "Use \(instrument.displayName)")
+    }
+
+    private func playableRangeLabel(_ instrument: InstrumentTone) -> String {
+        let range = instrument.originalPlayableMIDIRange
+        return "\(noteName(range.lowerBound))–\(noteName(range.upperBound)) · MIDI \(range.lowerBound)–\(range.upperBound)"
+    }
+
+    private func noteName(_ midi: Int) -> String {
+        let names = ["C", "C♯", "D", "E♭", "E", "F", "F♯", "G", "A♭", "A", "B♭", "B"]
+        return "\(names[(midi % 12 + 12) % 12])\(midi / 12 - 1)"
     }
 }
 

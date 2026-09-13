@@ -315,6 +315,15 @@ final class JazzStudioStore: ObservableObject {
         audio.preview(midi: midi, tone: chart.instrument)
     }
 
+    func instrumentPreviewPlan(for instrument: InstrumentTone) -> JazzInstrumentPreviewPlan {
+        JazzInstrumentPreviewPlan(midiPitch: 60, instrument: instrument)
+    }
+
+    func previewInstrument(_ instrument: InstrumentTone) {
+        let plan = instrumentPreviewPlan(for: instrument)
+        audio.preview(midi: plan.midiPitch, tone: plan.instrument)
+    }
+
     func previewKeys(_ midis: Set<Int>) {
         audio.updateKeyboardPreview(midis: midis, tone: chart.instrument)
     }

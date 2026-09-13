@@ -88,6 +88,62 @@ final class FrankenJazzUITests: XCTestCase {
         XCTAssertEqual(relaunchedToggle.label, "Switch to dark mode")
     }
 
+    func testInstrumentRackExposesEveryOriginalSoundAndSelectsWithoutAuditioning() throws {
+        let route = app.buttons["open-instrument-rack"]
+        XCTAssertTrue(route.waitForExistence(timeout: 3))
+        XCTAssertTrue(route.isHittable)
+        XCTAssertGreaterThanOrEqual(route.frame.height, 44)
+        route.tap()
+
+        XCTAssertTrue(app.navigationBars["Instrument rack"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["15 INSTRUMENTS"].exists)
+        let expected: [(id: String, name: String)] = [
+            ("mellow-keys", "Mellow Keys"),
+            ("fm-electric-piano", "FM Electric Piano"),
+            ("concert-grand", "Concert Grand"),
+            ("organ", "Organ"),
+            ("warm-pad", "Warm Pad"),
+            ("analog-poly", "Analog Poly"),
+            ("vibraphone", "Vibraphone"),
+            ("concert-vibes", "Concert Vibes"),
+            ("flute", "Flute"),
+            ("clarinet", "Clarinet"),
+            ("guitar", "Guitar"),
+            ("upright-bass", "Upright Bass"),
+            ("blues-guitar", "Blues Guitar"),
+            ("dreadnought-guitar", "Steel Dreadnought"),
+            ("ukulele", "Re-entrant Ukulele")
+        ]
+
+        for instrument in expected {
+            let card = app.descendants(matching: .any)["instrument-card-\(instrument.id)"]
+            let hear = app.buttons["instrument-hear-\(instrument.id)"]
+            for _ in 0..<5 where !hear.isHittable { app.swipeUp() }
+            XCTAssertTrue(card.exists, "Missing \(instrument.name) from the complete original catalog.")
+            XCTAssertTrue(app.staticTexts[instrument.name].exists)
+            XCTAssertTrue(hear.exists)
+            XCTAssertTrue(hear.isHittable)
+            XCTAssertGreaterThanOrEqual(hear.frame.height, 44)
+            // Deliberately do not tap Hear: Simulator verification stays silent.
+        }
+
+        let chooseUkulele = app.buttons["instrument-select-ukulele"]
+        XCTAssertTrue(chooseUkulele.isHittable)
+        XCTAssertGreaterThanOrEqual(chooseUkulele.frame.height, 44)
+        chooseUkulele.tap()
+        XCTAssertEqual(chooseUkulele.label, "Re-entrant Ukulele, selected")
+
+        let proof = XCTAttachment(screenshot: app.screenshot())
+        proof.name = "FrankenJazz complete original instrument rack"
+        proof.lifetime = .keepAlways
+        add(proof)
+
+        app.buttons["Done"].tap()
+        let quickSelector = app.buttons["instrument-quick-selector"]
+        XCTAssertTrue(quickSelector.waitForExistence(timeout: 3))
+        XCTAssertEqual(quickSelector.value as? String, "Re-entrant Ukulele")
+    }
+
     func testTouchUndoAndRedoRoundTripAChartEdit() throws {
         let undo = app.buttons["undo-chart-change"]
         let redo = app.buttons["redo-chart-change"]
