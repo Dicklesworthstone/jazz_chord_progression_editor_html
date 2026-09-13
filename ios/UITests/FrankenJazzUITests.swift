@@ -97,6 +97,8 @@ final class FrankenJazzUITests: XCTestCase {
 
         XCTAssertTrue(app.navigationBars["Instrument rack"].waitForExistence(timeout: 3))
         XCTAssertTrue(app.staticTexts["15 INSTRUMENTS"].exists)
+        let rack = app.scrollViews["instrument-rack-scroll"]
+        XCTAssertTrue(rack.waitForExistence(timeout: 3))
         let expected: [(id: String, name: String)] = [
             ("mellow-keys", "Mellow Keys"),
             ("fm-electric-piano", "FM Electric Piano"),
@@ -116,11 +118,12 @@ final class FrankenJazzUITests: XCTestCase {
         ]
 
         for instrument in expected {
-            let card = app.descendants(matching: .any)["instrument-card-\(instrument.id)"]
+            let name = app.staticTexts[instrument.name]
             let hear = app.buttons["instrument-hear-\(instrument.id)"]
-            for _ in 0..<5 where !hear.isHittable { app.swipeUp() }
-            XCTAssertTrue(card.exists, "Missing \(instrument.name) from the complete original catalog.")
-            XCTAssertTrue(app.staticTexts[instrument.name].exists)
+            for _ in 0..<8 where !name.isHittable { rack.swipeUp() }
+            XCTAssertTrue(name.exists, "Missing \(instrument.name) from the complete original catalog.")
+            XCTAssertTrue(name.isHittable)
+            for _ in 0..<2 where !hear.isHittable { rack.swipeUp() }
             XCTAssertTrue(hear.exists)
             XCTAssertTrue(hear.isHittable)
             XCTAssertGreaterThanOrEqual(hear.frame.height, 44)

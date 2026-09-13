@@ -531,6 +531,7 @@ private struct InstrumentRackView: View {
                 .frame(maxWidth: .infinity)
             }
             .scrollIndicators(.hidden)
+            .accessibilityIdentifier("instrument-rack-scroll")
         }
         .navigationTitle("Instrument rack")
         .navigationBarTitleDisplayMode(.inline)
@@ -614,7 +615,6 @@ private struct InstrumentRackView: View {
                 }
             }
         }
-        .accessibilityIdentifier("instrument-card-\(instrument.originalID)")
     }
 
     private func auditionButton(_ instrument: InstrumentTone) -> some View {
