@@ -1692,6 +1692,27 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertTrue(fourCourse.left.allSatisfy(\.isFinite))
     }
 
+    func testUkuleleChordRenderSurvivesCooperativeTaskStackWithoutAudioOutput() async throws {
+        JazzPhysicalInstrumentRenderer.resetCacheForTesting()
+        let rendered = await Task.detached {
+            JazzPhysicalInstrumentRenderer.renderChord(
+                tone: .ukulele,
+                midis: [60, 64, 67, 71],
+                velocity: 96,
+                sampleRate: 24_000,
+                maximumSeconds: 0.08
+            )
+        }.value
+
+        let chord = try XCTUnwrap(rendered)
+        XCTAssertEqual(chord.algorithmID, "changes.dsp.plucked-ukulele@1")
+        XCTAssertEqual(chord.renderedMIDIPitches, [60, 64, 67, 71])
+        XCTAssertEqual(chord.left.count, 1_920)
+        XCTAssertTrue(chord.left.contains { abs($0) > 0.0001 })
+        XCTAssertTrue(chord.left.allSatisfy(\.isFinite))
+        XCTAssertEqual(chord.left.count, chord.right.count)
+    }
+
     func testCooperativePluckedChordIsBitExactWithOriginalMonolithicABIWithoutAudioOutput() throws {
         JazzPhysicalInstrumentRenderer.resetCacheForTesting()
         let renderedMIDIs = [48, 52, 55, 59, 62, 65]
