@@ -482,9 +482,9 @@ final class JazzAudioEngine: ObservableObject {
     /// the progression player, playhead, or transport generation.
     func preview(midis: [Int], tone: InstrumentTone) {
         let pitches = Array(Set(midis)).sorted()
-        guard (1...10).contains(pitches.count),
+        guard (1...JazzDocumentValidator.maximumStoredVoices).contains(pitches.count),
               pitches.allSatisfy({ (21...108).contains($0) }) else {
-            previewIssue = "A preview needs 1–10 playable notes in the A0–C8 range."
+            previewIssue = "A preview needs 1–\(JazzDocumentValidator.maximumStoredVoices) playable notes in the A0–C8 range."
             return
         }
         previewGeneration += 1

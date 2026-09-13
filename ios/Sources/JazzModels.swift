@@ -694,6 +694,30 @@ struct JazzInstrumentPreviewPlan: Equatable {
     var instrument: InstrumentTone
 }
 
+struct JazzChordPad: Identifiable, Equatable, Sendable {
+    var id: UUID { chordID }
+    var chordID: UUID
+    var position: Int
+    var symbol: String
+    var barNumber: Int
+    var midiPitches: [Int]
+    var voicingAuthority: String
+}
+
+struct JazzChordPadGroup: Identifiable, Equatable, Sendable {
+    var id: String
+    var name: String
+    var annotation: String
+    var pads: [JazzChordPad]
+}
+
+struct JazzChordPadPreviewPlan: Equatable {
+    var chordID: UUID
+    var sourceRevision: Int
+    var midiPitches: [Int]
+    var instrument: InstrumentTone
+}
+
 struct LibraryEntry: Identifiable, Hashable, Sendable {
     enum Provenance: String, Sendable {
         case publicDomain = "Public domain"

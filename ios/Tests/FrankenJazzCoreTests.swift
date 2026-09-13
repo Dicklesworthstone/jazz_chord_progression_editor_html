@@ -348,6 +348,87 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertNil(invalidClock.next)
     }
 
+    func testChordPadProjectionPreservesEverySourceOccurrenceAndExactPlaybackVoicing() throws {
+        let first = JazzMeasure(chords: [
+            JazzChordEvent(symbol: "Cmaj7", beats: 2),
+            JazzChordEvent(symbol: "G7/B", beats: 2, manualMIDIPitches: [47, 55, 59, 59, 65])
+        ])
+        let second = JazzMeasure(chords: [
+            JazzChordEvent(symbol: "Dm9", frozenMIDIPitches: [38, 53, 57, 60, 64])
+        ])
+        let chart = JazzChart(
+            title: "Pads",
+            key: .c,
+            instrument: .concertVibes,
+            voicingFamily: .spread,
+            measures: [first, second],
+            sections: [
+                JazzChartSection(name: "A", annotation: "Open", startMeasureID: first.id),
+                JazzChartSection(name: "Bridge", annotation: "Lift", startMeasureID: second.id)
+            ]
+        )
+
+        let groups = JazzTheory.chordPadGroups(chart)
+        let pads = groups.flatMap(\.pads)
+        let playback = JazzTheory.compilePlayback(chart)
+
+        XCTAssertEqual(groups.map(\.name), ["A", "Bridge"])
+        XCTAssertEqual(groups.map(\.annotation), ["Open", "Lift"])
+        XCTAssertEqual(groups.map { $0.pads.count }, [2, 1])
+        XCTAssertEqual(pads.map(\.chordID), chart.measures.flatMap(\.chords).map(\.id))
+        XCTAssertEqual(Set(pads.map(\.chordID)).count, chart.chordCount)
+        XCTAssertEqual(pads.map(\.position), [0, 1, 2])
+        XCTAssertEqual(pads.map(\.barNumber), [1, 1, 2])
+        XCTAssertEqual(pads.map(\.midiPitches), playback.map(\.midiPitches))
+        XCTAssertEqual(pads[1].midiPitches, [47, 55, 59, 59, 65], "Manual octave, order, and doubles are literal.")
+        XCTAssertEqual(pads[1].voicingAuthority, "Manual exact")
+        XCTAssertEqual(pads[2].voicingAuthority, "Frozen exact")
+        XCTAssertTrue(pads[0].midiPitches.count >= 4)
+    }
+
+    @MainActor
+    func testChordPadPreviewPlanIsRevisionBoundAndDoesNotMutateDocumentOrHistory() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FrankenJazzChordPadTests-" + UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let chord = JazzChordEvent(symbol: "E7/B")
+        let chart = JazzChart(
+            title: "Pad plan", key: .c, instrument: .clarinet,
+            voicingFamily: .open, measures: [JazzMeasure(chords: [chord])]
+        )
+        let recovery = JazzRecoveryStore(directory: directory)
+        recovery.save(chart)
+        let store = JazzStudioStore(recovery: recovery)
+        let before = store.chart
+        let revision = store.revision
+        let selected = store.selectedChordID
+
+        let plan = try XCTUnwrap(store.chordPadPreviewPlan(for: chord.id))
+
+        XCTAssertEqual(plan.chordID, chord.id)
+        XCTAssertEqual(plan.sourceRevision, revision)
+        XCTAssertEqual(plan.instrument, .clarinet)
+        XCTAssertEqual(plan.midiPitches, JazzTheory.compilePlayback(chart).first?.midiPitches)
+        XCTAssertEqual(store.chart, before)
+        XCTAssertEqual(store.revision, revision)
+        XCTAssertEqual(store.selectedChordID, selected)
+        XCTAssertFalse(store.canUndo)
+        XCTAssertNil(store.chordPadPreviewPlan(for: UUID()))
+    }
+
+    func testChordPreviewAcceptsTheFullStoredVoicingBoundAndRefusesOneMore() throws {
+        let sixteen = Array(48...63)
+        let rendered = try XCTUnwrap(
+            JazzAudioRenderer.renderPreviewChord(midis: sixteen, tone: .mellowKeys, duration: 0.08)
+        )
+        XCTAssertFalse(rendered.left.isEmpty)
+        XCTAssertTrue(rendered.left.allSatisfy(\.isFinite))
+        XCTAssertNil(
+            JazzAudioRenderer.renderPreviewChord(midis: Array(48...64), tone: .mellowKeys, duration: 0.08)
+        )
+    }
+
     func testSectionBoundaryReallyControlsAutomaticVoiceLeading() throws {
         let first = JazzMeasure(chords: [JazzChordEvent(symbol: "Cmaj7")])
         let second = JazzMeasure(chords: [JazzChordEvent(symbol: "Bmaj7")])

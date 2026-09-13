@@ -169,6 +169,7 @@ private struct ChartEditorView: View {
     @FocusState private var editorFocused: Bool
     @State private var quickEntryExpanded = false
     @State private var instrumentRackPresented = false
+    @State private var chordPadsPresented = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var columns: [GridItem] {
@@ -195,6 +196,9 @@ private struct ChartEditorView: View {
         .onTapGesture { editorFocused = false }
         .sheet(isPresented: $instrumentRackPresented) {
             NavigationStack { InstrumentRackView(store: store) }
+        }
+        .sheet(isPresented: $chordPadsPresented) {
+            NavigationStack { ChordPadsView(store: store) }
         }
     }
 
@@ -325,12 +329,15 @@ private struct ChartEditorView: View {
                 HStack {
                     JazzSectionLabel(number: "02", title: "Lead sheet", tint: JazzTheme.emerald)
                     Spacer()
-                    if !compact {
-                        Text("TOUCH EDITING")
-                            .font(.system(size: JazzTheme.size(9), weight: .bold, design: .monospaced))
-                            .kerning(1.1)
-                            .foregroundStyle(JazzTheme.secondary)
+                    Button { chordPadsPresented = true } label: {
+                        Label(compact ? "Pads" : "Play chord pads", systemImage: "square.grid.3x3.fill")
+                            .lineLimit(1)
+                            .frame(minHeight: 44)
                     }
+                    .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.emerald))
+                    .accessibilityIdentifier("open-chord-pads")
+                    .accessibilityLabel("Play chord pads")
+                    .accessibilityHint("Opens every chart change as a touchable exact-voicing pad")
                 }
                 HStack(spacing: 8) {
                     Button { store.undo() } label: {
@@ -648,6 +655,154 @@ private struct InstrumentRackView: View {
     private func noteName(_ midi: Int) -> String {
         let names = ["C", "C♯", "D", "E♭", "E", "F", "F♯", "G", "A♭", "A", "B♭", "B"]
         return "\(names[(midi % 12 + 12) % 12])\(midi / 12 - 1)"
+    }
+}
+
+private struct ChordPadsView: View {
+    @ObservedObject var store: JazzStudioStore
+    @Environment(\.dismiss) private var dismiss
+
+    private let columns = [
+        GridItem(.adaptive(minimum: 148, maximum: 230), spacing: 11, alignment: .top)
+    ]
+
+    var body: some View {
+        ZStack {
+            JazzForgeBackground()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    introduction
+                    ForEach(store.chordPadGroups) { group in
+                        groupSection(group)
+                    }
+                }
+                .padding(16)
+                .frame(maxWidth: 940)
+                .frame(maxWidth: .infinity)
+            }
+            .scrollIndicators(.hidden)
+            .accessibilityIdentifier("chord-pads-scroll")
+        }
+        .navigationTitle("Chord pads")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(JazzTheme.background, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .presentationDetents([.large])
+        .presentationDragIndicator(.visible)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button { store.stopChordPadPreview() } label: {
+                    Label("Stop audition", systemImage: "speaker.slash.fill")
+                }
+                .accessibilityIdentifier("stop-chord-pad-audition")
+            }
+            ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
+        }
+        .onDisappear { store.stopChordPadPreview() }
+    }
+
+    private var introduction: some View {
+        JazzPanel(accent: JazzTheme.emerald, padding: 15) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    JazzSectionLabel(number: "P1", title: "Play the changes", tint: JazzTheme.emerald)
+                    Spacer()
+                    Text("\(store.chart.chordCount) PADS")
+                        .font(.system(size: JazzTheme.size(9), weight: .bold, design: .monospaced))
+                        .foregroundStyle(JazzTheme.secondary)
+                }
+                Text("Tap any pad to hear the exact voicing shown below it through \(store.chart.instrument.displayName).")
+                    .font(.system(size: JazzTheme.size(13), weight: .medium, design: .rounded))
+                    .foregroundStyle(JazzTheme.text)
+                Label("Auditioning never edits the chart or moves the band transport.", systemImage: "hand.tap")
+                    .font(.system(size: JazzTheme.size(10), weight: .medium, design: .rounded))
+                    .foregroundStyle(JazzTheme.secondary)
+            }
+        }
+    }
+
+    private func groupSection(_ group: JazzChordPadGroup) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline) {
+                Label(group.name, systemImage: "rectangle.stack.fill")
+                    .font(.system(size: JazzTheme.size(15), weight: .bold, design: .rounded))
+                    .foregroundStyle(JazzTheme.cyan)
+                    .accessibilityAddTraits(.isHeader)
+                Spacer()
+                Text("\(group.pads.count) change\(group.pads.count == 1 ? "" : "s")")
+                    .font(.system(size: JazzTheme.size(9), weight: .bold, design: .monospaced))
+                    .foregroundStyle(JazzTheme.secondary)
+            }
+            if !group.annotation.isEmpty {
+                Text(group.annotation)
+                    .font(.system(size: JazzTheme.size(10.5), design: .rounded))
+                    .foregroundStyle(JazzTheme.secondary)
+            }
+            LazyVGrid(columns: columns, alignment: .leading, spacing: 11) {
+                ForEach(group.pads) { pad in
+                    padButton(pad)
+                }
+            }
+        }
+        .accessibilityIdentifier("chord-pad-group-\(group.id)")
+    }
+
+    private func padButton(_ pad: JazzChordPad) -> some View {
+        Button { store.previewChordPad(pad.chordID) } label: {
+            VStack(alignment: .leading, spacing: 7) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(pad.symbol)
+                        .font(.system(size: JazzTheme.size(20), weight: .bold, design: .serif))
+                        .foregroundStyle(JazzTheme.paper)
+                    Spacer(minLength: 6)
+                    Text("BAR \(pad.barNumber)")
+                        .font(.system(size: JazzTheme.size(8), weight: .black, design: .monospaced))
+                        .foregroundStyle(JazzTheme.brass)
+                }
+                Text(pad.midiPitches.map(noteName).joined(separator: " · "))
+                    .font(.system(size: JazzTheme.size(10), weight: .semibold, design: .monospaced))
+                    .foregroundStyle(JazzTheme.text)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 5) {
+                    Image(systemName: "speaker.wave.2.fill")
+                    Text(pad.voicingAuthority)
+                }
+                .font(.system(size: JazzTheme.size(9), weight: .bold, design: .rounded))
+                .foregroundStyle(JazzTheme.emerald)
+            }
+            .frame(maxWidth: .infinity, minHeight: 82, alignment: .topLeading)
+            .padding(12)
+        }
+        .buttonStyle(JazzChordPadButtonStyle())
+        .disabled(pad.midiPitches.isEmpty)
+        .accessibilityIdentifier("chord-pad-\(pad.position)")
+        .accessibilityLabel("Chord pad \(pad.position + 1), bar \(pad.barNumber), \(pad.symbol)")
+        .accessibilityValue(pad.midiPitches.map(noteName).joined(separator: ", "))
+        .accessibilityHint("Plays this exact voicing without editing the chart or moving transport")
+    }
+
+    private func noteName(_ midi: Int) -> String {
+        let names = ["C", "C♯", "D", "E♭", "E", "F", "F♯", "G", "A♭", "A", "B♭", "B"]
+        return "\(names[(midi % 12 + 12) % 12])\(midi / 12 - 1)"
+    }
+}
+
+private struct JazzChordPadButtonStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .background(
+                configuration.isPressed ? JazzTheme.emerald.opacity(0.20) : JazzTheme.raised,
+                in: RoundedRectangle(cornerRadius: 14)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(configuration.isPressed ? JazzTheme.emerald : JazzTheme.stroke, lineWidth: configuration.isPressed ? 2 : 1)
+            )
+            .scaleEffect(configuration.isPressed && !reduceMotion ? 0.985 : 1)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.08), value: configuration.isPressed)
     }
 }
 

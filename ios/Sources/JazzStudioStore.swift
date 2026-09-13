@@ -340,6 +340,33 @@ final class JazzStudioStore: ObservableObject {
         audio.preview(midis: selectedMIDIPitches, tone: chart.instrument)
     }
 
+    var chordPadGroups: [JazzChordPadGroup] {
+        JazzTheory.chordPadGroups(chart)
+    }
+
+    func chordPadPreviewPlan(for chordID: UUID) -> JazzChordPadPreviewPlan? {
+        guard let pad = chordPadGroups.lazy.flatMap(\.pads).first(where: { $0.chordID == chordID }),
+              !pad.midiPitches.isEmpty else { return nil }
+        return JazzChordPadPreviewPlan(
+            chordID: chordID,
+            sourceRevision: revision,
+            midiPitches: pad.midiPitches,
+            instrument: chart.instrument
+        )
+    }
+
+    func previewChordPad(_ chordID: UUID) {
+        guard let plan = chordPadPreviewPlan(for: chordID) else {
+            notice = "That chord pad is stale or cannot be rendered safely. Reopen the pads and try again."
+            return
+        }
+        audio.preview(midis: plan.midiPitches, tone: plan.instrument)
+    }
+
+    func stopChordPadPreview() {
+        audio.stopPreview()
+    }
+
     func continuationPreviewPlan(for option: JazzContinuationOption) -> JazzContinuationPreviewPlan? {
         guard option.sourceRevision == revision,
               continuationOptions.contains(option),

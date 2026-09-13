@@ -129,6 +129,40 @@ final class FrankenJazzUITests: XCTestCase {
         add(proof)
     }
 
+    func testChordPadsExposeTheWholeStarterChartWithoutAuditioning() throws {
+        let route = app.buttons["open-chord-pads"]
+        XCTAssertTrue(route.waitForExistence(timeout: 3))
+        XCTAssertTrue(route.isHittable)
+        XCTAssertGreaterThanOrEqual(route.frame.height, 44)
+        route.tap()
+
+        XCTAssertTrue(app.navigationBars["Chord pads"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["12 PADS"].exists)
+        let scroll = app.scrollViews["chord-pads-scroll"]
+        XCTAssertTrue(scroll.waitForExistence(timeout: 3))
+        let first = app.buttons["chord-pad-0"]
+        XCTAssertTrue(first.waitForExistence(timeout: 3))
+        XCTAssertTrue(first.isHittable)
+        XCTAssertGreaterThanOrEqual(first.frame.height, 44)
+        XCTAssertTrue(first.label.contains("Cmaj9"))
+
+        let last = app.buttons["chord-pad-11"]
+        for _ in 0..<10 where !last.isHittable { scroll.swipeUp() }
+        XCTAssertTrue(last.exists)
+        XCTAssertTrue(last.isHittable)
+        XCTAssertGreaterThanOrEqual(last.frame.height, 44)
+        XCTAssertTrue(last.label.contains("C6"))
+        XCTAssertTrue(app.buttons["stop-chord-pad-audition"].exists)
+
+        // The pad actions are intentionally not tapped in automated UI runs.
+        // Their pure preview plan and renderer are covered without sound in
+        // the core suite; this path proves the complete touch surface.
+        let proof = XCTAttachment(screenshot: app.screenshot())
+        proof.name = "FrankenJazz exact full-chart chord pads"
+        proof.lifetime = .keepAlways
+        add(proof)
+    }
+
     func testTouchUndoAndRedoRoundTripAChartEdit() throws {
         let undo = app.buttons["undo-chart-change"]
         let redo = app.buttons["redo-chart-change"]
