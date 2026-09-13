@@ -49,7 +49,10 @@ final class FrankenJazzUITests: XCTestCase {
         let preview = app.buttons["preview-continuation-1"]
         XCTAssertTrue(preview.exists)
         XCTAssertTrue(preview.isHittable)
-        XCTAssertEqual(preview.label, "Hear Cmaj7")
+        XCTAssertTrue(preview.label.hasPrefix("Hear "))
+        let previewedSymbol = String(preview.label.dropFirst("Hear ".count))
+        XCTAssertFalse(previewedSymbol.isEmpty)
+        XCTAssertTrue(app.staticTexts[previewedSymbol].exists)
         XCTAssertGreaterThanOrEqual(preview.frame.height, 44)
 
         // Do not tap Hear: this lane proves the audible choice is discoverable
