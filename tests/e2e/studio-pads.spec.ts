@@ -13,6 +13,24 @@ const pitches=[{step:"C",alter:0,octave:4},{step:"C",alter:0,octave:4},{step:"E"
 const document={...fixture,title:"Touch pad fixtures",sections:[{...base,name:"Seventeen pads",measures:Array.from({length:17},(_v,i)=>({...measure,id:`pad-bar-${String(i)}`,completion:{kind:"complete"},events:[{...event,id:`pad-event-${String(i)}`,duration:{numerator:4,denominator:1},chord:{kind:"custom",sourceText:`Pad ${String(i+1)}`,label:`Pad ${String(i+1)}`,pitchNames:pitches.map(p=>({step:p.step,alter:p.alter})),bass:null},voicing:{mode:"manual",bassPolicy:"included",pitches}}]}))}]};
 const url=fileUrl;
 test.use({userAgent:"OpenAI File Downloader, XaiImageApiFetch/1.0",contextOptions:{reducedMotion:"reduce"}});
+for(const [ownerKey,otherKey] of [["Space","Enter"],["Enter","Space"],["Enter","NumpadEnter"],["NumpadEnter","Enter"]] as const)test(`pad releases only its owning key: ${ownerKey} held across ${otherKey}`,async({page,browser},info)=>{
+ const errors:string[]=[],requests:string[]=[],phases:{phase:string;counts:unknown}[]=[];
+ page.on("pageerror",e=>errors.push(e.message));page.on("console",m=>{if(m.type()==="error")errors.push(m.text());});
+ await page.route("**/*",async route=>{if(route.request().isNavigationRequest()&&route.request().url()===fileUrl)await route.continue();else{requests.push(route.request().url());await route.abort();}});
+ try{
+  await page.goto(fileUrl);await page.locator("#studio-import-chart").click();await page.locator("#studio-import-file").setInputFiles({name:"pads.changes.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify(document))});
+  await page.locator("#studio-import-commit").click();await page.locator("#studio-import-confirm").click();await expect(page.locator("#studio-document-title")).toHaveValue(document.title);
+  const before=await page.locator(".studio-document-status__revision").textContent();await page.locator("#studio-open-command-lane").click();await page.getByText("Play chord pads",{exact:true}).click();
+  const pad=page.getByRole("region",{name:"Exact chord pads"}).locator(".studio-pads__pad").first();await observeNativeSources(page);await pad.focus();await page.keyboard.down(ownerKey);
+  await expect(pad).toHaveAttribute("aria-pressed","true");await expect.poll(()=>page.evaluate(()=>window.u5NativeSourceCounts?.().sounding??0)).toBeGreaterThan(0);
+  const heldCounts=await page.evaluate(()=>window.u5NativeSourceCounts?.());phases.push({phase:"owner-down",counts:heldCounts});
+  await page.keyboard.down(otherKey);await page.keyboard.up(otherKey);phases.push({phase:"other-released",counts:await page.evaluate(()=>window.u5NativeSourceCounts?.())});
+  await expect(pad).toHaveAttribute("aria-pressed","true");expect(await page.evaluate(()=>window.u5NativeSourceCounts?.().sounding??0)).toBeGreaterThan(0);
+  expect(await page.evaluate(()=>window.u5NativeSourceCounts?.().started)).toBe(heldCounts?.started);
+  await page.keyboard.up(ownerKey);await expect(pad).toHaveAttribute("aria-pressed","false");await expect.poll(()=>page.evaluate(()=>window.u5NativeSourceCounts?.())).toMatchObject({sounding:0,futureAttacks:0});
+  phases.push({phase:"owner-released",counts:await page.evaluate(()=>window.u5NativeSourceCounts?.())});expect(await page.locator(".studio-document-status__revision").textContent()).toBe(before);expect(errors).toEqual([]);expect(requests).toEqual([]);
+ }finally{await info.attach("pads-key-ownership-evidence",{body:JSON.stringify({hash,browser:browser.version(),ownerKey,otherKey,errors,requests,phases,inputs:"Real browser keyboard input and native audio sources; no physical-device or listening claim."}),contentType:"application/json"});}
+});
 for(const theme of ["light","dark"] as const)for(const width of [320,1280])test(`held pads ${theme} ${String(width)}px`,async({page,browser},info)=>{
  const errors:string[]=[],requests:{url:string;allowed:boolean}[]=[];const onsets:{input:string;milliseconds:number}[]=[];
  page.on("pageerror",e=>errors.push(e.message));page.on("console",m=>{if(m.type()==="error")errors.push(m.text());});

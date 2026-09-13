@@ -2,6 +2,7 @@ import { expect, test } from "bun:test";
 import { createHash } from "node:crypto";
 import { createStudioCompositionOverState } from "../../src/application/studio-controller";
 import { loopArrangementFixture } from "../support/loop-arrangement-fixture";
+import { createMidiExportDownloadStart, type MidiExportDownloadAnchor } from "../../src/ui/midi-export-delivery";
 
 const cleanup={objectUrlsCreated:1,objectUrlsRevoked:1,outstandingOwnedResources:0};
 function setup(deferred=false,deferredDelivery=false) {
@@ -55,3 +56,38 @@ test("a newly mounted subscriber sees pending delivery complete after the old su
  expect(oldStates).toEqual(["delivering"]);expect(newStates).toEqual(["delivered"]);
  service.cancel();expect(newStates).toEqual(["delivered"]);
 });
+
+for (const fault of ["click", "remove"] as const) {
+ test(`performed MIDI reports ${fault} failure through the real download adapter and permits a fresh download`,async()=>{
+  const f=loopArrangementFixture(),urls=new Set<string>(),anchors=new Set<MidiExportDownloadAnchor>();
+  let injected=true,activations=0,allocations=0;
+  const composition=createStudioCompositionOverState(f.state,f.dependencies,{
+   midiExportHashBytes:bytes=>Promise.resolve(createHash("sha256").update(bytes).digest("hex")),
+   midiExportDelivery:createMidiExportDownloadStart({
+    createObjectUrl:()=>{const url=`blob:midi-${String(++allocations)}`;urls.add(url);return url;},
+    revokeObjectUrl:url=>{urls.delete(url);},
+    createAnchor:()=>{
+     const anchor:MidiExportDownloadAnchor={href:"",download:"",click:()=>{
+      if(injected&&fault==="click")throw new Error("Browser activation failed");activations+=1;
+     },remove:()=>{if(injected&&fault==="remove")throw new Error("Browser removal failed");anchors.delete(anchor);}};
+     return anchor;
+    },
+    attachToDocument:anchor=>{anchors.add(anchor);},
+   }),
+  });
+  const service=composition.performedMidi;if(service===null)throw new Error("Unwired MIDI service");
+  const before=composition.readApplicationState();
+  expect((await service.prepare(null)).state).toBe("ready");
+  const failed=await service.download();expect(failed.state).toBe("refused");
+  expect(failed.message).toContain(fault==="click"?"could not complete":"cleanup could not be confirmed");
+  expect(urls.size).toBe(0);expect(anchors.size).toBe(fault==="remove"?1:0);
+  expect(activations).toBe(fault==="remove"?1:0);
+  await service.download();expect(allocations).toBe(1);
+  injected=false;for(const anchor of anchors)anchor.remove();
+  expect((await service.prepare(null)).state).toBe("ready");
+  expect((await service.download()).state).toBe("delivered");
+  expect(urls.size).toBe(0);expect(anchors.size).toBe(0);
+  expect(activations).toBe(fault==="remove"?2:1);
+  expect(composition.readApplicationState()).toBe(before);
+ });
+}

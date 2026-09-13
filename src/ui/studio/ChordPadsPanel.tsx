@@ -4,10 +4,11 @@ export type StudioChordPadsPorts=Readonly<{
   documentId:string;revision:number;read:StudioController["readPads"];release:StudioController["releasePad"];
   press:(source:StudioInspectorSource,input:"pointer"|"keyboard",hold:boolean)=>ReturnType<StudioController["pressPad"]>;
 }>;
+type PadInput=number|"tap"|Readonly<{key:" "|"Enter";code:string}>;
 const label=(p:Readonly<{step:string;alter:number;octave:number}>)=>`${p.step}${p.alter<0?"b".repeat(-p.alter):"#".repeat(p.alter)}${String(p.octave)}`;
 export function ChordPadsPanel({ports}:{ports:StudioChordPadsPorts}){
   const [result,setResult]=useState<StudioInspectorResult<StudioPadsView>|null>(null),[notice,setNotice]=useState(""),[held,setHeld]=useState<string|null>(null);
-  const owner=useRef<Readonly<{id:number;eventId:string;input:number|"keyboard"|"tap"}>|null>(null),latest=useRef(ports);latest.current=ports;
+  const owner=useRef<Readonly<{id:number;eventId:string;input:PadInput}>|null>(null),latest=useRef(ports);latest.current=ports;
   const release=():void=>{const active=owner.current;owner.current=null;setHeld(null);if(active!==null){void latest.current.release(active.id);setNotice("Pad release requested. Instrument tails may decay.");}};
   const releaseRef=useRef(release);releaseRef.current=release;
   useEffect(()=>{
@@ -19,7 +20,7 @@ export function ChordPadsPanel({ports}:{ports:StudioChordPadsPorts}){
   const view=result?.ok===true?result.value:null;
   const stale=view!==null&&(view.documentId!==ports.documentId||view.revision!==ports.revision);
   const load=(section:string|null,page:number):void=>{release();setResult(ports.read(section,page));setNotice("");};
-  const begin=(source:StudioInspectorSource,input:number|"keyboard"|"tap"):void=>{
+  const begin=(source:StudioInspectorSource,input:PadInput):void=>{
     release();const started=ports.press(source,typeof input==="number"?"pointer":"keyboard",input!=="tap");
     owner.current={id:started.id,eventId:source.eventId,input};setHeld(input==="tap"?null:source.eventId);setNotice("Preparing these exact notes…");
     void started.completion.then(r=>{if(owner.current?.id!==started.id)return;setNotice(r.ok?(input==="tap"?"Short tap accepted: up to 1.2 seconds plus the instrument tail.":"Hold accepted: up to 8 seconds; naturally decaying sounds may end sooner."):r.message);if(!r.ok){owner.current=null;setHeld(null);}});
@@ -38,8 +39,8 @@ export function ChordPadsPanel({ports}:{ports:StudioChordPadsPorts}){
           onPointerUp={e=>{if(owner.current?.input===e.pointerId)release();}}
           onPointerCancel={e=>{if(owner.current?.input===e.pointerId)release();}}
           onLostPointerCapture={e=>{if(owner.current?.input===e.pointerId)release();}}
-          onKeyDown={e=>{if(e.key!==" "&&e.key!=="Enter")return;e.preventDefault();if(!e.repeat&&(owner.current===null||owner.current.input==="tap"))begin(pad.source,"keyboard");}}
-          onKeyUp={e=>{if(e.key!==" "&&e.key!=="Enter")return;e.preventDefault();if(owner.current?.eventId===pad.source.eventId&&owner.current.input==="keyboard")release();}}
+          onKeyDown={e=>{if(e.key!==" "&&e.key!=="Enter")return;e.preventDefault();if(!e.repeat&&(owner.current===null||owner.current.input==="tap"))begin(pad.source,{key:e.key,code:e.code});}}
+          onKeyUp={e=>{if(e.key!==" "&&e.key!=="Enter")return;e.preventDefault();const active=owner.current;if(active?.eventId===pad.source.eventId&&typeof active.input==="object"&&active.input.key===e.key&&active.input.code===e.code)release();}}
           onBlur={()=>{if(owner.current?.eventId===pad.source.eventId)release();}}
           onClick={e=>{if(e.detail===0&&(owner.current===null||owner.current.input==="tap"))begin(pad.source,"tap");}}>
           <strong>{pad.symbol}</strong><span>{pad.pitches.map(label).join(" · ")}</span>{pad.externalBass?<small>Separate external bass omitted</small>:null}

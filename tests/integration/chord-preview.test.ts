@@ -101,7 +101,7 @@ describe("jcpe-gnyy chord-click preview", () => {
       createFakeAudioPlatform({ failContextCreation: true }).platform,
     );
     const refused = await refusing.initialize(1, GESTURE, documentId, 0);
-    expect(refused.termination).toBe("refusal");
+    expect(refused.termination).toBe("fault");
     expect(refusing.isInitialized()).toBe(false);
 
     /* A receipt, and only a receipt, is what initialization means. */

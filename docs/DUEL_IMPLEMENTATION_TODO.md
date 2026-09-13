@@ -30,6 +30,91 @@ Package `jcpe-6ujg.2`. Spec `jcpe-6ujg.2.1` → build `jcpe-6ujg.2.2` → verify
 - [x] Pass focused tests, typecheck, lint/boundaries, artifact size and applicable real-browser gates — build jcpe-6ujg.2.2 closed with exact command/result evidence.
 - [ ] Record independent acceptance and close all three phases before package.
 
+### Performed MIDI verification: download failure cleanup (2026-09-11)
+
+- [x] Claim ready `.2.3`; read original contracts and coordinate shared adapter ownership.
+- [x] Identify URL/anchor leaks on synchronous activation exceptions and false cleanup success when anchor removal throws.
+- [x] Add independent failure witnesses for each allocation/activation/cleanup boundary plus successful immediate activation.
+- [x] Repair shared browser download cleanup without changing encoded MIDI or user-activation timing.
+- [x] Exercise performed-MIDI coordinator refusals and recovery through the actual adapter.
+- [x] Verify native file downloads and injected activation/removal failures in Chromium, Firefox and WebKit at 320/1280 widths.
+- [x] Run focused MIDI regressions, strict types, lint/boundaries and guarded build through RCH; bind evidence to unchanged source.
+- [x] Repair observed full-lint crash on generated `.rch-tmp` Playwright cache by matching its existing Git exclusion; preserve every source rule.
+- [x] Fresh review, commit owned fixes and record evidence; retain original external-player/physical-device acceptance on `.2.3`.
+- [x] Rebuild immediately before committing; rerun unchanged model/quality and native-playback release gates against committed bytes.
+- [x] Publish the repair to both hosts, poll for the committed hash and verify native MIDI download/failure/recovery at phone/desktop widths.
+
+
+The old adapter failed 8 of 11 independently authored fault witnesses. The repaired
+adapter passed 183 focused MIDI/arrangement tests (4,791 assertions, 16 files),
+`bun run typecheck`, full `bun run lint` (348 source-policy files, zero findings),
+and the guarded `bun run build`, all via RCH hz2 with Bun 1.3.14 and Node 26.0.0.
+The final browser matrix passed 24/24: 18 performed-MIDI download/failure/recovery
+cases and six unchanged note-first/audio/storage round trips, three engines at
+320/1280 widths, zero skipped/retried/flaky cases or unexpected console/page/network
+errors. All 1,601 declared input hashes and local source mtimes remained unchanged.
+The guarded candidate is SHA256
+`687e5d1774639e8c8c4faff80476975f475e0b5e08e814c5b1b31a6d9ffbdef4`,
+8,631,443 bytes. Evidence: `.tmp/midi-cleanup/final.log` for focused/static gates;
+`test-results/midi-cleanup-settled/{browser-results,source-receipt}.json` and its
+native MIDI files, resource observations and browser version/error diagnostics.
+
+Earlier failed runs remain available: the new interceptor originally blocked its
+own file navigation (16/24 passed); after correcting that, WebKit exposed a startup
+race in revision capture (22/24 passed). The final tests wait for the existing
+completed-demo banner before recording the revision; all original revision and
+resource assertions remain. The observed generated-cache lint crash was fixed by
+excluding only the already Git-ignored `.rch-tmp`; existing recovery diagnostics
+were typed without changing their behavioral assertions. The first release-gate
+attempt was refused before execution by RCH worker memory pressure; this is not a
+release-gate pass. After pressure eased, the final guarded rebuild reproduced the
+same bytes and `bun run predeploy:check` passed 11 shipping models and nine
+rendered instruments with zero fail findings (warnings retained). Logs remain
+under `.tmp/midi-cleanup/`; final release-gate evidence is in
+`test-results/midi-cleanup-release-gates/`.
+
+
+Repair and tooling commits `ec794529dcc5350acca85596254bb709e1be7713` and
+`121e8ea` are pushed. Native release playback initially could not start on hz2
+because of transient memory pressure. The hz3 alternative stalled after its
+first instrument while disk utilization reached 100 percent; its owned browser
+and server were stopped and confirmed absent before using the recovered hz2.
+The interrupted run is not a pass. Its scratch launcher returned zero for a
+signal-terminated child, so the launcher was tightened to reject signals and
+require the complete semantic gate ledger. The checked-in gate, assertions and
+instrument count remain unchanged. Logs: `playback.log`, `playback-hz3.log` and
+`playback-hz2-recovered.log` under `.tmp/midi-cleanup/`.
+
+
+The recovered hz2 run passed the unchanged native playback gate for all 15
+instruments with zero console/page errors. Recovery enforcement stayed enabled;
+its PASS was explicitly vacuous because no refusal reproduced. Committed HTML
+and share-image bytes were then uploaded to both hosts. Both public URLs matched
+`git show ec794529dcc5350acca85596254bb709e1be7713:jazz_chord_progression_editor.html`
+on the first poll. Cloudflare deployment: `455591b9.jazz-chord-progression-editor-html.pages.dev`.
+Vercel: `dpl_DkwJCVgCKuZ1RgemjQ32bbNW3ZNa`, READY, production target. Evidence:
+`test-results/midi-cleanup-release/playback-gate.json`, `.tmp/midi-cleanup/upload.log`
+and `.tmp/midi-cleanup/host-hashes.json`.
+
+2026-09-11 20:46 UTC: Live Chromium 149.0.7827.55 passed 12/12 cases: two hosts
+at 320/1280 widths, normal download and injected click/removal failure followed
+by successful fresh preparation/download. Zero skipped/retried/flaky cases,
+console/page errors, unexpected requests or panel overflow. All twelve retained
+MIDI files are 1,166 bytes with SHA256
+`41b9c57d4a5b1dfe5c20f0e8d274696105d62c9e08d1cb0f84360fa74827442f`,
+matching each prepared artifact. Revision equality and URL/anchor accounting
+passed. Phone and desktop screenshots were inspected. No Cloudflare beacon
+error occurred in these sessions; this does not claim permanent removal of the
+platform injection. Reports: `test-results/midi-cleanup-live/host-{0,1}.json`;
+summary and screenshots under `.tmp/midi-cleanup/`. The repair is shipped;
+original independent acceptance remains open on `.2.3`.
+
+This is author-executed automated proof, not independent acceptance. `.2.3` and
+its package stay open for the original two external MIDI players/DAWs, independent
+review and applicable physical-device evidence. The three pre-existing untracked
+application UI copies remain untouched and excluded from the candidate; this is
+not a claim that every in-flight file or every project acceptance gate passed.
+
 ## COD1: Note-first chord creation
 
 Package `jcpe-6ujg.3`. Spec `jcpe-6ujg.3.1` → build `jcpe-6ujg.3.2` → verify `jcpe-6ujg.3.3`.
@@ -99,6 +184,22 @@ Package `jcpe-6ujg.7`. Spec `jcpe-6ujg.7.1` → build `jcpe-6ujg.7.2` → verify
 - [x] Pass focused tests, typecheck, lint/boundaries, artifact size and applicable real-browser gates.
 - [ ] Record independent acceptance and close all three phases before package.
 
+### Keyboard hold repair (2026-09-12, `jcpe-6ujg.7.3`)
+
+- [x] Claim the verification leaf, inspect its inherited contracts and reserve the pad UI, browser tests and this TODO.
+- [x] Identify cross-key release: Space/Enter and main/keypad Enter currently share one keyboard owner.
+- [x] Add real keyboard/native-audio regressions for all four owning/other-key orders, preserving document revision and rejecting extra attacks.
+- [x] Demonstrate those regressions fail against committed artifact `687e5d1774639e8c8c4faff80476975f475e0b5e08e814c5b1b31a6d9ffbdef4`: RCH Chromium 0 passed/4 expected diagnostic failures, each at the premature-release assertion; original diagnostics retained in `test-results/pad-key-baseline`.
+- [x] Preserve both key and physical code; release only that key's hold. Pointer ownership and bounded assistive click activation keep their existing paths.
+- [x] Pass RCH `bun test tests/unit/studio-pads.test.ts tests/integration/studio-pads.test.ts tests/integration/studio-inspector-commands.test.ts tests/integration/studio-comping.test.ts` (39 tests, 277 assertions), `bun run typecheck` (all four projects), `bun run lint` and `bun run build`.
+- [x] Pass all 27 native pad cases in Chromium 149.0.7827.55, Firefox 151.0 and WebKit 26.5 with 0 failures/skips/retries/flaky cases: `test-results/pad-key-fixed/browser-results.json`. This includes all four physical-key orders, pointer/cancellation/focus/page/tap behavior, 320/1280px, both themes and accessibility. Artifact `acf66ca16933a9afd40c125fb56d30a95d0d012aa5a6dfa4be58d7a17a5dccc5`, 8,631,505 bytes; 1,610 source/test/config hashes and mtimes unchanged.
+- [x] Recheck source hashes/mtimes and push repair `c650a255ac7e1251d207abf4b457d1f5be7e630c`; regression tests were already committed in `d8173f5`. Only owned source/artifact/TODO/Bead paths were staged for the repair.
+- [x] Rebuild to the same hash, pass `bun run predeploy:check` (11 shipping models, nine-instrument quality PASS) and the unchanged native playback gate against `git show c650a25:jazz_chord_progression_editor.html` (15 instruments pass; starter-chart Chromium proof, not listening acceptance).
+- [x] Deploy committed bytes to Cloudflare Pages `ffb91084` and Vercel `dpl_HYcEi4w3JP1VNYsSm3GjdgRg1VRN`. Both `jazzchords.org` and `changes-jazz-progression-studio.vercel.app` matched the committed hash and 8,631,505 bytes on the first poll.
+- [x] Pass 12 live browser cases: both hosts × 320/1280px × Chromium/Firefox/WebKit. All 48 key-order sequences retain the owner without extra attacks and release to zero sounding/future sources; document revision stays unchanged. No console/page errors, unexpected requests, skipped/flaky cases or retries. Reports: `test-results/pad-key-live-clean/host-0.json` and `host-1.json`.
+- [x] Diagnose and correct a verification-side screenshot error: the first live run passed all key/audio checks but WebKit's Playwright screenshot helper injected inline `body {}`, correctly refused by CSP (4 cases passed, 2 failed). Keep those traces/screenshots in `test-results/pad-key-live`. Remove screenshot injection from the interaction check, retain every console/behavior assertion, and rerun the complete 12-case live matrix. No app or CSP changes. Desktop/phone captures were separately inspected.
+- [x] Return `.7.3` to open/unassigned for original physical-phone, listening and independent acceptance; automated author verification does not close this leaf or its package.
+
 ## CC1: Short WAV export
 
 Package `jcpe-6ujg.8`. Spec `jcpe-6ujg.8.1` → build `jcpe-6ujg.8.2` → verify `jcpe-6ujg.8.3`.
@@ -111,6 +212,19 @@ Package `jcpe-6ujg.8`. Spec `jcpe-6ujg.8.1` → build `jcpe-6ujg.8.2` → verify
 - [ ] Verify physical phone peak memory, cancellation and listening — `.8.3` remains open.
 - [x] Pass focused tests, typecheck, lint/boundaries, artifact size and applicable real-browser gates — `.8.2` closed.
 - [ ] Record independent acceptance and close all three phases before package.
+
+### WAV chart-switch repair (2026-09-12, `jcpe-6ujg.8.3`)
+
+- [x] Claim the ready verification leaf and review the original WAV/excerpt/source-cancellation contracts.
+- [x] Identify old section/excerpt choices surviving a chart identity change, including before the first Prepare.
+- [x] Add source-switch witnesses for unprepared, ready, rendering and hashing phases, plus a same-chart edit success case.
+- [x] Add native import/switch/render/download coverage at 320/1280px with reused section IDs and independently checked WAV duration.
+- [x] Demonstrate the original source fails all four chart-switch witnesses while passing the same-chart control; the committed `acf66ca…dccc5` artifact fails all four new Chromium import cases at the stale passage selection. Evidence: `.tmp/wav-chart-switch/baseline.log` and `test-results/wav-chart-baseline`.
+- [x] Reset chart-owned choices on a new document identity, including before any prepared binding exists, while preserving single-render ownership and explicit same-chart selections.
+- [x] Run focused WAV/renderer/replacement regressions, types, lint/boundaries, guarded build and the full native WAV matrix through RCH — 42 tests / 301 assertions; 36 Chromium/Firefox/WebKit cases, zero unexpected/skipped/flaky results. Candidate `4820645651ed7271831a89f2be3fa0bfb38b44ea14c09b2477be668d110eeca0`, 8,631,590 bytes; evidence `.tmp/wav-chart-switch/fixed.log` and `test-results/wav-chart-fixed`.
+- [x] Review all 1,610 source/test/script/config hashes and mtimes, preserve the three unrelated UI copies, and commit/push owned repair `9b0f7a11aed0c52fd3cc9114007ec43ffdd5a931`. Final RCH rebuild matches the tested bytes; 11 shipping model acceptance rows and nine-instrument quality gate pass (zero fail findings).
+- [x] Deploy committed bytes after unchanged mandatory gates: 15/15 native Chromium starter-chart instruments pass; recovery check is enforced but vacuous (no reproducible refusal). Cloudflare `917da715` and Vercel `dpl_Ag6RaMM2qnxXLCX1ArC2jXVcb8o9` both match `48206456…eeca0` on the first poll. All 24 live 320/1280px Chromium/Firefox/WebKit import/switch/render/download cases pass with 24 independently decoded WAVs, no console/page errors, no extra requests and no skipped/flaky/retried cases. Evidence: `test-results/wav-chart-release`, `test-results/wav-chart-live`, `.tmp/wav-chart-switch/host-hashes.json` and `.tmp/wav-chart-switch/final-evidence-summary.json`.
+- [x] Preserve original physical-phone memory/cancellation/listening and independent acceptance as open on `.8.3`; return the verification leaf open/unassigned after this deployed repair. Author browser verification does not close those original gates.
 
 ## CC4: Compatible songbook import
 
@@ -286,8 +400,8 @@ The 361-file source hash map remained unchanged, including the exact file set, b
 
 ### Guitar positions while composing (COD1 + COD4, 2026-09-11)
 
-Consumer: the owner's continued implementation request. This extends the two
-working finalists; retire into their feature record after acceptance.
+Consumer: the owner's continued implementation request. This connects the two
+working finalists; retain physical/player acceptance under `.3.3` and `.4.3`.
 
 - [x] Confirm that saved-chord guitar positions exist but drafts cannot use them.
 - [x] Specify draft/source authority and hand-author exact-position fixtures before implementation (`.4.4`).
@@ -296,9 +410,189 @@ working finalists; retire into their feature record after acceptance.
 - [x] Share diagrams/tables with saved-chord view; add lazy draft disclosure and owned audition.
 - [x] Prove live edits, exact unisons/spellings, no-position, stale hiding, selection reset and unchanged chart.
 - [x] Run RCH focused tests, four TypeScript projects, owned lint/source policy and guarded build; kill four semantic mutants.
-- [ ] Run real-browser phone/desktop proof and existing guitar/note-first regressions, inspect screenshots, and promote only unchanged-source guarded bytes.
-- [ ] Fresh review and exact evidence; leave physical/player `.3.3` and `.4.3` open.
+- [x] Trace browser execution failures; repair missing worker audio infrastructure while retaining original assertions, timeouts and failed receipts.
+- [x] Find and fix the existing export/recovery defect exposed by the native regression suite, with an independently written failing test first.
+- [x] Prove marker-refresh success and refusal after newer edits, stale delivery and quota failure; rerun lifecycle/recovery regressions and source gates.
+- [x] Complete all 33 real-browser phone/desktop cases, including existing guitar/note-first regressions; inspect receipts/screenshots and promote only unchanged-source guarded bytes.
+- [x] Finish exact evidence and close `.4.5`; keep physical/player `.3.3` and `.4.3` open.
 
-Implementation checkpoint: RCH `final-gates.log` passes 52 focused tests / 912 assertions, all four strict TypeScript projects, owned ESLint, source policy (347 files), and guarded build. `mutants.log` kills actual duplicate collapse, occurrence reversal, ignored document identity and ignored revision; restored production passes 3 tests / 277 assertions. Initial test typing errors were corrected with explicit fixture-value/index validation, without changing expectations. Evidence lives in `.tmp/note-first-guitar/`.
+Source evidence lives in `.tmp/note-first-guitar/`. The independently authored
+specification packet passes 16 assertions. `recovery-gates-fixed.log` passes
+52 guitar/note-entry tests / 912 assertions plus 67 lifecycle/recovery tests /
+414 assertions: **119 tests / 1,326 assertions**, all four strict TypeScript
+projects, owned ESLint, source policy (347 files), and guarded Bun 1.3.14 build.
+Initial nullable/indexed test values were fixed with explicit validation, without
+changing expected values or weakening compiler/lint rules.
 
-Browser execution failures are retained: the first local run had 9 passes / 2 failures before stopping; the second, with the documented `LP_NUM_THREADS=4`, had 8 passes / 3 failures / 1 interrupted. Long workflows exhausted their unchanged 30-second total budget; traces show cumulative startup/UI time rather than a failed exact-note assertion. The renderer setting alone did not fix this local timing limitation. The same complete suite moved to hz2 through RCH. Chromium passed, but Firefox's existing and new audio checks exposed an absent worker audio server. PulseAudio and its native local null sink were installed; a separate real Node/native AudioContext preflight now passes in Chromium 149.0.7827.55, Firefox 151.0 and WebKit 26.5. This is an infrastructure correction, not a mock audio adapter or a physical listening claim. The first worker report remains at `test-results/draft-guitar-run/`; the first complete corrected-environment run at `test-results/draft-guitar-final/` passed 32/33. Its WebKit desktop failure was a test race: the trace records Export opening immediately after shell readiness, before the asynchronous recovery probe; the app correctly offered Keep after that session change. The regression now explicitly waits for “Recovered chart opened” before the unchanged exact-document comparison, as the dedicated recovery suite already does. A complete 33-case run with that synchronization fix is pending at `test-results/draft-guitar-verified/`. No assertion, timeout, retry count, CSP or browser matrix was relaxed.
+`mutants.log` kills actual duplicate collapse, occurrence reversal, ignored
+document identity and ignored revision; restored selector production passes
+3 tests / 277 assertions. That selector is unchanged in the rebuilt artifact.
+Native tests exercise real audio, storage and downloads; the small integration
+audio double proves ownership, not physical listening quality.
+
+Browser failures remain inspectable. The two local runs recorded 9 passes /
+2 failures before stopping, then 8 passes / 3 failures / 1 interrupted with the
+documented `LP_NUM_THREADS=4`. Long workflows exhausted the unchanged 30-second
+total budget. The renderer setting alone did not fix this local timing
+limitation; no local performance repair is claimed. The same complete suite
+moved to hz2 through RCH. Chromium passed, but Firefox's existing and new audio
+checks exposed an absent worker audio server. PulseAudio 17 with its native
+local `auto_null` sink fixed that prerequisite; a real Node/native AudioContext
+preflight passes in Chromium 149.0.7827.55, Firefox 151.0 and WebKit 26.5.
+This is an OS audio backend, not a mock Web Audio implementation. The first
+worker report remains at `test-results/draft-guitar-run/`.
+
+The first complete corrected-environment matrix (`draft-guitar-final`) was
+32/33. Its WebKit desktop reload failure initially appeared to be Export racing
+recovery, so the existing test was strengthened to await “Recovered chart
+opened” before its unchanged exact-document comparison. The next complete
+matrix (`draft-guitar-verified`) remained 32/33: that explanation was incomplete.
+Targeted native diagnostics (`draft-guitar-recovery-debug` and
+`draft-guitar-recovery-storage`) recorded no post-reload input and inspected real
+IndexedDB. The revision 6 recovery envelope still carried revision 5 `lastExport`
+beside a durable revision 6 export binding. The app correctly offered Keep for
+that mismatch; successful export had never queued a refreshed recovery envelope.
+
+`recovery-red.log` proves the new production lifecycle/A1 test failed before the
+fix: 23 pass / 1 failure, missing queued refresh. Successful marker persistence
+now queues the exact current document through existing recovery scheduling,
+only if its document ID and revision still match. A late storage completion
+cannot queue an older chart, and failed/stale exports queue nothing. The new
+positive and late-edit controls, existing negative controls, and cold-service
+startup checks pass in the 67-test recovery set. The complete matrix at `test-results/draft-guitar-recovery-fixed/` passes
+**33/33**, zero skipped/unexpected/flaky, in 220,902.453 ms. No assertion,
+timeout, retry count, CSP or browser matrix was relaxed.
+
+Verification retains the exact three-file transfer exclusion for unowned
+`src/application/ChordPadsPanel.tsx`, `src/application/ExactShareDialog.tsx`, and
+`src/application/NoteFirstPanel.tsx`. Those files remain untouched. Whole-tree
+release readiness, physical acceptance and deployment are not claimed.
+
+
+Final browser command (RCH hz2, pinned real Node 26):
+`node node_modules/@playwright/test/cli.js test tests/e2e/note-first-guitar.spec.ts tests/e2e/studio-guitar.spec.ts tests/e2e/note-first-keyboard.spec.ts tests/e2e/studio-note-first.spec.ts --config test-results/draft-guitar-recovery-fixed/playwright.config.ts --workers 1`.
+The runner binds all four artifact environment variables to the same guarded
+candidate. All 33 machine-readable evidence attachments match SHA-256
+`3cd5aea9ee98647b44d5d4dbca6d8dd05a79c1d9f2b4eaa137e94412f0b168c9`;
+none records page/console errors or runtime network requests. Existing cases
+also record allowed initial/reload navigation to the local artifact. The matrix
+covers Chromium/Firefox/WebKit, 320px/desktop, dark/light presentation, touch and
+keyboard entry, exact duplicate/spelling tables, live edits, stale hiding,
+no-position boundaries, native audition/release, unchanged chart until Add,
+exact Add/Undo/Redo and automatic recovery downloads, Axe and overflow. Both
+Chromium screenshots were visually reviewed.
+
+The exact 362-file source set and hashes remained unchanged before promotion.
+Root HTML and `dist/index.html` now contain the same guarded **8,628,372 bytes**,
+1,882 bytes above the prior keyboard build, leaving 284,524 bytes of shell
+headroom plus the untouched 524,288-byte Atlas reserve. The corresponding
+standalone manifest is in `dist/`. Implementation `.4.5` is complete; physical
+verification `.3.3`/`.4.3`, package epics, dropout prerequisites and reopened G9
+remain open. No Git commit, push or deployment was performed by this session.
+
+## Explicit short WAV excerpts (2026-09-11, CyanCove)
+
+- [x] Recover live Beads/Agent Mail/Git state and read WAV/timing/layer contracts.
+- [x] Identify observed gap: no way to select four later bars from a longer chart.
+- [x] Specify opt-in one-based chart/section bar ranges and unchanged audio limits.
+- [x] Author independent ticks for rests, fractional pickups, cross-section ranges.
+- [x] Pass specification fixture gate (RCH hz2: 1 test, 12 assertions); close `.8.4`, claim dependent build `.8.5`.
+- [x] Implement bounded exact original-document range resolution and refusals.
+- [x] Wire excerpt intents/view and accessible first-bar/count UI into existing WAV.
+- [x] Preserve full-context P0, exact note occurrences, source state and dry route.
+- [x] Test invalid ranges, source limits, rendering/hashing cancellation and stale bytes.
+- [x] Decode actual later-excerpt PCM and browser downloads, retaining leading silence.
+- [x] Run RCH focused tests/types/lint/source policy/guarded build and native browser matrix.
+- [x] Fresh-eyes review, exact evidence and source-bound generated artifact promotion.
+- [x] Close build `.8.5` after named gates; leave `.8.3` physical memory/listening open.
+
+2026-09-11 06:05 UTC: Explicit WAV excerpt implementation `.8.5` passes its named
+automated gates. Choose specific bars within a longer chart/section; full-context
+P0 retains exact spelling/register/order/duplicates and rational rests/pickups.
+Range edits cancel rendering/hashing and clear old downloads. Existing dry-piano
+limits, source immutability, and whole-chart/section defaults remain in force.
+
+Evidence: RCH hz2, Bun 1.3.14 and Node 26.0.0; `.tmp/wav-excerpt/gates-final.log`
+contains 30 tests / 225 assertions, zero failures, focused final types, owned lint,
+source policy 348 files / zero findings, and guarded build. All four type projects
+passed in `gates-typed.log`; changed test projects were rechecked after correcting
+the Promise-returning test hash port's lint issue. Four semantic mutations (wrong
+section offset, off-by-one start, dropped rest time, five-bar admission) were killed
+by actual failing assertions in `mutants.log`; source restoration was verified.
+
+Native results `test-results/wav-excerpt-restored/browser-results.json`: 24 passed,
+0 skipped/unexpected/flaky, retries 0; 139,029.256 ms. Chromium 149.0.7827.55,
+Firefox 151.0, WebKit 26.5; 320/1280 widths and light/dark. Every artifact-bound
+receipt has zero console/page errors and runtime network requests. Axe and overflow
+checks pass. Actual downloads independently decode to 537,644-byte stereo PCM16
+WAVs with 64,000 silent leading frames; chart bars 5–6 and section bars 2–3 are
+byte-identical. Existing whole-passage native WAV cases pass unchanged.
+
+Root/dist are byte-identical at SHA256
+`3f16acb3b339e13febaef0d9480a670303c298c822aa43755ca300922d2f7cc9`,
+8,631,170 bytes. All 363 scoped source file hashes matched before promotion;
+281,726 shell-budget bytes remain plus the reserved 524,288 Atlas bytes. The three
+pre-existing unowned application-layer UI copies remain untouched and excluded
+from scoped RCH transfer; this is not a whole-tree release/deployment claim.
+
+Failed evidence retained: initial fixture used unnormalized stored durations
+(corrected to exact 1/3, 5/2, 4/1 without changing expected ticks); branded-value test
+assertions needed explicit primitive projection; one async test adapter needed a
+Promise return; RCH admission needed stale-own-lease recovery. Initial browser run
+could not launch missing pinned executables (0 pass / 24 failures); restored the
+same browser versions into a task-owned cache and reran the full unchanged matrix.
+No assertion, timeout, retry, gate or acceptance requirement was relaxed.
+Fresh-eyes self-review and honesty inventory found no inflated completion or
+weakened gate. No deployment was performed. Original `.8.3` physical-phone
+memory/listening verification and parent epic remain open.
+
+## WAV excerpt production release (2026-09-11, jcpe-sho1)
+
+- [x] Recover exact tested artifact/source identity and claim release lane.
+- [x] Rebuild matching bytes via RCH; commit only completed artifact/TODO/Beads and push.
+- [x] Pass mandatory model acceptance, instrument quality, and native playback gates.
+- [x] Upload committed HTML and share image to Cloudflare Pages and Vercel.
+- [x] Poll both public hosts until their bytes match the committed artifact.
+- [x] Verify live boot and WAV excerpt download at phone/desktop widths with real browsers.
+- [x] Record host/commit/hash/evidence and close deployment task; retain physical acceptance limits.
+
+2026-09-11 19:31 UTC: User-requested production release `jcpe-sho1` completed.
+Both `https://jazzchords.org/` and
+`https://changes-jazz-progression-studio.vercel.app/` serve committed artifact
+`ace028f1964f6d199f44304ce91f5fb47fae66d1`, SHA256
+`3f16acb3b339e13febaef0d9480a670303c298c822aa43755ca300922d2f7cc9`,
+8,631,170 bytes. Both matched on the first post-upload poll.
+Cloudflare deployment: `a3bd32bd.jazz-chord-progression-editor-html.pages.dev`.
+Vercel deployment: `dpl_3edpr5HWQhNMMWe5PtPztHXmWKvU`, READY, production alias set.
+
+Release gates used unchanged checked-in programs on RCH hz2, Bun 1.3.14 and
+real Node 26.0.0: guarded rebuild exactly matched the tested artifact;
+`bun run predeploy:check` passed all 11 shipping model rows and instrument
+quality (9 rendered instruments, zero fail findings; warning diagnostics retained).
+`node scripts/check-predeploy-playback.ts <committed-artifact> --json ...`
+passed all 15 instruments with zero console/page errors. Recovery enforcement
+remained enabled; its PASS was explicitly vacuous because no refusal reproduced.
+Evidence: `.tmp/wav-release/gates-corpus.log`,
+`test-results/instrument-quality/instrument-quality-v2.json`, and
+`test-results/wav-release/playback-gate.json`.
+
+Uploads used the same two committed public assets and targets as `bun run deploy`;
+the gates were executed remotely through RCH and authenticated uploads locally.
+Session-only launchers set the required HTTP User-Agent without editing gates,
+assertions, timing, or production code. The saved Wrangler login succeeded after
+the environment API token returned 10000; no global credentials were changed.
+The stale unmanaged RCH listener had no active/queued builds, ignored SIGTERM,
+and was terminated before the healthy listener resumed. The ignored UIowa corpus
+was restored to the worker from six locally SHA-verified manifest-pinned files.
+All failed infrastructure/prerequisite logs remain under `.tmp/wav-release/`.
+
+Live native Chromium 149.0.7827.55: 8/8 cases, two hosts x light/dark x 320/1280;
+zero skipped/retried/flaky cases, console/page errors, unexpected requests, axe
+violations, or panel overflow. Every real WAV download retained its independently
+expected 537,644 bytes and 64,000 silent leading frames. Chart bars 5–6 and section
+bars 2–3 were byte-identical on both sites, and chart revision stayed unchanged.
+Phone screenshots were inspected. Reports: `test-results/wav-release-live/host-0.json`
+and `host-1.json`; exact receipt summary `.tmp/wav-release/live-evidence-summary.json`.
+No Cloudflare beacon error occurred in these browser sessions; this does not claim
+the platform injection is permanently disabled. Original `.8.3` physical-device
+memory/listening verification remains open. No release gate was weakened or skipped.
