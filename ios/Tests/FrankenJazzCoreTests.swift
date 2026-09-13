@@ -1393,7 +1393,12 @@ final class FrankenJazzCoreTests: XCTestCase {
         }
         XCTAssertNil(JazzAudioRenderer.renderPreviewChord(midis: [], tone: .mellowKeys))
         XCTAssertNil(JazzAudioRenderer.renderPreviewChord(midis: [20, 60], tone: .mellowKeys))
-        XCTAssertNil(JazzAudioRenderer.renderPreviewChord(midis: Array(48...58), tone: .mellowKeys))
+        let firstMIDIBeyondStoredVoiceBound = 48 + JazzDocumentValidator.maximumStoredVoices
+        XCTAssertNil(
+            JazzAudioRenderer.renderPreviewChord(
+                midis: Array(48...firstMIDIBeyondStoredVoiceBound), tone: .mellowKeys
+            )
+        )
     }
 
     func testPianoTouchLayoutPrefersBlackKeysAndSupportsGlideHitTesting() {
