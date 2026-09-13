@@ -9,8 +9,13 @@ Consumer: the user and Codex executing the 2026-09-04 request to implement the r
 - [x] Dispatch keyboard intents to application-owned exact rational arithmetic and retain the accepted playhead fraction.
 - [x] Prove fractional Arrow/bar/Page steps, exact Home/End and clamps, ready pending starts, refusal and document/history preservation: 4 tests, 123 assertions.
 - [x] Run RCH focused tests, typecheck/lint, native regression (3 browsers), existing U4 evidence (27 tests, 753 assertions and 3 browsers), and guarded build. Retain earlier disk-stalled browser attempts and original U0 token failures.
-- [ ] Fresh review, commit/push explicit owned paths, then deployment gates and real live verification.
-- [ ] Close only this defect with exact evidence; preserve U4 ownership and original human acceptance obligations.
+- [x] Fresh-review and commit explicit owned paths as `a41a7e1`; preserve incoming iOS changes in merge `863df84`, reconcile stale web changes, reproduce the same artifact and push.
+- [x] Run both predeploy gates against committed bytes: model 11/11, instrument quality 9/9 and real playback 15/15 pass. Quality warnings remain observations; human listening is not claimed.
+- [x] Deploy committed 8,632,936-byte artifact to Cloudflare Pages and Vercel; both public hosts repeatedly match SHA256 `2e9c10e4cfb6f3df6a8a5059450578dd15b566cbeac3e45d68f45afeefadd84f`. Cloudflare deployment `4b5f0b70`; Vercel `dpl_4mhtfjGvGDvyAyjc8EnkBaTJQ496` is READY.
+- [x] Inspect live desktop/phone diagnostics on both hosts: Vercel 6/6 pass; Cloudflare 5/6 pass, with WebKit 320px timing out at initial Play actionability before seek. Preserve `test-results/keyboard-live-ram/host-{0,1}.json` and every earlier failure; the matrix is not green.
+- [x] Investigate the remaining failure with a bounded passive frame/visibility diagnostic. Cloudflare WebKit 320px completes exact 27/8→35/8→27/8 seeking, Space containment and unchanged revision, with no runtime errors or extra requests. The page stays visible/focused and the button stationary, but frames stall for seconds; concurrent worker full I/O pressure reaches 85%. This supports a scheduling problem without proving its cause. Diagnostic 1/1 is not a replacement for the failed matrix.
+- [ ] Resolve the live WebKit startup/actionability instability and obtain the original complete live matrix with unchanged assertions/deadlines/retry policy. Keep the defect in_progress while this remains unresolved.
+- [ ] Close only this defect with exact evidence; preserve U4 ownership, the original red U0 CSS-token gate and human acceptance obligations.
 
 ## M1 audition lifecycle and matched groove — jcpe-qyyn (CyanCove)
 
