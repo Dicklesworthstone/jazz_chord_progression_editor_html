@@ -22,6 +22,9 @@ test("keyboard seeks preserve a fractional paused playhead", async ({ page, brow
   try {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto(url);
+    // Empty-startup recovery seeds the starter chart asynchronously. Capture
+    // its revision only once the transport can play that completed chart.
+    await expect(page.locator("#studio-transport-play")).toBeEnabled();
     const revision = await page.locator(".studio-document-status__revision").textContent();
     await page.locator("#studio-transport-play").click();
     await expect(page.locator("#transport-bar")).toHaveAttribute("data-audio-state", "playing");
