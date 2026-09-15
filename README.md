@@ -128,7 +128,7 @@ The two HTML outputs must be byte-identical. The enforced artifact ceiling is
 9 MiB (`maxUncompressedBytes: 9437184`, the same figure the reviewed PHS7
 physical-system contract pins), with a hard 512 KiB reservation for the
 future Harmonic Atlas and an 8,912,896-byte shell allocation; the current
-tracked artifact from `29dda11` measures 8,633,114 bytes. The full amendment history and the
+tracked artifact from `8f50175` measures 8,633,118 bytes. The full amendment history and the
 reclamation path (physical models replacing the ~2.8 MB sampled payloads)
 are recorded in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 

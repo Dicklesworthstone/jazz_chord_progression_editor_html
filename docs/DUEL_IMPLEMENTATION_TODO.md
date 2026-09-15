@@ -128,11 +128,19 @@ Package `jcpe-6ujg.3`. Spec `jcpe-6ujg.3.1` → build `jcpe-6ujg.3.2` → verify
 - [ ] Record independent acceptance and close all three phases before package.
 
 2026-09-15 verification checkpoint: `.3.3` found and repaired lost keyboard focus
-after Add and supplementary-Unicode Custom-label truncation. The 180 focused
-tests, types, lint and guarded reproduction pass; the new 42-case native matrix
-has 23 passes and 19 failures, so the repair is not accepted or deployed.
-The detailed recovery steps and retained evidence are in the note-first section
-of `docs/IMPLEMENTATION_TODO.md`. Original independent/device acceptance stays open.
+after Add and supplementary-Unicode Custom-label truncation in `8f50175`.
+The 180 focused tests, types, lint and guarded reproduction pass. Complete native
+groups now pass 42/42 on hz4: Chromium 14, Firefox 14, WebKit 14, with unchanged
+deadlines/assertions, one attempt per case and no errors or forbidden requests.
+The earlier 23/42 matrix, later 10/14 group and setup failures remain recorded.
+Committed-byte predeploy passes for 11 shipping models, nine instrument-quality
+subjects and all 15 native playback cases; recovery is explicitly vacuous, not
+an exercised refusal. Both hosts now serve the exact `cf898ef` artifact, SHA256
+`8d3dd95ef258f1358a179390ff208525ea246c04a2d0dd14324e0eed6a9a1802`.
+All 12 live focus/Unicode/exact-download cases pass at 320/1280px across three
+engines and both hosts, with no console/page errors or extra requests in this run.
+Detailed evidence is in `docs/IMPLEMENTATION_TODO.md`; original independent/player
+and physical-device acceptance stays open on this same leaf and parent.
 
 ## COD4 + AGY1: Exact guitar positions and instrument view
 
