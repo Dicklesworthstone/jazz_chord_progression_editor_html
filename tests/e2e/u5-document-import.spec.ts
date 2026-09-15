@@ -51,6 +51,18 @@ async function exportDocument(page: Page): Promise<unknown> {
   const parsed: unknown = JSON.parse(bytes);
   return parsed;
 }
+// A successful export makes the chart clean. Establish the dirty revision
+// required by U5 section 4.1 through real edits while retaining the exact
+// document used by the preservation/Undo assertions.
+async function leaveUnexportedRevision(page: Page): Promise<void> {
+  const title = page.locator("#studio-document-title");
+  const original = await title.inputValue();
+  await title.fill(`${original} draft`);
+  await title.press("Enter");
+  await title.fill(original);
+  await title.press("Enter");
+  await expect(page.getByText("Changed since export", { exact: true })).toBeVisible();
+}
 async function previewFile(page: Page): Promise<void> {
   await page.locator("#studio-import-chart").click();
   await page.locator("#studio-import-file").setInputFiles(fixture);
@@ -71,6 +83,7 @@ for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 
     test.use({ viewport });
     test("a truncated legacy report still discloses every rejected chord count before confirmation", async ({ page }) => {
       const original = await exportDocument(page);
+      await leaveUnexportedRevision(page);
       const source = { name: "Partial legacy chart", sections: [{ name: "A", chords: [
         ...Array.from({ length: 300 }, () => ({ name: "Cmaj7", notes: ["C3", "E3", "G3", "B3"] })), null,
       ] }, null] };
@@ -105,6 +118,7 @@ for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 
       await expect(page.locator("#studio-import-commit")).toHaveCount(0);
       await page.keyboard.press("Escape");
       expect(await exportDocument(page)).toEqual(original);
+      await leaveUnexportedRevision(page);
       await previewFile(page); await replacePreview(page);
       expect(await exportDocument(page)).toEqual(expectedDocument);
       await page.locator("#studio-undo").click(); expect(await exportDocument(page)).toEqual(original);
@@ -113,25 +127,59 @@ for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 
       test(`${format} import retires an actually sounding chord preview`, async ({ page }, info) => {
         await expect(page.locator("#studio-document-title")).toHaveValue("Deacon Blues");
         const original = await exportDocument(page);
+        await leaveUnexportedRevision(page);
         await observeNativeSources(page);
         await page.locator(".studio-chord-card").first().click();
         await expect.poll(() => page.evaluate(() => window.u5NativeSourceCounts?.().sounding ?? 0)).toBeGreaterThan(0);
-        await page.locator("#studio-import-chart").click();
-        await page.locator("#studio-import-file").setInputFiles(format === "canonical" ? fixture : {
-          name: "legacy-preview.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify({ name: "Legacy preview replacement",
+        // Batch the DOM/file steps in one browser evaluation so automation
+        // round trips cannot consume the finite 1.2-second preview. These are
+        // the real visible controls, native File and existing import handler;
+        // the audio graph, clock, preview duration and retirement stay real.
+        const transferFile = format === "canonical" ? { name: "nested.changes.json", text: canonical } : {
+          name: "legacy-preview.json", text: JSON.stringify({ name: "Legacy preview replacement",
             description: "Exact manual notes", sections: [{ name: "A", chords: [{ name: "Cmaj7", root: "C", type: "maj7",
-              notes: ["C3", "E3", "G3", "B3"], annotation: "Keep this note" }] }] })),
-        });
-        await page.locator("#studio-import-commit").click();
-        await expect(page.locator("#studio-import-confirm")).toBeEnabled();
-        const atConfirm = await page.evaluate(() => window.u5NativeSourceCounts?.());
+              notes: ["C3", "E3", "G3", "B3"], annotation: "Keep this note" }] }] }),
+        };
+        const { atConfirm, importSetupMs } = await page.evaluate(async file => {
+          const started = performance.now();
+          const ready = (selector: string): Promise<Element> => new Promise((resolve, reject) => {
+            const inspect = () => {
+              const element = document.querySelector(selector);
+              if (element !== null && element.getClientRects().length > 0 && !element.matches(":disabled")) {
+                observer.disconnect(); clearTimeout(timer); resolve(element);
+              }
+            };
+            const observer = new MutationObserver(inspect);
+            const timer = setTimeout(() => { observer.disconnect(); reject(new Error(`IMPORT_CONTROL_NOT_READY:${selector}`)); }, 5000);
+            observer.observe(document.body, { childList: true, subtree: true, attributes: true }); inspect();
+          });
+          const click = async (selector: string): Promise<void> => {
+            const element = await ready(selector);
+            if (!(element instanceof HTMLButtonElement)) throw new Error(`IMPORT_BUTTON_MISSING:${selector}`);
+            element.click();
+          };
+          await click("#studio-import-chart");
+          const input = await ready("#studio-import-file");
+          if (!(input instanceof HTMLInputElement)) throw new Error("IMPORT_FILE_INPUT_MISSING");
+          const transfer = new DataTransfer();
+          transfer.items.add(new File([file.text], file.name, { type: "application/json" }));
+          input.files = transfer.files;
+          input.dispatchEvent(new Event("input", { bubbles: true }));
+          input.dispatchEvent(new Event("change", { bubbles: true }));
+          await click("#studio-import-commit");
+          const confirm = await ready("#studio-import-confirm");
+          if (!(confirm instanceof HTMLButtonElement)) throw new Error("IMPORT_CONFIRM_MISSING");
+          const atConfirm = window.u5NativeSourceCounts?.();
+          const importSetupMs = performance.now() - started;
+          confirm.click();
+          return { atConfirm, importSetupMs };
+        }, transferFile);
         expect(atConfirm?.sounding).toBeGreaterThan(0);
-        await page.locator("#studio-import-confirm").click();
         await expect(page.getByRole("dialog")).toHaveCount(0);
         await expect.poll(() => page.evaluate(() => window.u5NativeSourceCounts?.()))
           .toMatchObject({ sounding: 0, futureAttacks: 0 });
         await expect(page.locator("#studio-transport-stop")).toBeDisabled();
-        await info.attach("preview-retirement", { contentType: "application/json", body: JSON.stringify({ atConfirm,
+        await info.attach("preview-retirement", { contentType: "application/json", body: JSON.stringify({ atConfirm, importSetupMs,
           after: await page.evaluate(() => window.u5NativeSourceCounts?.()) }) });
         const actual = await exportDocument(page);
         if (format === "canonical") expect(actual).toEqual(expectedDocument);

@@ -149,6 +149,11 @@ test("a real click delivers the golden bytes with exact cleanup evidence", async
   const diagnostics = captureDiagnostics(page);
   await page.goto(baseUrl, { waitUntil: "load" });
 
+  // Finish the load-time gesture-less probe before introducing a trusted
+  // gesture; otherwise its timer can overlap this positive delivery.
+  await page.waitForFunction(
+    () => (window as unknown as Record<string, unknown>)["__e0AutoReceipt"],
+  );
   const downloadPromise = page.waitForEvent("download");
   await page.locator("#deliver").click();
   const download = await downloadPromise;

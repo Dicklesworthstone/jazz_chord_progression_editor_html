@@ -17,6 +17,8 @@ for(const theme of ["light","dark"] as const)for(const width of [320,1280])test(
  await page.route("**/*",async route=>{const allowed=route.request().isNavigationRequest()&&route.request().url()===url;requests.push({url:route.request().url(),allowed});if(allowed)await route.continue();else await route.abort();});
  try{
   await page.emulateMedia({colorScheme:theme});await page.setViewportSize({width,height:900});await page.goto(url);
+  // Starter seeding is asynchronous; establish the nonempty chart required by confirmation.
+  await expect(page.locator("#studio-document-title")).toHaveValue("Deacon Blues");
   await page.locator("#studio-import-chart").click();await page.locator("#studio-import-file").setInputFiles({name:"piano.changes.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify(chart))});await page.locator("#studio-import-commit").click();await page.locator("#studio-import-confirm").click();
   await expect(page.locator("#studio-document-title")).toHaveValue(chart.title);const revision=await page.locator(".studio-document-status__revision").textContent();await observeNativeSources(page);
   await page.evaluate(()=>{let created=0;const Native=window.AudioContext;window.AudioContext=new Proxy(Native,{construct(target,args,newTarget){created++;document.documentElement.dataset["wavAudioContexts"]=String(created);const context:unknown=Reflect.construct(target,args,newTarget);if(!(context instanceof Native))throw new Error("Invalid native context");return context;}});document.documentElement.dataset["wavAudioContexts"]="0";});

@@ -356,7 +356,7 @@ describe("A0/E0 bridge production source policy: composition privacy", () => {
             return null;
           })
           .filter((name): name is string => name !== null);
-        /* The reviewed composition return is exactly this sextuple. */
+        /* The composition root owns these services; the public controller does not expose the interchange owner. */
         const reviewedComposition = [
           "controller",
           "interchangeOwner",
@@ -364,6 +364,11 @@ describe("A0/E0 bridge production source policy: composition privacy", () => {
           "readApplicationState",
           "allocateTransportCommandRequestId",
           "midiExport",
+          "performedMidi",
+          "comping",
+          "wav",
+          "printCharts",
+          "songbook",
         ];
         if (
           names.includes("controller") &&
