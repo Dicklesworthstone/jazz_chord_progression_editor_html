@@ -1,8 +1,8 @@
-# Changes — Jazz Progression Studio
+# JazzChords.org — Jazz Progression Studio
 
 An offline, deterministic jazz chord-progression studio designed to turn lead-sheet changes into an explainable, playable, portable chart—without accounts, telemetry, cloud services, or runtime AI.
 
-> **Development status (2026-09-08):** Changes is a working editor and
+> **Development status (2026-09-08):** JazzChords.org is a working editor and
 > playback studio, with substantial recovery, interchange and voicing tools.
 > The repository includes newer exact-sharing, My Charts and Focus workflows
 > than the build currently served at <https://jazzchords.org>. Full harmonic
@@ -12,9 +12,9 @@ An offline, deterministic jazz chord-progression studio designed to turn lead-sh
 > See the [implementation status](docs/IMPLEMENTATION_TODO.md), [reality check](docs/REALITY_CHECK.md)
 > and [limitations](#current-limitations).
 
-## Why Changes
+## Why JazzChords.org
 
-Jazz harmony tools often force a poor choice: move slowly through generic forms, accept opaque “smart” suggestions, or set up a full DAW before testing four bars. Changes is being built around a different promise:
+Jazz harmony tools often force a poor choice: move slowly through generic forms, accept opaque “smart” suggestions, or set up a full DAW before testing four bars. JazzChords.org is being built around a different promise:
 
 - type changes as quickly as a lead sheet;
 - preserve exact spelling, beat duration, stable identity, and manual voicings;
@@ -62,7 +62,7 @@ problems have been resolved; deployment freshness is a separate requirement.
 | Progression library | 27 library entries plus the starter chart, with a machine-checked provenance law |
 | MIDI import | Compare up to five local `.mid` candidates with explained, deterministic rankings; inspect any candidate before Add. Tied keys remain explicit and do not transfer automatically; Advanced offers a key choice. Includes a Rust SMF parser in WASM, salvage ledger, per-track preview/overrides, and automated groove matching (M0 shipped; M1 owner-listening gate open) |
 | Recovery | Best-effort IndexedDB with localStorage fallback, revision-bound writes, automatic current recovery when startup is untouched, Keep/Discard for conflicts, previous-copy fallback, and visible storage failures |
-| Chart import | Local Changes/legacy JSON files and pasted data get a bounded preview before replacement; migration reports disclose retained data, confirmation retires playback, and imported document IDs survive recovery |
+| Chart import | Local JazzChords.org/legacy JSON files and pasted data get a bounded preview before replacement; migration reports disclose retained data, confirmation retires playback, and imported document IDs survive recovery |
 | JSON export | **Export JSON** prepares and validates a portable chart, then **Download JSON** hands it to the browser; only exact successful delivery advances the export marker |
 | My Charts | Explicit local collection with search, rename, fresh-ID duplication, confirmed replacement/removal, and exact portable backups; atomic IndexedDB writes refuse stale tabs and preserve existing charts on failure |
 | Chart-text export | **Export text** checks the supported chart structure and lists lost voicing, identity, analysis, and playback data before download; it leaves the JSON export marker unchanged |
@@ -77,7 +77,7 @@ There is no hidden legacy editor behind the page; the studio is the ground-up re
 
 1. Obtain this repository or the standalone `jazz_chord_progression_editor.html` file.
 2. Open `jazz_chord_progression_editor.html` in a modern browser by double-clicking it or using the browser's **Open File** command.
-3. Confirm that the page opens the JazzChords studio with a demo chart loaded — press **Play** to hear it, or **Clear** to start your own.
+3. Confirm that the page opens the JazzChords.org studio with a demo chart loaded — press **Play** to hear it, or **Clear** to start your own.
 
 No local server, account, API key, or network connection is required.
 
@@ -402,7 +402,7 @@ Confirm that you opened the generated root file rather than `src/index.html`, th
 
 No. The rebuild is a ground-up replacement. Legacy behavior is retained only as audit and migration evidence, not as a second runtime.
 
-### Does Changes use AI to choose chords?
+### Does JazzChords.org use AI to choose chords?
 
 No. The runtime product boundary forbids models and prompts. Planned suggestions are plural outputs from explicit laws, reviewed corpora, deterministic ranking, and bounded search.
 

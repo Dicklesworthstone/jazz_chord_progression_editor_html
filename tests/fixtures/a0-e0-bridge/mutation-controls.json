@@ -192,7 +192,7 @@
         "materialization": "comparisonInput",
         "operator": "replace",
         "jsonPointer": "/arguments/0/candidate/title",
-        "from": "Changes",
+        "from": "Cadence",
         "to": false,
         "exactChangedFieldCount": 1
       },
@@ -631,19 +631,19 @@
         "materialization": "comparisonInput",
         "operator": "replace",
         "jsonPointer": "/controllerState/document/title",
-        "from": "Changes",
-        "to": "Changes edited by current state",
+        "from": "Cadence",
+        "to": "Cadence edited by current state",
         "exactChangedFieldCount": 1
       },
       "observation": {
         "materialization": "controllerStateAfter",
         "jsonPointer": "/document/title",
-        "baselineValue": "Changes",
-        "killerValue": "Changes edited by current state"
+        "baselineValue": "Cadence",
+        "killerValue": "Cadence edited by current state"
       },
       "exactExpectedDifference": {
-        "baselineValue": "Changes",
-        "killerValue": "Changes edited by current state"
+        "baselineValue": "Cadence",
+        "killerValue": "Cadence edited by current state"
       },
       "oracleExpectation": {
         "outcome": "pass"

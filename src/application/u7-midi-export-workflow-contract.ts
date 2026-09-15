@@ -72,7 +72,7 @@ export const U7_MIDI_TRACK_COUNT = 2;
 export const U7_MAX_MARKER_TEXT_UTF8_BYTES = 96;
 
 /** E1 filename law pins. */
-export const U7_FILENAME_PREFIX = "changes-";
+export const U7_FILENAME_PREFIX = "JazzChords.org-";
 export const U7_FILENAME_SUFFIX = ".mid";
 export const U7_FILENAME_MAX_CHARACTERS = 64;
 
@@ -201,7 +201,7 @@ export type U7TitleNoticeKind = (typeof U7_TITLE_NOTICE_KINDS)[number];
 
 /** Pinned track-metadata literals. */
 export const U7_VOICING_TRACK_NAME = "Voicings";
-export const U7_INSTRUMENT_NAME = "Changes";
+export const U7_INSTRUMENT_NAME = "JazzChords.org";
 
 /**
  * Request-id law: deterministic, E1-alphabet transliteration of the document

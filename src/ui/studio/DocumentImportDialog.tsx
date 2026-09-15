@@ -9,7 +9,7 @@ const COMMITTING = Object.freeze({ kind: "blocked", reason: "Wait for the chart 
 const FOCUS = Object.freeze({ triggerId: "studio-import-chart", workflowTargetId: "studio-document-title", workspaceId: "workspace" });
 const FORMAT_OPTIONS = [
   { id: "import-format-auto", value: "auto", label: "Detect format", description: null, disabled: false },
-  { id: "import-format-json", value: "canonical-json", label: "Changes JSON", description: null, disabled: false },
+  { id: "import-format-json", value: "canonical-json", label: "JazzChords.org JSON", description: null, disabled: false },
   { id: "import-format-legacy", value: "legacy-json", label: "Legacy JSON", description: null, disabled: false },
   { id: "import-format-text", value: "chart-text", label: "Chart text (insert only)", description: null, disabled: false },
 ] as const;
@@ -46,7 +46,7 @@ export function DocumentImportDialog({ service, view }: Readonly<{ service: Stud
     onContractRefusal={onContractRefusal} onDismiss={service.cancel}
     content={<div class="studio-document-import">
       {confirm ? <>
-        <p>Replace the current chart with <strong>{view.title}</strong> from {view.sourceFormat === "unversioned-legacy-json" ? "legacy import" : "Changes JSON import"}?</p>
+        <p>Replace the current chart with <strong>{view.title}</strong> from {view.sourceFormat === "unversioned-legacy-json" ? "legacy import" : "JazzChords.org JSON import"}?</p>
         <p>The incoming chart keeps its notes, spellings, durations, sections and settings. Playback will stop before replacement. Current edits and selections will be replaced.</p>
         {view.nonUndoable ? <>
           <p role="alert">History is at its boundary. This replacement cannot be undone. Export your current chart before continuing.</p>
@@ -85,7 +85,7 @@ export function DocumentImportDialog({ service, view }: Readonly<{ service: Stud
         {view.phase === "reading" ? <p role="status">Reading and validating the chart…</p> : null}
         {view.summary === null ? null : <section aria-label="Import preview">
           <h3>{view.title}</h3>
-          <p>Detected format: {view.sourceFormat === "unversioned-legacy-json" ? "Legacy JSON" : "Changes JSON"}</p>
+          <p>Detected format: {view.sourceFormat === "unversioned-legacy-json" ? "Legacy JSON" : "JazzChords.org JSON"}</p>
           <p>{view.summary.sections} sections; {view.summary.measures} measures; {view.summary.chordEvents} chords.</p>
           <p>{view.summary.manualVoicings} Manual; {view.summary.frozenVoicings} Frozen; {view.summary.customChords} Custom chords. Imported Manual and Frozen notes keep their supplied pitches and order.</p>
           {view.groups.filter((group) => group.items.length > 0 || view.omittedItems > 0).map((group) => <section key={group.name} aria-label={group.name}>

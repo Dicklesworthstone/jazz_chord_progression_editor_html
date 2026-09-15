@@ -146,7 +146,7 @@ the deterministic filename, and the loss list:
   number emits one on/off pair, and the stored voicing keeps the doubling
   (additive amendment, jcpe-u0mc).
 
-Filename law: `changes-` + `documentId` with every character outside
+Filename law: `JazzChords.org-` + `documentId` with every character outside
 `[A-Za-z0-9._-]` replaced by `-`, truncated so the full name is at most 64
 characters including the `.mid` suffix.
 

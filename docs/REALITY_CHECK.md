@@ -1,4 +1,4 @@
-# Changes reality check — 2026-09-08
+# JazzChords.org reality check — 2026-09-08
 
 **September 9 M1 repair (`9ff4de5`/`97aed83`):** the tied-key contradiction below is resolved by full-set equivariance and unique-only automatic selection. The actual importer now discloses ties, retains the original presentation counterexample, and offers an explicit Key override; unresolved ties withhold key transfer. Independent rotated fixtures, actual decoder/controller/Undo proof,57 import browser cases and36 standalone cases pass. The M1 specification task closes; broader M1 acceptance, source-note review and human listening remain open. The dated observations below are retained as history; this update is not a new full-audit or release claim.
 
@@ -11,7 +11,7 @@ The fixture is being corrected under `jcpe-browser-suite-admission-0nyi` and its
 new evidence/tools are isolated under `.tmp/`. Tracked source and evidence were
 untouched. This notice supersedes raw-retention statements in the dated snapshot.
 
-Changes is a useful working studio with substantial editing, playback, recovery,
+JazzChords.org is a useful working studio with substantial editing, playback, recovery,
 interchange and voicing foundations. It is not yet the complete, independently
 proved harmonic-discovery system described by its plans. Since September 4,
 several useful workflows and a shared execution service have landed. The main

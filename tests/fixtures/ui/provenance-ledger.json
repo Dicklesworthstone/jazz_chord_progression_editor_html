@@ -9,7 +9,7 @@
     "reviewed-project-contract": "A normative repository architecture, plan, or Bead requirement.",
     "application-handoff": "A reviewed A0 selector, intent, revision, stale-state, or status boundary consumed by UI.",
     "external-standard-minimum": "An external accessibility minimum recorded separately from stricter project policy.",
-    "project-policy": "A deliberate Changes UX requirement that may be stricter than an external minimum.",
+    "project-policy": "A deliberate JazzChords.org UX requirement that may be stricter than an external minimum.",
     "mechanical-derivation": "A direct consequence of declared counts, finite collections, deterministic ordering, or exact-plus-one arithmetic."
   },
   "authorities": [

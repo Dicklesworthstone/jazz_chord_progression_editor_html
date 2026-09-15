@@ -31,7 +31,7 @@ const repositoryRoot = fileURLToPath(new URL("../..", import.meta.url));
 async function withFixtureCopy(
   run: (copyRoot: string) => Promise<void>,
 ): Promise<void> {
-  const temporaryRoot = await mkdtemp(join(tmpdir(), "changes-h0-contract-"));
+  const temporaryRoot = await mkdtemp(join(tmpdir(), "jazzchords-h0-contract-"));
   const copyRoot = join(temporaryRoot, "harmony-analysis");
   await cp(fixtureRoot, copyRoot, { recursive: true });
   try {

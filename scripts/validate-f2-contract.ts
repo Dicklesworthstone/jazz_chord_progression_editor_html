@@ -207,11 +207,11 @@ const EXPECTED_REVIEWED_DIGESTS = {
     "d5a2a4306c927cd0018737c31f863f18799450510b8a4faf7ba150c366091d54",
   companionsSha256: {
     "adversarial-cases.json":
-      "a6a8573e53b11e044e22a267d82ddf57f930913f966d157ed4e4e0d96ded5243",
+      "369d20467f86445adff5768f93ae8d323fb781b3e530e05935af29ae24c586ac",
     "provenance-ledger.json":
       "e9a24fdb862292cc774e5866c704160d33110f270aa43fe058cc55d390daef99",
     "shape-cases.json":
-      "6fe69ec31d7136af24e02438a358ba2092378a62b1c7bd4ff6a268acc2a446bc",
+      "548618f9b329c64b5083a207883b0e8508be9850270351207fd173e8a7eb742d",
     "trace-ledger.json":
       "664427ba257c0a6efcad69d926b472def777d20326c24cf22f62dd79c90ad6cd",
   },
@@ -229,11 +229,11 @@ const EXPECTED_SEMANTIC_SNAPSHOT_DIGESTS = {
     "f2-decoder-contract.json":
       "5fa677e6e6773caf801c6defe6d8e7e819668609383155d74a0a1e311e4e0c7a",
     "adversarial-cases.json":
-      "4a321bf2437b7a4ee37861f7dd387ab50b3d2b11bc51e553ed791752047f2f69",
+      "2bd37fd5fe16f13756f2f815476be759f9a54139eefe7c06b916d4f999e5a878",
     "provenance-ledger.json":
       "45eabc724d9d0a4e9ca2fab5bc1189c1eb042b0b1272fcdf6f3b37d88a9ffef1",
     "shape-cases.json":
-      "0d0fe2a30bcf3a23be858943938615ad0a3b59ecb1a6864a1861cd3802d6a14d",
+      "4e0f456efcf8cf1b0c90262fb54cb663d6237144b56552f98d0a5e7d352e3c52",
     "trace-ledger.json":
       "bf61e11d067bbcf466fa8e9a376dbf23007f1eb7f28705010679ac0760100199",
   },
@@ -254,7 +254,7 @@ const EXPECTED_MUTATION_LEDGER_SHA256 =
 const EXPECTED_TARGET_REGISTRIES_SHA256 =
   "9ff7fcc1179879a068eeec9a069b65c79c1ef6fe972077fd380adaaf3db64afd";
 const EXPECTED_CRITICAL_CELL_INVENTORIES_SHA256 =
-  "ef414a546e00921182d60174aa9cb3ba309d8f9002afa865a93d6a176a09121f";
+  "790f2ba2a4b5557f0ed7efa9c0841edcf8cb976f23c4f87c32ab45e37d926f69";
 const EXPECTED_WORK_EVIDENCE_CONTRACT_SHA256 =
   "ef4ca43432eaca00231d4cc53e63fff727e933361c8cf910e9fc2ac331c915c9";
 

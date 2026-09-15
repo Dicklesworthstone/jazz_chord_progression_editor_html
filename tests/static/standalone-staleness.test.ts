@@ -75,7 +75,7 @@ async function mutateOneTitleByte(path: string): Promise<{
   differingBytes: number;
 }> {
   /* The product title (eb22085): the one string every page variant carries. */
-  const marker = "<title>JazzChords";
+  const marker = "<title>JazzChords.org";
   const source = await readFile(path, "utf8");
   if (!source.includes(marker)) {
     throw new Error(`TEST_MUTATION_MARKER_MISSING: ${path}.`);

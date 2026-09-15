@@ -1195,7 +1195,7 @@ const H0_REVIEWED_AUTHORITIES = Object.freeze([
   {
     id: "H0-AUTH-PLAN",
     authorityClass: "reviewed-project-contract",
-    title: "Changes rebuild plan, Harmony and progression intelligence",
+    title: "JazzChords.org rebuild plan, Harmony and progression intelligence",
     sourceRefs: [
       "docs/REBUILD_PLAN.md#111-boundary-between-facts-analysis-and-suggestions",
       "docs/REBUILD_PLAN.md#113-roman-numeral-readings",
@@ -1413,7 +1413,7 @@ const EXPECTED_BYTE_DIGESTS: Readonly<
   "limit-cases.json": "9e91b3cf040ef38734a8535f530babaa9ba6769cd8210d23471bdcfb528dd849",
   "operation-state-cases.json": "7d3bffb07e49b151fbfa199f1c7a76d9dd61e98649928b3de10e0dc89f573013",
   "mutation-controls.json": "bbb1a46783111afc7eeca53f15c46cc1ef00ec4433a00dd3266813b75d4f45c1",
-  "provenance-ledger.json": "3473050aa9a4121a7c8d1f746513a4c75f96071677be0e13ebb6f9f5372f0fcd",
+  "provenance-ledger.json": "c24ba6b9aae4f4f9dd16ffb0e41951900d6409cf7e932f3d67813b6021f77593",
   "trace-ledger.json": "4a5ab10c18fec1909c6c769816a3059d39c519888b6b56c09dbbb3b309dac08e",
 };
 
@@ -1433,7 +1433,7 @@ const EXPECTED_SEMANTIC_DIGESTS: Readonly<
   "limit-cases.json": "7237bc8511936183cdb562cd23a1c9de4ebb8062707c303403736280328f629b",
   "operation-state-cases.json": "6874c5e2692301d151707c473e42fcc38a4a9ff3d28e227221108cdf09c299f4",
   "mutation-controls.json": "633acc2c9152a93d7b565298169d735204c2b2b8a62b340cab88e926769d3e93",
-  "provenance-ledger.json": "a065ec1c88aba10b2005d78e57ce35d1fdfc8c158093cbb80ad9dadebf4954ad",
+  "provenance-ledger.json": "5d6cff59e451dca5e33e024e5cad019d1c05cbbc2b9b0b59305c1d7b58f42ceb",
   "trace-ledger.json": "570d18f4ee40a604d9e5178b87e8112645766ffc008fa9ff4adeccd4204a18cc",
 };
 

@@ -22,7 +22,7 @@
     "single-complete-c-document": {
       "schema": "changes.progression.v2",
       "id": "document-e0-single-c",
-      "title": "Changes",
+      "title": "Cadence",
       "description": "",
       "meter": { "beatsPerBar": 4, "beatUnit": 4 },
       "tempoBpm": 120,
@@ -156,7 +156,7 @@
         },
         "commandId": "command-e0-replace-1",
         "commandKind": "replace-document",
-        "label": "Import Changes",
+        "label": "Import Cadence",
         "coalescing": null,
         "firstLogicalTimeMs": 9000,
         "lastLogicalTimeMs": 9000
@@ -368,7 +368,7 @@
       },
       "replacementCommandSeed": {
         "id": "command-e0-replace-1",
-        "label": "Import Changes",
+        "label": "Import Cadence",
         "logicalTimeMs": 9000
       },
       "replacementImpact": {
@@ -405,18 +405,18 @@
     "canonical-artifact-binding": {
       "kind": "canonical-json",
       "sourceDocumentId": "document-e0-minimal",
-      "filename": "Changes.changes.json",
+      "filename": "Cadence.changes.json",
       "byteLength": 352,
-      "semanticDocumentHash": "c73321857e0ad8cc6ac03961ec872d456090d190d2d5c1a659883259c7f20fe5"
+      "semanticDocumentHash": "f224c1d24b2d0d3598ed4259efef45d7f9b074debb0cd7e22d14a5050f0a1c8e"
     },
     "canonical-marker-candidate-revision-7": {
       "artifactKind": "canonical-json",
       "sourceDocumentId": "document-e0-minimal",
       "revision": 7,
       "exportedAt": "2026-07-18T00:00:00.000Z",
-      "semanticDocumentHash": "c73321857e0ad8cc6ac03961ec872d456090d190d2d5c1a659883259c7f20fe5",
+      "semanticDocumentHash": "f224c1d24b2d0d3598ed4259efef45d7f9b074debb0cd7e22d14a5050f0a1c8e",
       "byteLength": 352,
-      "filename": "Changes.changes.json",
+      "filename": "Cadence.changes.json",
       "canonicalPolicyVersion": 1,
       "semanticHashPolicyVersion": 1
     }
@@ -801,7 +801,7 @@
           {
             "operation": "set",
             "path": ["title"],
-            "from": "Changes",
+            "from": "Cadence",
             "to": false
           }
         ]
@@ -2092,7 +2092,7 @@
           "sourceMutationTiming": "after-artifact-preparation-before-delivery-call",
           "sourceMutation": {
             "path": ["title"],
-            "from": "Changes",
+            "from": "Cadence",
             "to": "Caller mutation"
           },
           "expected": {
@@ -2101,7 +2101,7 @@
             "freshPrivateByteCopies": 1,
             "writerAliasesCallerMemory": false,
             "bytesOffered": 352,
-            "semanticDocumentHash": "c73321857e0ad8cc6ac03961ec872d456090d190d2d5c1a659883259c7f20fe5"
+            "semanticDocumentHash": "f224c1d24b2d0d3598ed4259efef45d7f9b074debb0cd7e22d14a5050f0a1c8e"
           }
         },
         {
@@ -2119,7 +2119,7 @@
             "freshPrivateByteCopies": 1,
             "writerAliasesCallerMemory": false,
             "bytesOffered": 352,
-            "semanticDocumentHash": "c73321857e0ad8cc6ac03961ec872d456090d190d2d5c1a659883259c7f20fe5"
+            "semanticDocumentHash": "f224c1d24b2d0d3598ed4259efef45d7f9b074debb0cd7e22d14a5050f0a1c8e"
           }
         },
         {
@@ -2128,7 +2128,7 @@
           "sourceMutationTiming": "after-write-start-before-write-settlement",
           "sourceMutation": {
             "path": ["sourceDocument", "title"],
-            "from": "Changes",
+            "from": "Cadence",
             "to": "Concurrent caller mutation"
           },
           "expected": {
@@ -4528,7 +4528,7 @@
         "artifact": {
           "kind": "lead-sheet-text",
           "sourceDocumentId": "document-e0-minimal",
-          "filename": "Changes.changes.txt",
+          "filename": "Cadence.changes.txt",
           "byteLength": 60,
           "semanticDocumentHash": null
         }
@@ -4559,7 +4559,7 @@
         {
           "operation": "set",
           "path": ["artifact", "semanticDocumentHash"],
-          "from": "c73321857e0ad8cc6ac03961ec872d456090d190d2d5c1a659883259c7f20fe5",
+          "from": "f224c1d24b2d0d3598ed4259efef45d7f9b074debb0cd7e22d14a5050f0a1c8e",
           "to": "0000000000000000000000000000000000000000000000000000000000000000"
         }
       ]
@@ -4589,7 +4589,7 @@
         {
           "operation": "set",
           "path": ["artifact", "filename"],
-          "from": "Changes.changes.json",
+          "from": "Cadence.changes.json",
           "to": "Other.changes.json"
         }
       ]
@@ -4688,8 +4688,8 @@
         {
           "operation": "set",
           "path": ["document", "title"],
-          "from": "Changes",
-          "to": "Changes edited"
+          "from": "Cadence",
+          "to": "Cadence edited"
         },
         {
           "operation": "set",
@@ -4708,8 +4708,8 @@
         {
           "operation": "set",
           "path": ["document", "title"],
-          "from": "Changes",
-          "to": "Changes edited"
+          "from": "Cadence",
+          "to": "Cadence edited"
         },
         {
           "operation": "set",
@@ -4785,15 +4785,15 @@
       },
       "binding": {
         "kind": "canonical-json",
-        "filename": "Changes.changes.json",
+        "filename": "Cadence.changes.json",
         "byteLength": 352,
-        "semanticDocumentHash": "c73321857e0ad8cc6ac03961ec872d456090d190d2d5c1a659883259c7f20fe5",
+        "semanticDocumentHash": "f224c1d24b2d0d3598ed4259efef45d7f9b074debb0cd7e22d14a5050f0a1c8e",
         "sourceDocumentId": "document-e0-minimal"
       },
       "privateBytes": {
         "encoding": "UTF-8",
         "exactByteLength": 352,
-        "sha256": "c73321857e0ad8cc6ac03961ec872d456090d190d2d5c1a659883259c7f20fe5",
+        "sha256": "f224c1d24b2d0d3598ed4259efef45d7f9b074debb0cd7e22d14a5050f0a1c8e",
         "ownership": "single-private-Uint8Array",
         "aliasesArtifactTextOrCallerMemory": false,
         "zeroedOnDiscardOrFinish": true
@@ -4827,8 +4827,8 @@
         {
           "operation": "set",
           "path": ["binding", "filename"],
-          "from": "Changes.changes.json",
-          "to": "Changes edited.changes.json"
+          "from": "Cadence.changes.json",
+          "to": "Cadence edited.changes.json"
         },
         {
           "operation": "set",
@@ -4839,8 +4839,8 @@
         {
           "operation": "set",
           "path": ["binding", "semanticDocumentHash"],
-          "from": "c73321857e0ad8cc6ac03961ec872d456090d190d2d5c1a659883259c7f20fe5",
-          "to": "1cde9a00387d67845b97b46b486f4c961db14d9d25e5823fe59717f05bfe26cf"
+          "from": "f224c1d24b2d0d3598ed4259efef45d7f9b074debb0cd7e22d14a5050f0a1c8e",
+          "to": "7efa72a936ae8115d536c74b9271e766f2499c4c0a134b58880729446eb04ad1"
         },
         {
           "operation": "set",
@@ -4851,18 +4851,18 @@
         {
           "operation": "set",
           "path": ["privateBytes", "sha256"],
-          "from": "c73321857e0ad8cc6ac03961ec872d456090d190d2d5c1a659883259c7f20fe5",
-          "to": "1cde9a00387d67845b97b46b486f4c961db14d9d25e5823fe59717f05bfe26cf"
+          "from": "f224c1d24b2d0d3598ed4259efef45d7f9b074debb0cd7e22d14a5050f0a1c8e",
+          "to": "7efa72a936ae8115d536c74b9271e766f2499c4c0a134b58880729446eb04ad1"
         }
       ],
       "derivedText": {
         "baseFixtureId": "goldens/minimal.changes.json",
         "exactReplacement": {
-          "from": "\"title\": \"Changes\"",
-          "to": "\"title\": \"Changes edited\""
+          "from": "\"title\": \"Cadence\"",
+          "to": "\"title\": \"Cadence edited\""
         },
         "expectedByteLength": 359,
-        "expectedSha256": "1cde9a00387d67845b97b46b486f4c961db14d9d25e5823fe59717f05bfe26cf"
+        "expectedSha256": "7efa72a936ae8115d536c74b9271e766f2499c4c0a134b58880729446eb04ad1"
       }
     },
     {
@@ -4876,7 +4876,7 @@
         "privateBytes": {
           "source": "transferred-from-prepared-registry-entry",
           "exactByteLength": 352,
-          "sha256": "c73321857e0ad8cc6ac03961ec872d456090d190d2d5c1a659883259c7f20fe5",
+          "sha256": "f224c1d24b2d0d3598ed4259efef45d7f9b074debb0cd7e22d14a5050f0a1c8e",
           "ownership": "single-transferred-Uint8Array"
         },
         "preference": "prefer-file-system-access"
@@ -4914,9 +4914,9 @@
           "generation": 1,
           "documentId": "document-e0-minimal",
           "revision": 7,
-          "filename": "Changes.changes.json",
+          "filename": "Cadence.changes.json",
           "byteLength": 352,
-          "semanticDocumentHash": "c73321857e0ad8cc6ac03961ec872d456090d190d2d5c1a659883259c7f20fe5",
+          "semanticDocumentHash": "f224c1d24b2d0d3598ed4259efef45d7f9b074debb0cd7e22d14a5050f0a1c8e",
           "canonicalPolicyVersion": 1,
           "semanticHashPolicyVersion": 1
         }
@@ -4942,9 +4942,9 @@
           "generation": 2,
           "documentId": "document-e0-minimal",
           "revision": 8,
-          "filename": "Changes edited.changes.json",
+          "filename": "Cadence edited.changes.json",
           "byteLength": 359,
-          "semanticDocumentHash": "1cde9a00387d67845b97b46b486f4c961db14d9d25e5823fe59717f05bfe26cf",
+          "semanticDocumentHash": "7efa72a936ae8115d536c74b9271e766f2499c4c0a134b58880729446eb04ad1",
           "canonicalPolicyVersion": 1,
           "semanticHashPolicyVersion": 1
         }
@@ -5086,10 +5086,10 @@
             "schema": "changes.export.canonical-json-artifact.v1",
             "kind": "canonical-json",
             "mediaType": "application/json;charset=utf-8",
-            "filename": "Changes.changes.json",
+            "filename": "Cadence.changes.json",
             "textFixtureId": "goldens/minimal.changes.json",
             "byteLength": 351,
-            "semanticDocumentHash": "c73321857e0ad8cc6ac03961ec872d456090d190d2d5c1a659883259c7f20fe5",
+            "semanticDocumentHash": "f224c1d24b2d0d3598ed4259efef45d7f9b074debb0cd7e22d14a5050f0a1c8e",
             "sourceDocumentId": "document-e0-minimal"
           }
         }
@@ -5552,7 +5552,7 @@
         "documentId": "document-e0-minimal",
         "revision": 7,
         "exportedAt": "2026-07-18T00:00:00.000Z",
-        "semanticDocumentHash": "c73321857e0ad8cc6ac03961ec872d456090d190d2d5c1a659883259c7f20fe5",
+        "semanticDocumentHash": "f224c1d24b2d0d3598ed4259efef45d7f9b074debb0cd7e22d14a5050f0a1c8e",
         "canonicalPolicyVersion": 1,
         "semanticHashPolicyVersion": 1
       }
@@ -5792,7 +5792,7 @@
         {
           "operation": "set",
           "path": ["semanticDocumentHash"],
-          "from": "c73321857e0ad8cc6ac03961ec872d456090d190d2d5c1a659883259c7f20fe5",
+          "from": "f224c1d24b2d0d3598ed4259efef45d7f9b074debb0cd7e22d14a5050f0a1c8e",
           "to": "0000000000000000000000000000000000000000000000000000000000000000"
         }
       ]
@@ -5817,7 +5817,7 @@
         {
           "operation": "set",
           "path": ["filename"],
-          "from": "Changes.changes.json",
+          "from": "Cadence.changes.json",
           "to": "Other.changes.json"
         }
       ]
@@ -6686,7 +6686,7 @@
           "documentId": "document-e0-minimal",
           "revision": 7,
           "exportedAt": "2026-07-18T00:00:00.000Z",
-          "semanticDocumentHash": "c73321857e0ad8cc6ac03961ec872d456090d190d2d5c1a659883259c7f20fe5",
+          "semanticDocumentHash": "f224c1d24b2d0d3598ed4259efef45d7f9b074debb0cd7e22d14a5050f0a1c8e",
           "canonicalPolicyVersion": 1,
           "semanticHashPolicyVersion": 1
         },
@@ -6694,8 +6694,8 @@
           "kind": "canonical-json",
           "sourceDocumentId": "document-e0-minimal",
           "byteLength": 352,
-          "filename": "Changes.changes.json",
-          "semanticDocumentHash": "c73321857e0ad8cc6ac03961ec872d456090d190d2d5c1a659883259c7f20fe5",
+          "filename": "Cadence.changes.json",
+          "semanticDocumentHash": "f224c1d24b2d0d3598ed4259efef45d7f9b074debb0cd7e22d14a5050f0a1c8e",
           "canonicalPolicyVersion": 1,
           "semanticHashPolicyVersion": 1
         }
@@ -7575,7 +7575,7 @@
         {
           "id": "a1-wrong-filename",
           "path": ["artifact", "filename"],
-          "from": "Changes.changes.json",
+          "from": "Cadence.changes.json",
           "to": "Other.changes.json"
         },
         {
@@ -7587,7 +7587,7 @@
         {
           "id": "a1-wrong-semantic-hash",
           "path": ["artifact", "semanticDocumentHash"],
-          "from": "c73321857e0ad8cc6ac03961ec872d456090d190d2d5c1a659883259c7f20fe5",
+          "from": "f224c1d24b2d0d3598ed4259efef45d7f9b074debb0cd7e22d14a5050f0a1c8e",
           "to": "0000000000000000000000000000000000000000000000000000000000000000"
         },
         {

@@ -364,7 +364,7 @@ export const sanitizeExportFilename = (
   const reserved = EXPORT_FILENAME_RESERVED_BASENAMES.some(
     (name) => name === firstComponent.toLowerCase(),
   );
-  if (reserved) projected = `changes-${projected}`;
+  if (reserved) projected = `JazzChords.org-${projected}`;
 
   const filename = `${projected}${extension}`;
   return Object.freeze({

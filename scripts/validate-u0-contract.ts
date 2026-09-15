@@ -71,11 +71,11 @@ export const U0_REVIEWED_SEMANTIC_DIGESTS: Readonly<
    * the studio engraving token family, and the embedded-OFL-font asset
    * policy. */
   "u0-ui-contract.json":
-    "2dd18f699bf0fea0ed72b422b876e15710e3c19eae73809161c62632043946e9",
+    "54b480c137543885609f750688a552c7f74ac13571542baa156defdbf80f2795",
   "primitive-state-matrix.json":
     "6e05bbe3bb4d442adb0510f87d12b72bcc3c19e01c7a56655025bd0e699c9568",
   "provenance-ledger.json":
-    "ceb276f41a9eef5b22af193cb63b3c18348c6d57a139bc9094032b56745e3a61",
+    "9aef08d4600494f3d0b4d196f3097f51a081da3bb8795a352108c59d9e85eef4",
   "shell-state-matrix.json":
     "7c6076cfc710b70ee248302c3598f808371973a550f808400e31baaad81e2e8a",
   "trace-ledger.json":

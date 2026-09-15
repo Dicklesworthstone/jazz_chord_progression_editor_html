@@ -1,4 +1,4 @@
-# Product ideas for the working Changes studio
+# Product ideas for the working JazzChords.org studio
 
 Date: 2026-09-06 (New York). Source baseline: `658baddd620d2060d215280ec34efdb858be8bc3`.
 Status: idea-wizard phases 1–6 completed, including four refinement passes. The owner authorized implementation of all fifteen ideas on 2026-09-06; execution is tracked below and in IMPLEMENTATION_TODO.md. This document itself certifies no runtime capability.

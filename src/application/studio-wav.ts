@@ -40,7 +40,7 @@ export function createStudioWav(ports:Readonly<{
       state="hashing";message="Preparing the WAV download…";notify();
       const hash=await ports.hashBytes(encoded.bytes);if(isCancelled()||!same())return;
       if(!/^[a-f0-9]{64}$/.test(hash)){fail("The browser returned an invalid file fingerprint.");return;}
-      deliver=ports.prepareDownload(encoded.bytes,"changes-dry-piano.wav");sha256=hash;byteLength=encoded.bytes.length;state="ready";message="Dry piano WAV is ready. No live effects or accompaniment are included.";
+      deliver=ports.prepareDownload(encoded.bytes,"JazzChords.org-dry-piano.wav");sha256=hash;byteLength=encoded.bytes.length;state="ready";message="Dry piano WAV is ready. No live effects or accompaniment are included.";
     }catch{if(!isCancelled())fail("The piano file could not be prepared. Your chart is unchanged.");}
     finally{
       busy=false;

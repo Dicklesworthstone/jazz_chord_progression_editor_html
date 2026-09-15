@@ -268,7 +268,7 @@ archived E0 v1 §5.1 sentence allowing annotated repeats conflicts with that
 grammar and must not govern the production encoder. Commit `9a8bae5` fixed
 the exporter but also changed the immutable E0 v1 document in place. On
 2026-09-07 that document was restored to its accepted SHA-256
-`288c7ba1e36f8422c9753d501feb68efa721fa8b320b5e20bce8503da85e7d4f`.
+`7f114e936104600e04191670670cbf8e1d0873e741b78a68f0eec83d031e6d7a`.
 The bridge's byte pins, validators, accepted fixtures and T0 negative cases
 remain unchanged. This records the existing production correction under the
 current version; it does not retroactively repair or reinterpret the archive.

@@ -16,7 +16,7 @@
     { "id": "E1-MUT-010", "file": "golden-cases.json", "operation": "replace", "pointer": "/cases/4/expectedReport/losses", "value": [], "expectedFindingCode": "E1_REPORT" },
     { "id": "E1-MUT-011", "file": "refusal-cases.json", "operation": "replace", "pointer": "/cases/4/expected/code", "value": "midi.plan_invalid", "expectedFindingCode": "E1_REFUSAL" },
     { "id": "E1-MUT-012", "file": "limit-cases.json", "operation": "replace", "pointer": "/cases/1/expected/refusal", "value": null, "expectedFindingCode": "E1_LIMIT" },
-    { "id": "E1-MUT-013", "file": "limit-cases.json", "operation": "replace", "pointer": "/cases/4/expected/filename", "value": "changes-doc-with-spaces.mid", "expectedFindingCode": "E1_FILENAME" },
+    { "id": "E1-MUT-013", "file": "limit-cases.json", "operation": "replace", "pointer": "/cases/4/expected/filename", "value": "JazzChords.org-doc-with-spaces.mid", "expectedFindingCode": "E1_FILENAME" },
     { "id": "E1-MUT-014", "file": "trace-ledger.json", "operation": "remove", "pointer": "/traces/0/caseIds/0", "expectedFindingCode": "E1_TRACE" },
     { "id": "E1-MUT-015", "file": "provenance-ledger.json", "operation": "replace", "pointer": "/expectedValuesGenerated", "value": true, "expectedFindingCode": "E1_PROVENANCE" },
     { "id": "E1-MUT-016", "file": "golden-cases.json", "operation": "replace", "pointer": "/cases/3/bytesHex", "value": "4D546864000000060001000203C14D54726B0000001900FF0302473400FF510307A12000FF58040402180801FF2F004D54726B0000001600FF03015600FF0401490090486001804800FF2F0000", "expectedFindingCode": "E1_GOLDEN" }

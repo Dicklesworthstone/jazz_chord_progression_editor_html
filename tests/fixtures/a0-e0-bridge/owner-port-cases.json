@@ -55,77 +55,77 @@
     "state-revision-7": {
       "kind": "accepted-e0-v1-reference",
       "path": "tests/fixtures/interchange/input-fixture-ledger.json",
-      "sha256": "693d3e39db3e82e5c24980d363566943360687bdf2dcd523185f56a028b0f714",
+      "sha256": "e52b744746ecce4474552d5c3c27c3c68f6876170c441e0ca1dca51ba724f26f",
       "jsonPointer": "/sharedBases/workflow-state-revision-7/value",
       "materializeAs": "AppState"
     },
     "state-retiring-retained": {
       "kind": "accepted-e0-v1-reference",
       "path": "tests/fixtures/interchange/input-fixture-ledger.json",
-      "sha256": "693d3e39db3e82e5c24980d363566943360687bdf2dcd523185f56a028b0f714",
+      "sha256": "e52b744746ecce4474552d5c3c27c3c68f6876170c441e0ca1dca51ba724f26f",
       "jsonPointer": "/fixtures/118",
       "materializeAs": "AppState"
     },
     "state-retiring-unavailable": {
       "kind": "accepted-e0-v1-reference",
       "path": "tests/fixtures/interchange/input-fixture-ledger.json",
-      "sha256": "693d3e39db3e82e5c24980d363566943360687bdf2dcd523185f56a028b0f714",
+      "sha256": "e52b744746ecce4474552d5c3c27c3c68f6876170c441e0ca1dca51ba724f26f",
       "jsonPointer": "/fixtures/178",
       "materializeAs": "AppState"
     },
     "state-marker-current-7": {
       "kind": "accepted-e0-v1-reference",
       "path": "tests/fixtures/interchange/input-fixture-ledger.json",
-      "sha256": "693d3e39db3e82e5c24980d363566943360687bdf2dcd523185f56a028b0f714",
+      "sha256": "e52b744746ecce4474552d5c3c27c3c68f6876170c441e0ca1dca51ba724f26f",
       "jsonPointer": "/fixtures/205",
       "materializeAs": "AppState"
     },
     "state-marker-published-7": {
       "kind": "accepted-e0-v1-reference",
       "path": "tests/fixtures/interchange/input-fixture-ledger.json",
-      "sha256": "693d3e39db3e82e5c24980d363566943360687bdf2dcd523185f56a028b0f714",
+      "sha256": "e52b744746ecce4474552d5c3c27c3c68f6876170c441e0ca1dca51ba724f26f",
       "jsonPointer": "/fixtures/206",
       "materializeAs": "AppState"
     },
     "state-marker-picker-edit": {
       "kind": "accepted-e0-v1-reference",
       "path": "tests/fixtures/interchange/input-fixture-ledger.json",
-      "sha256": "693d3e39db3e82e5c24980d363566943360687bdf2dcd523185f56a028b0f714",
+      "sha256": "e52b744746ecce4474552d5c3c27c3c68f6876170c441e0ca1dca51ba724f26f",
       "jsonPointer": "/fixtures/207",
       "materializeAs": "AppState"
     },
     "state-marker-published-picker-edit": {
       "kind": "accepted-e0-v1-reference",
       "path": "tests/fixtures/interchange/input-fixture-ledger.json",
-      "sha256": "693d3e39db3e82e5c24980d363566943360687bdf2dcd523185f56a028b0f714",
+      "sha256": "e52b744746ecce4474552d5c3c27c3c68f6876170c441e0ca1dca51ba724f26f",
       "jsonPointer": "/fixtures/208",
       "materializeAs": "AppState"
     },
     "state-marker-current-8": {
       "kind": "accepted-e0-v1-reference",
       "path": "tests/fixtures/interchange/input-fixture-ledger.json",
-      "sha256": "693d3e39db3e82e5c24980d363566943360687bdf2dcd523185f56a028b0f714",
+      "sha256": "e52b744746ecce4474552d5c3c27c3c68f6876170c441e0ca1dca51ba724f26f",
       "jsonPointer": "/fixtures/209",
       "materializeAs": "AppState"
     },
     "state-marker-published-then-edited-8": {
       "kind": "accepted-e0-v1-reference",
       "path": "tests/fixtures/interchange/input-fixture-ledger.json",
-      "sha256": "693d3e39db3e82e5c24980d363566943360687bdf2dcd523185f56a028b0f714",
+      "sha256": "e52b744746ecce4474552d5c3c27c3c68f6876170c441e0ca1dca51ba724f26f",
       "jsonPointer": "/fixtures/210",
       "materializeAs": "AppState"
     },
     "state-marker-other-document-7": {
       "kind": "accepted-e0-v1-reference",
       "path": "tests/fixtures/interchange/input-fixture-ledger.json",
-      "sha256": "693d3e39db3e82e5c24980d363566943360687bdf2dcd523185f56a028b0f714",
+      "sha256": "e52b744746ecce4474552d5c3c27c3c68f6876170c441e0ca1dca51ba724f26f",
       "jsonPointer": "/fixtures/212",
       "materializeAs": "AppState"
     },
     "e0-document-minimal": {
       "kind": "accepted-e0-v1-reference",
       "path": "tests/fixtures/interchange/goldens/minimal.changes.json",
-      "sha256": "c73321857e0ad8cc6ac03961ec872d456090d190d2d5c1a659883259c7f20fe5",
+      "sha256": "f224c1d24b2d0d3598ed4259efef45d7f9b074debb0cd7e22d14a5050f0a1c8e",
       "jsonPointer": "",
       "materializeAs": "ValidatedDocument"
     },
@@ -763,7 +763,7 @@
         },
         "replacementCommandSeed": {
           "id": "command-e0-replace-1",
-          "label": "Import Changes",
+          "label": "Import Cadence",
           "logicalTimeMs": 9000
         },
         "disclosedImpact": {
@@ -803,7 +803,7 @@
         },
         "replacementCommandSeed": {
           "id": "command-e0-replace-1",
-          "label": "Import Changes",
+          "label": "Import Cadence",
           "logicalTimeMs": 9000
         },
         "disclosedImpact": {
@@ -853,7 +853,7 @@
     "history-oversized-document": {
       "kind": "accepted-e0-v1-reference",
       "path": "tests/fixtures/interchange/input-fixture-ledger.json",
-      "sha256": "693d3e39db3e82e5c24980d363566943360687bdf2dcd523185f56a028b0f714",
+      "sha256": "e52b744746ecce4474552d5c3c27c3c68f6876170c441e0ca1dca51ba724f26f",
       "jsonPointer": "/sharedBases/workflow-document-history-oversized",
       "materializeAs": "ValidatedDocument"
     },
@@ -864,14 +864,14 @@
         "candidate": {
           "literalId": "e0-document-minimal",
           "documentId": "document-e0-minimal",
-          "canonicalMaterializedSha256": "b177cf5c0ac4d53c9bb6d7dfb903730b3a7b57484ac998d2bc4044ed6296f6ec",
+          "canonicalMaterializedSha256": "39b46fceee48a732f67d4af1a0827dfbeaa31f67688c44ba032af2800e1082a6",
           "canonicalMaterializedByteLength": 272,
-          "acceptedPrettyFileSha256": "c73321857e0ad8cc6ac03961ec872d456090d190d2d5c1a659883259c7f20fe5",
+          "acceptedPrettyFileSha256": "f224c1d24b2d0d3598ed4259efef45d7f9b074debb0cd7e22d14a5050f0a1c8e",
           "preservationPolicy": "validated-bytes-and-manual-frozen-spellings-preserved-without-repair"
         },
         "command": {
           "id": "command-e0-replace-1",
-          "label": "Import Changes",
+          "label": "Import Cadence",
           "expectedDocumentId": "document-e0-nested",
           "expectedRevision": 7,
           "logicalTimeMs": 9000,
@@ -906,7 +906,7 @@
             "callsDuringPublication": 0,
             "repairs": 0
           },
-          "candidateCanonicalMaterializedSha256": "b177cf5c0ac4d53c9bb6d7dfb903730b3a7b57484ac998d2bc4044ed6296f6ec",
+          "candidateCanonicalMaterializedSha256": "39b46fceee48a732f67d4af1a0827dfbeaa31f67688c44ba032af2800e1082a6",
           "candidateCanonicalMaterializedByteLength": 272
         },
         "bookmarksAndFocus": {
@@ -959,7 +959,7 @@
           "entry": {
             "commandId": "command-e0-replace-1",
             "commandKind": "replace-document",
-            "label": "Import Changes",
+            "label": "Import Cadence",
             "before": {
               "$literalRef": "manual-frozen-source-c"
             },
@@ -1053,7 +1053,7 @@
               {
                 "commandId": "command-e0-replace-1",
                 "commandKind": "replace-document",
-                "label": "Import Changes",
+                "label": "Import Cadence",
                 "before": {
                   "$literalRef": "manual-frozen-source-c"
                 },
@@ -1163,7 +1163,7 @@
                 {
                   "commandId": "command-e0-replace-1",
                   "commandKind": "replace-document",
-                  "label": "Import Changes",
+                  "label": "Import Cadence",
                   "before": {
                     "$literalRef": "manual-frozen-source-c"
                   },
@@ -1313,7 +1313,7 @@
     "state-published-retained-minimal": {
       "kind": "accepted-e0-v1-reference",
       "path": "tests/fixtures/interchange/input-fixture-ledger.json",
-      "sha256": "693d3e39db3e82e5c24980d363566943360687bdf2dcd523185f56a028b0f714",
+      "sha256": "e52b744746ecce4474552d5c3c27c3c68f6876170c441e0ca1dca51ba724f26f",
       "jsonPointer": "/fixtures/118",
       "materializeAs": "AppState",
       "materializationPatches": [
@@ -1438,7 +1438,7 @@
             {
               "commandId": "command-e0-replace-1",
               "commandKind": "replace-document",
-              "label": "Import Changes",
+              "label": "Import Cadence",
               "before": {
                 "$literalRef": "manual-frozen-source-c"
               },
@@ -1532,7 +1532,7 @@
             {
               "commandId": "command-e0-replace-1",
               "commandKind": "replace-document",
-              "label": "Import Changes",
+              "label": "Import Cadence",
               "before": {
                 "$literalRef": "manual-frozen-source-c"
               },
@@ -2238,7 +2238,7 @@
     "state-published-manual-source-c": {
       "kind": "accepted-e0-v1-reference",
       "path": "tests/fixtures/interchange/input-fixture-ledger.json",
-      "sha256": "693d3e39db3e82e5c24980d363566943360687bdf2dcd523185f56a028b0f714",
+      "sha256": "e52b744746ecce4474552d5c3c27c3c68f6876170c441e0ca1dca51ba724f26f",
       "jsonPointer": "/fixtures/118",
       "materializeAs": "AppState",
       "materializationPatches": [
@@ -3216,7 +3216,7 @@
     "state-published-manual-target-d": {
       "kind": "accepted-e0-v1-reference",
       "path": "tests/fixtures/interchange/input-fixture-ledger.json",
-      "sha256": "693d3e39db3e82e5c24980d363566943360687bdf2dcd523185f56a028b0f714",
+      "sha256": "e52b744746ecce4474552d5c3c27c3c68f6876170c441e0ca1dca51ba724f26f",
       "jsonPointer": "/fixtures/118",
       "materializeAs": "AppState",
       "materializationPatches": [
@@ -3751,14 +3751,14 @@
         "candidate": {
           "literalId": "e0-document-minimal",
           "documentId": "document-e0-minimal",
-          "canonicalMaterializedSha256": "b177cf5c0ac4d53c9bb6d7dfb903730b3a7b57484ac998d2bc4044ed6296f6ec",
+          "canonicalMaterializedSha256": "39b46fceee48a732f67d4af1a0827dfbeaa31f67688c44ba032af2800e1082a6",
           "canonicalMaterializedByteLength": 272,
-          "acceptedPrettyFileSha256": "c73321857e0ad8cc6ac03961ec872d456090d190d2d5c1a659883259c7f20fe5",
+          "acceptedPrettyFileSha256": "f224c1d24b2d0d3598ed4259efef45d7f9b074debb0cd7e22d14a5050f0a1c8e",
           "preservationPolicy": "validated-bytes-and-manual-frozen-spellings-preserved-without-repair"
         },
         "command": {
           "id": "command-e0-replace-1",
-          "label": "Import Changes",
+          "label": "Import Cadence",
           "expectedDocumentId": "oversized",
           "expectedRevision": 7,
           "logicalTimeMs": 9000,
@@ -3795,7 +3795,7 @@
             "callsDuringPublication": 0,
             "repairs": 0
           },
-          "candidateCanonicalMaterializedSha256": "b177cf5c0ac4d53c9bb6d7dfb903730b3a7b57484ac998d2bc4044ed6296f6ec",
+          "candidateCanonicalMaterializedSha256": "39b46fceee48a732f67d4af1a0827dfbeaa31f67688c44ba032af2800e1082a6",
           "candidateCanonicalMaterializedByteLength": 272
         },
         "bookmarksAndFocus": {
@@ -3835,7 +3835,7 @@
           "entry": {
             "commandId": "command-e0-replace-1",
             "commandKind": "replace-document",
-            "label": "Import Changes",
+            "label": "Import Cadence",
             "before": {
               "$literalRef": "history-oversized-document"
             },
@@ -4008,7 +4008,7 @@
     "state-published-unavailable": {
       "kind": "accepted-e0-v1-reference",
       "path": "tests/fixtures/interchange/input-fixture-ledger.json",
-      "sha256": "693d3e39db3e82e5c24980d363566943360687bdf2dcd523185f56a028b0f714",
+      "sha256": "e52b744746ecce4474552d5c3c27c3c68f6876170c441e0ca1dca51ba724f26f",
       "jsonPointer": "/fixtures/178",
       "materializeAs": "AppState",
       "materializationPatches": [
@@ -4171,9 +4171,9 @@
         "candidate": {
           "literalId": "e0-document-minimal",
           "documentId": "document-e0-minimal",
-          "canonicalMaterializedSha256": "b177cf5c0ac4d53c9bb6d7dfb903730b3a7b57484ac998d2bc4044ed6296f6ec",
+          "canonicalMaterializedSha256": "39b46fceee48a732f67d4af1a0827dfbeaa31f67688c44ba032af2800e1082a6",
           "canonicalMaterializedByteLength": 272,
-          "acceptedPrettyFileSha256": "c73321857e0ad8cc6ac03961ec872d456090d190d2d5c1a659883259c7f20fe5",
+          "acceptedPrettyFileSha256": "f224c1d24b2d0d3598ed4259efef45d7f9b074debb0cd7e22d14a5050f0a1c8e",
           "preservationPolicy": "validated-bytes-and-manual-frozen-spellings-preserved-without-repair"
         },
         "command": {
@@ -4213,7 +4213,7 @@
             "callsDuringPublication": 0,
             "repairs": 0
           },
-          "candidateCanonicalMaterializedSha256": "b177cf5c0ac4d53c9bb6d7dfb903730b3a7b57484ac998d2bc4044ed6296f6ec",
+          "candidateCanonicalMaterializedSha256": "39b46fceee48a732f67d4af1a0827dfbeaa31f67688c44ba032af2800e1082a6",
           "candidateCanonicalMaterializedByteLength": 272
         },
         "bookmarksAndFocus": {
@@ -4620,7 +4620,7 @@
     "state-published-label-160": {
       "kind": "accepted-e0-v1-reference",
       "path": "tests/fixtures/interchange/input-fixture-ledger.json",
-      "sha256": "693d3e39db3e82e5c24980d363566943360687bdf2dcd523185f56a028b0f714",
+      "sha256": "e52b744746ecce4474552d5c3c27c3c68f6876170c441e0ca1dca51ba724f26f",
       "jsonPointer": "/fixtures/118",
       "materializeAs": "AppState",
       "materializationPatches": [
@@ -5246,7 +5246,7 @@
     "state-retiring-representative-f3": {
       "kind": "accepted-e0-v1-reference",
       "path": "tests/fixtures/interchange/input-fixture-ledger.json",
-      "sha256": "693d3e39db3e82e5c24980d363566943360687bdf2dcd523185f56a028b0f714",
+      "sha256": "e52b744746ecce4474552d5c3c27c3c68f6876170c441e0ca1dca51ba724f26f",
       "jsonPointer": "/fixtures/118",
       "materializeAs": "AppState",
       "materializationPatches": [
@@ -5273,7 +5273,7 @@
         },
         "command": {
           "id": "command-e0-replace-1",
-          "label": "Import Changes",
+          "label": "Import Cadence",
           "expectedDocumentId": "document-e0-nested",
           "expectedRevision": 7,
           "logicalTimeMs": 9000,
@@ -5363,7 +5363,7 @@
           "entry": {
             "commandId": "command-e0-replace-1",
             "commandKind": "replace-document",
-            "label": "Import Changes",
+            "label": "Import Cadence",
             "before": {
               "$literalRef": "manual-frozen-source-c"
             },
@@ -5458,7 +5458,7 @@
               {
                 "commandId": "command-e0-replace-1",
                 "commandKind": "replace-document",
-                "label": "Import Changes",
+                "label": "Import Cadence",
                 "before": {
                   "$literalRef": "manual-frozen-source-c"
                 },
@@ -5569,7 +5569,7 @@
                 {
                   "commandId": "command-e0-replace-1",
                   "commandKind": "replace-document",
-                  "label": "Import Changes",
+                  "label": "Import Cadence",
                   "before": {
                     "$literalRef": "manual-frozen-source-c"
                   },
@@ -5722,7 +5722,7 @@
     "state-published-representative-f3": {
       "kind": "accepted-e0-v1-reference",
       "path": "tests/fixtures/interchange/input-fixture-ledger.json",
-      "sha256": "693d3e39db3e82e5c24980d363566943360687bdf2dcd523185f56a028b0f714",
+      "sha256": "e52b744746ecce4474552d5c3c27c3c68f6876170c441e0ca1dca51ba724f26f",
       "jsonPointer": "/fixtures/118",
       "materializeAs": "AppState",
       "materializationPatches": [
@@ -5854,7 +5854,7 @@
             {
               "commandId": "command-e0-replace-1",
               "commandKind": "replace-document",
-              "label": "Import Changes",
+              "label": "Import Cadence",
               "before": {
                 "$literalRef": "manual-frozen-source-c"
               },
@@ -5949,7 +5949,7 @@
             {
               "commandId": "command-e0-replace-1",
               "commandKind": "replace-document",
-              "label": "Import Changes",
+              "label": "Import Cadence",
               "before": {
                 "$literalRef": "manual-frozen-source-c"
               },
@@ -6252,7 +6252,7 @@
         },
         "replacementCommandSeed": {
           "id": "command-e0-replace-1",
-          "label": "Import Changes",
+          "label": "Import Cadence",
           "logicalTimeMs": 9000
         },
         "disclosedImpact": {
@@ -6292,7 +6292,7 @@
         },
         "replacementCommandSeed": {
           "id": "command-e0-replace-1",
-          "label": "Import Changes",
+          "label": "Import Cadence",
           "logicalTimeMs": 9000
         },
         "disclosedImpact": {
@@ -6319,14 +6319,14 @@
     "mutation-007-invalid-structure-candidate": {
       "kind": "accepted-e0-v1-reference",
       "path": "tests/fixtures/interchange/goldens/minimal.changes.json",
-      "sha256": "c73321857e0ad8cc6ac03961ec872d456090d190d2d5c1a659883259c7f20fe5",
+      "sha256": "f224c1d24b2d0d3598ed4259efef45d7f9b074debb0cd7e22d14a5050f0a1c8e",
       "jsonPointer": "",
       "materializeAs": "RawDocumentCandidate",
       "materializationPatches": [
         {
           "op": "replace",
           "jsonPointer": "/title",
-          "from": "Changes",
+          "from": "Cadence",
           "to": false,
           "value": false
         }
@@ -6348,7 +6348,7 @@
         },
         "replacementCommandSeed": {
           "id": "command-e0-replace-1",
-          "label": "Import Changes",
+          "label": "Import Cadence",
           "logicalTimeMs": 9000
         },
         "disclosedImpact": {
@@ -6470,7 +6470,7 @@
         },
         "replacementCommandSeed": {
           "id": "command-e0-replace-1",
-          "label": "Import Changes",
+          "label": "Import Cadence",
           "logicalTimeMs": 9000
         },
         "disclosedImpact": {
@@ -6510,7 +6510,7 @@
         },
         "replacementCommandSeed": {
           "id": "command-e0-replace-1",
-          "label": "Import Changes",
+          "label": "Import Cadence",
           "logicalTimeMs": 9000
         },
         "disclosedImpact": {
@@ -6550,7 +6550,7 @@
         },
         "replacementCommandSeed": {
           "id": "command-e0-replace-1",
-          "label": "Import Changes",
+          "label": "Import Cadence",
           "logicalTimeMs": 9000
         },
         "disclosedImpact": {
@@ -6617,7 +6617,7 @@
     "mutation-state-marker-other-document": {
       "kind": "accepted-e0-v1-reference",
       "path": "tests/fixtures/interchange/input-fixture-ledger.json",
-      "sha256": "693d3e39db3e82e5c24980d363566943360687bdf2dcd523185f56a028b0f714",
+      "sha256": "e52b744746ecce4474552d5c3c27c3c68f6876170c441e0ca1dca51ba724f26f",
       "jsonPointer": "/fixtures/205",
       "materializeAs": "AppState",
       "materializationPatches": [
@@ -6633,39 +6633,39 @@
     "mutation-state-marker-edited-title": {
       "kind": "accepted-e0-v1-reference",
       "path": "tests/fixtures/interchange/input-fixture-ledger.json",
-      "sha256": "693d3e39db3e82e5c24980d363566943360687bdf2dcd523185f56a028b0f714",
+      "sha256": "e52b744746ecce4474552d5c3c27c3c68f6876170c441e0ca1dca51ba724f26f",
       "jsonPointer": "/fixtures/205",
       "materializeAs": "AppState",
       "materializationPatches": [
         {
           "op": "replace",
           "jsonPointer": "/document/title",
-          "from": "Changes",
-          "to": "Changes edited by current state",
-          "value": "Changes edited by current state"
+          "from": "Cadence",
+          "to": "Cadence edited by current state",
+          "value": "Cadence edited by current state"
         }
       ]
     },
     "mutation-state-marker-published-edited-title": {
       "kind": "accepted-e0-v1-reference",
       "path": "tests/fixtures/interchange/input-fixture-ledger.json",
-      "sha256": "693d3e39db3e82e5c24980d363566943360687bdf2dcd523185f56a028b0f714",
+      "sha256": "e52b744746ecce4474552d5c3c27c3c68f6876170c441e0ca1dca51ba724f26f",
       "jsonPointer": "/fixtures/206",
       "materializeAs": "AppState",
       "materializationPatches": [
         {
           "op": "replace",
           "jsonPointer": "/document/title",
-          "from": "Changes",
-          "to": "Changes edited by current state",
-          "value": "Changes edited by current state"
+          "from": "Cadence",
+          "to": "Cadence edited by current state",
+          "value": "Cadence edited by current state"
         }
       ]
     },
     "mutation-shared-state-retiring-manual-source-c": {
       "kind": "accepted-e0-v1-reference",
       "path": "tests/fixtures/interchange/input-fixture-ledger.json",
-      "sha256": "693d3e39db3e82e5c24980d363566943360687bdf2dcd523185f56a028b0f714",
+      "sha256": "e52b744746ecce4474552d5c3c27c3c68f6876170c441e0ca1dca51ba724f26f",
       "jsonPointer": "/fixtures/118",
       "materializeAs": "AppState",
       "materializationPatches": [
@@ -7264,7 +7264,7 @@
         },
         "replacementCommandSeed": {
           "id": "command-e0-replace-1",
-          "label": "Import Changes",
+          "label": "Import Cadence",
           "logicalTimeMs": 9000
         },
         "disclosedImpact": {
@@ -7304,7 +7304,7 @@
         },
         "replacementCommandSeed": {
           "id": "command-e0-replace-1",
-          "label": "Import Changes",
+          "label": "Import Cadence",
           "logicalTimeMs": 9000
         },
         "disclosedImpact": {
@@ -7335,14 +7335,14 @@
         "candidate": {
           "literalId": "e0-document-minimal",
           "documentId": "document-e0-minimal",
-          "canonicalMaterializedSha256": "b177cf5c0ac4d53c9bb6d7dfb903730b3a7b57484ac998d2bc4044ed6296f6ec",
+          "canonicalMaterializedSha256": "39b46fceee48a732f67d4af1a0827dfbeaa31f67688c44ba032af2800e1082a6",
           "canonicalMaterializedByteLength": 272,
-          "acceptedPrettyFileSha256": "c73321857e0ad8cc6ac03961ec872d456090d190d2d5c1a659883259c7f20fe5",
+          "acceptedPrettyFileSha256": "f224c1d24b2d0d3598ed4259efef45d7f9b074debb0cd7e22d14a5050f0a1c8e",
           "preservationPolicy": "validated-bytes-and-manual-frozen-spellings-preserved-without-repair"
         },
         "command": {
           "id": "command-e0-replace-1",
-          "label": "Import Changes",
+          "label": "Import Cadence",
           "expectedDocumentId": "document-e0-nested",
           "expectedRevision": 7,
           "logicalTimeMs": 9000,
@@ -7377,7 +7377,7 @@
             "callsDuringPublication": 0,
             "repairs": 0
           },
-          "candidateCanonicalMaterializedSha256": "b177cf5c0ac4d53c9bb6d7dfb903730b3a7b57484ac998d2bc4044ed6296f6ec",
+          "candidateCanonicalMaterializedSha256": "39b46fceee48a732f67d4af1a0827dfbeaa31f67688c44ba032af2800e1082a6",
           "candidateCanonicalMaterializedByteLength": 272
         },
         "bookmarksAndFocus": {
@@ -7430,7 +7430,7 @@
           "entry": {
             "commandId": "command-e0-replace-1",
             "commandKind": "replace-document",
-            "label": "Import Changes",
+            "label": "Import Cadence",
             "before": {
               "$literalRef": "manual-frozen-source-c"
             },
@@ -7524,7 +7524,7 @@
               {
                 "commandId": "command-e0-replace-1",
                 "commandKind": "replace-document",
-                "label": "Import Changes",
+                "label": "Import Cadence",
                 "before": {
                   "$literalRef": "manual-frozen-source-c"
                 },
@@ -7634,7 +7634,7 @@
                 {
                   "commandId": "command-e0-replace-1",
                   "commandKind": "replace-document",
-                  "label": "Import Changes",
+                  "label": "Import Cadence",
                   "before": {
                     "$literalRef": "manual-frozen-source-c"
                   },
@@ -7862,7 +7862,7 @@
     "state-retiring-manual-target-d": {
       "kind": "accepted-e0-v1-reference",
       "path": "tests/fixtures/interchange/input-fixture-ledger.json",
-      "sha256": "693d3e39db3e82e5c24980d363566943360687bdf2dcd523185f56a028b0f714",
+      "sha256": "e52b744746ecce4474552d5c3c27c3c68f6876170c441e0ca1dca51ba724f26f",
       "jsonPointer": "/fixtures/118",
       "materializeAs": "AppState",
       "materializationPatches": [
@@ -7905,7 +7905,7 @@
         },
         "replacementCommandSeed": {
           "id": "command-e0-replace-1",
-          "label": "Import Changes",
+          "label": "Import Cadence",
           "logicalTimeMs": 7000
         },
         "disclosedImpact": {
@@ -7936,14 +7936,14 @@
         "candidate": {
           "literalId": "e0-document-minimal",
           "documentId": "document-e0-minimal",
-          "canonicalMaterializedSha256": "b177cf5c0ac4d53c9bb6d7dfb903730b3a7b57484ac998d2bc4044ed6296f6ec",
+          "canonicalMaterializedSha256": "39b46fceee48a732f67d4af1a0827dfbeaa31f67688c44ba032af2800e1082a6",
           "canonicalMaterializedByteLength": 272,
-          "acceptedPrettyFileSha256": "c73321857e0ad8cc6ac03961ec872d456090d190d2d5c1a659883259c7f20fe5",
+          "acceptedPrettyFileSha256": "f224c1d24b2d0d3598ed4259efef45d7f9b074debb0cd7e22d14a5050f0a1c8e",
           "preservationPolicy": "validated-bytes-and-manual-frozen-spellings-preserved-without-repair"
         },
         "command": {
           "id": "command-e0-replace-1",
-          "label": "Import Changes",
+          "label": "Import Cadence",
           "expectedDocumentId": "document-e0-nested",
           "expectedRevision": 7,
           "logicalTimeMs": 7000,
@@ -7978,7 +7978,7 @@
             "callsDuringPublication": 0,
             "repairs": 0
           },
-          "candidateCanonicalMaterializedSha256": "b177cf5c0ac4d53c9bb6d7dfb903730b3a7b57484ac998d2bc4044ed6296f6ec",
+          "candidateCanonicalMaterializedSha256": "39b46fceee48a732f67d4af1a0827dfbeaa31f67688c44ba032af2800e1082a6",
           "candidateCanonicalMaterializedByteLength": 272
         },
         "bookmarksAndFocus": {
@@ -8031,7 +8031,7 @@
           "entry": {
             "commandId": "command-e0-replace-1",
             "commandKind": "replace-document",
-            "label": "Import Changes",
+            "label": "Import Cadence",
             "before": {
               "$literalRef": "manual-frozen-source-c"
             },
@@ -8125,7 +8125,7 @@
               {
                 "commandId": "command-e0-replace-1",
                 "commandKind": "replace-document",
-                "label": "Import Changes",
+                "label": "Import Cadence",
                 "before": {
                   "$literalRef": "manual-frozen-source-c"
                 },
@@ -8235,7 +8235,7 @@
                 {
                   "commandId": "command-e0-replace-1",
                   "commandKind": "replace-document",
-                  "label": "Import Changes",
+                  "label": "Import Cadence",
                   "before": {
                     "$literalRef": "manual-frozen-source-c"
                   },
@@ -8424,7 +8424,7 @@
     "state-published-logical-time-latest-boundary": {
       "kind": "accepted-e0-v1-reference",
       "path": "tests/fixtures/interchange/input-fixture-ledger.json",
-      "sha256": "693d3e39db3e82e5c24980d363566943360687bdf2dcd523185f56a028b0f714",
+      "sha256": "e52b744746ecce4474552d5c3c27c3c68f6876170c441e0ca1dca51ba724f26f",
       "jsonPointer": "/fixtures/118",
       "materializeAs": "AppState",
       "materializationPatches": [
@@ -8549,7 +8549,7 @@
             {
               "commandId": "command-e0-replace-1",
               "commandKind": "replace-document",
-              "label": "Import Changes",
+              "label": "Import Cadence",
               "before": {
                 "$literalRef": "manual-frozen-source-c"
               },
@@ -8643,7 +8643,7 @@
             {
               "commandId": "command-e0-replace-1",
               "commandKind": "replace-document",
-              "label": "Import Changes",
+              "label": "Import Cadence",
               "before": {
                 "$literalRef": "manual-frozen-source-c"
               },
@@ -8902,7 +8902,7 @@
         },
         "replacementCommandSeed": {
           "id": "command-e0-replace-1",
-          "label": "Import Changes",
+          "label": "Import Cadence",
           "logicalTimeMs": 9000
         },
         "disclosedImpact": {
@@ -8929,7 +8929,7 @@
     "mutation-state-marker-document-other": {
       "kind": "accepted-e0-v1-reference",
       "path": "tests/fixtures/interchange/input-fixture-ledger.json",
-      "sha256": "693d3e39db3e82e5c24980d363566943360687bdf2dcd523185f56a028b0f714",
+      "sha256": "e52b744746ecce4474552d5c3c27c3c68f6876170c441e0ca1dca51ba724f26f",
       "jsonPointer": "/fixtures/205",
       "materializeAs": "AppState",
       "materializationPatches": [
@@ -14504,7 +14504,7 @@
                   {
                     "op": "replace",
                     "jsonPointer": "/candidate/title",
-                    "from": "Changes",
+                    "from": "Cadence",
                     "to": false,
                     "value": false
                   }
@@ -14577,7 +14577,7 @@
             "baselineRunId": "BRIDGE-REP-001/retained",
             "operator": "replace",
             "jsonPointer": "/arguments/0/candidate/title",
-            "from": "Changes",
+            "from": "Cadence",
             "to": false,
             "exactChangedFieldCount": 1
           },
@@ -19205,7 +19205,7 @@
                 {
                   "commandId": "command-e0-replace-1",
                   "commandKind": "replace-document",
-                  "label": "Import Changes",
+                  "label": "Import Cadence",
                   "before": {
                     "$literalRef": "manual-frozen-source-c"
                   },
@@ -19299,7 +19299,7 @@
                 {
                   "commandId": "command-e0-replace-1",
                   "commandKind": "replace-document",
-                  "label": "Import Changes",
+                  "label": "Import Cadence",
                   "before": {
                     "$literalRef": "manual-frozen-source-c"
                   },
@@ -19872,7 +19872,7 @@
                 {
                   "commandId": "command-e0-replace-1",
                   "commandKind": "replace-document",
-                  "label": "Import Changes",
+                  "label": "Import Cadence",
                   "before": {
                     "$literalRef": "manual-frozen-source-c"
                   },
@@ -19966,7 +19966,7 @@
                 {
                   "commandId": "command-e0-replace-1",
                   "commandKind": "replace-document",
-                  "label": "Import Changes",
+                  "label": "Import Cadence",
                   "before": {
                     "$literalRef": "manual-frozen-source-c"
                   },
@@ -20559,7 +20559,7 @@
                 {
                   "commandId": "command-e0-replace-1",
                   "commandKind": "replace-document",
-                  "label": "Import Changes",
+                  "label": "Import Cadence",
                   "before": {
                     "$literalRef": "manual-frozen-source-c"
                   },
@@ -20653,7 +20653,7 @@
                 {
                   "commandId": "command-e0-replace-1",
                   "commandKind": "replace-document",
-                  "label": "Import Changes",
+                  "label": "Import Cadence",
                   "before": {
                     "$literalRef": "manual-frozen-source-c"
                   },
@@ -24106,7 +24106,7 @@
                 {
                   "commandId": "command-e0-replace-1",
                   "commandKind": "replace-document",
-                  "label": "Import Changes",
+                  "label": "Import Cadence",
                   "before": {
                     "$literalRef": "manual-frozen-source-c"
                   },
@@ -24200,7 +24200,7 @@
                 {
                   "commandId": "command-e0-replace-1",
                   "commandKind": "replace-document",
-                  "label": "Import Changes",
+                  "label": "Import Cadence",
                   "before": {
                     "$literalRef": "manual-frozen-source-c"
                   },
@@ -28364,8 +28364,8 @@
             "downstreamObservation": {
               "materialization": "controllerStateAfter",
               "jsonPointer": "/document/title",
-              "baselineValue": "Changes",
-              "killerValue": "Changes edited by current state"
+              "baselineValue": "Cadence",
+              "killerValue": "Cadence edited by current state"
             },
             "expectedOwnerLaw": {
               "outcome": "pass"
@@ -31159,9 +31159,9 @@
               {
                 "op": "replace",
                 "jsonPointer": "/document/title",
-                "from": "Changes",
-                "to": "Changes edited",
-                "value": "Changes edited"
+                "from": "Cadence",
+                "to": "Cadence edited",
+                "value": "Cadence edited"
               },
               {
                 "op": "replace",
@@ -31392,9 +31392,9 @@
               {
                 "op": "replace",
                 "jsonPointer": "/document/title",
-                "from": "Changes",
-                "to": "Changes edited",
-                "value": "Changes edited"
+                "from": "Cadence",
+                "to": "Cadence edited",
+                "value": "Cadence edited"
               },
               {
                 "op": "replace",

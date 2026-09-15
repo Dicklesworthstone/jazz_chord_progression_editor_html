@@ -240,7 +240,7 @@ function inputProps(overrides: Partial<UiInputProps> = {}): UiInputProps {
     onValueChange: () => undefined,
     placeholder: null,
     readOnly: false,
-    value: "Changes",
+    value: "Cadence",
     ...overrides,
   });
 }

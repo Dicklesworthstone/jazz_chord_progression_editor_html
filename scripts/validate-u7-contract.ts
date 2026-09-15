@@ -162,7 +162,7 @@ export const U7_REVIEWED_DERIVATION_PINS = Object.freeze({
   markerAccidentalStyle: "unicode",
   titleFallback: "Untitled",
   voicingTrackName: "Voicings",
-  instrumentName: "Changes",
+  instrumentName: "JazzChords.org",
   requestIdPrefix: "u7-midi-export-",
   customChordPlanCode: "playback.custom_voicing_missing",
 } as const);
@@ -205,21 +205,21 @@ export const U7_REVIEWED_COMPANION_SCHEMAS = Object.freeze({
 export const U7_REVIEWED_BYTE_DIGESTS: Readonly<Record<string, string>> =
   Object.freeze({
     "preview-cases.json":
-      "f3b095be4707631528b66a1f03424e65780218203cbc028e976d361b4cda8e32",
+      "68bcbcdd54cb9929b0f549ce2753aed2cc589336375e8e2910ac405f09ef6a5c",
     "state-cases.json":
       "8a61316b520f862cea857c3cb5c1727d04784f56bee70c2e9cc174d6625b01e3",
     "limit-cases.json":
-      "aaaee0bb3bcdbfe7dc163c2128a432d435a86beb5f54b696081e6bba1666c8bc",
+      "d833cc4f8b0ebfa8ffa36a7271a88ec0790a91b036202834d4ca9c25f9c23515",
     "trace-ledger.json":
       "ffa07c7f205b6680378ce200946a1ea85ddf9a76fa34b4f6226622862cc55aaf",
     "provenance-ledger.json":
       "836a0d5c4d46362f6aec0191e64f21a21e865148eb2275d1777305d50b027dc6",
     "mutation-controls.json":
-      "3534aed8a405c767af489ab7ab8e549cda551f2bd418e72afe0b1386fcafee94",
+      "1810688ac155be8e4739861e75477099b9e0b29370e4c73e089ac97c1f193ced",
   });
 
 export const U7_REVIEWED_SEMANTIC_DIGEST =
-  "96d223a9851526264a2960214abffaf826305e9f8193ba0908151371c302515c";
+  "14d731e422d7cf061a92dfc7d07f68aa7b708925d458ac3470dbe91581ce1d43";
 
 /* -------------------------------------------------------------------------- */
 /* Generic helpers                                                            */
@@ -649,7 +649,7 @@ function deriveTitle(title: string): {
 
 function deriveFilename(documentId: string): string {
   const safe = documentId.replace(/[^A-Za-z0-9._-]/g, "-");
-  const full = `changes-${safe}.mid`;
+  const full = `JazzChords.org-${safe}.mid`;
   if (full.length <= U7_REVIEWED_LIMITS.maxFilenameCharacters) return full;
   return `${full.slice(0, U7_REVIEWED_LIMITS.maxFilenameCharacters - 4)}.mid`;
 }
@@ -1760,7 +1760,7 @@ export async function validateU7Contract(
       midiPpq: 960,
       midiTrackCount: 2,
       maxMarkerTextUtf8Bytes: 96,
-      filenamePrefix: "changes-",
+      filenamePrefix: "JazzChords.org-",
       filenameSuffix: ".mid",
       filenameMaxCharacters: 64,
       maxDocumentChordEvents: 8_192,

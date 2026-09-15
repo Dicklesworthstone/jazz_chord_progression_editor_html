@@ -101,13 +101,13 @@
   .studio-print-only .studio-print-page { margin: 0; inline-size: 100%; block-size: 100%; display: block; }
   .studio-print-sheet { break-after: page; break-inside: avoid; }
   .studio-print-sheet:last-child { break-after: auto; }
-  .studio-print-only[data-paper="a4"] .studio-print-sheet { page: changes-a4; inline-size: 210mm; block-size: 297mm; }
-  .studio-print-only[data-paper="letter"] .studio-print-sheet { page: changes-letter; inline-size: 215.9mm; block-size: 279.4mm; }
+  .studio-print-only[data-paper="a4"] .studio-print-sheet { page: jazzchords-a4; inline-size: 210mm; block-size: 297mm; }
+  .studio-print-only[data-paper="letter"] .studio-print-sheet { page: jazzchords-letter; inline-size: 215.9mm; block-size: 279.4mm; }
 }
 
 @media print {
- body:has(.studio-print-only[data-paper="a4"]) { page: changes-a4; }
- body:has(.studio-print-only[data-paper="letter"]) { page: changes-letter; }
+ body:has(.studio-print-only[data-paper="a4"]) { page: jazzchords-a4; }
+ body:has(.studio-print-only[data-paper="letter"]) { page: jazzchords-letter; }
  body:has(.studio-print-only) { margin: 0 !important; padding: 0 !important; background: white !important; }
  #app:has(.studio-print-only) { min-height: 0 !important; height: auto !important; }
  #app:has(.studio-print-only) > :not(.studio-shell):not(:has(.studio-shell)) { display: none !important; }

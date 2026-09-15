@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "changes-jazz-progression-studio",
+      "name": "jazzchords.org",
       "dependencies": {
         "preact": "10.29.7",
       },

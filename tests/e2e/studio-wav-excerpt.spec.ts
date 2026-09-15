@@ -58,7 +58,7 @@ for(const theme of ["light","dark"] as const)for(const width of [320,1280])test(
   await first.fill("6");await prepare.click();await expect(downloadButton).toBeDisabled();await expect(panel).toContainText("Choose 1–4 consecutive bars");
   await first.fill("5");
   const start=Date.now();await prepare.click();await expect(downloadButton).toBeEnabled();renderMs=Date.now()-start;const digest=await panel.getAttribute("data-artifact-sha256");
-  const pending=page.waitForEvent("download");await downloadButton.click();const download=await pending;expect(await download.failure()).toBeNull();expect(download.suggestedFilename()).toBe("changes-dry-piano.wav");
+  const pending=page.waitForEvent("download");await downloadButton.click();const download=await pending;expect(await download.failure()).toBeNull();expect(download.suggestedFilename()).toBe("JazzChords.org-dry-piano.wav");
   const bytes=readFileSync(await download.path());expect(bytes.length).toBe(537644);expect(bytes.toString("ascii",0,4)).toBe("RIFF");expect(bytes.toString("ascii",8,12)).toBe("WAVE");expect(bytes.readUInt32LE(4)).toBe(bytes.length-8);expect(bytes.readUInt16LE(20)).toBe(1);expect(bytes.readUInt16LE(22)).toBe(2);expect(bytes.readUInt32LE(24)).toBe(32000);expect(bytes.readUInt32LE(28)).toBe(128000);expect(bytes.readUInt16LE(32)).toBe(4);expect(bytes.readUInt16LE(34)).toBe(16);expect(bytes.readUInt32LE(40)).toBe(537600);
   expect(bytes.subarray(44,44+64000*4).every(n=>n===0)).toBe(true);expect(bytes.subarray(44+64100*4,44+65000*4).some(n=>n!==0)).toBe(true);expect(bytes.subarray(44+134000*4).every(n=>n===0)).toBe(true);
   let peak=0;for(let i=44;i<bytes.length;i+=2)peak=Math.max(peak,Math.abs(bytes.readInt16LE(i)));expect(peak).toBeLessThanOrEqual(29492);

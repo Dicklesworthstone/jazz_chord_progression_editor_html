@@ -281,7 +281,7 @@ struct JazzAppIdentity: View {
                 }
             VStack(alignment: .leading, spacing: 3) {
                 FrankenJazzWordmark(compact: compact)
-                Text("CHANGES_LAB · PRIVATE · OFFLINE")
+                Text("JazzChords.org · PRIVATE · OFFLINE")
                     .font(.system(size: JazzTheme.size(compact ? 8.2 : 9.2), weight: .bold, design: .monospaced))
                     .kerning(1.1)
                     .foregroundStyle(JazzTheme.secondary)

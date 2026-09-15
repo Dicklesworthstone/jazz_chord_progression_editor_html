@@ -356,7 +356,7 @@ async function inventoriedEmbeddedAssets(
 
   return [
     {
-      id: "changes-empty-favicon",
+      id: "jazzchords-empty-favicon",
       mime: "image/svg+xml",
       bytes: payload.byteLength,
       sha256: await sha256Hex(payload),

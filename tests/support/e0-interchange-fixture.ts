@@ -177,7 +177,7 @@ function replacementEntryWithoutEstimate(
   return Object.freeze({
     commandId: "command-e0-replace-1",
     commandKind: "replace-document",
-    label: "Import Changes",
+    label: "Import Cadence",
     before: state.document,
     after: candidate,
     beforeBookmarks: state.bookmarks,
@@ -460,7 +460,7 @@ export function materializeE0WorkflowValues(): E0WorkflowMaterialization {
     }),
     replacementCommandSeed: Object.freeze({
       id: "command-e0-replace-1",
-      label: "Import Changes",
+      label: "Import Cadence",
       logicalTimeMs: 9_000,
     }),
     rawSourceRetained: false as const,

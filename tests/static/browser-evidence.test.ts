@@ -14,8 +14,8 @@ import { mergeBrowserEvidence } from "../../scripts/merge-browser-evidence";
 
 const BROWSERS = ["chromium", "firefox", "webkit"] as const;
 const MODES = ["file", "http"] as const;
-const ARTIFACT = "<!doctype html><title>Changes Ω evidence fixture</title>";
-const CANONICAL_OUTPUT = "release output/Changes étude #1.html";
+const ARTIFACT = "<!doctype html><title>JazzChords.org Ω evidence fixture</title>";
+const CANONICAL_OUTPUT = "release output/JazzChords.org étude #1.html";
 const MERGED_OUTPUT =
   "test-results with spaces/standalone browser evidence Ω.json";
 

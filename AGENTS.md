@@ -4,7 +4,10 @@ This file applies to the entire repository.
 
 ## Product boundary
 
-Changes is an offline, deterministic jazz chord-progression studio. Runtime
+The product name is **JazzChords.org**. Use that exact name consistently in all
+project branding, documentation, interfaces, metadata, and exports.
+
+JazzChords.org is an offline, deterministic jazz chord-progression studio. Runtime
 music behavior comes from typed data, explicit theory laws, bounded algorithms,
 and checked-in reviewed corpora. Do not add a model client, prompt, telemetry,
 CDN, remote font, remote sample, or runtime network dependency.

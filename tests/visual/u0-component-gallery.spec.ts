@@ -103,14 +103,14 @@ async function buildGalleryServer(): Promise<GalleryServer> {
     throw new Error("U0_GALLERY_BROWSER_BUILD_MISSING_HTML");
   }
   const artifactBytes = await readFile(join(releaseRoot, "index.html"));
-  assets.set("changes.html", artifactBytes);
+  assets.set("jazzchords.html", artifactBytes);
 
   const server = createServer((request, response) => {
     const pathname = new URL(request.url ?? "/", "http://127.0.0.1").pathname;
     const name = pathname === routePath
       ? "u0-component-gallery.html"
-      : pathname === "/changes.html"
-        ? "changes.html"
+      : pathname === "/jazzchords.html"
+        ? "jazzchords.html"
         : pathname.startsWith("/__tests__/")
           ? basename(pathname)
           : "";
@@ -147,7 +147,7 @@ async function buildGalleryServer(): Promise<GalleryServer> {
       },
       origin,
       temporaryRoot,
-      url: `${origin}/changes.html`,
+      url: `${origin}/jazzchords.html`,
     }),
     origin,
   };
@@ -410,7 +410,7 @@ test("proves Field relationships, Tree pointer semantics, and the default resize
 });
 
 test("keeps the production shell hosts in flattened release DOM order", async ({ page }) => {
-  await page.goto(`${galleryServer.origin}/changes.html`, { waitUntil: "load" });
+  await page.goto(`${galleryServer.origin}/jazzchords.html`, { waitUntil: "load" });
   await expect(page.locator('[data-app-ready="true"]')).toHaveCount(1);
   expect(
     await page.locator("#transport-bar, #dialog-host, #notice-region, #help").evaluateAll(

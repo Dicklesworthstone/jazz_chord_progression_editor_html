@@ -98,7 +98,7 @@ export function StudioHeader({
       <div class="studio-brand">
         <div class="studio-brand__copy">
           <h1 class="studio-brand__wordmark">
-            Jazz<span class="studio-brand__wordmark-accent">Chords</span>
+            Jazz<span class="studio-brand__wordmark-accent">Chords</span>.org
             <VisuallyHidden
               content=" — offline jazz studio"
               focusableWhenSkippedTo={false}

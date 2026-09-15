@@ -162,7 +162,7 @@ describe("U5 production import workflow", () => {
     }, "auto");
     h.service.cancel(); h.service.open(); await h.service.previewPaste(minimal, "auto");
     const bytes = new TextEncoder().encode(nested); complete({ ok: true, bytes, observedByteLength: bytes.length }); await slow;
-    expect(h.service.getSnapshot().title).toBe("Changes"); expect(h.retirements()).toBe(0);
+    expect(h.service.getSnapshot().title).toBe("Cadence"); expect(h.retirements()).toBe(0);
   });
 
   test("oversized replacement needs the exact displayed explicit acknowledgement", async () => {
@@ -311,7 +311,7 @@ describe("U5 production import workflow", () => {
     expect(h.transport.service.inspectTransport().generation).toBe(generation + 1);
     h.service.open(); await h.service.previewPaste(minimal, "auto"); await h.service.requestCommit(); await h.service.confirm(false);
     expect(h.service.getSnapshot().open).toBe(false);
-    expect(h.composition.readApplicationState().document.title).toBe("Changes");
+    expect(h.composition.readApplicationState().document.title).toBe("Cadence");
     expect(h.transport.service.inspectTransport().generation).toBe(generation + 2);
   });
 });

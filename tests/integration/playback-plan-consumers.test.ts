@@ -157,7 +157,7 @@ test("the real MIDI consumer exports a production loop plan and reports the loop
   expect(
     exported.value.report.losses.map((loss) => loss.kind),
   ).toContain("loop-range");
-  expect(exported.value.report.filename).toBe("changes-doc-p0-loop.mid");
+  expect(exported.value.report.filename).toBe("JazzChords.org-doc-p0-loop.mid");
 });
 
 test("the production Manual unison plan exports with an explicit unison-doubling loss (jcpe-u0mc)", () => {

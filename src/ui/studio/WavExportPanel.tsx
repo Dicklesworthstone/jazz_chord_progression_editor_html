@@ -16,7 +16,7 @@ export function WavExportPanel({service}:{service:StudioWavService}){
       </fieldset>:<p>{view.availableBars} bars in this passage. {view.availableBars>4?"Choose specific bars to export a short excerpt.":""}</p>}
       <div class="studio-wav__actions"><button type="button" disabled={view.busy} onClick={()=>{void service.prepare();}}>Prepare piano WAV</button><button type="button" disabled={!view.busy&&view.state!=="ready"} onClick={service.cancel}>Cancel piano WAV</button><button type="button" disabled={view.state!=="ready"||view.busy} onClick={service.download}>Download piano WAV</button></div>
       {view.busy?<progress aria-label="Piano notes rendered" value={view.done} max={Math.max(1,view.total)} />:null}
-      <p role="status" aria-live="polite">{view.message}</p>{view.byteLength>0?<p>{Math.round(view.byteLength/1024)} KiB · changes-dry-piano.wav</p>:null}
+      <p role="status" aria-live="polite">{view.message}</p>{view.byteLength>0?<p>{Math.round(view.byteLength/1024)} KiB · JazzChords.org-dry-piano.wav</p>:null}
     </section>
   </details>;
 }

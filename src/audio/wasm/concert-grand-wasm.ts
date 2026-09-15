@@ -26,12 +26,12 @@ export const CONCERT_GRAND_WASM_BASE64 =
  * the live tree against it without cargo.
  */
 export const CONCERT_GRAND_DSP_SOURCE_CLOSURE_SHA256 =
-  "399235e4c09a3dbc62dd7eddf172e60063a9c42e55f0b8d180ccfd74f80e1e3c";
+  "8ed8b1daed2434e2edff1addc2adad395bf46cc7a9847a8f17ea510e6aabd0e4";
 
 export const CONCERT_GRAND_DSP_SOURCE_CLOSURE = Object.freeze(
   {
     "dsp/concert-grand/Cargo.lock": "14050a5651a8e54f0cc4cb2c4da880c119b5b9a3e5cbf07c128cf62d5c536bda",
-    "dsp/concert-grand/Cargo.toml": "7fc73728025f17b4f8b105178eba7e2915756a36a099dca7c3249e25fa1fe539",
+    "dsp/concert-grand/Cargo.toml": "6c235dacc40de28e5db0acd32658e02f293513f24d5c8de11b5ca5b31144db8e",
     "dsp/concert-grand/rust-toolchain.toml": "8bda8e2160fe9eb1e558650bdd52039f87f57170d65f4bf0788f404ddf6d40b6",
     "dsp/concert-grand/src/clarinet.rs": "d8203be9cccb6a8817fc426fd1c9f8115b7e5f2bdec80e94c292efd3c4c25c3c",
     "dsp/concert-grand/src/clarinet_v2_parameters.rs": "fdd1241a6b3d42731b6a465ae3efd47df30d42a5c2b4610579136e6b152fb5e4",
@@ -39,7 +39,7 @@ export const CONCERT_GRAND_DSP_SOURCE_CLOSURE = Object.freeze(
     "dsp/concert-grand/src/flute_v2.rs": "a6abf6a715a1c7410ffee1ac7477319a0f1671864358f32913d478406548b45a",
     "dsp/concert-grand/src/flute_v3.rs": "17c2141e3e9c40a8c563359584d940e6392befc56cff7cc42035a095bce64706",
     "dsp/concert-grand/src/guitar.rs": "6541b7b67b585c6e70b436c9986cb8acaf9fb41c84ea73aafe01978a0ecce630",
-    "dsp/concert-grand/src/lib.rs": "45a81ef259b3766c0a228e4012499f8b94a6ec9f53d3e410718c4f72d39cdaad",
+    "dsp/concert-grand/src/lib.rs": "4665b7766697938b3fa5db6bff6dbd7accb938609d4be15d81f82dc12ca493ce",
     "dsp/concert-grand/src/physical.rs": "4415838a85ce03ae2bff2c279c15fd8bb4a347f3ac13bedf402b50afc1f703d1",
     "dsp/concert-grand/src/piano_v2.rs": "50f437cfde24f19ac8e469d98fd8d3ee2c43d1d0ca0a40bf08a421ac3b9d0b0c",
     "dsp/concert-grand/src/piano_v2_scale.rs": "d6421c0698b3c75e49d9969231c1e373714af296e51cd931d2e5636117564fcc",

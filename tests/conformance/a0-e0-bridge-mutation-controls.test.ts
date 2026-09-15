@@ -472,12 +472,12 @@ describe("A0/E0 bridge mutation controls: law mutations killed by real observati
       rawCallArgument(ref, 0) as PublishCanonicalExportRevisionRequest,
     );
     expect((result as { ok: boolean }).ok).toBe(true);
-    const renamed = harness.controller.setTitle("Changes edited");
+    const renamed = harness.controller.setTitle("Cadence edited");
     expect(renamed.ok).toBe(true);
     /* The edit's revision advance survives; revision 7 is never reinstalled. */
     const identity = harness.owner.readCurrentApplicationDocumentIdentity();
     expect(identity.revision).toBe(8 as never);
-    expect(harness.controller.getSnapshot().title).toBe("Changes edited");
+    expect(harness.controller.getSnapshot().title).toBe("Cadence edited");
     dischargedControlIds.add("BRIDGE-MUT-019");
   });
 

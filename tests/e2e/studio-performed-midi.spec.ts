@@ -38,7 +38,7 @@ for(const width of [320,1280])test(`performed section MIDI downloads exact bytes
   expect(await download.failure()).toBeNull();
   const bytes=readFileSync(downloaded);expect([...bytes.subarray(0,14)]).toEqual([77,84,104,100,0,0,0,6,0,1,0,3,3,192]);
   expect(createHash("sha256").update(bytes).digest("hex")).toBe(sha256);
-  expect(download.suggestedFilename()).toMatch(/^changes-performed-.*\.mid$/);
+  expect(download.suggestedFilename()).toMatch(/^JazzChords\.org-performed-.*\.mid$/);
   await expect(panel).toContainText("handed to browser downloads");
   expect(await panel.evaluate(e=>e.scrollWidth<=e.clientWidth)).toBe(true);
   expect(await page.locator(".studio-document-status__revision").textContent()).toBe(revision);
@@ -75,20 +75,20 @@ for(const fault of ["click","remove"] as const)for(const width of [320,1280])tes
     URL.createObjectURL=create;URL.revokeObjectURL=revoke;
     Object.defineProperty(HTMLAnchorElement.prototype,"click",{value:click,writable:true,configurable:true});
     Object.defineProperty(Element.prototype,"remove",{value:remove,writable:true,configurable:true});
-    for(const anchor of document.querySelectorAll<HTMLAnchorElement>('a[download^="changes-performed-"]'))anchor.remove();
+    for(const anchor of document.querySelectorAll<HTMLAnchorElement>('a[download^="JazzChords.org-performed-"]'))anchor.remove();
    }};
    window.midiDownloadProof=state;
    URL.createObjectURL=function(blob){const result=create.call(URL,blob);if(blob instanceof Blob&&blob.type==="audio/midi"){state.created+=1;state.active.add(result);}return result;};
    URL.revokeObjectURL=function(value){revoke.call(URL,value);if(state.active.delete(value))state.revoked+=1;};
    HTMLAnchorElement.prototype.click=function(){
-    if(this.download.startsWith("changes-performed-")){
+    if(this.download.startsWith("JazzChords.org-performed-")){
      if(failure==="click"&&state.faults===0){state.faults+=1;throw new Error("Injected MIDI click failure");}
      state.clicks+=1;
     }
     Reflect.apply(click,this,[]);
    };
    Element.prototype.remove=function(){
-    if(this instanceof HTMLAnchorElement&&this.download.startsWith("changes-performed-")&&failure==="remove"&&state.faults===0){state.faults+=1;throw new Error("Injected MIDI remove failure");}
+    if(this instanceof HTMLAnchorElement&&this.download.startsWith("JazzChords.org-performed-")&&failure==="remove"&&state.faults===0){state.faults+=1;throw new Error("Injected MIDI remove failure");}
     Reflect.apply(remove,this,[]);
    };
   },fault);
@@ -105,7 +105,7 @@ for(const fault of ["click","remove"] as const)for(const width of [320,1280])tes
   if(firstDownload!==null)expect(await (await firstDownload).failure()).toBeNull();
   const snapshot=()=>page.evaluate(()=>{
    const state=window.midiDownloadProof;if(state===undefined)throw new Error("Missing native instrumentation");
-   return {created:state.created,revoked:state.revoked,active:state.active.size,clicks:state.clicks,faults:state.faults,anchors:document.querySelectorAll('a[download^="changes-performed-"]').length};
+   return {created:state.created,revoked:state.revoked,active:state.active.size,clicks:state.clicks,faults:state.faults,anchors:document.querySelectorAll('a[download^="JazzChords.org-performed-"]').length};
   });
   const failed=await snapshot();
   expect(failed).toEqual({created:1,revoked:1,active:0,clicks:fault==="remove"?1:0,faults:1,anchors:fault==="remove"?1:0});

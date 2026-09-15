@@ -124,7 +124,7 @@ export function createStudioExactShare(options: Readonly<{
       let result:Awaited<ReturnType<typeof prepareExactQr>>;
       try{result=await prepareExactQr(selectedBound.document,options.readLocation(),options.compress,attempt.signal);}catch{result={ok:false,code:"share.encoding_invalid",message:"QR preparation failed. Copy the exact link or download JSON."};}
       if(qrAbort!==attempt||attempt.signal.aborted||owner!==selectedOwner||top()!==selectedOwner||bound!==selectedBound||!current())return;
-      qrAbort=null;publish(result.ok?{qr:result.value,qrPhase:"ready",qrMessage:"Scan with a current Changes app. The receiver needs the app assets; the code contains only the exact chart link."}:{qr:null,qrPhase:"refused",qrMessage:result.message});
+      qrAbort=null;publish(result.ok?{qr:result.value,qrPhase:"ready",qrMessage:"Scan with a current JazzChords.org app. The receiver needs the app assets; the code contains only the exact chart link."}:{qr:null,qrPhase:"refused",qrMessage:result.message});
     },
     downloadJson: () => {
       if (owner === null || top() !== owner) return;

@@ -151,7 +151,7 @@ function makeHarness(overrides: ScriptOverrides = {}): Harness {
       candidate: Object.freeze({ id: "D2" }),
       replacementCommandSeed: Object.freeze({
         id: "command-wf-1",
-        label: "Import Changes",
+        label: "Import Cadence",
         logicalTimeMs: 12000,
       }),
       disclosedImpact: Object.freeze({ undoDisposition: "retained" }),

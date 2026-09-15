@@ -622,7 +622,7 @@ function checkSeedCase(findings: Findings, seedCase: SeedCase): SeedResult | nul
     findings.add("E1E_LOSSES", path, "loop-range loss does not track the plan loop");
   }
   const sanitized = seedCase.documentId.replaceAll(/[^A-Za-z0-9._-]/gu, "-");
-  const expectedFilename = `changes-${sanitized.slice(0, 52)}.mid`;
+  const expectedFilename = `JazzChords.org-${sanitized.slice(0, 52)}.mid`;
   if (report.filename !== expectedFilename) {
     findings.add("E1E_FILENAME", path, "filename differs from the fresh law");
   }

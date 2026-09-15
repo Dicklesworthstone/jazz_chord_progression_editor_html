@@ -12,7 +12,7 @@
  ],
  "reviewedFileSha256": {
   "primitive-state-matrix.json": "be49e61578dcaeac5fced77c08621a6cdfc28855a73ef21732776cc5dafbb09d",
-  "provenance-ledger.json": "49e78607a8b6b9241f8c990b269eb5abb2a0df03fd142b853686b9b6de9d1535",
+  "provenance-ledger.json": "7f0405bb39cebb84013714272b107eaa756f6ed052b548ed24faa432c33a2e75",
   "shell-state-matrix.json": "e904601142d48d4f450b02ef3a3ea2489b9d909c0d83579f939b6c4e8ec9b3ec",
   "trace-ledger.json": "08b6cf4caba9b21e5e28d80f6bcc5963ddc9c5143206bf3bf6926339d992872d"
  },

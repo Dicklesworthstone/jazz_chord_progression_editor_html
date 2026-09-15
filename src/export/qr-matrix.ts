@@ -21,7 +21,7 @@
  *   Software.
  */
 
-// Bounded byte-mode/M adaptation for Changes. No package/runtime dependency.
+// Bounded byte-mode/M adaptation for JazzChords.org. No package/runtime dependency.
 export type QrMatrix=Readonly<{version:number;size:number;mask:number;rows:readonly string[]}>;
 export type QrWork=Readonly<{bytes:number;versionChecks:number;maskCandidates:number;moduleVisits:number;gfMultiplications:number;termination:"complete"|"refused"}>;
 export type QrResult=Readonly<{ok:true;matrix:QrMatrix;work:QrWork}>|Readonly<{ok:false;message:string;work:QrWork}>;

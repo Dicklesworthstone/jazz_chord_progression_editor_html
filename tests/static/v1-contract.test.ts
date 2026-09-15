@@ -109,7 +109,7 @@ const fixtureRoot = fileURLToPath(
 async function withFixtureCopy(
   run: (copyRoot: string) => Promise<void>,
 ): Promise<void> {
-  const temporaryRoot = await mkdtemp(join(tmpdir(), "changes-v1-contract-"));
+  const temporaryRoot = await mkdtemp(join(tmpdir(), "jazzchords-v1-contract-"));
   const copyRoot = join(temporaryRoot, "voice-assignment");
   await cp(fixtureRoot, copyRoot, { recursive: true });
   try {

@@ -86,7 +86,7 @@ describe("E1 report exactness against every golden", () => {
       const fixtureCase = await requireGoldenCase(caseId);
       const value = requireExported(exportMidi(await goldenRequest(caseId)));
       expect(value.report.filename).toBe(
-        `changes-${fixtureCase.planSpec.documentId}.mid`,
+        `JazzChords.org-${fixtureCase.planSpec.documentId}.mid`,
       );
       expect(value.report.filename.length).toBeLessThanOrEqual(64);
     }

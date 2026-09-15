@@ -72,7 +72,7 @@ type LicenseReport = {
 };
 
 const expectedOwnedAsset = {
-  id: "changes-empty-favicon",
+  id: "jazzchords-empty-favicon",
   mime: "image/svg+xml",
   source: "src/index.html#favicon",
   license: "LicenseRef-Project",

@@ -1,6 +1,6 @@
 # FrankenJazz
 
-FrankenJazz is the native Apple sibling of the Changes jazz progression studio.
+FrankenJazz is the native Apple sibling of the JazzChords.org jazz progression studio.
 One SwiftUI target adapts deliberately across iPhone, iPad, and Mac Catalyst.
 It runs offline and stores recovery data only in the app's private Application
 Support directory.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build the original Changes Rust instrument core for iPhone, Simulator, and
+# Build the original JazzChords.org Rust instrument core for iPhone, Simulator, and
 # Mac Catalyst, then package it as a non-embedded static XCFramework.
 set -euo pipefail
 

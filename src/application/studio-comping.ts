@@ -85,7 +85,7 @@ export function createStudioComping(ports:Readonly<{
     if(token!==generation)return;
     if(!same(s)){state="stale";message="The chart changed during preparation. Prepare again.";notify();return;}
     if(!/^[a-f0-9]{64}$/.test(hash)){fail("Invalid MIDI fingerprint; no file was prepared.");return;}
-    bytes=exported.bytes;sha256=hash;filename="changes-comp-rhythm.mid";state="ready";message="The exact rhythm MIDI is ready to download.";notify();
+    bytes=exported.bytes;sha256=hash;filename="JazzChords.org-comp-rhythm.mid";state="ready";message="The exact rhythm MIDI is ready to download.";notify();
   };
   const downloadMidi=async():Promise<void>=>{
     const s=snapshot;if(state!=="ready"||s===null||bytes===null||sha256===null||filename===null)return;
@@ -129,6 +129,6 @@ export function createStudioComping(ports:Readonly<{
     setPassage:(id:string|null):void=>{change(()=>{sectionId=id;});},
     previewRecipe:(text:string):void=>{if(state==="delivering")return;importGeneration+=1;showRecipe(text);},
     applyRecipe:():void=>{const held=importDraft;if(held!==null)change(()=>{recipe=held;importDraft=null;});},
-    downloadRecipe:():void=>{try{const deliver=ports.prepareRecipeDownload(JSON.stringify(recipe,null,2)+"\n","changes-comp-recipe.json");message=deliver()?"Recipe handed to browser downloads. It is separate from chart backups and shared links.":"Recipe download was not confirmed. Try again from this button.";}catch{message="This browser could not download the recipe.";}notify();},
+    downloadRecipe:():void=>{try{const deliver=ports.prepareRecipeDownload(JSON.stringify(recipe,null,2)+"\n","JazzChords.org-comp-recipe.json");message=deliver()?"Recipe handed to browser downloads. It is separate from chart backups and shared links.":"Recipe download was not confirmed. Try again from this button.";}catch{message="This browser could not download the recipe.";}notify();},
   });
 }

@@ -228,7 +228,7 @@ describe("X1 serialized-transport retirement adapter (real transport)", () => {
         candidate: Object.freeze({ id: "doc-x1-next" }),
         replacementCommandSeed: Object.freeze({
           id: "command-x1-1",
-          label: "Import Changes",
+          label: "Import Cadence",
           logicalTimeMs: 9000,
         }),
         disclosedImpact: Object.freeze({ undoDisposition: "retained" }),

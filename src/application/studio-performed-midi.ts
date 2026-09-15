@@ -82,7 +82,7 @@ export function createStudioPerformedMidi(ports:Readonly<{
     if(!same(document,revision,style))return refuse("The chart changed during preparation. Prepare the current passage again.","stale");
     if(!/^[a-f0-9]{64}$/.test(sha256))return refuse("The browser returned an invalid file fingerprint.");
     prepared={document,revision,style,bytes:exported.bytes};
-    publish({state:"ready",message:"Performed MIDI is ready. Its notes and timing match the selected arrangement.",filename:`changes-performed-${document.id.replace(/[^A-Za-z0-9._-]/g,"-").slice(0,40)}.mid`,bars,notes:exported.evidence.pitches,byteLength:exported.bytes.length,sha256,tempoMicroseconds:exported.tempoMicroseconds});
+    publish({state:"ready",message:"Performed MIDI is ready. Its notes and timing match the selected arrangement.",filename:`JazzChords.org-performed-${document.id.replace(/[^A-Za-z0-9._-]/g,"-").slice(0,40)}.mid`,bars,notes:exported.evidence.pitches,byteLength:exported.bytes.length,sha256,tempoMicroseconds:exported.tempoMicroseconds});
     return read();
   };
   const download=async():Promise<StudioPerformedMidiView>=>{

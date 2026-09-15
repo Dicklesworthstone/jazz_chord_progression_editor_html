@@ -21,7 +21,7 @@
       "expectedGolden": {
         "file": "goldens/minimal.changes.json",
         "bytes": 352,
-        "sha256": "c73321857e0ad8cc6ac03961ec872d456090d190d2d5c1a659883259c7f20fe5"
+        "sha256": "f224c1d24b2d0d3598ed4259efef45d7f9b074debb0cd7e22d14a5050f0a1c8e"
       },
       "stateEffect": "NONE",
       "markerEffect": "UNCHANGED",
@@ -297,7 +297,7 @@
       "resultCategory": "EXPORT_READY",
       "failureStage": null,
       "expectedIssueCodes": [],
-      "expectedFilename": "untitled-changes.json",
+      "expectedFilename": "untitled-JazzChords.org.json",
       "stateEffect": "NONE",
       "markerEffect": "UNCHANGED",
       "exactStageCounts": { "fallbacks": 1 },

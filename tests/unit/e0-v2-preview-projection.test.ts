@@ -75,7 +75,7 @@ const RETAINED_PROJECTION = Object.freeze({
 
 const COMMAND_SEED: ImportReplacementCommandSeed = Object.freeze({
   id: "command-v2-preview-1",
-  label: "Import Changes",
+  label: "Import Cadence",
   logicalTimeMs: 15000,
 });
 

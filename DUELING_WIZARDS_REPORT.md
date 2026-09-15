@@ -1,4 +1,4 @@
-# Dueling Idea Wizards: Changes
+# Dueling Idea Wizards: JazzChords.org
 
 Run: September 10, 2026 UTC. Source baseline: `d6567ac2a90b6f625932b3bf2ae80b9eb7bdad31`.
 
@@ -62,7 +62,7 @@ All recommended runtime functionality is feasible in principle as static browser
 
 **Implementation:** Reuse the import recognizer's useful theory through a public pure interface, rather than importing an export adapter into theory or fabricating MIDI. Current recognition by pitch class is not sufficient to certify exact spelled authoring. A proposed finite search of 32 templates × 35 written roots gives 1,120 candidate cells.
 
-**Cost and proof:** M. Independent ambiguous-name, enharmonic, duplicate and diminished-symmetry fixtures; real audition/Add/Undo; reject stale draft publication. This makes Changes useful to someone who knows the sound before knowing the symbol.
+**Cost and proof:** M. Independent ambiguous-name, enharmonic, duplicate and diminished-symmetry fixtures; real audition/Add/Undo; reject stale draft publication. This makes JazzChords.org useful to someone who knows the sound before knowing the symbol.
 
 ### 4. Author the comping rhythm — COD2, peer mean 851.5
 

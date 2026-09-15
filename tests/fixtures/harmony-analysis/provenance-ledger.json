@@ -10,7 +10,7 @@
     {
       "id": "H0-AUTH-PLAN",
       "authorityClass": "reviewed-project-contract",
-      "title": "Changes rebuild plan, Harmony and progression intelligence",
+      "title": "JazzChords.org rebuild plan, Harmony and progression intelligence",
       "sourceRefs": ["docs/REBUILD_PLAN.md#111-boundary-between-facts-analysis-and-suggestions","docs/REBUILD_PLAN.md#113-roman-numeral-readings","docs/REBUILD_PLAN.md#114-chord-scales-and-tensions"],
       "claims": ["literal-context-option separation","four evidence tiers","KeyContext modes","Roman and functional rule families","mechanical match weights","initial scale families and mapping predicates","plural scale options","clash and exception reporting"],
       "reviewTier": "project-reviewed-contract"

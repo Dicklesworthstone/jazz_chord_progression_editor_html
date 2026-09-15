@@ -1,4 +1,4 @@
-# Rebuild Plan: Changes — Jazz Progression Studio
+# Rebuild Plan: JazzChords.org — Jazz Progression Studio
 
 Status: reviewed implementation contract (five review rounds complete)
 
@@ -12,9 +12,11 @@ Source evidence: `docs/LEGACY_AUDIT.md`
 Rebuild the application as a modular, typed, client-only music application and
 compile it into one self-contained HTML release artifact.
 
-The product will be called **Changes** in the interface, with the descriptive
-subtitle **Jazz Progression Studio**. The existing repository and artifact name
-remain unchanged so bookmarks, downloads, and deployment paths stay familiar.
+The product name is and must remain **JazzChords.org** everywhere, including
+the interface, documentation, metadata, and exports. **Jazz Progression Studio**
+is a descriptive subtitle, never an alternative product name. The existing
+repository and artifact name remain unchanged so bookmarks, downloads, and
+deployment paths stay familiar.
 
 The rebuild is not an attempt to reproduce the old UI with newer tooling. It
 changes the center of gravity from “a catalog of impressive-looking chord
@@ -62,7 +64,7 @@ object. The plan makes those seams explicit and testable.
 
 ### 3.1 One-sentence promise
 
-Changes lets a musician type, arrange, hear, inspect, and refine a jazz chord
+JazzChords.org lets a musician type, arrange, hear, inspect, and refine a jazz chord
 progression in seconds, with reliable playback and theory explanations that say
 what is known, what is contextual, and what is merely one musical option.
 
@@ -286,7 +288,7 @@ frozen, and loop states receive text or iconography in addition to color.
 
 ```text
 ┌────────────────────────────────────────────────────────────────────┐
-│ Changes   chart title      key/mode   Undo Redo  Import Export Help│
+│ JazzChords.org  chart title  key/mode  Undo Redo  Import Export Help  │
 ├───────────────┬────────────────────────────────┬───────────────────┤
 │ Library       │ Lead-sheet chart               │ Harmony Lens      │
 │ - quick entry │ sections / measures / chords   │ symbol + tones    │
@@ -2944,7 +2946,7 @@ JSON export emits only validated `ProgressionDocumentV2`, pretty-printed with a
 stable top-level/property ordering and final newline. Derived analysis, UI state,
 recovery metadata, and history are excluded. Export performs a decode round trip
 and semantic equality check before offering bytes. The filename is a sanitized
-title plus `.changes.json`; an empty title uses `untitled-changes.json`.
+title plus `.changes.json`; an empty title uses `untitled-JazzChords.org.json`.
 
 Use the File System Access API only as progressive enhancement after a real
 transient user activation. Canonical marker-capable export performs asynchronous

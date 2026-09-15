@@ -88,7 +88,7 @@ const LOCAL = Object.freeze({
   planSchema: "changes.playback.plan.v1",
   writerId: "changes.midi-export",
   writerVersion: 1,
-  filenamePrefix: "changes-",
+  filenamePrefix: "JazzChords.org-",
   filenameSuffix: ".mid",
 });
 

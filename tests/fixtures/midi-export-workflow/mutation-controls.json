@@ -30,8 +30,8 @@
       "mutation": {
         "operator": "replace",
         "jsonPointer": "/cases/0/expectedPreview/artifact/byteLength",
-        "from": 129,
-        "to": 130,
+        "from": 136,
+        "to": 137,
         "exactChangedFieldCount": 1
       },
       "expectedFinding": "U7_CONTRACT_BYTE_LENGTH",

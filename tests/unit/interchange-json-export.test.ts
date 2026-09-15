@@ -186,7 +186,7 @@ describe("E0 canonical JSON export against the reviewed goldens", () => {
 describe("E0 safe filename projection", () => {
   test("blank titles take the exact fallback", () => {
     const out = sanitizeExportFilename("   ", "canonical-json");
-    expect(out.filename).toBe("untitled-changes.json");
+    expect(out.filename).toBe("untitled-JazzChords.org.json");
     expect(out.usedFallback).toBe(true);
   });
 
@@ -196,9 +196,9 @@ describe("E0 safe filename projection", () => {
     expect(out.changed).toBe(true);
   });
 
-  test("reserved device basenames take the changes- prefix", () => {
+  test("reserved device basenames take the JazzChords.org- prefix", () => {
     const out = sanitizeExportFilename("CON", "canonical-json");
-    expect(out.filename).toBe("changes-CON.changes.json");
+    expect(out.filename).toBe("JazzChords.org-CON.changes.json");
   });
 
   test("120-scalar truncation strips re-exposed trailing dots", () => {

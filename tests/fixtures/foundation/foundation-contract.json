@@ -212,7 +212,7 @@
     "webkit"
   ],
   "requiredReadyMarker": "[data-app-ready=\"true\"]",
-  "expectedHeading": "JazzChords \u2014 offline jazz studio",
+  "expectedHeading": "JazzChords.org \u2014 offline jazz studio",
   "traceability": [
     {
       "id": "F0-TOOLCHAIN-01",

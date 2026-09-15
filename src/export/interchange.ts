@@ -485,8 +485,8 @@ export const deliverExportArtifact: DeliverExportArtifact = async (
           {
             description:
               artifact.kind === "canonical-json"
-                ? "Changes Progression JSON"
-                : "Changes Lead Sheet Text",
+                ? "JazzChords.org Progression JSON"
+                : "JazzChords.org Lead Sheet Text",
             accept: {
               /* split() always yields at least one element; ?? satisfies
                * noUncheckedIndexedAccess without an assertion. */
@@ -746,8 +746,8 @@ export const startPreparedExportDelivery: StartPreparedExportDelivery = (
           {
             description:
               binding.kind === "canonical-json"
-                ? "Changes Progression JSON"
-                : "Changes Lead Sheet Text",
+                ? "JazzChords.org Progression JSON"
+                : "JazzChords.org Lead Sheet Text",
             accept: {
               [mediaType.split(";")[0] ?? mediaType]: [
                 binding.kind === "canonical-json"

@@ -201,7 +201,7 @@ this order:
 
 1. Choose `.changes.json` or `.changes.txt` from the artifact kind.
 2. Decide blankness with ECMAScript `trim()`. A blank title uses the exact
-   `untitled-changes.json` or `untitled-changes.txt` fallback.
+   `untitled-JazzChords.org.json` or `untitled-JazzChords.org.txt` fallback.
 3. Iterate Unicode scalar values without normalization. Replace each maximal
    run of C0 controls, DEL, `" * / : < > ? \\ |`, bidi embedding/override or
    isolate controls, and lone-surrogate evidence with one ASCII hyphen. A
@@ -216,7 +216,7 @@ this order:
    removal. UTF-16 width is never used as the limit.
 7. If empty after projection, use the fallback. If the ASCII-case-folded first
    basename component is a reserved DOS device name from the public table,
-   prefix `changes-`.
+   prefix `JazzChords.org-`.
 8. Append the owned extension exactly once.
 
 Internal ordinary spaces and non-control Unicode are preserved. Filename text

@@ -173,8 +173,8 @@ export const CANONICAL_JSON_MEDIA_TYPE = "application/json;charset=utf-8";
 export const LEAD_SHEET_TEXT_MEDIA_TYPE = "text/plain;charset=utf-8";
 export const CANONICAL_JSON_FILENAME_EXTENSION = ".changes.json";
 export const LEAD_SHEET_TEXT_FILENAME_EXTENSION = ".changes.txt";
-export const UNTITLED_CANONICAL_JSON_FILENAME = "untitled-changes.json";
-export const UNTITLED_LEAD_SHEET_TEXT_FILENAME = "untitled-changes.txt";
+export const UNTITLED_CANONICAL_JSON_FILENAME = "untitled-JazzChords.org.json";
+export const UNTITLED_LEAD_SHEET_TEXT_FILENAME = "untitled-JazzChords.org.txt";
 
 export const EXPORT_FILENAME_FORBIDDEN_CODE_POINTS = Object.freeze([
   0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c,

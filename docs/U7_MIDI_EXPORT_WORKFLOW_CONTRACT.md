@@ -130,7 +130,7 @@ Marker overflow is unreachable by construction: chord markers ≤ 8,192
   `title-truncated` notice carrying the original byte length. (The domain
   decoder already refuses blank titles; the fallback for empty text is
   pinned as a defensive law and covered by a near-miss fixture row.)
-- `voicingTrackName` = `Voicings` and `instrumentName` = `Changes`, pinned
+- `voicingTrackName` = `Voicings` and `instrumentName` = `JazzChords.org`, pinned
   literals. The file carries no program change, so the instrument metadata
   is a label of the artifact family, not a claim about the playback
   instrument; this keeps the exported bytes a pure function of the document,

@@ -146,9 +146,9 @@
   "reviewedDigests": {
     "contractDocumentSha256": "d5a2a4306c927cd0018737c31f863f18799450510b8a4faf7ba150c366091d54",
     "companionsSha256": {
-      "adversarial-cases.json": "a6a8573e53b11e044e22a267d82ddf57f930913f966d157ed4e4e0d96ded5243",
+      "adversarial-cases.json": "369d20467f86445adff5768f93ae8d323fb781b3e530e05935af29ae24c586ac",
       "provenance-ledger.json": "e9a24fdb862292cc774e5866c704160d33110f270aa43fe058cc55d390daef99",
-      "shape-cases.json": "6fe69ec31d7136af24e02438a358ba2092378a62b1c7bd4ff6a268acc2a446bc",
+      "shape-cases.json": "548618f9b329c64b5083a207883b0e8508be9850270351207fd173e8a7eb742d",
       "trace-ledger.json": "664427ba257c0a6efcad69d926b472def777d20326c24cf22f62dd79c90ad6cd"
     }
   },

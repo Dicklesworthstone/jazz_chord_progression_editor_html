@@ -223,7 +223,7 @@ export async function createU0ArtifactServer(): Promise<U0ArtifactServer> {
     const artifactSha256 = createHash("sha256").update(artifact).digest("hex");
     const server = createServer((request, response) => {
       const requestUrl = new URL(request.url ?? "/", "http://127.0.0.1");
-      if (request.method === "GET" && requestUrl.pathname === "/changes.html") {
+      if (request.method === "GET" && requestUrl.pathname === "/jazzchords.html") {
         response.writeHead(200, {
           "cache-control": "no-store",
           "content-length": artifact.byteLength,
@@ -254,7 +254,7 @@ export async function createU0ArtifactServer(): Promise<U0ArtifactServer> {
       },
       origin,
       temporaryRoot,
-      url: `${origin}/changes.html`,
+      url: `${origin}/jazzchords.html`,
     });
   } catch (error) {
     await rm(temporaryRoot, { recursive: true, force: true });

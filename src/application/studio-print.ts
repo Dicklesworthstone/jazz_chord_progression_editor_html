@@ -11,7 +11,7 @@ export function createStudioPrint(ports:Readonly<{readDocument:()=>ValidatedDocu
  const clear=():void=>{generation++;pages=[];pageIndex=0;deliver=null;};
  const close=():void=>{clear();state="idle";message="Print preview closed.";notify();};
  const fail=(text:string):void=>{clear();state="refused";message=text;notify();};
- const preparePage=():void=>{const page=pages[pageIndex];if(page===undefined)throw new Error("Missing print page");const encoded=encodePrintSvg(page);if(!encoded.ok)throw new Error(encoded.message);deliver=ports.prepareDownload(encoded.bytes,`changes-${paper}-page-${String(pageIndex+1)}.svg`);};
+ const preparePage=():void=>{const page=pages[pageIndex];if(page===undefined)throw new Error("Missing print page");const encoded=encodePrintSvg(page);if(!encoded.ok)throw new Error(encoded.message);deliver=ports.prepareDownload(encoded.bytes,`JazzChords.org-${paper}-page-${String(pageIndex+1)}.svg`);};
  ports.subscribeSource(()=>{if(binding===null||same())return;clear();state="stale";message="The chart changed. Prepare a current print preview.";notify();});
  return Object.freeze({read,subscribe:(listener:()=>void)=>{listeners.add(listener);return()=>{listeners.delete(listener);};},close,
   setPaper:(value:PrintPaper)=>{close();paper=value;message="Paper changed. Prepare its layout.";notify();},

@@ -54,7 +54,7 @@
     "representativeDocument": {
       "schema": "changes.progression.v2",
       "id": "doc-main",
-      "title": "Changes",
+      "title": "Cadence",
       "description": "Independent F2 fixture",
       "meter": {
         "beatsPerBar": 4,

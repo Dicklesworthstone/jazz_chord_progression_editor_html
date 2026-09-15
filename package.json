@@ -1,5 +1,5 @@
 {
-  "name": "changes-jazz-progression-studio",
+  "name": "jazzchords.org",
   "version": "2.0.0-dev.0",
   "private": true,
   "description": "An offline, deterministic jazz chord-progression studio.",

@@ -140,7 +140,7 @@ async function withArtifactServer(
   run: (target: string) => Promise<void>,
 ): Promise<void> {
   const server = createServer((request, response) => {
-    if (request.method === "GET" && request.url === "/changes.html") {
+    if (request.method === "GET" && request.url === "/jazzchords.html") {
       response.writeHead(200, {
         "cache-control": "no-store",
         "content-length": artifact.byteLength,
@@ -164,7 +164,7 @@ async function withArtifactServer(
   }
 
   try {
-    await run(`http://127.0.0.1:${String(address.port)}/changes.html`);
+    await run(`http://127.0.0.1:${String(address.port)}/jazzchords.html`);
   } finally {
     await closeServer(server);
   }
@@ -335,7 +335,7 @@ test.describe("F0 automated accessibility baseline", () => {
 
       if (mode === "file") {
         const copyPath = testInfo.outputPath(
-          "Changes ü # accessibility",
+          "JazzChords.org ü # accessibility",
           "jazz chord progression editor.html",
         );
         await mkdir(dirname(copyPath), { recursive: true });

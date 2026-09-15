@@ -75,15 +75,15 @@ const EXPECTED_FILES = Object.freeze([
 
 export const E0_ACCEPTED_BYTE_DIGESTS: Readonly<Record<string, string>> = {
   "canonical-json-cases.json":
-    "8eac2bdee9a90f6e6828295f103d1ab66fe0157992ac5639e977c6cff59e79d5",
+    "6e4aca5c398f13c42c36ee6ac76280a4bc75911bc23ee9da185d04fb216e2042",
   "chart-text-cases.json":
     "79875e4060148663e8c8af717cd22abf3afbe6c1999f1c811f530b5b05253bad",
   "e0-interchange-contract.json":
-    "a53963189636dd1f8cba3b2c4dd2b4c4f1b44187f452fd887705fa4768ec35be",
+    "c7bcf84d974b3a2479f7924af05299af0a0016cc3b254d267a0a2c0479445cbc",
   "import-cases.json":
     "22ab4a62d9f62d93eae169f60d51de9780218bbcc160b4cdfe3e7f0101c38688",
   "input-fixture-ledger.json":
-    "693d3e39db3e82e5c24980d363566943360687bdf2dcd523185f56a028b0f714",
+    "e52b744746ecce4474552d5c3c27c3c68f6876170c441e0ca1dca51ba724f26f",
   "limit-cases.json":
     "4eb50078380a302779691e7004b4ffc6805c3b75ed76addfd8b78f7daee2c237",
   "mutation-controls.json":
@@ -95,9 +95,9 @@ export const E0_ACCEPTED_BYTE_DIGESTS: Readonly<Record<string, string>> = {
   "trace-ledger.json":
     "ccb7186dc7e25a4d0edbb65a3a4b2fbefe52674756faa630509a83ad1fae18c9",
   "workflow-adapter-cases.json":
-    "722cf3574eb1005cb49b3222488c585f346fe57d7a1cc7b83b1277383a7a9d73",
+    "7b72e314f5d5599874a3ef1473f0a2da35bfea7d2bf2a14772342d5710c6427a",
   "goldens/minimal.changes.json":
-    "c73321857e0ad8cc6ac03961ec872d456090d190d2d5c1a659883259c7f20fe5",
+    "f224c1d24b2d0d3598ed4259efef45d7f9b074debb0cd7e22d14a5050f0a1c8e",
   "goldens/minimal.changes.txt":
     "0fc780c103673d387cc0497abbb4cf9baaf2ad6cb3ec224a4326c96030fc659e",
   "goldens/negative-zero.changes.json":
@@ -109,7 +109,7 @@ export const E0_ACCEPTED_BYTE_DIGESTS: Readonly<Record<string, string>> = {
 };
 
 export const E0_ACCEPTED_SEMANTIC_DIGEST =
-  "af7c46751b2bbbd8a24de4f80b4b6b8208ac2e86cdce7764593531cf5ca60e52";
+  "c7e6109510d829b006000c6ea19a1cfef277f2e1010dc29ca5ef552b518b52f3";
 
 const EXPECTED_SCHEMAS: Readonly<Record<string, string>> = {
   "canonical-json-cases.json": "changes.fixtures.e0-canonical-json-cases.v1",
@@ -3939,7 +3939,7 @@ export async function validateE0Contract(
         },
         commandId: "command-e0-replace-1",
         commandKind: "replace-document",
-        label: "Import Changes",
+        label: "Import Cadence",
         coalescing: null,
         firstLogicalTimeMs: 9_000,
         lastLogicalTimeMs: 9_000,
@@ -4695,7 +4695,7 @@ export async function validateE0Contract(
     objectAt(matchingConfirmationCase?.["expectedCommand"]),
     {
       id: "command-e0-replace-1",
-      label: "Import Changes",
+      label: "Import Cadence",
       expectedDocumentId: "oversized",
       expectedRevision: 7,
       logicalTimeMs: 9_000,
@@ -5848,7 +5848,7 @@ export async function validateE0Contract(
   );
 
   const markerHash =
-    "c73321857e0ad8cc6ac03961ec872d456090d190d2d5c1a659883259c7f20fe5";
+    "f224c1d24b2d0d3598ed4259efef45d7f9b074debb0cd7e22d14a5050f0a1c8e";
   const acceptedMarker = {
     documentId: "document-e0-minimal",
     revision: 7,
@@ -5869,7 +5869,7 @@ export async function validateE0Contract(
       kind: "canonical-json",
       sourceDocumentId: "document-e0-minimal",
       byteLength: 352,
-      filename: "Changes.changes.json",
+      filename: "Cadence.changes.json",
       semanticDocumentHash: markerHash,
       canonicalPolicyVersion: 1,
       semanticHashPolicyVersion: 1,
@@ -5925,7 +5925,7 @@ export async function validateE0Contract(
       },
       binding: {
         kind: "canonical-json",
-        filename: "Changes.changes.json",
+        filename: "Cadence.changes.json",
         byteLength: 352,
         semanticDocumentHash: markerHash,
         sourceDocumentId: "document-e0-minimal",
@@ -6003,7 +6003,7 @@ export async function validateE0Contract(
           generation: 1,
           documentId: "document-e0-minimal",
           revision: 7,
-          filename: "Changes.changes.json",
+          filename: "Cadence.changes.json",
           byteLength: 352,
           semanticDocumentHash: markerHash,
           canonicalPolicyVersion: 1,
@@ -6058,7 +6058,7 @@ export async function validateE0Contract(
             schema: "changes.export.canonical-json-artifact.v1",
             kind: "canonical-json",
             mediaType: "application/json;charset=utf-8",
-            filename: "Changes.changes.json",
+            filename: "Cadence.changes.json",
             textFixtureId: "goldens/minimal.changes.json",
             byteLength: 351,
             semanticDocumentHash: markerHash,
@@ -6124,8 +6124,8 @@ export async function validateE0Contract(
           {
             operation: "set",
             path: ["binding", "filename"],
-            from: "Changes.changes.json",
-            to: "Changes edited.changes.json",
+            from: "Cadence.changes.json",
+            to: "Cadence edited.changes.json",
           },
           {
             operation: "set",
@@ -6136,8 +6136,8 @@ export async function validateE0Contract(
           {
             operation: "set",
             path: ["binding", "semanticDocumentHash"],
-            from: "c73321857e0ad8cc6ac03961ec872d456090d190d2d5c1a659883259c7f20fe5",
-            to: "1cde9a00387d67845b97b46b486f4c961db14d9d25e5823fe59717f05bfe26cf",
+            from: "f224c1d24b2d0d3598ed4259efef45d7f9b074debb0cd7e22d14a5050f0a1c8e",
+            to: "7efa72a936ae8115d536c74b9271e766f2499c4c0a134b58880729446eb04ad1",
           },
           {
             operation: "set",
@@ -6148,19 +6148,19 @@ export async function validateE0Contract(
           {
             operation: "set",
             path: ["privateBytes", "sha256"],
-            from: "c73321857e0ad8cc6ac03961ec872d456090d190d2d5c1a659883259c7f20fe5",
-            to: "1cde9a00387d67845b97b46b486f4c961db14d9d25e5823fe59717f05bfe26cf",
+            from: "f224c1d24b2d0d3598ed4259efef45d7f9b074debb0cd7e22d14a5050f0a1c8e",
+            to: "7efa72a936ae8115d536c74b9271e766f2499c4c0a134b58880729446eb04ad1",
           },
         ],
         derivedText: {
           baseFixtureId: "goldens/minimal.changes.json",
           exactReplacement: {
-            from: '"title": "Changes"',
-            to: '"title": "Changes edited"',
+            from: '"title": "Cadence"',
+            to: '"title": "Cadence edited"',
           },
           expectedByteLength: 359,
           expectedSha256:
-            "1cde9a00387d67845b97b46b486f4c961db14d9d25e5823fe59717f05bfe26cf",
+            "7efa72a936ae8115d536c74b9271e766f2499c4c0a134b58880729446eb04ad1",
         },
       },
       {
@@ -6178,10 +6178,10 @@ export async function validateE0Contract(
             generation: 2,
             documentId: "document-e0-minimal",
             revision: 8,
-            filename: "Changes edited.changes.json",
+            filename: "Cadence edited.changes.json",
             byteLength: 359,
             semanticDocumentHash:
-              "1cde9a00387d67845b97b46b486f4c961db14d9d25e5823fe59717f05bfe26cf",
+              "7efa72a936ae8115d536c74b9271e766f2499c4c0a134b58880729446eb04ad1",
             canonicalPolicyVersion: 1,
             semanticHashPolicyVersion: 1,
           },
@@ -7346,7 +7346,7 @@ export async function validateE0Contract(
           artifact: {
             kind: "lead-sheet-text",
             sourceDocumentId: "document-e0-minimal",
-            filename: "Changes.changes.txt",
+            filename: "Cadence.changes.txt",
             byteLength: 60,
             semanticDocumentHash: null,
           },
@@ -7360,7 +7360,7 @@ export async function validateE0Contract(
           revision: 7,
           exportedAt: "2026-07-18T00:00:00.000Z",
           semanticDocumentHash:
-            "c73321857e0ad8cc6ac03961ec872d456090d190d2d5c1a659883259c7f20fe5",
+            "f224c1d24b2d0d3598ed4259efef45d7f9b074debb0cd7e22d14a5050f0a1c8e",
           canonicalPolicyVersion: 1,
           semanticHashPolicyVersion: 1,
         },
@@ -7559,7 +7559,7 @@ export async function validateE0Contract(
   const canonicalArtifactBinding = {
     kind: "canonical-json",
     sourceDocumentId: "document-e0-minimal",
-    filename: "Changes.changes.json",
+    filename: "Cadence.changes.json",
     byteLength: 352,
     semanticDocumentHash: markerHash,
   };
@@ -7675,7 +7675,7 @@ export async function validateE0Contract(
       exportedAt: "2026-07-18T00:00:00.000Z",
       semanticDocumentHash: markerHash,
       byteLength: 352,
-      filename: "Changes.changes.json",
+      filename: "Cadence.changes.json",
       canonicalPolicyVersion: 1,
       semanticHashPolicyVersion: 1,
     },
@@ -8055,7 +8055,7 @@ export async function validateE0Contract(
             "after-artifact-preparation-before-delivery-call",
           sourceMutation: {
             path: ["title"],
-            from: "Changes",
+            from: "Cadence",
             to: "Caller mutation",
           },
           expected: {
@@ -8065,7 +8065,7 @@ export async function validateE0Contract(
             writerAliasesCallerMemory: false,
             bytesOffered: 352,
             semanticDocumentHash:
-              "c73321857e0ad8cc6ac03961ec872d456090d190d2d5c1a659883259c7f20fe5",
+              "f224c1d24b2d0d3598ed4259efef45d7f9b074debb0cd7e22d14a5050f0a1c8e",
           },
         },
         {
@@ -8084,7 +8084,7 @@ export async function validateE0Contract(
             writerAliasesCallerMemory: false,
             bytesOffered: 352,
             semanticDocumentHash:
-              "c73321857e0ad8cc6ac03961ec872d456090d190d2d5c1a659883259c7f20fe5",
+              "f224c1d24b2d0d3598ed4259efef45d7f9b074debb0cd7e22d14a5050f0a1c8e",
           },
         },
         {
@@ -8093,7 +8093,7 @@ export async function validateE0Contract(
           sourceMutationTiming: "after-write-start-before-write-settlement",
           sourceMutation: {
             path: ["sourceDocument", "title"],
-            from: "Changes",
+            from: "Cadence",
             to: "Concurrent caller mutation",
           },
           expected: {
@@ -9367,7 +9367,7 @@ export async function validateE0Contract(
       {
         ...markerCurrentState,
         revision: 8,
-        document: { ...markerCurrentDocument, title: "Changes edited" },
+        document: { ...markerCurrentDocument, title: "Cadence edited" },
         quickEntry: { ...markerCurrentQuickEntry, baseRevision: 8 },
       },
       markerRevision8State,
@@ -9395,7 +9395,7 @@ export async function validateE0Contract(
       {
         ...markerPublishedState,
         revision: 8,
-        document: { ...markerCurrentDocument, title: "Changes edited" },
+        document: { ...markerCurrentDocument, title: "Cadence edited" },
         quickEntry: { ...markerCurrentQuickEntry, baseRevision: 8 },
       },
       markerPublishedThenEditedState,
@@ -10865,7 +10865,7 @@ export async function validateE0Contract(
           {
             operation: "set",
             path: ["artifact", "semanticDocumentHash"],
-            from: "c73321857e0ad8cc6ac03961ec872d456090d190d2d5c1a659883259c7f20fe5",
+            from: "f224c1d24b2d0d3598ed4259efef45d7f9b074debb0cd7e22d14a5050f0a1c8e",
             to: "0000000000000000000000000000000000000000000000000000000000000000",
           },
         ],
@@ -10899,7 +10899,7 @@ export async function validateE0Contract(
           {
             operation: "set",
             path: ["artifact", "filename"],
-            from: "Changes.changes.json",
+            from: "Cadence.changes.json",
             to: "Other.changes.json",
           },
         ],
@@ -11022,7 +11022,7 @@ export async function validateE0Contract(
           {
             operation: "set",
             path: ["semanticDocumentHash"],
-            from: "c73321857e0ad8cc6ac03961ec872d456090d190d2d5c1a659883259c7f20fe5",
+            from: "f224c1d24b2d0d3598ed4259efef45d7f9b074debb0cd7e22d14a5050f0a1c8e",
             to: "0000000000000000000000000000000000000000000000000000000000000000",
           },
         ],
@@ -11056,7 +11056,7 @@ export async function validateE0Contract(
           {
             operation: "set",
             path: ["filename"],
-            from: "Changes.changes.json",
+            from: "Cadence.changes.json",
             to: "Other.changes.json",
           },
         ],
@@ -11217,7 +11217,7 @@ export async function validateE0Contract(
         {
           id: "a1-wrong-filename",
           path: ["artifact", "filename"],
-          from: "Changes.changes.json",
+          from: "Cadence.changes.json",
           to: "Other.changes.json",
         },
         {

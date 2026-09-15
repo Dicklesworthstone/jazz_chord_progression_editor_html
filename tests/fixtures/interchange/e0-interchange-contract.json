@@ -303,8 +303,8 @@
     "basenameCodePoints": 120,
     "canonicalExtension": ".changes.json",
     "textExtension": ".changes.txt",
-    "canonicalFallback": "untitled-changes.json",
-    "textFallback": "untitled-changes.txt",
+    "canonicalFallback": "untitled-JazzChords.org.json",
+    "textFallback": "untitled-JazzChords.org.txt",
     "forbiddenCodePointRanges": [
       [0, 31],
       [127, 127],

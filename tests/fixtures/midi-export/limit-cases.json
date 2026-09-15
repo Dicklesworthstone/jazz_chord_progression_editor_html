@@ -11,7 +11,7 @@
     { "id": "E1-LIM-002", "kind": "validate", "override": { "path": "/title", "value": { "repeatChar": "a", "count": 97 } }, "expected": { "refusal": { "code": "midi.text_invalid", "pointer": "/title" } }, "traceIds": ["E1-TRACE-LIMITS"], "authorityIds": ["E1-AUTH-DERIVED"] },
     { "id": "E1-LIM-003", "kind": "validate", "override": { "path": "/markers", "value": { "generateMarkers": 8257 } }, "expected": { "refusal": { "code": "midi.plan_invalid", "pointer": "/markers" } }, "traceIds": ["E1-TRACE-LIMITS"], "authorityIds": ["E1-AUTH-DERIVED"] },
     { "id": "E1-LIM-004", "kind": "validate", "override": { "path": "/plan/events/0/startTick", "value": "shift-event-to-max-vlq" }, "expected": { "refusal": null }, "traceIds": ["E1-TRACE-LIMITS", "E1-TRACE-BYTES"], "authorityIds": ["E1-AUTH-SMF", "E1-AUTH-DERIVED"] },
-    { "id": "E1-LIM-005", "kind": "filename", "documentId": "doc/with spaces/and*chars-that-run-very-long-0123456789-0123456789-0123456789", "expected": { "filename": "changes-doc-with-spaces-and-chars-that-run-very-long-0123456.mid" }, "traceIds": ["E1-TRACE-FILENAME", "E1-TRACE-LIMITS"], "authorityIds": ["E1-AUTH-DERIVED"] },
-    { "id": "E1-LIM-006", "kind": "filename", "documentId": "doc-e1-simple", "expected": { "filename": "changes-doc-e1-simple.mid" }, "traceIds": ["E1-TRACE-FILENAME"], "authorityIds": ["E1-AUTH-DERIVED"] }
+    { "id": "E1-LIM-005", "kind": "filename", "documentId": "doc/with spaces/and*chars-that-run-very-long-0123456789-0123456789-0123456789", "expected": { "filename": "JazzChords.org-doc-with-spaces-and-chars-that-run-very-long-.mid" }, "traceIds": ["E1-TRACE-FILENAME", "E1-TRACE-LIMITS"], "authorityIds": ["E1-AUTH-DERIVED"] },
+    { "id": "E1-LIM-006", "kind": "filename", "documentId": "doc-e1-simple", "expected": { "filename": "JazzChords.org-doc-e1-simple.mid" }, "traceIds": ["E1-TRACE-FILENAME"], "authorityIds": ["E1-AUTH-DERIVED"] }
   ]
 }

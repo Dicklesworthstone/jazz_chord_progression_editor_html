@@ -9,7 +9,7 @@ surfaces stay explicitly outside the shipped native boundary.
 
 FrankenJazz is a private, offline lead-sheet studio for iPhone, iPad, and Mac.
 It should make a progression quick to type, satisfying to hear, and useful to
-understand. The Apple app is a native sibling of Changes, not a web wrapper and
+understand. The Apple app is a native sibling of JazzChords.org, not a web wrapper and
 not a visual mock of its controls.
 
 The first Apple release must let a musician:

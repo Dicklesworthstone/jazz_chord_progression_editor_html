@@ -3,7 +3,7 @@ name = "concert-grand"
 version = "1.0.0"
 edition = "2021"
 license = "MIT"
-description = "Deterministic rendered-piano and spectrum-analysis DSP core for Changes (compiled to wasm32-unknown-unknown and embedded in the standalone artifact)."
+description = "Deterministic rendered-piano and spectrum-analysis DSP core for JazzChords.org (compiled to wasm32-unknown-unknown and embedded in the standalone artifact)."
 publish = false
 
 [lib]

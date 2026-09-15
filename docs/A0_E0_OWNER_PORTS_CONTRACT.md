@@ -148,17 +148,17 @@ authority for these values is `ACCEPTED_E0_V1_ARTIFACT_PINS` in
 
 | Role               | Immutable E0 v1 path                         | SHA-256                                                            |
 | ------------------ | -------------------------------------------- | ------------------------------------------------------------------ |
-| documentation      | `docs/E0_INTERCHANGE_CONTRACT.md`            | `288c7ba1e36f8422c9753d501feb68efa721fa8b320b5e20bce8503da85e7d4f` |
-| export source      | `src/export/interchange-contract.ts`         | `a8db592fb3b4f8c35385052753284f1a604b683d207b6aa7abd89fec04f2d035` |
+| documentation      | `docs/E0_INTERCHANGE_CONTRACT.md`            | `7f114e936104600e04191670670cbf8e1d0873e741b78a68f0eec83d031e6d7a` |
+| export source      | `src/export/interchange-contract.ts`         | `ab9b49991ef49325cd24d7cac018e7806228ddea205c39c685fe4afaee717cbf` |
 | application source | `src/application/e0-interchange-contract.ts` | `32a51ef9eac0948a069fc3498348562f70e7703b430f9e1ad9c9961fe53cf10a` |
-| validator          | `scripts/validate-e0-contract.ts`            | `3cc96d2ece16e22f98689057dbf1d64b64929dfbb2f92fd85391a7dc1d6bee04` |
+| validator          | `scripts/validate-e0-contract.ts`            | `963cb043162234d6964bd0db0754e0fa99991c35ffce3c8f9290fa4c480627ca` |
 | static test        | `tests/static/e0-contract.test.ts`           | `9873a0342bdf4ce6ab3754572d2f62cef6dbecbcb2a41105b316635204719cf4` |
-| test support       | `tests/support/e0-interchange-fixture.ts`    | `cda73a5421b2635d1feb845ad39e1681920eddbf9d09f51b0ed624b19e06d522` |
+| test support       | `tests/support/e0-interchange-fixture.ts`    | `6bfc046631b8289190bf23eabbf1aa2824cf96a8bcdf72de6e288e1029392fc9` |
 | acceptance review  | `docs/evidence/E0_GOLDEN_PACKET_REVIEW.md`   | `a11d79fe73811364d3d631f2a5b2d9d1fcce0f79fdc3ed64472d5980a2397693` |
 
 The accepted 16-file fixture closure remains pinned separately by its byte
 manifest digest
-`a056af4cc18d502ff75a4890e4ce360b26365976e18962ce8da4d827b971ce48`.
+`f9b7e1a979cebc0df8cd99a3be7c0864a2a7b8257c86a7f5ae4b994ca05cc77c`.
 
 Pin-supersession record (2026-07-31): the hashes above were re-pinned by the
 accepted additive groove-field amendment (`jcpe-jnnu`, commit `51b1240`),

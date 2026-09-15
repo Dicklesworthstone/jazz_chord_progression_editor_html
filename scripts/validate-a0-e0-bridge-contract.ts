@@ -111,11 +111,11 @@ const EXPECTED_REVIEW_STATES: Readonly<Record<string, string>> = Object.freeze({
 export const A0_E0_BRIDGE_SPEC_BYTE_DIGESTS: Readonly<Record<string, string>> =
   Object.freeze({
     "a0-e0-bridge-contract.json":
-      "67cbf2c05eb32876bd499a84f6f34c01c5390ccecb22efb7cba4efe55dabd9cb",
+      "184aca16010ecce89d2bc425236a656df756b535c47820e61fe79ba7148c31e3",
     "mutation-controls.json":
-      "40a21b19b8a738ff6930f5a4667cad191b735b22851335a78d11920023a77cbc",
+      "92a1ee0cd4a47c915566c1dd3033ce736107ebef6e4eebfbe6b299311e65cc06",
     "owner-port-cases.json":
-      "3015b9b1a20273103ab63506261c23d398bb3d117dd97188838d753323c48a84",
+      "2c730f53ada50323ade4396ada238d77f727feff5304599b68f6ccce77e39a03",
     "provenance-ledger.json":
       "47ccded1e2c1a16ca97aa742927c6972ef2a10ec97c1d1ff67f37b1e90d34737",
     "trace-ledger.json":
@@ -123,10 +123,10 @@ export const A0_E0_BRIDGE_SPEC_BYTE_DIGESTS: Readonly<Record<string, string>> =
   });
 
 export const A0_E0_BRIDGE_SPEC_SEMANTIC_DIGEST =
-  "e1e6df67e72bacb3fd9098ffd0652c32a0a02b2b8e81c616004ade9477fb36b8";
+  "313a2ab79a0463498ef0935b8182423c96910f3e4dd7d7fb71e23e69ff817b89";
 
 export const A0_E0_BRIDGE_ACCEPTED_E0_BYTE_MANIFEST_DIGEST =
-  "a056af4cc18d502ff75a4890e4ce360b26365976e18962ce8da4d827b971ce48";
+  "f9b7e1a979cebc0df8cd99a3be7c0864a2a7b8257c86a7f5ae4b994ca05cc77c";
 
 export const A0_E0_BRIDGE_OWNER_OPERATION_NAMES = Object.freeze([
   "prepareImportReplacementPublication",
@@ -167,18 +167,18 @@ const DISCARD_REASONS = Object.freeze([
 const ACCEPTED_E0_INPUT_LEDGER_PATH =
   "tests/fixtures/interchange/input-fixture-ledger.json";
 const ACCEPTED_E0_INPUT_LEDGER_SHA256 =
-  "693d3e39db3e82e5c24980d363566943360687bdf2dcd523185f56a028b0f714";
+  "e52b744746ecce4474552d5c3c27c3c68f6876170c441e0ca1dca51ba724f26f";
 
 const ACCEPTED_E0_V1_ARTIFACT_PINS = Object.freeze([
   {
     role: "documentation",
     path: "docs/E0_INTERCHANGE_CONTRACT.md",
-    sha256: "288c7ba1e36f8422c9753d501feb68efa721fa8b320b5e20bce8503da85e7d4f",
+    sha256: "7f114e936104600e04191670670cbf8e1d0873e741b78a68f0eec83d031e6d7a",
   },
   {
     role: "export-source",
     path: "src/export/interchange-contract.ts",
-    sha256: "a8db592fb3b4f8c35385052753284f1a604b683d207b6aa7abd89fec04f2d035",
+    sha256: "ab9b49991ef49325cd24d7cac018e7806228ddea205c39c685fe4afaee717cbf",
   },
   {
     role: "application-source",
@@ -188,7 +188,7 @@ const ACCEPTED_E0_V1_ARTIFACT_PINS = Object.freeze([
   {
     role: "validator",
     path: "scripts/validate-e0-contract.ts",
-    sha256: "3cc96d2ece16e22f98689057dbf1d64b64929dfbb2f92fd85391a7dc1d6bee04",
+    sha256: "963cb043162234d6964bd0db0754e0fa99991c35ffce3c8f9290fa4c480627ca",
   },
   {
     role: "static-test",
@@ -198,7 +198,7 @@ const ACCEPTED_E0_V1_ARTIFACT_PINS = Object.freeze([
   {
     role: "test-support",
     path: "tests/support/e0-interchange-fixture.ts",
-    sha256: "cda73a5421b2635d1feb845ad39e1681920eddbf9d09f51b0ed624b19e06d522",
+    sha256: "6bfc046631b8289190bf23eabbf1aa2824cf96a8bcdf72de6e288e1029392fc9",
   },
   {
     role: "acceptance-review",

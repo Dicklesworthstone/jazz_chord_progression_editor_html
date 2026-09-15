@@ -119,7 +119,7 @@
     "limit.midi_export_size_exceeded": "failsafe-unreachable-within-legal-plan-bounds"
   },
   "filenamePolicy": {
-    "prefix": "changes-",
+    "prefix": "JazzChords.org-",
     "suffix": ".mid",
     "safeClass": "^[A-Za-z0-9._-]+$",
     "replacement": "-",

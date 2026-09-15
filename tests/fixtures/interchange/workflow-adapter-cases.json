@@ -3082,7 +3082,7 @@
       "markerEffect": "UNCHANGED",
       "expectedCommand": {
         "id": "command-e0-replace-1",
-        "label": "Import Changes",
+        "label": "Import Cadence",
         "expectedDocumentId": "oversized",
         "expectedRevision": 7,
         "logicalTimeMs": 9000,

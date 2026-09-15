@@ -150,7 +150,7 @@
         "markerCount": 1,
         "byteLength": 98,
         "totalTicks": 960,
-        "filename": "changes-doc-e1-g1.mid",
+        "filename": "JazzChords.org-doc-e1-g1.mid",
         "losses": []
       },
       "traceIds": [
@@ -352,7 +352,7 @@
         "markerCount": 3,
         "byteLength": 124,
         "totalTicks": 960,
-        "filename": "changes-doc-e1-g2.mid",
+        "filename": "JazzChords.org-doc-e1-g2.mid",
         "losses": []
       },
       "traceIds": [
@@ -521,7 +521,7 @@
         "markerCount": 0,
         "byteLength": 100,
         "totalTicks": 960,
-        "filename": "changes-doc-e1-g3.mid",
+        "filename": "JazzChords.org-doc-e1-g3.mid",
         "losses": [
           {
             "kind": "annotation-text",
@@ -639,7 +639,7 @@
         "markerCount": 0,
         "byteLength": 77,
         "totalTicks": 1,
-        "filename": "changes-doc-e1-g4.mid",
+        "filename": "JazzChords.org-doc-e1-g4.mid",
         "losses": [
           {
             "kind": "annotation-text",
@@ -767,7 +767,7 @@
         "markerCount": 1,
         "byteLength": 85,
         "totalTicks": 960,
-        "filename": "changes-doc-e1-g5.mid",
+        "filename": "JazzChords.org-doc-e1-g5.mid",
         "losses": [
           {
             "kind": "enharmonic-spelling",
@@ -888,7 +888,7 @@
         "markerCount": 0,
         "byteLength": 79,
         "totalTicks": 960,
-        "filename": "changes-doc-e1-g6.mid",
+        "filename": "JazzChords.org-doc-e1-g6.mid",
         "losses": [
           {
             "kind": "annotation-text",

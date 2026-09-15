@@ -1,4 +1,4 @@
-//! Deterministic DSP core for the Changes studio.
+//! Deterministic DSP core for the JazzChords.org studio.
 //!
 //! Six independent capabilities share this module so the standalone artifact
 //! embeds exactly one wasm payload:

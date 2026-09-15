@@ -163,7 +163,7 @@
         "maxCharacters": 64
       },
       "expected": {
-        "filename": "changes-doc-with-a-name-that-runs-and-runs-and-runs-and-runs.mid",
+        "filename": "JazzChords.org-doc-with-a-name-that-runs-and-runs-and-runs-a.mid",
         "characters": 64
       }
     }

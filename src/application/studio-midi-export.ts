@@ -261,7 +261,7 @@ export function studioMidiExportUnwiredDownload(): StudioMidiExportDownloadResul
 const MAX_MARKER_TEXT_UTF8_BYTES = 96;
 const TITLE_FALLBACK = "Untitled";
 const VOICING_TRACK_NAME = "Voicings";
-const INSTRUMENT_NAME = "Changes";
+const INSTRUMENT_NAME = "JazzChords.org";
 const REQUEST_ID_PREFIX = "u7-midi-export-";
 const MAX_REQUEST_ID_ASCII_LENGTH = 128;
 const MAX_PREPARATION_ID = 9_007_199_254_740_991;

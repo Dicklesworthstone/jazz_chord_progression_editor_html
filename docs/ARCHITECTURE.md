@@ -1,9 +1,9 @@
-# Changes Architecture
+# JazzChords.org Architecture
 
 Status: foundation contract
 
 This document is the code-facing architecture contract for the rebuilt
-**Changes — Jazz Progression Studio**. It complements the product and theory
+**JazzChords.org — Jazz Progression Studio**. It complements the product and theory
 decisions in `REBUILD_PLAN.md`, but it is deliberately sufficient for an
 implementation agent to decide where code belongs, which imports are legal,
 what the release artifact is, and how those claims are proved.

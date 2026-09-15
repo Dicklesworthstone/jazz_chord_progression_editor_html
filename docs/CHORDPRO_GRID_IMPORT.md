@@ -12,7 +12,7 @@ Reviewed 2026-09-10: [official grid specification](https://www.chordpro.org/chor
 [tempo](https://www.chordpro.org/chordpro/directives-tempo/), and
 [title](https://www.chordpro.org/chordpro/directives-title/).
 Grid shape is a layout property, not an exact musical-time encoding. Therefore
-Changes requires explicit acknowledgement of this import interpretation:
+JazzChords.org requires explicit acknowledgement of this import interpretation:
 **4/4, one quarter-note beat per cell, dots continue the previous chord within
 the bar, `/` starts another occurrence of the previous chord, and `% . . .`
 copies the previous complete bar.** Chords receive Balanced Auto voicing; source
@@ -39,7 +39,7 @@ properties are refused. Shape bounds each line; it does not create silent bars.
 Each grid line has leading and trailing barlines, whitespace-separated tokens,
 and 1–4 complete bars of exactly four cells each. Accepted non-repeating barlines
 are `|`, `||`, and `|.`. A final `|.` must be the final token on that line.
-Chord cells are exact symbols accepted by Changes' existing spelling-first T0
+Chord cells are exact symbols accepted by JazzChords.org' existing spelling-first T0
 parser, at most 64 code points. They are never converted by suffix heuristics.
 A dot after a chord extends that event by one exact quarter beat. A leading dot
 is ambiguous and refuses, including all-dot bars. A slash repeats the most recent

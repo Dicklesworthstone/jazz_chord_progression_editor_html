@@ -349,7 +349,7 @@ async function editFixtureJson(
 async function validateFixtureCopy(
   edit: (root: string) => Promise<void>,
 ): Promise<Awaited<ReturnType<typeof validateT1Contract>>> {
-  const root = await mkdtemp(join(tmpdir(), "changes-t1-contract-"));
+  const root = await mkdtemp(join(tmpdir(), "jazzchords-t1-contract-"));
   try {
     await cp(fixtureRoot, root, { recursive: true });
     await edit(root);

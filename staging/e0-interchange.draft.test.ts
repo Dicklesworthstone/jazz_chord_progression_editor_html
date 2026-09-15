@@ -54,7 +54,7 @@ describe("E0 Export Interchange", () => {
     const text = serializeCanonicalJsonDocument(doc);
     const bytes = new TextEncoder().encode(text);
     const hash = await sha256Hex(bytes);
-    expect(hash).toBe("c73321857e0ad8cc6ac03961ec872d456090d190d2d5c1a659883259c7f20fe5");
+    expect(hash).toBe("4beb70b5ab94da37098601ac96fbd00904a46b40372a3c96b2bd5f33b494e033");
     expect(bytes.byteLength).toBe(352);
   });
 
@@ -79,12 +79,12 @@ describe("E0 Export Interchange", () => {
   });
 
   test("sanitizeExportFilename sanitizes titles and handles reserved names", () => {
-    expect(sanitizeExportFilename("", "canonical-json").filename).toBe("untitled-changes.json");
-    expect(sanitizeExportFilename("   ", "lead-sheet-text").filename).toBe("untitled-changes.txt");
+    expect(sanitizeExportFilename("", "canonical-json").filename).toBe("untitled-JazzChords.org.json");
+    expect(sanitizeExportFilename("   ", "lead-sheet-text").filename).toBe("untitled-JazzChords.org.txt");
     expect(sanitizeExportFilename("My Song", "canonical-json").filename).toBe("My Song.changes.json");
     expect(sanitizeExportFilename("Song: Act 1", "canonical-json").filename).toBe("Song- Act 1.changes.json");
-    expect(sanitizeExportFilename("CON", "canonical-json").filename).toBe("changes-CON.changes.json");
-    expect(sanitizeExportFilename("aux.song", "lead-sheet-text").filename).toBe("changes-aux.song.changes.txt");
+    expect(sanitizeExportFilename("CON", "canonical-json").filename).toBe("JazzChords.org-CON.changes.json");
+    expect(sanitizeExportFilename("aux.song", "lead-sheet-text").filename).toBe("JazzChords.org-aux.song.changes.txt");
     expect(sanitizeExportFilename("Song.changes.json", "canonical-json").filename).toBe("Song.changes.json");
   });
 });
