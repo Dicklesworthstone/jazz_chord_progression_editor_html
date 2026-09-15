@@ -2,10 +2,10 @@
 
 An offline, deterministic jazz chord-progression studio designed to turn lead-sheet changes into an explainable, playable, portable chart—without accounts, telemetry, cloud services, or runtime AI.
 
-> **Development status (2026-09-08):** JazzChords.org is a working editor and
+> **Development status (2026-09-15):** JazzChords.org is a working editor and
 > playback studio, with substantial recovery, interchange and voicing tools.
-> The repository includes newer exact-sharing, My Charts and Focus workflows
-> than the build currently served at <https://jazzchords.org>. Full harmonic
+> Exact sharing, My Charts and Focus are included in the build deployed to
+> <https://jazzchords.org> and its Vercel mirror. Full harmonic
 > discovery and release acceptance remain incomplete. The current candidate
 > passes the DSP source/WASM and instrument gates. The aggregate now stops at
 > required X1 human listening evidence; later release gates remain unverified.

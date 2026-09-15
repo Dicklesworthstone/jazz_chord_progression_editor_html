@@ -127,6 +127,13 @@ Package `jcpe-6ujg.3`. Spec `jcpe-6ujg.3.1` → build `jcpe-6ujg.3.2` → verify
 - [x] Pass focused tests, typecheck, lint/boundaries, artifact size and applicable real-browser gates.
 - [ ] Record independent acceptance and close all three phases before package.
 
+2026-09-15 verification checkpoint: `.3.3` found and repaired lost keyboard focus
+after Add and supplementary-Unicode Custom-label truncation. The 180 focused
+tests, types, lint and guarded reproduction pass; the new 42-case native matrix
+has 23 passes and 19 failures, so the repair is not accepted or deployed.
+The detailed recovery steps and retained evidence are in the note-first section
+of `docs/IMPLEMENTATION_TODO.md`. Original independent/device acceptance stays open.
+
 ## COD4 + AGY1: Exact guitar positions and instrument view
 
 Package `jcpe-6ujg.4`. Spec `jcpe-6ujg.4.1` → build `jcpe-6ujg.4.2` → verify `jcpe-6ujg.4.3`.
