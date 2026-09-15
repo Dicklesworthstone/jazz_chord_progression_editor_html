@@ -48,7 +48,13 @@ for (const width of [320, 1280]) test(`M1 source review preserves notes and owns
   const axe = await new AxeBuilder({ page }).include(`[data-testid="midi-import-${width === 320 ? "sheet" : "rail"}"]`).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
   expect(axe.violations).toEqual([]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
-  await review.screenshot({ path: info.outputPath("source-review.png") });
+  // Axe uses a temporary page. Restore the app's foreground before taking
+  // the viewport screenshot; an element crop hides the scrollable panel.
+  await page.bringToFront();
+  // WebKit's screenshot preparation injects an inline `body {}` style,
+  // violating this artifact's hash CSP. Keep its real error gate intact;
+  // capture visual artifacts in Chromium while all engines run assertions.
+  if (info.project.name === "chromium") await page.screenshot({ path: info.outputPath("source-review.png") });
   // Alternative changes replace the preview identity and cannot retain old notes.
   await panel.getByTestId("midi-import-alternative-picker").first().selectOption({ label: "F6/D" });
   await expect(review).toHaveCount(0);
@@ -67,4 +73,28 @@ for (const width of [320, 1280]) test(`M1 source review preserves notes and owns
   await expect(page.locator(".studio-chord-card")).toHaveCount(0);
   expectCleanDiagnostics(diagnostics); expect(requests).toEqual([]);
   await info.attach("source-review-proof", { body: JSON.stringify({ width, browser: browser.version(), artifact: createHash("sha256").update(readFileSync("jazz_chord_progression_editor.html")).digest("hex"), revision, chart, sounding, stopped, diagnostics, requests }), contentType: "application/json" });
+});
+
+test("M1 unwritten silence is reviewable without inventing a source pitch", async ({ page }) => {
+  const diagnostics = captureDiagnostics(page);
+  await page.setViewportSize({ width: 320, height: 900 });
+  await openStudio(page);
+  await page.locator("#studio-open-library-sheet").click();
+  const panel = page.getByTestId("midi-import-sheet");
+  await panel.getByTestId("midi-import-file").setInputFiles({ name: "leading-silence.mid", mimeType: "audio/midi", buffer: Buffer.from(batchChordFile({ leadingTicks: 1920 })) });
+  await expect(panel.getByTestId("midi-import-auto")).toBeVisible();
+  await panel.getByTestId("midi-import-advanced-summary").click();
+  await expect(panel.getByTestId("midi-import-alternative-picker").first()).toBeDisabled();
+  const trigger = panel.getByTestId("midi-import-review-source").first();
+  await trigger.click();
+  const review = panel.getByTestId("midi-import-source-review");
+  await expect(review).toBeFocused();
+  await expect(review).toContainText("0 note occurrences across 0 tracks");
+  await expect(review.getByTestId("midi-import-source-all")).toBeDisabled();
+  await expect(review.getByTestId("midi-import-source-pitch")).toHaveCount(0);
+  await review.getByRole("button", { name: "Close source review", exact: true }).click();
+  await expect(review).toHaveCount(0);
+  await expect(trigger).toBeFocused();
+  await expect(page.locator("#studio-undo")).toBeDisabled();
+  expectCleanDiagnostics(diagnostics);
 });

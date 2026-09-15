@@ -1,11 +1,16 @@
 import type { Page } from "@playwright/test";
 
 type NativeSourceCounts = Readonly<{ started: number; sounding: number; futureAttacks: number }>;
-declare global { interface Window { u5NativeSourceCounts?: () => NativeSourceCounts } }
+declare global { interface Window {
+  u5NativeSourceCounts?: () => NativeSourceCounts;
+  u5NativeSourceClockSeconds?: () => number | null;
+} }
 export async function observeNativeSources(page: Page): Promise<void> {
   await page.evaluate(() => {
     const sources = new Map<AudioScheduledSourceNode, { start: number; stop: number | null; ended: boolean }>();
+    let sourceContext: BaseAudioContext | null = null;
     const record = (source: AudioScheduledSourceNode, when: number) => {
+      sourceContext = source.context;
       const row = { start: when, stop: null, ended: false };
       sources.set(source, row);
       source.addEventListener("ended", () => { row.ended = true; }, { once: true });
@@ -30,6 +35,7 @@ export async function observeNativeSources(page: Page): Promise<void> {
         if (row !== undefined) row.stop = when;
       };
     }
+    window.u5NativeSourceClockSeconds = () => sourceContext?.currentTime ?? null;
     window.u5NativeSourceCounts = () => {
       let sounding = 0; let futureAttacks = 0;
       for (const [source, row] of sources) {
