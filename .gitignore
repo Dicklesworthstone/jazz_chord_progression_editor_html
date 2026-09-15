@@ -46,3 +46,6 @@ Thumbs.db
 # Local debug probes and overflow-audit captures (not product fixtures).
 /tmp/
 .rch-tmp/
+
+# One-off Beads recovery snapshot; keep its local copy out of Git.
+/.beads/recovery-20260804T0450Z/issues.jsonl.pre-dedupe
