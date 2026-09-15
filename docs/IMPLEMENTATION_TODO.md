@@ -1,5 +1,21 @@
 # Implementation TODO
 
+## MIDI source-note review — jcpe-upbz (CyanCove, 2026-09-15)
+
+Consumer: the requested granular implementation list. Retire this section after original M1 acceptance; preserve results in the Bead.
+
+- [x] Reconcile tracker and live source; key ambiguity is already fixed in 97aed83. Preserve that implementation and original acceptance.
+- [x] Release note-first verify for its remaining human/device work; claim the stale ready M1 build leaf and reserve exact files.
+- [x] Specify bounded source-note inspection, half-open overlap, source fidelity, exclusions, short-note disclosure, stale selection and preview ownership.
+- [x] Author independent positive/near-miss/transposition/bounds fixtures before production code.
+- [x] Implement an on-demand application selector over retained decoded notes; retain complete counts and all pitch keys while bounding detail rows.
+- [x] Connect ambiguous and unwritten passages to the review; preserve default one-file/Add flow and all overrides.
+- [x] Wire individual/source-set pitch previews into the existing owner, with explicit limits, timing disclaimer, Stop and replacement handling.
+- [ ] Prove native desktop/320px review, sound/retirement, refusal, override/new-file reset and unchanged chart/history.
+- [ ] Run focused M0/M1, static and guarded-build gates through RCH; retain all failures and exact inputs.
+- [ ] Fresh review, address defects, reproduce the artifact, commit explicit owned paths and complete authorized deployment gates.
+- [ ] Keep original independent M1 and human listening acceptance open; do not close the package from this slice.
+
 ## Note-first verification — jcpe-6ujg.3.3 (CyanCove, 2026-09-15)
 
 Consumer: the user's requested granular work list and the agent executing this leaf. Retire this section after the original acceptance is complete; preserve command/results in the Bead. This is the existing checklist, not an additional reporting system.
