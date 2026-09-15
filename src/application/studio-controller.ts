@@ -938,6 +938,12 @@ export interface StudioController {
   readonly releasePreviewPitches: () => Promise<StudioInspectorResult<void>>;
   readonly previewPlaybackPlan: (plan: PlaybackPlan, gesture: StudioAudioGesture) => Promise<StudioInspectorResult<void>>;
   readonly readPreviewPlaybackStatus: () => TransportPreviewStatus;
+  /** Import owns its source pitches and groove; stale releases spare newer previews. */
+  readonly midiImportPreview: Readonly<{
+    pitches: StudioController["previewPitches"];
+    plan: StudioController["previewPlaybackPlan"];
+    release: StudioController["releasePreviewPitches"];
+  }>;
   /**
    * Display-only live playhead label in the exact-beat format the transport
    * view already uses. The UI's animation frame reads this while the transport
@@ -7426,7 +7432,30 @@ function makeStudioComposition(
       ?releasePreviewPitches():Promise.resolve({ok:true,value:undefined});
   };
 
+  let midiImportPreviewGeneration: number | null = null;
+  const midiImportPreview: StudioController["midiImportPreview"] = Object.freeze({
+    pitches: (pitches, gesture) => {
+      const expected = previewOrdinal + 1;
+      const result = previewPitches(pitches, gesture);
+      if (result.ok && pitchSetPreviewGeneration === expected) midiImportPreviewGeneration = expected;
+      return result;
+    },
+    plan: (plan, gesture) => {
+      const expected = previewOrdinal + 1;
+      const pending = previewPlaybackPlan(plan, gesture);
+      if (pitchSetPreviewGeneration === expected) midiImportPreviewGeneration = expected;
+      return pending;
+    },
+    release: () => {
+      const generation = midiImportPreviewGeneration;
+      midiImportPreviewGeneration = null;
+      return generation !== null && generation === pitchSetPreviewGeneration && generation === previewOrdinal
+        ? releasePreviewPitches() : Promise.resolve(Object.freeze({ ok: true, value: undefined }));
+    },
+  });
+
   const controller: StudioController = Object.freeze({
+    midiImportPreview,
     acknowledgeFocus,
     declareMeasureCompletion,
     getSnapshot: () => snapshot,

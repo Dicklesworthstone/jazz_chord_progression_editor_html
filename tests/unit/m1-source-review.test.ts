@@ -1,4 +1,8 @@
 import { expect, test } from "bun:test";
+import { createStudioController } from "../../src/application/runtime";
+import { createStudioAudio } from "../../src/application/studio-audio";
+import { auditionMidiImportGroove } from "../../src/application/studio-midi-audition";
+import { createFakeAudioPlatform } from "../../src/test-support/fake-audio-platform";
 import { reviewMidiImportSource, sourceReviewPitches } from "../../src/application/studio-midi-source-review";
 import { createStudioMidiImport } from "../../src/application/studio-midi-import";
 import { realDecodeFrame } from "../support/midi-import-test-kit";
@@ -96,3 +100,39 @@ test("empty retained passages and the exact 16-pitch preview boundary remain hon
     expect(sourceReviewPitches(result.review, Number.NaN)).toBeNull();
   }
 });
+
+
+for (const kind of ["pitches", "groove"] as const) test(`MIDI ${kind} release spares a newer note-first owner and retires its own owner`, async () => {
+  const audio = createStudioAudio(createFakeAudioPlatform().platform);
+  const created = createStudioController({ audio });
+  if (!created.ok) throw Error("controller refused");
+  const controller = created.controller;
+  expect(controller.setInstrument("organ").ok).toBe(true);
+  const before = controller.getSnapshot().revision;
+  const gesture = { kind: "trusted-pointer", trusted: true, sequence: 1 } as const;
+  const importer = createStudioMidiImport(realDecodeFrame);
+  const preview = await importer.readFile("owner.mid", batchChordFile());
+  const voices = () => audio.inspect().engine.previewNonreleasingVoiceCount;
+  const awaitVoices = async (count: number) => {
+    const deadline = Date.now() + 8_000;
+    while (voices() !== count && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 10));
+    expect(voices()).toBe(count);
+  };
+  if (kind === "groove") expect((await auditionMidiImportGroove(controller, importer, preview, gesture)).ok).toBe(true);
+  else expect(controller.midiImportPreview.pitches([60, 64], gesture).ok).toBe(true);
+  // A later note-first preview takes the same persistent audio graph.
+  expect(controller.previewNoteFirst("D4 F4 A4", { ...gesture, sequence: 2 }).ok).toBe(true);
+  await awaitVoices(3);
+  expect((await controller.midiImportPreview.release()).ok).toBe(true);
+  expect(voices()).toBe(3);
+  expect((await controller.releaseNoteFirst()).ok).toBe(true);
+  expect(voices()).toBe(0);
+  // Honest success twin: this owner can still release its own sounding notes.
+  expect(controller.midiImportPreview.pitches([60, 64], { ...gesture, sequence: 3 }).ok).toBe(true);
+  await awaitVoices(2);
+  expect((await controller.midiImportPreview.release()).ok).toBe(true);
+  expect(voices()).toBe(0);
+  expect((await controller.midiImportPreview.release()).ok).toBe(true);
+  expect(controller.getSnapshot().revision).toBe(before);
+  controller.stopProgression();
+}, 20_000);

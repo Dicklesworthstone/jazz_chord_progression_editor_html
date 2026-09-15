@@ -96,5 +96,5 @@ export async function auditionMidiImportGroove(
   if (importer === null) return Object.freeze({ok:false as const,code:"m1.audition_unavailable",message:"MIDI import is unavailable."});
   const compiled = compileMidiGrooveAudition(importer,preview);
   if (!compiled.ok) return compiled;
-  return controller.previewPlaybackPlan(compiled.plan,gesture);
+  return controller.midiImportPreview.plan(compiled.plan,gesture);
 }
