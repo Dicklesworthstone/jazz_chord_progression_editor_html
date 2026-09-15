@@ -39,6 +39,13 @@ final class FrankenJazzUITests: XCTestCase {
             NSPredicate(format: "label BEGINSWITH 'Measure 1, Cmaj9'")
         ).firstMatch
         XCTAssertTrue(firstChord.waitForExistence(timeout: 3))
+        let transport = app.buttons["transport-play-pause"]
+        XCTAssertTrue(firstChord.isHittable)
+        XCTAssertLessThanOrEqual(
+            firstChord.frame.maxY,
+            transport.frame.minY - 4,
+            "The first change must remain fully above the pinned transport on iPhone."
+        )
         firstChord.tap()
 
         let lab = app.descendants(matching: .any)["continuation-lab"]
@@ -552,6 +559,13 @@ final class FrankenJazzUITests: XCTestCase {
         documentActions.tap()
 
         XCTAssertTrue(app.buttons["Import a chart, text, or MIDI file"].waitForExistence(timeout: 3))
+        let pasteImport = app.buttons["paste-chart-import"]
+        XCTAssertTrue(pasteImport.waitForExistence(timeout: 3))
+        XCTAssertTrue(pasteImport.isHittable)
+        XCTAssertGreaterThanOrEqual(pasteImport.frame.height, 44)
+        XCTAssertTrue(app.staticTexts.matching(
+            NSPredicate(format: "label CONTAINS 'read only after you tap'")
+        ).firstMatch.exists)
         let boundary = app.staticTexts.matching(
             NSPredicate(format: "label CONTAINS 'Common DAW retriggers'")
         ).firstMatch

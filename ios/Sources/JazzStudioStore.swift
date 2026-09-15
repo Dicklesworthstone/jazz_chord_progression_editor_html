@@ -3,6 +3,8 @@ import Combine
 import SwiftUI
 import UniformTypeIdentifiers
 
+let jazzMaximumImportBytes = 2_000_000
+
 /// Monotonic ownership for asynchronous document reads. File-provider reads
 /// can finish in any order; only the newest request may publish, and an edit
 /// made while a read is in flight invalidates that request as well.
@@ -66,6 +68,16 @@ enum JazzVoicingMode: Equatable {
     case manual
 }
 
+enum JazzSheetDestination: String, Identifiable, Equatable {
+    case inspector
+    case library
+    case documents
+    case instrumentRack
+    case chordPads
+
+    var id: String { rawValue }
+}
+
 @MainActor
 final class JazzStudioStore: ObservableObject {
     enum DraftState: Equatable {
@@ -81,9 +93,7 @@ final class JazzStudioStore: ObservableObject {
     @Published var selectedChordID: UUID?
     @Published var librarySearch = ""
     @Published var notice: String?
-    @Published var isInspectorPresented = false
-    @Published var isLibraryPresented = false
-    @Published var isDocumentPresented = false
+    @Published var presentedSheet: JazzSheetDestination?
     @Published var isSaveCopyPresented = false
     @Published var saveCopyDocument: JazzExportDocument?
     @Published private(set) var canUndo = false
@@ -172,6 +182,31 @@ final class JazzStudioStore: ObservableObject {
         chart.measures.lazy.flatMap(\.chords).first(where: { $0.id == selectedChordID })
     }
 
+    var isInspectorPresented: Bool {
+        get { presentedSheet == .inspector }
+        set { setSheet(.inspector, presented: newValue) }
+    }
+
+    var isLibraryPresented: Bool {
+        get { presentedSheet == .library }
+        set { setSheet(.library, presented: newValue) }
+    }
+
+    var isDocumentPresented: Bool {
+        get { presentedSheet == .documents }
+        set { setSheet(.documents, presented: newValue) }
+    }
+
+    var isInstrumentRackPresented: Bool {
+        get { presentedSheet == .instrumentRack }
+        set { setSheet(.instrumentRack, presented: newValue) }
+    }
+
+    var isChordPadsPresented: Bool {
+        get { presentedSheet == .chordPads }
+        set { setSheet(.chordPads, presented: newValue) }
+    }
+
     var selectedDescription: ChordDescription? {
         guard let selectedChord else { return nil }
         return JazzTheory.parseChord(selectedChord.symbol, in: chart.key)
@@ -234,6 +269,14 @@ final class JazzStudioStore: ObservableObject {
             $0.title.localizedCaseInsensitiveContains(query) ||
             $0.kicker.localizedCaseInsensitiveContains(query) ||
             $0.note.localizedCaseInsensitiveContains(query)
+        }
+    }
+
+    private func setSheet(_ destination: JazzSheetDestination, presented: Bool) {
+        if presented {
+            presentedSheet = destination
+        } else if presentedSheet == destination {
+            presentedSheet = nil
         }
     }
 
@@ -1078,9 +1121,9 @@ final class JazzStudioStore: ObservableObject {
         do {
             let data = try await Task.detached(priority: .userInitiated) {
                 let values = try url.resourceValues(forKeys: [.fileSizeKey])
-                guard (values.fileSize ?? 0) <= 2_000_000 else { throw ImportError.tooLarge }
+                guard (values.fileSize ?? 0) <= jazzMaximumImportBytes else { throw ImportError.tooLarge }
                 let data = try Data(contentsOf: url, options: .mappedIfSafe)
-                guard data.count <= 2_000_000 else { throw ImportError.tooLarge }
+                guard data.count <= jazzMaximumImportBytes else { throw ImportError.tooLarge }
                 return data
             }.value
             try Task.checkCancellation()
@@ -1117,6 +1160,39 @@ final class JazzStudioStore: ObservableObject {
         } catch {
             guard importFence.owns(importToken, currentRevision: revision) else { return }
             notice = "Import refused: \(error.localizedDescription)"
+        }
+    }
+
+    /// Imports only after the user explicitly asks to read the system
+    /// pasteboard. JSON-looking input is never reinterpreted as chord text
+    /// after a JSON failure; malformed portable copies must fail closed.
+    func importPastedText(_ text: String?) {
+        let importToken = importFence.claim(revision: revision)
+        do {
+            guard let text, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                throw ImportError.emptyClipboard
+            }
+            let data = Data(text.utf8)
+            guard data.count <= jazzMaximumImportBytes else { throw ImportError.tooLarge }
+            let firstCharacter = text.first(where: { !$0.isWhitespace })
+            let imported: JazzChart
+            let sourceDescription: String
+            if firstCharacter == "{" {
+                imported = try decoder.decode(JazzChart.self, from: data)
+                sourceDescription = "chart JSON"
+            } else {
+                imported = try JazzLeadSheetTextCodec.decode(text, fallbackTitle: "Pasted chart")
+                sourceDescription = "lead-sheet text"
+            }
+            try JazzDocumentValidator.validate(imported)
+            guard importFence.owns(importToken, currentRevision: revision) else { return }
+            commit(imported, notice: "Pasted \(sourceDescription) as “\(imported.title)”.")
+            draftText = imported.chartText
+            selectedChordID = imported.measures.first?.chords.first?.id
+            isDocumentPresented = false
+        } catch {
+            guard importFence.owns(importToken, currentRevision: revision) else { return }
+            notice = "Paste refused: \(error.localizedDescription)"
         }
     }
 
@@ -1544,6 +1620,7 @@ enum ExportKind: String, CaseIterable, Identifiable, Hashable {
 
 enum ImportError: LocalizedError, Equatable {
     case tooLarge
+    case emptyClipboard
     case notUTF8
     case invalidDocument
     case invalidMeasure(Int)
@@ -1552,6 +1629,7 @@ enum ImportError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .tooLarge: "The file is larger than the 2 MB import limit."
+        case .emptyClipboard: "The clipboard does not contain chart text or native FrankenJazz JSON."
         case .notUTF8: "The text file is not valid UTF-8."
         case .invalidDocument: "The file is not a valid FrankenJazz chart."
         case let .invalidMeasure(index): "Measure \(index) contains invalid timing or chord data."

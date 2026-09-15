@@ -653,6 +653,105 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertEqual(store.chart, before)
     }
 
+    @MainActor
+    func testPastedLeadSheetAndNativeJSONAreExactUndoableReplacements() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FrankenJazzPasteImportTests-" + UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let store = JazzStudioStore(recovery: JazzRecoveryStore(directory: directory))
+        store.newChart()
+        let beforeText = store.chart
+
+        store.isDocumentPresented = true
+        store.importPastedText("[A] \"Pocket\"\n| Dm7 G7 | Cmaj7 |")
+
+        XCTAssertEqual(store.chart.title, "Pasted chart")
+        XCTAssertEqual(store.chart.chartText, "[A] \"Pocket\"\n| Dm7 G7 | Cmaj7 |")
+        XCTAssertEqual(store.chart.sections?.map(\.annotation), ["Pocket"])
+        XCTAssertEqual(store.selectedChordID, store.chart.measures.first?.chords.first?.id)
+        XCTAssertFalse(store.isDocumentPresented)
+        XCTAssertEqual(store.notice, "Pasted lead-sheet text as “Pasted chart”.")
+        store.undo()
+        XCTAssertEqual(store.chart, beforeText)
+
+        var manual = JazzChart(
+            title: "Clipboard voicings",
+            instrument: .clarinet,
+            measures: [JazzMeasure(chords: [
+                JazzChordEvent(symbol: "G7/F", manualMIDIPitches: [41, 55, 59, 62, 65])
+            ])]
+        )
+        manual.updatedAt = Date(timeIntervalSince1970: 1_750_000_000)
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let json = try XCTUnwrap(String(data: encoder.encode(manual), encoding: .utf8))
+        let beforeJSON = store.chart
+
+        store.isDocumentPresented = true
+        store.importPastedText(json)
+
+        XCTAssertEqual(store.chart, manual)
+        XCTAssertEqual(store.selectedMIDIPitches, [41, 55, 59, 62, 65])
+        XCTAssertFalse(store.isDocumentPresented)
+        XCTAssertEqual(store.notice, "Pasted chart JSON as “Clipboard voicings”.")
+        store.undo()
+        XCTAssertEqual(store.chart, beforeJSON)
+    }
+
+    @MainActor
+    func testSheetCoordinatorKeepsOneVisibleOwnerAndDismissesOnlyItsOwnRoute() {
+        let store = JazzStudioStore()
+
+        store.isInspectorPresented = true
+        XCTAssertEqual(store.presentedSheet, .inspector)
+        XCTAssertTrue(store.isInspectorPresented)
+
+        store.isInstrumentRackPresented = true
+        XCTAssertEqual(store.presentedSheet, .instrumentRack)
+        XCTAssertFalse(store.isInspectorPresented)
+        XCTAssertTrue(store.isInstrumentRackPresented)
+
+        store.isInspectorPresented = false
+        XCTAssertEqual(store.presentedSheet, .instrumentRack)
+        store.isInstrumentRackPresented = false
+        XCTAssertNil(store.presentedSheet)
+
+        store.isChordPadsPresented = true
+        store.isDocumentPresented = true
+        XCTAssertEqual(store.presentedSheet, .documents)
+        XCTAssertFalse(store.isChordPadsPresented)
+        XCTAssertTrue(store.isDocumentPresented)
+    }
+
+    @MainActor
+    func testRefusedPastePreservesDocumentRevisionAndHistory() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FrankenJazzPasteRefusalTests-" + UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let store = JazzStudioStore(recovery: JazzRecoveryStore(directory: directory))
+        store.newChart()
+        store.transpose(1)
+
+        for refused in [nil, "   \n", "{not valid JSON", "not a chart", String(repeating: "C", count: jazzMaximumImportBytes + 1)] as [String?] {
+            let chart = store.chart
+            let revision = store.revision
+            let canUndo = store.canUndo
+            let canRedo = store.canRedo
+            store.isDocumentPresented = true
+
+            store.importPastedText(refused)
+
+            XCTAssertEqual(store.chart, chart)
+            XCTAssertEqual(store.revision, revision)
+            XCTAssertEqual(store.canUndo, canUndo)
+            XCTAssertEqual(store.canRedo, canRedo)
+            XCTAssertTrue(store.isDocumentPresented)
+            XCTAssertTrue(store.notice?.hasPrefix("Paste refused:") == true)
+        }
+    }
+
     func testLeadSheetTextCodecRoundTripsEveryRepresentableNativeSetting() throws {
         let measures = [
             JazzMeasure(chords: [

@@ -38,9 +38,20 @@ struct FrankenJazzStudioView: View {
         .preferredColorScheme((JazzAppearance(rawValue: appearance) ?? .dark).colorScheme)
         .environment(\.dynamicTypeSize, JazzTheme.dynamicTypeSize(from: systemDynamicTypeSize, for: textScale))
         .tint(JazzTheme.brass)
-        .sheet(isPresented: $store.isInspectorPresented) { NavigationStack { ChordInspectorView(store: store, sheetMode: true) } }
-        .sheet(isPresented: $store.isLibraryPresented) { NavigationStack { LibraryView(store: store, sheetMode: true) } }
-        .sheet(isPresented: $store.isDocumentPresented) { NavigationStack { DocumentCenterView(store: store) } }
+        .sheet(item: $store.presentedSheet) { destination in
+            switch destination {
+            case .inspector:
+                NavigationStack { ChordInspectorView(store: store, sheetMode: true) }
+            case .library:
+                NavigationStack { LibraryView(store: store, sheetMode: true) }
+            case .documents:
+                NavigationStack { DocumentCenterView(store: store) }
+            case .instrumentRack:
+                NavigationStack { InstrumentRackView(store: store) }
+            case .chordPads:
+                NavigationStack { ChordPadsView(store: store) }
+            }
+        }
         .fileExporter(
             isPresented: $store.isSaveCopyPresented,
             document: store.saveCopyDocument,
@@ -168,8 +179,6 @@ private struct ChartEditorView: View {
     let presentsInspectorOnSelection: Bool
     @FocusState private var editorFocused: Bool
     @State private var quickEntryExpanded = false
-    @State private var instrumentRackPresented = false
-    @State private var chordPadsPresented = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var columns: [GridItem] {
@@ -194,12 +203,6 @@ private struct ChartEditorView: View {
         .scrollIndicators(.hidden)
         .scrollDismissesKeyboard(.interactively)
         .onTapGesture { editorFocused = false }
-        .sheet(isPresented: $instrumentRackPresented) {
-            NavigationStack { InstrumentRackView(store: store) }
-        }
-        .sheet(isPresented: $chordPadsPresented) {
-            NavigationStack { ChordPadsView(store: store) }
-        }
     }
 
     private var documentHeader: some View {
@@ -228,8 +231,7 @@ private struct ChartEditorView: View {
                 HStack(spacing: 10) { settingControls }
                 VStack(spacing: 9) {
                     HStack(spacing: 8) { keyControl; tempoControl }
-                    HStack(spacing: 8) { grooveControl; instrumentControl }
-                    instrumentRackButton
+                    HStack(spacing: 8) { grooveControl; instrumentControl; instrumentRackButton }
                 }
             }
         }
@@ -312,10 +314,12 @@ private struct ChartEditorView: View {
     }
 
     private var instrumentRackButton: some View {
-        Button { instrumentRackPresented = true } label: {
-            Label("All 15", systemImage: "square.grid.2x2")
-                .lineLimit(1)
-                .frame(maxWidth: .infinity)
+        Button { store.isInstrumentRackPresented = true } label: {
+            VStack(spacing: 1) {
+                Image(systemName: "square.grid.2x2")
+                Text("15").font(.system(size: JazzTheme.size(9), weight: .bold, design: .monospaced))
+            }
+            .frame(width: 44, height: 44)
         }
         .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.cyan))
         .accessibilityIdentifier("open-instrument-rack")
@@ -329,7 +333,7 @@ private struct ChartEditorView: View {
                 HStack {
                     JazzSectionLabel(number: "02", title: "Lead sheet", tint: JazzTheme.emerald)
                     Spacer()
-                    Button { chordPadsPresented = true } label: {
+                    Button { store.isChordPadsPresented = true } label: {
                         Label(compact ? "Pads" : "Play chord pads", systemImage: "square.grid.3x3.fill")
                             .lineLimit(1)
                             .frame(minHeight: 44)
@@ -1074,7 +1078,7 @@ private struct MeasureCard: View {
                                 )
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.68)
-                                .frame(maxWidth: .infinity, minHeight: 38)
+                                .frame(maxWidth: .infinity, minHeight: 44)
                                 .padding(.horizontal, 5)
                             if !chord.annotation.isEmpty {
                                 Image(systemName: "note.text")
@@ -3078,6 +3082,16 @@ private struct DocumentCenterView: View {
                                     .frame(maxWidth: .infinity)
                             }
                             .buttonStyle(JazzPrimaryButtonStyle(tint: JazzTheme.cyan))
+                            Button { store.importPastedText(UIPasteboard.general.string) } label: {
+                                Label("Paste chart text or JSON", systemImage: "doc.on.clipboard")
+                                    .frame(maxWidth: .infinity, minHeight: 44)
+                            }
+                            .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.emerald))
+                            .accessibilityIdentifier("paste-chart-import")
+                            .accessibilityHint("Reads the clipboard only after this button is activated and replaces the chart as one undoable action.")
+                            Text("Paste is read only after you tap. A valid paste becomes one undoable chart replacement; refused text leaves the current chart unchanged.")
+                                .font(.system(size: JazzTheme.size(10.5), design: .rounded))
+                                .foregroundStyle(JazzTheme.secondary)
                             Text("MIDI chord stacks become editable 4/4 symbols with exact Manual pitches. Common DAW retriggers, stray note-offs, open notes, and missing end markers are repaired and reported; structural corruption, another meter, an out-of-range/oversized stack, or no nameable harmony is refused instead of guessed.")
                                 .font(.system(size: JazzTheme.size(10.5), design: .rounded))
                                 .foregroundStyle(JazzTheme.secondary)
