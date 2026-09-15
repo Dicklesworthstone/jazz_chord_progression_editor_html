@@ -12,6 +12,7 @@ export type StudioNoteFirstPorts=Readonly<{
 }>;
 export function NoteFirstPanel({ports}:{ports:StudioNoteFirstPorts}){
   const [text,setText]=useState("");
+  const notesInput=useRef<HTMLTextAreaElement>(null);
   const [octave,setOctave]=useState(3),[spelling,setSpelling]=useState<NoteFirstKeyboardSpelling>("sharps");
   const keyboard=useMemo(()=>ports.keys(octave,spelling),[ports.keys,octave,spelling]);
   const octaveInput=useRef<HTMLSelectElement>(null),occurrences=useRef<HTMLOListElement>(null),removalFocus=useRef<number|null>(null);
@@ -52,7 +53,7 @@ export function NoteFirstPanel({ports}:{ports:StudioNoteFirstPorts}){
     <summary>Start from notes</summary>
     <section aria-label="Note-first entry">
       <p>Know the voicing before the name? Enter up to 16 notes with octaves. We keep their spelling, order and doubles.</p>
-      <label>Voicing notes<textarea class="studio-command-lane__input" rows={2} maxLength={512} spellcheck={false}
+      <label>Voicing notes<textarea ref={notesInput} class="studio-command-lane__input" rows={2} maxLength={512} spellcheck={false}
         placeholder="A3 C4 E4 G4" value={text} onInput={e=>{void ports.release();setText(e.currentTarget.value);setDraft(null);setNotice("");}} /></label>
       <fieldset class="studio-note-keyboard"><legend>Tap notes into your voicing</legend>
         <div class="studio-note-keyboard__controls">
@@ -84,7 +85,8 @@ export function NoteFirstPanel({ports}:{ports:StudioNoteFirstPorts}){
           </label>)}
           {allNames.length>initialNames.length?<button class="ui-button" type="button" onClick={()=>{setMore(!more);}}>{more?"Fewer names":`All ${String(analysis.candidates.length)} names`}</button>:null}
           <label style={{display:"block",padding:"0.5rem 0"}}><input type="radio" name="note-first-choice" value="custom" checked={choice==="custom"} onChange={()=>{setChoice("custom");setAck(false);}} />Custom voicing</label>
-          {choice==="custom"?<label>Custom label<input class="studio-command-lane__input" maxLength={64} value={customLabel} onInput={e=>{setCustomLabel(e.currentTarget.value);}} /></label>:null}
+          {/* HTML counts UTF-16 units; application validation permits 64 Unicode code points. */}
+          {choice==="custom"?<label>Custom label<input class="studio-command-lane__input" maxLength={128} value={customLabel} onInput={e=>{setCustomLabel(e.currentTarget.value);}} /></label>:null}
         </fieldset>
         {candidate!==undefined&&!candidate.spellingExact?<label style={{display:"block",padding:"0.5rem 0"}}><input type="checkbox" checked={ack} onChange={e=>{setAck(e.currentTarget.checked);}} />Use this name as a Custom label, keeping my exact notes.</label>:null}
         <label>Add one full bar to<select class="studio-command-lane__input" value={section} onChange={e=>{setSection(e.currentTarget.value);}}>
@@ -96,7 +98,7 @@ export function NoteFirstPanel({ports}:{ports:StudioNoteFirstPorts}){
         <button class="ui-button" type="button" disabled={!canAdd} onClick={()=>{
           if(draft===null)return;void ports.release();
           const result=ports.insert(draft.source,text,{name:choice==="custom"?null:choice,customLabel,acknowledgeEnharmonic:ack},section);
-          if(result.ok){setDraft(null);setText("");setNotice("Added one bar with your exact Manual voicing. Undo is available in the chart.");}
+          if(result.ok){setDraft(null);setText("");setNotice("Added one bar with your exact Manual voicing. Undo is available in the chart.");notesInput.current?.focus();}
           else setNotice(result.refusal.message);
         }}>Add bar from notes</button>
       </>:null}

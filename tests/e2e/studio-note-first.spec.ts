@@ -46,6 +46,7 @@ for(const width of [320,1280])test(`note-first exact audio and Manual bar roundt
     await expect.poll(()=>page.evaluate(()=>window.u5NativeSourceCounts?.().futureAttacks??-1)).toBe(0);
     expect(await panel.evaluate(e=>e.scrollWidth<=e.clientWidth)).toBe(true);
     await panel.getByRole("button",{name:"Add bar from notes",exact:true}).click();await expect(panel).toContainText("Added one bar");
+    await expect(panel.getByLabel("Voicing notes")).toBeFocused();
     await page.getByRole("button",{name:"Close the command lane",exact:true}).click();
     const after=await exported(page),first=after.document.sections[0],oldFirst=before.document.sections[0];
     expect(first?.measures.length).toBe((oldFirst?.measures.length??0)+1);
@@ -63,4 +64,47 @@ for(const width of [320,1280])test(`note-first exact audio and Manual bar roundt
     expect(errors).toEqual([]);expect(requests.every(r=>r.allowed)).toBe(true);
     await info.attach("note-first-portable-document",{body:after.bytes,contentType:"application/json"});
   }finally{await info.attach("note-first-evidence",{body:JSON.stringify({hash,width,browser:browser.version(),errors,requests}),contentType:"application/json"});}
+});
+
+for(const width of [320,1280])for(const reading of ["custom","enharmonic"] as const)test(`note-first ${reading} labels preserve exact notes at ${String(width)}px`,async({page,browser},info)=>{
+  const errors:string[]=[],requests:string[]=[];
+  page.on("pageerror",e=>errors.push(e.message));page.on("console",m=>{if(m.type()==="error")errors.push(m.text());});
+  await page.route("**/*",async route=>{if(route.request().isNavigationRequest()&&route.request().url()===url)await route.continue();else{requests.push(route.request().url());await route.abort();}});
+  try{
+    await page.setViewportSize({width,height:900});await page.goto(url);await expect(page.locator(".studio-shell")).toHaveAttribute("data-app-ready","true");
+    const before=await exported(page);
+    await page.locator("#studio-open-command-lane").click();await page.getByText("Start from notes",{exact:true}).click();
+    const panel=page.getByRole("region",{name:"Note-first entry"}),notes=panel.getByLabel("Voicing notes");
+    await notes.fill(reading==="custom"?"C#4 F##4 Gbb4 C#4":"C#4 F4 G#4 C#4");await panel.getByRole("button",{name:"Find chord names",exact:true}).click();
+    const label=reading==="custom"?"🎹".repeat(64):"Db";
+    await panel.getByLabel("Add one full bar to").selectOption({index:1});
+    if(reading==="custom"){
+      await panel.getByRole("radio",{name:"Custom voicing",exact:true}).check();
+      const labelInput=panel.getByLabel("Custom label",{exact:true});
+      // Actual text entry must honor the same code-point limit as application validation.
+      await labelInput.pressSequentially(label);await expect(labelInput).toHaveValue(label);
+    }else{
+      await panel.getByRole("radio",{name:/^Db — enharmonic reading/}).check();
+      await expect(panel.getByRole("button",{name:"Add bar from notes",exact:true})).toBeDisabled();
+      await panel.getByLabel("Use this name as a Custom label, keeping my exact notes.",{exact:true}).check();
+    }
+    const add=panel.getByRole("button",{name:"Add bar from notes",exact:true});await add.focus();await page.keyboard.press("Enter");
+    await expect(panel).toContainText("Added one bar");await expect(notes).toBeFocused();await expect(notes).toHaveValue("");
+    await page.getByRole("button",{name:"Close the command lane",exact:true}).click();
+    const after=await exported(page),event=after.document.sections[0]?.measures.at(-1)?.events[0];
+    expect(event?.chord.kind).toBe("custom");if(event?.chord.kind!=="custom")throw new Error("Expected Custom chord");
+    expect(event.chord.label).toBe(label);expect(event.chord.sourceText).toBe(label);
+    const pitches=reading==="custom"
+      ?[{step:"C",alter:1,octave:4},{step:"F",alter:2,octave:4},{step:"G",alter:-2,octave:4},{step:"C",alter:1,octave:4}]
+      :[{step:"C",alter:1,octave:4},{step:"F",alter:0,octave:4},{step:"G",alter:1,octave:4},{step:"C",alter:1,octave:4}];
+    expect(event.voicing).toEqual({mode:"manual",bassPolicy:"included",pitches});
+    expect(event.chord.pitchNames).toEqual(pitches.map(({step,alter})=>({step,alter})));
+    await page.locator("#studio-undo").click();expect((await exported(page)).document).toEqual(before.document);
+    await page.locator("#studio-redo").click();expect((await exported(page)).document).toEqual(after.document);
+    await expect(page.locator("#studio-recovery-status")).toContainText("Recovered locally at");await page.reload();
+    await expect(page.locator("#studio-recovery-notice-title")).toHaveText("Recovered chart opened");
+    expect((await exported(page)).document).toEqual(after.document);
+    expect(errors).toEqual([]);expect(requests).toEqual([]);
+    await info.attach("custom-note-first-document",{body:after.bytes,contentType:"application/json"});
+  }finally{await info.attach("custom-note-first-evidence",{body:JSON.stringify({hash,width,reading,browser:browser.version(),errors,requests}),contentType:"application/json"});}
 });

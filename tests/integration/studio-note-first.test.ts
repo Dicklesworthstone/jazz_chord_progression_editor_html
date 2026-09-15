@@ -37,6 +37,21 @@ test("Custom remains available for a no-match cluster and preserves duplicated o
   expect(event?.chord.kind).toBe("custom");expect(event?.chord.sourceText).toBe("Close cluster");
   if(event?.voicing.mode!=="manual")throw new Error("Expected Manual");expect(event.voicing.pitches.length).toBe(4);
 });
+test("Custom labels count Unicode code points and refuse overflow without editing the chart",()=>{
+  for(const label of ["🎹".repeat(64),"🎵".repeat(32)+"A".repeat(32),"A".repeat(64)]){
+    const c=setup(),controller=c.controller,text="C4 C#4 D4 C4",draft=controller.readNoteFirst(text),before=c.readApplicationState();
+    const custom=(customLabel:string)=>({name:null,customLabel,acknowledgeEnharmonic:false});
+    for(const invalid of [label+"x","A\u0001B"," "]){
+      expect(controller.insertNoteFirst(draft.source,text,custom(invalid),"loop-section-0").ok).toBe(false);
+      expect(c.readApplicationState().document).toBe(before.document);expect(c.readApplicationState().history).toBe(before.history);
+    }
+    expect(controller.insertNoteFirst(draft.source,text,custom(label),"loop-section-0").ok).toBe(true);
+    const after=c.readApplicationState(),event=after.document.sections[0]?.measures[1]?.events[0];
+    expect(event?.chord.kind).toBe("custom");expect(event?.chord.sourceText).toBe(label);
+    expect(controller.undo().ok).toBe(true);expect(c.readApplicationState().document).toEqual(before.document);
+    expect(controller.redo().ok).toBe(true);expect(c.readApplicationState().document).toEqual(after.document);
+  }
+});
 test("stale revision, wrong document, missing destination and forged naming choices are atomic refusals",()=>{
   const c=setup(),text="A3 C4 E4 G4",draft=c.controller.readNoteFirst(text);
   for(const [source,choice,section]of [
