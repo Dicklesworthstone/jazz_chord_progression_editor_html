@@ -6,9 +6,9 @@ An offline, deterministic jazz chord-progression studio designed to turn lead-sh
 > playback studio, with substantial recovery, interchange and voicing tools.
 > Exact sharing, My Charts and Focus are included in the build deployed to
 > <https://jazzchords.org> and its Vercel mirror. Full harmonic
-> discovery and release acceptance remain incomplete. The current candidate
-> passes the DSP source/WASM and instrument gates. The aggregate now stops at
-> required X1 human listening evidence; later release gates remain unverified.
+> discovery and release acceptance remain incomplete. The latest predeploy
+> model and instrument checks pass; this release does not claim a complete
+> aggregate `verify` pass. Required X1 human listening evidence remains outstanding.
 > See the [implementation status](docs/IMPLEMENTATION_TODO.md), [reality check](docs/REALITY_CHECK.md)
 > and [limitations](#current-limitations).
 
@@ -42,17 +42,20 @@ acceptance gates, and [`ios/README.md`](ios/README.md) for build instructions.
 
 ## What works today
 
-This table describes the shipped web app, including batch MIDI comparison and
-explicit tied-key review. On September 15, 2026 (UTC), both
-[jazzchords.org](https://jazzchords.org/) and its
+This table describes the shipped web app, including batch MIDI comparison,
+explicit tied-key review and source-note inspection with pitch previews. On
+September 15, 2026 (UTC), both [jazzchords.org](https://jazzchords.org/) and its
 [Vercel mirror](https://changes-jazz-progression-studio.vercel.app/) were verified
-against the committed HTML and social image from `29dda11`. Both use the
-JazzChords.org name and include My Charts, Focus and exact sharing. Chromium,
-Firefox and WebKit passed boot and Play/Pause/Stop checks at 320px and 1280px,
-with no console/page errors or extra requests. The
-[delivery record](docs/IMPLEMENTATION_TODO.md#canonical-project-name--jcpe-0b8b-cyancove)
-preserves exact hashes, earlier failed runs and the final evidence. Broader
-real-device and human acceptance obligations remain open below.
+against the committed HTML and social image from `7c4db18`. Chromium, Firefox
+and WebKit passed all 12 live desktop/320px checks of exact source-note details,
+keyboard focus, native sound and Stop, with unchanged chart revisions and no
+console/page errors or extra requests in those runs. Before upload, the full
+48-case M1 browser groups, M0 regression gate and committed-byte predeploy
+checks passed. The
+[delivery record](docs/IMPLEMENTATION_TODO.md#midi-source-note-review--jcpe-upbz-cyancove-2026-09-15)
+preserves exact hashes, earlier failed runs and final evidence. These are
+solo automated checks; independent musical, real-device and human acceptance
+obligations remain open below.
 
 | Capability | Current state |
 |---|---|
@@ -63,7 +66,7 @@ real-device and human acceptance obligations remain open below.
 | Exact voicings | Choose and audition alternatives, keep a Frozen realization, or edit up to 16 exact Manual notes in the chord inspector; complete U2 package proof remains open |
 | Playback | One persistent Web Audio graph, serialized transport with loop/seek/pause/live mix, 7 grooves, and 15 instruments spanning physical models (clarinet, flute, four plucked strings), the hybrid concert grand, and CC0-sampled bass/vibes — every shipping model gated by the model-acceptance ledger |
 | Progression library | 27 library entries plus the starter chart, with a machine-checked provenance law |
-| MIDI import | Compare up to five local `.mid` candidates with explained, deterministic rankings; inspect any candidate before Add. Tied keys remain explicit and do not transfer automatically; Advanced offers a key choice. Includes a Rust SMF parser in WASM, salvage ledger, per-track preview/overrides, and automated groove matching (M0 shipped; M1 owner-listening gate open) |
+| MIDI import | Compare up to five local `.mid` candidates with explained, deterministic rankings; inspect any candidate before Add. Tied keys remain explicit and do not transfer automatically; Advanced offers a key choice. Advanced also shows the retained source notes for ambiguous or unwritten passages: exact keys, channels, ticks and velocities, with individual or bounded whole-set pitch previews. Includes a Rust SMF parser in WASM, salvage ledger, per-track preview/overrides, and automated groove matching (M0 shipped; M1 independent and owner-listening acceptance open) |
 | Recovery | Best-effort IndexedDB with localStorage fallback, revision-bound writes, automatic current recovery when startup is untouched, Keep/Discard for conflicts, previous-copy fallback, and visible storage failures |
 | Chart import | Local JazzChords.org/legacy JSON files and pasted data get a bounded preview before replacement; migration reports disclose retained data, confirmation retires playback, and imported document IDs survive recovery |
 | JSON export | **Export JSON** prepares and validates a portable chart, then **Download JSON** hands it to the browser; only exact successful delivery advances the export marker |
@@ -128,7 +131,7 @@ The two HTML outputs must be byte-identical. The enforced artifact ceiling is
 9 MiB (`maxUncompressedBytes: 9437184`, the same figure the reviewed PHS7
 physical-system contract pins), with a hard 512 KiB reservation for the
 future Harmonic Atlas and an 8,912,896-byte shell allocation; the current
-tracked artifact from `8f50175` measures 8,633,118 bytes. The full amendment history and the
+tracked artifact from `7c4db18` measures 8,641,021 bytes. The full amendment history and the
 reclamation path (physical models replacing the ~2.8 MB sampled payloads)
 are recorded in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
