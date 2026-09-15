@@ -612,3 +612,48 @@ Proof covers beginning/middle/default-end placement, a long multi-chunk import
 in front of existing material, missing/stale targets without mutation, actual
 decoder/controller paths, failed later chunks with rollback, new-file reset,
 and native Advanced Add/Undo in all three browser engines.
+
+
+### Amendment #7: source-note review (jcpe-upbz)
+
+Advanced links each displayed ambiguous or unwritten reading to its retained
+source occurrences using the exact `(measureIndex, startTick)` span identity.
+Review is computed on demand for one span, never once per row during rendering.
+The existing 64-reading display bound is stated with an omitted count. A stale
+span or absent automation refuses without retargeting or mutating the chart.
+
+Review includes notes satisfying `onTick < span.endTick && offTick > span.startTick`
+in included bass/harmony/melody tracks; percussion, silent and channel 9 notes
+are excluded. Source track index/name, channel, MIDI key/octave, velocity and
+original on/off ticks are preserved, including notes crossing the boundaries.
+Notes overlapping the span by less than floor(PPQ/8), unless they attacked exactly at span start, remain visible
+as context explicitly marked ignored by harmonic mass. MIDI carries no source
+enharmonic spelling; displayed sharp note names are labels, not recovered spellings.
+
+One scan of the retained decoded model collects exact occurrence/track counts
+and every distinct key (at most 128), plus at most 64 detail rows in source
+track then decoder-note order. Truncation is stated. No source note is deleted,
+revoiced, inserted, quantized, or renamed in the retained model or destination.
+Rows from salvaged bytes are labeled as repaired-source notes; lost original
+notes/timings are not claimed.
+
+Each key can be previewed, or the complete distinct pitch set when it contains
+1–16 keys. Denser sets refuse as a set without silently dropping pitches;
+individual keys remain available. This is the existing fixed-gate, fixed-velocity
+preview through the current instrument, explicitly labeled as pitches together,
+not a reconstruction of original timing, dynamics, timbre or pedals. This slice
+does not implement source-performance replay or alternative-voicing audition.
+
+Preview requests re-resolve the current pending span and require the requested
+key to occur there. File/candidate replacement, replan, Add, Discard, Stop and
+newer previews retire the existing preparation/preview owner. Selecting another
+review cancels the prior import preview. Review state is bound to the immutable
+preview identity and disappears on replacement/replan. The chart, document
+revision/history and progression playhead remain untouched.
+
+Proof uses independently built SMF bytes over all 12 transpositions, exact
+boundary/short-note/channel/exclusion controls, repeated occurrences, stale keys,
+empty and dense sets, detail truncation and input immutability. Native desktop
+and 320px proof exercises actual file decoding, Advanced controls, real preview
+sources and Stop, override/new-file reset, accessibility and unchanged revision.
+Original M1 verification and human listening remain open.

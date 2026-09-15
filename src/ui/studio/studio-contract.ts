@@ -1,6 +1,6 @@
 import type {StudioChordPadsPorts} from "./ChordPadsPanel";
 import type { StudioNoteFirstPorts } from "./NoteFirstPanel";
-import type { StudioPlayAlongView, StudioPerformedMidiService, StudioCompingService, StudioWavService, StudioPrintService, StudioSongbookService } from "../../application/runtime";
+import type { MidiImportSpanKey, MidiSourceReviewResult, StudioPlayAlongView, StudioPerformedMidiService, StudioCompingService, StudioWavService, StudioPrintService, StudioSongbookService } from "../../application/runtime";
 import type { ComponentChildren } from "preact";
 import type { UiDiagnostic } from "../ui-contract";
 import type { StudioInspectorPorts } from "./ChordInspector";
@@ -598,6 +598,7 @@ export type StudioMidiImportView = Readonly<{
   traceJson: string | null;
   /** True while the pre-Add audition is sounding; the button shows Stop. */
   auditioning: boolean;
+  sourceReview?: MidiSourceReviewResult | null;
   /**
    * M1-OVR (amendment #2): the Advanced override controls' data — every
    * track with its classification and exclusion state, every written span
@@ -619,6 +620,7 @@ export type StudioMidiImportOverridesView = Readonly<{
     role: string;
     excluded: boolean;
   }>[];
+  omittedSpanCount?: number;
   spans: readonly Readonly<{
     measureIndex: number;
     startTick: number;
@@ -766,6 +768,8 @@ export type StudioShellCallbacks = Readonly<{
    * of click-previews sounding the file's own first bars at its tempo.
    */
   onMidiImportAudition: () => void;
+  onMidiImportReviewSource: (span: MidiImportSpanKey | null) => void;
+  onMidiImportPreviewSource: (choice: number | "all" | null) => void;
   /**
    * Replace the pending import's M1-OVR override set (absolute, never a
    * delta): the application re-plans on the retained bytes and swaps the

@@ -205,3 +205,6 @@ export type {ExactQr} from "./qr-share";
 
 export type {NoteFirstDraftEdit,NoteFirstKeyboard,NoteFirstKeyboardSpelling} from "./note-first-keyboard-contract";
 export type {StudioNoteFirstGuitarView} from "./studio-guitar";
+
+export { reviewMidiImportSource, sourceReviewPitches } from "./studio-midi-source-review";
+export type { MidiImportSpanKey, MidiSourceReview, MidiSourceReviewResult } from "./studio-midi-source-review";

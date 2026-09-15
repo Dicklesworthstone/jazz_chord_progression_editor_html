@@ -6917,3 +6917,11 @@ li[data-resize-preview]::after {
 .studio-my-charts__row span { font-size: .85em; }
 .studio-my-charts fieldset { min-inline-size: 0; margin-block: .5rem; }
 .studio-my-charts fieldset label { display: flex; align-items: center; gap: .5rem; min-block-size: 44px; }
+
+/* On-demand retained MIDI notes: the rail and phone sheet share this view. */
+.studio-midi-import__source-review { min-width: 0; overflow-wrap: anywhere; }
+.studio-midi-import__source-actions { display: flex; flex-wrap: wrap; gap: var(--space-1); margin-block: var(--space-1); }
+.studio-midi-import__source-actions .ui-button { white-space: normal; }
+.studio-midi-import__source-review details { margin-block: var(--space-2); }
+.studio-midi-import__source-review summary { cursor: pointer; min-height: var(--control-min-block); }
+.studio-midi-import__source-review li { margin-block: var(--space-1); }

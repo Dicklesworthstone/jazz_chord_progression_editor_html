@@ -12,6 +12,10 @@ import {
 } from "preact/hooks";
 
 import {
+  reviewMidiImportSource,
+  sourceReviewPitches,
+  type MidiImportSpanKey,
+  type MidiSourceReviewResult,
   type StudioPlayAlongView,
   type StudioExactShareService,
   type StudioExactShareView,
@@ -1149,10 +1153,11 @@ function midiImportOverridesView(
         }),
       ),
     ),
+    omittedSpanCount: Math.max(0, (automation?.readings ?? []).filter(r => !r.written || r.alternativeTexts.length > 1).length - 64),
     spans: Object.freeze(
       (automation?.readings ?? [])
         .filter(
-          (reading) => reading.written && reading.alternativeTexts.length > 1,
+          (reading) => !reading.written || reading.alternativeTexts.length > 1,
         )
         .slice(0, 64)
         .map((reading) => {
@@ -1164,7 +1169,7 @@ function midiImportOverridesView(
           return Object.freeze({
             measureIndex: reading.span.measureIndex,
             startTick: reading.span.startTick,
-            label: `Bar ${String(reading.span.measureIndex + 1)}`,
+            label: `Bar ${String(reading.span.measureIndex + 1)}, ticks ${String(reading.span.startTick)}–${String(reading.span.endTick)}${reading.written ? "" : " — unwritten"}`,
             options: reading.alternativeTexts,
             chosenOrdinal: chosen?.alternativeOrdinal ?? 0,
           });
@@ -1188,6 +1193,7 @@ function midiImportView(
   grooveOptions: readonly Readonly<{ id: string; label: string }>[],
   beforeSectionId: string | null,
   destinationSections: readonly Readonly<{ id: string; name: string }>[],
+  sourceReview: MidiSourceReviewResult | null,
 ): StudioMidiImportView {
   if (!available) {
     return Object.freeze({
@@ -1372,6 +1378,7 @@ function midiImportView(
       (plan !== null && preview.blockedReason === null),
     traceJson: JSON.stringify(preview.trace, null, 1),
     auditioning,
+    sourceReview,
     overrides: midiImportOverridesView(preview, overridesState, grooveOptions, beforeSectionId, destinationSections),
   });
 }
@@ -1848,6 +1855,10 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
    * Audio schedules the immutable groove plan. This timer only reads its
    * status; commit, discard, override, new file and unmount cancel the owner.
    */
+  const [midiSourceReview, setMidiSourceReview] = useState<Readonly<{ preview: MidiImportPreview; result: MidiSourceReviewResult }> | null>(null);
+  useEffect(() => {
+    setMidiSourceReview(current => current?.preview === midiPreview ? current : null);
+  }, [midiPreview]);
   const [midiAuditioning, setMidiAuditioning] = useState(false);
   /* M1-OVR: the absolute override set for the pending preview. */
   const [midiOverrides, setMidiOverrides] = useState<M1ImportOverrides>({
@@ -2529,6 +2540,7 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
     snapshot.performance.options,
     midiBeforeSectionId,
     snapshot.sections,
+    midiSourceReview !== null && midiSourceReview.preview === midiPreview ? midiSourceReview.result : null,
   ), batch: {
     pending: midiReading,
     candidates: midiBatch === null || midiBatch.candidates.length < 2 ? [] : midiBatch.candidates.map((candidate) => ({
@@ -3148,6 +3160,32 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
         onMidiExportClose: closeMidiExport,
         onMidiExportRepreview: repreviewMidiExport,
         onMidiExportBlockedEventActivate: focusMidiExportBlocker,
+        onMidiImportReviewSource: (span: MidiImportSpanKey | null) => {
+          cancelMidiAudition();
+          setMidiSourceReview(span === null || midiPreview === null ? null : {
+            preview: midiPreview, result: reviewMidiImportSource(midiPreview, span),
+          });
+        },
+        onMidiImportPreviewSource: (choice: number | "all" | null) => {
+          cancelMidiAudition();
+          if (choice === null) return;
+          if (midiPreview === null || midiSourceReview?.preview !== midiPreview || !midiSourceReview.result.ok) {
+            setMidiImportNotice("Choose a current source passage first.");
+            return;
+          }
+          // Re-resolve the retained source before sounding it; never trust a
+          // stale rendered key or silently truncate a dense pitch set.
+          const current = reviewMidiImportSource(midiPreview, midiSourceReview.result.review.span);
+          const pitches = current.ok ? sourceReviewPitches(current.review, choice) : null;
+          if (pitches === null) {
+            setMidiImportNotice("This source pitch set cannot be previewed together. Choose one of its individual notes.");
+            return;
+          }
+          const result = actions.previewPitches(pitches, nextAudioGesture("trusted-pointer"));
+          setMidiImportNotice(result.ok
+            ? "Source pitch preview requested with your current instrument. Original timing and dynamics are not reproduced; your chart is unchanged."
+            : result.refusal.message);
+        },
         onMidiImportAudition: () => {
           if (midiAuditioning) {
             cancelMidiAudition();
