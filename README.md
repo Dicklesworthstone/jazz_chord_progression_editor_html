@@ -42,14 +42,17 @@ acceptance gates, and [`ios/README.md`](ios/README.md) for build instructions.
 
 ## What works today
 
-This table describes the repository build at `97aed83`, including batch MIDI comparison and explicit tied-key review. September 8 checks of both
+This table describes the shipped web app, including batch MIDI comparison and
+explicit tied-key review. On September 15, 2026 (UTC), both
 [jazzchords.org](https://jazzchords.org/) and its
-[Vercel mirror](https://changes-jazz-progression-studio.vercel.app/) recorded the
-older committed artifact from `11ef504`. Both boot and play in desktop and phone
-browsers, but lack the newer My Charts and Focus controls and exact-sharing
-dialog. The [reality check](docs/REALITY_CHECK.md#committed-source-and-public-delivery)
-records exact hashes and the release blocker. Historical Cloudflare login
-problems have been resolved; deployment freshness is a separate requirement.
+[Vercel mirror](https://changes-jazz-progression-studio.vercel.app/) were verified
+against the committed HTML and social image from `29dda11`. Both use the
+JazzChords.org name and include My Charts, Focus and exact sharing. Chromium,
+Firefox and WebKit passed boot and Play/Pause/Stop checks at 320px and 1280px,
+with no console/page errors or extra requests. The
+[delivery record](docs/IMPLEMENTATION_TODO.md#canonical-project-name--jcpe-0b8b-cyancove)
+preserves exact hashes, earlier failed runs and the final evidence. Broader
+real-device and human acceptance obligations remain open below.
 
 | Capability | Current state |
 |---|---|
@@ -125,7 +128,7 @@ The two HTML outputs must be byte-identical. The enforced artifact ceiling is
 9 MiB (`maxUncompressedBytes: 9437184`, the same figure the reviewed PHS7
 physical-system contract pins), with a hard 512 KiB reservation for the
 future Harmonic Atlas and an 8,912,896-byte shell allocation; the current
-tracked artifact at `a50e471` measures 8,428,308 bytes. The full amendment history and the
+tracked artifact from `29dda11` measures 8,633,114 bytes. The full amendment history and the
 reclamation path (physical models replacing the ~2.8 MB sampled payloads)
 are recorded in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
@@ -311,8 +314,7 @@ Local recovery is not cloud backup. Keep JSON copies of important charts; browse
 - The repository supports choosing, auditioning, freezing and manually editing
   voicings. Complete U2 proof and the broader U6 voicing workbench remain open.
 - JSON/legacy import, JSON and chart-text export, exact share links, My Charts
-  and MIDI export are available in the repository build. The live sites still
-  serve an older build; see the status above.
+  and MIDI export are available in the repository build and on both live sites.
 - Recovery and My Charts use best-effort browser storage. U5 lifecycle is
   complete, but a local collection is not a durable backup; keep portable JSON files.
 - Legacy application behavior was deliberately removed rather than copied
