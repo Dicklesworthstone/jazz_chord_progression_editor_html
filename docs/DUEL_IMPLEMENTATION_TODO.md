@@ -312,6 +312,18 @@ Package `jcpe-6ujg.10`. Spec `jcpe-6ujg.10.1` → build `jcpe-6ujg.10.2` → ver
 
 Package `jcpe-6ujg.11`. Spec `jcpe-6ujg.11.1` → build `jcpe-6ujg.11.2` → verify `jcpe-6ujg.11.3`.
 
+### Page selection and current-chart verification — 2026-09-16
+
+- [x] Claim original `.11.3`, read its full inherited spec/build context and print/source contracts, and reserve only the owned tests/TODO.
+- [x] Review layout, application service, native SVG/print adapters and UI; no production defect established by source inspection. Existing native tests cover the first downloaded page; extend verification to selecting later pages, source edits and replacement with reused IDs.
+- [x] Exercise both A4/Letter and 320/1280px: download the selected second page, inspect exact SVG symbols, rational durations, final bar IDs and footer; preserve all print pages and byte-identical source JSON.
+- [x] Verify a title draft preserves preparation, explicit Apply invalidates it, and replacement through native JSON import invalidates it even with reused IDs. Prepare and download the current title and replacement chords successfully afterward.
+- [x] Run RCH on ovh-a with Bun 1.3.14/Node 26.0.0: 12 focused print tests / 97 assertions; full types/lint; final E2E types/lint; guarded rebuild. Native matrix: 24 passed, zero unexpected/skipped/flaky, Chromium 149.0.7827.55 / Firefox 151.0 / WebKit 26.5; zero console/page errors or forbidden requests. Original assertions and production code remain unchanged.
+- [x] Inspect 36 real downloaded SVGs, four native PDF proofs and four desktop/narrow preview screenshots. Both pages have correct geometry, all 49 exact chord/durations and embedded Unicode-mapped Archivo; first-page split stays 48 A4 / 44 Letter. Solo automation is not independent physical acceptance.
+- [x] Record test commit `e225bae`; all 1,801 frozen inputs remained current through the final rebuild. Root/dist/committed artifact remain byte-identical: 8,643,212 bytes, SHA-256 `64717703cf90481cf21687fa226cf80310d12a3b41abf032c856456b076390d2`. Runtime unchanged; no deployment needed. Results retained under `test-results/print-lifecycle-{static-final,browser-final,rebuild}-20260916/`.
+- [x] Preserve and explain initial failures: one unnecessary optional chain failed lint; parsing downloaded SVG through test-injected DOMParser inside the app caused four Chromium CSP failures. Reopen actual downloads as standalone file documents instead, with font/XML/content/error/network checks intact. Original red results remain under `test-results/print-lifecycle-{static,browser}-20260916/`; no CSP weakening or diagnostic filtering.
+- [ ] Resolve the observed PDF renderer discrepancy during original print acceptance: Poppler 26.01.0 sequential two-page rasterization omits repeated glyphs on page two; isolated page-two rendering and MuPDF 1.27.0 two-page rendering preserve all content. Root cause and physical-printer compatibility are not established; retained images/commands are in `.tmp/print-lifecycle-20260916/`. Keep this on `.11.3` alongside native phone and physical A4/Letter output.
+
 - [x] Reopen deferred chord-only printing scope under this user authorization — `.11.1` closed.
 - [x] Specify Letter/A4 geometry, pagination, fonts and overfull-cell behavior — docs/PRINTABLE_CHARTS.md; independent geometry/wrapping/font/boundary fixtures validated.
 - [x] Implement deterministic escaped vector layout and standalone SVG export — `.11.2` closed; exact source text/time, bounded wrapping, embedded font and explicit refusals.

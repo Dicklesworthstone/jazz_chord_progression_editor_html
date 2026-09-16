@@ -1,5 +1,5 @@
 import {verifyNativePrintPdf} from "../support/print-pdf-proof";
-import {expect,test,type Page} from "@playwright/test";
+import {expect,test,type Download,type Page} from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import {createHash} from "node:crypto";
 import {readFileSync,writeFileSync} from "node:fs";
@@ -51,6 +51,17 @@ for(const paper of ["a4","letter"] as const)for(const width of [320,1280])test(`
  const errors:string[]=[],requests:{url:string;allowed:boolean}[]=[];
  page.on("pageerror",e=>errors.push(e.message));page.on("console",m=>{if(m.type()==="error")errors.push(m.text());});
  await page.route("**/*",async route=>{const allowed=route.request().isNavigationRequest()&&route.request().url()===url;requests.push({url:route.request().url(),allowed});if(allowed)await route.continue();else await route.abort();});
+ const inspectSvg=async(download:Download,name:string)=>{
+  const saved=info.outputPath(name);await download.saveAs(saved);const standalone=await page.context().newPage(),standaloneUrl=pathToFileURL(saved).href;
+  try{
+   standalone.on("pageerror",e=>errors.push(e.message));standalone.on("console",m=>{if(m.type()==="error")errors.push(m.text());});
+   await standalone.route("**/*",async route=>{const allowed=route.request().url()===standaloneUrl&&route.request().isNavigationRequest();requests.push({url:route.request().url(),allowed});if(allowed)await route.continue();else await route.abort();});
+   await standalone.goto(standaloneUrl);await expect(standalone.locator("svg")).toBeVisible();
+   expect(await standalone.evaluate(async()=>{const fonts=await document.fonts.load("400 16px JazzChordsPrint");await document.fonts.ready;return fonts.length;})).toBe(1);
+   const decoded=await standalone.evaluate(()=>({errors:document.querySelectorAll("parsererror").length,forbidden:document.querySelectorAll("script,foreignObject,iframe,image").length,text:Array.from(document.querySelectorAll("text"),e=>e.textContent),bars:Array.from(document.querySelectorAll("rect[data-source-id]"),e=>e.getAttribute("data-source-id"))}));
+   expect(decoded.errors).toBe(0);expect(decoded.forbidden).toBe(0);return decoded;
+  }finally{await standalone.close();}
+ };
  try{
   await page.emulateMedia({colorScheme:width===320?"dark":"light"});await page.setViewportSize({width,height:900});await page.goto(url);
   await expect(page.locator(".studio-shell")).toHaveAttribute("data-app-ready","true");await importPrintChart(page,chart);
@@ -63,13 +74,14 @@ for(const paper of ["a4","letter"] as const)for(const width of [320,1280])test(`
   const pending=page.waitForEvent("download");await panel.getByRole("button",{name:"Download page SVG",exact:true}).click();
   const download=await pending;expect(await download.failure()).toBeNull();expect(download.suggestedFilename()).toBe(`JazzChords.org-${paper}-page-2.svg`);
   const second=readFileSync(await download.path());
-  const decoded=await page.evaluate(source=>{const xml=new DOMParser().parseFromString(source,"image/svg+xml");return{errors:xml.querySelectorAll("parsererror").length,text:Array.from(xml.querySelectorAll("text"),e=>e.textContent),bars:Array.from(xml.querySelectorAll("rect[data-source-id]"),e=>e.getAttribute("data-source-id"))};},second.toString("utf8"));
+  const decoded=await inspectSvg(download,"selected-page.svg");
   expect(decoded.errors).toBe(0);expect(decoded.text.filter(t=>t==="Dbmaj7 [4/1 q]")).toHaveLength(count);
   expect(decoded.bars).toEqual(Array.from({length:count},(_v,i)=>`print-bar-${String(49-count+i)}`));expect(decoded.text).toContain("2 / 2");
   await expect(panel.getByRole("button",{name:"Download page SVG",exact:true})).toBeDisabled();
   await expect(page.locator(".studio-print-only svg")).toHaveCount(2);
   await page.getByRole("button",{name:"Close the command lane",exact:true}).click();expect(await exportPrintSource(page)).toEqual(before);
-  const title=page.locator("#studio-document-title");await title.fill("Revised print title");await title.press("Tab");
+  await page.locator("#studio-document-title").fill("Revised print title");
+  await expect(page.locator(".studio-print-only svg")).toHaveCount(2);await page.locator("#studio-apply-title").click();
   await expect(page.locator(".studio-print-only")).toHaveCount(0);panel=await openPrintTool(page);
   await expect(panel.locator("svg")).toHaveCount(0);await expect(panel.getByRole("button",{name:"Print all pages",exact:true})).toBeDisabled();
   await expect(panel.getByRole("button",{name:"Download page SVG",exact:true})).toBeDisabled();
@@ -83,8 +95,8 @@ for(const paper of ["a4","letter"] as const)for(const width of [320,1280])test(`
   await expect(panel.getByRole("combobox",{name:"Preview page",exact:true})).toHaveValue("0");await expect(panel.locator("svg text").filter({hasText:"Replacement print title"})).toHaveCount(1);
   const freshPending=page.waitForEvent("download");await panel.getByRole("button",{name:"Download page SVG",exact:true}).click();const fresh=await freshPending;
   expect(await fresh.failure()).toBeNull();expect(fresh.suggestedFilename()).toBe(`JazzChords.org-${paper}-page-1.svg`);const current=readFileSync(await fresh.path());
-  const text=await page.evaluate(source=>{const xml=new DOMParser().parseFromString(source,"image/svg+xml");return Array.from(xml.querySelectorAll("text"),e=>e.textContent);},current.toString("utf8"));
-  expect(text).toContain("Replacement print title");expect(text).not.toContain("Revised print title");expect(text.filter(t=>t==="F7 [4/1 q]")).toHaveLength(49-count);expect(text.some(t=>t?.includes("Dbmaj7"))).toBe(false);
+  const {text}=await inspectSvg(fresh,"replacement-page.svg");
+  expect(text).toContain("Replacement print title");expect(text).not.toContain("Revised print title");expect(text.filter(t=>t==="F7 [4/1 q]")).toHaveLength(49-count);expect(text.some(t=>t.includes("Dbmaj7"))).toBe(false);
   expect(await panel.evaluate(e=>e.scrollWidth<=e.clientWidth)).toBe(true);
   if(browserName==="chromium"){await panel.scrollIntoViewIfNeeded();await page.screenshot({path:info.outputPath("current-print-preview.png")});}
   await page.getByRole("button",{name:"Close the command lane",exact:true}).click();expect(await exportPrintSource(page)).toEqual(replacementSource);
