@@ -50,6 +50,8 @@ struct FrankenJazzStudioView: View {
                 NavigationStack { InstrumentRackView(store: store) }
             case .chordPads:
                 NavigationStack { ChordPadsView(store: store) }
+            case .authoredComping:
+                NavigationStack { AuthoredCompingView(store: store) }
             }
         }
         .fileExporter(
@@ -333,6 +335,15 @@ private struct ChartEditorView: View {
                 HStack {
                     JazzSectionLabel(number: "02", title: "Lead sheet", tint: JazzTheme.emerald)
                     Spacer()
+                    Button { store.isAuthoredCompingPresented = true } label: {
+                        Label(compact ? "Comp" : "Author comping", systemImage: "circle.grid.4x3.fill")
+                            .lineLimit(1)
+                            .frame(minHeight: 44)
+                    }
+                    .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.brass))
+                    .accessibilityIdentifier("open-authored-comping")
+                    .accessibilityLabel("Author a comping rhythm")
+                    .accessibilityHint("Opens the original sixteen-step session rhythm tool")
                     Button { store.isChordPadsPresented = true } label: {
                         Label(compact ? "Pads" : "Play chord pads", systemImage: "square.grid.3x3.fill")
                             .lineLimit(1)
@@ -3044,6 +3055,211 @@ private struct MyChartsView: View {
                 },
                 secondaryButton: .cancel()
             )
+        }
+    }
+}
+
+private struct AuthoredCompingView: View {
+    @ObservedObject var store: JazzStudioStore
+    @Environment(\.dismiss) private var dismiss
+    @State private var importingRecipe = false
+    @State private var recipeURL: URL?
+    @State private var midiURL: URL?
+
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 4)
+
+    var body: some View {
+        ZStack {
+            JazzForgeBackground()
+            ScrollView {
+                VStack(spacing: 14) {
+                    JazzPanel(accent: JazzTheme.brass) {
+                        VStack(alignment: .leading, spacing: 12) {
+                            JazzSectionLabel(number: "08", title: "Authored comping", tint: JazzTheme.brass)
+                            Text("Build one exact 16-step rhythm for 1–4 complete bars. This is session-only: it never rewrites the chart, recovery file, undo history, or ordinary playback.")
+                                .font(.system(size: JazzTheme.size(11.5), design: .rounded))
+                                .foregroundStyle(JazzTheme.secondary)
+                            Picker("Passage", selection: Binding(
+                                get: { store.selectedCompingSectionID },
+                                set: store.selectCompingPassage
+                            )) {
+                                Text("Whole chart").tag(UUID?.none)
+                                ForEach(store.authoredCompingPassages, id: \.id) { passage in
+                                    Text(passage.name).tag(Optional(passage.id))
+                                }
+                            }
+                            .pickerStyle(.menu)
+                            .accessibilityIdentifier("comping-passage")
+                            Menu {
+                                ForEach(Array(JazzCompingRecipe.presets.enumerated()), id: \.offset) { index, preset in
+                                    Button(preset.name) { store.selectCompingPreset(index) }
+                                }
+                            } label: {
+                                Label("Load a rhythm preset", systemImage: "sparkles")
+                                    .frame(maxWidth: .infinity, minHeight: 44)
+                            }
+                            .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.brass))
+                        }
+                    }
+
+                    JazzPanel(accent: JazzTheme.emerald) {
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack {
+                                JazzSectionLabel(number: "09", title: "Sixteenth-note grid", tint: JazzTheme.emerald)
+                                Spacer()
+                                Text("tap: off → soft → medium → loud")
+                                    .font(.system(size: JazzTheme.size(8.5), weight: .semibold, design: .monospaced))
+                                    .foregroundStyle(JazzTheme.secondary)
+                            }
+                            LazyVGrid(columns: columns, spacing: 8) {
+                                ForEach(store.compingRecipe.slots.indices, id: \.self) { index in
+                                    let level = store.compingRecipe.slots[index]
+                                    Button { store.cycleCompingSlot(index) } label: {
+                                        VStack(spacing: 3) {
+                                            Text("\(index + 1)")
+                                                .font(.system(size: JazzTheme.size(9), weight: .bold, design: .monospaced))
+                                            Image(systemName: level == 0 ? "minus" : "speaker.wave.\(level).fill")
+                                                .font(.system(size: JazzTheme.size(16), weight: .bold))
+                                        }
+                                        .frame(maxWidth: .infinity, minHeight: 50)
+                                        .foregroundStyle(level == 0 ? JazzTheme.secondary : JazzTheme.background)
+                                        .background(
+                                            level == 0 ? JazzTheme.raised : slotColor(level),
+                                            in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        )
+                                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(JazzTheme.emerald.opacity(level == 0 ? 0.25 : 0.72)))
+                                    }
+                                    .buttonStyle(.plain)
+                                    .accessibilityIdentifier("comping-slot-\(index + 1)")
+                                    .accessibilityLabel("Step \(index + 1)")
+                                    .accessibilityValue(levelName(level))
+                                    .accessibilityHint("Cycles through off, soft, medium, and loud")
+                                }
+                            }
+                            Picker("Gate", selection: Binding(
+                                get: { store.compingRecipe.gateTicks },
+                                set: store.setCompingGate
+                            )) {
+                                Text("1/32").tag(120)
+                                Text("1/16").tag(240)
+                                Text("1/8").tag(480)
+                            }
+                            .pickerStyle(.segmented)
+                            .accessibilityIdentifier("comping-gate")
+                            Text("Gate clips at the next authored attack, chord boundary, and passage end. Chord arrivals never invent an extra attack.")
+                                .font(.system(size: JazzTheme.size(10.5), design: .rounded))
+                                .foregroundStyle(JazzTheme.secondary)
+                        }
+                    }
+
+                    JazzPanel(accent: JazzTheme.cyan) {
+                        VStack(alignment: .leading, spacing: 11) {
+                            JazzSectionLabel(number: "10", title: "Hear and export", tint: JazzTheme.cyan)
+                            compingStatus
+                            HStack(spacing: 10) {
+                                Button { store.auditionAuthoredComping() } label: {
+                                    Label("Hear", systemImage: "speaker.wave.2.fill")
+                                        .frame(maxWidth: .infinity, minHeight: 44)
+                                }
+                                .buttonStyle(JazzPrimaryButtonStyle(tint: JazzTheme.cyan))
+                                .accessibilityIdentifier("hear-authored-comping")
+                                Button { store.audio.stopPreview() } label: {
+                                    Label("Stop", systemImage: "stop.fill")
+                                        .frame(maxWidth: .infinity, minHeight: 44)
+                                }
+                                .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.coral))
+                            }
+                            if let midiURL {
+                                ShareLink(item: midiURL) {
+                                    Label("Share exact rhythm MIDI", systemImage: "square.and.arrow.up")
+                                        .frame(maxWidth: .infinity, minHeight: 44)
+                                }
+                                .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.brass))
+                                .accessibilityIdentifier("export-comping-midi")
+                            }
+                            HStack(spacing: 10) {
+                                if let recipeURL {
+                                ShareLink(item: recipeURL) {
+                                    Label("Share recipe", systemImage: "doc.badge.arrow.up")
+                                        .frame(maxWidth: .infinity, minHeight: 44)
+                                }
+                                .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.emerald))
+                                .accessibilityIdentifier("export-comping-recipe")
+                            }
+                            Button { importingRecipe = true } label: {
+                                    Label("Import recipe", systemImage: "doc.badge.plus")
+                                        .frame(maxWidth: .infinity, minHeight: 44)
+                            }
+                            .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.violet))
+                            .accessibilityIdentifier("import-comping-recipe")
+                            }
+                            Text("Recipe files are separate from chart backups and shared links. MIDI contains only these comp attacks with literal manual/frozen pitches and deliberate doublings preserved.")
+                                .font(.system(size: JazzTheme.size(10.5), design: .rounded))
+                                .foregroundStyle(JazzTheme.secondary)
+                        }
+                    }
+                }
+                .frame(maxWidth: 590)
+                .padding(18)
+                .frame(maxWidth: .infinity)
+            }
+            .scrollIndicators(.hidden)
+        }
+        .navigationTitle("Comp rhythm")
+        .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+        .task(id: exportIdentity) { refreshExports() }
+        .onDisappear { store.audio.stopPreview() }
+        .fileImporter(isPresented: $importingRecipe, allowedContentTypes: [.json], allowsMultipleSelection: false) { result in
+            guard case let .success(urls) = result, let url = urls.first else { return }
+            Task { await store.importAuthoredCompingRecipe(url) }
+        }
+    }
+
+    @ViewBuilder private var compingStatus: some View {
+        if let result = try? store.authoredCompingResult() {
+            Label(
+                "Ready · \(result.events.count) attacks · \(result.pitchOccurrences) note occurrences",
+                systemImage: "checkmark.circle.fill"
+            )
+            .foregroundStyle(JazzTheme.emerald)
+            .accessibilityIdentifier("comping-ready")
+        } else {
+            Label(compingIssue, systemImage: "exclamationmark.triangle.fill")
+                .foregroundStyle(JazzTheme.coral)
+                .accessibilityIdentifier("comping-refusal")
+        }
+    }
+
+    private var compingIssue: String {
+        do {
+            _ = try store.authoredCompingResult()
+            return "Ready"
+        } catch {
+            return error.localizedDescription
+        }
+    }
+
+    private var exportIdentity: String {
+        store.compingRecipe.slots.map(String.init).joined(separator: ".")
+            + "-\(store.compingRecipe.gateTicks)-\(store.selectedCompingSectionID?.uuidString ?? "all")-\(store.revision)"
+    }
+
+    private func refreshExports() {
+        recipeURL = store.authoredCompingRecipeURL()
+        midiURL = (try? store.authoredCompingResult()) == nil
+            ? nil
+            : store.authoredCompingMIDIURL()
+    }
+
+    private func levelName(_ level: Int) -> String {
+        ["Off", "Soft", "Medium", "Loud"][min(3, max(0, level))]
+    }
+
+    private func slotColor(_ level: Int) -> Color {
+        switch level {
+        case 1: JazzTheme.emerald.opacity(0.68)
+        case 2: JazzTheme.cyan.opacity(0.84)
+        default: JazzTheme.brass
         }
     }
 }
