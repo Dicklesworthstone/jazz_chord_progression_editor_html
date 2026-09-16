@@ -209,7 +209,8 @@ final class FrankenJazzUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["comping-ready"].waitForExistence(timeout: 3))
 
         let hear = app.buttons["hear-authored-comping"]
-        XCTAssertTrue(hear.exists)
+        for _ in 0..<8 where !hear.isHittable { app.swipeUp() }
+        XCTAssertTrue(hear.waitForExistence(timeout: 3))
         XCTAssertTrue(hear.isHittable)
         XCTAssertGreaterThanOrEqual(hear.frame.height, 44)
         // Do not tap Hear: this DSR lane must remain silent.
