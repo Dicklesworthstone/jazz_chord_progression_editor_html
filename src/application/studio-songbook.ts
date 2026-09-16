@@ -21,7 +21,12 @@ export function createStudioSongbook(ports:Readonly<{readDocument:()=>ValidatedD
  const close=():void=>{clear();text="";state="idle";message="Songbook preview closed.";notify();};
  ports.subscribeSource(()=>{if(binding===null||same())return;clear();state="stale";message="The chart changed. Preview the source again.";notify();});
  return Object.freeze({read:()=>Object.freeze({state,text,result,acknowledged,message,tempo:ports.readDocument().tempoBpm}),subscribe:(listener:()=>void)=>{listeners.add(listener);return()=>{listeners.delete(listener);};},close,
-  setText:(value:string)=>{clear();text=value.length<=16384?value:"";state=value.length<=16384?"idle":"refused";message=value.length<=16384?"Source changed. Preview before adding.":"Source exceeds 16,384 characters.";notify();},
+  setText:(value:string)=>{
+   // A multiline insertion can emit further input events after the refused
+   // value has been cleared. Empty no-ops must not erase that refusal.
+   if(state==="refused"&&text===""&&value==="")return;
+   clear();text=value.length<=16384?value:"";state=value.length<=16384?"idle":"refused";message=value.length<=16384?"Source changed. Preview before adding.":"Source exceeds 16,384 characters.";notify();
+  },
   preview:()=>{clear();capture();show();},
   previewFile:async(file)=>{clear();text="";capture();const token=generation;
    if(!Number.isSafeInteger(file.size)||file.size<0||file.size>16384){state="refused";message="Choose a UTF-8 songbook file of at most 16,384 bytes.";notify();return;}

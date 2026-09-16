@@ -382,14 +382,23 @@ for (const instrument of ["organ", "concert-grand"] as const) test(`M1-E2E-004 $
     await expect(audition).toHaveAttribute("aria-pressed", "true");
     await expect(audition).toContainText("Stop the audition");
     await expect.poll(() => page.evaluate(() => window.u5NativeSourceCounts?.().started ?? 0)).toBeGreaterThan(0);
+    ledger.log("queued", await page.evaluate(() => window.u5NativeSourceCounts?.()));
+    // Native start() calls may precede the device clock starting. Require
+    // actual sound before measuring musical motion; queued future sources
+    // alone are not evidence that the audition is playing.
+    await expect.poll(() => page.evaluate(() => window.u5NativeSourceCounts?.().sounding ?? 0)).toBeGreaterThan(0);
     const firstSources = await page.evaluate(() => window.u5NativeSourceCounts?.());
     if (firstSources === undefined) throw new Error("NATIVE_SOURCE_OBSERVER_MISSING");
+    const firstAudioTime = await page.evaluate(() => window.u5NativeSourceClockSeconds?.());
+    if (firstAudioTime == null) throw new Error("NATIVE_AUDIO_CLOCK_MISSING");
     // At120 BPM the matched medium-swing groove schedules within the first
     // two-second bar. A fixed one-sonority-per-bar audition cannot satisfy this.
-    await page.waitForTimeout(700);
+    // Measure the same 700ms in musical playback time. Device-clock stalls
+    // must not turn a wall-clock sleep into evidence about groove timing.
+    await expect.poll(() => page.evaluate(() => window.u5NativeSourceClockSeconds?.() ?? -1), { intervals: [20] }).toBeGreaterThanOrEqual(firstAudioTime + 0.7);
     const grooveSources = await page.evaluate(() => window.u5NativeSourceCounts?.());
     expect(grooveSources?.started).toBeGreaterThan(firstSources.started);
-    ledger.log("started", {firstSources,grooveSources});
+    ledger.log("started", {firstSources,grooveSources,firstAudioTime,audioTime:await page.evaluate(() => window.u5NativeSourceClockSeconds?.())});
 
     /* A second press cancels immediately. */
     await audition.click();

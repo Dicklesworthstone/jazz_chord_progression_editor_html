@@ -248,6 +248,8 @@ function ResponsiveStaleOwnerHarness() {
     onMidiImportCommit: () => undefined,
     onMidiImportDiscard: () => undefined,
     onMidiImportAudition: () => undefined,
+    onMidiImportReviewSource: () => undefined,
+    onMidiImportPreviewSource: () => undefined,
   onMidiImportOverridesChange: () => undefined,
     onOpenMidiExport: () => undefined,
     onMidiExportGenerate: () => undefined,

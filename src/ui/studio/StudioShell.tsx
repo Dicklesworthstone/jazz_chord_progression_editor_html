@@ -598,6 +598,8 @@ export function StudioShell({
               onMidiImportCommit={shellCallbacks.onMidiImportCommit}
               onMidiImportDiscard={callbacks.onMidiImportDiscard}
               onMidiImportAudition={callbacks.onMidiImportAudition}
+              onMidiImportReviewSource={callbacks.onMidiImportReviewSource}
+              onMidiImportPreviewSource={callbacks.onMidiImportPreviewSource}
               onMidiImportOverridesChange={callbacks.onMidiImportOverridesChange}
               onInsertRecoveredChord={callbacks.onInsertRecoveredChord}
               onRecoveryAcknowledgeChange={callbacks.onRecoveryAcknowledgeChange}
@@ -968,6 +970,8 @@ export function StudioShell({
                   onMidiImportCommit={shellCallbacks.onMidiImportCommit}
                   onMidiImportDiscard={callbacks.onMidiImportDiscard}
                   onMidiImportAudition={callbacks.onMidiImportAudition}
+              onMidiImportReviewSource={callbacks.onMidiImportReviewSource}
+              onMidiImportPreviewSource={callbacks.onMidiImportPreviewSource}
                   onMidiImportOverridesChange={callbacks.onMidiImportOverridesChange}
                   onInsertRecoveredChord={callbacks.onInsertRecoveredChord}
                   onRecoveryAcknowledgeChange={

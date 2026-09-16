@@ -20,6 +20,7 @@ import {
   makeChordEvent,
   makeBeatPosition,
   makeBeatRange,
+  MIDI_PPQ,
   makeInstrumentId,
   makeKeyMode,
   makeMeter,
@@ -938,6 +939,12 @@ export interface StudioController {
   readonly releasePreviewPitches: () => Promise<StudioInspectorResult<void>>;
   readonly previewPlaybackPlan: (plan: PlaybackPlan, gesture: StudioAudioGesture) => Promise<StudioInspectorResult<void>>;
   readonly readPreviewPlaybackStatus: () => TransportPreviewStatus;
+  /** Import owns its source pitches and groove; stale releases spare newer previews. */
+  readonly midiImportPreview: Readonly<{
+    pitches: StudioController["previewPitches"];
+    plan: StudioController["previewPlaybackPlan"];
+    release: StudioController["releasePreviewPitches"];
+  }>;
   /**
    * Display-only live playhead label in the exact-beat format the transport
    * view already uses. The UI's animation frame reads this while the transport
@@ -4818,7 +4825,19 @@ function makeStudioComposition(
    * for playing/paused runs, so ready-state positioning is presentation
    * intent applied at the next play dispatch, nothing more.
    */
-  let pendingRunStartBeat: BeatPosition | null = null;
+  let pendingRunStart: Readonly<{
+    beat: BeatPosition;
+    document: AppState["document"];
+    revision: number;
+    notificationSequence: number;
+  }> | null = null;
+  const readPendingRunStartBeat = (): BeatPosition | null => {
+    const pending = pendingRunStart;
+    return pending !== null && pending.document === state.document &&
+      pending.revision === state.revision &&
+      pending.notificationSequence === state.transport.notificationSequence
+      ? pending.beat : null;
+  };
   let previewInitialization: ReturnType<StudioAudioPort["initialize"]> | null =
     null;
 
@@ -5475,8 +5494,8 @@ function makeStudioComposition(
     }
     /* U4 ready-state scrub: an exact chosen start position rides this Play
      * and is consumed by it (presentation intent, never A0 state). */
-    const pendingStart = pendingRunStartBeat;
-    pendingRunStartBeat = null;
+    const pendingStart = readPendingRunStartBeat();
+    pendingRunStart = null;
     const commandRequestId = nextTransportRequestId();
     const startBeat = pendingStart ?? state.transport.startBeat;
     const expectation = expectTransport(
@@ -5792,7 +5811,7 @@ function makeStudioComposition(
       "stopping",
       state.transport.startBeat,
     );
-    pendingRunStartBeat = null;
+    pendingRunStart = null;
     instrumentBoundaryNotice = null;
     if (!expectation.ok) return expectation;
     const documentId = state.document.id;
@@ -5880,7 +5899,7 @@ function makeStudioComposition(
         "This build has no audio output wired.",
       );
     }
-    pendingRunStartBeat = null;
+    pendingRunStart = null;
     instrumentBoundaryNotice = null;
     const status = state.transport.status;
     if (status === "ready" || status === "unavailable" || status === "failed") {
@@ -6001,10 +6020,10 @@ function makeStudioComposition(
     | "next-play"
     | null => instrumentBoundaryNotice;
 
-  const readPendingRunStartBeats = (): number | null =>
-    pendingRunStartBeat === null
-      ? null
-      : pendingRunStartBeat.numerator / pendingRunStartBeat.denominator;
+  const readPendingRunStartBeats = (): number | null => {
+    const beat = readPendingRunStartBeat();
+    return beat === null ? null : beat.numerator / beat.denominator;
+  };
 
   /**
    * U4 exact seek (l3a.12.2). Playing/paused dispatches the X1 seek; ready
@@ -6048,7 +6067,8 @@ function makeStudioComposition(
           "Write at least one chord before seeking.",
         );
       }
-      pendingRunStartBeat = beat;
+      pendingRunStart = Object.freeze({ beat, document: state.document, revision: state.revision,
+        notificationSequence: state.transport.notificationSequence });
       notify();
       return apply("seek-to-beat", (current) =>
         Object.freeze({
@@ -6096,7 +6116,7 @@ function makeStudioComposition(
     if (key === "Home") return seekToBeat(zero.value);
     if (key === "End") return seekToBeat(total);
     const origin = status === "ready"
-      ? (pendingRunStartBeat ?? state.transport.playhead)
+      ? (readPendingRunStartBeat() ?? state.transport.playhead)
       : state.transport.playhead;
     const current = compareBeatValues(origin, total) > 0 ? total : origin;
     const pageStep = key === "PageUp" || key === "PageDown";
@@ -6257,6 +6277,12 @@ function makeStudioComposition(
       : formatExactBeatLabel(audioPort.readPlayheadBeat());
 
   let playAlongCache: Readonly<{ document: AppState["document"]; timeline: ReturnType<typeof buildPlayAlongTimeline> }> | null = null;
+  let playAlongLoopCache: Readonly<{
+    document: AppState["document"];
+    sectionId: string | null;
+    enabled: boolean;
+    loop: BeatRange | null;
+  }> | null = null;
   const readPlayAlong = (): StudioPlayAlongView => {
     if (playAlongCache === null || playAlongCache.document !== state.document) {
       playAlongCache = { document: state.document, timeline: buildPlayAlongTimeline(state.document) };
@@ -6272,9 +6298,22 @@ function makeStudioComposition(
       return readPlayAlongTimeline(timeline, Number.NaN, null,
         state.transport.status === "failed" ? "Playback unavailable" : "Press Play to follow the chart");
     }
+    if (service.state === "ready") {
+      // This is next-Play intent, not a claim that the audio clock has moved.
+      // Cache only when source or loop intent changes; never compile per poll.
+      if (playAlongLoopCache === null || playAlongLoopCache.document !== state.document ||
+          playAlongLoopCache.sectionId !== loopSectionId || playAlongLoopCache.enabled !== loopEnabled) {
+        const end = makeBeatPosition({ numerator: timeline.spans.at(-1)?.end ?? 0, denominator: MIDI_PPQ });
+        const loop = loopSectionId !== null ? studioSectionLoopRange(state.document, loopSectionId)
+          : loopEnabled && end.ok ? wholeChartLoop({ totalBeats: end.value }) : null;
+        playAlongLoopCache = { document: state.document, sectionId: loopSectionId, enabled: loopEnabled, loop };
+      }
+      const beat = readPendingRunStartBeat() ?? state.transport.startBeat;
+      return readPlayAlongTimeline(timeline, beat.numerator / beat.denominator, playAlongLoopCache.loop, "Starting position");
+    }
     const beat = audioPort.readPlayheadBeat();
     return readPlayAlongTimeline(timeline, beat.numerator / beat.denominator, service.loop,
-      service.state === "paused" ? "Paused" : service.state === "playing" ? "Play along" : "Starting position");
+      service.state === "paused" ? "Paused" : "Play along");
   };
 
   let lastPlanPitchClasses: Map<string, readonly number[]> | null = null;
@@ -7426,7 +7465,30 @@ function makeStudioComposition(
       ?releasePreviewPitches():Promise.resolve({ok:true,value:undefined});
   };
 
+  let midiImportPreviewGeneration: number | null = null;
+  const midiImportPreview: StudioController["midiImportPreview"] = Object.freeze({
+    pitches: (pitches, gesture) => {
+      const expected = previewOrdinal + 1;
+      const result = previewPitches(pitches, gesture);
+      if (result.ok && pitchSetPreviewGeneration === expected) midiImportPreviewGeneration = expected;
+      return result;
+    },
+    plan: (plan, gesture) => {
+      const expected = previewOrdinal + 1;
+      const pending = previewPlaybackPlan(plan, gesture);
+      if (pitchSetPreviewGeneration === expected) midiImportPreviewGeneration = expected;
+      return pending;
+    },
+    release: () => {
+      const generation = midiImportPreviewGeneration;
+      midiImportPreviewGeneration = null;
+      return generation !== null && generation === pitchSetPreviewGeneration && generation === previewOrdinal
+        ? releasePreviewPitches() : Promise.resolve(Object.freeze({ ok: true, value: undefined }));
+    },
+  });
+
   const controller: StudioController = Object.freeze({
+    midiImportPreview,
     acknowledgeFocus,
     declareMeasureCompletion,
     getSnapshot: () => snapshot,

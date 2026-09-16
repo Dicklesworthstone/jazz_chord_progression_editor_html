@@ -47,6 +47,8 @@ function RailFocusHarness() {
       onMidiImportCommit: () => undefined,
       onMidiImportDiscard: () => undefined,
       onMidiImportAudition: () => undefined,
+    onMidiImportReviewSource: () => undefined,
+    onMidiImportPreviewSource: () => undefined,
       onMidiImportOverridesChange: () => undefined,
       onInsertRecoveredChord: () => undefined,
       onQuickEntryClear: () => undefined,

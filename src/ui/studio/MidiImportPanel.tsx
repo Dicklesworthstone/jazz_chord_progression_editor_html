@@ -1,3 +1,5 @@
+import { useEffect, useRef } from "preact/hooks";
+import type { MidiImportSpanKey } from "../../application/runtime";
 import { Button } from "../primitives";
 import type { StudioMidiImportView } from "./studio-contract";
 
@@ -30,6 +32,8 @@ export type MidiImportPanelProps = Readonly<{
   onDiscard: () => void;
   /** Toggle the bounded pre-Add audition of the file's own first bars. */
   onAudition: () => void;
+  onReviewSource: (span: MidiImportSpanKey | null) => void;
+  onPreviewSource: (choice: number | "all" | null) => void;
   /** Replace the absolute M1-OVR override set; the app re-plans atomically. */
   onOverridesChange: (next: Readonly<{
     excludedTrackIndices: readonly number[];
@@ -55,6 +59,8 @@ export function MidiImportPanel({
   onCommit,
   onDiscard,
   onAudition,
+  onReviewSource,
+  onPreviewSource,
   onOverridesChange,
   onOpenCommandLane,
 }: MidiImportPanelProps) {
@@ -63,6 +69,12 @@ export function MidiImportPanel({
    * next override set from its own view state; the application re-plans
    * on the retained bytes and swaps the preview atomically (doc §12).
    */
+  const reviewRef = useRef<HTMLElement>(null);
+  const sourceTrigger = useRef<HTMLButtonElement | null>(null);
+  useEffect(() => {
+    const node = reviewRef.current;
+    if (view.sourceReview?.ok && node !== null && node.getClientRects().length > 0) node.focus();
+  }, [view.sourceReview]);
   const overrides = view.overrides;
   const currentOverrides = () => ({
     excludedTrackIndices:
@@ -424,6 +436,7 @@ export function MidiImportPanel({
                       <label>
                         <span>{span.label}</span>
                         <select
+                          disabled={span.options.length === 0}
                           data-testid="midi-import-alternative-picker"
                           id={`studio-midi-import-alt-${String(span.measureIndex)}-${String(span.startTick)}-${context}`}
                           onChange={(event) => {
@@ -457,6 +470,7 @@ export function MidiImportPanel({
                           }}
                           value={String(span.chosenOrdinal)}
                         >
+                          {span.options.length === 0 ? <option value="0">No nameable chord</option> : null}
                           {span.options.map((option, ordinal) => (
                             <option key={option} value={String(ordinal)}>
                               {option}
@@ -464,9 +478,51 @@ export function MidiImportPanel({
                           ))}
                         </select>
                       </label>
+                      <button type="button" class="ui-button" data-variant="ghost"
+                        data-testid="midi-import-review-source"
+                        aria-label={`Review source notes for ${span.label}`}
+                        onClick={(event) => { sourceTrigger.current = event.currentTarget; onReviewSource({ measureIndex: span.measureIndex, startTick: span.startTick }); }}>
+                        Review source notes
+                      </button>
                     </li>
                   ))}
                 </ul>
+              )}
+              {(overrides.omittedSpanCount ?? 0) > 0 ? <p class="studio-supporting-copy">Showing the first 64 passages; {overrides.omittedSpanCount} more are omitted here.</p> : null}
+              {view.sourceReview == null ? null : !view.sourceReview.ok ?
+                <p role="status">{view.sourceReview.message}</p> : (
+                <section class="studio-midi-import__source-review" data-testid="midi-import-source-review"
+                  aria-label="Source note review" ref={reviewRef} tabIndex={-1}>
+                  <h4>Source notes · Bar {view.sourceReview.review.span.measureIndex + 1}</h4>
+                  <p class="studio-supporting-copy">{view.sourceReview.review.occurrenceCount} note occurrences across {view.sourceReview.review.trackCount} {view.sourceReview.review.trackCount === 1 ? "track" : "tracks"}; passage ticks {view.sourceReview.review.span.startTick}–{view.sourceReview.review.endTick}, {view.sourceReview.review.ppq} ticks per quarter note.</p>
+                  {view.sourceReview.review.repaired ? <p>These notes come from the repaired MIDI. See the repair account above for what changed.</p> : null}
+                  <p class="studio-supporting-copy">Preview individual pitches or hear them together with your current instrument. Original timing, dynamics and pedals are not reproduced. MIDI has no enharmonic spelling; these names label its exact keys and octaves.</p>
+                  <div class="studio-midi-import__source-actions">
+                    <button type="button" class="ui-button" data-variant="primary" data-testid="midi-import-source-all"
+                      disabled={view.sourceReview.review.pitches.length === 0 || view.sourceReview.review.pitches.length > 16}
+                      onClick={() => { onPreviewSource("all"); }}>Preview pitches together</button>
+                    <button type="button" class="ui-button" data-variant="ghost" data-testid="midi-import-source-stop"
+                      onClick={() => { onPreviewSource(null); }}>Stop source preview</button>
+                    <button type="button" class="ui-button" data-variant="ghost"
+                      onClick={() => { onReviewSource(null); sourceTrigger.current?.focus(); }}>Close source review</button>
+                  </div>
+                  {view.sourceReview.review.pitches.length > 16 ? <p>More than 16 distinct pitches: preview individual notes below. No pitches have been dropped.</p> : null}
+                  <div class="studio-midi-import__source-actions">
+                    {view.sourceReview.review.pitches.map(pitch => <button key={pitch.midiPitch} type="button"
+                      class="ui-button" data-variant="ghost" data-testid="midi-import-source-pitch"
+                      onClick={() => { onPreviewSource(pitch.midiPitch); }}>{pitch.label}</button>)}
+                  </div>
+                  <details>
+                    <summary>Exact note occurrences ({view.sourceReview.review.occurrenceCount})</summary>
+                    <p class="studio-supporting-copy">Included pitched tracks only. Short context notes are retained here even when the harmonic detector ignores them. Original on/off ticks may cross this passage’s boundaries.</p>
+                    {view.sourceReview.review.truncatedCount > 0 ? <p>Showing 64 occurrences in source track order; {view.sourceReview.review.truncatedCount} more remain in the file. All distinct pitches appear above.</p> : null}
+                    <ul>
+                      {view.sourceReview.review.notes.map((note, ordinal) => <li key={ordinal}>
+                        {note.label} · Track {note.trackIndex + 1}: {note.trackName} · channel {note.channel + 1} · ticks {note.onTick}–{note.offTick} · velocity {note.velocity}{note.contributes ? "" : " · short context note; ignored by harmony"}
+                      </li>)}
+                    </ul>
+                  </details>
+                </section>
               )}
               <label class="studio-midi-import__override-groove">
                 <span>Groove</span>

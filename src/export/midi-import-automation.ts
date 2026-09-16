@@ -345,13 +345,14 @@ export function computeAutomationSpans(
   if (!boundsResult.ok) return boundsResult;
   const spans: M1Span[] = [];
   const emit = (
+    activeTracks: readonly M1RoleTrack[],
     measureIndex: number,
     depth: number,
     startTick: number,
     endTick: number,
   ): void => {
     const { mass, contributing } = spanMass(
-      tracks,
+      activeTracks,
       minSounding,
       startTick,
       endTick,
@@ -362,10 +363,10 @@ export function computeAutomationSpans(
       const mid = startTick + Math.ceil((endTick - startTick) / 2);
       if (mid > startTick && mid < endTick) {
         const left = presentClasses(
-          spanMass(tracks, minSounding, startTick, mid).mass,
+          spanMass(activeTracks, minSounding, startTick, mid).mass,
         );
         const right = presentClasses(
-          spanMass(tracks, minSounding, mid, endTick).mass,
+          spanMass(activeTracks, minSounding, mid, endTick).mass,
         );
         /*
          * A silent half contributes the empty set: two chords in the first
@@ -379,8 +380,8 @@ export function computeAutomationSpans(
           if (left.includes(pc) !== right.includes(pc)) difference += 1;
         }
         if (difference >= M1_SEGMENT_SPLIT_MIN_DIFFERENCE) {
-          emit(measureIndex, depth + 1, startTick, mid);
-          emit(measureIndex, depth + 1, mid, endTick);
+          emit(activeTracks, measureIndex, depth + 1, startTick, mid);
+          emit(activeTracks, measureIndex, depth + 1, mid, endTick);
           return;
         }
       }
@@ -406,7 +407,14 @@ export function computeAutomationSpans(
     );
   };
   for (const bound of boundsResult.bounds) {
-    emit(bound.measureIndex, 0, bound.startTick, bound.endTick);
+    // Each recursive span lies within this bar. Filter once so its mass
+    // probes do not repeatedly scan every note of a long arrangement.
+    // Stable filtering preserves occurrence order and boundary-crossing notes;
+    // no sorted-input assumption, quantization or grace-note decision is added.
+    const activeTracks = tracks.map(track => ({ role: track.role,
+      notes: track.notes.filter(note => note.onTick < bound.endTick && note.offTick > bound.startTick),
+    }));
+    emit(activeTracks, bound.measureIndex, 0, bound.startTick, bound.endTick);
   }
   return { ok: true, spans: Object.freeze(spans) };
 }

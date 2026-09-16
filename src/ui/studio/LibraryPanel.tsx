@@ -2,7 +2,7 @@ import { diagnosticProse } from "./entry-diagnostics";
 import { EntryRepairControls, useEntryRepair } from "./EntryRepair";
 import { useState } from "preact/hooks";
 
-import { PROGRESSION_LIBRARY, STARTER_CHART } from "../../application/runtime";
+import { PROGRESSION_LIBRARY, STARTER_CHART, type MidiImportSpanKey } from "../../application/runtime";
 import { MidiImportPanel } from "./MidiImportPanel";
 import {
   Button,
@@ -68,6 +68,8 @@ export type LibraryPanelContentProps = Readonly<{
   onMidiImportCommit: () => void;
   onMidiImportDiscard: () => void;
   onMidiImportAudition: () => void;
+  onMidiImportReviewSource: (span: MidiImportSpanKey | null) => void;
+  onMidiImportPreviewSource: (choice: number | "all" | null) => void;
   onMidiImportOverridesChange: Parameters<
     typeof MidiImportPanel
   >[0]["onOverridesChange"];
@@ -688,6 +690,8 @@ export function LibraryPanelContent({
   onMidiImportCommit,
   onMidiImportDiscard,
   onMidiImportAudition,
+  onMidiImportReviewSource,
+  onMidiImportPreviewSource,
   onMidiImportOverridesChange,
   onQuickEntryDraftChange,
   onQuickEntryInsert,
@@ -735,6 +739,8 @@ export function LibraryPanelContent({
           onCommit={onMidiImportCommit}
           onDiscard={onMidiImportDiscard}
           onAudition={onMidiImportAudition}
+          onReviewSource={onMidiImportReviewSource}
+          onPreviewSource={onMidiImportPreviewSource}
           onOverridesChange={onMidiImportOverridesChange}
           onOpenCommandLane={onOpenCommandLane}
           view={midiImport}
@@ -902,6 +908,8 @@ export type LibraryPanelProps = Readonly<{
   onMidiImportCommit: () => void;
   onMidiImportDiscard: () => void;
   onMidiImportAudition: () => void;
+  onMidiImportReviewSource: (span: MidiImportSpanKey | null) => void;
+  onMidiImportPreviewSource: (choice: number | "all" | null) => void;
   onMidiImportOverridesChange: Parameters<
     typeof MidiImportPanel
   >[0]["onOverridesChange"];
@@ -931,6 +939,8 @@ export function LibraryPanel({
   onMidiImportCommit,
   onMidiImportDiscard,
   onMidiImportAudition,
+  onMidiImportReviewSource,
+  onMidiImportPreviewSource,
   onMidiImportOverridesChange,
   onQuickEntryDraftChange,
   onQuickEntryInsert,
@@ -971,6 +981,8 @@ export function LibraryPanel({
             onMidiImportCommit={onMidiImportCommit}
             onMidiImportDiscard={onMidiImportDiscard}
             onMidiImportAudition={onMidiImportAudition}
+            onMidiImportReviewSource={onMidiImportReviewSource}
+            onMidiImportPreviewSource={onMidiImportPreviewSource}
             onMidiImportOverridesChange={onMidiImportOverridesChange}
             onInsertRecoveredChord={onInsertRecoveredChord}
             onOpenCommandLane={onOpenCommandLane}
