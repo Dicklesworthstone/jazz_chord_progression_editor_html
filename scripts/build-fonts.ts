@@ -1,5 +1,6 @@
 import { resolve } from "node:path";
 import { atomicWrite, sha256Hex } from "./foundation-io";
+import { PRINT_FONT_DATA, PRINT_FONT_LICENSE, PRINT_FONT_SHA256 } from "../src/export/print-font";
 
 /**
  * Regenerates `src/styles/fonts.css` from the checked-in font binaries under
@@ -8,15 +9,16 @@ import { atomicWrite, sha256Hex } from "./foundation-io";
  * payloads inside a generated stylesheet. Like the wasm and piano payloads,
  * the generated file is committed; `--check` proves it matches its inputs.
  *
- * Both faces are variable fonts subset to the latin range by upstream Google
- * Fonts static serving; the checked-in bytes are the single source of truth.
+ * The UI faces are variable fonts subset to the latin range by upstream
+ * Google Fonts. Printing uses a derived static weight-400 Archivo face so
+ * the preview and exported SVG share the exact measured font instance.
  */
 export type EmbeddedFontFace = {
   /** Stable asset id recorded in dist/licenses.json. */
   id: string;
-  family: "Archivo" | "Literata";
+  family: "Archivo" | "Literata" | "JazzChordsPrint";
   style: "normal" | "italic";
-  /** CSS font-weight range served by the variable file. */
+  /** CSS font weight or range served by the file. */
   weightRange: string;
   file: string;
   license: string;
@@ -36,6 +38,19 @@ export const EMBEDDED_FONT_FACES: readonly EmbeddedFontFace[] = Object.freeze([
     source:
       "Archivo variable (latin subset), The Archivo Project Authors, " +
       "https://github.com/Omnibus-Type/Archivo via Google Fonts",
+  },
+  {
+    id: "archivo-print-regular-latin",
+    family: "JazzChordsPrint",
+    style: "normal",
+    weightRange: "400",
+    file: "archivo-print-400.woff2",
+    license: "OFL-1.1",
+    licenseFile: "assets/fonts/OFL-archivo.txt",
+    source:
+      "Archivo static weight 400, derived from archivo-latin.woff2 by " +
+      "scripts/derive-print-font.py; The Archivo Project Authors, " +
+      "https://github.com/Omnibus-Type/Archivo",
   },
   {
     id: "literata-variable-latin",
@@ -83,6 +98,13 @@ export async function generateFontsCss(root: string): Promise<string> {
       throw new Error(`FONT_ASSET_FORMAT: ${face.file} is not a woff2 file.`);
     }
     const base64 = Buffer.from(bytes).toString("base64");
+    if (face.family === "JazzChordsPrint" && (
+      PRINT_FONT_DATA !== `data:font/woff2;base64,${base64}` ||
+      PRINT_FONT_SHA256 !== await sha256Hex(bytes) ||
+      PRINT_FONT_LICENSE !== await Bun.file(resolve(root, face.licenseFile)).text()
+    )) {
+      throw new Error("PRINT_FONT_DRIFT: preview, SVG and licensed asset must share exact bytes; run scripts/derive-print-font.py.");
+    }
     blocks.push(
       [
         `/* ${face.id}: sha256 ${await sha256Hex(bytes)}, ${String(bytes.byteLength)} bytes, ${face.license} */`,

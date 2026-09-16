@@ -37,6 +37,29 @@ measurements must fit the declared positions. Downloaded SVG embeds the same
 WOFF2 plus its complete OFL notice; the in-app preview uses the already bundled
 font. No external resource or popup is required.
 
+The exact print face is `assets/fonts/archivo-print-400.woff2`, a static
+weight-400 instance of the bundled Archivo. Ordinary UI typography continues
+to use the variable face. `scripts/derive-print-font.py` (FontTools 4.61.1 with
+Brotli, invoked through RCH) regenerates this face and its embedded SVG payload
+and advance table; `--check` compares both outputs byte-for-byte. Then run
+`bun scripts/build-fonts.ts` through RCH to regenerate the preview stylesheet.
+Normal Bun builds need no Python packages and reject preview/SVG/font/license
+drift. The input/output SHA-256 values are pinned in the derivation script.
+
+The independent `font-advances.json` fixture was read directly by FreeType
+`FT_Get_Advance` with NO_SCALE/NO_HINTING/NO_BITMAP at weight 400, for all
+200 existing cmap entries (soft hyphen remains refused). Variable weight 400
+and the static instance have identical advances. The previous advance table
+used the variable default instead: W was .954 em instead of .924 em. An A4
+title of 33 W characters is 182.952 mm and fits the 184 mm title limit; 34 W
+characters must still refuse. The focused and native-browser tests preserve
+this positive/near-miss pair and compare preview/SVG widths against FreeType
+within .1 mm, below the existing 1 mm layout slack. Both SVG styles request
+`text-rendering: geometricPrecision`; inherited `optimizeLegibility` otherwise
+rounds small scaled font sizes and makes preview widths viewport-dependent.
+No wrapping fixture was
+generated from production output.
+
 ## Work, bytes and authority
 
 Admit 1-64 sections, 1-256 measures, at most 1024 events, 512 code points per
