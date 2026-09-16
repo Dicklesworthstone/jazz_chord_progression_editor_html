@@ -14,6 +14,202 @@ struct JazzPerformanceEvent: Equatable, Sendable {
     var velocity: Int
 }
 
+struct JazzCompingRecipe: Codable, Equatable, Sendable {
+    static let schema = "changes.comp-recipe.v1"
+    static let allowedGateTicks = [120, 240, 480]
+
+    var schema: String
+    var slots: [Int]
+    var gateTicks: Int
+
+    init(slots: [Int], gateTicks: Int = 240) {
+        self.schema = Self.schema
+        self.slots = slots
+        self.gateTicks = gateTicks
+    }
+
+    var isValid: Bool {
+        schema == Self.schema && slots.count == 16
+            && slots.allSatisfy { (0...3).contains($0) }
+            && Self.allowedGateTicks.contains(gateTicks)
+    }
+
+    static let presets: [(name: String, recipe: Self)] = [
+        ("Quarter pulse", Self(slots: [3, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0])),
+        ("Offbeats", Self(slots: [0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 2, 0])),
+        ("Charleston", Self(slots: [3, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0]))
+    ]
+
+    static func decodeStrict(_ data: Data) -> Self? {
+        guard data.count <= 2_048,
+              let object = try? JSONSerialization.jsonObject(with: data),
+              let dictionary = object as? [String: Any],
+              Set(dictionary.keys) == Set(["schema", "slots", "gateTicks"]),
+              dictionary["schema"] as? String == schema,
+              let rawSlots = dictionary["slots"] as? [Any], rawSlots.count == 16,
+              let gateNumber = dictionary["gateTicks"] as? NSNumber,
+              CFGetTypeID(gateNumber) != CFBooleanGetTypeID()
+        else { return nil }
+        let gate = gateNumber.intValue
+        guard Double(gate) == gateNumber.doubleValue, allowedGateTicks.contains(gate) else { return nil }
+        var slots: [Int] = []
+        for raw in rawSlots {
+            guard let number = raw as? NSNumber,
+                  CFGetTypeID(number) != CFBooleanGetTypeID()
+            else { return nil }
+            let value = number.intValue
+            guard Double(value) == number.doubleValue, (0...3).contains(value) else { return nil }
+            slots.append(value)
+        }
+        return Self(slots: slots, gateTicks: gate)
+    }
+}
+
+enum JazzAuthoredCompingIssue: LocalizedError, Equatable, Sendable {
+    case invalidRecipe
+    case missingPassage
+    case passage
+    case source
+    case limit
+    case empty
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidRecipe: "Use a version 1 recipe with exactly 16 slots and a 120, 240, or 480 tick gate."
+        case .missingPassage: "That section no longer exists. Choose a current passage."
+        case .passage: "Choose 1–4 complete 4/4 bars. Pickups and incomplete bars are not shortened or filled."
+        case .source: "The chart could not be projected into a safe authored comping source."
+        case .limit: "Authored comping supports at most 128 source chords, 64 attacks, and 1,024 pitch occurrences."
+        case .empty: "No notes fall on the active slots. Add a slot or choose another passage."
+        }
+    }
+}
+
+struct JazzAuthoredCompingResult: Equatable, Sendable {
+    var passageChart: JazzChart
+    var events: [JazzPerformanceEvent]
+    var sourceChecked: Int
+    var slotsVisited: Int
+    var cursorAdvances: Int
+    var pitchOccurrences: Int
+}
+
+/// Native counterpart of the original web app's bounded authored-comping
+/// compiler. It is intentionally comp-only: no style articulation, bass line,
+/// chord-arrival attack, or voicing rewrite runs after the grid is applied.
+enum JazzAuthoredCompingCompiler {
+    static func compile(
+        chart: JazzChart,
+        recipe: JazzCompingRecipe,
+        sectionID: UUID?
+    ) throws -> JazzAuthoredCompingResult {
+        guard recipe.isValid else { throw JazzAuthoredCompingIssue.invalidRecipe }
+        guard chart.chordCount <= 128 else { throw JazzAuthoredCompingIssue.limit }
+
+        let measures: [JazzMeasure]
+        let passageStartTick: Int
+        if let sectionID {
+            guard let group = chart.sectionGroups.first(where: { $0.section?.id == sectionID }),
+                  group.section != nil,
+                  let firstMeasure = group.indexedMeasures.first
+            else { throw JazzAuthoredCompingIssue.missingPassage }
+            measures = group.indexedMeasures.map(\.element)
+            passageStartTick = firstMeasure.offset * 4 * JazzPerformancePlan.ppq
+        } else {
+            measures = chart.measures
+            passageStartTick = 0
+        }
+        guard (1...4).contains(measures.count),
+              measures.allSatisfy({ measure in
+                  !measure.chords.isEmpty
+                      && measure.chords.allSatisfy { $0.beats.isFinite && $0.beats > 0 }
+                      && abs(measure.chords.reduce(0) { $0 + $1.beats } - 4) < 0.000_001
+              })
+        else { throw JazzAuthoredCompingIssue.passage }
+
+        let passage = JazzChart(
+            id: chart.id,
+            title: chart.title,
+            key: chart.key,
+            tempoBPM: chart.tempoBPM,
+            groove: chart.groove,
+            instrument: chart.instrument,
+            voicingFamily: chart.voicingFamily,
+            playbackMix: chart.playbackMix,
+            measures: measures,
+            sections: nil
+        )
+        let allSource = JazzTheory.compilePlayback(chart)
+        let totalTicks = measures.count * 4 * JazzPerformancePlan.ppq
+        let passageEndTick = passageStartTick + totalTicks
+        let source = allSource.filter { event in
+            let tick = Int((event.startBeat * Double(JazzPerformancePlan.ppq)).rounded())
+            return tick >= passageStartTick && tick < passageEndTick
+        }
+        guard allSource.count == chart.chordCount,
+              source.count == measures.reduce(0, { $0 + $1.chords.count }),
+              !source.isEmpty else {
+            throw JazzAuthoredCompingIssue.source
+        }
+
+        var attacks: [(tick: Int, level: Int)] = []
+        var slotsVisited = 0
+        for tick in stride(from: 0, to: totalTicks, by: 240) {
+            slotsVisited += 1
+            let level = recipe.slots[(tick / 240) % 16]
+            if level > 0 { attacks.append((tick, level)) }
+        }
+
+        var events: [JazzPerformanceEvent] = []
+        var cursor = 0
+        var cursorAdvances = 0
+        var pitchOccurrences = 0
+        for (attackIndex, attack) in attacks.enumerated() {
+            while cursor < source.count {
+                let event = source[cursor]
+                let start = Int((event.startBeat * Double(JazzPerformancePlan.ppq)).rounded()) - passageStartTick
+                let duration = Int((event.durationBeats * Double(JazzPerformancePlan.ppq)).rounded())
+                if start + duration > attack.tick { break }
+                cursor += 1
+                cursorAdvances += 1
+            }
+            guard cursor < source.count else { continue }
+            let owner = source[cursor]
+            let ownerStart = Int((owner.startBeat * Double(JazzPerformancePlan.ppq)).rounded()) - passageStartTick
+            let ownerDuration = Int((owner.durationBeats * Double(JazzPerformancePlan.ppq)).rounded())
+            guard ownerStart <= attack.tick, ownerStart + ownerDuration > attack.tick,
+                  !owner.midiPitches.isEmpty,
+                  owner.midiPitches.count <= JazzDocumentValidator.maximumStoredVoices,
+                  owner.midiPitches.allSatisfy({ (0...127).contains($0) })
+            else { throw JazzAuthoredCompingIssue.source }
+            let nextAttack = attackIndex + 1 < attacks.count ? attacks[attackIndex + 1].tick : totalTicks
+            let gate = min(recipe.gateTicks, ownerStart + ownerDuration - attack.tick, totalTicks - attack.tick, nextAttack - attack.tick)
+            guard gate > 0 else { throw JazzAuthoredCompingIssue.source }
+            pitchOccurrences += owner.midiPitches.count
+            guard events.count < 64, pitchOccurrences <= 1_024 else {
+                throw JazzAuthoredCompingIssue.limit
+            }
+            events.append(JazzPerformanceEvent(
+                chordID: owner.chordID,
+                role: .comp,
+                startTick: attack.tick,
+                gateDurationTicks: gate,
+                midiPitches: owner.midiPitches,
+                velocity: [0, 48, 80, 112][attack.level]
+            ))
+        }
+        guard !events.isEmpty else { throw JazzAuthoredCompingIssue.empty }
+        return JazzAuthoredCompingResult(
+            passageChart: passage,
+            events: events,
+            sourceChecked: allSource.count,
+            slotsVisited: slotsVisited,
+            cursorAdvances: cursorAdvances,
+            pitchOccurrences: pitchOccurrences
+        )
+    }
+}
+
 /// Native projection of the source-owned `performance-plan` tables. The
 /// renderer consumes these role events directly; a groove is no longer a
 /// sustained pad plus an unrelated percussion approximation.
