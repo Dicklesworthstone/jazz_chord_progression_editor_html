@@ -1,5 +1,30 @@
 # Implementation TODO
 
+
+## Preserve piano, print and QR colors — jcpe-milestone-reliable-studio-l3a.12.4
+
+- [x] Reproduce the unchanged U0 token failure via RCH: 10 pass, 1 fail, ten literal-color findings; original contrast and mutation checks stay intact.
+- [x] Freeze nine named color values from the existing component CSS; mirror their definitions in the U0 contract and independent exact-map transcription before replacing consumers.
+- [x] Replace only the ten color literals; keep these physical piano/paper/QR colors invariant across light, OS-dark and pinned-dark themes.
+- [x] Unmask the pre-existing responsive-token inventory mismatch: retain the original coarse-pointer witness and pin all five existing media/selector/value combinations, with 19 adverse scope/value/missing/duplicate controls. No transport CSS or geometry changes.
+- [x] RCH final static `test-results/token-static-complete2-20260916/`: U0 contract, 27/27 focused tests (607 assertions), full types, full lint, 349-file boundaries and guarded build pass. The palette and responsive inventory changes are explicitly reviewed; no claim that the old gate is unchanged. HTML is 8,636,715 bytes, SHA256 `a4fa47b59d56125e4d0ad72e79b7aa4a08af7048dc6665447d73fb852ec8830d`. Retain the earlier digest/inventory/lint failures and the input-transfer restart that ran no tests.
+- [x] Prepare an admitted second RCH worker after ovh-a memory refusal; verify the official Bun 1.3.14 baseline archive for ovh-b's older CPU, retain Node 26 / Playwright 1.61.1 / pinned browser bytes, native PulseAudio and real PDF/QR dependencies. The initial source transfer resumes after a timeout; no local fallback or admission bypass.
+- [x] Retain the first browser run: 19 passed, six driver failures, 41 interrupted/not-run cases, zero flaky. The new comparison assumed the command lane remained open after native `afterprint`; restore it through normal controls just as the existing print suite does. No product bytes, color/byte assertions, deadlines or retry settings changed; the full 66-case replacement run is required.
+- [x] Complete the corrected 66-case run: Chromium 22/22 and Firefox 22/22 pass; all 22 WebKit cases fail at native browser launch because the new worker lacks `libwoff2dec.so.1.0.2`. Keep the entire red report. Install the required system libraries and run the full WebKit group with unchanged source, assertions and deadlines; the two passing engine groups remain source-bound evidence, not a green full-run claim.
+- [x] Retain WebKit's post-library run on ovh-b: 10 passed, 3 deadline failures and 9 interrupted/not-run. Inspect the first trace/screenshot: app boot and present controls are visible, but the root cause is not proven. Move the complete unchanged WebKit group to the original ovh-a platform after fresh RCH admission and no-browser-contention checks; no timeout widening or cold-start performance claim.
+- [x] Verify all three complete engine groups against the same 1,804 inputs and HTML hash: Chromium 22/22 and Firefox 22/22 in `test-results/token-browser-complete-20260916/`; WebKit 22/22 (206.136s) in `test-results/token-webkit-ovha-20260916/`. Each accepted case passes once; zero skipped/flaky cases in the accepted groups. Check all 84 diagnostic attachments and 18 exact old/new comparisons, including every piano key style, print-media colors, exported SVG bytes and QR paths across 320/1280px and light/OS-dark/pinned-dark. Original native PDF and independent QR pixel-decode tests pass. The earlier full run remains red; there is no aggregate `bun run verify`, cold-platform timing or original U4/human acceptance claim.
+- [ ] Fresh review, commit/push owned paths, run committed-byte predeploy gates, publish and verify both hosts.
+- [x] Retain original U4 ownership and full acceptance; this isolated defect cannot close its parent.
+
+
+## Broader regression audit — 2026-09-16 UTC
+
+- [x] Preserve the RCH baseline at `test-results/runtime-audit-20260916/`: 3,892 pass, six failures and two unhandled errors; this is not a full-suite pass.
+- [ ] Re-run clarinet CLI and flute replay with the pinned original UIowa corpus included. The print-derived RAM input closure omitted their ignored corpus directory; no source-defect claim from that run.
+- [ ] Use the repository's normal non-browser test selection: explicitly naming the entire integration directory caused Bun to import two Playwright-only suites. Their unhandled imports are harness failures, not native browser results.
+- [ ] Review the original P0 production inventory against `src/playback/authored-comping.ts` and prove its real layer ownership under the original comping acceptance.
+- [ ] Investigate the G5 expected-child mismatch under the reopened original G5 task; preserve independently authored branch expectations and keep full advanced-discovery acceptance open.
+
 ## Play-along start cues — jcpe-6ujg.1.3 (CyanCove, 2026-09-16 UTC)
 
 Consumer: the requested granular implementation list. Retire this section after original play-along acceptance; preserve exact results in the Bead.

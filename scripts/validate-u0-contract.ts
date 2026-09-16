@@ -69,9 +69,11 @@ export const U0_REVIEWED_SEMANTIC_DIGESTS: Readonly<
   /* Re-reviewed 2026-08-04 for the v2 ink-on-paper redesign
    * (jcpe-v2-redesign-z323): paper-light base + night override token maps,
    * the studio engraving token family, and the embedded-OFL-font asset
-   * policy. */
+   * policy. The 2026-09-16 additive review (jcpe-milestone-reliable-studio-l3a.12.4)
+   * adds nine invariant piano/print/QR colors with their existing exact values;
+   * every previous token, contrast pair and remaining contract field is unchanged. */
   "u0-ui-contract.json":
-    "54b480c137543885609f750688a552c7f74ac13571542baa156defdbf80f2795",
+    "0e1cd0a2041b4a3e11c2bc74c6cdfc6d1e789d0bf770aef8bfa84494ecb38300",
   "primitive-state-matrix.json":
     "6e05bbe3bb4d442adb0510f87d12b72bcc3c19e01c7a56655025bd0e699c9568",
   "provenance-ledger.json":

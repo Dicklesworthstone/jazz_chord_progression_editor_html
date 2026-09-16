@@ -32,8 +32,8 @@
 .studio-inspector-notes input { inline-size: 5rem; }
 .studio-inspector-piano-scroll { overflow-x: auto; padding: .4rem; }
 .studio-inspector-piano { position: relative; block-size: 9rem; }
-.studio-inspector-piano button { position: absolute; inline-size: 64px; block-size: 9rem; border: 1px solid #252525; border-radius: 0 0 .25rem .25rem; color: #121212; background: #faf8f0; align-content: end; padding: .25rem; font-size: .7rem; }
-.studio-inspector-piano .is-black { z-index: 1; inline-size: 44px; background: #252525; color: #fff; block-size: 5.5rem; }
+.studio-inspector-piano button { position: absolute; inline-size: 64px; block-size: 9rem; border: 1px solid var(--inspector-piano-dark); border-radius: 0 0 .25rem .25rem; color: var(--inspector-piano-ink); background: var(--inspector-piano-light); align-content: end; padding: .25rem; font-size: .7rem; }
+.studio-inspector-piano .is-black { z-index: 1; inline-size: 44px; background: var(--inspector-piano-dark); color: var(--inspector-piano-inverse); block-size: 5.5rem; }
 
 /* ---------------------------------------------------------------- shell */
 
@@ -6955,8 +6955,8 @@ li[data-resize-preview]::after {
 .studio-inspector .studio-inspector-check { display: flex; align-items: center; gap: .5rem; min-block-size: 44px; }
 .studio-inspector .studio-inspector-check input { inline-size: 1.25rem; min-block-size: 1.25rem; margin: .5rem; }
 .studio-inspector fieldset { min-inline-size: 0; border: 1px solid var(--border-strong); border-radius: .4rem; display: flex; flex-wrap: wrap; gap: .25rem .75rem; }
-.studio-inspector-piano button[data-active="true"] { box-shadow: inset 0 -8px 0 #a93829; }
-.studio-inspector-piano button[data-role="root"] { border-block-end: 5px solid #245d87; }
+.studio-inspector-piano button[data-active="true"] { box-shadow: inset 0 -8px 0 var(--inspector-piano-active); }
+.studio-inspector-piano button[data-role="root"] { border-block-end: 5px solid var(--inspector-piano-root); }
 .studio-inspector-piano-role { display: block; margin-block-start: .3rem; font-size: .6rem; font-weight: 700; }
 
 .studio-exact-share textarea { width: 100%; box-sizing: border-box; overflow-wrap: anywhere; resize: vertical; font: inherit; }

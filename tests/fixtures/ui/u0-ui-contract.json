@@ -111,7 +111,16 @@
    "--key-white": "#ede9de",
    "--key-white-lit": "#fffdf4",
    "--key-black": "#1a1814",
-   "--key-frame": "#8b8474"
+   "--key-frame": "#8b8474",
+   "--inspector-piano-dark": "#252525",
+   "--inspector-piano-ink": "#121212",
+   "--inspector-piano-light": "#faf8f0",
+   "--inspector-piano-inverse": "#fff",
+   "--inspector-piano-active": "#a93829",
+   "--inspector-piano-root": "#245d87",
+   "--print-ink": "#111",
+   "--print-rule": "#555",
+   "--qr-surface": "#fff"
   },
   "typography": {
    "--font-ui": "'Archivo', system-ui, -apple-system, 'Segoe UI', sans-serif",
