@@ -1,5 +1,27 @@
 # Implementation TODO
 
+## Play-along start cues — jcpe-6ujg.1.3 (CyanCove, 2026-09-16 UTC)
+
+Consumer: the requested granular implementation list. Retire this section after original play-along acceptance; preserve exact results in the Bead.
+
+- [x] Re-read the repository agreement, README and architecture; reconcile ready Beads, original play-along spec/build/verify context, current source and peer ownership. Only CyanCove is active in Agent Mail; preserve all three untracked application UI copies.
+- [x] Claim the original ready verification leaf and inspect the source timeline, controller authority, Focus lifecycle and current browser coverage.
+- [x] Reproduce stopped-seek disagreement: the scrubber stores the next start while the cue reads the old audio position. Author exact starting/arriving and unchanged-state expectations through the real controller.
+- [x] Reproduce source-edit leakage through the actual next Play: after seeking beat 5 and changing the title, the baseline still started on Dm7 at 5 instead of Cmaj7 at 0.
+- [x] Verify pending intent across Undo/Redo, edit-and-Undo, real lesson replacement-and-Undo, refused edits, setting receipts and accepted/ignored notifications: 26/26 focused tests, 204 assertions, 1.07s through RCH. Fake audio clock proves controller/transport semantics; it is not native audio evidence.
+- [x] Reproduce armed/disarmed loop mismatch through the actual controller and transport. Baseline: 14/17 pass, three new regressions fail.
+- [x] Verify section-loop boundaries, out-of-range starts and chart end without clamping through the same focused suite.
+- [x] Reproduce the visible cue defect against committed bytes; retain diagnostics/hashes. Corrected-observer baseline: 1/5 pass, two pointer obstructions and two exact cue failures (desktop and touch): scrubber beat 2 versus Cmaj7 at beat 1. First Chromium baseline: 0/4; two load timeouts, one real 320×568 Play obstruction, one obsolete scheduled-source observation against the default Concert Grand worklet. No browser cue proof from that run.
+- [x] Repair the confirmed phone Focus transport overflow and verify actual Chromium pointer reachability; observe default-instrument destination PCM and explicitly select the oscillator for the existing scheduled-source test.
+- [x] Repair controller pending-start/source binding, ready-position and ready-loop cues; preserve live/paused audio authority, exact notes/time, source staleness, history and bounded cached selector work.
+- [x] Finish Chromium Focus layout proof: corrected two-row phone controls passed ready-cue/native PCM checks, but the first broad geometry check found laptop Mute beyond the viewport. Add the existing Sound sheet at compact Focus widths and restore 44px coarse-pointer controls. Keep that failing 4/5 run. Final Chromium: all 24 browser tests pass with zero unexpected/flaky/skipped cases; its outer wrapper alone exits 1 because it mistakenly expected 26, corrected to the actual full 24-case collection. No test failure is relabeled.
+- [x] Correct the new test’s mistaken count-in receipt assumption and typed exact-beat expectations. Keep the failed 92/93 run, type/lint diagnostics and earlier 14/17 negative proof.
+- [x] Complete the frozen 1,802-file remote input snapshot including the existing iOS theory bridge; native-observer type/lint checks pass. Local hashes and mtimes still match.
+- [x] RCH final static: 97/97 tests across eight files, 760 assertions, 56.48s; all three intentional source mutants fail their named witnesses and restored source passes 26/26. Full four-project typecheck, source boundaries/lint and guarded build pass; artifact `fa2657e865e093d2529a15b4e1aaa617a7b0ee7bd606b77256ae11416d03ff9a`, 8,642,945 bytes. Retain all prior failures.
+- [ ] Run sequential real Node Chromium/Firefox/WebKit Focus/play-along/seek checks (five complete files collect 24 cases per engine; the initial scratch count of 26 was a counting error, corrected against Playwright collection), including 320px, reduced motion, keyboard, Stop, exact cue, zero runtime errors and offline behavior; inspect screenshots.
+- [ ] Fresh-review final changes against original acceptance, reproduce committed bytes, commit explicit owned paths and complete authorized predeploy/two-host/live checks.
+- [ ] Record proof and disposition on the original verification leaf; retain independent-person and applicable physical-phone/U4 acceptance until actually performed.
+
 ## MIDI source-note review — jcpe-upbz (CyanCove, 2026-09-15)
 
 Consumer: the requested granular implementation list. Retire this section after original M1 acceptance; preserve results in the Bead.
