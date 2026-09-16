@@ -35,6 +35,35 @@ struct JazzPhysicalGlobalCacheSnapshot: Equatable, Sendable {
 /// app. The original DSP owns process-global scratch for some physical models,
 /// so every FFI call is serialized even though chart renders run off-main.
 enum JazzPhysicalInstrumentRenderer {
+    /// Rust's reviewed soundboard solve uses fixed-size matrices so the same
+    /// allocation-free code can ship in WebAssembly. iOS cooperative-task
+    /// threads have a much smaller stack than the main thread; entering that
+    /// solver directly from `Task.detached` can therefore overflow before it
+    /// returns a single sample. Keep the Rust pipeline exact, but host its
+    /// synchronous FFI work on a bounded native thread with explicit headroom.
+    private final class LargeStackRenderJob: @unchecked Sendable {
+        typealias Operation = (inout [Float], inout [Float]) -> Int
+
+        private let operation: Operation
+        private let finished = DispatchSemaphore(value: 0)
+        private(set) var left: [Float]
+        private(set) var right: [Float]
+        private(set) var written = 0
+
+        init(maximumFrames: Int, operation: @escaping Operation) {
+            self.operation = operation
+            left = [Float](repeating: 0, count: maximumFrames)
+            right = [Float](repeating: 0, count: maximumFrames)
+        }
+
+        func run() {
+            written = operation(&left, &right)
+            finished.signal()
+        }
+
+        func wait() { finished.wait() }
+    }
+
     private struct RenderCacheKey: Hashable, Sendable {
         var midis: [Int]
         var velocities: [Int]
@@ -164,6 +193,7 @@ enum JazzPhysicalInstrumentRenderer {
     static let maximumGlobalCacheEntries = 256
     static let maximumGlobalCachePCMBytes = 100_663_296
     private static let truncationFadeSeconds = 0.015
+    private static let physicalRendererStackSize = 8 * 1_024 * 1_024
     private static let engineLock = NSLock()
     private static let renderCache = RenderCache()
 
@@ -270,24 +300,23 @@ enum JazzPhysicalInstrumentRenderer {
             )
         }
 
-        var left = [Float](repeating: 0, count: maximumFrames)
-        var right = [Float](repeating: 0, count: maximumFrames)
-        engineLock.lock()
-        let written: Int
-        if cancellation?.isCancelled == true {
-            written = 0
-        } else if tone == .concertGrand {
-            written = renderConcertGrandCooperativelyLocked(
-                midi: renderedMidi,
-                velocity: velocity,
-                sampleRate: sampleRate,
-                left: &left,
-                right: &right,
-                maximumFrames: maximumFrames,
-                cancellation: cancellation
-            )
-        } else {
-            written = renderLocked(
+        let requiresLargeStack = metadata.packIndex != nil
+        let output = runPhysicalRender(maximumFrames: maximumFrames, largeStack: requiresLargeStack) { left, right in
+            engineLock.lock()
+            defer { engineLock.unlock() }
+            if cancellation?.isCancelled == true { return 0 }
+            if tone == .concertGrand {
+                return renderConcertGrandCooperativelyLocked(
+                    midi: renderedMidi,
+                    velocity: velocity,
+                    sampleRate: sampleRate,
+                    left: &left,
+                    right: &right,
+                    maximumFrames: maximumFrames,
+                    cancellation: cancellation
+                )
+            }
+            return renderLocked(
                 tone: tone,
                 midi: renderedMidi,
                 velocity: velocity,
@@ -297,7 +326,9 @@ enum JazzPhysicalInstrumentRenderer {
                 maximumFrames: maximumFrames
             )
         }
-        engineLock.unlock()
+        var left = output.left
+        var right = output.right
+        let written = output.written
         guard cancellation?.isCancelled != true else { return nil }
         guard written > 0, written <= maximumFrames else { return nil }
         left.removeSubrange(written...)
@@ -383,20 +414,24 @@ enum JazzPhysicalInstrumentRenderer {
 
         let midi32 = renderedMIDIs.map(Int32.init)
         let velocity32 = velocities.map(Int32.init)
-        var left = [Float](repeating: 0, count: maximumFrames)
-        var right = [Float](repeating: 0, count: maximumFrames)
-        engineLock.lock()
-        let written = cancellation?.isCancelled == true ? 0 : renderPluckedChordCooperativelyLocked(
-            packIndex: packIndex,
-            midis: midi32,
-            velocities: velocity32,
-            sampleRate: sampleRate,
-            left: &left,
-            right: &right,
-            maximumFrames: maximumFrames,
-            cancellation: cancellation
-        )
-        engineLock.unlock()
+        let output = runPhysicalRender(maximumFrames: maximumFrames, largeStack: true) { left, right in
+            engineLock.lock()
+            defer { engineLock.unlock() }
+            guard cancellation?.isCancelled != true else { return 0 }
+            return renderPluckedChordCooperativelyLocked(
+                packIndex: packIndex,
+                midis: midi32,
+                velocities: velocity32,
+                sampleRate: sampleRate,
+                left: &left,
+                right: &right,
+                maximumFrames: maximumFrames,
+                cancellation: cancellation
+            )
+        }
+        var left = output.left
+        var right = output.right
+        let written = output.written
         guard cancellation?.isCancelled != true else { return nil }
         guard written > 0, written <= maximumFrames else { return nil }
         left.removeSubrange(written...)
@@ -426,6 +461,25 @@ enum JazzPhysicalInstrumentRenderer {
 
     static func globalCacheSnapshot() -> JazzPhysicalGlobalCacheSnapshot {
         renderCache.globalSnapshot()
+    }
+
+    private static func runPhysicalRender(
+        maximumFrames: Int,
+        largeStack: Bool,
+        operation: @escaping LargeStackRenderJob.Operation
+    ) -> (written: Int, left: [Float], right: [Float]) {
+        let job = LargeStackRenderJob(maximumFrames: maximumFrames, operation: operation)
+        if largeStack {
+            let thread = Thread { job.run() }
+            thread.name = "FrankenJazz physical renderer"
+            thread.qualityOfService = .utility
+            thread.stackSize = physicalRendererStackSize
+            thread.start()
+            job.wait()
+        } else {
+            job.run()
+        }
+        return (job.written, job.left, job.right)
     }
 
     private static func noteFrames(tone: InstrumentTone, midi: Int, sampleRate: Double) -> Int {

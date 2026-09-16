@@ -118,7 +118,7 @@ enum JazzAudioRenderer {
     ) -> JazzRenderedAudio? {
         let pitches = Array(Set(midis)).sorted()
         guard cancellation?.isCancelled != true,
-              (1...10).contains(pitches.count),
+              (1...JazzDocumentValidator.maximumStoredVoices).contains(pitches.count),
               pitches.allSatisfy({ (21...108).contains($0) }),
               duration.isFinite,
               (0.08...3).contains(duration)

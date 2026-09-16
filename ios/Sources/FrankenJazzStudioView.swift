@@ -38,9 +38,20 @@ struct FrankenJazzStudioView: View {
         .preferredColorScheme((JazzAppearance(rawValue: appearance) ?? .dark).colorScheme)
         .environment(\.dynamicTypeSize, JazzTheme.dynamicTypeSize(from: systemDynamicTypeSize, for: textScale))
         .tint(JazzTheme.brass)
-        .sheet(isPresented: $store.isInspectorPresented) { NavigationStack { ChordInspectorView(store: store, sheetMode: true) } }
-        .sheet(isPresented: $store.isLibraryPresented) { NavigationStack { LibraryView(store: store, sheetMode: true) } }
-        .sheet(isPresented: $store.isDocumentPresented) { NavigationStack { DocumentCenterView(store: store) } }
+        .sheet(item: $store.presentedSheet) { destination in
+            switch destination {
+            case .inspector:
+                NavigationStack { ChordInspectorView(store: store, sheetMode: true) }
+            case .library:
+                NavigationStack { LibraryView(store: store, sheetMode: true) }
+            case .documents:
+                NavigationStack { DocumentCenterView(store: store) }
+            case .instrumentRack:
+                NavigationStack { InstrumentRackView(store: store) }
+            case .chordPads:
+                NavigationStack { ChordPadsView(store: store) }
+            }
+        }
         .fileExporter(
             isPresented: $store.isSaveCopyPresented,
             document: store.saveCopyDocument,
@@ -220,7 +231,7 @@ private struct ChartEditorView: View {
                 HStack(spacing: 10) { settingControls }
                 VStack(spacing: 9) {
                     HStack(spacing: 8) { keyControl; tempoControl }
-                    HStack(spacing: 8) { grooveControl; instrumentControl }
+                    HStack(spacing: 8) { grooveControl; instrumentControl; instrumentRackButton }
                 }
             }
         }
@@ -233,6 +244,7 @@ private struct ChartEditorView: View {
         Divider().overlay(.white.opacity(0.08)).frame(height: 31)
         grooveControl
         instrumentControl
+        instrumentRackButton
     }
 
     private var keyControl: some View {
@@ -296,6 +308,23 @@ private struct ChartEditorView: View {
             .padding(.horizontal, 8)
             .background(JazzTheme.raised, in: Capsule())
         }
+        .accessibilityIdentifier("instrument-quick-selector")
+        .accessibilityLabel("Current instrument")
+        .accessibilityValue(store.chart.instrument.displayName)
+    }
+
+    private var instrumentRackButton: some View {
+        Button { store.isInstrumentRackPresented = true } label: {
+            VStack(spacing: 1) {
+                Image(systemName: "square.grid.2x2")
+                Text("15").font(.system(size: JazzTheme.size(9), weight: .bold, design: .monospaced))
+            }
+            .frame(width: 44, height: 44)
+        }
+        .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.cyan))
+        .accessibilityIdentifier("open-instrument-rack")
+        .accessibilityLabel("Browse all 15 instruments")
+        .accessibilityHint("Shows every original instrument, its native renderer, playable range, and audition controls")
     }
 
     private var chartCanvas: some View {
@@ -304,12 +333,15 @@ private struct ChartEditorView: View {
                 HStack {
                     JazzSectionLabel(number: "02", title: "Lead sheet", tint: JazzTheme.emerald)
                     Spacer()
-                    if !compact {
-                        Text("TOUCH EDITING")
-                            .font(.system(size: JazzTheme.size(9), weight: .bold, design: .monospaced))
-                            .kerning(1.1)
-                            .foregroundStyle(JazzTheme.secondary)
+                    Button { store.isChordPadsPresented = true } label: {
+                        Label(compact ? "Pads" : "Play chord pads", systemImage: "square.grid.3x3.fill")
+                            .lineLimit(1)
+                            .frame(minHeight: 44)
                     }
+                    .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.emerald))
+                    .accessibilityIdentifier("open-chord-pads")
+                    .accessibilityLabel("Play chord pads")
+                    .accessibilityHint("Opens every chart change as a touchable exact-voicing pad")
                 }
                 HStack(spacing: 8) {
                     Button { store.undo() } label: {
@@ -484,6 +516,297 @@ private struct ChartEditorView: View {
         .font(.system(size: JazzTheme.size(10.5), weight: .medium, design: .rounded))
         .foregroundStyle(JazzTheme.secondary)
         .padding(.bottom, 6)
+    }
+}
+
+private struct InstrumentRackView: View {
+    @ObservedObject var store: JazzStudioStore
+    @Environment(\.dismiss) private var dismiss
+
+    private let columns = [
+        GridItem(.adaptive(minimum: 265, maximum: 390), spacing: 12, alignment: .top)
+    ]
+
+    var body: some View {
+        ZStack {
+            JazzForgeBackground()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    introduction
+                    ForEach(InstrumentFamily.allCases) { family in
+                        familySection(family)
+                    }
+                }
+                .padding(16)
+                .frame(maxWidth: 940)
+                .frame(maxWidth: .infinity)
+            }
+            .scrollIndicators(.hidden)
+            .accessibilityIdentifier("instrument-rack-scroll")
+        }
+        .navigationTitle("Instrument rack")
+        .navigationBarTitleDisplayMode(.inline)
+        .presentationDetents([.large])
+        .presentationDragIndicator(.visible)
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
+        }
+        .onDisappear { store.audio.stopPreview() }
+    }
+
+    private var introduction: some View {
+        JazzPanel(accent: JazzTheme.brass, padding: 15) {
+            VStack(alignment: .leading, spacing: 7) {
+                HStack {
+                    JazzSectionLabel(number: "A1", title: "Original sound set", tint: JazzTheme.brass)
+                    Spacer()
+                    Text("15 INSTRUMENTS")
+                        .font(.system(size: JazzTheme.size(9), weight: .bold, design: .monospaced))
+                        .foregroundStyle(JazzTheme.secondary)
+                }
+                Text("Choose the voice used by the chart, or hear any instrument first without changing your selection.")
+                    .font(.system(size: JazzTheme.size(13), weight: .medium, design: .rounded))
+                    .foregroundStyle(JazzTheme.text)
+                Label("Every sound is rendered locally through the original engine path.", systemImage: "lock.shield")
+                    .font(.system(size: JazzTheme.size(10), weight: .medium, design: .rounded))
+                    .foregroundStyle(JazzTheme.secondary)
+            }
+        }
+    }
+
+    private func familySection(_ family: InstrumentFamily) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label(family.rawValue, systemImage: family.symbol)
+                .font(.system(size: JazzTheme.size(15), weight: .bold, design: .rounded))
+                .foregroundStyle(JazzTheme.cyan)
+                .accessibilityAddTraits(.isHeader)
+            LazyVGrid(columns: columns, alignment: .leading, spacing: 12) {
+                ForEach(family.instruments) { instrument in
+                    instrumentCard(instrument)
+                }
+            }
+        }
+        .accessibilityIdentifier("instrument-family-\(family.id)")
+    }
+
+    private func instrumentCard(_ instrument: InstrumentTone) -> some View {
+        let selected = instrument == store.chart.instrument
+        return JazzPanel(accent: selected ? JazzTheme.emerald : JazzTheme.cyan, padding: 13) {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .top, spacing: 11) {
+                    Image(systemName: instrument.symbol)
+                        .font(.system(size: JazzTheme.size(19), weight: .semibold))
+                        .foregroundStyle(selected ? JazzTheme.background : JazzTheme.cyan)
+                        .frame(width: 44, height: 44)
+                        .background(selected ? JazzTheme.emerald : JazzTheme.cyan.opacity(0.10), in: RoundedRectangle(cornerRadius: 12))
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(instrument.displayName)
+                            .font(.system(size: JazzTheme.size(16), weight: .bold, design: .rounded))
+                            .foregroundStyle(JazzTheme.text)
+                        Text(playableRangeLabel(instrument))
+                            .font(.system(size: JazzTheme.size(9.5), weight: .semibold, design: .monospaced))
+                            .foregroundStyle(JazzTheme.brass)
+                    }
+                    Spacer(minLength: 4)
+                    if selected {
+                        Label("Selected", systemImage: "checkmark.circle.fill")
+                            .labelStyle(.iconOnly)
+                            .foregroundStyle(JazzTheme.emerald)
+                            .accessibilityLabel("Selected instrument")
+                    }
+                }
+                Text(instrument.nativeAudioSourceNote)
+                    .font(.system(size: JazzTheme.size(10.5), weight: .medium, design: .rounded))
+                    .foregroundStyle(JazzTheme.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 8) { auditionButton(instrument); selectionButton(instrument, selected: selected) }
+                    VStack(spacing: 8) { auditionButton(instrument); selectionButton(instrument, selected: selected) }
+                }
+            }
+        }
+    }
+
+    private func auditionButton(_ instrument: InstrumentTone) -> some View {
+        Button { store.previewInstrument(instrument) } label: {
+            Label("Hear C4", systemImage: "speaker.wave.2.fill")
+                .frame(maxWidth: .infinity, minHeight: 44)
+        }
+        .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.cyan))
+        .accessibilityIdentifier("instrument-hear-\(instrument.originalID)")
+        .accessibilityLabel("Hear C4 on \(instrument.displayName)")
+        .accessibilityHint("Auditions this sound without changing the selected chart instrument")
+    }
+
+    @ViewBuilder
+    private func selectionButton(_ instrument: InstrumentTone, selected: Bool) -> some View {
+        Button { store.updateInstrument(instrument) } label: {
+            Label(selected ? "Selected" : "Use instrument", systemImage: selected ? "checkmark" : "arrow.right.circle")
+                .frame(maxWidth: .infinity, minHeight: 44)
+        }
+        .buttonStyle(JazzSecondaryButtonStyle(tint: selected ? JazzTheme.emerald : JazzTheme.brass))
+        .disabled(selected)
+        .accessibilityIdentifier("instrument-select-\(instrument.originalID)")
+        .accessibilityLabel(selected ? "\(instrument.displayName), selected" : "Use \(instrument.displayName)")
+    }
+
+    private func playableRangeLabel(_ instrument: InstrumentTone) -> String {
+        let range = instrument.originalPlayableMIDIRange
+        return "\(noteName(range.lowerBound))–\(noteName(range.upperBound)) · MIDI \(range.lowerBound)–\(range.upperBound)"
+    }
+
+    private func noteName(_ midi: Int) -> String {
+        let names = ["C", "C♯", "D", "E♭", "E", "F", "F♯", "G", "A♭", "A", "B♭", "B"]
+        return "\(names[(midi % 12 + 12) % 12])\(midi / 12 - 1)"
+    }
+}
+
+private struct ChordPadsView: View {
+    @ObservedObject var store: JazzStudioStore
+    @Environment(\.dismiss) private var dismiss
+
+    private let columns = [
+        GridItem(.adaptive(minimum: 148, maximum: 230), spacing: 11, alignment: .top)
+    ]
+
+    var body: some View {
+        ZStack {
+            JazzForgeBackground()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    introduction
+                    ForEach(store.chordPadGroups) { group in
+                        groupSection(group)
+                    }
+                }
+                .padding(16)
+                .frame(maxWidth: 940)
+                .frame(maxWidth: .infinity)
+            }
+            .scrollIndicators(.hidden)
+            .accessibilityIdentifier("chord-pads-scroll")
+        }
+        .navigationTitle("Chord pads")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(JazzTheme.background, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .presentationDetents([.large])
+        .presentationDragIndicator(.visible)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button { store.stopChordPadPreview() } label: {
+                    Label("Stop audition", systemImage: "speaker.slash.fill")
+                }
+                .accessibilityIdentifier("stop-chord-pad-audition")
+            }
+            ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
+        }
+        .onDisappear { store.stopChordPadPreview() }
+    }
+
+    private var introduction: some View {
+        JazzPanel(accent: JazzTheme.emerald, padding: 15) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    JazzSectionLabel(number: "P1", title: "Play the changes", tint: JazzTheme.emerald)
+                    Spacer()
+                    Text("\(store.chart.chordCount) PADS")
+                        .font(.system(size: JazzTheme.size(9), weight: .bold, design: .monospaced))
+                        .foregroundStyle(JazzTheme.secondary)
+                }
+                Text("Tap any pad to hear the exact voicing shown below it through \(store.chart.instrument.displayName).")
+                    .font(.system(size: JazzTheme.size(13), weight: .medium, design: .rounded))
+                    .foregroundStyle(JazzTheme.text)
+                Label("Auditioning never edits the chart or moves the band transport.", systemImage: "hand.tap")
+                    .font(.system(size: JazzTheme.size(10), weight: .medium, design: .rounded))
+                    .foregroundStyle(JazzTheme.secondary)
+            }
+        }
+    }
+
+    private func groupSection(_ group: JazzChordPadGroup) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline) {
+                Label(group.name, systemImage: "rectangle.stack.fill")
+                    .font(.system(size: JazzTheme.size(15), weight: .bold, design: .rounded))
+                    .foregroundStyle(JazzTheme.cyan)
+                    .accessibilityAddTraits(.isHeader)
+                Spacer()
+                Text("\(group.pads.count) change\(group.pads.count == 1 ? "" : "s")")
+                    .font(.system(size: JazzTheme.size(9), weight: .bold, design: .monospaced))
+                    .foregroundStyle(JazzTheme.secondary)
+            }
+            if !group.annotation.isEmpty {
+                Text(group.annotation)
+                    .font(.system(size: JazzTheme.size(10.5), design: .rounded))
+                    .foregroundStyle(JazzTheme.secondary)
+            }
+            LazyVGrid(columns: columns, alignment: .leading, spacing: 11) {
+                ForEach(group.pads) { pad in
+                    padButton(pad)
+                }
+            }
+        }
+        .accessibilityIdentifier("chord-pad-group-\(group.id)")
+    }
+
+    private func padButton(_ pad: JazzChordPad) -> some View {
+        Button { store.previewChordPad(pad.chordID) } label: {
+            VStack(alignment: .leading, spacing: 7) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(pad.symbol)
+                        .font(.system(size: JazzTheme.size(20), weight: .bold, design: .serif))
+                        .foregroundStyle(JazzTheme.paper)
+                    Spacer(minLength: 6)
+                    Text("BAR \(pad.barNumber)")
+                        .font(.system(size: JazzTheme.size(8), weight: .black, design: .monospaced))
+                        .foregroundStyle(JazzTheme.brass)
+                }
+                Text(pad.midiPitches.map(noteName).joined(separator: " · "))
+                    .font(.system(size: JazzTheme.size(10), weight: .semibold, design: .monospaced))
+                    .foregroundStyle(JazzTheme.text)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 5) {
+                    Image(systemName: "speaker.wave.2.fill")
+                    Text(pad.voicingAuthority)
+                }
+                .font(.system(size: JazzTheme.size(9), weight: .bold, design: .rounded))
+                .foregroundStyle(JazzTheme.emerald)
+            }
+            .frame(maxWidth: .infinity, minHeight: 82, alignment: .topLeading)
+            .padding(12)
+        }
+        .buttonStyle(JazzChordPadButtonStyle())
+        .disabled(pad.midiPitches.isEmpty)
+        .accessibilityIdentifier("chord-pad-\(pad.position)")
+        .accessibilityLabel("Chord pad \(pad.position + 1), bar \(pad.barNumber), \(pad.symbol)")
+        .accessibilityValue(pad.midiPitches.map(noteName).joined(separator: ", "))
+        .accessibilityHint("Plays this exact voicing without editing the chart or moving transport")
+    }
+
+    private func noteName(_ midi: Int) -> String {
+        let names = ["C", "C♯", "D", "E♭", "E", "F", "F♯", "G", "A♭", "A", "B♭", "B"]
+        return "\(names[(midi % 12 + 12) % 12])\(midi / 12 - 1)"
+    }
+}
+
+private struct JazzChordPadButtonStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .background(
+                configuration.isPressed ? JazzTheme.emerald.opacity(0.20) : JazzTheme.raised,
+                in: RoundedRectangle(cornerRadius: 14)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(configuration.isPressed ? JazzTheme.emerald : JazzTheme.stroke, lineWidth: configuration.isPressed ? 2 : 1)
+            )
+            .scaleEffect(configuration.isPressed && !reduceMotion ? 0.985 : 1)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.08), value: configuration.isPressed)
     }
 }
 
@@ -755,7 +1078,7 @@ private struct MeasureCard: View {
                                 )
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.68)
-                                .frame(maxWidth: .infinity, minHeight: 38)
+                                .frame(maxWidth: .infinity, minHeight: 44)
                                 .padding(.horizontal, 5)
                             if !chord.annotation.isEmpty {
                                 Image(systemName: "note.text")
@@ -2759,6 +3082,16 @@ private struct DocumentCenterView: View {
                                     .frame(maxWidth: .infinity)
                             }
                             .buttonStyle(JazzPrimaryButtonStyle(tint: JazzTheme.cyan))
+                            Button { store.importPastedText(UIPasteboard.general.string) } label: {
+                                Label("Paste chart text or JSON", systemImage: "doc.on.clipboard")
+                                    .frame(maxWidth: .infinity, minHeight: 44)
+                            }
+                            .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.emerald))
+                            .accessibilityIdentifier("paste-chart-import")
+                            .accessibilityHint("Reads the clipboard only after this button is activated and replaces the chart as one undoable action.")
+                            Text("Paste is read only after you tap. A valid paste becomes one undoable chart replacement; refused text leaves the current chart unchanged.")
+                                .font(.system(size: JazzTheme.size(10.5), design: .rounded))
+                                .foregroundStyle(JazzTheme.secondary)
                             Text("MIDI chord stacks become editable 4/4 symbols with exact Manual pitches. Common DAW retriggers, stray note-offs, open notes, and missing end markers are repaired and reported; structural corruption, another meter, an out-of-range/oversized stack, or no nameable harmony is refused instead of guessed.")
                                 .font(.system(size: JazzTheme.size(10.5), design: .rounded))
                                 .foregroundStyle(JazzTheme.secondary)

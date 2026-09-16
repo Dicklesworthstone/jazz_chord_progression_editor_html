@@ -348,6 +348,87 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertNil(invalidClock.next)
     }
 
+    func testChordPadProjectionPreservesEverySourceOccurrenceAndExactPlaybackVoicing() throws {
+        let first = JazzMeasure(chords: [
+            JazzChordEvent(symbol: "Cmaj7", beats: 2),
+            JazzChordEvent(symbol: "G7/B", beats: 2, manualMIDIPitches: [47, 55, 59, 59, 65])
+        ])
+        let second = JazzMeasure(chords: [
+            JazzChordEvent(symbol: "Dm9", frozenMIDIPitches: [38, 53, 57, 60, 64])
+        ])
+        let chart = JazzChart(
+            title: "Pads",
+            key: .c,
+            instrument: .concertVibes,
+            voicingFamily: .spread,
+            measures: [first, second],
+            sections: [
+                JazzChartSection(name: "A", annotation: "Open", startMeasureID: first.id),
+                JazzChartSection(name: "Bridge", annotation: "Lift", startMeasureID: second.id)
+            ]
+        )
+
+        let groups = JazzTheory.chordPadGroups(chart)
+        let pads = groups.flatMap(\.pads)
+        let playback = JazzTheory.compilePlayback(chart)
+
+        XCTAssertEqual(groups.map(\.name), ["A", "Bridge"])
+        XCTAssertEqual(groups.map(\.annotation), ["Open", "Lift"])
+        XCTAssertEqual(groups.map { $0.pads.count }, [2, 1])
+        XCTAssertEqual(pads.map(\.chordID), chart.measures.flatMap(\.chords).map(\.id))
+        XCTAssertEqual(Set(pads.map(\.chordID)).count, chart.chordCount)
+        XCTAssertEqual(pads.map(\.position), [0, 1, 2])
+        XCTAssertEqual(pads.map(\.barNumber), [1, 1, 2])
+        XCTAssertEqual(pads.map(\.midiPitches), playback.map(\.midiPitches))
+        XCTAssertEqual(pads[1].midiPitches, [47, 55, 59, 59, 65], "Manual octave, order, and doubles are literal.")
+        XCTAssertEqual(pads[1].voicingAuthority, "Manual exact")
+        XCTAssertEqual(pads[2].voicingAuthority, "Frozen exact")
+        XCTAssertTrue(pads[0].midiPitches.count >= 4)
+    }
+
+    @MainActor
+    func testChordPadPreviewPlanIsRevisionBoundAndDoesNotMutateDocumentOrHistory() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FrankenJazzChordPadTests-" + UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let chord = JazzChordEvent(symbol: "E7/B")
+        let chart = JazzChart(
+            title: "Pad plan", key: .c, instrument: .clarinet,
+            voicingFamily: .open, measures: [JazzMeasure(chords: [chord])]
+        )
+        let recovery = JazzRecoveryStore(directory: directory)
+        recovery.save(chart)
+        let store = JazzStudioStore(recovery: recovery)
+        let before = store.chart
+        let revision = store.revision
+        let selected = store.selectedChordID
+
+        let plan = try XCTUnwrap(store.chordPadPreviewPlan(for: chord.id))
+
+        XCTAssertEqual(plan.chordID, chord.id)
+        XCTAssertEqual(plan.sourceRevision, revision)
+        XCTAssertEqual(plan.instrument, .clarinet)
+        XCTAssertEqual(plan.midiPitches, JazzTheory.compilePlayback(chart).first?.midiPitches)
+        XCTAssertEqual(store.chart, before)
+        XCTAssertEqual(store.revision, revision)
+        XCTAssertEqual(store.selectedChordID, selected)
+        XCTAssertFalse(store.canUndo)
+        XCTAssertNil(store.chordPadPreviewPlan(for: UUID()))
+    }
+
+    func testChordPreviewAcceptsTheFullStoredVoicingBoundAndRefusesOneMore() throws {
+        let sixteen = Array(48...63)
+        let rendered = try XCTUnwrap(
+            JazzAudioRenderer.renderPreviewChord(midis: sixteen, tone: .mellowKeys, duration: 0.08)
+        )
+        XCTAssertFalse(rendered.left.isEmpty)
+        XCTAssertTrue(rendered.left.allSatisfy(\.isFinite))
+        XCTAssertNil(
+            JazzAudioRenderer.renderPreviewChord(midis: Array(48...64), tone: .mellowKeys, duration: 0.08)
+        )
+    }
+
     func testSectionBoundaryReallyControlsAutomaticVoiceLeading() throws {
         let first = JazzMeasure(chords: [JazzChordEvent(symbol: "Cmaj7")])
         let second = JazzMeasure(chords: [JazzChordEvent(symbol: "Bmaj7")])
@@ -570,6 +651,105 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertTrue(store.canUndo)
         store.undo()
         XCTAssertEqual(store.chart, before)
+    }
+
+    @MainActor
+    func testPastedLeadSheetAndNativeJSONAreExactUndoableReplacements() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FrankenJazzPasteImportTests-" + UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let store = JazzStudioStore(recovery: JazzRecoveryStore(directory: directory))
+        store.newChart()
+        let beforeText = store.chart
+
+        store.isDocumentPresented = true
+        store.importPastedText("[A] \"Pocket\"\n| Dm7 G7 | Cmaj7 |")
+
+        XCTAssertEqual(store.chart.title, "Pasted chart")
+        XCTAssertEqual(store.chart.chartText, "[A] \"Pocket\"\n| Dm7 G7 | Cmaj7 |")
+        XCTAssertEqual(store.chart.sections?.map(\.annotation), ["Pocket"])
+        XCTAssertEqual(store.selectedChordID, store.chart.measures.first?.chords.first?.id)
+        XCTAssertFalse(store.isDocumentPresented)
+        XCTAssertEqual(store.notice, "Pasted lead-sheet text as “Pasted chart”.")
+        store.undo()
+        XCTAssertEqual(store.chart, beforeText)
+
+        var manual = JazzChart(
+            title: "Clipboard voicings",
+            instrument: .clarinet,
+            measures: [JazzMeasure(chords: [
+                JazzChordEvent(symbol: "G7/F", manualMIDIPitches: [41, 55, 59, 62, 65])
+            ])]
+        )
+        manual.updatedAt = Date(timeIntervalSince1970: 1_750_000_000)
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let json = try XCTUnwrap(String(data: encoder.encode(manual), encoding: .utf8))
+        let beforeJSON = store.chart
+
+        store.isDocumentPresented = true
+        store.importPastedText(json)
+
+        XCTAssertEqual(store.chart, manual)
+        XCTAssertEqual(store.selectedMIDIPitches, [41, 55, 59, 62, 65])
+        XCTAssertFalse(store.isDocumentPresented)
+        XCTAssertEqual(store.notice, "Pasted chart JSON as “Clipboard voicings”.")
+        store.undo()
+        XCTAssertEqual(store.chart, beforeJSON)
+    }
+
+    @MainActor
+    func testSheetCoordinatorKeepsOneVisibleOwnerAndDismissesOnlyItsOwnRoute() {
+        let store = JazzStudioStore()
+
+        store.isInspectorPresented = true
+        XCTAssertEqual(store.presentedSheet, .inspector)
+        XCTAssertTrue(store.isInspectorPresented)
+
+        store.isInstrumentRackPresented = true
+        XCTAssertEqual(store.presentedSheet, .instrumentRack)
+        XCTAssertFalse(store.isInspectorPresented)
+        XCTAssertTrue(store.isInstrumentRackPresented)
+
+        store.isInspectorPresented = false
+        XCTAssertEqual(store.presentedSheet, .instrumentRack)
+        store.isInstrumentRackPresented = false
+        XCTAssertNil(store.presentedSheet)
+
+        store.isChordPadsPresented = true
+        store.isDocumentPresented = true
+        XCTAssertEqual(store.presentedSheet, .documents)
+        XCTAssertFalse(store.isChordPadsPresented)
+        XCTAssertTrue(store.isDocumentPresented)
+    }
+
+    @MainActor
+    func testRefusedPastePreservesDocumentRevisionAndHistory() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FrankenJazzPasteRefusalTests-" + UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let store = JazzStudioStore(recovery: JazzRecoveryStore(directory: directory))
+        store.newChart()
+        store.transpose(1)
+
+        for refused in [nil, "   \n", "{not valid JSON", "not a chart", String(repeating: "C", count: jazzMaximumImportBytes + 1)] as [String?] {
+            let chart = store.chart
+            let revision = store.revision
+            let canUndo = store.canUndo
+            let canRedo = store.canRedo
+            store.isDocumentPresented = true
+
+            store.importPastedText(refused)
+
+            XCTAssertEqual(store.chart, chart)
+            XCTAssertEqual(store.revision, revision)
+            XCTAssertEqual(store.canUndo, canUndo)
+            XCTAssertEqual(store.canRedo, canRedo)
+            XCTAssertTrue(store.isDocumentPresented)
+            XCTAssertTrue(store.notice?.hasPrefix("Paste refused:") == true)
+        }
     }
 
     func testLeadSheetTextCodecRoundTripsEveryRepresentableNativeSetting() throws {
@@ -1123,6 +1303,41 @@ final class FrankenJazzCoreTests: XCTestCase {
         }
     }
 
+    func testInstrumentFamiliesPartitionTheCompleteOriginalCatalog() {
+        let families = InstrumentFamily.allCases
+        let grouped = families.flatMap(\.instruments)
+
+        XCTAssertEqual(families.count, 5)
+        XCTAssertEqual(grouped.count, InstrumentTone.allCases.count)
+        XCTAssertEqual(Set(grouped), Set(InstrumentTone.allCases))
+        XCTAssertEqual(Set(grouped).count, grouped.count, "An instrument must appear in exactly one rack family.")
+        for family in families {
+            XCTAssertFalse(family.instruments.isEmpty)
+            XCTAssertTrue(family.instruments.allSatisfy { $0.family == family })
+            XCTAssertNotNil(UIImage(systemName: family.symbol))
+        }
+    }
+
+    @MainActor
+    func testInstrumentAuditionPlanUsesRequestedToneWithoutMutatingDocumentState() {
+        let store = JazzStudioStore()
+        let chartBefore = store.chart
+        let revisionBefore = store.revision
+        let selectedChordBefore = store.selectedChordID
+        let canUndoBefore = store.canUndo
+        let canRedoBefore = store.canRedo
+
+        let plan = store.instrumentPreviewPlan(for: .dreadnoughtGuitar)
+
+        XCTAssertEqual(plan, JazzInstrumentPreviewPlan(midiPitch: 60, instrument: .dreadnoughtGuitar))
+        XCTAssertTrue(plan.instrument.originalPlayableMIDIRange.contains(plan.midiPitch))
+        XCTAssertEqual(store.chart, chartBefore)
+        XCTAssertEqual(store.revision, revisionBefore)
+        XCTAssertEqual(store.selectedChordID, selectedChordBefore)
+        XCTAssertEqual(store.canUndo, canUndoBefore)
+        XCTAssertEqual(store.canRedo, canRedoBefore)
+    }
+
     func testEveryInstrumentRendersFiniteDistinctNonSilentPreviewWithoutAudioOutput() throws {
         var fingerprints = Set<[UInt32]>()
         for tone in InstrumentTone.allCases {
@@ -1277,7 +1492,12 @@ final class FrankenJazzCoreTests: XCTestCase {
         }
         XCTAssertNil(JazzAudioRenderer.renderPreviewChord(midis: [], tone: .mellowKeys))
         XCTAssertNil(JazzAudioRenderer.renderPreviewChord(midis: [20, 60], tone: .mellowKeys))
-        XCTAssertNil(JazzAudioRenderer.renderPreviewChord(midis: Array(48...58), tone: .mellowKeys))
+        let firstMIDIBeyondStoredVoiceBound = 48 + JazzDocumentValidator.maximumStoredVoices
+        XCTAssertNil(
+            JazzAudioRenderer.renderPreviewChord(
+                midis: Array(48...firstMIDIBeyondStoredVoiceBound), tone: .mellowKeys
+            )
+        )
     }
 
     func testPianoTouchLayoutPrefersBlackKeysAndSupportsGlideHitTesting() {
@@ -1655,6 +1875,27 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertEqual(fourCourse.renderedMIDIPitches, [60, 64, 67, 71])
         XCTAssertEqual(fourCourse.left.count, fourCourse.right.count)
         XCTAssertTrue(fourCourse.left.allSatisfy(\.isFinite))
+    }
+
+    func testUkuleleChordRenderSurvivesCooperativeTaskStackWithoutAudioOutput() async throws {
+        JazzPhysicalInstrumentRenderer.resetCacheForTesting()
+        let rendered = await Task.detached {
+            JazzPhysicalInstrumentRenderer.renderChord(
+                tone: .ukulele,
+                midis: [60, 64, 67, 71],
+                velocity: 96,
+                sampleRate: 24_000,
+                maximumSeconds: 0.08
+            )
+        }.value
+
+        let chord = try XCTUnwrap(rendered)
+        XCTAssertEqual(chord.algorithmID, "changes.dsp.plucked-ukulele@1")
+        XCTAssertEqual(chord.renderedMIDIPitches, [60, 64, 67, 71])
+        XCTAssertEqual(chord.left.count, 1_920)
+        XCTAssertTrue(chord.left.contains { abs($0) > 0.0001 })
+        XCTAssertTrue(chord.left.allSatisfy(\.isFinite))
+        XCTAssertEqual(chord.left.count, chord.right.count)
     }
 
     func testCooperativePluckedChordIsBitExactWithOriginalMonolithicABIWithoutAudioOutput() throws {

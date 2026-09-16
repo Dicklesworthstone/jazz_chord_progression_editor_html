@@ -429,6 +429,41 @@ enum JazzTheory {
         return events
     }
 
+    /// Projects the current lead sheet into the same exact chord realizations
+    /// used by native playback. The pad surface is only another view of the
+    /// document: it neither repairs pitches nor invents a second voicing path.
+    static func chordPadGroups(_ chart: JazzChart) -> [JazzChordPadGroup] {
+        let pitchesByChord = Dictionary(
+            uniqueKeysWithValues: compilePlayback(chart).map { ($0.chordID, $0.midiPitches) }
+        )
+        let positionsByChord = Dictionary(
+            uniqueKeysWithValues: chart.measures.flatMap(\.chords).enumerated().map { ($0.element.id, $0.offset) }
+        )
+        return chart.sectionGroups.map { group in
+            let name = group.section?.name ?? (chart.sections == nil ? "Whole chart" : "Opening bars")
+            let pads = group.indexedMeasures.flatMap { item in
+                item.element.chords.map { chord in
+                    JazzChordPad(
+                        chordID: chord.id,
+                        position: positionsByChord[chord.id] ?? 0,
+                        symbol: chord.symbol,
+                        barNumber: item.offset + 1,
+                        midiPitches: pitchesByChord[chord.id] ?? [],
+                        voicingAuthority: chord.manualMIDIPitches != nil
+                            ? "Manual exact"
+                            : chord.frozenMIDIPitches != nil ? "Frozen exact" : chart.voicingFamily.rawValue
+                    )
+                }
+            }
+            return JazzChordPadGroup(
+                id: group.id,
+                name: name,
+                annotation: group.section?.annotation ?? "",
+                pads: pads
+            )
+        }
+    }
+
     private static func nearestOctaveVoicing(_ pitches: [Int], to previous: [Int]) -> [Int] {
         guard !previous.isEmpty else { return pitches }
         return pitches.map { pitch in

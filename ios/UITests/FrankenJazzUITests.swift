@@ -39,6 +39,13 @@ final class FrankenJazzUITests: XCTestCase {
             NSPredicate(format: "label BEGINSWITH 'Measure 1, Cmaj9'")
         ).firstMatch
         XCTAssertTrue(firstChord.waitForExistence(timeout: 3))
+        let transport = app.buttons["transport-play-pause"]
+        XCTAssertTrue(firstChord.isHittable)
+        XCTAssertLessThanOrEqual(
+            firstChord.frame.maxY,
+            transport.frame.minY - 4,
+            "The first change must remain fully above the pinned transport on iPhone."
+        )
         firstChord.tap()
 
         let lab = app.descendants(matching: .any)["continuation-lab"]
@@ -86,6 +93,81 @@ final class FrankenJazzUITests: XCTestCase {
         let relaunchedToggle = app.buttons["appearance-toggle"]
         XCTAssertTrue(relaunchedToggle.waitForExistence(timeout: 3))
         XCTAssertEqual(relaunchedToggle.label, "Switch to dark mode")
+    }
+
+    func testInstrumentRackExposesEveryOriginalSoundAndSelectsWithoutAuditioning() throws {
+        let route = app.buttons["open-instrument-rack"]
+        XCTAssertTrue(route.waitForExistence(timeout: 3))
+        XCTAssertTrue(route.isHittable)
+        XCTAssertGreaterThanOrEqual(route.frame.height, 44)
+        route.tap()
+
+        XCTAssertTrue(app.navigationBars["Instrument rack"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["15 INSTRUMENTS"].exists)
+        let rack = app.scrollViews["instrument-rack-scroll"]
+        XCTAssertTrue(rack.waitForExistence(timeout: 3))
+        // The pure catalog test exhaustively proves all 15 identities and their
+        // grouping. Here, exercise the two ends of the lazily rendered rack so
+        // XCTest does not mistake an off-screen SwiftUI card for a missing one.
+        let firstName = app.staticTexts["Mellow Keys"]
+        let firstHear = app.buttons["instrument-hear-mellow-keys"]
+        XCTAssertTrue(firstName.isHittable)
+        XCTAssertTrue(firstHear.isHittable)
+        XCTAssertGreaterThanOrEqual(firstHear.frame.height, 44)
+        // Deliberately do not tap Hear: Simulator verification stays silent.
+
+        let lastName = app.staticTexts["Re-entrant Ukulele"]
+        for _ in 0..<12 where !lastName.isHittable { rack.swipeUp() }
+        XCTAssertTrue(lastName.exists, "The complete original catalog must reach Re-entrant Ukulele.")
+        XCTAssertTrue(lastName.isHittable)
+        let lastHear = app.buttons["instrument-hear-ukulele"]
+        XCTAssertTrue(lastHear.isHittable)
+        XCTAssertGreaterThanOrEqual(lastHear.frame.height, 44)
+
+        let chooseUkulele = app.buttons["instrument-select-ukulele"]
+        XCTAssertTrue(chooseUkulele.isHittable)
+        XCTAssertGreaterThanOrEqual(chooseUkulele.frame.height, 44)
+        chooseUkulele.tap()
+        XCTAssertEqual(chooseUkulele.label, "Re-entrant Ukulele, selected")
+
+        let proof = XCTAttachment(screenshot: app.screenshot())
+        proof.name = "FrankenJazz complete original instrument rack"
+        proof.lifetime = .keepAlways
+        add(proof)
+    }
+
+    func testChordPadsExposeTheWholeStarterChartWithoutAuditioning() throws {
+        let route = app.buttons["open-chord-pads"]
+        XCTAssertTrue(route.waitForExistence(timeout: 3))
+        XCTAssertTrue(route.isHittable)
+        XCTAssertGreaterThanOrEqual(route.frame.height, 44)
+        route.tap()
+
+        XCTAssertTrue(app.navigationBars["Chord pads"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["12 PADS"].exists)
+        let scroll = app.scrollViews["chord-pads-scroll"]
+        XCTAssertTrue(scroll.waitForExistence(timeout: 3))
+        let first = app.buttons["chord-pad-0"]
+        XCTAssertTrue(first.waitForExistence(timeout: 3))
+        XCTAssertTrue(first.isHittable)
+        XCTAssertGreaterThanOrEqual(first.frame.height, 44)
+        XCTAssertTrue(first.label.contains("Cmaj9"))
+
+        let last = app.buttons["chord-pad-11"]
+        for _ in 0..<10 where !last.isHittable { scroll.swipeUp() }
+        XCTAssertTrue(last.exists)
+        XCTAssertTrue(last.isHittable)
+        XCTAssertGreaterThanOrEqual(last.frame.height, 44)
+        XCTAssertTrue(last.label.contains("C6"))
+        XCTAssertTrue(app.buttons["stop-chord-pad-audition"].exists)
+
+        // The pad actions are intentionally not tapped in automated UI runs.
+        // Their pure preview plan and renderer are covered without sound in
+        // the core suite; this path proves the complete touch surface.
+        let proof = XCTAttachment(screenshot: app.screenshot())
+        proof.name = "FrankenJazz exact full-chart chord pads"
+        proof.lifetime = .keepAlways
+        add(proof)
     }
 
     func testTouchUndoAndRedoRoundTripAChartEdit() throws {
@@ -477,6 +559,13 @@ final class FrankenJazzUITests: XCTestCase {
         documentActions.tap()
 
         XCTAssertTrue(app.buttons["Import a chart, text, or MIDI file"].waitForExistence(timeout: 3))
+        let pasteImport = app.buttons["paste-chart-import"]
+        XCTAssertTrue(pasteImport.waitForExistence(timeout: 3))
+        XCTAssertTrue(pasteImport.isHittable)
+        XCTAssertGreaterThanOrEqual(pasteImport.frame.height, 44)
+        XCTAssertTrue(app.staticTexts.matching(
+            NSPredicate(format: "label CONTAINS 'read only after you tap'")
+        ).firstMatch.exists)
         let boundary = app.staticTexts.matching(
             NSPredicate(format: "label CONTAINS 'Common DAW retriggers'")
         ).firstMatch
