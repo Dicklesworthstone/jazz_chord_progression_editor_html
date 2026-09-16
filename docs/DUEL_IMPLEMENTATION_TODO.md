@@ -125,7 +125,12 @@ Package `jcpe-6ujg.3`. Spec `jcpe-6ujg.3.1` → build `jcpe-6ujg.3.2` → verify
 - [x] Wire preview, exact Manual insertion, Custom fallback and one Undo
 - [x] Verify real entry/audition/insertion/persistence plus M0 regressions
 - [x] Pass focused tests, typecheck, lint/boundaries, artifact size and applicable real-browser gates.
-- [ ] Follow up on complete pasted-note validation in `NoteFirstPanel.tsx`: its native 512-character textarea limit repeats the now-reproduced songbook/recipe truncation pattern. Exercise a valid prefix plus trailing notes before claiming a defect; preserve exact-note bounds and refuse the complete input if required. Track this within the original `.3.3` verification leaf.
+- [x] Follow up on complete pasted-note validation in `NoteFirstPanel.tsx`; claim original `.3.3`, read inherited acceptance and exact-note contracts, and reserve only owned paths. Source review shows the 256-code-point parser already refuses the 512-unit truncated note text, so do not claim accepted shortened notes. The Custom label's 128-unit native cap can instead cut a 65-code-point paste to a valid 64-emoji prefix; reproduce through native entry before changing production.
+- [ ] Run the new 320px/desktop browser witnesses against committed bytes; retain rejected note text and require complete Custom-label refusal, paired with exact 256-character notes and 64-Unicode-label insertion/JSON/Undo/Redo successes.
+- [ ] Repair confirmed input truncation without changing parser, naming, spelling, note-count, Custom-label or publication semantics; keep source limits visible and complete input editable.
+- [ ] Run RCH focused note-entry/M0 regressions, full types/lint and guarded build; run the complete four-spec native matrix with the new cases and inspect all receipts/screenshots.
+- [ ] Recheck hashes/mtimes, rebuild immediately before commit, commit/push explicit owned paths; run committed-byte predeploy and deploy/verify both hosts with actual browser behavior.
+- [ ] Record all original/final results and return this original verification leaf open for independent musical/player and physical-device acceptance.
 - [ ] Record independent acceptance and close all three phases before package.
 
 2026-09-15 verification checkpoint: `.3.3` found and repaired lost keyboard focus
