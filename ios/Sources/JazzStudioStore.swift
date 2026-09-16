@@ -75,6 +75,7 @@ enum JazzSheetDestination: String, Identifiable, Equatable {
     case instrumentRack
     case chordPads
     case authoredComping
+    case noteFirst
 
     var id: String { rawValue }
 }
@@ -215,6 +216,11 @@ final class JazzStudioStore: ObservableObject {
     var isAuthoredCompingPresented: Bool {
         get { presentedSheet == .authoredComping }
         set { setSheet(.authoredComping, presented: newValue) }
+    }
+
+    var isNoteFirstPresented: Bool {
+        get { presentedSheet == .noteFirst }
+        set { setSheet(.noteFirst, presented: newValue) }
     }
 
     var authoredCompingPassages: [(id: UUID, name: String)] {
@@ -1002,6 +1008,48 @@ final class JazzStudioStore: ObservableObject {
         selectedChordID = measure.chords.first?.id
         let symbol = JazzChordPalette.symbol(root: root, quality: quality)
         notice = "Added \(symbol) as a new final bar. Undo removes it."
+        return nil
+    }
+
+    /// Publishes the note-first draft through the same parser, history,
+    /// recovery, selection, and transport owner as every other chart edit.
+    /// The matcher chooses only the symbol; the exact played MIDI sequence is
+    /// retained verbatim as Manual authority, including octaves and doublings.
+    @discardableResult
+    func appendNoteFirstChord(
+        symbol: String,
+        midiPitches: [Int],
+        sourceRevision: Int
+    ) -> String? {
+        guard sourceRevision == revision else {
+            let message = "The chart changed while this chord was open. Review the notes again before adding it."
+            notice = message
+            return message
+        }
+        guard (1...JazzDocumentValidator.maximumStoredVoices).contains(midiPitches.count),
+              midiPitches.allSatisfy(JazzDocumentValidator.storedVoicingPitchRange.contains) else {
+            let message = "Choose 1–\(JazzDocumentValidator.maximumStoredVoices) notes in the A0–C8 range."
+            notice = message
+            return message
+        }
+        guard chart.measures.count < JazzTheory.maximumMeasures else {
+            let message = "The chart already has its maximum of \(JazzTheory.maximumMeasures) bars. No chord was added."
+            notice = message
+            return message
+        }
+        let matches = JazzTheory.noteFirstCandidates(for: midiPitches, in: chart.key)
+        guard matches.contains(where: { $0.symbol == symbol }) else {
+            let message = "That name no longer matches the exact selected notes. Choose one of the refreshed options."
+            notice = message
+            return message
+        }
+
+        let chord = JazzChordEvent(symbol: symbol, manualMIDIPitches: midiPitches)
+        audio.stop()
+        audio.stopPreview()
+        mutate { $0.measures.append(JazzMeasure(chords: [chord])) }
+        selectedChordID = chord.id
+        notice = "Added \(symbol) as an exact Manual bar. Undo removes it."
         return nil
     }
 

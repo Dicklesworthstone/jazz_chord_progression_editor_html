@@ -16,6 +16,9 @@ Support directory.
 - a compact note-by-note exact-voicing editor with semitone/octave moves,
   voice addition/removal, exact order and doubling preservation, and named
   range/count refusals;
+- a playable Start from notes keyboard that compares every exact entered pitch
+  class against the accepted chord grammar, offers deterministic plural names,
+  and inserts one Manual bar without losing MIDI order or doublings;
 - bounded per-chord rehearsal notes with lead-sheet indicators, undo, recovery,
   and canonical FrankenJazz document persistence;
 - direct selected-chord symbol editing with parser-backed refusal, one-step

@@ -52,6 +52,8 @@ struct FrankenJazzStudioView: View {
                 NavigationStack { ChordPadsView(store: store) }
             case .authoredComping:
                 NavigationStack { AuthoredCompingView(store: store) }
+            case .noteFirst:
+                NavigationStack { NoteFirstChordView(store: store) }
             }
         }
         .fileExporter(
@@ -336,7 +338,7 @@ private struct ChartEditorView: View {
                     JazzSectionLabel(number: "02", title: "Lead sheet", tint: JazzTheme.emerald)
                     Spacer()
                     Button { store.isAuthoredCompingPresented = true } label: {
-                        Label(compact ? "Comp" : "Author comping", systemImage: "circle.grid.4x3.fill")
+                        Label(compact ? "Comp" : "Author comping", systemImage: "circle.grid.3x3.fill")
                             .lineLimit(1)
                             .frame(minHeight: 44)
                     }
@@ -353,6 +355,15 @@ private struct ChartEditorView: View {
                     .accessibilityIdentifier("open-chord-pads")
                     .accessibilityLabel("Play chord pads")
                     .accessibilityHint("Opens every chart change as a touchable exact-voicing pad")
+                    Button { store.isNoteFirstPresented = true } label: {
+                        Label(compact ? "Notes" : "Start from notes", systemImage: "pianokeys")
+                            .lineLimit(1)
+                            .frame(minHeight: 44)
+                    }
+                    .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.cyan))
+                    .accessibilityIdentifier("open-note-first")
+                    .accessibilityLabel("Start from notes")
+                    .accessibilityHint("Builds an exact Manual chord by touching the playable keyboard")
                 }
                 HStack(spacing: 8) {
                     Button { store.undo() } label: {
@@ -1708,6 +1719,8 @@ private struct MiniPiano: View {
     let onKeyPress: (Int) -> Void
     let onActiveKeysChanged: (Set<Int>) -> Void
     let onPrewarmKeys: (Set<Int>, Set<Int>) -> Void
+    var fixedMIDIRange: ClosedRange<Int>? = nil
+    var onKeyTapped: ((Int) -> Void)? = nil
     @State private var activeTouchMIDIs = Set<Int>()
 
     private let whiteWidth: CGFloat = 46
@@ -1716,6 +1729,12 @@ private struct MiniPiano: View {
     private let blackVisualWidth: CGFloat = 30
 
     private var bounds: (start: Int, end: Int) {
+        if let fixedMIDIRange {
+            return (
+                max(21, min(108, fixedMIDIRange.lowerBound)),
+                max(21, min(108, fixedMIDIRange.upperBound))
+            )
+        }
         let valid = highlightedMIDIPitches.filter { (21...108).contains($0) }
         let lowest = valid.min() ?? 60
         let highest = valid.max() ?? 72
@@ -1800,7 +1819,8 @@ private struct MiniPiano: View {
                         guard pitches != activeTouchMIDIs else { return }
                         activeTouchMIDIs = pitches
                         onActiveKeysChanged(pitches)
-                    }
+                    },
+                    onKeyTapped: onKeyTapped
                 )
                 .accessibilityHidden(true)
             }
@@ -1874,6 +1894,7 @@ private struct PianoMultiTouchSurface: UIViewRepresentable {
     var whiteSpacing: CGFloat
     var blackTouchWidth: CGFloat
     var onActiveKeysChanged: (Set<Int>) -> Void
+    var onKeyTapped: ((Int) -> Void)?
 
     func makeUIView(context: Context) -> PianoTouchView {
         let view = PianoTouchView()
@@ -1897,6 +1918,7 @@ private struct PianoMultiTouchSurface: UIViewRepresentable {
             blackTouchWidth: blackTouchWidth
         )
         view.onActiveKeysChanged = onActiveKeysChanged
+        view.onKeyTapped = onKeyTapped
     }
 }
 
@@ -1906,6 +1928,7 @@ private final class PianoTouchView: UIView {
         whiteSpacing: 1, blackTouchWidth: 44
     )
     var onActiveKeysChanged: ((Set<Int>) -> Void)?
+    var onKeyTapped: ((Int) -> Void)?
     private var pitchByTouch = [ObjectIdentifier: Int]()
 
     override func didMoveToWindow() {
@@ -1929,6 +1952,9 @@ private final class PianoTouchView: UIView {
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        for touch in touches {
+            if let midi = pitchByTouch[ObjectIdentifier(touch)] { onKeyTapped?(midi) }
+        }
         remove(touches)
     }
 
@@ -3056,6 +3082,212 @@ private struct MyChartsView: View {
                 secondaryButton: .cancel()
             )
         }
+    }
+}
+
+private struct NoteFirstChordView: View {
+    @ObservedObject var store: JazzStudioStore
+    @Environment(\.dismiss) private var dismiss
+    @State private var selectedMIDIs: [Int]
+    @State private var openedRevision: Int?
+    @State private var keyboardOctave = 3
+    @State private var issue: String?
+
+    init(store: JazzStudioStore) {
+        self.store = store
+        let seed = ProcessInfo.processInfo.arguments.contains("-ui-testing-note-first-seed")
+            ? [60, 64, 67]
+            : []
+        _selectedMIDIs = State(initialValue: seed)
+    }
+
+    private var candidates: [JazzNoteFirstCandidate] {
+        JazzTheory.noteFirstCandidates(for: selectedMIDIs, in: store.chart.key)
+    }
+
+    private var keyboardRange: ClosedRange<Int> {
+        let base = (keyboardOctave + 1) * 12
+        return max(21, base)...min(108, base + 24)
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 14) {
+                JazzPanel(accent: JazzTheme.cyan) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack(alignment: .firstTextBaseline) {
+                            JazzSectionLabel(number: "08", title: "Start from notes", tint: JazzTheme.cyan)
+                            Spacer()
+                            Text("\(selectedMIDIs.count)/\(JazzDocumentValidator.maximumStoredVoices)")
+                                .font(.system(size: JazzTheme.size(10), weight: .bold, design: .monospaced))
+                                .foregroundStyle(JazzTheme.secondary)
+                                .accessibilityIdentifier("note-first-selected-count")
+                        }
+                        Text("Touch the playable keyboard to build an exact voicing. Every octave, tap order, and duplicate becomes Manual chart data; naming never rewrites your notes.")
+                            .font(.system(size: JazzTheme.size(12), design: .rounded))
+                            .foregroundStyle(JazzTheme.secondary)
+
+                        HStack(spacing: 10) {
+                            Stepper("Keyboard octave \(keyboardOctave)", value: $keyboardOctave, in: 0...6)
+                                .font(.system(size: JazzTheme.size(11), weight: .semibold, design: .rounded))
+                                .accessibilityIdentifier("note-first-octave")
+                            Spacer(minLength: 4)
+                            Button("Clear") {
+                                selectedMIDIs.removeAll(keepingCapacity: true)
+                                issue = nil
+                                store.audio.stopPreview()
+                            }
+                            .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.coral))
+                            .disabled(selectedMIDIs.isEmpty)
+                            .accessibilityIdentifier("note-first-clear")
+                        }
+
+                        MiniPiano(
+                            highlightedMIDIPitches: Set(selectedMIDIs),
+                            accent: JazzTheme.cyan,
+                            instrumentName: store.chart.instrument.displayName,
+                            onKeyPress: addAndPreview,
+                            onActiveKeysChanged: store.previewKeys,
+                            onPrewarmKeys: store.prewarmKeys,
+                            fixedMIDIRange: keyboardRange,
+                            onKeyTapped: add
+                        )
+                        .frame(height: 96)
+
+                        if selectedMIDIs.isEmpty {
+                            Label("Tap at least one key to begin.", systemImage: "hand.tap")
+                                .font(.system(size: JazzTheme.size(11), weight: .semibold, design: .rounded))
+                                .foregroundStyle(JazzTheme.secondary)
+                        } else {
+                            selectedVoices
+                            Button {
+                                store.audio.preview(midis: selectedMIDIs, tone: store.chart.instrument)
+                            } label: {
+                                Label("Hear exact voicing", systemImage: "speaker.wave.2.fill")
+                                    .frame(maxWidth: .infinity, minHeight: 44)
+                            }
+                            .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.cyan))
+                            .accessibilityIdentifier("note-first-preview")
+                        }
+                    }
+                }
+
+                JazzPanel(accent: JazzTheme.emerald) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        JazzSectionLabel(number: "09", title: "Matching names", tint: JazzTheme.emerald)
+                        if selectedMIDIs.isEmpty {
+                            Text("Names appear after you choose notes.")
+                                .foregroundStyle(JazzTheme.secondary)
+                        } else if candidates.isEmpty {
+                            Text("No accepted chord name matches this complete pitch-class set. Your notes are untouched; add or remove a note and try again.")
+                                .foregroundStyle(JazzTheme.coral)
+                                .accessibilityIdentifier("note-first-no-match")
+                        } else {
+                            ForEach(candidates) { candidate in
+                                candidateCard(candidate)
+                            }
+                        }
+                        if let issue {
+                            Label(issue, systemImage: "exclamationmark.triangle.fill")
+                                .font(.system(size: JazzTheme.size(10.5), weight: .semibold, design: .rounded))
+                                .foregroundStyle(JazzTheme.coral)
+                                .accessibilityIdentifier("note-first-refusal")
+                        }
+                    }
+                }
+            }
+            .frame(maxWidth: 650)
+            .padding(18)
+            .frame(maxWidth: .infinity)
+        }
+        .scrollIndicators(.hidden)
+        .navigationTitle("Start from notes")
+        .accessibilityIdentifier("note-first-sheet")
+        .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+        .onAppear { openedRevision = store.revision }
+        .onDisappear { store.audio.stopPreview() }
+    }
+
+    private var selectedVoices: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(Array(selectedMIDIs.enumerated()), id: \.offset) { index, midi in
+                    Button {
+                        selectedMIDIs.remove(at: index)
+                        issue = nil
+                    } label: {
+                        HStack(spacing: 5) {
+                            Text("\(index + 1). \(midiName(midi))")
+                            Image(systemName: "xmark.circle.fill")
+                        }
+                        .frame(minHeight: 44)
+                    }
+                    .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.emerald))
+                    .accessibilityIdentifier("note-first-remove-\(index)")
+                    .accessibilityLabel("Remove voice \(index + 1), \(midiName(midi))")
+                }
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Exact selected voices in authored order")
+    }
+
+    private func candidateCard(_ candidate: JazzNoteFirstCandidate) -> some View {
+        Button {
+            guard let openedRevision else { return }
+            issue = store.appendNoteFirstChord(
+                symbol: candidate.symbol,
+                midiPitches: selectedMIDIs,
+                sourceRevision: openedRevision
+            )
+            if issue == nil { dismiss() }
+        } label: {
+            VStack(alignment: .leading, spacing: 5) {
+                HStack {
+                    Text(candidate.symbol)
+                        .font(.system(size: JazzTheme.size(18), weight: .bold, design: .rounded))
+                    Spacer()
+                    Text(candidate.description.romanNumeral)
+                        .font(.system(size: JazzTheme.size(11), weight: .bold, design: .monospaced))
+                        .foregroundStyle(JazzTheme.cyan)
+                }
+                Text(candidate.description.function + " · " + candidate.description.colorNote)
+                    .font(.system(size: JazzTheme.size(10.5), design: .rounded))
+                    .foregroundStyle(JazzTheme.secondary)
+                    .multilineTextAlignment(.leading)
+                Text("Add one four-beat Manual bar")
+                    .font(.system(size: JazzTheme.size(9.5), weight: .semibold, design: .monospaced))
+                    .foregroundStyle(JazzTheme.emerald)
+            }
+            .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
+        }
+        .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.emerald))
+        .accessibilityIdentifier("note-first-add-\(candidate.symbol)")
+        .accessibilityLabel("Add \(candidate.symbol) as an exact Manual bar")
+        .accessibilityHint("Preserves all \(selectedMIDIs.count) selected MIDI notes in their authored order")
+    }
+
+    private func addAndPreview(_ midi: Int) {
+        add(midi)
+        store.previewKey(midi)
+    }
+
+    private func add(_ midi: Int) {
+        guard selectedMIDIs.count < JazzDocumentValidator.maximumStoredVoices else {
+            issue = "A Manual chord can contain at most \(JazzDocumentValidator.maximumStoredVoices) voices."
+            return
+        }
+        guard JazzDocumentValidator.storedVoicingPitchRange.contains(midi) else {
+            issue = "That key is outside the supported A0–C8 range."
+            return
+        }
+        selectedMIDIs.append(midi)
+        issue = nil
+    }
+
+    private func midiName(_ midi: Int) -> String {
+        let names = ["C", "C♯", "D", "E♭", "E", "F", "F♯", "G", "A♭", "A", "B♭", "B"]
+        return "\(names[(midi % 12 + 12) % 12])\(midi / 12 - 1)"
     }
 }
 

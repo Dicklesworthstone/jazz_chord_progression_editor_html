@@ -7,12 +7,23 @@ enum JazzTheory {
 
     private static let sharpNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
     private static let flatNames = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"]
-    private static let supportedSuffixes: Set<String> = [
+    private static let acceptedSuffixes = [
         "", "m", "dim", "°", "dim7", "°7", "m7b5", "ø", "ø7", "mmaj7",
         "maj13", "maj9", "maj7#11", "maj7#5", "maj7", "m13", "13", "m11", "11",
         "add9", "add2", "6/9", "m9", "9", "7alt", "7b9b5", "7b9#5",
         "7#9b5", "7#9#5", "7b9", "7#9", "7b5", "7#5", "m7", "7sus4", "7sus",
         "7", "m6", "6", "sus2", "sus4", "sus", "aug", "+"
+    ]
+    private static let supportedSuffixes = Set(acceptedSuffixes)
+    /// Parser aliases such as `add2`, `sus`, `7sus`, `ø`, and `°` remain
+    /// accepted, but are omitted from matcher output so one pitch-class set
+    /// does not produce cosmetic duplicate answers.
+    private static let noteFirstSuffixes = [
+        "", "m", "dim", "dim7", "m7b5", "aug", "sus2", "sus4",
+        "6", "m6", "7", "maj7", "m7", "mmaj7", "add9", "6/9",
+        "9", "m9", "11", "m11", "13", "m13", "7sus4", "7b5",
+        "7#5", "7b9", "7#9", "7b9b5", "7b9#5", "7#9b5", "7#9#5",
+        "7alt", "maj9", "maj13", "maj7#11", "maj7#5"
     ]
 
     static func pitchClass(for name: String) -> Int? {
@@ -36,6 +47,54 @@ enum JazzTheory {
 
     static func noteName(_ pitchClass: Int, flats: Bool) -> String {
         (flats ? flatNames : sharpNames)[(pitchClass % 12 + 12) % 12]
+    }
+
+    /// Returns plural, deterministic names for an exact played pitch-class
+    /// set. The lowest supplied MIDI note becomes an explicit slash bass when
+    /// it is not the candidate root. Matching is bounded by a frozen
+    /// 12-roots-by-36-qualities inventory and never guesses from a partial
+    /// voicing; the caller retains every original MIDI pitch, order, octave,
+    /// and duplicate as Manual document data.
+    static func noteFirstCandidates(
+        for midiPitches: [Int],
+        in key: JazzKey,
+        limit: Int = 8
+    ) -> [JazzNoteFirstCandidate] {
+        guard (1...JazzDocumentValidator.maximumStoredVoices).contains(midiPitches.count),
+              midiPitches.allSatisfy(JazzDocumentValidator.storedVoicingPitchRange.contains),
+              (1...12).contains(limit),
+              let bassMIDI = midiPitches.min()
+        else { return [] }
+
+        let pitchClasses = Set(midiPitches.map { ($0 % 12 + 12) % 12 })
+        let bassPitchClass = (bassMIDI % 12 + 12) % 12
+        let flats = key.prefersFlats
+        var matches: [JazzNoteFirstCandidate] = []
+        for rootPitchClass in 0..<12 {
+            let root = noteName(rootPitchClass, flats: flats)
+            for (qualityRank, suffix) in noteFirstSuffixes.enumerated() {
+                let baseSymbol = root + suffix
+                guard let base = parseChord(baseSymbol, in: key),
+                      Set(base.pitchClasses) == pitchClasses else { continue }
+                let symbol = rootPitchClass == bassPitchClass
+                    ? baseSymbol
+                    : baseSymbol + "/" + noteName(bassPitchClass, flats: flats)
+                guard let description = parseChord(symbol, in: key) else { continue }
+                matches.append(JazzNoteFirstCandidate(
+                    symbol: symbol,
+                    description: description,
+                    rootInBass: rootPitchClass == bassPitchClass,
+                    rootMatchesKey: rootPitchClass == key.pitchClass,
+                    qualityRank: qualityRank
+                ))
+            }
+        }
+        return matches.sorted {
+            if $0.rootInBass != $1.rootInBass { return $0.rootInBass && !$1.rootInBass }
+            if $0.rootMatchesKey != $1.rootMatchesKey { return $0.rootMatchesKey && !$1.rootMatchesKey }
+            if $0.qualityRank != $1.qualityRank { return $0.qualityRank < $1.qualityRank }
+            return $0.symbol < $1.symbol
+        }.prefix(limit).map { $0 }
     }
 
     static func parseChart(_ text: String) throws -> ParsedChart {

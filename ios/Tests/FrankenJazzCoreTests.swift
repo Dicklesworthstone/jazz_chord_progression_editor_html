@@ -922,6 +922,74 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertEqual(store.chart.measures.last?.chords.first?.symbol, "F#m7b5")
     }
 
+    func testNativeNoteFirstMatcherReturnsPluralExactNamesAndSlashBassDeterministically() {
+        let rootPosition = JazzTheory.noteFirstCandidates(for: [60, 64, 67], in: .c)
+        XCTAssertEqual(rootPosition.first?.symbol, "C")
+        XCTAssertEqual(rootPosition.first?.description.pitchClasses, [0, 4, 7])
+
+        let inversion = JazzTheory.noteFirstCandidates(for: [64, 67, 72], in: .c)
+        XCTAssertEqual(inversion.first?.symbol, "C/E")
+        XCTAssertTrue(inversion.first?.rootInBass == false)
+
+        let ambiguous = JazzTheory.noteFirstCandidates(for: [60, 64, 67, 69], in: .c)
+        XCTAssertTrue(ambiguous.map(\.symbol).contains("C6"))
+        XCTAssertTrue(ambiguous.map(\.symbol).contains("Am7/C"))
+        XCTAssertEqual(
+            JazzTheory.noteFirstCandidates(for: [60, 64, 67, 60], in: .c).map(\.symbol),
+            rootPosition.map(\.symbol),
+            "Duplicate unisons are retained by the document but must not change chord naming."
+        )
+
+        XCTAssertTrue(JazzTheory.noteFirstCandidates(for: [], in: .c).isEmpty)
+        XCTAssertTrue(JazzTheory.noteFirstCandidates(for: [20, 60, 64], in: .c).isEmpty)
+        XCTAssertTrue(JazzTheory.noteFirstCandidates(for: Array(repeating: 60, count: 17), in: .c).isEmpty)
+        XCTAssertTrue(JazzTheory.noteFirstCandidates(for: [60, 61], in: .c).isEmpty)
+        XCTAssertTrue(JazzTheory.noteFirstCandidates(for: [60, 64, 67], in: .c, limit: 0).isEmpty)
+    }
+
+    @MainActor
+    func testNativeNoteFirstAppendPreservesExactOrderDoublingsRecoveryAndOneUndo() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FrankenJazzNoteFirstTests-" + UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let recovery = JazzRecoveryStore(directory: directory)
+        let store = JazzStudioStore(recovery: recovery)
+        let before = store.chart
+        let revision = store.revision
+        let exact = [60, 64, 67, 60]
+
+        XCTAssertNil(store.appendNoteFirstChord(symbol: "C", midiPitches: exact, sourceRevision: revision))
+        XCTAssertEqual(store.chart.measures.count, before.measures.count + 1)
+        XCTAssertEqual(store.chart.measures.last?.chords.first?.symbol, "C")
+        XCTAssertEqual(store.chart.measures.last?.chords.first?.beats, 4)
+        XCTAssertEqual(store.chart.measures.last?.chords.first?.manualMIDIPitches, exact)
+        XCTAssertNil(store.chart.measures.last?.chords.first?.frozenMIDIPitches)
+        XCTAssertEqual(store.selectedChord?.manualMIDIPitches, exact)
+        XCTAssertTrue(store.canUndo)
+
+        let recovered = try XCTUnwrap(recovery.load())
+        XCTAssertEqual(recovered.measures.last?.chords.first?.manualMIDIPitches, exact)
+        store.undo()
+        XCTAssertEqual(store.chart, before)
+
+        let staleRevision = store.revision
+        store.updateTitle("Revision fence")
+        let unchanged = store.chart
+        XCTAssertNotNil(store.appendNoteFirstChord(
+            symbol: "C",
+            midiPitches: exact,
+            sourceRevision: staleRevision
+        ))
+        XCTAssertEqual(store.chart, unchanged)
+        XCTAssertNotNil(store.appendNoteFirstChord(
+            symbol: "Dbmaj7",
+            midiPitches: exact,
+            sourceRevision: store.revision
+        ))
+        XCTAssertEqual(store.chart, unchanged)
+    }
+
     @MainActor
     func testNativeCountInAndMetronomePlansMatchOriginalFourFourPolicy() {
         let fresh = JazzAudioEngine.transportClickPlan(
@@ -2376,7 +2444,10 @@ final class FrankenJazzCoreTests: XCTestCase {
         )
         let midi = try PerformedMIDIFileWriter.makeFile(chart: result.passageChart, events: result.events)
         XCTAssertEqual(midi.bassLaneCount, 0)
-        XCTAssertEqual(midi.compLaneCount, 4)
+        XCTAssertEqual(
+            midi.compLaneCount, 1,
+            "Distinct simultaneous pitches share one MIDI channel; extra lanes are reserved for overlapping unisons."
+        )
         XCTAssertEqual(midi.attackCount, 4)
         XCTAssertEqual(midi.pitchCount, 16)
         let rendered = try XCTUnwrap(JazzAudioRenderer.render(

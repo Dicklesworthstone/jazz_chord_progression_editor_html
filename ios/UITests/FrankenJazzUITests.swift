@@ -209,7 +209,8 @@ final class FrankenJazzUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["comping-ready"].waitForExistence(timeout: 3))
 
         let hear = app.buttons["hear-authored-comping"]
-        XCTAssertTrue(hear.exists)
+        for _ in 0..<8 where !hear.isHittable { app.swipeUp() }
+        XCTAssertTrue(hear.waitForExistence(timeout: 3))
         XCTAssertTrue(hear.isHittable)
         XCTAssertGreaterThanOrEqual(hear.frame.height, 44)
         // Do not tap Hear: this DSR lane must remain silent.
@@ -278,8 +279,8 @@ final class FrankenJazzUITests: XCTestCase {
 
     func testChordPaletteBuildsARealUndoableBarWithoutPlayingAudio() throws {
         let toggle = app.buttons["quick-entry-toggle"]
-        XCTAssertTrue(toggle.waitForExistence(timeout: 3))
         revealAboveTransport(toggle)
+        XCTAssertTrue(toggle.waitForExistence(timeout: 3))
         XCTAssertTrue(toggle.isHittable)
         toggle.tap()
 
@@ -312,6 +313,46 @@ final class FrankenJazzUITests: XCTestCase {
         proof.name = "FrankenJazz original chord palette parity"
         proof.lifetime = .keepAlways
         add(proof)
+    }
+
+    func testNoteFirstCreatesAnExactManualBarAndUndoWithoutPlayingAudio() throws {
+        app.terminate()
+        app.launchArguments.append("-ui-testing-note-first-seed")
+        app.launch()
+
+        let open = app.buttons["open-note-first"]
+        XCTAssertTrue(open.waitForExistence(timeout: 3))
+        revealAboveTransport(open)
+        XCTAssertTrue(open.isHittable)
+        XCTAssertGreaterThanOrEqual(open.frame.height, 44)
+        open.tap()
+
+        let sheet = app.descendants(matching: .any)["note-first-sheet"]
+        XCTAssertTrue(sheet.waitForExistence(timeout: 3))
+        XCTAssertEqual(app.staticTexts["note-first-selected-count"].label, "3/16")
+        let addButton = app.buttons["note-first-add-C"]
+        XCTAssertTrue(addButton.waitForExistence(timeout: 3))
+        XCTAssertTrue(addButton.isHittable)
+        XCTAssertGreaterThanOrEqual(addButton.frame.height, 44)
+        XCTAssertEqual(addButton.label, "Add C as an exact Manual bar")
+
+        // The deterministic launch seed exercises the real matcher and store
+        // path while deliberately avoiding any key or preview tap in the
+        // silent Simulator lane.
+        addButton.tap()
+        let added = app.buttons.matching(
+            NSPredicate(format: "label BEGINSWITH 'Measure 9, C'")
+        ).firstMatch
+        XCTAssertTrue(added.waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["undo-chart-change"].isEnabled)
+
+        let proof = XCTAttachment(screenshot: app.screenshot())
+        proof.name = "FrankenJazz native note-first exact Manual bar"
+        proof.lifetime = .keepAlways
+        add(proof)
+
+        app.buttons["undo-chart-change"].tap()
+        XCTAssertFalse(added.waitForExistence(timeout: 1))
     }
 
     func testNamedSectionsAreVisibleEditableAndArmOnlyTheirOwnLoop() throws {
@@ -521,6 +562,11 @@ final class FrankenJazzUITests: XCTestCase {
         let instruction = app.staticTexts["Press, glide, or play several keys"]
         let middleC = app.buttons["piano-key-60"]
         let chordPreview = app.buttons["preview-selected-chord"]
+        for _ in 0..<8 where !chordPreview.isHittable { app.swipeUp() }
+        XCTAssertTrue(chordPreview.waitForExistence(timeout: 3))
+        XCTAssertTrue(chordPreview.isHittable)
+        XCTAssertEqual(chordPreview.label, "Hear this voicing")
+
         for _ in 0..<8 where !middleC.isHittable { app.swipeUp() }
         XCTAssertTrue(instruction.waitForExistence(timeout: 3))
         XCTAssertTrue(middleC.waitForExistence(timeout: 3))
@@ -529,9 +575,6 @@ final class FrankenJazzUITests: XCTestCase {
         XCTAssertGreaterThanOrEqual(middleC.frame.height, 44)
         XCTAssertTrue(middleC.label.contains("C4"))
         XCTAssertTrue(app.staticTexts["FM Electric Piano"].exists)
-        XCTAssertTrue(chordPreview.exists)
-        XCTAssertTrue(chordPreview.isHittable)
-        XCTAssertEqual(chordPreview.label, "Hear this voicing")
 
         // Do not tap either audio action: automated validation must never emit audible output.
         let proof = XCTAttachment(screenshot: app.screenshot())
@@ -682,6 +725,7 @@ final class FrankenJazzUITests: XCTestCase {
         ).firstMatch.waitForExistence(timeout: 3))
 
         let search = app.searchFields.firstMatch
+        for _ in 0..<4 where !search.exists { app.swipeDown() }
         XCTAssertTrue(search.waitForExistence(timeout: 3))
         search.tap()
         search.typeText("Midnight")
