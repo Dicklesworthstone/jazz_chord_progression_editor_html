@@ -39,7 +39,8 @@ export function CompingPanel({ports}:{ports:Readonly<{service:StudioCompingServi
       <details><summary>Save or open a rhythm recipe</summary>
         <button type="button" disabled={busy} onClick={()=>{service.downloadRecipe();}}>Download rhythm recipe</button>
         <label>Open recipe file<input type="file" accept="application/json,.json" disabled={busy} onChange={e=>{const file=e.currentTarget.files?.[0];e.currentTarget.value="";setText("");if(file!==undefined)void service.previewRecipeFile(file);}} /></label>
-        <label>Paste recipe JSON<textarea value={text} maxLength={2048} disabled={busy} onInput={e=>{setText(e.currentTarget.value);service.previewRecipe(e.currentTarget.value);}} /></label>
+        {/* Validate the complete paste; native maxlength can hide trailing JSON. */}
+        <label>Paste recipe JSON<textarea value={text} disabled={busy} onInput={e=>{setText(e.currentTarget.value);service.previewRecipe(e.currentTarget.value);}} /></label>
         {view.importDraft===null?null:<p>Preview: {view.importDraft.slots.filter(n=>n>0).length} active slots · {view.importDraft.gateTicks}/960 beat maximum gate.</p>}
         <button type="button" disabled={busy||view.importDraft===null} onClick={()=>{service.applyRecipe();}}>Apply recipe to session</button>
       </details>
