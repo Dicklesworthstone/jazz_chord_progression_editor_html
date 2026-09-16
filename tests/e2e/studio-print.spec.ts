@@ -6,10 +6,26 @@ import {readFileSync,writeFileSync} from "node:fs";
 import {resolve} from "node:path";
 import {pathToFileURL} from "node:url";
 import fixture from "../fixtures/exact-share/document.changes.json" with {type:"json"};
+import fontAdvances from "../fixtures/printable-charts/font-advances.json" with {type:"json"};
 const artifact=resolve(process.env["JCPE_PRINT_ARTIFACT"]??"jazz_chord_progression_editor.html"),url=pathToFileURL(artifact).href,hash=createHash("sha256").update(readFileSync(artifact)).digest("hex");
 const section=fixture.sections[0],measure=section?.measures[0],event=measure?.events[0];if(!section||!measure||!event)throw new Error("Fixture");
 const chart={...fixture,title:"Print exact Dbmaj7",sections:[{...section,name:"Forty nine bars",measures:Array.from({length:49},(_v,i)=>({...measure,id:`print-bar-${String(i)}`,completion:{kind:"complete"},events:[{...event,id:`print-event-${String(i)}`,duration:{numerator:4,denominator:1},chord:{kind:"custom",sourceText:"Dbmaj7",label:"Dbmaj7",pitchNames:[{step:"D",alter:-1}],bass:null},voicing:{mode:"manual",bassPolicy:"included",pitches:[{step:"D",alter:-1,octave:4}]}}]}))}]};
 test.use({userAgent:"OpenAI File Downloader, XaiImageApiFetch/1.0",contextOptions:{reducedMotion:"reduce"}});
+async function verifyPrintedWidths(page:Page,selector:string):Promise<void>{
+ const widths=await page.locator(`${selector} text`).evaluateAll(elements=>elements.map(element=>{
+  if(!(element instanceof SVGTextElement))throw new Error("Expected SVG text");
+  return{text:element.textContent,size:Number(element.getAttribute("font-size")),width:element.getComputedTextLength(),family:getComputedStyle(element).fontFamily};
+ }));
+ expect(widths.length).toBeGreaterThan(0);
+ const advances:Readonly<Record<string,number>>=fontAdvances;
+ for(const item of widths){
+  expect(item.family).toContain("JazzChordsPrint");
+  let expected=0;for(const char of item.text){const advance=advances[String(char.codePointAt(0))];if(advance===undefined)throw new Error("Missing independent font metric");expected+=advance*item.size;}
+  // Native text layout rounds glyph positions; reserve far less than the
+  // contract's 1 mm cell slack while checking the independent FreeType sum.
+  expect(Math.abs(item.width-expected)).toBeLessThanOrEqual(0.1);
+ }
+}
 for(const paper of ["a4","letter"] as const)for(const width of [320,1280])test(`exact printable ${paper} ${String(width)}px`,async({page,browser,browserName},info)=>{
  const errors:string[]=[],requests:{url:string;allowed:boolean}[]=[];
  page.on("pageerror",e=>errors.push(e.message));page.on("console",m=>{if(m.type()==="error")errors.push(m.text());});await page.route("**/*",async route=>{const allowed=route.request().isNavigationRequest()&&route.request().url()===url;requests.push({url:route.request().url(),allowed});if(allowed)await route.continue();else await route.abort();});
@@ -19,9 +35,10 @@ for(const paper of ["a4","letter"] as const)for(const width of [320,1280])test(`
   const svg=panel.locator("svg");expect(await svg.locator("text").evaluateAll(elements=>elements.every(e=>{if(!(e instanceof SVGGraphicsElement))return false;const box=e.getBBox();const parent=e.ownerSVGElement;if(parent===null||box.x<0||box.x+box.width>parent.viewBox.baseVal.width||box.y+box.height>parent.viewBox.baseVal.height)return false;const cell=[...parent.querySelectorAll("rect[data-source-id]")].find(r=>r.getAttribute("data-source-id")===e.getAttribute("data-source-id"));if(!(cell instanceof SVGRectElement))return true;return box.x>=cell.x.baseVal.value&&box.x+box.width<=cell.x.baseVal.value+cell.width.baseVal.value-1&&box.y+box.height<=cell.y.baseVal.value+cell.height.baseVal.value-1;}))).toBe(true);
   expect((await new AxeBuilder({page}).include(".studio-print-tool").analyze()).violations).toEqual([]);expect(await panel.evaluate(e=>e.scrollWidth<=e.clientWidth)).toBe(true);
   const pending=page.waitForEvent("download");await panel.getByRole("button",{name:"Download page SVG",exact:true}).click();const download=await pending;expect(await download.failure()).toBeNull();const bytes=readFileSync(await download.path()),text=bytes.toString("utf8");expect(download.suggestedFilename()).toBe(`JazzChords.org-${paper}-page-1.svg`);
-  const font=text.match(/data:font\/woff2;base64,([A-Za-z0-9+/=]+)/)?.[1];if(font===undefined)throw new Error("Missing embedded font");expect(Buffer.from(font,"base64").equals(readFileSync("assets/fonts/archivo-latin.woff2"))).toBe(true);
+  await verifyPrintedWidths(page,".studio-print-tool svg");
+  const font=text.match(/data:font\/woff2;base64,([A-Za-z0-9+/=]+)/)?.[1];if(font===undefined)throw new Error("Missing embedded font");expect(Buffer.from(font,"base64").equals(readFileSync("assets/fonts/archivo-print-400.woff2"))).toBe(true);
   const saved=info.outputPath("downloaded-chart.svg");await download.saveAs(saved);const standalone=await page.context().newPage(),standaloneUrl=pathToFileURL(saved).href;
-  try{standalone.on("pageerror",e=>errors.push(e.message));standalone.on("console",m=>{if(m.type()==="error")errors.push(m.text());});await standalone.route("**/*",async route=>{const allowed=route.request().url()===standaloneUrl&&route.request().isNavigationRequest();requests.push({url:route.request().url(),allowed});if(allowed)await route.continue();else await route.abort();});await standalone.goto(standaloneUrl);const parsed=await standalone.evaluate(()=>{const d=document;return{errors:d.querySelectorAll("parsererror").length,forbidden:d.querySelectorAll("script,foreignObject,iframe,image").length,text:[...d.querySelectorAll("text")].map(e=>e.textContent),width:d.documentElement.getAttribute("width"),height:d.documentElement.getAttribute("height")};});expect(parsed.errors).toBe(0);expect(parsed.forbidden).toBe(0);expect(parsed.text.filter(t=>t==="Dbmaj7 [4/1 q]").length).toBe(paper==="a4"?48:44);expect(parsed.width).toBe(paper==="a4"?"210mm":"215.9mm");expect(parsed.height).toBe(paper==="a4"?"297mm":"279.4mm");expect(await standalone.evaluate(async()=>{const fonts=await document.fonts.load("400 16px JazzChordsPrint");await document.fonts.ready;return fonts.length;})).toBe(1);await expect(standalone.locator("svg")).toBeVisible();}finally{await standalone.close();}
+  try{standalone.on("pageerror",e=>errors.push(e.message));standalone.on("console",m=>{if(m.type()==="error")errors.push(m.text());});await standalone.route("**/*",async route=>{const allowed=route.request().url()===standaloneUrl&&route.request().isNavigationRequest();requests.push({url:route.request().url(),allowed});if(allowed)await route.continue();else await route.abort();});await standalone.goto(standaloneUrl);const parsed=await standalone.evaluate(()=>{const d=document;return{errors:d.querySelectorAll("parsererror").length,forbidden:d.querySelectorAll("script,foreignObject,iframe,image").length,text:[...d.querySelectorAll("text")].map(e=>e.textContent),width:d.documentElement.getAttribute("width"),height:d.documentElement.getAttribute("height")};});expect(parsed.errors).toBe(0);expect(parsed.forbidden).toBe(0);expect(parsed.text.filter(t=>t==="Dbmaj7 [4/1 q]").length).toBe(paper==="a4"?48:44);expect(parsed.width).toBe(paper==="a4"?"210mm":"215.9mm");expect(parsed.height).toBe(paper==="a4"?"297mm":"279.4mm");expect(await standalone.evaluate(async()=>{const fonts=await document.fonts.load("400 16px JazzChordsPrint");await document.fonts.ready;return fonts.length;})).toBe(1);await expect(standalone.locator("svg")).toBeVisible();await verifyPrintedWidths(standalone,"svg");}finally{await standalone.close();}
   if(browserName==="chromium"){await page.evaluate(()=>{window.addEventListener("beforeprint",()=>{document.documentElement.dataset["nativePrintSeen"]="yes";},{once:true});});await panel.getByRole("button",{name:"Print all pages",exact:true}).click();await expect(page.locator("html")).toHaveAttribute("data-native-print-seen","yes");}
   await page.emulateMedia({media:"print"});await expect(page.locator(".studio-print-only svg")).toHaveCount(2);await expect(page.locator("#studio-shell-background")).toBeHidden();
   if(browserName==="chromium"){const pdf=await page.pdf({preferCSSPageSize:true,printBackground:true,displayHeaderFooter:false});await info.attach(`native-${paper}-pdf`,{body:pdf,contentType:"application/pdf"});const pdfPath=info.outputPath(`native-${paper}.pdf`);writeFileSync(pdfPath,pdf);const proof=verifyNativePrintPdf(pdfPath,paper);await info.attach("native-pdf-proof",{body:JSON.stringify(proof),contentType:"application/json"});}
@@ -103,4 +120,22 @@ for(const paper of ["a4","letter"] as const)for(const width of [320,1280])test(`
   expect(errors).toEqual([]);expect(requests.every(r=>r.allowed)).toBe(true);
   await info.attach("selected-page-svg",{body:second,contentType:"image/svg+xml"});await info.attach("replacement-page-svg",{body:current,contentType:"image/svg+xml"});
  }finally{await info.attach("print-current-source-evidence",{body:JSON.stringify({hash,paper,width,browser:browser.version(),errors,requests}),contentType:"application/json"});}
+});
+
+
+test("print the fitting weight-400 title and refuse its one-character near miss",async({page},info)=>{
+ const errors:string[]=[],requests:{url:string;allowed:boolean}[]=[];
+ page.on("pageerror",e=>errors.push(e.message));page.on("console",m=>{if(m.type()==="error")errors.push(m.text());});
+ await page.route("**/*",async route=>{const allowed=route.request().isNavigationRequest()&&route.request().url()===url;requests.push({url:route.request().url(),allowed});if(allowed)await route.continue();else await route.abort();});
+ try{
+  await page.goto(url);await importPrintChart(page,{...chart,title:"W".repeat(33)});
+  let panel=await openPrintTool(page);await panel.getByRole("combobox",{name:"Paper",exact:true}).selectOption("a4");
+  await panel.getByRole("button",{name:"Prepare print preview",exact:true}).click();await expect(panel).toContainText("2 pages ready");
+  await expect(panel.locator("svg text").filter({hasText:"W".repeat(33)})).toHaveCount(1);await verifyPrintedWidths(page,".studio-print-tool svg");
+  await page.getByRole("button",{name:"Close the command lane",exact:true}).click();await page.locator("#studio-document-title").fill("W".repeat(34));await page.locator("#studio-apply-title").click();
+  panel=await openPrintTool(page);await panel.getByRole("button",{name:"Prepare print preview",exact:true}).click();
+  await expect(panel).toContainText("Title is too wide for a single print line.");await expect(panel.locator("svg")).toHaveCount(0);await expect(page.locator(".studio-print-only")).toHaveCount(0);
+  await expect(panel.getByRole("button",{name:"Print all pages",exact:true})).toBeDisabled();await expect(page.locator("#studio-document-title")).toHaveValue("W".repeat(34));
+  expect(errors).toEqual([]);expect(requests.every(r=>r.allowed)).toBe(true);
+ }finally{await info.attach("print-title-fit-evidence",{body:JSON.stringify({hash,errors,requests}),contentType:"application/json"});}
 });

@@ -89,7 +89,7 @@
 .studio-print-tool button:focus-visible, .studio-print-tool select:focus-visible, .studio-print-tool summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .studio-print-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-block: 10px; }
 .studio-print-page { display: block; inline-size: 100%; block-size: auto; margin-block-start: 12px; }
-.studio-print-page text { font-family: Archivo, sans-serif; font-weight: 400; font-kerning: none; font-variant-ligatures: none; white-space: pre; fill: #111; }
+.studio-print-page text { text-rendering: geometricPrecision; font-family: JazzChordsPrint, sans-serif; font-weight: 400; font-kerning: none; font-variant-ligatures: none; white-space: pre; fill: #111; }
 .studio-print-paper { fill: white; }
 .studio-print-cell { fill: none; stroke: #555; stroke-width: .2; }
 .studio-print-only { display: none; }

@@ -6,6 +6,7 @@ import {validateDocumentSemantics} from "../../src/application/document-validati
 import {layoutPrintableChart,encodePrintSvg,printTextWidth,wrapPrintText,escapePrintXml} from "../../src/export/printable-chart";
 import {PRINT_FONT_DATA,PRINT_FONT_SHA256} from "../../src/export/print-font";
 import {loopArrangementFixture} from "../support/loop-arrangement-fixture";
+import advances from "../fixtures/printable-charts/font-advances.json";
 import fixture from "../fixtures/printable-charts/cases.json";
 function document(bars:readonly number[],symbol="Cmaj7",title="Print chart",duration={numerator:4,denominator:1},eventCount=1){
  const base=loopArrangementFixture().state.document,s=base.sections[0],m=s?.measures[0],e=m?.events[0];if(!s||!m||!e)throw new Error("Fixture");
@@ -17,6 +18,7 @@ test("independent geometry, pagination boundaries and section-orphan fixtures",(
  for(const c of fixture.geometry){const r=layoutPrintableChart(document([1]),c.paper==="a4"?"a4":"letter");if(!r.ok)throw new Error(r.message);expect(r.pages[0]?.width).toBe(c.width);expect(r.pages[0]?.height).toBe(c.height);expect(r.pages[0]?.boxes[0]?.width).toBeCloseTo(c.column,9);}
 });
 test("literal font advances and independently enumerated wrap retain every character",()=>{
+ for(const [code,advance]of Object.entries(advances))if(code!=="173")expect(printTextWidth(String.fromCodePoint(Number(code)),1)).toBe(advance);
  for(const [char,advance]of Object.entries(fixture.fontAdvances))expect(printTextWidth(char,1)).toBe(advance);
  expect([...wrapPrintText(fixture.wrap.input,fixture.wrap.width)]).toEqual(fixture.wrap.lines);
  expect(wrapPrintText(fixture.wrap.input,fixture.wrap.width).join("")).toBe(fixture.wrap.input);
@@ -24,7 +26,7 @@ test("literal font advances and independently enumerated wrap retain every chara
 test("source symbols, rational duration, escape hostility and embedded font bytes are exact",()=>{
  for(const c of fixture.escaping)expect(escapePrintXml(c.input)).toBe(c.xml);
  for(const symbol of fixture.sourceSymbols){const r=layoutPrintableChart(document([1],symbol),"a4");if(!r.ok)throw new Error(r.message);const page=r.pages[0];if(!page)throw new Error("Page");expect(page.texts.some(t=>t.text===`${symbol} [4/1 q]`)).toBe(true);const svg=encodePrintSvg(page);if(!svg.ok)throw new Error(svg.message);const text=new TextDecoder().decode(svg.bytes);expect(text).toContain(escapePrintXml(symbol));expect(text).not.toContain("<script");expect(text).toContain("SIL OPEN FONT LICENSE");}
- const bytes=Buffer.from(PRINT_FONT_DATA.split(",")[1]??"","base64");expect(bytes.equals(readFileSync("assets/fonts/archivo-latin.woff2"))).toBe(true);expect(createHash("sha256").update(bytes).digest("hex")).toBe(PRINT_FONT_SHA256);
+ const bytes=Buffer.from(PRINT_FONT_DATA.split(",")[1]??"","base64");expect(bytes.equals(readFileSync("assets/fonts/archivo-print-400.woff2"))).toBe(true);expect(createHash("sha256").update(bytes).digest("hex")).toBe(PRINT_FONT_SHA256);
 });
 test("unsupported glyphs and source/line caps refuse without a partial page",()=>{
  for(const value of [...fixture.unsupported,"\u00ad"]){expect(()=>printTextWidth(value,4)).toThrow();if(value!=="\u0000"){const r=layoutPrintableChart(document([1],"C",value),"a4");expect(r.ok).toBe(false);expect("pages"in r).toBe(false);}}
@@ -35,3 +37,13 @@ test("unsupported glyphs and source/line caps refuse without a partial page",()=
 });
 
 test("partial bars retain independently authored rational durations",()=>{for(const d of fixture.durations){const r=layoutPrintableChart(document([1],"Cmaj7","Fractional chart",{numerator:d.numerator,denominator:d.denominator}),"a4");if(!r.ok)throw new Error(r.message);expect(r.pages[0]?.texts.some(t=>t.text===`Cmaj7 [${d.text}]`)).toBe(true);expect(r.pages[0]?.texts.some(t=>t.text===`1. ${d.numerator/d.denominator===4?"complete":"incomplete"}`)).toBe(true);}});
+
+// FreeType at weight 400: W advances 924/1000 em. A4 title admits 184 mm.
+test("title fit uses the printed weight, retaining a fitting title and refusing its near miss",()=>{
+ const fitting=layoutPrintableChart(document([1],"Cmaj7","W".repeat(33)),"a4");
+ expect(fitting.ok).toBe(true);if(!fitting.ok)throw new Error(fitting.message);
+ expect(fitting.pages[0]?.texts[0]?.text).toBe("W".repeat(33));
+ expect(printTextWidth("W".repeat(33),6)).toBeCloseTo(182.952,9);
+ const tooWide=layoutPrintableChart(document([1],"Cmaj7","W".repeat(34)),"a4");
+ expect(tooWide.ok).toBe(false);expect("pages"in tooWide).toBe(false);
+});

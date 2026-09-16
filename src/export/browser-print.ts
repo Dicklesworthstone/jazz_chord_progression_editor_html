@@ -10,5 +10,5 @@ export const prepareBrowserSvgDownload:PrepareSvgDownload=(bytes,filename)=>{
   return Object.freeze({issued,created,revoked,outstanding:created-revoked+(attached?1:0)});
  };
 };
-export async function prepareBrowserPrintFont():Promise<void>{const fonts=await document.fonts.load("400 16px Archivo");if(fonts.length===0)throw new Error("Bundled print font unavailable");await document.fonts.ready;}
+export async function prepareBrowserPrintFont():Promise<void>{const fonts=await document.fonts.load("400 16px JazzChordsPrint");if(fonts.length===0)throw new Error("Bundled print font unavailable");await document.fonts.ready;}
 export function activateBrowserPrint():void{window.print();}
