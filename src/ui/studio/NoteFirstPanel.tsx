@@ -53,7 +53,8 @@ export function NoteFirstPanel({ports}:{ports:StudioNoteFirstPorts}){
     <summary>Start from notes</summary>
     <section aria-label="Note-first entry">
       <p>Know the voicing before the name? Enter up to 16 notes with octaves. We keep their spelling, order and doubles.</p>
-      <label>Voicing notes<textarea ref={notesInput} class="studio-command-lane__input" rows={2} maxLength={512} spellcheck={false}
+      {/* Preserve the complete input so validation never sees a truncated paste. */}
+      <label>Voicing notes<textarea ref={notesInput} class="studio-command-lane__input" rows={2} spellcheck={false}
         placeholder="A3 C4 E4 G4" value={text} onInput={e=>{void ports.release();setText(e.currentTarget.value);setDraft(null);setNotice("");}} /></label>
       <fieldset class="studio-note-keyboard"><legend>Tap notes into your voicing</legend>
         <div class="studio-note-keyboard__controls">
@@ -85,8 +86,8 @@ export function NoteFirstPanel({ports}:{ports:StudioNoteFirstPorts}){
           </label>)}
           {allNames.length>initialNames.length?<button class="ui-button" type="button" onClick={()=>{setMore(!more);}}>{more?"Fewer names":`All ${String(analysis.candidates.length)} names`}</button>:null}
           <label style={{display:"block",padding:"0.5rem 0"}}><input type="radio" name="note-first-choice" value="custom" checked={choice==="custom"} onChange={()=>{setChoice("custom");setAck(false);}} />Custom voicing</label>
-          {/* HTML counts UTF-16 units; application validation permits 64 Unicode code points. */}
-          {choice==="custom"?<label>Custom label<input class="studio-command-lane__input" maxLength={128} value={customLabel} onInput={e=>{setCustomLabel(e.currentTarget.value);}} /></label>:null}
+          {/* Application validation checks all code points, including a pasted suffix. */}
+          {choice==="custom"?<label>Custom label<input class="studio-command-lane__input" value={customLabel} onInput={e=>{setCustomLabel(e.currentTarget.value);}} /></label>:null}
         </fieldset>
         {candidate!==undefined&&!candidate.spellingExact?<label style={{display:"block",padding:"0.5rem 0"}}><input type="checkbox" checked={ack} onChange={e=>{setAck(e.currentTarget.checked);}} />Use this name as a Custom label, keeping my exact notes.</label>:null}
         <label>Add one full bar to<select class="studio-command-lane__input" value={section} onChange={e=>{setSection(e.currentTarget.value);}}>

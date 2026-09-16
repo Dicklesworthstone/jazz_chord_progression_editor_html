@@ -12,6 +12,9 @@ Validate through domain constructors/projection; reject unsupported spellings,
 triple accidentals, empty input and out-of-MIDI-range notes. Keep order, register,
 spelling and duplicates. Delimiters/case are lexical choices, never enharmonic
 repair. Display the normalized spelled note list before audition/insertion.
+Keep the complete typed or pasted source editable when it exceeds the limit;
+do not let a native input cap discard the suffix before validation. An overlong
+note draft is refused as a whole, without audition or insertion.
 
 Move the existing M0 24-entry reverse-T1 template data unchanged into a pure
 theory interface; keep M0's public aliases, IDs, ordering and inference behavior.
@@ -38,6 +41,9 @@ exist, with additional names available explicitly. Keep the chosen name visible
 when collapsing alternatives, even when it is outside the initial group.
 Always offer Custom with an explicit label. Enharmonic names need a visible
 acknowledgement that naming uses different spelling while stored notes stay exact.
+Custom labels accept 1–64 Unicode code points after trimming, without control
+characters. Validate the complete label at insertion: a valid 64-character
+prefix followed by another character must refuse, never insert the prefix.
 F3 requires literal formula spelling for parsed Manual chords: an acknowledged
 enharmonic reading is therefore stored as a Custom chord bearing the chosen name
 as its label, visibly disclosed before insertion. Exact readings remain parsed

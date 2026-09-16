@@ -76,7 +76,7 @@ for(const width of [320,1280])for(const field of ["notes","Custom label"] as con
     await page.locator("#studio-open-command-lane").click();await page.getByText("Start from notes",{exact:true}).click();
     const panel=page.getByRole("region",{name:"Note-first entry"}),notes=panel.getByLabel("Voicing notes"),find=panel.getByRole("button",{name:"Find chord names",exact:true});
     const text=field==="notes"?"A3 C4 E4 G4 A3":"C#4 F##4 Gbb4 C#4",label="🎹".repeat(64);
-    const exact=text.padEnd(256," ");expect([...exact]).toHaveLength(256);
+    const exact=text.padEnd(256," ");expect(Array.from(exact)).toHaveLength(256);
     await notes.focus();await page.keyboard.insertText(exact);await expect(notes).toHaveValue(exact);await find.click();await expect(panel).toContainText(`Exact stored notes: ${text}`);
     await panel.getByLabel("Add one full bar to").selectOption({index:1});
     if(field==="notes"){
@@ -93,7 +93,7 @@ for(const width of [320,1280])for(const field of ["notes","Custom label"] as con
     }else{
       await panel.getByRole("radio",{name:"Custom voicing",exact:true}).check();const input=panel.getByLabel("Custom label",{exact:true});
       for(const suffix of ["X","🎵"]){
-        const whole=label+suffix;expect([...whole]).toHaveLength(65);
+        const whole=label+suffix;expect(Array.from(whole)).toHaveLength(65);
         await input.fill("");await input.focus();await page.keyboard.insertText(whole);
         await panel.getByRole("button",{name:"Add bar from notes",exact:true}).click();
         await expect(panel.getByRole("status")).toHaveText("Give this Custom voicing a label of 1–64 characters without control characters.");
