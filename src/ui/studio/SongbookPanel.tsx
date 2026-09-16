@@ -10,7 +10,8 @@ export function SongbookPanel({service}:{service:StudioSongbookService}){
   <section aria-label="ChordPro songbook import">
    <p>Add one 4/4 grid as a new section. Lyrics, repeat endings, two-bar repeat signs and other ChordPro dialects are not supported.</p>
    <label>ChordPro file<input class="studio-command-lane__input" type="file" accept=".crd,.cho,.chordpro,.pro,.txt,text/plain" onChange={e=>{const file=e.currentTarget.files?.[0];e.currentTarget.value="";setPage(0);if(file!==undefined)void service.previewFile(file);}} /></label>
-   <label>ChordPro text<textarea class="studio-command-lane__input" rows={6} maxLength={16384} spellcheck={false} value={view.text} onInput={e=>{setPage(0);service.setText(e.currentTarget.value);}} /></label>
+   {/* Let the service reject the complete input; maxlength would silently drop pasted source. */}
+   <label>ChordPro text<textarea class="studio-command-lane__input" rows={6} spellcheck={false} value={view.text} onInput={e=>{setPage(0);service.setText(e.currentTarget.value);}} /></label>
    <div class="studio-songbook__actions"><button type="button" class="ui-button" onClick={()=>{service.setText(EXAMPLE);setPage(0);}}>Use example grid</button>
     <button type="button" class="ui-button" disabled={view.state==="reading"||view.text.length===0} onClick={()=>{setPage(0);service.preview();}}>Preview songbook</button>
     <button type="button" class="ui-button" onClick={()=>{service.close();setPage(0);}}>Close songbook preview</button></div>

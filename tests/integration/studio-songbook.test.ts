@@ -45,3 +45,21 @@ test("colliding identities refuse the whole section, preserving prior music and 
 test("a non-4/4 destination refuses instead of changing meter or approximating durations",()=>{
  const c=setup();expect(c.controller.clearChart().ok).toBe(true);expect(c.controller.setMeter(3,4).ok).toBe(true);const before=c.readApplicationState();c.songbook.setText(text);c.songbook.preview();expect(c.songbook.read().state).toBe("refused");expect(c.songbook.read().message).toContain("4/4 destination");c.songbook.acknowledge(true);c.songbook.add();expect(c.readApplicationState()).toBe(before);
 });
+
+test("oversized pasted source retires consent and pending reads without retaining an importable prefix",async()=>{
+ const c=setup(),s=c.songbook,before=c.readApplicationState();
+ const lines=[text];let padding=16384-text.length;
+ while(padding>0){const length=Math.min(padding,1000);lines.push("#"+"x".repeat(length-2));padding-=length;}
+ const exact=lines.join("\n");expect(exact.length).toBe(16384);
+ s.setText(exact);s.preview();s.acknowledge(true);expect(s.read().state).toBe("ready");
+ s.setText(exact+"\n{new_song}");
+ expect(s.read()).toMatchObject({state:"refused",text:"",result:null,acknowledged:false});
+ s.add();expect(c.readApplicationState()).toBe(before);
+ let finish:((value:ArrayBuffer)=>void)|undefined;
+ const pending=s.previewFile({size:10,arrayBuffer:()=>new Promise<ArrayBuffer>(r=>{finish=r;})});
+ s.setText(exact+"\n{new_song}");const refused=s.read();finish?.(new TextEncoder().encode(text).buffer);await pending;expect(s.read()).toEqual(refused);
+ s.setText(exact);s.preview();expect(s.read().state).toBe("ready");expect(s.read().acknowledged).toBe(false);
+ s.add();expect(c.readApplicationState()).toBe(before);s.acknowledge(true);s.add();
+ expect(c.readApplicationState().document.sections.at(-1)?.measures).toHaveLength(4);
+ expect(c.controller.undo().ok).toBe(true);expect(c.readApplicationState().document).toEqual(before.document);
+});
