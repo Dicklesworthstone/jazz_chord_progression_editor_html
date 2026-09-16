@@ -314,6 +314,46 @@ final class FrankenJazzUITests: XCTestCase {
         add(proof)
     }
 
+    func testNoteFirstCreatesAnExactManualBarAndUndoWithoutPlayingAudio() throws {
+        app.terminate()
+        app.launchArguments.append("-ui-testing-note-first-seed")
+        app.launch()
+
+        let open = app.buttons["open-note-first"]
+        XCTAssertTrue(open.waitForExistence(timeout: 3))
+        revealAboveTransport(open)
+        XCTAssertTrue(open.isHittable)
+        XCTAssertGreaterThanOrEqual(open.frame.height, 44)
+        open.tap()
+
+        let sheet = app.descendants(matching: .any)["note-first-sheet"]
+        XCTAssertTrue(sheet.waitForExistence(timeout: 3))
+        XCTAssertEqual(app.staticTexts["note-first-selected-count"].label, "3/16")
+        let addButton = app.buttons["note-first-add-C"]
+        XCTAssertTrue(addButton.waitForExistence(timeout: 3))
+        XCTAssertTrue(addButton.isHittable)
+        XCTAssertGreaterThanOrEqual(addButton.frame.height, 44)
+        XCTAssertEqual(addButton.label, "Add C as an exact Manual bar")
+
+        // The deterministic launch seed exercises the real matcher and store
+        // path while deliberately avoiding any key or preview tap in the
+        // silent Simulator lane.
+        addButton.tap()
+        let added = app.buttons.matching(
+            NSPredicate(format: "label BEGINSWITH 'Measure 9, C'")
+        ).firstMatch
+        XCTAssertTrue(added.waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["undo-chart-change"].isEnabled)
+
+        let proof = XCTAttachment(screenshot: app.screenshot())
+        proof.name = "FrankenJazz native note-first exact Manual bar"
+        proof.lifetime = .keepAlways
+        add(proof)
+
+        app.buttons["undo-chart-change"].tap()
+        XCTAssertFalse(added.waitForExistence(timeout: 1))
+    }
+
     func testNamedSectionsAreVisibleEditableAndArmOnlyTheirOwnLoop() throws {
         app.terminate()
         app.launchArguments.append("-ui-testing-sections")

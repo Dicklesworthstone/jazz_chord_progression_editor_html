@@ -673,6 +673,17 @@ struct ChordDescription: Equatable, Sendable {
     var colorNote: String
 }
 
+struct JazzNoteFirstCandidate: Identifiable, Equatable, Sendable {
+    var id: String { symbol }
+    var symbol: String
+    var description: ChordDescription
+    var rootInBass: Bool
+    var rootMatchesKey: Bool
+    /// Stable ordering from the source chord grammar. This is ranking input,
+    /// not a musical probability or correctness score.
+    var qualityRank: Int
+}
+
 struct PlaybackEvent: Identifiable, Sendable {
     var id: UUID
     var chordID: UUID

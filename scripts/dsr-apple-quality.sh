@@ -7,6 +7,16 @@ cd "$repo_root/ios"
 build_root="${FRANKEN_APPLE_BUILD_ROOT:-${DSR_QUALITY_RUN_DIR:-$repo_root/ios/build/dsr-apple-quality}}"
 mkdir -p "$build_root/tmp"
 sbh check --need 20G "$build_root"
+
+# CoreSimulator cannot install app bundles directly from every external volume
+# that is otherwise suitable for a large DerivedData tree. Keep compilation on
+# the roomy build volume while allowing callers to put installable products on
+# local APFS.
+xcode_product_settings=()
+if [[ -n "${FRANKEN_APPLE_PRODUCT_ROOT:-}" ]]; then
+  mkdir -p "$FRANKEN_APPLE_PRODUCT_ROOT"
+  xcode_product_settings+=("SYMROOT=$FRANKEN_APPLE_PRODUCT_ROOT")
+fi
 (cd "$repo_root" && bun run check:ios-instrument-samples)
 "$repo_root/ios/build-dsp.sh"
 command -v xcodegen >/dev/null
@@ -26,10 +36,12 @@ plutil -lint Sources/FrankenJazz.entitlements
 TMPDIR="$build_root/tmp" xcodebuild -project FrankenJazz.xcodeproj -scheme FrankenJazz \
   -destination 'generic/platform=iOS Simulator' \
   -derivedDataPath "$build_root/derived-data" \
+  "${xcode_product_settings[@]}" \
   CODE_SIGNING_ALLOWED=NO build
 TMPDIR="$build_root/tmp" xcodebuild -project FrankenJazz.xcodeproj -scheme FrankenJazz \
   -destination 'platform=macOS,variant=Mac Catalyst' \
   -derivedDataPath "$build_root/derived-data" \
+  "${xcode_product_settings[@]}" \
   CODE_SIGNING_ALLOWED=NO test -only-testing:FrankenJazzTests
 
 # Resolve concrete devices only after proving the Simulator audio fence. The
@@ -63,6 +75,7 @@ fi
 TMPDIR="$build_root/tmp" xcodebuild -project FrankenJazz.xcodeproj -scheme FrankenJazz \
   -destination "platform=iOS Simulator,id=$iphone_id" \
   -derivedDataPath "$build_root/derived-data" \
+  "${xcode_product_settings[@]}" \
   CODE_SIGNING_ALLOWED=NO test \
   -only-testing:FrankenJazzUITests \
   -skip-testing:FrankenJazzUITests/FrankenJazzUITests/testRealPlaybackAndChordInspectorPath \
@@ -72,5 +85,6 @@ TMPDIR="$build_root/tmp" xcodebuild -project FrankenJazz.xcodeproj -scheme Frank
 TMPDIR="$build_root/tmp" xcodebuild -project FrankenJazz.xcodeproj -scheme FrankenJazz \
   -destination "platform=iOS Simulator,id=$ipad_id" \
   -derivedDataPath "$build_root/derived-data" \
+  "${xcode_product_settings[@]}" \
   CODE_SIGNING_ALLOWED=NO test \
   -only-testing:FrankenJazzUITests/FrankenJazzUITests/testIPadExpandedWorkspaceExposesLibraryChartInspectorAndTransport
