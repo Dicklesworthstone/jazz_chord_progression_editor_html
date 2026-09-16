@@ -96,6 +96,16 @@ Consumer: the user and Codex executing the 2026-09-04 request to implement the r
 
 ## Canonical project name — jcpe-0b8b (CyanCove)
 
+### Native display-name regression — 2026-09-16 UTC
+
+- [x] Reopen and claim the original naming task after incoming commit `c4ecc52` reintroduced the rejected name in two native display-name fields. Read the original task's explicit FrankenJazz sibling exception and the Apple app contract; preserve web JazzChords.org branding.
+- [x] Restore `FrankenJazz` in both `ios/project.yml` and `ios/Sources/Info.plist`, retaining the new icon, build version 2, bundle identifiers and all unrelated native work.
+- [x] Parse the entire YAML and plist, verify every generated property agrees, and compare with committed native metadata: only the two display-name scalars differ. Icon, build version 2, project settings, bundle IDs and all 1,801 verified web inputs remain unchanged. Inspect all 30 capitalized residuals across 1,867 tracked/first-party untracked files: ordinary music/editing text plus the historical regression receipt; no remaining product-name misuse. `git diff --check` passes. Receipt: `.tmp/next-ready-20260916/native-metadata-proof.json`.
+- [x] Commit and push only the two corrected native paths as `368699b`. At 02:33:04–05 UTC both web hosts again return HTTP 200 and HTML SHA256 `389490f6600c5237228d7e5e00f782e7106025e50d2268ee65ecef4e298fda92`, identical to Git HEAD; no web rebuild or upload is needed for these native metadata edits. Receipt: `.tmp/next-ready-20260916/final-host-receipts.json`.
+- [ ] Complete the Apple plan's clean generated-project rebuild through an admitted RCH Mac worker before re-closing the task. The current 15-worker RCH roster has no Apple-tagged worker, so no admitted Xcode lane was established. Source metadata validation alone does not establish the name in a built or installed Apple app; keep the original task open for that gate.
+
+### Completed web naming correction — 2026-09-15 UTC
+
 - [x] Audit all 1,862 tracked files for product-name, slug, native-name and filename occurrences; classify ordinary musical/editing uses separately.
 - [x] Claim the owner-directed correction and reserve exact branding paths; keep unrelated contributor changes intact.
 - [x] Correct unambiguous product prose, UI/header, social metadata, QR instructions, import/export descriptions, MIDI instrument metadata, package metadata and matching fixture text.

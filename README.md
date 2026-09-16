@@ -2,7 +2,7 @@
 
 An offline, deterministic jazz chord-progression studio designed to turn lead-sheet changes into an explainable, playable, portable chart—without accounts, telemetry, cloud services, or runtime AI.
 
-> **Development status (2026-09-15):** JazzChords.org is a working editor and
+> **Development status (2026-09-16 UTC):** JazzChords.org is a working editor and
 > playback studio, with substantial recovery, interchange and voicing tools.
 > Exact sharing, My Charts and Focus are included in the build deployed to
 > <https://jazzchords.org> and its Vercel mirror. Full harmonic
@@ -43,17 +43,19 @@ acceptance gates, and [`ios/README.md`](ios/README.md) for build instructions.
 ## What works today
 
 This table describes the shipped web app, including MIDI source-note inspection,
-source-bound play-along starting cues and reachable Focus controls on phones.
+source-bound play-along starting cues and bounded songbook import.
 On September 16, 2026 (UTC), both [jazzchords.org](https://jazzchords.org/) and its
 [Vercel mirror](https://changes-jazz-progression-studio.vercel.app/) were verified
-against the committed HTML and social image from `d5bc152`. Chromium, Firefox
-and WebKit passed all 30 live desktop/320px checks of playback, exact starting
-chords, keyboard seeking, Stop and control reachability, with unchanged chart
-revisions and no application errors or forbidden requests. Cloudflare's known
+against the committed HTML and social image from `3189d9f`. Chromium, Firefox
+and WebKit passed all 36 live desktop/320px songbook checks: complete-source
+paste validation, native file import, exact bars, downloads and Undo/Redo.
+Oversized pastes are refused without silently discarding their tail or changing
+the chart; a subsequent valid paste remains usable. There were no application
+errors or forbidden requests. Cloudflare's known
 analytics injection was blocked by the unchanged CSP and recorded separately.
-Before upload, 97 focused tests, 72 browser checks and the committed-byte
-predeploy gates passed. The
-[delivery record](docs/IMPLEMENTATION_TODO.md#play-along-start-cues--jcpe-6ujg13-cyancove-2026-09-16-utc)
+Before upload, 17 focused tests, full types/lint, 18 browser checks and the
+committed-byte predeploy gates passed. The
+[delivery record](docs/DUEL_IMPLEMENTATION_TODO.md#complete-source-paste-repair--2026-09-16-jcpe-6ujg93)
 preserves exact hashes, earlier failed runs and final evidence. These are
 solo automated checks; independent musical, real-device and human acceptance
 obligations remain open below.
@@ -70,6 +72,7 @@ obligations remain open below.
 | MIDI import | Compare up to five local `.mid` candidates with explained, deterministic rankings; inspect any candidate before Add. Tied keys remain explicit and do not transfer automatically; Advanced offers a key choice. Advanced also shows the retained source notes for ambiguous or unwritten passages: exact keys, channels, ticks and velocities, with individual or bounded whole-set pitch previews. Includes a Rust SMF parser in WASM, salvage ledger, per-track preview/overrides, and automated groove matching (M0 shipped; M1 independent and owner-listening acceptance open) |
 | Recovery | Best-effort IndexedDB with localStorage fallback, revision-bound writes, automatic current recovery when startup is untouched, Keep/Discard for conflicts, previous-copy fallback, and visible storage failures |
 | Chart import | Local JazzChords.org/legacy JSON files and pasted data get a bounded preview before replacement; migration reports disclose retained data, confirmation retires playback, and imported document IDs survive recovery |
+| Songbook import | Paste or open a local file in the supported ChordPro 4/4 grid subset; review the preview and acknowledge quarter-cell timing before adding one complete section. Oversized or unsupported source is refused as a whole, with exact-limit input still usable; this is not general ChordPro compatibility |
 | JSON export | **Export JSON** prepares and validates a portable chart, then **Download JSON** hands it to the browser; only exact successful delivery advances the export marker |
 | My Charts | Explicit local collection with search, rename, fresh-ID duplication, confirmed replacement/removal, and exact portable backups; atomic IndexedDB writes refuse stale tabs and preserve existing charts on failure |
 | Chart-text export | **Export text** checks the supported chart structure and lists lost voicing, identity, analysis, and playback data before download; it leaves the JSON export marker unchanged |
@@ -132,7 +135,7 @@ The two HTML outputs must be byte-identical. The enforced artifact ceiling is
 9 MiB (`maxUncompressedBytes: 9437184`, the same figure the reviewed PHS7
 physical-system contract pins), with a hard 512 KiB reservation for the
 future Harmonic Atlas and an 8,912,896-byte shell allocation; the current
-tracked artifact from `d5bc152` measures 8,642,945 bytes. The full amendment history and the
+tracked artifact from `3189d9f` measures 8,642,969 bytes. The full amendment history and the
 reclamation path (physical models replacing the ~2.8 MB sampled payloads)
 are recorded in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
