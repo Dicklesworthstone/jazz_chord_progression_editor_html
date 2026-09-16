@@ -43,19 +43,21 @@ acceptance gates, and [`ios/README.md`](ios/README.md) for build instructions.
 ## What works today
 
 This table describes the shipped web app, including MIDI source-note inspection,
-source-bound play-along starting cues and bounded songbook import.
+source-bound play-along starting cues, bounded songbook import and authored comping.
 On September 16, 2026 (UTC), both [jazzchords.org](https://jazzchords.org/) and its
 [Vercel mirror](https://changes-jazz-progression-studio.vercel.app/) were verified
-against the committed HTML and social image from `3189d9f`. Chromium, Firefox
-and WebKit passed all 36 live desktop/320px songbook checks: complete-source
-paste validation, native file import, exact bars, downloads and Undo/Redo.
-Oversized pastes are refused without silently discarding their tail or changing
-the chart; a subsequent valid paste remains usable. There were no application
-errors or forbidden requests. Cloudflare's known
-analytics injection was blocked by the unchanged CSP and recorded separately.
-Before upload, 17 focused tests, full types/lint, 18 browser checks and the
+against the committed HTML and social image from `abf49f3`. Chromium, Firefox
+and WebKit passed all 60 live comping checks across both hosts, including desktop
+and 320px layouts, actual audio, file imports and exact MIDI/recipe downloads.
+Pasted recipes now reach validation in full: oversized input is refused without
+silently discarding its tail. Opening another chart clears the previous passage
+selection while retaining the session rhythm; same-chart edits preserve selection.
+There were no application errors or forbidden requests. Cloudflare's known
+analytics injection was blocked by the unchanged CSP and recorded separately;
+clean-byte equality was verified with curl, not inferred for injected responses.
+Before upload, 101 focused tests, full types/lint, 30 browser checks and the
 committed-byte predeploy gates passed. The
-[delivery record](docs/DUEL_IMPLEMENTATION_TODO.md#complete-source-paste-repair--2026-09-16-jcpe-6ujg93)
+[delivery record](docs/DUEL_IMPLEMENTATION_TODO.md#complete-recipe-input-and-chart-owned-passage--2026-09-16-jcpe-6ujg53)
 preserves exact hashes, earlier failed runs and final evidence. These are
 solo automated checks; independent musical, real-device and human acceptance
 obligations remain open below.
@@ -68,6 +70,7 @@ obligations remain open below.
 | Analysis | Literal-first Harmony Lens: chord tones with degrees, chord scale, guide tones, guide-tone motion into the next chord, and plural next-chord options with one-line reasons ("Options, not answers"); roman numerals and phrase brackets on the sheet. Deliberately narrower than the planned H0 evidence-tier engine and says so in source |
 | Exact voicings | Choose and audition alternatives, keep a Frozen realization, or edit up to 16 exact Manual notes in the chord inspector; complete U2 package proof remains open |
 | Playback | One persistent Web Audio graph, serialized transport with loop/seek/pause/live mix, 7 grooves, and 15 instruments spanning physical models (clarinet, flute, four plucked strings), the hybrid concert grand, and CC0-sampled bass/vibes — every shipping model gated by the model-acceptance ledger |
+| Authored comping | Edit a 16-slot rhythm, hear one pass over 1–4 complete 4/4 bars, and download exact performed MIDI or a separate rhythm recipe. Session settings preserve chart voicings and leave ordinary playback, chart backups and shared links unchanged; opening another chart resets the passage selection |
 | Progression library | 27 library entries plus the starter chart, with a machine-checked provenance law |
 | MIDI import | Compare up to five local `.mid` candidates with explained, deterministic rankings; inspect any candidate before Add. Tied keys remain explicit and do not transfer automatically; Advanced offers a key choice. Advanced also shows the retained source notes for ambiguous or unwritten passages: exact keys, channels, ticks and velocities, with individual or bounded whole-set pitch previews. Includes a Rust SMF parser in WASM, salvage ledger, per-track preview/overrides, and automated groove matching (M0 shipped; M1 independent and owner-listening acceptance open) |
 | Recovery | Best-effort IndexedDB with localStorage fallback, revision-bound writes, automatic current recovery when startup is untouched, Keep/Discard for conflicts, previous-copy fallback, and visible storage failures |
@@ -135,7 +138,7 @@ The two HTML outputs must be byte-identical. The enforced artifact ceiling is
 9 MiB (`maxUncompressedBytes: 9437184`, the same figure the reviewed PHS7
 physical-system contract pins), with a hard 512 KiB reservation for the
 future Harmonic Atlas and an 8,912,896-byte shell allocation; the current
-tracked artifact from `3189d9f` measures 8,642,969 bytes. The full amendment history and the
+tracked artifact from `abf49f3` measures 8,643,240 bytes. The full amendment history and the
 reclamation path (physical models replacing the ~2.8 MB sampled payloads)
 are recorded in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
