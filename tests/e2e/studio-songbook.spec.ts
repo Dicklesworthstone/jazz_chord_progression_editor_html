@@ -78,7 +78,7 @@ for(const width of [320,1280])test(`songbook paste retains the complete validati
   await page.locator("#studio-undo").click();expect((await exported(page)).document).toEqual(before.document);
   expect(errors).toEqual([]);expect(requests.every(r=>r.allowed)).toBe(true);
  }finally{
-  await info.attach("songbook-input-events",{body:JSON.stringify(await page.evaluate(()=>Reflect.get(window,"songbookInputEvidence"))),contentType:"application/json"});
+  await info.attach("songbook-input-events",{body:JSON.stringify(await page.evaluate(()=>{const value:unknown=Reflect.get(window,"songbookInputEvidence");return value;})),contentType:"application/json"});
   await info.attach("songbook-paste-evidence",{body:JSON.stringify({hash,width,browser:browser.version(),errors,requests}),contentType:"application/json"});
  }
 });
