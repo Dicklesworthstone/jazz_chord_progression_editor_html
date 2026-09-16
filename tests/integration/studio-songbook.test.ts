@@ -54,6 +54,7 @@ test("oversized pasted source retires consent and pending reads without retainin
  s.setText(exact);s.preview();s.acknowledge(true);expect(s.read().state).toBe("ready");
  s.setText(exact+"\n{new_song}");
  expect(s.read()).toMatchObject({state:"refused",text:"",result:null,acknowledged:false});
+ const oversized=s.read();s.setText("");s.setText("");expect(s.read()).toEqual(oversized);
  s.add();expect(c.readApplicationState()).toBe(before);
  let finish:((value:ArrayBuffer)=>void)|undefined;
  const pending=s.previewFile({size:10,arrayBuffer:()=>new Promise<ArrayBuffer>(r=>{finish=r;})});

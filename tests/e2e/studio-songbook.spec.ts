@@ -47,6 +47,14 @@ for(const width of [320,1280])test(`songbook paste retains the complete validati
  page.on("pageerror",e=>errors.push(e.message));page.on("console",m=>{if(m.type()==="error")errors.push(m.text());});
  await page.route("**/*",async route=>{const allowed=route.request().isNavigationRequest()&&route.request().url()===url;requests.push({url:route.request().url(),allowed});if(allowed)await route.continue();else await route.abort();});
  try{
+  await page.addInitScript(()=>{
+   const events:unknown[]=[];Object.defineProperty(window,"songbookInputEvidence",{value:events});
+   for(const kind of ["beforeinput","input"])document.addEventListener(kind,event=>{
+    const target=event.target;if(!(target instanceof HTMLTextAreaElement)||events.length>=100)return;
+    const input=event instanceof InputEvent?event:null;
+    events.push({kind,length:target.value.length,tail:target.value.slice(-80),maxlength:target.maxLength,inputType:input?.inputType,dataLength:input?.data?.length,trusted:event.isTrusted});
+   },true);
+  });
   expect(exactSource.length).toBe(16384);
   await page.setViewportSize({width,height:900});await page.goto(url);await expect(page.locator(".studio-shell")).toHaveAttribute("data-app-ready","true");
   const before=await exported(page);await page.locator("#studio-open-command-lane").click();await page.getByText("Import a ChordPro grid",{exact:true}).click();
@@ -69,5 +77,8 @@ for(const width of [320,1280])test(`songbook paste retains the complete validati
   expect(after.document.sections.at(-1)?.measures.map(m=>m.events.map(e=>[e.chord.sourceText,e.duration.numerator/e.duration.denominator]))).toEqual(fixture.positive[0]?.bars);
   await page.locator("#studio-undo").click();expect((await exported(page)).document).toEqual(before.document);
   expect(errors).toEqual([]);expect(requests.every(r=>r.allowed)).toBe(true);
- }finally{await info.attach("songbook-paste-evidence",{body:JSON.stringify({hash,width,browser:browser.version(),errors,requests}),contentType:"application/json"});}
+ }finally{
+  await info.attach("songbook-input-events",{body:JSON.stringify(await page.evaluate(()=>Reflect.get(window,"songbookInputEvidence"))),contentType:"application/json"});
+  await info.attach("songbook-paste-evidence",{body:JSON.stringify({hash,width,browser:browser.version(),errors,requests}),contentType:"application/json"});
+ }
 });

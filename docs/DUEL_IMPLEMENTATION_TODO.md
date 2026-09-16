@@ -249,6 +249,7 @@ Package `jcpe-6ujg.8`. Spec `jcpe-6ujg.8.1` → build `jcpe-6ujg.8.2` → verify
 - [x] Identify the textarea length limit that can discard source before the bounded decoder sees it.
 - [x] Reproduce native paste truncation against committed `fa2657e8…ff9a`: both new Chromium phone/desktop witnesses fail on the missing whole-source refusal, with the exact-limit prefix accepted. Original failures retained in `test-results/songbook-paste-baseline-20260916`.
 - [x] Remove the native textarea truncation limit; the existing application now receives the whole paste and refuses oversized input. Decoder, byte/work limits, stale-preview invalidation and acknowledgement are unchanged.
+- [x] Trace the first fixed matrix's 14/18 result: Chromium/WebKit emit additional input events after the rejected text is cleared, overwriting the refusal. Preserve the refusal across empty no-op events; native input logs and all four failures remain in the original evidence directories.
 - [ ] Prove exact-limit paste remains usable, oversized paste/file is refused, prior chart/history stays intact and a subsequent valid import still adds exact bars in one Undo.
 - [ ] Run RCH focused tests, full types/lint, guarded build, and sequential three-engine native file/paste/download/Undo matrices at phone and desktop widths.
 - [ ] Review the final diff and exact source hashes; run unchanged committed-byte predeploy gates, commit owned paths and push.
