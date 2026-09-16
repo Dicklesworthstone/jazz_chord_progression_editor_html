@@ -12,6 +12,11 @@ sbh check --need 20G "$build_root"
 command -v xcodegen >/dev/null
 xcodegen generate --spec project.yml
 git diff --exit-code -- FrankenJazz.xcodeproj Sources/Info.plist
+display_name="$(plutil -extract CFBundleDisplayName raw Sources/Info.plist)"
+if [[ "$display_name" != "FrankenJazz" ]]; then
+  echo "FrankenJazz identity drift: expected CFBundleDisplayName=FrankenJazz, got '$display_name'" >&2
+  exit 1
+fi
 git ls-files -z -- '*.swift' | xargs -0 xcrun swiftc -parse -enable-bare-slash-regex
 plutil -lint Sources/Info.plist
 plutil -lint Sources/PrivacyInfo.xcprivacy
