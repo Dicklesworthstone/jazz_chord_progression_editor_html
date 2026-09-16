@@ -36,6 +36,11 @@ if [[ "$display_name" != "FrankenJazz" ]]; then
   echo "FrankenJazz identity drift: expected CFBundleDisplayName=FrankenJazz, got '$display_name'" >&2
   exit 1
 fi
+bundle_version="$(plutil -extract CFBundleVersion raw Sources/Info.plist)"
+if [[ "$bundle_version" != '$(CURRENT_PROJECT_VERSION)' ]]; then
+  echo "FrankenJazz build-number drift: CFBundleVersion must derive from CURRENT_PROJECT_VERSION, got '$bundle_version'" >&2
+  exit 1
+fi
 git ls-files -z -- '*.swift' | xargs -0 xcrun swiftc -parse -enable-bare-slash-regex
 plutil -lint Sources/Info.plist
 plutil -lint Sources/PrivacyInfo.xcprivacy
