@@ -65,6 +65,11 @@ termination (`complete` or `refused`). Logical retained state is bounded by inpu
 
 Paste and file input share the same inert decoder. Check File.size before reading
 and recheck actual UTF-8 bytes afterward; fatal UTF-8 decoding. Replacing text,
+including an oversized paste, must reach the application as a complete value:
+do not use a native textarea length limit that silently discards trailing source.
+The application refuses oversized input, clears retained text and consent, and
+invalidates any older file read without offering a truncated candidate.
+Selecting another source,
 selecting another file, closing the tool or editing the destination invalidates
 pending reads and previews. Capture document ID/revision before async file reads;
 a completion may not bind itself to a newer chart. Add recomputes the source and
