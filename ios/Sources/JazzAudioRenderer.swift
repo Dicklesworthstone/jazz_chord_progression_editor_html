@@ -78,6 +78,35 @@ enum JazzAudioRenderer {
         return JazzRenderedAudio(left: stereo.left, right: stereo.right, sampleRate: sampleRate)
     }
 
+    /// Audition/export seam for a caller-owned, already bounded performance
+    /// plan such as the authored 16-step comping grid. The exact same
+    /// instrument renderers and master input path are used as chart playback.
+    nonisolated static func render(
+        chart: JazzChart,
+        performanceEvents: [JazzPerformanceEvent],
+        cancellation: JazzRenderCancellationToken? = nil
+    ) -> JazzRenderedAudio? {
+        guard cancellation?.isCancelled != true,
+              !performanceEvents.isEmpty,
+              performanceEvents.count <= 64
+        else { return nil }
+        let totalSeconds = chart.durationBeats * 60 / chart.tempoBPM
+        guard totalSeconds > 0, totalSeconds <= maximumSeconds else { return nil }
+        let frameCount = Int((totalSeconds + 0.35) * sampleRate)
+        guard frameCount > 0, frameCount <= Int(sampleRate * (maximumSeconds + 1)) else { return nil }
+        var stereo = StereoBuffer(
+            left: [Float](repeating: 0, count: frameCount),
+            right: [Float](repeating: 0, count: frameCount)
+        )
+        guard mixPerformance(
+            chart,
+            events: performanceEvents,
+            into: &stereo,
+            cancellation: cancellation
+        ), validateFinite(stereo, cancellation: cancellation) else { return nil }
+        return JazzRenderedAudio(left: stereo.left, right: stereo.right, sampleRate: sampleRate)
+    }
+
     /// Renders one short, bounded note for the inspector piano. This function
     /// is deliberately pure: tests can verify every instrument without
     /// starting AVAudioEngine or sending samples to an output device.
@@ -207,7 +236,21 @@ enum JazzAudioRenderer {
         into stereo: inout StereoBuffer,
         cancellation: JazzRenderCancellationToken?
     ) -> Bool {
-        for event in JazzPerformancePlan.compile(chart) {
+        mixPerformance(
+            chart,
+            events: JazzPerformancePlan.compile(chart),
+            into: &stereo,
+            cancellation: cancellation
+        )
+    }
+
+    private static func mixPerformance(
+        _ chart: JazzChart,
+        events: [JazzPerformanceEvent],
+        into stereo: inout StereoBuffer,
+        cancellation: JazzRenderCancellationToken?
+    ) -> Bool {
+        for event in events {
             guard cancellation?.isCancelled != true else { return false }
             let start = Int(
                 Double(event.startTick) / Double(JazzPerformancePlan.ppq)

@@ -2263,6 +2263,165 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertEqual(JazzPerformancePlan.styleID(for: .uptempoSwing), "uptempo-swing@1")
     }
 
+    func testAuthoredCompingRecipeStrictlyRoundTripsOriginalContract() throws {
+        let recipe = JazzCompingRecipe.presets[0].recipe
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        let data = try encoder.encode(recipe)
+        XCTAssertEqual(JazzCompingRecipe.decodeStrict(data), recipe)
+
+        XCTAssertNil(JazzCompingRecipe.decodeStrict(Data(#"{"schema":"changes.comp-recipe.v1","slots":[1],"gateTicks":240}"#.utf8)))
+        XCTAssertNil(JazzCompingRecipe.decodeStrict(Data(#"{"schema":"changes.comp-recipe.v1","slots":[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],"gateTicks":241}"#.utf8)))
+        XCTAssertNil(JazzCompingRecipe.decodeStrict(Data(#"{"schema":"changes.comp-recipe.v1","slots":[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],"gateTicks":240,"extra":true}"#.utf8)))
+        XCTAssertNil(JazzCompingRecipe.decodeStrict(Data(repeating: 0x20, count: 2_049)))
+    }
+
+    func testAuthoredCompingUsesHalfOpenChordOwnershipWithoutArrivalAttacks() throws {
+        let first = JazzChordEvent(symbol: "Cmaj7", beats: 2, manualMIDIPitches: [60, 64, 67, 60])
+        let second = JazzChordEvent(symbol: "Dm7", beats: 2, manualMIDIPitches: [62, 65, 69])
+        let chart = JazzChart(title: "Grid", tempoBPM: 120, measures: [JazzMeasure(chords: [first, second])])
+        let recipe = JazzCompingRecipe(slots: [3, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0])
+        let result = try JazzAuthoredCompingCompiler.compile(chart: chart, recipe: recipe, sectionID: nil)
+
+        XCTAssertEqual(result.events.map(\.startTick), [0, 960, 1_920, 2_880])
+        XCTAssertEqual(result.events.map(\.gateDurationTicks), [240, 240, 240, 240])
+        XCTAssertEqual(result.events.map(\.velocity), [112, 80, 48, 80])
+        XCTAssertEqual(result.events.map(\.chordID), [first.id, first.id, second.id, second.id])
+        XCTAssertEqual(result.events.map(\.midiPitches), [
+            [60, 64, 67, 60], [60, 64, 67, 60], [62, 65, 69], [62, 65, 69]
+        ])
+        XCTAssertEqual(Set(result.events.map(\.role)), [.comp])
+        XCTAssertEqual(result.slotsVisited, 16)
+        XCTAssertEqual(result.cursorAdvances, 1)
+        XCTAssertEqual(result.pitchOccurrences, 14)
+    }
+
+    func testAuthoredCompingClipsGateAtNextAttackChordAndPassage() throws {
+        let chart = JazzChart(
+            title: "Gate",
+            measures: [JazzMeasure(chords: [
+                JazzChordEvent(symbol: "Cmaj7", beats: 0.25),
+                JazzChordEvent(symbol: "Dm7", beats: 3.75)
+            ])]
+        )
+        let recipe = JazzCompingRecipe(
+            slots: [3, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            gateTicks: 480
+        )
+        let result = try JazzAuthoredCompingCompiler.compile(chart: chart, recipe: recipe, sectionID: nil)
+        XCTAssertEqual(result.events.map(\.startTick), [0, 240])
+        XCTAssertEqual(result.events.map(\.gateDurationTicks), [240, 480])
+        XCTAssertNotEqual(result.events[0].chordID, result.events[1].chordID)
+    }
+
+    func testAuthoredCompingSelectsNamedPassageAndRefusesUnsafeShapes() throws {
+        let first = JazzMeasure(chords: [JazzChordEvent(symbol: "Cmaj7")])
+        let second = JazzMeasure(chords: [JazzChordEvent(symbol: "Fmaj7")])
+        let sectionA = JazzChartSection(name: "A", startMeasureID: first.id)
+        let sectionB = JazzChartSection(
+            name: "B",
+            startMeasureID: second.id,
+            voiceLeadingBoundary: .continue
+        )
+        let chart = JazzChart(
+            title: "Sections",
+            measures: [first, second],
+            sections: [sectionA, sectionB]
+        )
+        let result = try JazzAuthoredCompingCompiler.compile(
+            chart: chart,
+            recipe: JazzCompingRecipe.presets[2].recipe,
+            sectionID: sectionB.id
+        )
+        XCTAssertEqual(result.passageChart.measures, [second])
+        XCTAssertEqual(result.passageChart.title, "Sections")
+        XCTAssertTrue(result.events.allSatisfy { $0.chordID == second.chords[0].id })
+        let realizedSecond = try XCTUnwrap(
+            JazzTheory.compilePlayback(chart).first(where: { $0.chordID == second.chords[0].id })
+        )
+        XCTAssertEqual(result.events[0].midiPitches, realizedSecond.midiPitches)
+
+        let fiveBars = JazzChart(
+            title: "Too long",
+            measures: (0..<5).map { _ in JazzMeasure(chords: [JazzChordEvent(symbol: "Cmaj7")]) }
+        )
+        XCTAssertThrowsError(try JazzAuthoredCompingCompiler.compile(
+            chart: fiveBars,
+            recipe: JazzCompingRecipe.presets[0].recipe,
+            sectionID: nil
+        )) { XCTAssertEqual($0 as? JazzAuthoredCompingIssue, .passage) }
+
+        let missing = UUID()
+        XCTAssertThrowsError(try JazzAuthoredCompingCompiler.compile(
+            chart: chart,
+            recipe: JazzCompingRecipe.presets[0].recipe,
+            sectionID: missing
+        )) { XCTAssertEqual($0 as? JazzAuthoredCompingIssue, .missingPassage) }
+    }
+
+    func testAuthoredCompingFeedsExactMIDIAndNativeAudioPipeline() throws {
+        let chart = JazzChart(
+            title: "Pipeline",
+            tempoBPM: 240,
+            instrument: .electricPiano,
+            measures: [JazzMeasure(chords: [JazzChordEvent(
+                symbol: "Cmaj7",
+                manualMIDIPitches: [60, 64, 67, 72]
+            )])]
+        )
+        let result = try JazzAuthoredCompingCompiler.compile(
+            chart: chart,
+            recipe: JazzCompingRecipe.presets[0].recipe,
+            sectionID: nil
+        )
+        let midi = try PerformedMIDIFileWriter.makeFile(chart: result.passageChart, events: result.events)
+        XCTAssertEqual(midi.bassLaneCount, 0)
+        XCTAssertEqual(midi.compLaneCount, 4)
+        XCTAssertEqual(midi.attackCount, 4)
+        XCTAssertEqual(midi.pitchCount, 16)
+        let rendered = try XCTUnwrap(JazzAudioRenderer.render(
+            chart: result.passageChart,
+            performanceEvents: result.events
+        ))
+        XCTAssertFalse(rendered.left.isEmpty)
+        XCTAssertTrue(rendered.left.allSatisfy(\.isFinite))
+        XCTAssertGreaterThan(rendered.left.map(abs).max() ?? 0, 0.000_1)
+    }
+
+    @MainActor
+    func testAuthoredCompingSessionStateDoesNotMutateChartAndResetsPassageAcrossDocuments() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FrankenJazzCompingStoreTests-" + UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let measure = JazzMeasure(chords: [JazzChordEvent(symbol: "Cmaj7")])
+        let section = JazzChartSection(name: "A", startMeasureID: measure.id)
+        let chart = JazzChart(title: "Session owner", measures: [measure], sections: [section])
+        let recovery = JazzRecoveryStore(directory: directory)
+        recovery.save(chart)
+        let store = JazzStudioStore(recovery: recovery)
+        let chartBefore = store.chart
+        let revisionBefore = store.revision
+
+        store.selectCompingPassage(section.id)
+        store.selectCompingPreset(1)
+        store.cycleCompingSlot(0)
+        store.setCompingGate(480)
+        let heldRecipe = store.compingRecipe
+
+        XCTAssertEqual(store.chart, chartBefore)
+        XCTAssertEqual(store.revision, revisionBefore)
+        XCTAssertFalse(store.canUndo)
+        XCTAssertEqual(store.selectedCompingSectionID, section.id)
+        XCTAssertEqual(try store.authoredCompingResult().events.map(\.role), [.comp, .comp, .comp, .comp, .comp])
+
+        store.newChart()
+        XCTAssertNil(store.selectedCompingSectionID)
+        XCTAssertEqual(store.compingRecipe, heldRecipe)
+        XCTAssertNotEqual(store.chart.id, chartBefore.id)
+        XCTAssertTrue(store.canUndo)
+    }
+
     func testMediumSwingCompilesWalkingBassAndCharlestonCompingGolden() throws {
         let measures = try JazzTheory.parseChart("| Cmaj7 |").measures
         let chart = JazzChart(title: "Schedule", tempoBPM: 120, groove: .mediumSwing, measures: measures)

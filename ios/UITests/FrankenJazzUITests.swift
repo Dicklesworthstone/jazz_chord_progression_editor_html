@@ -170,6 +170,66 @@ final class FrankenJazzUITests: XCTestCase {
         add(proof)
     }
 
+    func testAuthoredCompingExposesCompleteSilentWorkflow() throws {
+        app.terminate()
+        app.launchArguments.append("-ui-testing-sections")
+        app.launch()
+
+        let route = app.buttons["open-authored-comping"]
+        XCTAssertTrue(route.waitForExistence(timeout: 3))
+        XCTAssertTrue(route.isHittable)
+        XCTAssertGreaterThanOrEqual(route.frame.height, 44)
+        route.tap()
+
+        XCTAssertTrue(app.navigationBars["Comp rhythm"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["09 · SIXTEENTH-NOTE GRID"].exists)
+        XCTAssertTrue(app.descendants(matching: .any)["comping-ready"].exists)
+
+        let firstSlot = app.buttons["comping-slot-1"]
+        XCTAssertTrue(firstSlot.waitForExistence(timeout: 3))
+        XCTAssertTrue(firstSlot.isHittable)
+        XCTAssertGreaterThanOrEqual(firstSlot.frame.width, 44)
+        XCTAssertGreaterThanOrEqual(firstSlot.frame.height, 44)
+        XCTAssertEqual(firstSlot.value as? String, "Loud")
+        firstSlot.tap()
+        XCTAssertEqual(firstSlot.value as? String, "Off")
+
+        let gate = app.segmentedControls["comping-gate"]
+        XCTAssertTrue(gate.waitForExistence(timeout: 3))
+        XCTAssertTrue(gate.buttons["1/8"].isHittable)
+        gate.buttons["1/8"].tap()
+        XCTAssertTrue(gate.buttons["1/8"].isSelected)
+
+        let passage = app.buttons["comping-passage"]
+        XCTAssertTrue(passage.waitForExistence(timeout: 3))
+        passage.tap()
+        let sectionB = app.buttons["B"]
+        XCTAssertTrue(sectionB.waitForExistence(timeout: 2))
+        sectionB.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["comping-ready"].waitForExistence(timeout: 3))
+
+        let hear = app.buttons["hear-authored-comping"]
+        XCTAssertTrue(hear.exists)
+        XCTAssertTrue(hear.isHittable)
+        XCTAssertGreaterThanOrEqual(hear.frame.height, 44)
+        // Do not tap Hear: this DSR lane must remain silent.
+
+        let midi = app.buttons["export-comping-midi"]
+        let recipe = app.buttons["export-comping-recipe"]
+        let importer = app.buttons["import-comping-recipe"]
+        for control in [midi, recipe, importer] {
+            for _ in 0..<8 where !control.isHittable { app.swipeUp() }
+            XCTAssertTrue(control.waitForExistence(timeout: 3))
+            XCTAssertTrue(control.isHittable)
+            XCTAssertGreaterThanOrEqual(control.frame.height, 44)
+        }
+
+        let proof = XCTAttachment(screenshot: app.screenshot())
+        proof.name = "FrankenJazz authored comping complete silent workflow"
+        proof.lifetime = .keepAlways
+        add(proof)
+    }
+
     func testTouchUndoAndRedoRoundTripAChartEdit() throws {
         let undo = app.buttons["undo-chart-change"]
         let redo = app.buttons["redo-chart-change"]

@@ -528,6 +528,57 @@ final class JazzAudioEngine: ObservableObject {
         }
     }
 
+    /// Plays one bounded pass of an already compiled comping plan on the
+    /// preview node. It never rewrites the main transport, chart buffer, or
+    /// playhead and uses the same native instrument pipeline as playback.
+    func previewPerformance(chart: JazzChart, events: [JazzPerformanceEvent]) {
+        guard !events.isEmpty, events.count <= 64 else {
+            previewIssue = "That rhythm does not contain a safe bounded performance."
+            return
+        }
+        previewGeneration += 1
+        let request = previewGeneration
+        cancelPreviewRender()
+        previewPlayer.stop()
+        scheduledPreviewBuffer = nil
+        previewIssue = nil
+        let cancellation = JazzRenderCancellationToken()
+        previewCancellation = cancellation
+        previewRenderTask = Task { [weak self] in
+            let rendered = await Task.detached(priority: .userInitiated) {
+                JazzAudioRenderer.render(
+                    chart: chart,
+                    performanceEvents: events,
+                    cancellation: cancellation
+                )
+            }.value
+            guard let self,
+                  self.previewGeneration == request,
+                  self.previewCancellation === cancellation
+            else { return }
+            self.previewRenderTask = nil
+            self.previewCancellation = nil
+            guard let rendered, let pcm = self.makePCM(rendered) else {
+                self.previewIssue = "The local audio renderer could not create this rhythm audition."
+                return
+            }
+            do {
+                try self.configureSession()
+                guard self.previewGeneration == request else { return }
+                self.scheduledPreviewBuffer = pcm
+                self.previewPlayer.scheduleBuffer(pcm, at: nil) { [weak self] in
+                    Task { @MainActor in
+                        guard let self, self.previewGeneration == request else { return }
+                        self.scheduledPreviewBuffer = nil
+                    }
+                }
+                self.previewPlayer.play()
+            } catch {
+                self.previewIssue = "Rhythm audition is unavailable: \(error.localizedDescription)"
+            }
+        }
+    }
+
     /// Updates the visual keyboard without replacing voices that are already
     /// sounding. A quick tap is still allowed to finish its bounded release
     /// tail after the finger lifts; only newly added pitches schedule audio.

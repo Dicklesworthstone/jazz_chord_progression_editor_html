@@ -74,6 +74,7 @@ enum JazzSheetDestination: String, Identifiable, Equatable {
     case documents
     case instrumentRack
     case chordPads
+    case authoredComping
 
     var id: String { rawValue }
 }
@@ -103,6 +104,8 @@ final class JazzStudioStore: ObservableObject {
     @Published private(set) var continuationIssue: String?
     @Published private(set) var loopedSectionID: UUID?
     @Published private(set) var waveExportState: JazzWaveExportState = .idle
+    @Published private(set) var compingRecipe = JazzCompingRecipe.presets[0].recipe
+    @Published var selectedCompingSectionID: UUID?
 
     let audio = JazzAudioEngine()
     let myCharts: JazzMyChartsStore
@@ -118,6 +121,7 @@ final class JazzStudioStore: ObservableObject {
     private var waveExportTask: Task<Void, Never>?
     private var waveExportCancellation: JazzRenderCancellationToken?
     private var preparedWaveDirectoryURL: URL?
+    private var compingSourceChartID: UUID?
     private var audioChanges: AnyCancellable?
     private let recovery: JazzRecoveryStore
     private let theoryBridge: JazzTheoryBridge
@@ -162,6 +166,7 @@ final class JazzStudioStore: ObservableObject {
             draftText = seed.chartText
             selectedChordID = seed.measures.first?.chords.first?.id
         }
+        compingSourceChartID = chart.id
         audioChanges = audio.objectWillChange.sink { [weak self] _ in
             self?.objectWillChange.send()
         }
@@ -205,6 +210,115 @@ final class JazzStudioStore: ObservableObject {
     var isChordPadsPresented: Bool {
         get { presentedSheet == .chordPads }
         set { setSheet(.chordPads, presented: newValue) }
+    }
+
+    var isAuthoredCompingPresented: Bool {
+        get { presentedSheet == .authoredComping }
+        set { setSheet(.authoredComping, presented: newValue) }
+    }
+
+    var authoredCompingPassages: [(id: UUID, name: String)] {
+        chart.sectionGroups.compactMap { group in
+            guard let section = group.section else { return nil }
+            return (section.id, section.name)
+        }
+    }
+
+    func cycleCompingSlot(_ index: Int) {
+        guard compingRecipe.slots.indices.contains(index) else { return }
+        audio.stopPreview()
+        compingRecipe.slots[index] = (compingRecipe.slots[index] + 1) % 4
+    }
+
+    func selectCompingPreset(_ index: Int) {
+        guard JazzCompingRecipe.presets.indices.contains(index) else { return }
+        audio.stopPreview()
+        compingRecipe = JazzCompingRecipe.presets[index].recipe
+    }
+
+    func setCompingGate(_ ticks: Int) {
+        guard JazzCompingRecipe.allowedGateTicks.contains(ticks) else { return }
+        audio.stopPreview()
+        compingRecipe.gateTicks = ticks
+    }
+
+    func selectCompingPassage(_ sectionID: UUID?) {
+        audio.stopPreview()
+        selectedCompingSectionID = sectionID
+    }
+
+    func authoredCompingResult() throws -> JazzAuthoredCompingResult {
+        try JazzAuthoredCompingCompiler.compile(
+            chart: chart,
+            recipe: compingRecipe,
+            sectionID: selectedCompingSectionID
+        )
+    }
+
+    func auditionAuthoredComping() {
+        do {
+            let result = try authoredCompingResult()
+            audio.previewPerformance(chart: result.passageChart, events: result.events)
+            notice = "Playing one pass: \(result.events.count) authored comp attacks."
+        } catch {
+            notice = "Comping refused: \(error.localizedDescription)"
+        }
+    }
+
+    func authoredCompingRecipeURL() -> URL? {
+        do {
+            let data = try encoder.encode(compingRecipe)
+            let url = FileManager.default.temporaryDirectory
+                .appendingPathComponent("FrankenJazz-comp-recipe")
+                .appendingPathExtension("json")
+            try data.write(to: url, options: .atomic)
+            return url
+        } catch {
+            notice = "Recipe export failed: \(error.localizedDescription)"
+            return nil
+        }
+    }
+
+    func importAuthoredCompingRecipe(_ url: URL) async {
+        let accessed = url.startAccessingSecurityScopedResource()
+        defer { if accessed { url.stopAccessingSecurityScopedResource() } }
+        do {
+            let data = try await Task.detached(priority: .userInitiated) {
+                let values = try url.resourceValues(forKeys: [.fileSizeKey])
+                guard (values.fileSize ?? 0) <= 2_048 else {
+                    throw JazzAuthoredCompingIssue.invalidRecipe
+                }
+                let data = try Data(contentsOf: url, options: .mappedIfSafe)
+                guard data.count <= 2_048 else { throw JazzAuthoredCompingIssue.invalidRecipe }
+                return data
+            }.value
+            guard let recipe = JazzCompingRecipe.decodeStrict(data) else {
+                throw JazzAuthoredCompingIssue.invalidRecipe
+            }
+            audio.stopPreview()
+            compingRecipe = recipe
+            notice = "Imported the session comping recipe. The chart was not changed."
+        } catch {
+            notice = "Recipe import refused: \(error.localizedDescription)"
+        }
+    }
+
+    func authoredCompingMIDIURL() -> URL? {
+        do {
+            let result = try authoredCompingResult()
+            let file = try PerformedMIDIFileWriter.makeFile(
+                chart: result.passageChart,
+                events: result.events
+            )
+            let url = FileManager.default.temporaryDirectory
+                .appendingPathComponent("FrankenJazz-comp-rhythm")
+                .appendingPathExtension("mid")
+            try file.data.write(to: url, options: .atomic)
+            return url
+        } catch {
+            notice = "Comping MIDI failed: \(error.localizedDescription)"
+            return nil
+        }
     }
 
     var selectedDescription: ChordDescription? {
@@ -1311,6 +1425,13 @@ final class JazzStudioStore: ObservableObject {
         refreshContinuations()
         draftText = chart.chartText
         draftState = .current
+        if compingSourceChartID != chart.id {
+            selectedCompingSectionID = nil
+            compingSourceChartID = chart.id
+        } else if let selectedCompingSectionID,
+           !authoredCompingPassages.contains(where: { $0.id == selectedCompingSectionID }) {
+            self.selectedCompingSectionID = nil
+        }
         recovery.save(chart)
         audio.setPlaybackMix(chart.effectivePlaybackMix)
         primeTask?.cancel()
