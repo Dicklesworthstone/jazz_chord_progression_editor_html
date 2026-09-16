@@ -278,8 +278,8 @@ final class FrankenJazzUITests: XCTestCase {
 
     func testChordPaletteBuildsARealUndoableBarWithoutPlayingAudio() throws {
         let toggle = app.buttons["quick-entry-toggle"]
-        XCTAssertTrue(toggle.waitForExistence(timeout: 3))
         revealAboveTransport(toggle)
+        XCTAssertTrue(toggle.waitForExistence(timeout: 3))
         XCTAssertTrue(toggle.isHittable)
         toggle.tap()
 
@@ -561,6 +561,11 @@ final class FrankenJazzUITests: XCTestCase {
         let instruction = app.staticTexts["Press, glide, or play several keys"]
         let middleC = app.buttons["piano-key-60"]
         let chordPreview = app.buttons["preview-selected-chord"]
+        for _ in 0..<8 where !chordPreview.isHittable { app.swipeUp() }
+        XCTAssertTrue(chordPreview.waitForExistence(timeout: 3))
+        XCTAssertTrue(chordPreview.isHittable)
+        XCTAssertEqual(chordPreview.label, "Hear this voicing")
+
         for _ in 0..<8 where !middleC.isHittable { app.swipeUp() }
         XCTAssertTrue(instruction.waitForExistence(timeout: 3))
         XCTAssertTrue(middleC.waitForExistence(timeout: 3))
@@ -569,9 +574,6 @@ final class FrankenJazzUITests: XCTestCase {
         XCTAssertGreaterThanOrEqual(middleC.frame.height, 44)
         XCTAssertTrue(middleC.label.contains("C4"))
         XCTAssertTrue(app.staticTexts["FM Electric Piano"].exists)
-        XCTAssertTrue(chordPreview.exists)
-        XCTAssertTrue(chordPreview.isHittable)
-        XCTAssertEqual(chordPreview.label, "Hear this voicing")
 
         // Do not tap either audio action: automated validation must never emit audible output.
         let proof = XCTAttachment(screenshot: app.screenshot())
@@ -722,6 +724,7 @@ final class FrankenJazzUITests: XCTestCase {
         ).firstMatch.waitForExistence(timeout: 3))
 
         let search = app.searchFields.firstMatch
+        for _ in 0..<4 where !search.exists { app.swipeDown() }
         XCTAssertTrue(search.waitForExistence(timeout: 3))
         search.tap()
         search.typeText("Midnight")
