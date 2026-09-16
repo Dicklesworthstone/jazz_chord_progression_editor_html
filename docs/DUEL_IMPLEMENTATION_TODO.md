@@ -312,6 +312,15 @@ Package `jcpe-6ujg.10`. Spec `jcpe-6ujg.10.1` → build `jcpe-6ujg.10.2` → ver
 
 Package `jcpe-6ujg.11`. Spec `jcpe-6ujg.11.1` → build `jcpe-6ujg.11.2` → verify `jcpe-6ujg.11.3`.
 
+### Native PDF glyph repair — 2026-09-16 continuation
+
+- [x] Reclaim original `.11.3`, refresh Agent Mail/ready tasks and confirm all 1,801 previously verified inputs are unchanged; preserve peer application-panel files.
+- [x] Isolate the rendering discrepancy: native PDFs contain vertically reversed Type 3 FontBBox bounds. Normalizing only those four font bounds in a scratch PDF restores sequential Poppler rendering of the second page; no chart/PDF text changes are involved.
+- [ ] Test a static weight-400 instance of the existing bundled Archivo font through real native PDF output, preserving exact glyphs, coverage and print geometry; retain the current variable font for ordinary UI.
+- [ ] If the experiment succeeds, wire the derived print font into the native preview/download adapters with reproducible checked-in provenance and unchanged spelling/time/layout limits.
+- [ ] Add a raster regression that fails on the original missing-glyph output; run the original focused/three-engine print gates, types/lint/build and applicable committed-byte release gates through RCH.
+- [ ] Inspect both sequential and individual page renders, commit/push owned code and deploy changed runtime bytes to both hosts; verify actual print behavior and retain physical printer/phone acceptance on the original leaf.
+
 ### Page selection and current-chart verification — 2026-09-16
 
 - [x] Claim original `.11.3`, read its full inherited spec/build context and print/source contracts, and reserve only the owned tests/TODO.
