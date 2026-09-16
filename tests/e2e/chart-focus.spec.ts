@@ -202,6 +202,16 @@ for (const profile of CHART_FOCUS_PROFILES) {
         };
       });
       const diagnostics = await boot(page, fileUrl);
+      // This case counts native scheduled sources; Concert Grand uses a
+      // worklet. Exercise the oscillator explicitly instead of mistaking
+      // the absence of AudioScheduledSourceNodes for silence.
+      const instrument = page.locator("#studio-transport-instrument");
+      if (await instrument.isVisible()) await instrument.selectOption("analog-poly");
+      else {
+        await page.locator("#studio-open-sound-sheet").click();
+        await page.locator("#studio-transport-instrument-sheet").selectOption("analog-poly");
+        await page.keyboard.press("Escape");
+      }
       await observeNativeSources(page);
       expect(await page.evaluate(() => window.chartFocusContextCount)).toBe(0);
       await page.locator("#studio-transport-loop").click();
