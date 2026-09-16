@@ -17,6 +17,15 @@ if [[ -n "${FRANKEN_APPLE_PRODUCT_ROOT:-}" ]]; then
   mkdir -p "$FRANKEN_APPLE_PRODUCT_ROOT"
   xcode_product_settings+=("SYMROOT=$FRANKEN_APPLE_PRODUCT_ROOT")
 fi
+xcode_catalyst_result_settings=()
+xcode_iphone_result_settings=()
+xcode_ipad_result_settings=()
+if [[ -n "${FRANKEN_APPLE_RESULT_ROOT:-}" ]]; then
+  mkdir -p "$FRANKEN_APPLE_RESULT_ROOT"
+  xcode_catalyst_result_settings+=("-resultBundlePath" "$FRANKEN_APPLE_RESULT_ROOT/frankenjazz-catalyst.xcresult")
+  xcode_iphone_result_settings+=("-resultBundlePath" "$FRANKEN_APPLE_RESULT_ROOT/frankenjazz-iphone.xcresult")
+  xcode_ipad_result_settings+=("-resultBundlePath" "$FRANKEN_APPLE_RESULT_ROOT/frankenjazz-ipad.xcresult")
+fi
 (cd "$repo_root" && bun run check:ios-instrument-samples)
 "$repo_root/ios/build-dsp.sh"
 command -v xcodegen >/dev/null
@@ -42,6 +51,7 @@ TMPDIR="$build_root/tmp" xcodebuild -project FrankenJazz.xcodeproj -scheme Frank
   -destination 'platform=macOS,variant=Mac Catalyst' \
   -derivedDataPath "$build_root/derived-data" \
   "${xcode_product_settings[@]}" \
+  "${xcode_catalyst_result_settings[@]}" \
   CODE_SIGNING_ALLOWED=NO test -only-testing:FrankenJazzTests
 
 # Resolve concrete devices only after proving the Simulator audio fence. The
@@ -76,6 +86,7 @@ TMPDIR="$build_root/tmp" xcodebuild -project FrankenJazz.xcodeproj -scheme Frank
   -destination "platform=iOS Simulator,id=$iphone_id" \
   -derivedDataPath "$build_root/derived-data" \
   "${xcode_product_settings[@]}" \
+  "${xcode_iphone_result_settings[@]}" \
   CODE_SIGNING_ALLOWED=NO test \
   -only-testing:FrankenJazzUITests \
   -skip-testing:FrankenJazzUITests/FrankenJazzUITests/testRealPlaybackAndChordInspectorPath \
@@ -86,5 +97,6 @@ TMPDIR="$build_root/tmp" xcodebuild -project FrankenJazz.xcodeproj -scheme Frank
   -destination "platform=iOS Simulator,id=$ipad_id" \
   -derivedDataPath "$build_root/derived-data" \
   "${xcode_product_settings[@]}" \
+  "${xcode_ipad_result_settings[@]}" \
   CODE_SIGNING_ALLOWED=NO test \
   -only-testing:FrankenJazzUITests/FrankenJazzUITests/testIPadExpandedWorkspaceExposesLibraryChartInspectorAndTransport

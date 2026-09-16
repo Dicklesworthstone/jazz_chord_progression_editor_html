@@ -2444,7 +2444,10 @@ final class FrankenJazzCoreTests: XCTestCase {
         )
         let midi = try PerformedMIDIFileWriter.makeFile(chart: result.passageChart, events: result.events)
         XCTAssertEqual(midi.bassLaneCount, 0)
-        XCTAssertEqual(midi.compLaneCount, 4)
+        XCTAssertEqual(
+            midi.compLaneCount, 1,
+            "Distinct simultaneous pitches share one MIDI channel; extra lanes are reserved for overlapping unisons."
+        )
         XCTAssertEqual(midi.attackCount, 4)
         XCTAssertEqual(midi.pitchCount, 16)
         let rendered = try XCTUnwrap(JazzAudioRenderer.render(
