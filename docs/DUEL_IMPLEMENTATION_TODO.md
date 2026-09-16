@@ -125,6 +125,7 @@ Package `jcpe-6ujg.3`. Spec `jcpe-6ujg.3.1` → build `jcpe-6ujg.3.2` → verify
 - [x] Wire preview, exact Manual insertion, Custom fallback and one Undo
 - [x] Verify real entry/audition/insertion/persistence plus M0 regressions
 - [x] Pass focused tests, typecheck, lint/boundaries, artifact size and applicable real-browser gates.
+- [ ] Follow up on complete pasted-note validation in `NoteFirstPanel.tsx`: its native 512-character textarea limit repeats the now-reproduced songbook/recipe truncation pattern. Exercise a valid prefix plus trailing notes before claiming a defect; preserve exact-note bounds and refuse the complete input if required. Track this within the original `.3.3` verification leaf.
 - [ ] Record independent acceptance and close all three phases before package.
 
 2026-09-15 verification checkpoint: `.3.3` found and repaired lost keyboard focus
@@ -156,6 +157,19 @@ Package `jcpe-6ujg.4`. Spec `jcpe-6ujg.4.1` → build `jcpe-6ujg.4.2` → verify
 - [ ] Record independent acceptance and close all three phases before package.
 
 ## COD2 + AGY2: Authored comping rhythms and groove controls
+
+### Complete recipe input and chart-owned passage — 2026-09-16, `jcpe-6ujg.5.3`
+
+- [x] Read current contracts, original spec/build/verify tasks and source; claim the ready verification leaf and reserve exact files.
+- [x] Identify native recipe truncation before validation and a selected section surviving replacement by another chart with reused section IDs.
+- [x] Demonstrate both defects against the original source/artifact: RCH integration baseline 9 pass / 4 chart-switch failures; corrected native Chromium baseline 0 pass / 4 intended failures on both widths (34.757s), artifact `389490f6…fda92`. Exact-limit recipe and same-chart edit success cases pass. Retain the first browser report separately: two real paste failures and two incorrect test-locator failures, corrected by locating the actual named combobox without changing assertions/deadlines. Reports: `test-results/comping-safety-baseline-{tests,browser,browser-corrected}-20260916/`.
+- [x] Send the complete pasted recipe to the bounded parser, with an explicit oversized-input message; refuse without changing the current rhythm or chart. Parser limits/schema remain unchanged.
+- [x] Reset the chart-owned passage on document identity changes, including before preparation and during pending hash/delivery; preserve session recipe and same-chart selections. Add an over-four-bar replacement refusal with explicit-section success.
+- [x] Verify exact current-chart MIDI attacks, gates and pitches, no stale delivery, real audio retirement, native recipe/file/download behavior and chart immutability. The over-four-bar replacement refuses Whole chart until the user selects a valid section; session rhythm and same-chart passage choices remain exact.
+- [x] RCH final focused suites pass 101/101 with 4,599 assertions, full four-project types, full lint/source policy (349 files) and guarded build. All 30 native Chromium/Firefox/WebKit cases pass once (129.085s), zero unexpected/skipped/flaky/retried cases, application errors or forbidden requests. All receipts match `c49e0e1a6fa7ad676ff4f3d026d999d85d3ff61e123d1340799f87f4d14212fd`, 8,643,240 bytes. Inspect four final Chromium phone/desktop screenshots. Reports: `test-results/comping-safety-clean-static-20260916/` and `test-results/comping-safety-browser-20260916/`. Retain the initial static run's new test-fixture literal-type failure; correction uses precise fixture literals, no suppression.
+- [ ] Recheck source hashes/mtimes, rebuild immediately before commit, commit explicit owned paths and push.
+- [ ] Pass committed-byte predeploy gates, deploy both hosts and verify exact hashes and live behavior.
+- [ ] Record original failed runs and final results; retain independent human listening/physical-device acceptance on the original verification leaf.
 
 Package `jcpe-6ujg.5`. Spec `jcpe-6ujg.5.1` → build `jcpe-6ujg.5.2` → verify `jcpe-6ujg.5.3`.
 

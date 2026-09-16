@@ -28,6 +28,7 @@ export function createStudioComping(ports:Readonly<{
 }>):StudioCompingService {
   const initial=COMP_PRESETS[0];if(initial===undefined)throw new Error("Missing comp preset");
   let recipe=initial.recipe,sectionId:string|null=null,importDraft:CompRecipe|null=null,generation=0,importGeneration=0;
+  let sourceDocumentId=ports.readDocument().id;
   let state:StudioCompingView["state"]="idle",message="Choose 1–4 complete bars, then hear your rhythm.",snapshot:Snapshot|null=null;
   let bytes:Uint8Array|null=null,sha256:string|null=null,filename:string|null=null;
   const listeners=new Set<()=>void>(),notify=():void=>{for(const listener of listeners)listener();};
@@ -102,16 +103,25 @@ export function createStudioComping(ports:Readonly<{
   // Composition lifetime matches the controller lifetime. Invalidate before an
   // async instrument continuation can submit the previous document's notes.
   ports.subscribeSource(()=>{
-    if(snapshot===null||same(snapshot))return;
+    const documentId=ports.readDocument().id,changedDocument=documentId!==sourceDocumentId;
+    sourceDocumentId=documentId;
+    if(!changedDocument&&(snapshot===null||same(snapshot)))return;
     const delivering=state==="delivering";
     clear();
+    // A section belongs to its chart even when another chart reuses its ID.
+    // The authored rhythm is deliberately session-wide and stays intact.
+    if(changedDocument)sectionId=null;
     state=delivering?"delivering":"stale";
-    message=delivering?"The previous rhythm file is already being handed to the browser.":"The chart changed. Rhythm audition and preparation canceled.";
+    message=delivering?"The previous rhythm file is already being handed to the browser."
+      :changedDocument?"Opened another chart. Choose its passage; your session rhythm is unchanged."
+      :"The chart changed. Rhythm audition and preparation canceled.";
     void ports.release();notify();
   });
   const showRecipe=(text:string):void=>{
     importDraft=parseCompRecipe(text);
-    message=importDraft===null?"Recipe not recognized. Use a version 1 recipe with 16 slots and an allowed gate.":"Valid recipe preview. Apply it to replace only the session rhythm.";
+    message=text.length>2048||new TextEncoder().encode(text).length>2048
+      ?"Recipe input must be at most 2,048 bytes. Your rhythm is unchanged."
+      :importDraft===null?"Recipe not recognized. Use a version 1 recipe with 16 slots and an allowed gate.":"Valid recipe preview. Apply it to replace only the session rhythm.";
     notify();
   };
   const previewRecipeFile=async(file:Readonly<{size:number;text:()=>Promise<string>}>):Promise<void>=>{

@@ -1,3 +1,5 @@
+import {createStudioComping} from "../../src/application/studio-comping";
+import {publishA0Candidate} from "../support/a0-application-fixture";
 import type {PlaybackPlan} from "../../src/playback";
 import {expect,test} from "bun:test";
 import {createHash} from "node:crypto";
@@ -113,4 +115,63 @@ test("Stop waits for retirement, exposes refusal, and cannot overwrite newer wor
   else if(outcome==="superseded")expect(service.read().message).toContain("Playing one pass");
   else {expect(service.read().state).toBe("refused");expect(service.read().message).toContain("Use Stop");}
  }
+});
+
+for(const phase of ["unprepared","ready","hash","delivering"] as const)test(`new chart resets the comping passage from ${phase} and retains the session recipe`,async()=>{
+ let document=loopArrangementFixture().state.document,revision=0,changed:()=>void=()=>{},finishHash:(()=>void)|undefined,finishDelivery:(()=>void)|undefined;
+ const downloads:Uint8Array[]=[];let holdHash=phase==="hash",holdDelivery=phase==="delivering";
+ const service=createStudioComping({readDocument:()=>document,readRevision:()=>revision,subscribeSource:listener=>{changed=listener;return()=>{};},
+  preview:()=>Promise.resolve({ok:true,value:undefined}),release:()=>Promise.resolve({ok:true,value:undefined}),
+  hashBytes:bytes=>{const hash=createHash("sha256").update(bytes).digest("hex");if(holdHash){holdHash=false;return new Promise(resolve=>{finishHash=()=>{resolve(hash);};});}return Promise.resolve(hash);},
+  startDelivery:r=>{downloads.push(r.privateBytes);return {completion:holdDelivery?new Promise(resolve=>{holdDelivery=false;finishDelivery=()=>{resolve(cleanup);};}):Promise.resolve(cleanup)};},prepareRecipeDownload:()=>()=>true});
+ service.setPassage("loop-section-1");service.setPreset(2);service.setGate(120);const recipe=service.read().recipe;
+ let pending:Promise<void>|undefined;
+ if(phase==="ready"||phase==="delivering")await service.prepareMidi();
+ if(phase==="hash")pending=service.prepareMidi();
+ if(phase==="delivering")pending=service.downloadMidi();
+ // Section IDs deliberately repeat in another document: validity of the ID
+ // alone cannot transfer the user's old passage choice to a new chart.
+ document=publishA0Candidate({...document,id:"another-comping-chart",title:"Another comping chart"});revision++;changed();
+ const switched=service.read();const deliveredBefore=downloads.length;await service.downloadMidi();expect(downloads).toHaveLength(deliveredBefore);
+ finishHash?.();finishDelivery?.();await pending;
+ expect(switched).toMatchObject({sectionId:null,recipe,sha256:null,filename:null,attacks:0,notes:0});
+ expect(switched.state).toBe(phase==="delivering"?"delivering":"stale");
+ expect(service.read().state).not.toBe("ready");
+ await service.prepareMidi();expect(service.read()).toMatchObject({state:"ready",sectionId:null,recipe,attacks:4,notes:16});
+ await service.downloadMidi();expect(downloads).toHaveLength(deliveredBefore+1);
+ const midi=downloads.at(-1);if(midi===undefined)throw new Error("No current-chart MIDI");
+ expect(notes(midi).filter(n=>n.on).map(n=>[n.tick,n.pitch,n.velocity])).toEqual([
+  ...[0,1440].flatMap(t=>[60,64,67,71].map(p=>[t,p,t===0?112:80])),
+  ...[3840,5280].flatMap(t=>[62,65,69,72].map(p=>[t,p,t===3840?112:80])),
+ ]);
+ expect(revision).toBe(1);
+});
+
+test("same-chart edits keep the selected comping passage and recipe while invalidating MIDI",async()=>{
+ const {composition,service,downloads}=setup();service.setPassage("loop-section-1");service.setPreset(2);service.setGate(120);
+ const recipe=service.read().recipe;await service.prepareMidi();expect(composition.controller.setTitle("Renamed current chart").ok).toBe(true);
+ expect(service.read()).toMatchObject({state:"stale",sectionId:"loop-section-1",recipe,sha256:null});
+ await service.downloadMidi();expect(downloads).toEqual([]);await service.prepareMidi();expect(service.read()).toMatchObject({state:"ready",attacks:2,notes:8,recipe});
+});
+
+test("whole recipe input refuses an oversized valid prefix without applying it and accepts the exact limit",()=>{
+ const {composition,service}=setup(),before=composition.readApplicationState();service.setPreset(2);const original=service.read().recipe;
+ const desired={schema:"changes.comp-recipe.v1",slots:[0,0,2,0,0,0,2,0,0,0,2,0,0,0,2,0],gateTicks:120} as const;
+ const exact=JSON.stringify(desired).padEnd(2048," ");expect(new TextEncoder().encode(exact).length).toBe(2048);
+ service.previewRecipe(exact);expect(service.read().importDraft).toEqual(desired);
+ service.previewRecipe(exact+"{}");expect(service.read().importDraft).toBeNull();service.applyRecipe();expect(service.read().recipe).toBe(original);
+ service.previewRecipe(exact);service.applyRecipe();expect(service.read().recipe).toEqual(desired);expect(composition.readApplicationState()).toBe(before);
+});
+
+
+test("a new chart larger than four bars refuses the whole passage until explicitly selected",async()=>{
+ let document=loopArrangementFixture().state.document,revision=0,changed:()=>void=()=>{};
+ const downloads:Uint8Array[]=[];
+ const service=createStudioComping({readDocument:()=>document,readRevision:()=>revision,subscribeSource:listener=>{changed=listener;return()=>{};},
+  preview:()=>Promise.resolve({ok:true,value:undefined}),release:()=>Promise.resolve({ok:true,value:undefined}),hashBytes:bytes=>Promise.resolve(createHash("sha256").update(bytes).digest("hex")),
+  startDelivery:r=>{downloads.push(r.privateBytes);return {completion:Promise.resolve(cleanup)};},prepareRecipeDownload:()=>()=>true});
+ service.setPassage("loop-section-1");service.setPreset(2);const section=document.sections[0];if(section===undefined)throw new Error("Missing section");
+ document=publishA0Candidate({...document,id:"larger-comping-chart",sections:[...document.sections,...[2,3,4].map(i=>({...section,id:`large-section-${String(i)}`,measures:section.measures.map(m=>({...m,id:`large-measure-${String(i)}`,events:m.events.map(e=>({...e,id:`large-event-${String(i)}`}))}))}))]});revision++;changed();
+ expect(service.read().sectionId).toBeNull();await service.prepareMidi();expect(service.read().state).toBe("refused");expect(service.read().message).toContain("1–4 complete 4/4 bars");await service.downloadMidi();expect(downloads).toEqual([]);
+ service.setPassage("loop-section-1");await service.prepareMidi();expect(service.read()).toMatchObject({state:"ready",attacks:2,notes:8});
 });

@@ -53,14 +53,21 @@ advances, emitted attacks and retained pitch occurrences. Output storage is
 bounded by 64 event/provenance pairs plus 1,024 copied immutable pitch records.
 
 The application binds preparation to document identity/revision, passage and
-recipe. Editing any input invalidates prepared bytes and cancels this tool's
+recipe. A section selection belongs to that document: opening another document
+resets the passage to Whole chart, even before the first preparation or when
+section IDs repeat. Same-document edits retain the explicitly chosen section.
+The session recipe remains unchanged in both cases. Editing any input invalidates prepared bytes and cancels this tool's
 pending/sounding preview. Cancellation cannot release a newer unrelated preview.
 Late preparation/hash completion cannot resurrect canceled state. Preview,
 recipe export and MIDI delivery use existing application-owned adapters. One
 native delivery owns and revokes one object URL. Recipe files use closed schema
 `changes.comp-recipe.v1`, exact slots and gate ticks; maximum input 2,048 UTF-8
 bytes, no executable content or implicit coercion. Import previews a valid
-recipe; applying it changes only session settings. Invalid input retains draft.
+recipe; applying it changes only session settings. The complete pasted input
+must reach validation; a native textarea limit must not discard a suffix and
+turn an oversized input into an accepted recipe. Oversized input gives an
+explicit refusal, invalidates its import preview and leaves the current session
+recipe and chart untouched. Exact-limit input remains usable. Invalid input retains draft.
 
 ## Presets and proof
 
