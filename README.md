@@ -42,17 +42,18 @@ acceptance gates, and [`ios/README.md`](ios/README.md) for build instructions.
 
 ## What works today
 
-This table describes the shipped web app, including batch MIDI comparison,
-explicit tied-key review and source-note inspection with pitch previews. On
-September 15, 2026 (UTC), both [jazzchords.org](https://jazzchords.org/) and its
+This table describes the shipped web app, including MIDI source-note inspection,
+source-bound play-along starting cues and reachable Focus controls on phones.
+On September 16, 2026 (UTC), both [jazzchords.org](https://jazzchords.org/) and its
 [Vercel mirror](https://changes-jazz-progression-studio.vercel.app/) were verified
-against the committed HTML and social image from `7c4db18`. Chromium, Firefox
-and WebKit passed all 12 live desktop/320px checks of exact source-note details,
-keyboard focus, native sound and Stop, with unchanged chart revisions and no
-console/page errors or extra requests in those runs. Before upload, the full
-48-case M1 browser groups, M0 regression gate and committed-byte predeploy
-checks passed. The
-[delivery record](docs/IMPLEMENTATION_TODO.md#midi-source-note-review--jcpe-upbz-cyancove-2026-09-15)
+against the committed HTML and social image from `d5bc152`. Chromium, Firefox
+and WebKit passed all 30 live desktop/320px checks of playback, exact starting
+chords, keyboard seeking, Stop and control reachability, with unchanged chart
+revisions and no application errors or forbidden requests. Cloudflare's known
+analytics injection was blocked by the unchanged CSP and recorded separately.
+Before upload, 97 focused tests, 72 browser checks and the committed-byte
+predeploy gates passed. The
+[delivery record](docs/IMPLEMENTATION_TODO.md#play-along-start-cues--jcpe-6ujg13-cyancove-2026-09-16-utc)
 preserves exact hashes, earlier failed runs and final evidence. These are
 solo automated checks; independent musical, real-device and human acceptance
 obligations remain open below.
@@ -131,7 +132,7 @@ The two HTML outputs must be byte-identical. The enforced artifact ceiling is
 9 MiB (`maxUncompressedBytes: 9437184`, the same figure the reviewed PHS7
 physical-system contract pins), with a hard 512 KiB reservation for the
 future Harmonic Atlas and an 8,912,896-byte shell allocation; the current
-tracked artifact from `7c4db18` measures 8,641,021 bytes. The full amendment history and the
+tracked artifact from `d5bc152` measures 8,642,945 bytes. The full amendment history and the
 reclamation path (physical models replacing the ~2.8 MB sampled payloads)
 are recorded in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
