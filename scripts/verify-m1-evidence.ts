@@ -38,6 +38,13 @@ const LEDGER_PATH = resolve(LEDGER_DIR, "m1-evidence-ledger.json");
 const FIXTURE_DIR = "tests/fixtures/midi-import-automation";
 
 const INPUT_CLOSURE = Object.freeze([
+  "src/application/studio-midi-source-review.ts",
+  "tests/unit/m1-source-review.test.ts",
+  "tests/e2e/m1-source-review.spec.ts",
+  "tests/support/u5-native-audio.ts",
+  "src/ui/studio/LibraryPanel.tsx",
+  "src/ui/studio/StudioShell.tsx",
+  "src/styles/studio.css",
   "docs/M1_MIDI_IMPORT_AUTOMATION_CONTRACT.md",
   "scripts/validate-m1-contract.ts",
   "scripts/verify-m1-evidence.ts",

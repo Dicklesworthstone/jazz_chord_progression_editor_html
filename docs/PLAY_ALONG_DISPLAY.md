@@ -24,7 +24,16 @@ The live controller reads the audio port's numeric display beat and actual loop.
 It requires matching document and plan/view revision authority. If unavailable,
 preparing, failed or stale, show an honest status instead of a purported live
 chord. Ready state may show a clearly labeled starting cue; paused state retains
-the paused position. During count-in the audio display clock holds at the start:
+the paused position. A chosen ready-state scrub position is the next Play's
+starting cue, not an audio playhead. It is bound to the exact document object,
+revision and accepted transport-notification sequence: an edit, replacement,
+Undo/Redo or accepted notification cannot revive a stale pending start. Refused
+edits and ignored stale notifications preserve it. Play consumes it; Stop and
+Restart clear it. The ready cue uses the currently armed loop intent; playing
+and paused cues use the actual audio loop. A chosen position outside the armed
+loop or at the non-loop chart end remains absent, never silently clamped. Cache
+loop geometry by source and loop intent; display polling must not recompile or
+scan the chart each time. During count-in the audio display clock holds at the start:
 show the starting chord and chart beat, not an invented countdown or elapsed-beat
 animation. No platform timing or real-device performance guarantee is inferred.
 

@@ -243,6 +243,19 @@ Package `jcpe-6ujg.8`. Spec `jcpe-6ujg.8.1` → build `jcpe-6ujg.8.2` → verify
 
 ## CC4: Compatible songbook import
 
+### Complete-source paste repair — 2026-09-16, `jcpe-6ujg.9.3`
+
+- [x] Read current architecture, source, original specification/build/verify tasks and existing evidence; claim the unassigned verification leaf.
+- [x] Identify the textarea length limit that can discard source before the bounded decoder sees it.
+- [x] Reproduce native paste truncation against committed `fa2657e8…ff9a`: both new Chromium phone/desktop witnesses fail on the missing whole-source refusal, with the exact-limit prefix accepted. Original failures retained in `test-results/songbook-paste-baseline-20260916`.
+- [x] Remove the native textarea truncation limit; the existing application now receives the whole paste and refuses oversized input. Decoder, byte/work limits, stale-preview invalidation and acknowledgement are unchanged.
+- [x] Trace the first fixed matrix's 14/18 result: Chromium/WebKit emit additional input events after the rejected text is cleared, overwriting the refusal. Preserve the refusal across empty no-op events; native input logs and all four failures remain in the original evidence directories.
+- [x] Prove exact-limit paste remains usable, oversized paste/file is refused, prior chart/history stays intact and a subsequent valid import still adds exact bars in one Undo.
+- [x] Run RCH final focused tests (17/17, 213 assertions), full four-project types, full lint/source policy (349 files), guarded build, and all 18 native Chromium/Firefox/WebKit cases (89.940 seconds, zero unexpected/skipped/flaky/retried results). Reports: `test-results/songbook-paste-clean-static-20260916` and `test-results/songbook-paste-clean-browser-20260916`; all native receipts bind artifact `389490f6600c5237228d7e5e00f782e7106025e50d2268ee65ecef4e298fda92`, 8,642,969 bytes. No application errors or forbidden requests.
+- [ ] Review the final diff and exact source hashes; run unchanged committed-byte predeploy gates, commit owned paths and push.
+- [ ] Deploy both hosts and verify committed-byte hashes and actual browser behavior.
+- [ ] Record results and return the original verification leaf open for independent reference-tool/user acceptance; no physical-device or independent-review claim.
+
 Package `jcpe-6ujg.9`. Spec `jcpe-6ujg.9.1` → build `jcpe-6ujg.9.2` → verify `jcpe-6ujg.9.3`.
 
 - [x] Research authoritative supported format with permitted real examples and provenance — explicit ChordPro grid subset, official references and three original permitted .crd files; docs/CHORDPRO_GRID_IMPORT.md.
