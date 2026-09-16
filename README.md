@@ -42,22 +42,23 @@ acceptance gates, and [`ios/README.md`](ios/README.md) for build instructions.
 
 ## What works today
 
-This table describes the shipped web app, including MIDI source-note inspection,
-source-bound play-along starting cues, bounded songbook import and authored comping.
+This table describes the shipped web app, including exact note-first entry,
+MIDI source-note inspection, play-along starting cues, songbook import and comping.
 On September 16, 2026 (UTC), both [jazzchords.org](https://jazzchords.org/) and its
 [Vercel mirror](https://changes-jazz-progression-studio.vercel.app/) were verified
-against the committed HTML and social image from `abf49f3`. Chromium, Firefox
-and WebKit passed all 60 live comping checks across both hosts, including desktop
-and 320px layouts, actual audio, file imports and exact MIDI/recipe downloads.
-Pasted recipes now reach validation in full: oversized input is refused without
-silently discarding its tail. Opening another chart clears the previous passage
-selection while retaining the session rhythm; same-chart edits preserve selection.
+against the committed HTML and social image from `300a9f4`. Chromium, Firefox
+and WebKit passed all 60 live note-first checks across both hosts, including
+desktop and 320px layouts, actual audio, exact JSON downloads and Undo/Redo.
+Pasted notes and Custom labels now reach validation in full. Oversized notes
+retain their trailing text for correction; oversized labels are refused instead
+of silently inserting a shortened label. Valid insertion preserves exact pitch
+spellings, order and duplicates, with one Undo and exact recovery.
 There were no application errors or forbidden requests. Cloudflare's known
 analytics injection was blocked by the unchanged CSP and recorded separately;
 clean-byte equality was verified with curl, not inferred for injected responses.
-Before upload, 101 focused tests, full types/lint, 30 browser checks and the
+Before upload, 180 focused tests, full types/lint, 54 browser checks and the
 committed-byte predeploy gates passed. The
-[delivery record](docs/DUEL_IMPLEMENTATION_TODO.md#complete-recipe-input-and-chart-owned-passage--2026-09-16-jcpe-6ujg53)
+[delivery record](docs/DUEL_IMPLEMENTATION_TODO.md#cod1-note-first-chord-creation)
 preserves exact hashes, earlier failed runs and final evidence. These are
 solo automated checks; independent musical, real-device and human acceptance
 obligations remain open below.
@@ -69,6 +70,7 @@ obligations remain open below.
 | Chart authoring | Engraved sheet view and grid edit view over the demo chart; quick entry (`⌘K` / Type changes) for whole charts; per-chord inline editing, exact beat durations, measure/section structure edits, drag moves, range selection, and single-step undo/redo (U1 acceptance E2E) |
 | Analysis | Literal-first Harmony Lens: chord tones with degrees, chord scale, guide tones, guide-tone motion into the next chord, and plural next-chord options with one-line reasons ("Options, not answers"); roman numerals and phrase brackets on the sheet. Deliberately narrower than the planned H0 evidence-tier engine and says so in source |
 | Exact voicings | Choose and audition alternatives, keep a Frozen realization, or edit up to 16 exact Manual notes in the chord inspector; complete U2 package proof remains open |
+| Start from notes | Enter exact spelled notes or tap the keyboard, compare chord names, hear the voicing and add one Manual bar with one Undo. Custom labels and acknowledged enharmonic names preserve the entered pitches, order and duplicates; oversized pasted notes or labels remain editable and are refused without insertion |
 | Playback | One persistent Web Audio graph, serialized transport with loop/seek/pause/live mix, 7 grooves, and 15 instruments spanning physical models (clarinet, flute, four plucked strings), the hybrid concert grand, and CC0-sampled bass/vibes — every shipping model gated by the model-acceptance ledger |
 | Authored comping | Edit a 16-slot rhythm, hear one pass over 1–4 complete 4/4 bars, and download exact performed MIDI or a separate rhythm recipe. Session settings preserve chart voicings and leave ordinary playback, chart backups and shared links unchanged; opening another chart resets the passage selection |
 | Progression library | 27 library entries plus the starter chart, with a machine-checked provenance law |
@@ -138,7 +140,7 @@ The two HTML outputs must be byte-identical. The enforced artifact ceiling is
 9 MiB (`maxUncompressedBytes: 9437184`, the same figure the reviewed PHS7
 physical-system contract pins), with a hard 512 KiB reservation for the
 future Harmonic Atlas and an 8,912,896-byte shell allocation; the current
-tracked artifact from `abf49f3` measures 8,643,240 bytes. The full amendment history and the
+tracked artifact from `300a9f4` measures 8,643,212 bytes. The full amendment history and the
 reclamation path (physical models replacing the ~2.8 MB sampled payloads)
 are recorded in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
