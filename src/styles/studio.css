@@ -9,7 +9,7 @@
  */
 
 /* Chord inspector: the exact-note list remains usable independently of the piano. */
-.studio-inspector { display: grid; gap: 1rem; min-inline-size: 0; overflow-wrap: anywhere; }
+.studio-inspector { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; min-inline-size: 0; overflow-wrap: anywhere; }
 .studio-inspector p { margin-block: .5rem; }
 .studio-inspector-summary { display: grid; gap: .35rem; }
 .studio-inspector-summary strong { font-size: 1.5rem; }
