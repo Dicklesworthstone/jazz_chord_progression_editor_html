@@ -329,6 +329,7 @@ for (const invalidation of ["removed", "hidden", "screen-style"] as const) {
       await page.emulateMedia({ media: "print" }); await settle();
       await expect(dialog).toHaveCount(1);
       await trigger.evaluate((element, kind) => {
+        if (!(element instanceof HTMLElement)) throw new Error("Expected HTML trigger");
         if (kind === "removed") element.remove();
         else if (kind === "hidden") element.hidden = true;
         else element.style.display = "none";
