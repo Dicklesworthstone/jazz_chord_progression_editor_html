@@ -25,6 +25,7 @@
 import { Buffer } from "node:buffer";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { runEmulatedEvidence } from "./evidence-emulator";
 
 import {
   AUDIO_IMPULSE_ALGORITHM_ID,
@@ -597,5 +598,13 @@ async function main(): Promise<number> {
 }
 
 if (import.meta.main) {
-  process.exitCode = await main();
+  try {
+    const emulator = process.env["JCPE_EVIDENCE_QEMU"];
+    process.exitCode = emulator === undefined
+      ? await main()
+      : await runEmulatedEvidence(emulator, import.meta.path);
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exitCode = 2;
+  }
 }

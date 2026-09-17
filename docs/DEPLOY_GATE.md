@@ -59,6 +59,38 @@ six admitted trigonometric probe values on hz4. A portable analyzer still
 needs an explicit numerical contract and proof; changing the runtime or
 rounding outputs cannot silently replace the accepted report.
 
+### Optional software CPU for the model gate
+
+On Linux x64, `JCPE_EVIDENCE_QEMU=/absolute/path/to/qemu-x86_64`
+opts the model gate into software CPU execution. The launcher requires the
+pinned QEMU executable below and an official Bun 1.3.14 standard or baseline
+binary, then runs the same `check-predeploy.ts` with `-cpu max`. The child
+still performs all six runtime probes and the complete original replay.
+The parent propagates failure; there is no native fallback after an emulator
+error. Without the variable, the existing native path is unchanged. This
+setting also applies when the model gate is reached through `bun run verify`
+or `bun run deploy`. Instrument-quality and browser-playback gates remain
+separate and mandatory.
+
+The initial supported combination is Ubuntu 26.04 Linux x64 with QEMU
+10.2.1, package `1:10.2.1+ds-1ubuntu3.2`. Its `qemu-x86_64` SHA-256 is
+`e016785942d935f432db1527472c28288ca324f9c0ca2434084ee61d2d7a59b6`.
+The Debian package SHA-512 is
+`4ccfbcab0613da0912ffcc314a8c66df09e257dc6208b6b6dd794020784f5d19a4001e99ed0e52eb18db3ad5e2883034616e8ed4d3f16b5238346430de3fb3e3`.
+Install or extract this development tool separately; the gate never downloads
+or installs anything. Host libraries remain subject to exact replay rather
+than being assumed compatible from the OS label.
+
+```sh
+JCPE_EVIDENCE_QEMU=/absolute/path/to/qemu-x86_64 bun run predeploy:check
+```
+
+This executes the existing numerical implementation on a software CPU; it
+does not replace the analyzer, alter accepted evidence, or add anything to
+the browser app. It is slower than a conforming native worker. The original
+portability task remains open until its required positive/adverse and release
+gates have been verified for this execution path.
+
 The probes pin observed values from the environment that reproduces the
 accepted report. They are an admission check, not a mathematical accuracy
 claim, musical threshold, or complete proof of portability. Passing them still
