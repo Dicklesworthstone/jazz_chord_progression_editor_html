@@ -41,8 +41,23 @@ numeric fields and eight differing derived hashes, with identical source,
 WASM, reference and rendered-PCM bindings. Tracing found one sine and five
 cosine results differing by one floating-point step for identical arguments;
 the traced `log10`, `hypot`, `pow` and `sqrt` operations agreed whenever their
-inputs agreed. The host CPU and system libraries have not been separately
-isolated. Bun's version or baseline-build label alone is not an authority.
+inputs agreed.
+
+A subsequent same-host experiment isolated glibc's CPU-feature dispatch:
+with the same hz4 host, standard Bun binary, libraries and 1,805 frozen
+inputs, the default environment reproduces the accepted report exactly.
+Starting Bun with `GLIBC_TUNABLES=glibc.cpu.hwcaps=-FMA,-FMA4` reproduces
+all 60 differing fields and the entire ovh-b report exactly; disabling
+AVX/AVX2 produces that same report. This is a diagnostic experiment, **not**
+a deployment setting or workaround. Both non-default runs still fail exact
+accepted-evidence equality. Receipts are in
+`test-results/flute-runtime-dispatch-20260917/`.
+
+Bun's version or baseline-build label alone is not an authority. Nor is
+switching to Node an exact replacement: Node 26.0.0 differs from two of the
+six admitted trigonometric probe values on hz4. A portable analyzer still
+needs an explicit numerical contract and proof; changing the runtime or
+rounding outputs cannot silently replace the accepted report.
 
 The probes pin observed values from the environment that reproduces the
 accepted report. They are an admission check, not a mathematical accuracy
