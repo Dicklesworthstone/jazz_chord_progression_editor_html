@@ -67,8 +67,17 @@
 ## Broader regression audit — 2026-09-16 UTC
 
 - [x] Preserve the RCH baseline at `test-results/runtime-audit-20260916/`: 3,892 pass, six failures and two unhandled errors; this is not a full-suite pass.
-- [ ] Re-run clarinet CLI and flute replay with the pinned original UIowa corpus included. The print-derived RAM input closure omitted their ignored corpus directory; no source-defect claim from that run.
-- [ ] Use the repository's normal non-browser test selection: explicitly naming the entire integration directory caused Bun to import two Playwright-only suites. Their unhandled imports are harness failures, not native browser results.
+- [x] Repeat the full baseline on RCH hz4 with normal `bun test` and the pinned original UIowa corpus: 5,831 pass, 10 fail including two errors, 599,672 assertions across 523 files (1,278.56s). Retain `test-results/full-tests-20260917/`; this frozen pre-fix snapshot is not aggregate acceptance.
+- [x] Clarinet CLI and exact flute replay pass with the corpus present. The earlier absent-corpus failures did not establish source defects.
+- [ ] Fix normal Bun test selection: the corrected run still imports `u2-inspector-evidence.test.ts` and `u4-transport-controls-evidence.test.ts` under Bun. Earlier attribution solely to the explicit integration-directory command was incorrect. Preserve these suites under real Playwright; do not suppress their acceptance coverage.
+- [ ] Repair three standalone-staleness controls: the branding mutation replaces `JazzChords.org` with a shorter string, violating its unchanged one-byte-mutation assertion before the guard runs.
+- [ ] Review the six stale U0 evidence source hashes against actual acceptance evidence; do not regenerate approval pins merely to turn the test green.
+- [ ] Repair the ambiguous `U5-MUT-009` source needle (two matches); retain the original injected defect and unchanged killer assertion.
+- [ ] Rerun semantic-surface declarations with the three declared iOS source files included. Their omission from the RAM input closure is a harness defect, not evidence that repository files are absent.
+- [x] Under original `jcpe-6ujg.5.3`, replace authored comping's double assertion with a statically checked nonempty tuple of frozen pitch copies. Keep note order, duplicates, spelling and source immutability; no test or fixture changes.
+- [x] Unchanged cast-policy rerun on RCH hz4 removes exactly the comping finding; 29 findings remain elsewhere and the global gate still fails (one pass, one fail). Guarded build passes, producing 8,636,958 bytes, SHA256 `e621a568febf11d7baeaa89f122e16124cb020e8d44c65dcd889396ded499d68`. Receipt: `test-results/comping-cast-policy-20260917/`.
+- [x] RCH ovh-b final comping proof: 187/187 tests, 5,052 assertions (11.80s), P0 validator, all four TypeScript projects and full lint/boundaries pass. Its guarded build exactly matches hz4 above. `test-results/comping-cast-final-20260917/` remains overall red because the unchanged global cast gate still fails; no assertion relaxation. Initial hz4 focused job hit admission queue timeout without executing; no local fallback.
+- [x] Fresh-review the tuple change and all 1,807 bound inputs, preserve peer files, and copy only the two-worker identical guarded artifact to root/dist for the source checkpoint. No browser, human, deployment or aggregate pass claim; original comping acceptance stays open.
 - [x] Review the original P0 production inventory against `src/playback/authored-comping.ts` and prove its real layer ownership under the original comping acceptance.
   - [x] Claim `jcpe-6ujg.5.3`; read the comping/P0 ownership contracts and real source.
   - [x] Reproduce on RCH ovh-b with pinned Bun 1.3.14: 82 pass / 1 fail; exact failure is the omitted `authored-comping.ts` inventory entry (`test-results/comping-ownership-baseline-20260917/`).
