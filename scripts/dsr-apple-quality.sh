@@ -5,6 +5,8 @@ repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root/ios"
 
 build_root="${FRANKEN_APPLE_BUILD_ROOT:-${DSR_QUALITY_RUN_DIR:-$repo_root/ios/build/dsr-apple-quality}}"
+test_timeout_seconds="${FRANKEN_APPLE_TEST_TIMEOUT_SECONDS:-900}"
+timeout_bin="${FRANKEN_APPLE_TIMEOUT_BIN:-/opt/homebrew/bin/timeout}"
 mkdir -p "$build_root/tmp"
 sbh check --need 20G "$build_root"
 
@@ -26,6 +28,10 @@ if [[ -n "${FRANKEN_APPLE_RESULT_ROOT:-}" ]]; then
   xcode_iphone_result_settings+=("-resultBundlePath" "$FRANKEN_APPLE_RESULT_ROOT/frankenjazz-iphone.xcresult")
   xcode_ipad_result_settings+=("-resultBundlePath" "$FRANKEN_APPLE_RESULT_ROOT/frankenjazz-ipad.xcresult")
 fi
+if [[ ! -x "$timeout_bin" ]]; then
+  echo "FrankenJazz DSR requires GNU timeout at '$timeout_bin'" >&2
+  exit 1
+fi
 (cd "$repo_root" && bun run check:ios-instrument-samples)
 "$repo_root/ios/build-dsp.sh"
 command -v xcodegen >/dev/null
@@ -36,18 +42,25 @@ if [[ "$display_name" != "FrankenJazz" ]]; then
   echo "FrankenJazz identity drift: expected CFBundleDisplayName=FrankenJazz, got '$display_name'" >&2
   exit 1
 fi
+bundle_version="$(plutil -extract CFBundleVersion raw Sources/Info.plist)"
+if [[ "$bundle_version" != '$(CURRENT_PROJECT_VERSION)' ]]; then
+  echo "FrankenJazz build-number drift: CFBundleVersion must derive from CURRENT_PROJECT_VERSION, got '$bundle_version'" >&2
+  exit 1
+fi
 git ls-files -z -- '*.swift' | xargs -0 xcrun swiftc -parse -enable-bare-slash-regex
 plutil -lint Sources/Info.plist
 plutil -lint Sources/PrivacyInfo.xcprivacy
 plutil -lint Sources/FrankenJazz.entitlements
 
 /Users/jemanuel/.local/bin/ensure-simulator-audio-safe prepare
-TMPDIR="$build_root/tmp" xcodebuild -project FrankenJazz.xcodeproj -scheme FrankenJazz \
+TMPDIR="$build_root/tmp" "$timeout_bin" --signal=TERM --kill-after=30s "${test_timeout_seconds}s" \
+  xcodebuild -project FrankenJazz.xcodeproj -scheme FrankenJazz \
   -destination 'generic/platform=iOS Simulator' \
   -derivedDataPath "$build_root/derived-data" \
   "${xcode_product_settings[@]}" \
   CODE_SIGNING_ALLOWED=NO build
-TMPDIR="$build_root/tmp" xcodebuild -project FrankenJazz.xcodeproj -scheme FrankenJazz \
+TMPDIR="$build_root/tmp" "$timeout_bin" --signal=TERM --kill-after=30s "${test_timeout_seconds}s" \
+  xcodebuild -project FrankenJazz.xcodeproj -scheme FrankenJazz \
   -destination 'platform=macOS,variant=Mac Catalyst' \
   -derivedDataPath "$build_root/derived-data" \
   "${xcode_product_settings[@]}" \
@@ -82,7 +95,11 @@ if [[ -z "$iphone_id" || -z "$ipad_id" ]]; then
 fi
 
 /Users/jemanuel/.local/bin/ensure-simulator-audio-safe prepare
-TMPDIR="$build_root/tmp" xcodebuild -project FrankenJazz.xcodeproj -scheme FrankenJazz \
+xcrun simctl boot "$iphone_id" 2>/dev/null || true
+xcrun simctl bootstatus "$iphone_id" -b
+/Users/jemanuel/.local/bin/ensure-simulator-audio-safe prepare
+TMPDIR="$build_root/tmp" "$timeout_bin" --signal=TERM --kill-after=30s "${test_timeout_seconds}s" \
+  xcodebuild -project FrankenJazz.xcodeproj -scheme FrankenJazz \
   -destination "platform=iOS Simulator,id=$iphone_id" \
   -derivedDataPath "$build_root/derived-data" \
   "${xcode_product_settings[@]}" \
@@ -93,7 +110,11 @@ TMPDIR="$build_root/tmp" xcodebuild -project FrankenJazz.xcodeproj -scheme Frank
   -skip-testing:FrankenJazzUITests/FrankenJazzUITests/testIPadExpandedWorkspaceExposesLibraryChartInspectorAndTransport
 
 /Users/jemanuel/.local/bin/ensure-simulator-audio-safe prepare
-TMPDIR="$build_root/tmp" xcodebuild -project FrankenJazz.xcodeproj -scheme FrankenJazz \
+xcrun simctl boot "$ipad_id" 2>/dev/null || true
+xcrun simctl bootstatus "$ipad_id" -b
+/Users/jemanuel/.local/bin/ensure-simulator-audio-safe prepare
+TMPDIR="$build_root/tmp" "$timeout_bin" --signal=TERM --kill-after=30s "${test_timeout_seconds}s" \
+  xcodebuild -project FrankenJazz.xcodeproj -scheme FrankenJazz \
   -destination "platform=iOS Simulator,id=$ipad_id" \
   -derivedDataPath "$build_root/derived-data" \
   "${xcode_product_settings[@]}" \
