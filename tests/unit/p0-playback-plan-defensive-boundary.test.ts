@@ -75,6 +75,7 @@ class AccessorBackedReadonlyMap<K, V> implements ReadonlyMap<K, V> {
 }
 
 const PLAYBACK_PRODUCTION_FILE_NAMES = Object.freeze([
+  "authored-comping.ts",
   "compile-playback-plan.ts",
   "index.ts",
   "playback-plan-contract.ts",
@@ -1923,14 +1924,15 @@ describe("P0 defensive loop accounting and layer ownership", () => {
     ['import type { Hidden } from "../theory/private";', "deep-theory-import:../theory/private"],
     ["resolveChord(chord);", "runtime-theory-call:resolveChord"],
   ] as const) {
-    test(`loop projection retains the ownership restriction: ${finding}`, async () => {
-      const fileName = "project-playback-loop.ts";
-      const source = await readFile(new URL(`../../src/playback/${fileName}`, import.meta.url), "utf8");
-      expect(PLAYBACK_PRODUCTION_FILE_NAMES).toContain(fileName);
-      expect(playbackOwnershipFindings([{ fileName, sourceFile: parseSource(fileName, source) }])).toEqual([]);
-      expect(playbackOwnershipFindings([{
-        fileName, sourceFile: parseSource(fileName, `${injectedSource}\n${source}`),
-      }])).toEqual([`${fileName}:${finding}`]);
-    });
+    for (const fileName of ["project-playback-loop.ts", "authored-comping.ts"] as const) {
+      test(`${fileName} retains the ownership restriction: ${finding}`, async () => {
+        const source = await readFile(new URL(`../../src/playback/${fileName}`, import.meta.url), "utf8");
+        expect(PLAYBACK_PRODUCTION_FILE_NAMES).toContain(fileName);
+        expect(playbackOwnershipFindings([{ fileName, sourceFile: parseSource(fileName, source) }])).toEqual([]);
+        expect(playbackOwnershipFindings([{
+          fileName, sourceFile: parseSource(fileName, `${injectedSource}\n${source}`),
+        }])).toEqual([`${fileName}:${finding}`]);
+      });
+    }
   }
 });

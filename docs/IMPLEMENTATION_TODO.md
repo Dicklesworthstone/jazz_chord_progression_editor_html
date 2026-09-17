@@ -52,7 +52,12 @@
 - [x] Preserve the RCH baseline at `test-results/runtime-audit-20260916/`: 3,892 pass, six failures and two unhandled errors; this is not a full-suite pass.
 - [ ] Re-run clarinet CLI and flute replay with the pinned original UIowa corpus included. The print-derived RAM input closure omitted their ignored corpus directory; no source-defect claim from that run.
 - [ ] Use the repository's normal non-browser test selection: explicitly naming the entire integration directory caused Bun to import two Playwright-only suites. Their unhandled imports are harness failures, not native browser results.
-- [ ] Review the original P0 production inventory against `src/playback/authored-comping.ts` and prove its real layer ownership under the original comping acceptance.
+- [x] Review the original P0 production inventory against `src/playback/authored-comping.ts` and prove its real layer ownership under the original comping acceptance.
+  - [x] Claim `jcpe-6ujg.5.3`; read the comping/P0 ownership contracts and real source.
+  - [x] Reproduce on RCH ovh-b with pinned Bun 1.3.14: 82 pass / 1 fail; exact failure is the omitted `authored-comping.ts` inventory entry (`test-results/comping-ownership-baseline-20260917/`).
+  - [x] Include the compiler in the unchanged ownership scanner; apply all three existing theory-import/generation mutation controls to both loop projection and comping, with clean-source success twins.
+  - [x] RCH ovh-b final proof: P0 contract PASS; 187 tests / 5,052 assertions across seven complete suites PASS (10.64s); all four TypeScript projects and full lint/source-boundary checks PASS. Receipts in `test-results/comping-ownership-final-20260917/`, all 1,805 input hashes stable.
+  - [x] Review final diff and bound source hashes; stage only the ownership test and tracker/TODO record. Production source and committed HTML remain unchanged; no rebuild/deployment required for this test-only repair. Original `jcpe-6ujg.5.3` remains open for independent/human acceptance.
 - [ ] Investigate the G5 expected-child mismatch under the reopened original G5 task; preserve independently authored branch expectations and keep full advanced-discovery acceptance open.
 
 ## Play-along start cues — jcpe-6ujg.1.3 (CyanCove, 2026-09-16 UTC)
