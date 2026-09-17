@@ -88,8 +88,8 @@ const faults = [
     "U5-MUT-009",
     "src/application/studio-controller.ts",
     "tests/integration/studio-midi-export-marker.test.ts",
-    "startDelivery: options.midiExportDelivery,",
-    "startDelivery: (request) => { state = { ...state, exportRevision: state.revision }; return options.midiExportDelivery!(request); },",
+    "hashBytes: options.midiExportHashBytes,\n          startDelivery: options.midiExportDelivery,",
+    "hashBytes: options.midiExportHashBytes,\n          startDelivery: (request) => { state = { ...state, exportRevision: state.revision }; return options.midiExportDelivery!(request); },",
     "U5-LIFE-018"
   ],
   [
