@@ -80,7 +80,7 @@ async function mutateOneTitleByte(path: string): Promise<{
   if (!source.includes(marker)) {
     throw new Error(`TEST_MUTATION_MARKER_MISSING: ${path}.`);
   }
-  const mutated = source.replace(marker, "<title>JazzChorde");
+  const mutated = source.replace(marker, "<title>JazzChords.orh");
   const sourceBytes = new TextEncoder().encode(source);
   const mutatedBytes = new TextEncoder().encode(mutated);
   let differingBytes = 0;
