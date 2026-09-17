@@ -87,9 +87,22 @@ JCPE_EVIDENCE_QEMU=/absolute/path/to/qemu-x86_64 bun run predeploy:check
 
 This executes the existing numerical implementation on a software CPU; it
 does not replace the analyzer, alter accepted evidence, or add anything to
-the browser app. It is slower than a conforming native worker. The original
-portability task remains open until its required positive/adverse and release
-gates have been verified for this execution path.
+the browser app. It is slower than a conforming native worker.
+
+For source commit `5a4cad7`, RCH on the previously incompatible ovh-b
+worker reproduced the complete accepted flute report exactly with this path
+(native: 60 differences; emulated: zero). The full model gate passed all 11
+models and the separate quality gate passed nine instruments. A red model
+and a tampered accepted report both still returned exit 1; an unpinned
+emulator returned exit 2. Native Chromium then passed all 15 playback cases
+and recovery. On the conforming hz4 worker, 43 tests, all type projects,
+full lint and native predeploy also passed. Receipts are under
+`test-results/flute-emulation-{replay-complete,acceptance,static,playback}-20260917/`.
+
+This resolves `jcpe-uid4` through its explicit checked-runtime alternative.
+It does not promise that native JavaScript math is portable across CPUs,
+that arbitrary QEMU versions are interchangeable, or that human listening
+and device acceptance are complete.
 
 The probes pin observed values from the environment that reproduces the
 accepted report. They are an admission check, not a mathematical accuracy
