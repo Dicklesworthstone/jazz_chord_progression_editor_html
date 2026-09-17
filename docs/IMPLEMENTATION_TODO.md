@@ -47,6 +47,16 @@
 - [x] Retain original U4 ownership and full acceptance; this isolated defect cannot close its parent.
 
 
+## Flute replay portability — jcpe-uid4 (2026-09-17 UTC)
+
+- [x] Claim the original portability bug; preserve exact canonical evidence and all model thresholds.
+- [x] Recover both official Bun 1.3.14 binaries and verify their recorded SHA-256 values.
+- [x] Same-host RCH hz4: standard and baseline Bun each exactly reproduce all 12 cells and the complete accepted report (zero differences), `test-results/flute-portability-same-host-20260917/`.
+- [x] Same baseline binary across hz4/ovh-b: all 12 cell bindings equal, including PCM. ovh-b retains 52 numeric and eight derived-hash differences. Original and instrumented replays agree per host. Trace 2,048 sine / 6,143 cosine distinct inputs: one sine and five cosine outputs differ for identical arguments. Matching-input log10/hypot/pow/sqrt outputs agree. Reports `flute-portability-{math,trig}{,-ovh}-20260917`; CPU and system-library contributions remain unisolated.
+- [x] Document explicit numerical-runtime admission in `docs/DEPLOY_GATE.md`. Add six real FFT/window probes before machine-delegated flute replay; preserve original complete canonical equality, all musical thresholds, accepted report bytes and source/WASM/corpus/PCM binding. This diagnoses/refuses incompatible hosts; it does not solve portable analysis.
+- [x] RCH hz4 final: 40/40 tests, 149 assertions (8.85s), four type projects, full lint/boundaries, and original `bun run predeploy:check` PASS; receipt `test-results/flute-portability-final-20260917/` binds 1,805 inputs. RCH ovh-b actual CLI exits 1 with all six precise runtime findings, `test-results/flute-portability-refusal-20260917/`; that is expected refusal, not deploy acceptance.
+- [ ] Resolve remaining numerical portability or separately isolate CPU/library causes and complete original acceptance. The same `jcpe-uid4` stays open. No application/HTML changes or deployment this turn; native playback was not rerun for this development-time diagnostic.
+
 ## Broader regression audit — 2026-09-16 UTC
 
 - [x] Preserve the RCH baseline at `test-results/runtime-audit-20260916/`: 3,892 pass, six failures and two unhandled errors; this is not a full-suite pass.

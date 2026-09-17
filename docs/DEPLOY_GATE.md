@@ -24,6 +24,35 @@ finding (`MODEL_OPEN`, `MODEL_RED`, `MODEL_UNLISTED`,
 `MODEL_DELEGATED_WASM_MISMATCH`, `MODEL_WASM_DIGEST_DRIFT`, and kin — the
 delegated-evidence replay additionally requires the reference corpus below).
 
+## Evidence runtime compatibility
+
+Exact flute evidence replay requires a numerically compatible host, in addition
+to Bun 1.3.14 and the pinned reference corpus. `check-predeploy.ts` checks six
+actual FFT/window sine and cosine inputs before running a machine-delegated
+flute replay. A mismatch produces `MODEL_EVIDENCE_RUNTIME_MISMATCH` with the
+operation, argument, expected value and observed value. Use a conforming RCH
+worker and rerun the original gate. There is no override.
+
+This restriction comes from reproduced defect `jcpe-uid4`, not a theoretical
+platform concern. On September 17, 2026, both official Linux x64 Bun 1.3.14
+builds (standard and baseline) reproduced the full checked-in report exactly
+on worker hz4. The identical baseline executable on ovh-b produced 52 differing
+numeric fields and eight differing derived hashes, with identical source,
+WASM, reference and rendered-PCM bindings. Tracing found one sine and five
+cosine results differing by one floating-point step for identical arguments;
+the traced `log10`, `hypot`, `pow` and `sqrt` operations agreed whenever their
+inputs agreed. The host CPU and system libraries have not been separately
+isolated. Bun's version or baseline-build label alone is not an authority.
+
+The probes pin observed values from the environment that reproduces the
+accepted report. They are an admission check, not a mathematical accuracy
+claim, musical threshold, or complete proof of portability. Passing them still
+requires the unchanged complete canonical replay and all source/WASM/corpus/
+PCM bindings. No evidence value is rounded, rewritten or accepted by tolerance.
+This affects development-time evidence execution only; it does not narrow the
+web application's browser contract or change its embedded audio renderer.
+Portable analysis across incompatible hosts remains open on `jcpe-uid4`.
+
 ## Reachability is wider than the recipe registry
 
 The regression shipped through an engine gesture-routing override while the

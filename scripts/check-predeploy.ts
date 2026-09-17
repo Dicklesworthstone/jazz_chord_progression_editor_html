@@ -86,6 +86,34 @@ export type LedgerRow = Readonly<{
 
 export type GateFinding = Readonly<{ code: string; detail: string }>;
 
+/** Runtime conformance probes from the actual flute FFT/window calculation.
+ * These pin the environment that produced the accepted evidence, not a musical
+ * tolerance or a replacement for replay. See docs/DEPLOY_GATE.md.
+ */
+export function referenceRuntimeFindings(
+  math: Pick<Math, "sin" | "cos"> = Math,
+): readonly GateFinding[] {
+  const probes = [
+    ["sin", -2.9989324403164286, -0.1421768035194481],
+    ["cos", 4.553966786742127, -0.15776035546745149],
+    ["cos", 4.0936601708315346, -0.580000096842339],
+    ["cos", 2.0360895977111872, -0.4486849140274867],
+    ["cos", 5.902665171360163, 0.928471580941858],
+    ["cos", 5.313472702994605, 0.5655365765131326],
+  ] as const;
+  return probes.flatMap(([operation, argument, expected]) => {
+    const actual = math[operation](argument);
+    return Object.is(actual, expected) ? [] : [{
+      code: "MODEL_EVIDENCE_RUNTIME_MISMATCH",
+      detail: `Math.${operation}(${String(argument)}) returned ${String(actual)}; ` +
+        `the accepted flute evidence runtime returns ${String(expected)}. ` +
+        "Run this unchanged gate on a conforming evidence worker; Bun version " +
+        "alone does not identify numerical compatibility. See " +
+        "docs/DEPLOY_GATE.md#evidence-runtime-compatibility. Do not round or regenerate the evidence.",
+    }];
+  });
+}
+
 export type GateReplayResults = Readonly<{
   fluteV2?: FluteV2ReferenceRunResult;
   sampleReplacement?: Readonly<{
@@ -499,6 +527,15 @@ async function main(): Promise<number> {
     row.algorithmId === FLUTE_V2_REFERENCE_RUNNER_POLICY.rendererAlgorithmId &&
     row.status === "machine-delegated",
   );
+  if (needsFluteV2Replay) {
+    const runtimeFindings = referenceRuntimeFindings();
+    if (runtimeFindings.length > 0) {
+      for (const finding of runtimeFindings) {
+        console.error(`FAIL ${finding.code} ${finding.detail}`);
+      }
+      return 1;
+    }
+  }
   const needsVibesReplay = shippingIds.includes(
     VIBES_REPLACEMENT_POLICY.algorithmId,
   ) && ledgerRows.some((row) =>

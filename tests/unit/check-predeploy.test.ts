@@ -31,6 +31,7 @@ import {
   dspSourceDriftFinding,
   evaluateGate,
   parseLedger,
+  referenceRuntimeFindings,
   type LedgerRow,
 } from "../../scripts/check-predeploy";
 import {
@@ -53,6 +54,38 @@ import {
 import staleVibesEvidence from "../../release-evidence/audio/listening/vibes-replacement-evidence.json";
 
 const root = resolve(import.meta.dir, "../..");
+
+describe("reference evidence runtime compatibility", () => {
+  test("the real admitted runtime satisfies every probe", () => {
+    expect(referenceRuntimeFindings()).toEqual([]);
+  });
+
+  for (const [operation, argument, incompatible] of [
+    ["sin", -2.9989324403164286, -0.14217680351944806],
+    ["cos", 4.553966786742127, -0.15776035546745146],
+    ["cos", 4.0936601708315346, -0.5800000968423389],
+    ["cos", 2.0360895977111872, -0.44868491402748667],
+    ["cos", 5.902665171360163, 0.9284715809418581],
+    ["cos", 5.313472702994605, 0.5655365765131325],
+  ] as const) {
+    test(`reports the observed one-step ${operation}(${String(argument)}) mismatch`, () => {
+      const math = { sin: Math.sin, cos: Math.cos };
+      const original = math[operation];
+      math[operation] = (value) => value === argument ? incompatible : original(value);
+      const findings = referenceRuntimeFindings(math);
+      expect(findings).toHaveLength(1);
+      expect(findings[0]?.code).toBe("MODEL_EVIDENCE_RUNTIME_MISMATCH");
+      expect(findings[0]?.detail).toContain(String(incompatible));
+      expect(findings[0]?.detail).toContain("evidence-runtime-compatibility");
+      expect(referenceRuntimeFindings()).toEqual([]);
+    });
+  }
+
+  test("nonfinite math cannot pass runtime admission", () => {
+    expect(referenceRuntimeFindings({ sin: () => NaN, cos: () => Infinity }))
+      .toHaveLength(6);
+  });
+});
 
 function approvedRow(algorithmId: string): LedgerRow {
   return {
