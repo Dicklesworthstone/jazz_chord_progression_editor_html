@@ -4,10 +4,13 @@
 
 - [x] Read source/contract and reconcile original U2 ownership; claim this defect and preserve peer files.
 - [x] RCH committed baseline: both 320/1280px cases fail horizontal containment; 320px content is 1,885px inside 286px. Exact inspector close restores chart focus; entering print mode causes the command-lane stale-owner refusal. Preserve `test-results/inspector-baseline-20260917/`.
-- [ ] Add native regression assertions for tab/piano containment and hit testing, dirty-draft retention, exact focus return and retained print preview without visible refusal.
-- [ ] Fix intrinsic grid sizing and distinguish temporary print visibility from an actually stale overlay owner.
+- [x] Add native regression assertions for tab/piano containment and hit testing, dirty-draft retention, exact focus return and retained print preview without visible refusal. All six new/strengthened Chromium cases fail on the committed baseline: two geometry failures and four missing retained print panels; preserve `test-results/inspector-regressions-red-20260917/`.
+- [x] Fix the inspector grid with one zero-minimum fluid column. Observe native print-media changes so print CSS does not dismiss connected screen owners; still invalidate removed or explicitly hidden owners and recheck CSS-only invisibility on return to screen. Retire the media listener with its overlay lease.
 - [ ] Prove genuine owner removal and responsive disappearance still dismiss correctly, including removal/hiding during print and after print.
-- [ ] Run RCH contracts, relevant unit/integration tests, full types/lint/build, and sequential Chromium/Firefox/WebKit proofs. Inspect first/last piano-key screenshots.
+- [x] Retain first static run failures: an existing observer double lacked `matchMedia`; two new E2E typing errors; scratch Bun selection mistakenly imported the Playwright-only U2 evidence file. Extend the double with original stale-owner assertions and print-listener cleanup, fix test typing, and select the browser file only through native Playwright. No production fallback or weakened assertion.
+- [x] Final RCH static proof (`test-results/inspector-static-final-20260917/`): U0/U1/U2 contracts, 124/124 tests (637 assertions), full four-project typecheck, lint/boundaries (349 files), and guarded build pass. HTML is 8,636,921 bytes, SHA256 `9806877b0228701d7b1699d2db4383b9e9deabfd184b8136f4d0e1c810a11204`. No aggregate verify claim.
+- [x] First Chromium 53/53 and final Firefox 53/53 pass with one attempt each, zero skipped/flaky/unexpected. Original print/PDF, exact draft/notes, preview audio, accessibility, responsive stale owners and new containment/print cases are included. First Chromium precedes two test typing corrections; its production bytes are identical, but those eleven affected test cases still need the final Chromium rerun. Inspect actual first/last-key screenshots at 320/1280px; controls are visible and hit-testable.
+- [ ] Complete WebKit 53 cases and final Chromium 11-case correction check through RCH. Preserve all earlier failed reports and exact test-source identities.
 - [ ] Fresh review, committed-byte release gates, explicit owned commits/push, and both live-host byte/behavior checks. Original U2/human/device acceptance remains open.
 
 
