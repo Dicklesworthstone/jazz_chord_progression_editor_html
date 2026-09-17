@@ -70,7 +70,8 @@ export function compileAuthoredComping(plan:PlaybackPlan,input:unknown,start:num
     const id=parseStableId("event",`comp-grid-${String(events.length)}`);
     if(!position.ok||!duration.ok||!id.ok||(offset!==null&&!offset.ok))return refuse("comp.source");
     pitchOccurrences+=source.pitches.length;if(pitchOccurrences>1024||events.length===64)return refuse("comp.limit");
-    const pitchCopies=source.pitches.map(p=>Object.freeze({...p})) as unknown as PlaybackEvent["pitches"];
+    const [firstPitch,...remainingPitches]=source.pitches;
+    const pitchCopies:PlaybackEvent["pitches"]=[Object.freeze({...firstPitch}),...remainingPitches.map(p=>Object.freeze({...p}))];
     const midiCopies=Object.freeze([...source.midiPitches] as const);
     events.push(Object.freeze({...source,ordinal:events.length,eventId:id.value,startBeat:position.value,startTick:beatValueToMidiTicks(position.value),
       durationBeats:duration.value,durationTicks:beatValueToMidiTicks(duration.value),gateDurationBeats:duration.value,gateDurationTicks:beatValueToMidiTicks(duration.value),
