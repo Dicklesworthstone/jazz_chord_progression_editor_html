@@ -388,6 +388,16 @@ describe("U0 document overlay coordinator kernel", () => {
     let disconnectedObservers = 0;
     let mutationObserverConstructed = 0;
     const resizeListeners = new Set<() => void>();
+    const printListeners = new Set<() => void>();
+    const printMedia = {
+      matches: false,
+      addEventListener: (type: string, listener: () => void) => {
+        if (type === "change") printListeners.add(listener);
+      },
+      removeEventListener: (type: string, listener: () => void) => {
+        if (type === "change") printListeners.delete(listener);
+      },
+    };
     class ResizeObserverDouble {
       constructor(callback: ResizeObserverCallback) {
         runResizeCheck = () => {
@@ -416,6 +426,7 @@ describe("U0 document overlay coordinator kernel", () => {
         if (type === "resize") resizeListeners.add(listener);
       },
       getComputedStyle: () => ({ display: "block", visibility: "visible" }),
+      matchMedia: (query: string) => { expect(query).toBe("print"); return printMedia; },
       removeEventListener: (type: string, listener: () => void) => {
         if (type === "resize") resizeListeners.delete(listener);
       },
@@ -441,7 +452,14 @@ describe("U0 document overlay coordinator kernel", () => {
     expect(resizeListeners.size).toBe(1);
     expect(mutationObserverConstructed).toBe(1);
 
+    expect(printListeners.size).toBe(1);
+    printMedia.matches = true;
     renderedRectCount = 0;
+    runResizeCheck();
+    expect(dismissals).toEqual([]);
+    printMedia.matches = false;
+    // Screen-media notification must verify an owner even without resize.
+    for (const listener of printListeners) listener();
     runResizeCheck();
     runResizeCheck();
     expect(dismissals).toEqual(["stale-owner"]);
@@ -450,6 +468,7 @@ describe("U0 document overlay coordinator kernel", () => {
     acquired.lease.release();
     expect(disconnectedObservers).toBe(2);
     expect(resizeListeners.size).toBe(0);
+    expect(printListeners.size).toBe(0);
     expect(documentDouble.listenerCount("keydown")).toBe(0);
   });
 });
