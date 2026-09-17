@@ -302,3 +302,47 @@ test("U0-REF-002 keeps visible Close and Cancel affordances on every rendered di
     };
   });
 });
+
+for (const invalidation of ["removed", "hidden", "screen-style"] as const) {
+  test(`print layout preserves an overlay but a ${invalidation} owner still retires it`, async ({ browserName, page }, testInfo) => {
+    await runOverlayEvidence(page, browserName, testInfo, `u0-print-owner-${invalidation}`, [
+      u0Binding("U0-OVR-006", "TR-U0-OVERLAY"),
+      u0Binding("U0-STALE-004", "TR-U0-OVERLAY"),
+    ], async observations => {
+      await page.addStyleTag({ content: "@media print { #overlay-background { display: none; } }" });
+      const trigger = page.locator("#dialog-trigger"), dialog = page.locator("#editing-dialog");
+      const settle = () => page.evaluate(() => new Promise<void>(resolve => {
+        requestAnimationFrame(() => { requestAnimationFrame(() => { resolve(); }); });
+      }));
+      await trigger.click();
+      await expect(dialog).toBeVisible();
+      for (let cycle = 0; cycle < 2; cycle++) {
+        await page.emulateMedia({ media: "print" }); await settle();
+        await expect(trigger).toBeHidden(); await expect(dialog).toHaveCount(1);
+        await page.emulateMedia({ media: "screen" }); await settle();
+        await expect(dialog).toBeVisible();
+      }
+      expect((await entries(page)).filter(entry => entry["code"] === "ui.stale_owner")).toEqual([]);
+      await page.getByRole("button", { name: "Close editing dialog", exact: true }).click();
+      await expect(trigger).toBeFocused(); await expect(dialog).toHaveCount(0);
+      await trigger.click(); await expect(dialog).toBeVisible();
+      await page.emulateMedia({ media: "print" }); await settle();
+      await expect(dialog).toHaveCount(1);
+      await trigger.evaluate((element, kind) => {
+        if (kind === "removed") element.remove();
+        else if (kind === "hidden") element.hidden = true;
+        else element.style.display = "none";
+      }, invalidation);
+      if (invalidation === "screen-style") {
+        await settle(); await expect(dialog).toHaveCount(1);
+        await page.emulateMedia({ media: "screen" });
+      }
+      await expect(dialog).toHaveCount(0);
+      await page.emulateMedia({ media: "screen" });
+      await expect.poll(async () => (await entries(page)).filter(entry => entry["code"] === "ui.stale_owner").length).toBe(1);
+      observations["invalidation"] = invalidation;
+      observations["events"] = await entries(page);
+      expect(await page.locator("[data-authoritative-document]").getAttribute("data-authoritative-document")).toBe("Cmaj7 | Dm7 G7");
+    });
+  });
+}

@@ -585,8 +585,14 @@ export class DocumentOverlayCoordinator {
   #observeOwner(record: RuntimeOverlayRecord): () => void {
     const view = this.#document.defaultView;
     if (view === null) return () => undefined;
+    const printMedia = view.matchMedia("print");
     const verify = () => {
       if (this.#records.get(record.token) !== record) return;
+      // Print styles temporarily remove the screen workspace from layout.
+      // Keep its overlay until screen layout returns, but do not retain an
+      // owner actually removed or explicitly hidden by the application.
+      if (printMedia.matches && record.trigger.isConnected &&
+          record.trigger.closest("[hidden]") === null) return;
       if (!overlayOwnerIsRendered(record.trigger)) {
         this.#requestDismiss(record, "stale-owner", "programmatic", true);
       }
@@ -601,6 +607,7 @@ export class DocumentOverlayCoordinator {
       subtree: true,
     });
     view.addEventListener("resize", verify, { passive: true });
+    printMedia.addEventListener("change", verify);
     let stopped = false;
     return () => {
       if (stopped) return;
@@ -608,6 +615,7 @@ export class DocumentOverlayCoordinator {
       resizeObserver.disconnect();
       mutationObserver.disconnect();
       view.removeEventListener("resize", verify);
+      printMedia.removeEventListener("change", verify);
     };
   }
 
