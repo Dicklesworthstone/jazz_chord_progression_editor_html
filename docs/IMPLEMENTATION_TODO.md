@@ -1,5 +1,16 @@
 # Implementation TODO
 
+## Inspector containment and print focus — jcpe-dymb
+
+- [x] Read source/contract and reconcile original U2 ownership; claim this defect and preserve peer files.
+- [x] RCH committed baseline: both 320/1280px cases fail horizontal containment; 320px content is 1,885px inside 286px. Exact inspector close restores chart focus; entering print mode causes the command-lane stale-owner refusal. Preserve `test-results/inspector-baseline-20260917/`.
+- [ ] Add native regression assertions for tab/piano containment and hit testing, dirty-draft retention, exact focus return and retained print preview without visible refusal.
+- [ ] Fix intrinsic grid sizing and distinguish temporary print visibility from an actually stale overlay owner.
+- [ ] Prove genuine owner removal and responsive disappearance still dismiss correctly, including removal/hiding during print and after print.
+- [ ] Run RCH contracts, relevant unit/integration tests, full types/lint/build, and sequential Chromium/Firefox/WebKit proofs. Inspect first/last piano-key screenshots.
+- [ ] Fresh review, committed-byte release gates, explicit owned commits/push, and both live-host byte/behavior checks. Original U2/human/device acceptance remains open.
+
+
 
 ## Preserve piano, print and QR colors — jcpe-milestone-reliable-studio-l3a.12.4
 
