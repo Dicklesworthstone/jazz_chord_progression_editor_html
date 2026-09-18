@@ -1,5 +1,14 @@
 # Implementation TODO
 
+## File writer cleanup accounting — jcpe-gpge
+
+- [x] Read E0 cleanup contract, claim bounded defect, attempt lease renewal/handoff (Agent Mail unavailable; existing source leases retained).
+- [x] Add12 write/close × successful/rejected/absent-abort cases across public/prepared entry points. RCH baseline28pass/6fail proves missing-abort false cleanliness and invented close failures; successful-abort controls pass.
+- [x] Track whether close was attempted; require successful abort before clean failure, otherwise report one unresolved writer with exact cleanup failure kinds.
+- [x] Final RCH76pass/0fail,560 assertions; all four TypeScript projects, exact lint and guarded build pass (`test-results/writer-cleanup-final-20260918/`). Global cast policy remains1pass/1fail with23 findings, hostile controls pass. Preserve initial union-construction type failure and fix with explicit existing result variants, no cast/contract change.
+- [x] Native Chromium/Firefox/WebKit download/activation:12/12 passed, zero skipped/flaky/unexpected and zero console/page errors (`test-results/writer-cleanup-browser-final-20260918/`). Tests bundle final source directly; writer fault injection is separately covered by scripted adapters.
+- [x] Fresh solo review repeats76/0,560 assertions and guarded build; all1,835 static/browser/review input hashes match current files. Both builds reproduce SHA256 `690481498827286c7f102ec7c2a8e3cb0d065445aaf870a9d8f1ce5cbaffa477`,8,637,096 bytes. Copied guarded artifact to root/dist after confirming root still matched HEAD. Record exact tracker proof and prepare owned paths for commit/push; no aggregate/deploy claim. Mailbox remains unavailable; queued handoff is not delivered.
+
 ## Public export cleanup — jcpe-j45m
 
 - [x] Claim defect and reserve exact export/unit/browser paths. Read E0 cleanup contract.

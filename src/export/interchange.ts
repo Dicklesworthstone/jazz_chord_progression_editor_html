@@ -639,30 +639,39 @@ function startExportDelivery(
           ...cleanZero,
         });
       }
+      let closeAttempted = false;
       try {
         await writer.write(bytes);
+        closeAttempted = true;
         await writer.close();
       } catch {
-        /* write or close failed: abort the writer; an abort failure is a
-         * channel-discriminated cleanup breach with honest counts. */
+        // A missing abort capability cannot prove that the writer was released.
+        let aborted = false;
         try {
-          if (typeof writer.abort === "function") await writer.abort();
+          if (typeof writer.abort === "function") {
+            await writer.abort();
+            aborted = true;
+          }
         } catch {
-          return Object.freeze({
+          // Preserve the unresolved writer in the cleanup-failure receipt.
+        }
+        if (!aborted) {
+          const failure = {
             ok: false as const,
             outcome: "cleanup-failed" as const,
             code: "export.delivery_cleanup_failed" as const,
             artifact: null,
             cleanup: "reconciliation-required" as const,
             channel: "file-system-access" as const,
-            cleanupFailureKinds: Object.freeze([
-              "writer-close",
-              "writer-abort",
-            ] as const),
             objectUrlsCreated: 0 as const,
             objectUrlsRevoked: 0 as const,
             outstandingOwnedResources: 1 as const,
-          });
+          };
+          return closeAttempted
+            ? Object.freeze({ ...failure,
+                cleanupFailureKinds: Object.freeze(["writer-close", "writer-abort"] as const) })
+            : Object.freeze({ ...failure,
+                cleanupFailureKinds: Object.freeze(["writer-abort"] as const) });
         }
         return Object.freeze({
           ok: false as const,

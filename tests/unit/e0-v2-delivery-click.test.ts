@@ -195,6 +195,42 @@ describe("public export delivery cleanup", () => {
   });
 });
 
+describe("file writer failure cleanup", () => {
+  for (const entry of ["public", "prepared"] as const) {
+    for (const failedOperation of ["write", "close"] as const) {
+      for (const abortOutcome of ["success", "rejected", "absent"] as const) {
+        test(`${entry}: ${failedOperation} failure with ${abortOutcome} abort`, async () => {
+          const { log } = scriptBlobGlobals();
+          const writer = {
+            write: () => { log.push("write"); return failedOperation === "write"
+              ? Promise.reject(new Error("WRITE_FAILED")) : Promise.resolve(); },
+            close: () => { log.push("close"); return Promise.reject(new Error("CLOSE_FAILED")); },
+          };
+          const abort = () => { log.push("abort"); return abortOutcome === "rejected"
+            ? Promise.reject(new Error("ABORT_FAILED")) : Promise.resolve(); };
+          g.showSaveFilePicker = () => Promise.resolve({ createWritable: () =>
+            Promise.resolve(abortOutcome === "absent" ? writer : { ...writer, abort }) });
+          const result: unknown = entry === "public"
+            ? await deliverExportArtifact({ ...publicRequest(), preference: "prefer-file-system-access" })
+            : await readCompletion(startPreparedExportDelivery({ ...makeRequest(), preference: "prefer-file-system-access" }));
+          expect(log).toEqual(["write", ...(failedOperation === "close" ? ["close"] : []),
+            ...(abortOutcome === "absent" ? [] : ["abort"])]);
+          if (abortOutcome === "success") {
+            expect(result).toEqual({ ok: false, outcome: "failed", code: "export.delivery_write_failed",
+              channel: "file-system-access", artifact: BINDING, cleanup: "complete",
+              objectUrlsCreated: 0, objectUrlsRevoked: 0, outstandingOwnedResources: 0 });
+          } else {
+            expect(result).toEqual({ ok: false, outcome: "cleanup-failed", code: "export.delivery_cleanup_failed",
+              channel: "file-system-access", artifact: null, cleanup: "reconciliation-required",
+              cleanupFailureKinds: failedOperation === "close" ? ["writer-close", "writer-abort"] : ["writer-abort"],
+              objectUrlsCreated: 0, objectUrlsRevoked: 0, outstandingOwnedResources: 1 });
+          }
+        });
+      }
+    }
+  }
+});
+
 describe("section-10 start primitive (scripted browser globals)", () => {
   for (const row of [
     { failAt: "blob", log: [], urls: 0 },
