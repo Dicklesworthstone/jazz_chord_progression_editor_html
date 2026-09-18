@@ -1,14 +1,13 @@
 import {
   type AutoVoicing,
   type ChordEvent,
-  type ChordEventId,
   type DocumentId,
   type DomainPath,
-  type MeasureId,
   type ParsedChordEvent,
   type ProgressionDocumentShapeV2,
-  type SectionId,
   type StableIdFactory,
+  type StableIdFor,
+  type StableIdKind,
   type ValidatedDocument,
 } from "../domain";
 import {
@@ -596,7 +595,7 @@ export const buildChartDocumentCandidate: BuildChartDocumentCandidate = (
   let collisionOccurred = false;
   let limitExceeded = false;
 
-  const nextId = (kind: "document" | "section" | "measure" | "event"): string | null => {
+  const nextId = <K extends StableIdKind>(kind: K): StableIdFor<K> | null => {
     requestCount++;
     if (requestCount > MAX_E0_CHART_IMPORT_ID_REQUESTS) {
       limitExceeded = true;
@@ -674,14 +673,14 @@ export const buildChartDocumentCandidate: BuildChartDocumentCandidate = (
         const chordEv: ChordEvent =
           eDraft.chord.bass === null
             ? (Object.freeze({
-                id: evId as unknown as ChordEventId,
+                id: evId,
                 duration: eDraft.duration,
                 annotation: eDraft.annotation,
                 chord: eDraft.chord,
                 voicing: autoVoicing,
               }) as unknown as ParsedChordEvent)
             : (Object.freeze({
-                id: evId as unknown as ChordEventId,
+                id: evId,
                 duration: eDraft.duration,
                 annotation: eDraft.annotation,
                 chord: eDraft.chord,
@@ -692,7 +691,7 @@ export const buildChartDocumentCandidate: BuildChartDocumentCandidate = (
 
       measures.push(
         Object.freeze({
-          id: measId as unknown as MeasureId,
+          id: measId,
           events: Object.freeze(events),
           completion: Object.freeze({ kind: "complete" as const }),
         }),
@@ -701,7 +700,7 @@ export const buildChartDocumentCandidate: BuildChartDocumentCandidate = (
 
     sections.push(
       Object.freeze({
-        id: secId as unknown as SectionId,
+        id: secId,
         name: sDraft.name ?? `Section ${String(sIdx + 1)}`,
         annotation: sDraft.annotation,
         keyOverride: null,
@@ -713,7 +712,7 @@ export const buildChartDocumentCandidate: BuildChartDocumentCandidate = (
 
   const shape: ProgressionDocumentShapeV2 = Object.freeze({
     schema: "changes.progression.v2" as const,
-    id: docId as DocumentId,
+    id: docId,
     title: draft.headers.title ?? CHART_IMPORT_DEFAULTS.title,
     description: draft.headers.description ?? CHART_IMPORT_DEFAULTS.description,
     meter: draft.headers.meter ?? Object.freeze({ beatsPerBar: 4 as const, beatUnit: 4 as const }),

@@ -1,5 +1,16 @@
 # Implementation TODO
 
+## Chart import factory ID typing — jcpe-k3to
+
+- [x] Read E0 section 8.3 and stable-ID contracts; preserve original np17 owner and aggregate/human prerequisites.
+- [x] Claim the bounded implementation task and reserve exact files.
+- [x] Preserve the generic factory result in the collision/budget wrapper; remove four unchecked ID escapes and the redundant document-ID assertion without changing allocation behavior.
+- [x] Run original chart roundtrip, defaults, refusal/collision, E0 preview and contract checks through strict RCH: 35pass/0fail,456 assertions on 2026-09-18 (`test-results/chart-id-20260918/`). Earlier admission failures retained: ovh-b queued for five minutes then exited103 (`RCH-I001 queue_timeout`); prepared alternate vmi1152480 exited103 (`RCH-I004 alias_wrong_target` pointing at another project scratch directory). Neither executed tests. No shared alias changes or admission bypass; ovh-b later admitted the unchanged packet.
+- [x] App typecheck and exact lint pass. Unchanged cast policy is 1pass/1fail: hostile controls pass, production findings decrease from29 to25. The global gate and original np17 remain open.
+- [x] Guarded remote build reproduces committed HTML exactly: 8,636,958 bytes, SHA256 `e621a568febf11d7baeaa89f122e16124cb020e8d44c65dcd889396ded499d68`; all1,835 frozen inputs unchanged.
+- [x] Fresh solo review repeats all named checks (`test-results/chart-id-review-20260918/`): same35/0,456 assertions, app types/lint/build pass, same25 global findings, identical artifact and1,835 inputs. This is self-review, not independent human verification. Close only this bounded task; np17 remains open.
+- [x] Complete owned source/TODO/tracker change for commit and push; no deployment for unchanged app bytes.
+
 ## Inspector containment and print focus — jcpe-dymb
 
 - [x] Read source/contract and reconcile original U2 ownership; claim this defect and preserve peer files.
