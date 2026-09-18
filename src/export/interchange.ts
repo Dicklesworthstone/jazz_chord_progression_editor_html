@@ -30,7 +30,6 @@ import {
   type PrepareLeadSheetTextExport,
   type PrepareLeadSheetTextExportRequest,
   type PreparedExportDeliveryRequest,
-  type PreparedExportDeliveryStart,
   type StartPreparedExportDelivery,
   CANONICAL_JSON_MEDIA_TYPE,
 } from "./interchange-contract";
@@ -435,185 +434,13 @@ export const deliverExportArtifact: DeliverExportArtifact = async (
           semanticDocumentHash: null,
         });
 
-  const bytes = new TextEncoder().encode(artifact.text);
-  const g = globalThis as unknown as {
-    window?: {
-      showSaveFilePicker?: (opts: unknown) => Promise<{
-        createWritable: () => Promise<{
-          write: (data: Uint8Array) => Promise<void>;
-          close: () => Promise<void>;
-          abort?: () => Promise<void>;
-        }>;
-      }>;
-    };
-    showSaveFilePicker?: (opts: unknown) => Promise<{
-      createWritable: () => Promise<{
-        write: (data: Uint8Array) => Promise<void>;
-        close: () => Promise<void>;
-        abort?: () => Promise<void>;
-      }>;
-    }>;
-    document?: {
-      createElement: (tag: string) => {
-        href: string;
-        download: string;
-        style: { display: string };
-        click: () => void;
-      };
-      body: {
-        appendChild: (el: unknown) => void;
-        removeChild: (el: unknown) => void;
-      };
-    };
-    URL?: {
-      createObjectURL: (blob: Blob) => string;
-      revokeObjectURL: (url: string) => void;
-    };
-    Blob?: typeof Blob;
-  };
-
-  // File System Access API path
-  const picker = g.showSaveFilePicker ?? g.window?.showSaveFilePicker;
-  if (
-    request.preference === "prefer-file-system-access" &&
-    typeof picker === "function"
-  ) {
-    try {
-      const fileHandle = await picker({
-        suggestedName: artifact.filename,
-        types: [
-          {
-            description:
-              artifact.kind === "canonical-json"
-                ? "JazzChords.org Progression JSON"
-                : "JazzChords.org Lead Sheet Text",
-            accept: {
-              /* split() always yields at least one element; ?? satisfies
-               * noUncheckedIndexedAccess without an assertion. */
-              [artifact.mediaType.split(";")[0] ?? artifact.mediaType]: [
-                artifact.kind === "canonical-json"
-                  ? CANONICAL_JSON_FILENAME_EXTENSION
-                  : LEAD_SHEET_TEXT_FILENAME_EXTENSION,
-              ],
-            },
-          },
-        ],
-      });
-
-      const writable = await fileHandle.createWritable();
-      await writable.write(bytes);
-      await writable.close();
-
-      return Object.freeze({
-        ok: true,
-        outcome: "completed",
-        channel: "file-system-access",
-        bytesOffered: bytes.byteLength,
-        artifact: binding,
-        cleanup: "complete",
-        objectUrlsCreated: 0,
-        objectUrlsRevoked: 0,
-        outstandingOwnedResources: 0,
-      });
-    } catch (err: unknown) {
-      if (
-        err instanceof Error &&
-        (err.name === "AbortError" || err.message.includes("aborted"))
-      ) {
-        return Object.freeze({
-          ok: true,
-          outcome: "cancelled",
-          channel: "file-system-access",
-          artifact: binding,
-          cleanup: "complete",
-          objectUrlsCreated: 0,
-          objectUrlsRevoked: 0,
-          outstandingOwnedResources: 0,
-        });
-      }
-      return Object.freeze({
-        ok: false,
-        outcome: "failed",
-        code: "export.delivery_write_failed",
-        channel: "file-system-access",
-        artifact: binding,
-        cleanup: "complete",
-        objectUrlsCreated: 0,
-        objectUrlsRevoked: 0,
-        outstandingOwnedResources: 0,
-      });
-    }
-  }
-
-  // Object URL Download path
-  const doc = g.document;
-  const urlApi = g.URL;
-  const BlobCtor = g.Blob;
-  if (
-    doc !== undefined &&
-    urlApi !== undefined &&
-    typeof urlApi.createObjectURL === "function" &&
-    BlobCtor !== undefined
-  ) {
-    let objectUrl: string | null = null;
-    try {
-      const blob = new BlobCtor([bytes], { type: artifact.mediaType });
-      objectUrl = urlApi.createObjectURL(blob);
-
-      const anchor = doc.createElement("a");
-      anchor.href = objectUrl;
-      anchor.download = artifact.filename;
-      anchor.style.display = "none";
-      doc.body.appendChild(anchor);
-      anchor.click();
-      doc.body.removeChild(anchor);
-
-      urlApi.revokeObjectURL(objectUrl);
-
-      return Object.freeze({
-        ok: true,
-        outcome: "handed-off",
-        channel: "object-url-download",
-        bytesOffered: bytes.byteLength,
-        artifact: binding,
-        cleanup: "complete",
-        objectUrlsCreated: 1,
-        objectUrlsRevoked: 1,
-        outstandingOwnedResources: 0,
-      });
-    } catch {
-      if (objectUrl !== null) {
-        try {
-          urlApi.revokeObjectURL(objectUrl);
-        } catch {
-          // Cleanup error handling
-        }
-      }
-      return Object.freeze({
-        ok: false,
-        outcome: "failed",
-        code: "export.delivery_activation_failed",
-        channel: "object-url-download",
-        artifact: binding,
-        cleanup: "complete",
-        objectUrlsCreated: 1,
-        objectUrlsRevoked: 1,
-        outstandingOwnedResources: 0,
-      });
-    }
-  }
-
-  return Object.freeze({
-    ok: false,
-    outcome: "failed",
-    code: "export.delivery_capability_failed",
-    channel: null,
-    artifact: binding,
-    cleanup: "complete",
-    objectUrlsCreated: 0,
-    objectUrlsRevoked: 0,
-    outstandingOwnedResources: 0,
-  });
+  // Keep one delivery/cleanup implementation for both public entry points.
+  // The prepared primitive starts browser work before this async call returns.
+  return startExportDelivery({
+    binding,
+    privateBytes: new TextEncoder().encode(artifact.text),
+    preference: request.preference,
+  }).completion;
 };
 
 export const createE0ExportOperations: CreateE0ExportOperations = (
@@ -685,9 +512,9 @@ type BrowserDeliveryGlobals = Readonly<{
  * anchor, and revokes its object URL exactly once, and reports honest
  * channel-discriminated cleanup evidence.
  */
-export const startPreparedExportDelivery: StartPreparedExportDelivery = (
+function startExportDelivery(
   request: PreparedExportDeliveryRequest,
-): PreparedExportDeliveryStart => {
+): Readonly<{ completion: Promise<ExportDeliveryResult> }> {
   const binding = request.binding;
   const bytes = request.privateBytes;
   const g = globalThis as unknown as BrowserDeliveryGlobals;
@@ -980,4 +807,7 @@ export const startPreparedExportDelivery: StartPreparedExportDelivery = (
       }),
     ),
   });
-};
+}
+
+// Keep the composition boundary raw: the application still validates its result.
+export const startPreparedExportDelivery: StartPreparedExportDelivery = startExportDelivery;

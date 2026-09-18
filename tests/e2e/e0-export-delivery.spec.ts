@@ -72,8 +72,19 @@ test.beforeAll(async () => {
       privateBytes: bytes,
       preference: "download-only",
     });
+    function startDelivery() {
+      if (location.hash === "#public") {
+        return { completion: window.__e0DeliverExportArtifact({
+          artifact: Object.assign({}, binding, {
+            schema: "changes.export.canonical-json-artifact.v1",
+            mediaType: "application/json;charset=utf-8", text: goldenText
+          }), preference: "download-only"
+        }) };
+      }
+      return window.__e0StartPreparedExportDelivery(window.__e0Request);
+    }
     document.getElementById("deliver").addEventListener("click", function () {
-      var envelope = window.__e0StartPreparedExportDelivery(window.__e0Request);
+      var envelope = startDelivery();
       envelope.completion.then(function (receipt) {
         window.__e0Receipt = receipt;
       });
@@ -84,7 +95,7 @@ test.beforeAll(async () => {
     setTimeout(function () {
       window.__e0ProbePresent = typeof navigator !== "undefined" && !!navigator.userActivation;
       window.__e0ProbeActive = window.__e0ProbePresent ? navigator.userActivation.isActive : null;
-      var envelope = window.__e0StartPreparedExportDelivery(window.__e0Request);
+      var envelope = startDelivery();
       envelope.completion.then(function (receipt) {
         window.__e0AutoReceipt = receipt;
       });
@@ -96,7 +107,7 @@ test.beforeAll(async () => {
 
   server = createServer((request, response) => {
     if (request.url === "/" || request.url === "/index.html") {
-      response.writeHead(200, { "content-type": "text/html;charset=utf-8" });
+      response.writeHead(200, { "content-type": "text/html;charset=utf-8", "content-security-policy": "style-src 'none'" });
       response.end(page);
       return;
     }
@@ -145,9 +156,10 @@ function captureDiagnostics(page: Page): {
   return { consoleErrors, pageErrors };
 }
 
-test("a real click delivers the golden bytes with exact cleanup evidence", async ({ page }) => {
+for (const delivery of ["prepared", "public"] as const) {
+test(`${delivery}: a real click delivers the golden bytes with exact cleanup evidence`, async ({ page }) => {
   const diagnostics = captureDiagnostics(page);
-  await page.goto(baseUrl, { waitUntil: "load" });
+  await page.goto(`${baseUrl}#${delivery}`, { waitUntil: "load" });
 
   // Finish the load-time gesture-less probe before introducing a trusted
   // gesture; otherwise its timer can overlap this positive delivery.
@@ -185,9 +197,9 @@ test("a real click delivers the golden bytes with exact cleanup evidence", async
   expect(diagnostics.pageErrors).toEqual([]);
 });
 
-test("a gesture-less call is judged by the REAL activation probe", async ({ page }) => {
+test(`${delivery}: a gesture-less call is judged by the REAL activation probe`, async ({ page }) => {
   const diagnostics = captureDiagnostics(page);
-  await page.goto(baseUrl, { waitUntil: "load" });
+  await page.goto(`${baseUrl}#${delivery}`, { waitUntil: "load" });
 
   let downloadSeen = false;
   page.on("download", () => {
@@ -229,3 +241,5 @@ test("a gesture-less call is judged by the REAL activation probe", async ({ page
   expect(diagnostics.consoleErrors).toEqual([]);
   expect(diagnostics.pageErrors).toEqual([]);
 });
+
+}

@@ -5,8 +5,10 @@
  * a window global so the spec can drive it from a genuine user gesture in
  * a real browser and validate the download bytes and cleanup receipt.
  */
-import { startPreparedExportDelivery } from "../../src/export";
+import { startPreparedExportDelivery, deliverExportArtifact } from "../../src/export";
 
 (globalThis as unknown as Record<string, unknown>)[
   "__e0StartPreparedExportDelivery"
 ] = startPreparedExportDelivery;
+
+(globalThis as unknown as Record<string, unknown>)["__e0DeliverExportArtifact"] = deliverExportArtifact;

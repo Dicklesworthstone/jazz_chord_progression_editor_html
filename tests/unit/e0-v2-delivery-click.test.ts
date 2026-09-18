@@ -20,6 +20,10 @@ import {
 import type { A0E0InterchangeOwnerPorts } from "../../src/application/application-interchange-owner-contract";
 import {
   startPreparedExportDelivery,
+  deliverExportArtifact,
+  CANONICAL_JSON_ARTIFACT_SCHEMA,
+  CANONICAL_JSON_MEDIA_TYPE,
+  type ExportDeliveryRequest,
   type PreparedExportDeliveryRequest,
 } from "../../src/export";
 
@@ -96,6 +100,7 @@ function scriptBlobGlobals(overrides: Readonly<{
         href: "",
         download: "",
         hidden: false,
+        style: { display: "" },
         click: () => {
           log.push("click");
           if (overrides.failAt === "click") throw new Error("CLICK_FAILED");
@@ -132,6 +137,63 @@ function readCompletion(envelope: unknown): Promise<unknown> {
       !(envelope.completion instanceof Promise)) throw new Error("INVALID_DELIVERY_ENVELOPE");
   return envelope.completion;
 }
+
+function publicRequest(): ExportDeliveryRequest {
+  const binding = makeRequest().binding;
+  if (binding.kind !== "canonical-json") throw new Error("EXPECTED_JSON_BINDING");
+  return {
+    artifact: { ...binding, schema: CANONICAL_JSON_ARTIFACT_SCHEMA,
+      mediaType: CANONICAL_JSON_MEDIA_TYPE, text: new TextDecoder().decode(BYTES) },
+    preference: "download-only",
+  };
+}
+
+describe("public export delivery cleanup", () => {
+  for (const row of [
+    { failAt: "blob", log: [], urls: 0 },
+    { failAt: "url", log: ["create-url"], urls: 0 },
+    { failAt: "click", log: ["create-url", "append", "click", "remove", "revoke-url"], urls: 1 },
+  ] as const) {
+    test(`public ${row.failAt} failure releases only the admitted resources`, async () => {
+      const { log } = scriptBlobGlobals({ failAt: row.failAt });
+      const result: unknown = await deliverExportArtifact(publicRequest());
+      expect(log).toEqual([...row.log]);
+      expect(result).toEqual({ ok: false, outcome: "failed", code: "export.delivery_activation_failed",
+        channel: "object-url-download", artifact: BINDING, cleanup: "complete",
+        objectUrlsCreated: row.urls, objectUrlsRevoked: row.urls, outstandingOwnedResources: 0 });
+    });
+  }
+  test("public cleanup failures retain both outstanding resources without retrying revoke", async () => {
+    const { log } = scriptBlobGlobals({ removeThrows: true, revokeThrows: true });
+    const result: unknown = await deliverExportArtifact(publicRequest());
+    expect(log).toEqual(["create-url", "append", "click", "remove", "revoke-url"]);
+    expect(result).toMatchObject({ ok: false, outcome: "cleanup-failed", artifact: null,
+      cleanup: "reconciliation-required", cleanupFailureKinds: ["anchor-remove", "object-url-revoke"],
+      objectUrlsCreated: 1, objectUrlsRevoked: 0, outstandingOwnedResources: 2 });
+  });
+  test("public call without activation starts no browser work", async () => {
+    const { log } = scriptBlobGlobals({ active: false });
+    const result: unknown = await deliverExportArtifact(publicRequest());
+    expect(log).toEqual([]);
+    expect(result).toMatchObject({ ok: false, code: "export.delivery_user_gesture_required",
+      objectUrlsCreated: 0, objectUrlsRevoked: 0, outstandingOwnedResources: 0 });
+  });
+  test("public FSA writes exact bytes and cancellation never falls back", async () => {
+    const { log } = scriptBlobGlobals();
+    const writes: Uint8Array[] = [];
+    g.showSaveFilePicker = () => Promise.resolve({ createWritable: () => Promise.resolve({
+      write: (bytes: Uint8Array) => { writes.push(bytes); return Promise.resolve(); },
+      close: () => { log.push("close"); return Promise.resolve(); },
+    }) });
+    const request = { ...publicRequest(), preference: "prefer-file-system-access" as const };
+    expect(await deliverExportArtifact(request)).toMatchObject({ ok: true, outcome: "completed", bytesOffered: BYTES.length });
+    expect(writes).toEqual([BYTES]);
+    expect(log).toEqual(["close"]);
+    g.showSaveFilePicker = () => Promise.reject(new DOMException("Cancelled", "AbortError"));
+    expect(await deliverExportArtifact(request)).toMatchObject({ ok: true, outcome: "cancelled" });
+    expect(log).toEqual(["close"]);
+  });
+});
 
 describe("section-10 start primitive (scripted browser globals)", () => {
   for (const row of [
