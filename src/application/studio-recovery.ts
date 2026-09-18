@@ -231,7 +231,7 @@ export function createStudioRecoveryOrchestrator(
           disclosedImpact: assessed.impact,
           currentTransition: begun.transition,
           nonUndoableConfirmation: null,
-        }) as never,
+        }),
         confirmationBinding: Object.freeze({
           displayedRequirement: null,
           acknowledgement: null,

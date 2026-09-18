@@ -40,11 +40,16 @@ import type {
 import type { TransportCommandOutcome } from "../audio";
 import { SETTLED_TRANSPORT_STATUS } from "./studio-transport-status";
 
-export type BeginReplacementWorkflowResult<Origin extends ApplicationReplacementOrigin = "canonical-import" | "legacy-import"> =
+type ReplacementUndoDisposition = "retained" | "explicitly-unavailable";
+
+export type BeginReplacementWorkflowResult<
+  Origin extends ApplicationReplacementOrigin = "canonical-import" | "legacy-import",
+  UndoDisposition extends ReplacementUndoDisposition = ReplacementUndoDisposition,
+> =
   | Readonly<{
       ok: true;
       identity: ImportRequestIdentity;
-      transition: Omit<Exclude<DocumentTransitionState, { kind: "idle" }>, "kind" | "origin"> & Readonly<{ kind: "retiring-transport"; origin: Origin }>;
+      transition: Omit<Exclude<DocumentTransitionState, { kind: "idle" }>, "kind" | "origin" | "undoDisposition"> & Readonly<{ kind: "retiring-transport"; origin: Origin; undoDisposition: UndoDisposition }>;
     }>
   | Readonly<{
       ok: false;
@@ -64,14 +69,14 @@ export type StudioReplacementWorkflow = Readonly<{
       Readonly<{ ok: true }> | Readonly<{ ok: false; code: string }>;
   updateLifecycleDialogPhase: (dialogId: string, phase: "open" | "committing" | "failed", kind?: DialogDescriptor["kind"]) =>
       Readonly<{ ok: true }> | Readonly<{ ok: false; code: string }>;
-  begin: <Origin extends ApplicationReplacementOrigin>(
+  begin: <Origin extends ApplicationReplacementOrigin, UndoDisposition extends ReplacementUndoDisposition>(
     input: Readonly<{
       candidateDocumentId: string;
       previewIdentity?: ImportRequestIdentity;
-      undoDisposition: "retained" | "explicitly-unavailable";
+      undoDisposition: UndoDisposition;
       origin: Origin;
     }>,
-  ) => BeginReplacementWorkflowResult<Origin>;
+  ) => BeginReplacementWorkflowResult<Origin, UndoDisposition>;
   cancel: (identity: ImportRequestIdentity) => void;
 }>;
 

@@ -1,5 +1,13 @@
 # Implementation TODO
 
+## Recovery Keep undo-disposition typing — jcpe-j6bv
+
+- [x] Read replacement/recovery source and A0/E0 request contracts; claim one bounded task and reserve exact paths.
+- [x] Preserve input undo disposition in the workflow result type and remove recovery Keep as-never. Retain validation, oversized-history refusal, consent and transport semantics.
+- [x] Strict RCH focused proof (`test-results/recovery-typing-20260918/`):77pass/0fail,767 assertions across five existing recovery/replacement/import suites.
+- [x] All four TypeScript projects, exact lint and guarded build pass. App bytes equal HEAD:8,636,958 bytes, SHA256 `e621a568febf11d7baeaa89f122e16124cb020e8d44c65dcd889396ded499d68`. All1,835 inputs unchanged. Cast policy remains1pass/1fail with24 findings (down from25); hostile controls pass.
+- [x] Fresh solo re-execution reproduces every result (`test-results/recovery-typing-review-20260918/`); no independent-human claim. Review exact diff and all1,835 hashes, record named commands, close only jcpe-j6bv, and prepare owned paths for commit/push. Original np17 and human/aggregate gates remain open; no deployment.
+
 ## Chart import factory ID typing — jcpe-k3to
 
 - [x] Read E0 section 8.3 and stable-ID contracts; preserve original np17 owner and aggregate/human prerequisites.
