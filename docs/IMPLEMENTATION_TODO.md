@@ -1,5 +1,15 @@
 # Implementation TODO
 
+## Frozen E0 port envelopes — jcpe-l8a0
+
+- [x] Read accepted E0 v2 section3, existing owner implementation and conformance materializers; claim defect. Inbox read succeeds; reservation fails mailbox snapshot conflict, no lease claim.
+- [x] Freeze JSON fixture materialization per original contract; add legal-envelope controls plus mutable/accessor/prototype/hidden/symbol/proxy and nested-container attacks.
+- [x] Strict RCH baseline35pass/85fail across120 normalization cases; legal controls pass, all85 new hostile cases fail on original code. Reports `test-results/frozen-ports-baseline-20260918/`.
+- [x] Validate frozen plain records and dense frozen arrays with own enumerable data descriptors before reads; reject hidden/symbol fields and contain reflection/get-trap failures. Retain valid raw identity, including plain null-prototype records.
+- [x] Final strict RCH346pass/0fail,2,074 assertions across12 E0 v2/owner/full-loop/contract files; all four TypeScript projects, scoped lint and guarded build pass. Initial334/5 revealed five mutable scripted returns; those and negative controls now freeze without changing any assertion or fixture value. Initial test matcher type mismatch corrected with unknown-typed observations. Three driver cleanup and four nested/positive checks added.
+- [x] Separate E0 v2/owner-boundary static contract and production-policy suites:41pass/0fail,126 assertions (`test-results/frozen-ports-contracts-ovh-20260918/`).
+- [x] Fresh solo repeat on hz4:346/0,2,074 assertions; final normalization tests against original source36pass/88fail. All1,835 inputs match final/review/contract receipts and current source. Three guarded builds match SHA256 `88a3046ec010f507f7fd4cade2769cb63848cc131800cc3beaca4f06717b79a7`,8,638,026 bytes; root/dist promoted only after root matched HEAD. Close only jcpe-l8a0 and prepare owned paths for commit/push. No independent-human/browser/deployment or aggregate claim; unchanged cast-policy23 findings remains open. Retain RCH-I002 memory refusal and RCH-I001 queue timeout; no local fallback or relaxed admission.
+
 ## Publication effect validation — jcpe-h29m
 
 - [x] Inspect E0 v2 exact-result contract and claim the concrete effect vocabulary/sparse-array defect. Agent Mail reservation failed during database initialization; preserve peer files and check exact source hashes before promotion.
@@ -8,7 +18,7 @@
 - [x] Validate against APPLICATION_EFFECT_KINDS and require each own effect occurrence; original fixtures and assertions unchanged. Initial100/0 behavioral pass had test-only TypeScript/lint failures; corrected matcher observation typing and prototype construction, retained failed logs.
 - [x] Strict RCH final:100pass/0fail,811 assertions across five normalization/workflow/owner/full-loop/contract files; all four types projects, scoped lint and guarded build pass. Fresh solo replay reproduces100/0 and the final tests fail29/6 against original production. Reports `test-results/publication-effects-{checked,review}-20260918/` bind1,835 unchanged inputs. Guarded artifact SHA256 `326e626f5e859d2d8b395fe2a1500d88f8c2530319eed6a971a9dd9108ba7295`,8637191 bytes, identical across both builds and root/dist.
 - [x] Record bounded proof and prepare exact owned files for commit/push. Unchanged cast policy remains1pass/1fail with23 findings; hostile controls pass. Original np17, broader normalization and aggregate/human obligations remain open. Solo review only, no browser or deployment claim.
-- [ ] Follow-up remains open: enforce recursively frozen containers, safe data descriptors and remaining prototype/key tricks across all E0 port normalizers. Current fixture materialization also emits mutable containers; reconcile it with the original section-3 contract, preserving valid owner results and hostile cases. This bounded effect fix does not satisfy that broader obligation.
+- [x] Follow-up implemented and verified separately in jcpe-l8a0 above: frozen containers, safe data descriptors, prototype/key checks and contained normalization errors. The earlier effect-only fix did not itself satisfy this obligation. Original cast-policy and release gates remain open.
 
 ## File writer cleanup accounting — jcpe-gpge
 

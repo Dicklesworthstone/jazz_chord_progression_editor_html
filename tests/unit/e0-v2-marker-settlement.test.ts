@@ -162,7 +162,7 @@ describe("E0 v2 marker settlement (state-free, scripted ports)", () => {
   test("WF-007: a malformed CAS return is the invalid-envelope diagnostic with no A1 call", async () => {
     const wf = row(workflowFixture, "E0V2-WF-007");
     const h = makeHarness({
-      marker: () => ({
+      marker: () => Object.freeze({
         ok: true,
         outcome: "published",
         documentId: "document-v2-base",
@@ -254,7 +254,7 @@ describe("E0 v2 marker settlement (state-free, scripted ports)", () => {
 
   test("an A0 stale refusal projects only the observed identity and makes no A1 call", async () => {
     const h = makeHarness({
-      marker: () => ({
+      marker: () => Object.freeze({
         ok: false,
         outcome: "refused",
         code: "export.marker_publication_stale",
@@ -330,4 +330,16 @@ describe("E0 v2 marker settlement (state-free, scripted ports)", () => {
       expect(result.receipt.revision).toBe(9);
     }
   });
+});
+
+
+test("a revoked marker return requires reconciliation and never persists through A1", async () => {
+  const revoked = Proxy.revocable({}, {}); revoked.revoke();
+  const h = makeHarness({ marker: () => revoked.proxy });
+  const result = await h.driver(REQUEST, DELIVERY);
+  expect(result.ok).toBe(false);
+  if (result.ok || result.outcome !== "protocol-invalid") throw new Error("Expected protocol refusal");
+  expect(result.diagnostic).toEqual({ port: "publishCanonicalExportRevision", reason: "invalid-envelope", rawResultRetained: false });
+  expect(result.applicationReconciliation).toBe("required");
+  expect(h.calls).not.toContain("a1");
 });

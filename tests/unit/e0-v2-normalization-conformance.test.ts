@@ -61,7 +61,7 @@ type FixtureCase = Readonly<{
 }>;
 
 function materialize(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(materialize);
+  if (Array.isArray(value)) return Object.freeze(value.map(materialize));
   if (typeof value === "object" && value !== null) {
     const record = value as Readonly<Record<string, unknown>>;
     if (record["$counterObject"] === "complete-application-work-counter-object") {
@@ -71,7 +71,7 @@ function materialize(value: unknown): unknown {
     for (const [key, entry] of Object.entries(record)) {
       out[key] = materialize(entry);
     }
-    return out;
+    return Object.freeze(out);
   }
   return value;
 }
@@ -203,4 +203,98 @@ describe("publication effect occurrence validation", () => {
       });
     });
   }
+});
+
+
+describe("frozen own-data port envelopes", () => {
+  const validRows = fixture.cases.filter(row => row.expected.outcome === "normalized");
+  for (const row of validRows) {
+    const normalize = NORMALIZERS[row.port];
+    if (normalize === undefined) throw new Error("Missing normalizer");
+    const raw = materialize(row.rawReturn);
+    if (typeof raw !== "object" || raw === null) throw new Error("Missing envelope");
+    const data: Readonly<Record<string, unknown>> = raw as Readonly<Record<string, unknown>>;
+    for (const variant of ["mutable", "prototype", "hidden-field", "symbol-field", "accessor"] as const) {
+      test(`${row.id} rejects ${variant} without invoking getters`, () => {
+        const malformed = { ...data };
+        let getterCalls = 0;
+        if (variant === "prototype") Object.setPrototypeOf(malformed, { state: "smuggled" });
+        if (variant === "hidden-field") Object.defineProperty(malformed, "state", { value: "smuggled" });
+        if (variant === "symbol-field") Object.defineProperty(malformed, Symbol("state"), { value: "smuggled" });
+        if (variant === "accessor") {
+          const key = Object.keys(malformed)[0];
+          if (key === undefined) throw new Error("Missing key");
+          Object.defineProperty(malformed, key, { enumerable: true, get() { getterCalls += 1; return data[key]; } });
+        }
+        if (variant !== "mutable") Object.freeze(malformed);
+        const result: unknown = normalize(malformed);
+        expect(getterCalls).toBe(0);
+        expect(result).toEqual({ outcome: "protocol-invalid", diagnostic: {
+          port: row.port, reason: "invalid-envelope", rawResultRetained: false,
+        } });
+      });
+    }
+    for (const trap of ["revoked", "get", "ownKeys", "getOwnPropertyDescriptor", "getPrototypeOf", "isExtensible"] as const) {
+      test(`${row.id} contains ${trap} proxy errors`, () => {
+        const rejected = () => { throw new Error("PRIVATE_PORT_PAYLOAD"); };
+        const proxy = trap === "revoked" ? Proxy.revocable(data, {}) : null;
+        proxy?.revoke();
+        const rawProxy = proxy?.proxy ?? new Proxy(data, { [trap]: rejected });
+        expect(() => normalize(rawProxy)).not.toThrow();
+        const result: unknown = normalize(rawProxy);
+        expect(result).toEqual({ outcome: "protocol-invalid", diagnostic: {
+          port: row.port, reason: "invalid-envelope", rawResultRetained: false,
+        } });
+      });
+    }
+  }
+  const identity = Object.freeze({ requestId: 1, documentId: "before", baseRevision: 0 });
+  const effect = Object.freeze({ kind: "announce", revision: 1, requestId: null, reasonCode: "import.committed" });
+  const publication = Object.freeze({ ok: true, outcome: "committed", identity, documentId: "after", revision: 1,
+    effects: Object.freeze([effect]), counters: COMPLETE_COUNTER_OBJECT, liveForRequest: 0 });
+  for (const field of ["identity", "counters", "effects", "effect"] as const) {
+    test(`rejects a mutable nested ${field}`, () => {
+      const raw = Object.freeze({ ...publication,
+        ...(field === "identity" ? { identity: { ...identity } } : {}),
+        ...(field === "counters" ? { counters: { ...COMPLETE_COUNTER_OBJECT } } : {}),
+        ...(field === "effects" ? { effects: [effect] } : {}),
+        ...(field === "effect" ? { effects: Object.freeze([{ ...effect }]) } : {}),
+      });
+      expect(normalizePublicationResult(raw).outcome).toBe("protocol-invalid");
+    });
+  }
+  for (const variant of ["accessor", "hidden-field", "symbol-field", "prototype"] as const) {
+    test(`rejects an effects array with ${variant}`, () => {
+      const effects = [effect]; let getterCalls = 0;
+      if (variant === "accessor") Object.defineProperty(effects, "0", { get() { getterCalls += 1; return effect; } });
+      if (variant === "hidden-field") Object.defineProperty(effects, "state", { value: "smuggled" });
+      if (variant === "symbol-field") Object.defineProperty(effects, Symbol("state"), { value: "smuggled" });
+      if (variant === "prototype") Object.setPrototypeOf(effects, []);
+      const result = normalizePublicationResult(Object.freeze({ ...publication, effects: Object.freeze(effects) }));
+      expect(getterCalls).toBe(0); expect(result.outcome).toBe("protocol-invalid");
+    });
+  }
+  for (const field of ["value", "identity", "committingTransition"] as const) {
+    test(`rejects mutable preparation ${field}`, () => {
+      const value = { schema: "changes.prepared-import-replacement-publication.v1", identity,
+        sourceFormat: "canonical-json-v2", candidateDocumentId: "after", expectedTransportGeneration: 1,
+        committingTransition: Object.freeze({ kind: "committing", requestId: 1, origin: "canonical-import",
+          baseRevision: 0, candidateDocumentId: "after", undoDisposition: "retained" }) };
+      if (field === "identity") value.identity = { ...identity };
+      if (field === "committingTransition") value.committingTransition = { ...value.committingTransition };
+      if (field !== "value") Object.freeze(value);
+      expect(normalizePreparationResult(Object.freeze({ ok: true, value })).outcome).toBe("protocol-invalid");
+    });
+  }
+  test("a frozen null-prototype data identity remains valid", () => {
+    const raw = { documentId: "before", revision: 0 };
+    Object.setPrototypeOf(raw, null); Object.freeze(raw);
+    const result = normalizeIdentityResult(raw);
+    expect(result.outcome).toBe("normalized");
+    if (result.outcome === "normalized") {
+      const observed: unknown = result.value;
+      expect(observed).toBe(raw);
+    }
+  });
+
 });

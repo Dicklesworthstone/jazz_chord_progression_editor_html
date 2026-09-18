@@ -220,7 +220,7 @@ describe("E0 v2 workflow conformance (commit path, scripted ports)", () => {
   test("WF-002 malformed prepare envelope: diagnostic, reconciliation none, X1 never runs", async () => {
     const wf = row("E0V2-WF-002");
     const h = makeHarness({
-      prepare: () => ({
+      prepare: () => Object.freeze({
         ok: false,
         code: "import.replacement_preparation_busy",
         state: "smuggled",
@@ -244,7 +244,7 @@ describe("E0 v2 workflow conformance (commit path, scripted ports)", () => {
   test("WF-003 malformed publish envelope: diagnostic with the transport reconciliation obligation", async () => {
     const wf = row("E0V2-WF-003");
     const h = makeHarness({
-      publish: () => ({ ...COMMITTED_ENVELOPE, lastKnownState: {} }),
+      publish: () => Object.freeze({ ...COMMITTED_ENVELOPE, lastKnownState: {} }),
     });
     const result = await h.driver(h.request);
     expect(result.ok).toBe(false);
@@ -373,3 +373,20 @@ describe("E0 v2 workflow conformance (commit path, scripted ports)", () => {
     ]);
   });
 });
+
+
+for (const port of ["prepare", "publish"] as const) {
+  test(`${port} revoked return still runs exact protocol cleanup`, async () => {
+    const revoked = Proxy.revocable({}, {}); revoked.revoke();
+    const h = makeHarness({ [port]: () => revoked.proxy });
+    const result = await h.driver(h.request);
+    expect(result.ok).toBe(false);
+    if (result.ok || result.outcome !== "protocol-invalid") throw new Error("Expected protocol refusal");
+    expect(result.diagnostic).toEqual({ port: port === "prepare" ? "prepareImportReplacementPublication" : "publishImportReplacement",
+      reason: "invalid-envelope", rawResultRetained: false });
+    expect(result.liveForRequest).toBe(0);
+    expect(h.discards).toEqual([{ identity: IDENTITY,
+      reason: port === "prepare" ? "preparation-protocol-invalid" : "publication-protocol-invalid" }]);
+    expect(h.calls).toEqual(port === "prepare" ? ["prepare", "discard", "identity"] : ["prepare", "x1", "publish", "discard", "identity"]);
+  });
+}

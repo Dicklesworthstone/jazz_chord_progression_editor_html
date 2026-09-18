@@ -56,7 +56,7 @@ const fixture = JSON.parse(await readFile(fixturePath, "utf8")) as Readonly<{
  * failure), `$counterObject` materializes the complete ten-key counter
  * object. */
 function materialize(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(materialize);
+  if (Array.isArray(value)) return Object.freeze(value.map(materialize));
   if (typeof value === "object" && value !== null) {
     const record = value as Readonly<Record<string, unknown>>;
     const ref = record["$literalRef"];
@@ -72,7 +72,7 @@ function materialize(value: unknown): unknown {
     for (const [key, entry] of Object.entries(record)) {
       out[key] = materialize(entry);
     }
-    return out;
+    return Object.freeze(out);
   }
   return value;
 }
@@ -228,7 +228,7 @@ describe("E0 v2 resolution fixture conformance (commit driver)", () => {
     const wf = row("E0V2-RESCASE-006");
     const expected = materialize(wf["expectedResult"]);
     const h = makeHarness({
-      publish: () => ({
+      publish: () => Object.freeze({
         ok: true,
         outcome: "committed",
         identity: IDENTITY,
@@ -248,7 +248,7 @@ describe("E0 v2 resolution fixture conformance (commit driver)", () => {
     const wf = row("E0V2-RESCASE-007");
     const expected = materialize(wf["expectedResult"]);
     const h = makeHarness({
-      prepare: () => ({ ok: false, code: "import.replacement_request_stale" }),
+      prepare: () => Object.freeze({ ok: false, code: "import.replacement_request_stale" }),
       identity: () =>
         Object.freeze({ documentId: "document-v2-base", revision: 11 }),
     });
@@ -301,7 +301,7 @@ describe("E0 v2 resolution fixture conformance (commit driver)", () => {
       ),
     ).toBe(true);
     const h = makeHarness({
-      prepare: () => ({ ok: false, code: expected.code }),
+      prepare: () => Object.freeze({ ok: false, code: expected.code }),
     });
     const result = await h.driver(COMMIT_REQUEST);
     expect(result as unknown).toEqual(expected);
@@ -314,7 +314,7 @@ describe("E0 v2 resolution fixture conformance (commit driver)", () => {
     }>;
     expect(wf["codeIsMemberOfV1Six"]).toBe(true);
     const h = makeHarness({
-      prepare: () => ({ ok: false, code: expected.code }),
+      prepare: () => Object.freeze({ ok: false, code: expected.code }),
     });
     const result = await h.driver(COMMIT_REQUEST);
     expect(result as unknown).toEqual(expected);
@@ -334,7 +334,7 @@ describe("E0 v2 resolution fixture conformance (commit driver)", () => {
       ),
     ).toBe(false);
     const h = makeHarness({
-      prepare: () => ({ ok: false, code: expected.code }),
+      prepare: () => Object.freeze({ ok: false, code: expected.code }),
     });
     const result = await h.driver(COMMIT_REQUEST);
     expect(result.ok).toBe(false);
@@ -359,7 +359,7 @@ describe("E0 v2 resolution fixture conformance (commit driver)", () => {
       ),
     ).toBe(true);
     const h = makeHarness({
-      publish: () => ({
+      publish: () => Object.freeze({
         ok: false,
         outcome: "refused",
         code: expected.code,

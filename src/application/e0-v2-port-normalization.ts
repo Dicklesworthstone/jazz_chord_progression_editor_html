@@ -55,14 +55,22 @@ export function threwOrRejected(
 }
 
 function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+  const prototype: unknown = Reflect.getPrototypeOf(value);
+  if (prototype !== Object.prototype && prototype !== null) return false;
+  if (!Object.isFrozen(value)) return false;
+  return Reflect.ownKeys(value).every((key) => {
+    const descriptor = Reflect.getOwnPropertyDescriptor(value, key);
+    return typeof key === "string" && descriptor !== undefined &&
+      Object.hasOwn(descriptor, "value") && descriptor.enumerable === true;
+  });
 }
 
 function hasExactKeys(
   record: Readonly<Record<string, unknown>>,
   keys: readonly string[],
 ): boolean {
-  const present = Object.keys(record);
+  const present = Reflect.ownKeys(record);
   if (present.length !== keys.length) return false;
   return keys.every((key) => Object.hasOwn(record, key));
 }
@@ -142,14 +150,17 @@ function isEffect(value: unknown): boolean {
 /** Every effect must be an own occurrence; Array.every skips missing entries
  * and also accepts values inherited from a modified array prototype. */
 function isEffects(value: unknown): boolean {
-  if (!Array.isArray(value)) return false;
+  if (!Array.isArray(value) || Reflect.getPrototypeOf(value) !== Array.prototype || !Object.isFrozen(value)) return false;
+  if (Reflect.ownKeys(value).length !== value.length + 1) return false;
   for (let index = 0; index < value.length; index += 1) {
-    if (!Object.hasOwn(value, index) || !isEffect(value[index])) return false;
+    const descriptor = Reflect.getOwnPropertyDescriptor(value, String(index));
+    if (descriptor === undefined || !Object.hasOwn(descriptor, "value") ||
+      descriptor.enumerable !== true || !isEffect(value[index])) return false;
   }
   return true;
 }
 
-export function normalizePreparationResult(
+function normalizePreparationEnvelope(
   raw: unknown,
 ): E0V2Normalized<PrepareImportReplacementPublicationResult> {
   const port = "prepareImportReplacementPublication";
@@ -200,7 +211,7 @@ export function normalizePreparationResult(
   return invalid(port);
 }
 
-export function normalizePublicationResult(
+function normalizePublicationEnvelope(
   raw: unknown,
 ): E0V2Normalized<PublishImportReplacementResult> {
   const port = "publishImportReplacement";
@@ -262,7 +273,7 @@ export function normalizePublicationResult(
   return invalid(port);
 }
 
-export function normalizeIdentityResult(
+function normalizeIdentityEnvelope(
   raw: unknown,
 ): E0V2Normalized<ApplicationDocumentIdentity> {
   const port = "readCurrentApplicationDocumentIdentity";
@@ -280,7 +291,7 @@ export function normalizeIdentityResult(
   });
 }
 
-export function normalizeMarkerResult(
+function normalizeMarkerEnvelope(
   raw: unknown,
 ): E0V2Normalized<PublishCanonicalExportRevisionResult> {
   const port = "publishCanonicalExportRevision";
@@ -322,4 +333,34 @@ export function normalizeMarkerResult(
     });
   }
   return invalid(port);
+}
+
+
+/** Port invocation errors are handled by the driver. Hostile return values
+ * instead fail normalization, without retaining or exposing their payload. */
+function normalizeSafely<T>(
+  port: E0V2NormalizedPortName,
+  normalize: () => E0V2Normalized<T>,
+): E0V2Normalized<T> {
+  try {
+    return normalize();
+  } catch {
+    return invalid(port);
+  }
+}
+
+export function normalizePreparationResult(raw: unknown): E0V2Normalized<PrepareImportReplacementPublicationResult> {
+  return normalizeSafely("prepareImportReplacementPublication", () => normalizePreparationEnvelope(raw));
+}
+
+export function normalizePublicationResult(raw: unknown): E0V2Normalized<PublishImportReplacementResult> {
+  return normalizeSafely("publishImportReplacement", () => normalizePublicationEnvelope(raw));
+}
+
+export function normalizeIdentityResult(raw: unknown): E0V2Normalized<ApplicationDocumentIdentity> {
+  return normalizeSafely("readCurrentApplicationDocumentIdentity", () => normalizeIdentityEnvelope(raw));
+}
+
+export function normalizeMarkerResult(raw: unknown): E0V2Normalized<PublishCanonicalExportRevisionResult> {
+  return normalizeSafely("publishCanonicalExportRevision", () => normalizeMarkerEnvelope(raw));
 }
