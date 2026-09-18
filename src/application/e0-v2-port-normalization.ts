@@ -12,7 +12,7 @@
  * site and mapped to the `threw-or-rejected` reason; discard is the
  * deliberate unwrapped exception and has no normalizer by law.
  */
-import { APPLICATION_REPLACEMENT_ORIGINS } from "./application-state-contract";
+import { APPLICATION_EFFECT_KINDS, APPLICATION_REPLACEMENT_ORIGINS } from "./application-state-contract";
 import {
   IMPORT_REPLACEMENT_PREPARATION_REFUSAL_CODES,
   IMPORT_REPLACEMENT_PUBLICATION_REFUSAL_CODES,
@@ -131,12 +131,22 @@ function isEffect(value: unknown): boolean {
   return (
     isRecord(value) &&
     hasExactKeys(value, ["kind", "revision", "requestId", "reasonCode"]) &&
-    typeof value["kind"] === "string" &&
+    APPLICATION_EFFECT_KINDS.some((kind) => kind === value["kind"]) &&
     isNonNegativeSafeInteger(value["revision"]) &&
     (value["requestId"] === null ||
       isNonNegativeSafeInteger(value["requestId"])) &&
     typeof value["reasonCode"] === "string"
   );
+}
+
+/** Every effect must be an own occurrence; Array.every skips missing entries
+ * and also accepts values inherited from a modified array prototype. */
+function isEffects(value: unknown): boolean {
+  if (!Array.isArray(value)) return false;
+  for (let index = 0; index < value.length; index += 1) {
+    if (!Object.hasOwn(value, index) || !isEffect(value[index])) return false;
+  }
+  return true;
 }
 
 export function normalizePreparationResult(
@@ -211,8 +221,7 @@ export function normalizePublicationResult(
       !isIdentity(raw["identity"]) ||
       typeof raw["documentId"] !== "string" ||
       !isNonNegativeSafeInteger(raw["revision"]) ||
-      !Array.isArray(raw["effects"]) ||
-      !raw["effects"].every(isEffect) ||
+      !isEffects(raw["effects"]) ||
       !isWorkCounters(raw["counters"]) ||
       raw["liveForRequest"] !== 0
     ) {

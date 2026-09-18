@@ -152,3 +152,55 @@ describe("E0 v2 normalization fixture conformance", () => {
     });
   }
 });
+
+
+describe("publication effect occurrence validation", () => {
+  const effect = Object.freeze({ kind: "announce", revision: 1, requestId: null, reasonCode: "import.committed" });
+  const receipt = (effects: readonly unknown[]) => Object.freeze({
+    ok: true, outcome: "committed",
+    identity: Object.freeze({ requestId: 1, documentId: "document-before", baseRevision: 0 }),
+    documentId: "document-after", revision: 1, effects,
+    counters: COMPLETE_COUNTER_OBJECT, liveForRequest: 0,
+  });
+  for (const kind of ["queue-recovery", "compile-playback-plan", "restore-focus", "announce", "recommend-export"]) {
+    test(`preserves the legitimate ${kind} effect receipt`, () => {
+      const raw = receipt(Object.freeze([Object.freeze({ ...effect, kind })]));
+      const result = normalizePublicationResult(raw);
+      expect(result.outcome).toBe("normalized");
+      if (result.outcome === "normalized") {
+        const observed: unknown = result.value;
+        expect(observed).toBe(raw);
+      }
+    });
+  }
+  test("preserves an empty effects receipt", () => {
+    const raw = receipt(Object.freeze([]));
+    const result = normalizePublicationResult(raw);
+    expect(result.outcome).toBe("normalized");
+    if (result.outcome === "normalized") {
+        const observed: unknown = result.value;
+        expect(observed).toBe(raw);
+      }
+  });
+  for (const kind of ["", "ANNOUNCE", "replace-document", "state"]) {
+    test(`rejects the out-of-vocabulary effect ${JSON.stringify(kind)}`, () => {
+      expect(normalizePublicationResult(receipt(Object.freeze([Object.freeze({ ...effect, kind })])))).toEqual({
+        outcome: "protocol-invalid", diagnostic: { port: "publishImportReplacement", reason: "invalid-envelope", rawResultRetained: false },
+      });
+    });
+  }
+  for (const inherited of [false, true]) {
+    test(`rejects a ${inherited ? "prototype-provided" : "missing"} effect occurrence`, () => {
+      const effects: unknown[] = Array(2);
+      effects[0] = effect;
+      if (inherited) {
+        const prototype: unknown[] = [];
+        prototype[1] = effect;
+        Object.setPrototypeOf(effects, prototype);
+      }
+      expect(normalizePublicationResult(receipt(Object.freeze(effects)))).toEqual({
+        outcome: "protocol-invalid", diagnostic: { port: "publishImportReplacement", reason: "invalid-envelope", rawResultRetained: false },
+      });
+    });
+  }
+});

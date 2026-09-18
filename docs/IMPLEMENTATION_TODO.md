@@ -1,5 +1,15 @@
 # Implementation TODO
 
+## Publication effect validation — jcpe-h29m
+
+- [x] Inspect E0 v2 exact-result contract and claim the concrete effect vocabulary/sparse-array defect. Agent Mail reservation failed during database initialization; preserve peer files and check exact source hashes before promotion.
+- [x] Add independent cases for all five legal kinds, empty effects, four illegal kinds, missing and prototype-provided occurrences.
+- [x] Strict RCH baseline:29pass/6fail,74 assertions (`test-results/publication-effects-baseline-20260918/`). All six invalid receipts were incorrectly accepted; all legal/empty controls passed.
+- [x] Validate against APPLICATION_EFFECT_KINDS and require each own effect occurrence; original fixtures and assertions unchanged. Initial100/0 behavioral pass had test-only TypeScript/lint failures; corrected matcher observation typing and prototype construction, retained failed logs.
+- [x] Strict RCH final:100pass/0fail,811 assertions across five normalization/workflow/owner/full-loop/contract files; all four types projects, scoped lint and guarded build pass. Fresh solo replay reproduces100/0 and the final tests fail29/6 against original production. Reports `test-results/publication-effects-{checked,review}-20260918/` bind1,835 unchanged inputs. Guarded artifact SHA256 `326e626f5e859d2d8b395fe2a1500d88f8c2530319eed6a971a9dd9108ba7295`,8637191 bytes, identical across both builds and root/dist.
+- [x] Record bounded proof and prepare exact owned files for commit/push. Unchanged cast policy remains1pass/1fail with23 findings; hostile controls pass. Original np17, broader normalization and aggregate/human obligations remain open. Solo review only, no browser or deployment claim.
+- [ ] Follow-up remains open: enforce recursively frozen containers, safe data descriptors and remaining prototype/key tricks across all E0 port normalizers. Current fixture materialization also emits mutable containers; reconcile it with the original section-3 contract, preserving valid owner results and hostile cases. This bounded effect fix does not satisfy that broader obligation.
+
 ## File writer cleanup accounting — jcpe-gpge
 
 - [x] Read E0 cleanup contract, claim bounded defect, attempt lease renewal/handoff (Agent Mail unavailable; existing source leases retained).
