@@ -120,6 +120,20 @@ consistency.
 The v1 stateEffect vocabulary is retained unchanged; what changes is that
 the EFFECT is described, never the state itself returned.
 
+Malformed-request diagnostic typing correction (2026-09-19, `jcpe-3ae7`):
+the `pre-owner-provenance` / `import.replacement_request_invalid` result
+cannot claim an A0-validated document identity. No owner call is permitted
+there. Its identity is an immutable snapshot of readable own-data primitive
+fields, or `{ requestId: 0, documentId: "", baseRevision: 0 }` when those
+fields cannot be read. Its observed identity is derived from that snapshot.
+The type surface therefore admits unvalidated diagnostic strings only on
+this exact refusal; they are not stable IDs and cannot be passed to owner
+operations as identities. This corrects the former unchecked cast without
+changing the wire fields, codes, state effects, or accepted fixture values.
+Request shape checks reject accessors and extra symbol keys and contain
+reflection failures before any owner operation. Diagnostic construction
+never invokes an accessor or retains a mutable caller-owned identity.
+
 ### E0V2-RES-08 — raw marker states
 
 The v2 marker path calls the owner's `publishCanonicalExportRevision` port.

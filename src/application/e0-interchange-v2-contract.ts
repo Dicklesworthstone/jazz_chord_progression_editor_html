@@ -175,12 +175,28 @@ export const E0_V2_COMMIT_REFUSAL_STAGES = Object.freeze([
 export type E0V2CommitRefusalStage =
   (typeof E0_V2_COMMIT_REFUSAL_STAGES)[number];
 
+/** Unvalidated diagnostic data; never a stable document identity or owner input. */
+export type E0V2MalformedRequestIdentity = Readonly<{
+  requestId: number;
+  documentId: string;
+  baseRevision: number;
+}>;
+
 /**
  * Fully state-free result union. Refusals carry the observed document
  * identity where v1 carried `state: AppState`; the protocol failure carries
  * the reconciliation obligation where v1 carried `lastKnownState`.
  */
 export type CommitImportReplacementResultV2 =
+  | Readonly<{
+      ok: false;
+      outcome: "refused";
+      stage: "pre-owner-provenance";
+      code: "import.replacement_request_invalid";
+      identity: E0V2MalformedRequestIdentity;
+      observedIdentity: Readonly<{ documentId: string; revision: number }>;
+      liveForRequest: 0;
+    }>
   | Readonly<{
       ok: true;
       outcome: "committed";

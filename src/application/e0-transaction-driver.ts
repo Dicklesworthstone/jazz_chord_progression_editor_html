@@ -52,6 +52,7 @@ import {
   E0_V2_MARKER_SETTLEMENT_REQUEST_SCHEMA,
   type CommitImportReplacementRequestV2,
   type CommitImportReplacementResultV2,
+  type E0V2MalformedRequestIdentity,
   type CompleteCanonicalExportMarkerSettlementRequestV2,
   type E0V2PortProtocolDiagnostic,
   type PrepareCanonicalExportDeliveryRequestV2,
@@ -240,7 +241,7 @@ function ownDataField(value: unknown, key: string): unknown {
   return field;
 }
 
-function requestDerivedIdentity(request: unknown): ImportRequestIdentity {
+function requestDerivedIdentity(request: unknown): E0V2MalformedRequestIdentity {
   try {
     const identity = ownDataField(ownDataField(request, "ownerRequest"), "identity");
     const requestId = ownDataField(identity, "requestId");
