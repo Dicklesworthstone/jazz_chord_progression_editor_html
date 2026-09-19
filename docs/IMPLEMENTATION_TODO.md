@@ -4,10 +4,11 @@
 
 - [x] Inspect U2 preview contract and current source; claim exact controller/test/artifact/TODO paths and coordinate.
 - [x] Add8 real controller/X1 cases over fake audio platform: refusal/throw crossed with retry, repeated retry, newer preview and new preparation. Preserve voice-count, exact identity and unchanged chart controls.
-- [ ] Run original-source strict RCH baseline and record actual failures.
-- [ ] Retain failed submitted identity under source authority; cancel pending attacks and protect newer owners.
-- [ ] Run focused tests, all types, scoped lint, guarded build and native inspector regressions through RCH.
-- [ ] Fresh replay; verify source hashes/mtimes and artifact; update bead, commit owned paths, preserve broader acceptance gaps.
+- [x] Original-source strict RCH hz2 baseline17pass/6fail. Strengthen preparation-race case to explicitly refuse the background release; corrected baseline against f25801b remains17pass/6fail,143 assertions. Existing15 tests and2 newer-owner controls pass. Preserve both `test-results/inspector-retire-baseline{,-corrected}-20260919/`.
+- [x] Retain source-bound submitted identity separately from pending preparation; clear only after acknowledged retirement or observed replacement. Retry exact owner without cancelling newer unrelated previews.
+- [x] Strict RCH hz2 focused64tests/566assertions across inspector/register/comping/pads, all4 TypeScript projects, scoped ESLint and guarded build pass (`test-results/inspector-retire-final-20260919/`).
+- [x] Fresh solo strict RCH hz2 replay23tests/179assertions passes. Native inspector54/54 in302.699s, file/HTTP ×1280/390/320px ×3engines ×3original preview tests. Chromium149.0.7827.55, Firefox151.0, WebKit26.5; zero skipped/flaky/unexpected/global errors. All54 hash-bound diagnostics have zero console/page errors or forbidden requests. Real pointer/keyboard held-source retirement, exact chart preservation, independent band playback and global Stop pass. `test-results/inspector-retire-browser-20260919/`.
+- [x] Final strict RCH guarded rebuild matches static/browser builds: SHA256 `ce4fb767b6346e12b9349a38c8f1fbdb10358205b96ca8214760b7ebb56a09d3`,8,645,217bytes. All1,836 input hashes/365 source mtimes unchanged; root matched HEAD before generated artifact promotion. Source/tests committed by peer as613d59e; preserve its history. Close only bounded bug; commit owned artifact/TODO/tracker and release reservations. No deployment, independent-human, physical-device or aggregate acceptance claim; existing gaps stay open.
 
 ## Deploy export repairs — jcpe-7med
 
