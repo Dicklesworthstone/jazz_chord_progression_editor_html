@@ -205,3 +205,47 @@ test("literal accounting counts selected semantic records, with an explicit 16/1
     }
   }
 });
+
+
+for (let count = 1; count <= 16; count += 1) {
+  test(`Custom snapshot preserves all ${count} ordered spellings and duplicate pitch classes`, () => {
+    const source = structuredClone(resolveChord({ kind: "custom", sourceText: "snapshot", label: "snapshot",
+      pitchNames: [{ step: "D", alter: -1 }], bass: null }).value);
+    const names = Array.from({ length: count }, (_, index) => index % 3 === 0
+      ? { step: "D", alter: -1 } : index % 3 === 1 ? { step: "C", alter: 1 } : { step: "E", alter: 0 });
+    const classes = Array.from({ length: count }, (_, index) => index % 3 === 2 ? 4 : 1);
+    Reflect.set(source.source, "pitchNames", names);
+    Reflect.set(source.realizations[0], "spelledPitchNames", names);
+    Reflect.set(source.realizations[0], "pitchClasses", classes);
+    const result = deriveLiteralFacts({ requestId: "snapshot", baseRevision: 0, source, selectedRealizationId: null });
+    const facts = value(result).literalFacts;
+    expect(facts.spelledPitchNames).toEqual(names);
+    expect(facts.pitchClasses).toEqual(classes);
+    expect(facts.spelledPitchNames).not.toBe(names);
+    expect(facts.pitchClasses).not.toBe(classes);
+    expect(result.evidence).toEqual({ t1ResolutionsVisited: 1, selectedRealizationDegreesVisited: 0,
+      degreeComparisons: 0, emittedRecords: 4 + count, peakTrackedRecords: 9 + 3 * count, termination: "complete" });
+    allFrozen(result);
+    const before = JSON.stringify(result);
+    for (const name of names) name.alter = 2;
+    classes.fill(11);
+    expect(JSON.stringify(result)).toBe(before);
+  });
+}
+
+for (const corruption of ["empty", "missing-class", "extra-class"] as const) {
+  test(`Custom snapshot cannot publish a ${corruption} T1 tuple invariant violation`, () => {
+    const source = structuredClone(resolveChord({ kind: "custom", sourceText: "snapshot", label: "snapshot",
+      pitchNames: [{ step: "D", alter: -1 }], bass: null }).value);
+    if (corruption === "empty") {
+      Reflect.set(source.realizations[0], "spelledPitchNames", []);
+      Reflect.set(source.realizations[0], "pitchClasses", []);
+    } else {
+      Reflect.set(source.realizations[0], "pitchClasses", corruption === "missing-class" ? [] : [1, 1]);
+    }
+    // T1 publishes nonempty aligned tuples. This is an internal invariant
+    // guard, matching the existing parsed-realization guard, not a decoder.
+    expect(() => deriveLiteralFacts({ requestId: "snapshot", baseRevision: 0,
+      source, selectedRealizationId: null })).toThrow("Invalid T1");
+  });
+}

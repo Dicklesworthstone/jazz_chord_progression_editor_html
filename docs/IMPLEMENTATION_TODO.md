@@ -1,5 +1,14 @@
 # Implementation TODO
 
+## Checked literal snapshots — jcpe-46gc
+
+- [x] Read H0/T1/architecture/plan/theory guidance; retain np17 ownership and human dependencies; claim one leaf and reserve exact source/test/TODO.
+- [x] Add 1–16 Custom length, duplicate/enharmonic order, frozen nonaliasing and exact accounting controls; add empty/misaligned internal T1 invariant negatives.
+- [ ] Run original-source regression baseline via strict RCH.
+- [ ] Replace generic tuple cast with checked bounded/nonempty snapshots and explicit realization ID tuples.
+- [ ] Verify focused H0/T1 contracts, all types, lint, unchanged cast-policy controls/inventory and guarded build via strict RCH.
+- [ ] Fresh solo replay and artifact/source comparison; close only this leaf, update parent evidence, commit/push owned files, release leases. No aggregate/human/browser/deployment claim.
+
 ## Isolate save-picker capability — jcpe-l3cf
 
 - [x] Read architecture, E0 section10 and plan15.2; claim leaf and reserve adapter/test/TODO.
