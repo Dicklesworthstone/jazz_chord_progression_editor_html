@@ -462,6 +462,21 @@ export const createE0ExportOperations: CreateE0ExportOperations = (
 /* Section-10 activation-safe start primitive                          */
 /* ------------------------------------------------------------------ */
 
+// Optional availability is a runtime concern even though lib.dom declares
+// these globals for browser compilation. Assignment checks the native shapes.
+type BrowserDeliveryGlobals = Readonly<{
+  navigator?: Readonly<{ userActivation?: Readonly<{ isActive?: boolean }> }>;
+  window?: Window;
+  document?: Document;
+  URL?: typeof URL;
+  Blob?: typeof Blob;
+}>;
+
+type BrowserMethod = (this: unknown, ...args: readonly unknown[]) => unknown;
+function isBrowserMethod(value: unknown): value is BrowserMethod {
+  return typeof value === "function";
+}
+
 // Browser rejections are external values. A hostile name accessor must not
 // turn an ordinary picker failure into a rejected delivery completion.
 function isPickerCancellation(error: unknown): boolean {
@@ -492,7 +507,7 @@ function startExportDelivery(
 ): Readonly<{ completion: Promise<ExportDeliveryResult> }> {
   const binding = request.binding;
   const bytes = request.privateBytes;
-  const g = globalThis;
+  const g: BrowserDeliveryGlobals = globalThis;
 
   const cleanZero = Object.freeze({
     cleanup: "complete" as const,
@@ -524,7 +539,7 @@ function startExportDelivery(
   if (request.preference === "prefer-file-system-access") {
     try {
       const globalPicker: unknown = "showSaveFilePicker" in g ? g.showSaveFilePicker : undefined;
-      pickerOwner = typeof globalPicker === "function" ? g : g.window;
+      pickerOwner = isBrowserMethod(globalPicker) ? g : g.window;
       picker = globalPicker ?? (typeof pickerOwner === "object" && pickerOwner !== null &&
         "showSaveFilePicker" in pickerOwner ? pickerOwner.showSaveFilePicker : undefined);
     } catch {
@@ -547,7 +562,7 @@ function startExportDelivery(
 
   if (
     request.preference === "prefer-file-system-access" &&
-    typeof picker === "function"
+    isBrowserMethod(picker)
   ) {
     /* The picker is invoked HERE, synchronously, inside the activation
      * interval; everything after the first await runs on the completion. */
@@ -622,7 +637,7 @@ function startExportDelivery(
       let writer: unknown;
       try {
         if (typeof handle !== "object" || handle === null ||
-            !("createWritable" in handle) || typeof handle.createWritable !== "function") {
+            !("createWritable" in handle) || !isBrowserMethod(handle.createWritable)) {
           throw new TypeError("File handle has no writable capability");
         }
         writer = await handle.createWritable();
@@ -639,12 +654,12 @@ function startExportDelivery(
       let closeAttempted = false;
       try {
         if (typeof writer !== "object" || writer === null ||
-            !("write" in writer) || typeof writer.write !== "function") {
+            !("write" in writer) || !isBrowserMethod(writer.write)) {
           throw new TypeError("File writer has no write capability");
         }
         await writer.write(bytes);
         closeAttempted = true;
-        if (!("close" in writer) || typeof writer.close !== "function") {
+        if (!("close" in writer) || !isBrowserMethod(writer.close)) {
           throw new TypeError("File writer has no close capability");
         }
         await writer.close();
@@ -653,7 +668,7 @@ function startExportDelivery(
         let aborted = false;
         try {
           if (typeof writer === "object" && writer !== null &&
-              "abort" in writer && typeof writer.abort === "function") {
+              "abort" in writer && isBrowserMethod(writer.abort)) {
             await writer.abort();
             aborted = true;
           }
