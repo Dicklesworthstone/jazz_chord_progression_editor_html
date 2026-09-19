@@ -10,7 +10,7 @@ import {
   type H0SelectedRealizationId,
   type ParsedResolvedChord,
 } from "../../src/theory";
-import type { ChordDegree } from "../../src/domain";
+import type { ChordDegree, SpelledPitchClass } from "../../src/domain";
 import sources from "../fixtures/harmony-analysis/source-catalog.json";
 import literalCases from "../fixtures/harmony-analysis/literal-fact-cases.json";
 import scaleCases from "../fixtures/harmony-analysis/chord-scale-cases.json";
@@ -208,26 +208,26 @@ test("literal accounting counts selected semantic records, with an explicit 16/1
 
 
 for (let count = 1; count <= 16; count += 1) {
-  test(`Custom snapshot preserves all ${count} ordered spellings and duplicate pitch classes`, () => {
+  test(`Custom snapshot preserves all ${String(count)} ordered spellings and duplicate pitch classes`, () => {
     const source = structuredClone(resolveChord({ kind: "custom", sourceText: "snapshot", label: "snapshot",
       pitchNames: [{ step: "D", alter: -1 }], bass: null }).value);
-    const names = Array.from({ length: count }, (_, index) => index % 3 === 0
+    const names: SpelledPitchClass[] = Array.from({ length: count }, (_, index) => index % 3 === 0
       ? { step: "D", alter: -1 } : index % 3 === 1 ? { step: "C", alter: 1 } : { step: "E", alter: 0 });
-    const classes = Array.from({ length: count }, (_, index) => index % 3 === 2 ? 4 : 1);
+    const classes: number[] = Array.from({ length: count }, (_, index) => index % 3 === 2 ? 4 : 1);
     Reflect.set(source.source, "pitchNames", names);
     Reflect.set(source.realizations[0], "spelledPitchNames", names);
     Reflect.set(source.realizations[0], "pitchClasses", classes);
     const result = deriveLiteralFacts({ requestId: "snapshot", baseRevision: 0, source, selectedRealizationId: null });
     const facts = value(result).literalFacts;
-    expect(facts.spelledPitchNames).toEqual(names);
-    expect(facts.pitchClasses).toEqual(classes);
+    expect<readonly SpelledPitchClass[]>(facts.spelledPitchNames).toEqual(names);
+    expect<readonly number[]>(facts.pitchClasses).toEqual(classes);
     expect(facts.spelledPitchNames).not.toBe(names);
     expect(facts.pitchClasses).not.toBe(classes);
     expect(result.evidence).toEqual({ t1ResolutionsVisited: 1, selectedRealizationDegreesVisited: 0,
       degreeComparisons: 0, emittedRecords: 4 + count, peakTrackedRecords: 9 + 3 * count, termination: "complete" });
     allFrozen(result);
     const before = JSON.stringify(result);
-    for (const name of names) name.alter = 2;
+    for (const name of names) Reflect.set(name, "alter", 2);
     classes.fill(11);
     expect(JSON.stringify(result)).toBe(before);
   });

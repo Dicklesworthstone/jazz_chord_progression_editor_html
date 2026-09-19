@@ -4,10 +4,10 @@
 
 - [x] Read H0/T1/architecture/plan/theory guidance; retain np17 ownership and human dependencies; claim one leaf and reserve exact source/test/TODO.
 - [x] Add 1–16 Custom length, duplicate/enharmonic order, frozen nonaliasing and exact accounting controls; add empty/misaligned internal T1 invariant negatives.
-- [ ] Run original-source regression baseline via strict RCH.
-- [ ] Replace generic tuple cast with checked bounded/nonempty snapshots and explicit realization ID tuples.
-- [ ] Verify focused H0/T1 contracts, all types, lint, unchanged cast-policy controls/inventory and guarded build via strict RCH.
-- [ ] Fresh solo replay and artifact/source comparison; close only this leaf, update parent evidence, commit/push owned files, release leases. No aggregate/human/browser/deployment claim.
+- [x] Original-source strict RCH hz4 baseline68pass/3fail,4,742 assertions across71 cases: all52 prior tests and16 length controls pass; empty/missing-class/extra-class Custom inputs incorrectly publish success (`test-results/literal-snapshot-baseline-20260919/`).
+- [x] Replace generic tuple cast with checked bounded/nonempty snapshots and explicit one/four realization ID tuples; guard Custom pitch-array alignment. Preserve exact spellings, duplicate/order, immutable nonaliasing and work counts.
+- [x] Strict RCH hz4 final160pass/0fail,94,276 assertions over8 H0/T1 suites; all4 TypeScript projects, scoped lint and guarded build pass (`test-results/literal-snapshot-final-20260919/`). Initial run had test-only inferred-type/template-name errors; correct annotations and formatting without changing fixture values/assertions. Keep `literal-snapshot-checked-20260919/`. Unchanged cast-policy is1pass/1fail:11 remaining findings vs12, hostile controls pass. Parent remains open.
+- [x] Fresh solo RCH literal replay71pass/0fail,4,742 assertions and guarded build pass (`test-results/literal-snapshot-review-20260919/`). Both receipts/current1,835 inputs and364 source mtimes agree. Both artifacts equal committed root/dist SHA256 `7634f80337cb35ffa87f6734609b2a248d1a820a9b84a87790429fe7ec4df5db`,8,639,671 bytes: H0 deriveLiteralFacts is currently exported but has no shipped UI caller, so this is source/gate repair with no visible app change. Existing source/test commits32675ce/da1f468 preserved. Close only this leaf, update np17 evidence and finish owned test-typing/TODO/tracker commit; release leases11043–11045/11054. No aggregate, independent reviewer, human, browser or deployment claim.
 
 ## Isolate save-picker capability — jcpe-l3cf
 
