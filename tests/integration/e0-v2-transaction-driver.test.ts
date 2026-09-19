@@ -574,3 +574,57 @@ describe("E0 v2 Transaction Driver Integration", () => {
     expect(subsequentPrep.ok).toBe(true);
   });
 });
+
+describe("E0 v2 malformed request diagnostics", () => {
+  for (const scenario of [
+    "schema getter", "owner getter", "binding getter", "owner identity getter",
+    "binding proof getter", "identity field getter", "root ownKeys trap",
+    "owner descriptor trap", "revoked request", "revoked identity",
+    "root symbol", "owner symbol", "binding symbol", "root prototype",
+    "mutable diagnostic identity", "missing identity", "wrong identity kind",
+  ] as const) test(`${scenario} refuses before every owner call`, async () => {
+    const h = createHarness(), calls: string[] = [], owner = h.composition.interchangeOwner;
+    const driver = createE0V2TransactionDriver({
+      ...owner,
+      readCurrentApplicationDocumentIdentity: () => { calls.push("identity"); return owner.readCurrentApplicationDocumentIdentity(); },
+      prepareImportReplacementPublication: request => { calls.push("prepare"); return owner.prepareImportReplacementPublication(request); },
+      discardImportReplacementPublication: request => { calls.push("discard"); return owner.discardImportReplacementPublication(request); },
+      publishImportReplacement: request => { calls.push("publish"); return owner.publishImportReplacement(request); },
+      publishCanonicalExportRevision: request => { calls.push("marker"); return owner.publishCanonicalExportRevision(request); },
+    }, { retireImportReplacement: () => { calls.push("retire"); throw new Error("Unexpected retirement"); } });
+    const identity = { ...h.ownerRequest.identity };
+    const ownerRequest: Record<string, unknown> = { ...h.ownerRequest, identity };
+    const binding: Record<string, unknown> = { displayedRequirement: null, acknowledgement: null, byteMatchProvedBeforeOwnerCall: true };
+    const request: Record<string, unknown> = { schema: "changes.import-commit-request.v2", ownerRequest, confirmationBinding: binding };
+    let raw: unknown = request, getters = 0, expectedIdentity = { ...identity };
+    const unreadable = { requestId: 0, documentId: "", baseRevision: 0 };
+    const accessor = (target: object, key: string): void => {
+      Object.defineProperty(target, key, { enumerable: true, configurable: true, get: () => { getters++; throw new Error("Must not invoke request accessor"); } });
+    };
+    if (scenario === "schema getter") accessor(request, "schema");
+    else if (scenario === "owner getter") { accessor(request, "ownerRequest"); expectedIdentity = unreadable; }
+    else if (scenario === "binding getter") accessor(request, "confirmationBinding");
+    else if (scenario === "owner identity getter") { accessor(ownerRequest, "identity"); expectedIdentity = unreadable; }
+    else if (scenario === "binding proof getter") accessor(binding, "byteMatchProvedBeforeOwnerCall");
+    else if (scenario === "identity field getter") { accessor(identity, "documentId"); expectedIdentity = unreadable; }
+    else if (scenario === "root ownKeys trap") raw = new Proxy(request, { ownKeys: () => { throw new Error("keys trap"); } });
+    else if (scenario === "owner descriptor trap") { request["ownerRequest"] = new Proxy(ownerRequest, { getOwnPropertyDescriptor: () => { throw new Error("descriptor trap"); } }); expectedIdentity = unreadable; }
+    else if (scenario === "revoked request") { const p = Proxy.revocable(request, {}); p.revoke(); raw = p.proxy; expectedIdentity = unreadable; }
+    else if (scenario === "revoked identity") { const p = Proxy.revocable(identity, {}); p.revoke(); ownerRequest["identity"] = p.proxy; expectedIdentity = unreadable; }
+    else if (scenario === "root symbol") Object.defineProperty(request, Symbol("extra"), { value: true });
+    else if (scenario === "owner symbol") Object.defineProperty(ownerRequest, Symbol("extra"), { value: true });
+    else if (scenario === "binding symbol") Object.defineProperty(binding, Symbol("extra"), { value: true });
+    else if (scenario === "root prototype") Object.setPrototypeOf(request, { extra: true });
+    else if (scenario === "mutable diagnostic identity") request["schema"] = "wrong";
+    else if (scenario === "missing identity") { request["schema"] = "wrong"; delete ownerRequest["identity"]; expectedIdentity = unreadable; }
+    else { request["schema"] = "wrong"; ownerRequest["identity"] = { ...identity, requestId: "not-a-number" }; expectedIdentity = unreadable; }
+    const before = h.composition.controller.getSnapshot();
+    const result = await driver(raw as CommitImportReplacementRequestV2);
+    expect(result).toMatchObject({ ok: false, outcome: "refused", stage: "pre-owner-provenance", code: "import.replacement_request_invalid", identity: expectedIdentity,
+      observedIdentity: { documentId: expectedIdentity.documentId, revision: expectedIdentity.baseRevision }, liveForRequest: 0 });
+    expect(calls).toEqual([]); expect(getters).toBe(0);
+    expect(Object.isFrozen(result.identity)).toBe(true); expect(result.identity).not.toBe(identity);
+    if (scenario === "mutable diagnostic identity") { identity.documentId = "later-mutation"; identity.requestId = 999; expect(result.identity).toEqual(expectedIdentity); }
+    expect(h.composition.controller.getSnapshot()).toBe(before); expect(h.getNotifications()).toBe(0);
+  });
+});

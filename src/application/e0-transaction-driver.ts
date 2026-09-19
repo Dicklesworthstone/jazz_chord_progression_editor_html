@@ -216,48 +216,48 @@ const OWNER_REQUEST_KEYS = Object.freeze([
  * the identity read, so the observed identity is request-derived.
  */
 function requestShapeValid(request: unknown): boolean {
-  if (!isRecord(request)) return false;
-  if (!hasExactKeys(request, ["schema", "ownerRequest", "confirmationBinding"])) {
+  try {
+    const envelope = consentFields(request, ["schema", "ownerRequest", "confirmationBinding"]);
+    if (envelope === null || envelope["schema"] !== E0_V2_COMMIT_REQUEST_SCHEMA) return false;
+    const ownerRequest = consentFields(envelope["ownerRequest"], OWNER_REQUEST_KEYS);
+    const binding = consentFields(envelope["confirmationBinding"], [
+      "displayedRequirement", "acknowledgement", "byteMatchProvedBeforeOwnerCall",
+    ]);
+    return ownerRequest !== null &&
+      consentFields(ownerRequest["identity"], ["requestId", "documentId", "baseRevision"]) !== null &&
+      binding !== null && binding["byteMatchProvedBeforeOwnerCall"] === true;
+  } catch {
+    // Reflection on an untrusted request can throw, including revoked proxies.
     return false;
   }
-  if (request["schema"] !== E0_V2_COMMIT_REQUEST_SCHEMA) return false;
-  const ownerRequest = request["ownerRequest"];
-  if (!isRecord(ownerRequest) || !hasExactKeys(ownerRequest, OWNER_REQUEST_KEYS)) {
-    return false;
-  }
-  const binding = request["confirmationBinding"];
-  return (
-    isRecord(binding) &&
-    hasExactKeys(binding, [
-      "displayedRequirement",
-      "acknowledgement",
-      "byteMatchProvedBeforeOwnerCall",
-    ]) &&
-    binding["byteMatchProvedBeforeOwnerCall"] === true
-  );
+}
+
+function ownDataField(value: unknown, key: string): unknown {
+  if (!isRecord(value)) return undefined;
+  const descriptor = Object.getOwnPropertyDescriptor(value, key);
+  const field: unknown = descriptor !== undefined && Object.hasOwn(descriptor, "value")
+    ? descriptor.value : undefined;
+  return field;
 }
 
 function requestDerivedIdentity(request: unknown): ImportRequestIdentity {
-  if (isRecord(request)) {
-    const ownerRequest = request["ownerRequest"];
-    if (isRecord(ownerRequest)) {
-      const identity = ownerRequest["identity"];
-      if (
-        isRecord(identity) &&
-        typeof identity["requestId"] === "number" &&
-        typeof identity["documentId"] === "string" &&
-        typeof identity["baseRevision"] === "number"
-      ) {
-        return identity as unknown as ImportRequestIdentity;
-      }
+  try {
+    const identity = ownDataField(ownDataField(request, "ownerRequest"), "identity");
+    const requestId = ownDataField(identity, "requestId");
+    const documentId = ownDataField(identity, "documentId");
+    const baseRevision = ownDataField(identity, "baseRevision");
+    if (typeof requestId === "number" && typeof documentId === "string" && typeof baseRevision === "number") {
+      return Object.freeze({ requestId, documentId, baseRevision });
     }
+  } catch {
+    // Diagnostics must not invoke accessors or retain an unreadable raw object.
   }
   /* The request is untyped garbage; an honest zero identity beats a throw. */
   return Object.freeze({
     requestId: 0,
     documentId: "",
     baseRevision: 0,
-  }) as unknown as ImportRequestIdentity;
+  });
 }
 
 /** Capture only the fixed consent fields, without invoking accessors or toJSON. */

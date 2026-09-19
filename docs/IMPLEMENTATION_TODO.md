@@ -1,5 +1,14 @@
 # Implementation TODO
 
+## Total malformed import-request diagnostics — jcpe-3ae7
+
+- [x] Read E0v2 RES-01/04, owner boundary and plan; claim one bug and reserve driver/test/TODO paths10994–10996.
+- [x] Add17 malformed-envelope cases with exact refusal, no getter/owner/X1 calls, immutable request-derived identity and unchanged real composition state; retain existing valid commit/consent controls.
+- [x] Original-source strict RCH baseline32pass/15fail,265 assertions across47 cases. All30 existing cases and2 malformed controls pass;15 new cases reproduce throws, owner calls or mutable diagnostics (`test-results/request-boundary-baseline-20260919/`).
+- [x] Inspect exact plain own-data fields and contain reflection failures; construct frozen request-derived primitive identity snapshots without either double assertion.
+- [ ] Run focused E0 suites, all4 types, scoped lint, unchanged cast-policy diagnostic and guarded build via strict RCH.
+- [ ] Fresh solo replay; verify frozen source/artifact agreement; update parent np17 without closing aggregate/human gates; commit/push only owned files and release leases.
+
 ## Retry comping preview retirement — jcpe-twtz
 
 - [x] Read authored-comping ownership and preview-retirement contracts; claim one bug and reserve controller/integration/TODO paths10983–10985.
