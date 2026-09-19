@@ -9,7 +9,7 @@
 - [x] Corrected strict RCH hz4:85 tests/321 assertions, all4 TypeScript projects, scoped lint and guarded build pass. Unchanged cast-policy reports1pass/1fail with9 legacy application findings (down from11); hostile controls pass, original parent stays open. `test-results/export-types-final-20260919/`.
 - [x] Fresh solo delivery replay65 tests/215 assertions; existing12 native download/activation checks pass across Chromium, Firefox and WebKit in16.001s with zero failed/skipped/flaky cases or report errors. Golden downloads, exact cleanup, activation and zero console/page errors asserted. `test-results/export-types-browser-20260919/`; JSON reporter nested its output under that directory. No physical-device or independent-review claim.
 - [x] Final strict RCH guarded rebuild matches SHA256 `344c216f3b457e95b2f776096ae93c8bdb862894da35de3ecb3203ea2bc2fb8d`,8,640,754 bytes. All1,835 input hashes/364 source mtimes unchanged; generated root/dist promoted only after checking prior root against HEAD. `test-results/export-types-rebuild-20260919/`.
-- [ ] Commit/push owned corrections/artifact/TODO/tracker and release reservations. Peer session already committed initial source/tests/tracker as7812b22/1c94681/a25428e; preserve these and land lint correction separately. Parent np17 and human gates remain open; no deployment claim for this slice.
+- [x] Source/tests/initial tracker committed by peer session as7812b22/1c94681/a25428e; source lint correction21c2a80 and final artifact/evidence1586818 preserved and pushed. Closed only jcpe-dqge with exact gate results; parent np17 retains9findings and human/aggregate obligations. No deployment claim for this slice.
 
 ## Deploy committed repairs — jcpe-m6m8
 
