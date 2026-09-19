@@ -29,7 +29,6 @@ import {
   DEGREE_SPELLING_POLICY_ID,
   DEGREE_SPELLING_POLICY_VERSION,
   RESOLVED_CHORD_SCHEMA,
-  type IndexAlignedTuple,
   type ResolvedChord,
 } from "./resolution-contract";
 
@@ -64,12 +63,24 @@ function snapshotDegree(degree: ChordDegree): ChordDegree {
   return Object.freeze({ number: degree.number, alter: degree.alter });
 }
 
-/** Array.map preserves every index and tuple length; it never filters. */
-function snapshotTuple<T extends readonly unknown[], U>(
-  values: T,
-  copy: (value: T[number], index: number) => U,
-): IndexAlignedTuple<T, U> {
-  return Object.freeze(values.map(copy)) as IndexAlignedTuple<T, U>;
+/** Copy only bounded input and check the output shape before publication. */
+function snapshotTuple<T, U>(
+  values: H0BoundedTuple<T, 16>,
+  copy: (value: T, index: number) => U,
+): H0BoundedTuple<U, 16> {
+  const result = Object.freeze(values.map(copy));
+  if (!bounded(result)) throw new Error("Invalid T1 snapshot tuple");
+  return result;
+}
+
+function snapshotNonEmptyTuple<T, U>(
+  values: readonly T[],
+  copy: (value: T, index: number) => U,
+): H0BoundedNonEmptyTuple<U, 16> {
+  if (!nonEmpty(values)) throw new Error("Invalid T1 nonempty snapshot tuple");
+  const result = snapshotTuple(values, copy);
+  if (!nonEmpty(result)) throw new Error("Invalid T1 nonempty snapshot tuple");
+  return result;
 }
 
 function bounded<T>(values: readonly T[]): values is H0BoundedTuple<T, 16> {
@@ -81,8 +92,10 @@ function nonEmpty<T>(values: readonly T[]): values is H0BoundedNonEmptyTuple<T, 
 }
 
 function availableIds(source: ResolvedChord): H0BoundedNonEmptyTuple<H0SelectedRealizationId, 4> {
-  // The public T1 tuple has exactly one or four entries. Mapping preserves it.
-  return snapshotTuple(source.realizations, (realization) => realization.id);
+  const realizations = source.realizations;
+  return realizations.length === 1
+    ? Object.freeze([realizations[0].id] as const)
+    : Object.freeze([realizations[0].id, realizations[1].id, realizations[2].id, realizations[3].id] as const);
 }
 
 function upstreamRefusal(source: ResolvedChord): H0LiteralFactsRequestRefusal | null {
@@ -237,6 +250,9 @@ export function deriveLiteralFacts(request: H0LiteralFactsRequest): H0LiteralFac
   const bass = source.bass === null ? null : snapshotPitch(source.bass);
   const base = { ...POLICIES, requestId, baseRevision };
   if (selected.kind === "custom") {
+    if (selected.pitchClasses.length !== selected.spelledPitchNames.length) {
+      throw new Error("Invalid T1 custom pitch tuple alignment");
+    }
     const limitations = Object.freeze([
       Object.freeze({ code: "custom.no_degree_analysis" as const, detail: "Custom pitches have no declared root or degree roles." }),
       Object.freeze({ code: "custom.no_auto_voicing" as const, detail: "Custom pitches preserve their exact supplied order and duplicates." }),
@@ -245,8 +261,8 @@ export function deriveLiteralFacts(request: H0LiteralFactsRequest): H0LiteralFac
       kind: "literal", ruleId: "h0.literal-facts", contextIndependent: true,
       applicability: "not-applicable", selectedRealizationId: "custom", root: null, bass,
       degrees: null, requiredDegrees: null, optionalDegrees: null, guideToneDegrees: null,
-      spelledPitchNames: snapshotTuple(selected.spelledPitchNames, snapshotPitch),
-      pitchClasses: snapshotTuple(selected.pitchClasses, (pitch) => pitch),
+      spelledPitchNames: snapshotNonEmptyTuple(selected.spelledPitchNames, snapshotPitch),
+      pitchClasses: snapshotNonEmptyTuple(selected.pitchClasses, (pitch) => pitch),
       match: null, matchComponents: Object.freeze([] as const), limitations,
     } as const);
     return Object.freeze({
@@ -261,21 +277,21 @@ export function deriveLiteralFacts(request: H0LiteralFactsRequest): H0LiteralFac
       !bounded(selected.requiredDegrees) || !bounded(selected.optionalDegrees) || !bounded(selected.guideToneDegrees)) {
     throw new Error("Invalid T1 resolved-chord invariant");
   }
-  const copiedDegrees = snapshotTuple(degrees, snapshotDegree);
+  const copiedDegrees = snapshotNonEmptyTuple(degrees, snapshotDegree);
   // T1 guarantees index alignment. Each spelling is copied separately from the
   // source and then shared only between immutable output records.
-  const spelledPitchNames = snapshotTuple(copiedDegrees, (_degree, index) => {
+  const spelledPitchNames = snapshotNonEmptyTuple(copiedDegrees, (_degree, index) => {
     const pitch = selected.spelledPitchNames[index];
     if (pitch === undefined) throw new Error("Invalid T1 spelling tuple");
     return snapshotPitch(pitch);
   });
-  const pitchClasses = snapshotTuple(copiedDegrees, (_degree, index) => {
+  const pitchClasses = snapshotNonEmptyTuple(copiedDegrees, (_degree, index) => {
     const pitch = selected.pitchClasses[index];
     if (pitch === undefined) throw new Error("Invalid T1 pitch-class tuple");
     return pitch;
   });
   const suspension = source.source.triad === "sus2" ? 2 : source.source.triad === "sus4" ? 4 : null;
-  const components = snapshotTuple(copiedDegrees, (degree, index) => {
+  const components = snapshotNonEmptyTuple(copiedDegrees, (degree, index) => {
     const spelling = spelledPitchNames[index];
     if (spelling === undefined) throw new Error("Invalid T1 degree/spelling alignment");
     return matchComponent(degree, spelling, suspension);
