@@ -462,41 +462,6 @@ export const createE0ExportOperations: CreateE0ExportOperations = (
 /* Section-10 activation-safe start primitive                          */
 /* ------------------------------------------------------------------ */
 
-type BrowserDeliveryGlobals = Readonly<{
-  navigator?: Readonly<{ userActivation?: Readonly<{ isActive?: boolean }> }>;
-  showSaveFilePicker?: (options: unknown) => Promise<
-    Readonly<{
-      createWritable: () => Promise<
-        Readonly<{
-          write: (data: Uint8Array) => Promise<void>;
-          close: () => Promise<void>;
-          abort?: () => Promise<void>;
-        }>
-      >;
-    }>
-  >;
-  window?: Readonly<{
-    showSaveFilePicker?: BrowserDeliveryGlobals["showSaveFilePicker"];
-  }>;
-  document?: Readonly<{
-    createElement: (tag: string) => {
-      href: string;
-      download: string;
-      hidden: boolean;
-      click: () => void;
-    };
-    body: Readonly<{
-      appendChild: (el: unknown) => void;
-      removeChild: (el: unknown) => void;
-    }>;
-  }>;
-  URL?: Readonly<{
-    createObjectURL: (blob: Blob) => string;
-    revokeObjectURL: (url: string) => void;
-  }>;
-  Blob?: typeof Blob;
-}>;
-
 // Browser rejections are external values. A hostile name accessor must not
 // turn an ordinary picker failure into a rejected delivery completion.
 function isPickerCancellation(error: unknown): boolean {
@@ -527,7 +492,7 @@ function startExportDelivery(
 ): Readonly<{ completion: Promise<ExportDeliveryResult> }> {
   const binding = request.binding;
   const bytes = request.privateBytes;
-  const g = globalThis as unknown as BrowserDeliveryGlobals;
+  const g = globalThis;
 
   const cleanZero = Object.freeze({
     cleanup: "complete" as const,
@@ -553,14 +518,15 @@ function startExportDelivery(
     });
   }
 
-  let pickerOwner: BrowserDeliveryGlobals | BrowserDeliveryGlobals["window"];
-  let picker: BrowserDeliveryGlobals["showSaveFilePicker"];
+  let pickerOwner: unknown;
+  let picker: unknown;
   // Download-only is independent of File System Access, including its probes.
   if (request.preference === "prefer-file-system-access") {
     try {
-      const globalPicker = g.showSaveFilePicker;
+      const globalPicker: unknown = "showSaveFilePicker" in g ? g.showSaveFilePicker : undefined;
       pickerOwner = typeof globalPicker === "function" ? g : g.window;
-      picker = globalPicker ?? pickerOwner?.showSaveFilePicker;
+      picker = globalPicker ?? (typeof pickerOwner === "object" && pickerOwner !== null &&
+        "showSaveFilePicker" in pickerOwner ? pickerOwner.showSaveFilePicker : undefined);
     } catch {
       return Object.freeze({
         completion: Promise.resolve(Object.freeze({
@@ -585,17 +551,7 @@ function startExportDelivery(
   ) {
     /* The picker is invoked HERE, synchronously, inside the activation
      * interval; everything after the first await runs on the completion. */
-    let pickerPromise: Promise<
-      Readonly<{
-        createWritable: () => Promise<
-          Readonly<{
-            write: (data: Uint8Array) => Promise<void>;
-            close: () => Promise<void>;
-            abort?: () => Promise<void>;
-          }>
-        >;
-      }>
-    >;
+    let pickerPromise: unknown;
     try {
       pickerPromise = picker.call(pickerOwner, {
         suggestedName: binding.filename,
@@ -641,7 +597,7 @@ function startExportDelivery(
       });
     }
     const completion = (async (): Promise<ExportDeliveryResult> => {
-      let handle: Awaited<typeof pickerPromise>;
+      let handle: unknown;
       try {
         handle = await pickerPromise;
       } catch (error) {
@@ -663,8 +619,12 @@ function startExportDelivery(
           ...cleanZero,
         });
       }
-      let writer: Awaited<ReturnType<typeof handle.createWritable>>;
+      let writer: unknown;
       try {
+        if (typeof handle !== "object" || handle === null ||
+            !("createWritable" in handle) || typeof handle.createWritable !== "function") {
+          throw new TypeError("File handle has no writable capability");
+        }
         writer = await handle.createWritable();
       } catch {
         return Object.freeze({
@@ -678,14 +638,22 @@ function startExportDelivery(
       }
       let closeAttempted = false;
       try {
+        if (typeof writer !== "object" || writer === null ||
+            !("write" in writer) || typeof writer.write !== "function") {
+          throw new TypeError("File writer has no write capability");
+        }
         await writer.write(bytes);
         closeAttempted = true;
+        if (!("close" in writer) || typeof writer.close !== "function") {
+          throw new TypeError("File writer has no close capability");
+        }
         await writer.close();
       } catch {
         // A missing abort capability cannot prove that the writer was released.
         let aborted = false;
         try {
-          if (typeof writer.abort === "function") {
+          if (typeof writer === "object" && writer !== null &&
+              "abort" in writer && typeof writer.abort === "function") {
             await writer.abort();
             aborted = true;
           }
@@ -753,7 +721,7 @@ function startExportDelivery(
   }
   let url: string;
   try {
-    const blob = new g.Blob([bytes as never], { type: mediaType });
+    const blob = new g.Blob([new Uint8Array(bytes).buffer], { type: mediaType });
     url = g.URL.createObjectURL(blob);
   } catch {
     return Object.freeze({
@@ -767,7 +735,7 @@ function startExportDelivery(
       })),
     });
   }
-  let anchor: ReturnType<NonNullable<BrowserDeliveryGlobals["document"]>["createElement"]> | undefined;
+  let anchor: HTMLAnchorElement | undefined;
   let appended = false;
   let activationFailed = false;
   try {
@@ -784,7 +752,7 @@ function startExportDelivery(
     activationFailed = true;
   }
   let removeFailed = false;
-  if (appended) {
+  if (appended && anchor !== undefined) {
     try {
       g.document.body.removeChild(anchor);
     } catch {
