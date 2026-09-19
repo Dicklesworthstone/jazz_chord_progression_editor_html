@@ -182,7 +182,7 @@ function createHarness(options: HarnessOptions = {}) {
           disclosedImpact: unavailableImpact,
           currentTransition: transition as never,
           nonUndoableConfirmation: acknowledgement,
-        })) as never;
+        })) as PrepareImportReplacementPublicationRequest;
 
   return {
     composition,
@@ -197,6 +197,150 @@ function createHarness(options: HarnessOptions = {}) {
 }
 
 describe("E0 v2 Transaction Driver Integration", () => {
+
+  const consentFields = [
+    ["schema", "wrong-schema"],
+    ["confirmationId", "other-confirmation"],
+    ["candidateDocumentId", "other-document"],
+    ["commandId", "other-command"],
+    ["identity.requestId", 999],
+    ["identity.documentId", "other-source"],
+    ["identity.baseRevision", 999],
+    ["disclosedImpact.historyEntryRetainedBytes", 1],
+    ["disclosedImpact.evictedUndoEntries", 1],
+    ["disclosedImpact.redoEntriesCleared", 1],
+    ["disclosedImpact.confirmationRequired", false],
+    ["disclosedImpact.undoDisposition", "retained"],
+    ["disclosedImpact.undoEntriesAfterCommit", 1],
+    ["disclosedImpact.undoRetainedBytesAfterCommit", 1],
+    ["disclosedImpact.exportRecommended", false],
+  ] as const;
+
+  for (const scenario of [
+    "reordered requirement", "reordered identity", "reordered impact",
+    "reordered everywhere", "owner acknowledgement replaced",
+    "serialization spoof", "throwing serialization hook",
+    "requirement getter", "throwing reflection", "extra symbol",
+    ...consentFields.map(([path]) => `changed ${path}`),
+  ]) {
+    test(`consent provenance: ${scenario}`, async () => {
+      const h = createHarness({ disposition: "explicitly-unavailable" });
+      const displayed = h.requirement;
+      if (displayed === null || h.ownerRequest.nonUndoableConfirmation === null) {
+        throw new Error("NONUNDOABLE_HARNESS_REQUIRED");
+      }
+      const reverse = (value: object) => Object.freeze(
+        Object.fromEntries(Object.entries(value).reverse()),
+      );
+      let acknowledged: unknown = displayed;
+      let ownerAcknowledgement = h.ownerRequest.nonUndoableConfirmation;
+      let hookCalls = 0;
+      const shouldCommit = scenario.startsWith("reordered");
+      if (shouldCommit) {
+        const reordered = {
+          ...displayed,
+          identity: scenario === "reordered identity" || scenario === "reordered everywhere"
+            ? reverse(displayed.identity) : displayed.identity,
+          disclosedImpact: scenario === "reordered impact" || scenario === "reordered everywhere"
+            ? reverse(displayed.disclosedImpact) : displayed.disclosedImpact,
+        };
+        acknowledged = scenario === "reordered requirement" || scenario === "reordered everywhere"
+          ? reverse(reordered) : Object.freeze(reordered);
+      } else if (scenario === "owner acknowledgement replaced") {
+        ownerAcknowledgement = Object.freeze({
+          kind: "acknowledged",
+          requirement: Object.freeze({ ...displayed, confirmationId: "other-valid-id" }),
+        });
+      } else if (scenario.includes("serialization")) {
+        acknowledged = Object.freeze({
+          ...displayed, confirmationId: "unseen-confirmation",
+          toJSON: () => {
+            hookCalls++;
+            if (scenario === "throwing serialization hook") throw new Error("SERIALIZATION_HOOK");
+            return displayed;
+          },
+        });
+      } else if (scenario === "requirement getter") {
+        acknowledged = Object.freeze(Object.defineProperty({ ...displayed }, "confirmationId", {
+          enumerable: true,
+          get: () => { hookCalls++; return displayed.confirmationId; },
+        }));
+      } else if (scenario === "throwing reflection") {
+        acknowledged = new Proxy(displayed, { ownKeys: () => { throw new Error("REFLECTION_TRAP"); } });
+      } else if (scenario === "extra symbol") {
+        acknowledged = Object.freeze({ ...displayed, [Symbol("extra")]: true });
+      } else {
+        const mutation = consentFields.find(([path]) => scenario === `changed ${path}`);
+        if (mutation === undefined) throw new Error("UNKNOWN_CONSENT_CASE");
+        const [path, value] = mutation;
+        const [outer, inner] = path.split(".");
+        if (outer === undefined) throw new Error("MISSING_CONSENT_FIELD");
+        acknowledged = inner === undefined
+          ? Object.freeze({ ...displayed, [outer]: value })
+          : Object.freeze({
+              ...displayed,
+              [outer]: Object.freeze({
+                ...(outer === "identity" ? displayed.identity : displayed.disclosedImpact),
+                [inner]: value,
+              }),
+            });
+      }
+      const calls: string[] = [];
+      const owner = h.composition.interchangeOwner;
+      const driver = createE0V2TransactionDriver({
+        ...owner,
+        readCurrentApplicationDocumentIdentity: () => { calls.push("identity"); return owner.readCurrentApplicationDocumentIdentity(); },
+        prepareImportReplacementPublication: (request) => { calls.push("prepare"); return owner.prepareImportReplacementPublication(request); },
+        discardImportReplacementPublication: (request) => { calls.push("discard"); return owner.discardImportReplacementPublication(request); },
+        publishImportReplacement: (request) => { calls.push("publish"); return owner.publishImportReplacement(request); },
+        publishCanonicalExportRevision: (request) => { calls.push("marker"); return owner.publishCanonicalExportRevision(request); },
+      }, {
+        retireImportReplacement: (request) => {
+          calls.push("retire");
+          return Promise.resolve(Object.freeze({
+            ok: true,
+            value: Object.freeze({
+              schema: "changes.x1-replacement-retirement-evidence.v1",
+              authority: "x1-serialized-transport",
+              request,
+              receipt: Object.freeze({
+                requestId: request.identity.requestId, retiredTransportGeneration: 0,
+                progressionRetired: true, previewRetired: true, noFutureAttack: true,
+              }),
+            }),
+          }));
+        },
+      });
+      const before = h.composition.controller.getSnapshot();
+      const result = await driver(Object.freeze({
+        schema: "changes.import-commit-request.v2",
+        ownerRequest: Object.freeze({ ...h.ownerRequest, nonUndoableConfirmation: ownerAcknowledgement }),
+        confirmationBinding: Object.freeze({
+          displayedRequirement: displayed,
+          acknowledgement: Object.freeze({ kind: "acknowledged", requirement: acknowledged }),
+          byteMatchProvedBeforeOwnerCall: true,
+        }),
+      }) as CommitImportReplacementRequestV2);
+      expect(hookCalls).toBe(0);
+      expect(result.ok).toBe(shouldCommit);
+      expect(result.liveForRequest).toBe(0);
+      if (shouldCommit) {
+        expect(calls).toEqual(["prepare", "retire", "publish"]);
+        expect(h.composition.controller.getSnapshot().documentId).toBe(h.candidate.id);
+        expect(h.composition.controller.getSnapshot().revision).toBe(h.state.revision + 1);
+        expect(h.getNotifications()).toBe(1);
+      } else {
+        expect(result).toMatchObject({
+          ok: false, outcome: "refused", stage: "pre-owner-provenance",
+          code: "import.confirmation_identity_mismatch",
+        });
+        expect(calls).toEqual([]);
+        expect(h.composition.controller.getSnapshot()).toEqual(before);
+        expect(h.getNotifications()).toBe(0);
+      }
+    });
+  }
+
   test("successfully drives a retained replacement to committed state", async () => {
     const h = createHarness({ disposition: "retained" });
 

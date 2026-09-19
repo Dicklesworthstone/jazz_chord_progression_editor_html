@@ -1,5 +1,15 @@
 # Implementation TODO
 
+## Import confirmation provenance — jcpe-ezhp
+
+- [x] Read accepted E0v2 RES-04 and real owner consent checks; claim bug and reserve exact driver/test/TODO paths10980–10982.
+- [x] Add25 cases: reordered requirement/identity/impact/all, each15 changed scalar fields, owner acknowledgement replacement, serialization hooks, getter, reflection trap and extra symbol. Positive cases use the real application owner and scripted transport receipt; no native audio claim.
+- [x] Strict RCH original-source baseline5pass/25fail,140 assertions (`test-results/consent-baseline-20260919/`). Existing5 cases pass; baseline rejects reordered consent, accepts swapped owner consent and invokes owner identity read on provenance failures.
+- [x] Replace JSON serialization comparison with fixed own-data field comparison; bind both submitted acknowledgements to displayed consent and keep provenance diagnostics request-derived before any owner call.
+- [x] Final strict RCH hz4:162pass/0fail,1,239 assertions across7 integration/conformance files; all4 TypeScript projects, scoped lint and guarded build pass (`test-results/consent-final-20260919/`). Preserve first ovh-b missing-dependency-cache failures and first hz4 test-harness never-type errors. Correct the test-only request assertion to its declared union; no expected values or assertions changed.
+- [x] Fresh solo review/re-execution30pass/0fail,226 assertions plus guarded build (`test-results/consent-review-20260919/`). Both receipts/current1,835 inputs and364 source mtimes agree. Identical artifact SHA256 `8b5e6ecb363a14475d6321717e555ad041a58351ac8e159563ac15c4681cb634`,8,638,694 bytes. Root/dist promoted after tracked root matched HEAD. No independent-human or aggregate claim.
+- [x] Close bounded consent bug with exact results, preserving wider acceptance obligations. Commit/push only owned source/test/TODO/tracker/generated artifact and release exact leases; no deployment claim.
+
 ## Save-picker receiver — jcpe-3rla
 
 - [x] Inspect activation-safe browser adapter and section10 contract; claim bug and reserve source/test/TODO paths10962–10964.

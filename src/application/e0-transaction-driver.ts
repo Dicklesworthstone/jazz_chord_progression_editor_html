@@ -260,6 +260,66 @@ function requestDerivedIdentity(request: unknown): ImportRequestIdentity {
   }) as unknown as ImportRequestIdentity;
 }
 
+/** Capture only the fixed consent fields, without invoking accessors or toJSON. */
+function consentFields(
+  value: unknown,
+  keys: readonly string[],
+): Readonly<Record<string, unknown>> | null {
+  if (!isRecord(value)) return null;
+  const prototype: unknown = Object.getPrototypeOf(value);
+  if (prototype !== Object.prototype && prototype !== null) return null;
+  if (Reflect.ownKeys(value).length !== keys.length) return null;
+  const fields: Record<string, unknown> = {};
+  for (const key of keys) {
+    const descriptor = Object.getOwnPropertyDescriptor(value, key);
+    if (descriptor === undefined || !Object.hasOwn(descriptor, "value")) {
+      return null;
+    }
+    const field: unknown = descriptor.value;
+    fields[key] = field;
+  }
+  return fields;
+}
+
+/** E0V2-RES-04 compares data, independent of property insertion order.
+ * The three fixed records bound comparison work; no recursive serializer runs.
+ */
+function confirmationAcknowledgementMatches(left: unknown, acknowledgement: unknown): boolean {
+  try {
+    const ack = consentFields(acknowledgement, ["kind", "requirement"]);
+    if (ack === null || ack["kind"] !== "acknowledged") return false;
+    const right = ack["requirement"];
+    const scalarKeys = ["schema", "confirmationId", "candidateDocumentId", "commandId"];
+    const keys = [...scalarKeys, "identity", "disclosedImpact"];
+    const a = consentFields(left, keys);
+    const b = consentFields(right, keys);
+    if (a === null || b === null) return false;
+    if (!scalarKeys.every((key) => typeof a[key] === "string" && a[key] === b[key])) {
+      return false;
+    }
+    const groups = [
+      { key: "identity", fields: ["requestId", "documentId", "baseRevision"] },
+      { key: "disclosedImpact", fields: [
+        "historyEntryRetainedBytes", "evictedUndoEntries", "redoEntriesCleared",
+        "confirmationRequired", "undoDisposition", "undoEntriesAfterCommit",
+        "undoRetainedBytesAfterCommit", "exportRecommended",
+      ] },
+    ];
+    return groups.every(({ key, fields }) => {
+      const first = consentFields(a[key], fields);
+      const second = consentFields(b[key], fields);
+      return first !== null && second !== null && fields.every((field) => {
+        const value = first[field];
+        return (typeof value === "string" || typeof value === "number" || typeof value === "boolean") &&
+          value === second[field];
+      });
+    });
+  } catch {
+    // A revoked proxy or throwing reflection trap is not consent evidence.
+    return false;
+  }
+}
+
 function identitiesEqual(
   left: ImportRequestIdentity,
   right: unknown,
@@ -397,6 +457,11 @@ export function createE0V2TransactionDriver(
     const ownerRequest = request.ownerRequest;
     const identity = ownerRequest.identity;
 
+    // Pre-owner refusals cannot read current owner state, even for diagnostics.
+    const requestObservedIdentity = Object.freeze({
+      documentId: identity.documentId,
+      revision: identity.baseRevision,
+    });
     /* E0V2-RES-04: acknowledgement provenance BEFORE any owner call. */
     const binding = request.confirmationBinding;
     if (ownerRequest.nonUndoableConfirmation !== null) {
@@ -409,13 +474,16 @@ export function createE0V2TransactionDriver(
           stage: "pre-owner-provenance" as const,
           code: "history.nonundoable_confirmation_required" as const,
           identity,
-          observedIdentity: observeIdentity(identity),
+          observedIdentity: requestObservedIdentity,
           liveForRequest: 0 as const,
         });
       }
       const matches =
-        JSON.stringify(displayed) ===
-        JSON.stringify(acknowledged.requirement);
+        confirmationAcknowledgementMatches(displayed, acknowledged) &&
+        confirmationAcknowledgementMatches(
+          displayed,
+          ownerRequest.nonUndoableConfirmation,
+        );
       if (!matches) {
         return Object.freeze({
           ok: false as const,
@@ -423,7 +491,7 @@ export function createE0V2TransactionDriver(
           stage: "pre-owner-provenance" as const,
           code: "import.confirmation_identity_mismatch" as const,
           identity,
-          observedIdentity: observeIdentity(identity),
+          observedIdentity: requestObservedIdentity,
           liveForRequest: 0 as const,
         });
       }
@@ -434,7 +502,7 @@ export function createE0V2TransactionDriver(
         stage: "pre-owner-provenance" as const,
         code: "import.confirmation_identity_mismatch" as const,
         identity,
-        observedIdentity: observeIdentity(identity),
+        observedIdentity: requestObservedIdentity,
         liveForRequest: 0 as const,
       });
     }
