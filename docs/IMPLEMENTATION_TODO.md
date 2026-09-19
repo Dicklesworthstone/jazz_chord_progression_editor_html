@@ -1,5 +1,14 @@
 # Implementation TODO
 
+## Deploy committed repairs — jcpe-m6m8
+
+- [x] Recover source/tracker/ownership; confirm both hosts serve older, different HTML. Pin 0a2c284 and preserve peer files.
+- [x] Strict RCH hz4 guarded build reproduces committed HTML SHA256 `ad5b28ba2ada28adf160ecf9774cc957667c110745f35c82acfe34a54fd7e90c`,8,640,237 bytes. `bun run predeploy:check`:11 model rows and9 instruments/zero fail findings; retained quality warnings. Real Node26 playback15/15, enforced recovery explicitly vacuous (no refusal reproduced). Original gate assertions unchanged; isolated copy sets required User-Agent and resolves its admission import. Evidence `test-results/studio-release-gates-20260919/`.
+- [x] All1,835 input hashes/364 source mtimes unchanged; git-show root and image staged. Metadata-only HEAD `a70b682` carries runtime fix `0a2c284`. Cloudflare Pages `2f81ac8d` and Vercel `dpl_2sVRVHc18siP4hUsNfwV9qJBoMKx` READY/production. Both raw curl HTML and image responses match committed SHA256 on first poll; social image `b70c9e3cd1f0d56579f7ec1f913a5c239c6b27fa6b67c5202091eb5ecf56af12`,1,295,227 bytes. Required User-Agent throughout. `.tmp/studio-release-20260919/{upload.py,host-hashes.json}`.
+- [ ] Finish live native desktop/phone-width pad and exact-note workflow checks on both hosts. Preserve hz4 first Cloudflare16/18 (181.555s): native file selection and command-lane click exceeded unchanged5s deadlines; no code defect or sole infrastructure cause established. All trace/console/request/download data retained in `test-results/studio-release-live-20260919/`. Identical36-case matrix moved to idle hz2, with no assertion/deadline/retry changes.
+- [x] Keep Cloudflare injection issue `jcpe-2nky` open: Pages OAuth works, RUM list returns403/10000 for both credentials. Raw Python response still contains injected beacon while curl matches clean bytes; do not strip responses or infer absence from curl. Owner dashboard action requested; CSP unchanged.
+- [ ] Record exact results, close release leaf, commit/push only TODO/tracker and release reservation. Human/physical-device/aggregate acceptance stays open.
+
 ## Retry chord-pad release — jcpe-kvak
 
 - [x] Review shipped controller/UI and touch-pad contract; claim one bug, reserve exact files and coordinate.
