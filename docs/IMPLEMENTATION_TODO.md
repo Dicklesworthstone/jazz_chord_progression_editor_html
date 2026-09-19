@@ -1,5 +1,18 @@
 # Implementation TODO
 
+## Export completion containment — jcpe-uc4p
+
+- [x] Trace active click/lifecycle consumers. Ordinary malformed receipts already cannot publish a marker; accessor/proxy inspection can instead reject the operation and leave the dialog delivering. No marker-bypass claim.
+- [x] Claim/reserve exact paths; notify peer and preserve unrelated panels.
+- [x] Add real lifecycle failure-to-fresh-success regressions and15 valid terminal/12 malformed registry cases.
+- [x] Implement exact own-data snapshots, expected artifact binding, correlated cleanup outcomes and frozen published receipts. Unknown/reflection-failed results retain unknown cleanup knowledge.
+- [x] Strict RCH pre-fix driver replay:25pass/2fail. Accessor throws from shallow outcome validation; proxy with valid visible values is admitted without inspecting its throwing prototype trap (not a demonstrated marker-data bypass). Both new regressions pass with normalization. `test-results/delivery-normalization-baseline-20260919/`.
+- [x] Strict RCH hz4:150 tests/684 assertions across6 delivery/marker/lifecycle files, all4 types, scoped lint and guarded build pass. Unchanged cast-policy1pass/1fail retains9legacy findings; hostile controls pass. `test-results/delivery-normalization-final-20260919/`. Initial149pass/1fail exposed an invalid success fixture with artifact:null; corrected to the actual binding and added an exact binding assertion. New test matcher typing and2 lint mistakes corrected without suppression. Initial logs retained in `test-results/delivery-normalization-checked-20260919/`.
+- [x] Fresh solo hz2 replay119tests/529assertions. Native adapter12/12 in16.100s; actual studio JSON export/cancellation/failure12/12 in36.261s at1280/390px across Chromium149.0.7827.55, Firefox151.0, WebKit26.5. No skipped/flaky/unexpected/report errors;12 hash-bound diagnostics have zero console/page errors and only file requests. `test-results/delivery-normalization-browser-hz2-20260919/`.
+- [x] Preserve interrupted hz4 browser run separately: RCH job30027234903327490 cancelled after several minutes with severe IO stalls; Firefox cancellation trace reports Channel closed/target closed. No passing denominator claimed. Exact process absence checked before whole unchanged matrix moved to hz2. Raw logs/traces in `test-results/delivery-normalization-browser-cancelled-20260919/`; original deadlines/assertions/retries untouched.
+- [x] All1,836 input hashes/365 source mtimes unchanged. Final strict RCH hz2 guarded rebuild is identical to hz4/final and hz2/browser builds: SHA256 `f27164fa2aa7b4f0c003c1884c989019e283ee00452d90bed44db08e04131fe7`,8,645,119bytes. Root matched HEAD before guarded artifact promotion to root/dist. `test-results/delivery-normalization-rebuild-20260919/`.
+- [ ] Commit/push owned source/tests/artifact/evidence, close only this leaf and release reservations. Peer integration-regression commit206e589 retained. Human/aggregate obligations remain open; no deployment claim.
+
 ## Typed browser export capabilities — jcpe-dqge
 
 - [x] Inspect E0 section10, architecture, existing delivery tests and parent cast-policy findings; claim one leaf and reserve exact source/test paths.

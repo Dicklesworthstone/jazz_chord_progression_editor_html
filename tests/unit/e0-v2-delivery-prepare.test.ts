@@ -130,16 +130,15 @@ describe("E0 v2 delivery prepare driver (real registry, real serializer)", () =>
       h.ports,
       h.registry,
       (deliveryRequest) => {
-        const typed = deliveryRequest as Readonly<{ privateBytes: Uint8Array }>;
-        transfers.push(typed.privateBytes);
+        transfers.push(deliveryRequest.privateBytes);
         return Object.freeze({
           completion: Promise.resolve(
             Object.freeze({
               ok: true,
               outcome: "handed-off",
               channel: "object-url-download",
-              bytesOffered: typed.privateBytes.byteLength,
-              artifact: null,
+              bytesOffered: deliveryRequest.privateBytes.byteLength,
+              artifact: deliveryRequest.binding,
               cleanup: "complete",
               objectUrlsCreated: 1,
               objectUrlsRevoked: 1,
@@ -154,6 +153,10 @@ describe("E0 v2 delivery prepare driver (real registry, real serializer)", () =>
       deliveryPreference: "download-only",
     });
     expect(terminal.ok).toBe(true);
+    if (!terminal.ok) throw new Error("EXPECTED_TERMINAL");
+    expect(terminal.delivery.artifact).toMatchObject({ kind: "canonical-json",
+      sourceDocumentId: prepared.binding.documentId, filename: prepared.binding.filename,
+      byteLength: prepared.binding.byteLength, semanticDocumentHash: prepared.binding.semanticDocumentHash });
     expect(transfers.length).toBe(1);
     expect(new TextDecoder().decode(transfers[0])).toBe(goldenText);
   });

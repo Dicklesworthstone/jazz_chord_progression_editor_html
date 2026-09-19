@@ -1,3 +1,4 @@
+import { normalizeExportDelivery } from "./e0-delivery-normalization";
 /**
  * E0 v2 state-free replacement transaction driver
  * (docs/E0_INTERCHANGE_CONTRACT.md section 9 as amended by the accepted
@@ -993,24 +994,6 @@ export type E0V2ExportDeliveryClickDriver = (
   }>,
 ) => Promise<E0V2ExportDeliveryClickResult>;
 
-const EXPORT_DELIVERY_TERMINAL_OUTCOMES = Object.freeze([
-  "completed",
-  "handed-off",
-  "cancelled",
-  "failed",
-  "cleanup-failed",
-] as const);
-
-function isTerminalDeliveryEnvelope(raw: unknown): raw is ExportDeliveryResult {
-  return (
-    isRecord(raw) &&
-    typeof raw["ok"] === "boolean" &&
-    EXPORT_DELIVERY_TERMINAL_OUTCOMES.some(
-      (outcome) => outcome === raw["outcome"],
-    )
-  );
-}
-
 /**
  * E0V2-RES-11 click path: the identity that gates consumption is read at
  * need through the NORMALIZED `readCurrentApplicationDocumentIdentity`
@@ -1112,7 +1095,8 @@ export function createE0V2ExportDeliveryClickDriver(
     }
     registry.finishDelivery(request.preparationId);
 
-    if (!isTerminalDeliveryEnvelope(completionRaw)) {
+    const delivery = normalizeExportDelivery(completionRaw, taken.value.binding);
+    if (delivery === null) {
       return Object.freeze({
         ok: false as const,
         outcome: "delivery-protocol-invalid" as const,
@@ -1125,7 +1109,7 @@ export function createE0V2ExportDeliveryClickDriver(
     return Object.freeze({
       ok: true as const,
       outcome: "terminal" as const,
-      delivery: completionRaw,
+      delivery,
     });
   };
 }

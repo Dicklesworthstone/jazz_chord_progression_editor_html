@@ -492,6 +492,76 @@ describe("E0 v2 click driver over the real registry (WF-008)", () => {
     };
   }
 
+  const clean = { artifact: { ...BINDING }, cleanup: "complete", outstandingOwnedResources: 0 };
+  const terminalCases = [
+    { ...clean, ok: true, outcome: "handed-off", channel: "object-url-download", bytesOffered: 5, objectUrlsCreated: 1, objectUrlsRevoked: 1 },
+    { ...clean, ok: true, outcome: "completed", channel: "file-system-access", bytesOffered: 5, objectUrlsCreated: 0, objectUrlsRevoked: 0 },
+    { ...clean, ok: true, outcome: "cancelled", channel: "file-system-access", objectUrlsCreated: 0, objectUrlsRevoked: 0 },
+    ...[
+      { channel: null, code: "export.delivery_user_gesture_required", urls: 0 },
+      { channel: "file-system-access", code: "export.delivery_write_failed", urls: 0 },
+      { channel: "object-url-download", code: "export.delivery_activation_failed", urls: 1 },
+      { channel: "object-url-download", code: "export.delivery_capability_failed", urls: 0 },
+    ].map(row => ({ ...clean, ok: false, outcome: "failed", channel: row.channel, code: row.code, objectUrlsCreated: row.urls, objectUrlsRevoked: row.urls })),
+    ...[
+      { channel: "file-system-access", kinds: ["writer-abort"], created: 0, revoked: 0, resources: 1 },
+      { channel: "file-system-access", kinds: ["handle-release"], created: 0, revoked: 0, resources: 1 },
+      { channel: "file-system-access", kinds: ["writer-abort", "handle-release"], created: 0, revoked: 0, resources: 2 },
+      { channel: "file-system-access", kinds: ["writer-close", "writer-abort"], created: 0, revoked: 0, resources: 1 },
+      { channel: "file-system-access", kinds: ["writer-close", "writer-abort", "handle-release"], created: 0, revoked: 0, resources: 2 },
+      { channel: "object-url-download", kinds: ["anchor-remove"], created: 1, revoked: 1, resources: 1 },
+      { channel: "object-url-download", kinds: ["object-url-revoke"], created: 1, revoked: 0, resources: 1 },
+      { channel: "object-url-download", kinds: ["anchor-remove", "object-url-revoke"], created: 1, revoked: 0, resources: 2 },
+    ].map(row => ({ ok: false, outcome: "cleanup-failed", artifact: null, cleanup: "reconciliation-required",
+      code: "export.delivery_cleanup_failed", channel: row.channel, cleanupFailureKinds: row.kinds,
+      objectUrlsCreated: row.created, objectUrlsRevoked: row.revoked, outstandingOwnedResources: row.resources })),
+  ];
+  for (const [index, receipt] of terminalCases.entries()) {
+    test(`terminal ${String(index)}: preserves exact receipt in a detached frozen snapshot`, async () => {
+      const raw = { ...receipt };
+      const h = makeHarness({ start: () => ({ completion: Promise.resolve(raw) }) });
+      const result = await h.driver({ preparationId: h.preparationId, deliveryPreference: "download-only" });
+      const observed: unknown = result;
+      expect(observed).toEqual({ ok: true, outcome: "terminal", delivery: receipt });
+      if (!result.ok) throw new Error("EXPECTED_TERMINAL");
+      expect(result.delivery).not.toBe(raw);
+      expect(Object.isFrozen(result.delivery)).toBe(true);
+      if (result.delivery.artifact !== null) {
+        expect(result.delivery.artifact).not.toBe(raw.artifact);
+        expect(Object.isFrozen(result.delivery.artifact)).toBe(true);
+      }
+      if (result.delivery.outcome === "cleanup-failed") expect(Object.isFrozen(result.delivery.cleanupFailureKinds)).toBe(true);
+      raw.ok = !raw.ok;
+      expect(result.delivery.ok).toBe(receipt.ok);
+      expect(h.calls).toEqual(["identity", "browser-start"]);
+      expect(await h.driver({ preparationId: h.preparationId, deliveryPreference: "download-only" })).toMatchObject({ outcome: "refused" });
+    });
+  }
+  for (const [name, mutate] of [
+    ["missing fields", () => ({ ok: true, outcome: "handed-off" })],
+    ["wrong ok", (r: object) => ({ ...r, ok: false })],
+    ["wrong byte count", (r: object) => ({ ...r, bytesOffered: 4 })],
+    ["wrong artifact", (r: object) => ({ ...r, artifact: { ...BINDING, filename: "wrong.json" } })],
+    ["wrong cleanup", (r: object) => ({ ...r, objectUrlsRevoked: 0 })],
+    ["unknown code", () => ({ ...clean, ok: false, outcome: "failed", channel: null, objectUrlsCreated: 0, objectUrlsRevoked: 0, code: "invented" })],
+    ["extra symbol", (r: object) => ({ ...r, [Symbol("extra")]: true })],
+    ["inherited fields", (r: object): unknown => Object.create(r)],
+    ["throwing reflection", (r: object) => new Proxy(r, { ownKeys() { throw new Error("TRAP"); } })],
+    ["accessor", (r: object) => Object.defineProperty({ ...r }, "outcome", { get() { throw new Error("GETTER_MUST_NOT_RUN"); } })],
+    ["cross-channel cleanup", () => ({ ...terminalCases[7], channel: "object-url-download" })],
+    ["unpaired writer close", () => ({ ...terminalCases[7], cleanupFailureKinds: ["writer-close"] })],
+  ] as const) {
+    test(`invalid terminal: ${name} reports unknown cleanup without rejecting`, async () => {
+      const h = makeHarness({ start: () => ({ completion: Promise.resolve(mutate({ ...terminalCases[0] })) }) });
+      expect(await h.driver({ preparationId: h.preparationId, deliveryPreference: "download-only" })).toEqual({
+        ok: false, outcome: "delivery-protocol-invalid", code: "export.delivery_result_invalid", cleanupKnowledge: "unknown",
+        maximumPossibleOutstandingOwnedResources: 4, deliveryResourceReconciliation: "required",
+      });
+      expect(h.calls).toEqual(["identity", "browser-start"]);
+      expect(await h.driver({ preparationId: h.preparationId, deliveryPreference: "download-only" })).toMatchObject({ outcome: "refused" });
+    });
+  }
+
   test("WF-008: a malformed identity read fails the release gate with zero browser calls", async () => {
     const wf = workflowFixture.cases.find((c) => c["id"] === "E0V2-WF-008");
     if (wf === undefined) throw new Error("MISSING_FIXTURE_ROW");
