@@ -7653,12 +7653,39 @@ function makeStudioComposition(
   });
 
   let compPreviewGeneration:number|null=null;
+  let compRetirement: Readonly<{ generation: number; previewId: string }> | null = null;
+  const releaseCompingPreview = async (): Promise<StudioInspectorResult<void>> => {
+    const generation = compPreviewGeneration;
+    compPreviewGeneration = null;
+    if (generation !== null && generation === pitchSetPreviewGeneration && generation === previewOrdinal) {
+      const submitted = previewSubmission?.generation === generation ? previewSubmission : null;
+      if (submitted !== null) compRetirement = submitted;
+      // Invalidate pending preparation immediately. Keep a submitted preview's
+      // exact identity until its release succeeds, so Stop can retry a failure.
+      const result = await releasePreviewPitches();
+      if (submitted !== null) {
+        if (result.ok && compRetirement === submitted) compRetirement = null;
+        return result;
+      }
+      if (!result.ok) return result;
+    }
+    const pending = compRetirement;
+    if (pending !== null) {
+      if (previewSubmission !== pending || audioPort === null) {
+        // It was already retired or replaced. Never release the new owner.
+        compRetirement = null;
+      } else {
+        const result = await releaseSubmittedPreview(audioPort, pending);
+        if (result.ok && compRetirement === pending) compRetirement = null;
+        return result;
+      }
+    }
+    return Object.freeze({ ok: true, value: undefined });
+  };
   const comping = options.midiExportHashBytes === undefined || options.midiExportDelivery === undefined || options.prepareCompRecipeDownload === undefined ? null : createStudioComping({
     readDocument:()=>state.document,readRevision:()=>state.revision,subscribeSource:controller.subscribe,
     preview:(plan,gesture)=>{const pending=previewPlaybackPlan(plan,gesture);compPreviewGeneration=pitchSetPreviewGeneration;return pending;},
-    release:()=>{const generation=compPreviewGeneration;compPreviewGeneration=null;
-      return generation!==null&&generation===pitchSetPreviewGeneration&&generation===previewOrdinal
-        ?releasePreviewPitches():Promise.resolve({ok:true,value:undefined});},
+    release:releaseCompingPreview,
     hashBytes:options.midiExportHashBytes,startDelivery:options.midiExportDelivery,prepareRecipeDownload:options.prepareCompRecipeDownload,
   });
 

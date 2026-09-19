@@ -1,5 +1,15 @@
 # Implementation TODO
 
+## Retry comping preview retirement — jcpe-twtz
+
+- [x] Read authored-comping ownership and preview-retirement contracts; claim one bug and reserve controller/integration/TODO paths10983–10985.
+- [x] Add six cases using real composition/X0/X1 over the fake audio platform: refused/throwing releases, repeated refusal/retry, and preserving a newer unrelated preview. Check actual owned nonreleasing voice counts, exact preview IDs and unchanged document/revision.
+- [x] Original-source RCH baseline16pass/4fail,194 assertions: all four release-retry cases fail; existing tests and both newer-preview controls pass. `test-results/comping-retire-baseline-20260919/`.
+- [x] Preserve the exact submitted preview reference until retirement succeeds; cancel pending comping preparation first, retry any still-owned submission, and discard obsolete ownership when a newer preview replaces it.
+- [ ] Run focused comping/preview/MIDI tests, all4 types, scoped lint and guarded build via strict RCH.
+- [ ] Run existing native comping browser matrix serially, with exact User-Agent and no retries/skips; retain errors, requests and downloaded files.
+- [ ] Fresh solo replay and unchanged-source/artifact checks; close only bounded bug, explicit-path commit/push, release leases. Original human/physical-device package evidence remains open.
+
 ## Import confirmation provenance — jcpe-ezhp
 
 - [x] Read accepted E0v2 RES-04 and real owner consent checks; claim bug and reserve exact driver/test/TODO paths10980–10982.

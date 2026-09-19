@@ -175,3 +175,59 @@ test("a new chart larger than four bars refuses the whole passage until explicit
  expect(service.read().sectionId).toBeNull();await service.prepareMidi();expect(service.read().state).toBe("refused");expect(service.read().message).toContain("1–4 complete 4/4 bars");await service.downloadMidi();expect(downloads).toEqual([]);
  service.setPassage("loop-section-1");await service.prepareMidi();expect(service.read()).toMatchObject({state:"ready",attacks:2,notes:8});
 });
+
+for(const failure of ["refusal","throw"] as const)for(const continuation of ["retry","retry twice","newer preview","preparing again"] as const)test(`comping Stop retains failed ${failure} ownership: ${continuation}`,async()=>{
+ const audio=createStudioAudio(createFakeAudioPlatform().platform),plans:PlaybackPlan[]=[],releases:string[]=[];
+ let failures=continuation==="retry twice"||continuation==="preparing again"?2:1;
+ let holdPreparation=false,finishPreparation:(()=>void)|undefined,enteredPreparation:(()=>void)|undefined;
+ const held=new Promise<void>(resolve=>{finishPreparation=resolve;}),entered=new Promise<void>(resolve=>{enteredPreparation=resolve;});
+ const port:StudioAudioPort={...audio,
+  async prepareInstrument(...args){if(holdPreparation){enteredPreparation?.();await held;}return audio.prepareInstrument(...args);},
+  startPreview(...args){if(args[5]!==undefined)plans.push(args[5].plan);return audio.startPreview(...args);},
+  async releasePreview(requestId,previewId){
+   releases.push(previewId);
+   if(failures>0){failures--;if(failure==="throw")throw new Error("Injected release adapter failure");
+    // Obtain a real no-effect X1 refusal, leaving the original voices running.
+    return audio.releasePreview(-1,previewId);
+   }
+   return audio.releasePreview(requestId,previewId);
+  },
+ };
+ const {composition,service}=setup(false,port),before=composition.readApplicationState();
+ try{
+  await service.hear({kind:"trusted-keyboard",trusted:true,sequence:1});
+  const ownedId=audio.transportService.readPreviewStatus().previewId;
+  expect(ownedId).not.toBeNull();expect(audio.inspect().engine.previewNonreleasingVoiceCount).toBeGreaterThan(0);
+  await service.stop();expect(service.read().state).toBe("refused");expect(service.read().message).toContain("Use Stop");
+  expect(audio.inspect().engine.previewNonreleasingVoiceCount).toBeGreaterThan(0);
+  if(continuation==="preparing again"){
+   holdPreparation=true;
+   const next=service.hear({kind:"trusted-keyboard",trusted:true,sequence:2});await entered;
+   await service.stop();finishPreparation?.();await next;
+   expect(releases).toEqual([ownedId,ownedId,ownedId]);
+   expect(plans).toHaveLength(1);
+   expect(audio.inspect().engine.previewNonreleasingVoiceCount).toBe(0);
+   expect(service.read().message).toContain("preparation stopped");
+  }else if(continuation==="newer preview"){
+   const plan=plans[0];if(plan===undefined)throw new Error("Missing authored preview plan");
+   expect((await composition.controller.previewPlaybackPlan(plan,{kind:"trusted-keyboard",trusted:true,sequence:2})).ok).toBe(true);
+   const newer=audio.transportService.readPreviewStatus().previewId,calls=releases.length;
+   expect(newer).not.toBe(ownedId);await service.stop();
+   expect(releases).toHaveLength(calls);expect(audio.transportService.readPreviewStatus().previewId).toBe(newer);
+   expect(audio.inspect().engine.previewNonreleasingVoiceCount).toBeGreaterThan(0);
+   await composition.controller.releasePreviewPitches();expect(audio.inspect().engine.previewNonreleasingVoiceCount).toBe(0);
+  }else{
+   if(continuation==="retry twice"){
+    await service.stop();expect(service.read().state).toBe("refused");
+    expect(audio.inspect().engine.previewNonreleasingVoiceCount).toBeGreaterThan(0);
+   }
+   await service.stop();
+   expect(releases).toEqual(Array.from({length:continuation==="retry twice"?3:2},()=>ownedId));
+   expect(audio.inspect().engine.previewNonreleasingVoiceCount).toBe(0);
+   expect(service.read().message).toContain("preparation stopped");
+   const calls=releases.length;await service.stop();expect(releases).toHaveLength(calls);
+  }
+  expect(composition.readApplicationState().document).toBe(before.document);
+  expect(composition.readApplicationState().revision).toBe(before.revision);
+ }finally{finishPreparation?.();await audio.transportService.submitTransportCommand({commandRequestId:999,payload:{kind:"dispose-transport",reason:"page-teardown"}});}
+},30000);
