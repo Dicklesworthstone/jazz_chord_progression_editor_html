@@ -1,5 +1,13 @@
 # Implementation TODO
 
+## Deploy export repairs — jcpe-7med
+
+- [x] Claim release leaf; reserve TODO, coordinate browser lane, preserve three peer panels. Pin committed ee3fee3 artifact f27164fa (8,645,119 bytes) and 1,836 input hashes/365 source mtimes.
+- [ ] Reproduce committed artifact with strict RCH guarded build; run unchanged model/quality and native playback gates.
+- [ ] Recheck source and stage exact git-show HTML/image; upload both hosts and poll unmodified response hashes.
+- [ ] Run desktop/phone live JSON export, cancellation, failure and focus checks in all three engines; inspect visual evidence.
+- [ ] Record exact results and limitations, close only this leaf, commit/push TODO/tracker and release reservation.
+
 ## Export completion containment — jcpe-uc4p
 
 - [x] Trace active click/lifecycle consumers. Ordinary malformed receipts already cannot publish a marker; accessor/proxy inspection can instead reject the operation and leave the dialog delivering. No marker-bypass claim.
