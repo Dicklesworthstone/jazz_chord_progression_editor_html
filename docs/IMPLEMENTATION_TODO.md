@@ -1,5 +1,13 @@
 # Implementation TODO
 
+## Typed E0 envelope normalization — jcpe-v0f6
+
+- [x] Inspect remaining cast-policy findings and accepted E0 contract; claim only this bounded slice, leaving np17 and its aggregate obligations open.
+- [x] Replace seven double assertions with four exact envelope predicates and one typed guarded normalizer; preserve existing checks and valid raw identity.
+- [x] Add25 independently literal refusal-code/near-miss cases with exact reference and frozen-wrapper assertions. All412 tests across15 normalization, driver, owner, full-loop and static contract files pass (2,300 assertions); no existing assertion/fixture changed.
+- [x] Strict RCH `test-results/typed-ports-final-20260918/`: all4 TypeScript projects, scoped ESLint and guarded build pass. Unchanged cast policy:16 findings versus23 previously; hostile controls pass. Its production check remains red and the helper honestly exits1.
+- [x] Fresh solo RCH re-execution (`test-results/typed-ports-review-20260918/`):412/0,2,300 assertions; cast policy16 unchanged; guarded build identical SHA256 `1f04d49b18cd9c5b1336f5db3cd53fe8aa9cd5a1b28e85479e55b3bf452caa01`,8,637,265 bytes. Both receipts and current1,835 inputs match; root/dist promoted only after root matched HEAD. Diff reviewed without gate/contract relaxation. Close only jcpe-v0f6, prepare owned paths for commit/push; original np17 remains open. No independent-human, aggregate or deployment claim. Mail41912 delivered; reservation listing blocked by shared mailbox lock, no lease claim.
+
 ## Frozen E0 port envelopes — jcpe-l8a0
 
 - [x] Read accepted E0 v2 section3, existing owner implementation and conformance materializers; claim defect. Inbox read succeeds; reservation fails mailbox snapshot conflict, no lease claim.

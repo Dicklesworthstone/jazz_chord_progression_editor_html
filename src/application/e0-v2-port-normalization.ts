@@ -160,13 +160,12 @@ function isEffects(value: unknown): boolean {
   return true;
 }
 
-function normalizePreparationEnvelope(
+function isPreparationEnvelope(
   raw: unknown,
-): E0V2Normalized<PrepareImportReplacementPublicationResult> {
-  const port = "prepareImportReplacementPublication";
-  if (!isRecord(raw)) return invalid(port);
+): raw is PrepareImportReplacementPublicationResult {
+  if (!isRecord(raw)) return false;
   if (raw["ok"] === true) {
-    if (!hasExactKeys(raw, ["ok", "value"])) return invalid(port);
+    if (!hasExactKeys(raw, ["ok", "value"])) return false;
     const value = raw["value"];
     if (
       !isRecord(value) ||
@@ -187,12 +186,9 @@ function normalizePreparationEnvelope(
       !isNonNegativeSafeInteger(value["expectedTransportGeneration"]) ||
       !isCommittingTransition(value["committingTransition"])
     ) {
-      return invalid(port);
+      return false;
     }
-    return Object.freeze({
-      outcome: "normalized" as const,
-      value: raw as unknown as PrepareImportReplacementPublicationResult,
-    });
+    return true;
   }
   if (raw["ok"] === false) {
     if (
@@ -201,21 +197,17 @@ function normalizePreparationEnvelope(
         (code) => code === raw["code"],
       )
     ) {
-      return invalid(port);
+      return false;
     }
-    return Object.freeze({
-      outcome: "normalized" as const,
-      value: raw as unknown as PrepareImportReplacementPublicationResult,
-    });
+    return true;
   }
-  return invalid(port);
+  return false;
 }
 
-function normalizePublicationEnvelope(
+function isPublicationEnvelope(
   raw: unknown,
-): E0V2Normalized<PublishImportReplacementResult> {
-  const port = "publishImportReplacement";
-  if (!isRecord(raw)) return invalid(port);
+): raw is PublishImportReplacementResult {
+  if (!isRecord(raw)) return false;
   if (raw["ok"] === true) {
     if (
       !hasExactKeys(raw, [
@@ -236,12 +228,9 @@ function normalizePublicationEnvelope(
       !isWorkCounters(raw["counters"]) ||
       raw["liveForRequest"] !== 0
     ) {
-      return invalid(port);
+      return false;
     }
-    return Object.freeze({
-      outcome: "normalized" as const,
-      value: raw as unknown as PublishImportReplacementResult,
-    });
+    return true;
   }
   if (raw["ok"] === false) {
     if (
@@ -263,39 +252,31 @@ function normalizePublicationEnvelope(
       !isNonNegativeSafeInteger(raw["observedRevision"]) ||
       raw["liveForRequest"] !== 0
     ) {
-      return invalid(port);
+      return false;
     }
-    return Object.freeze({
-      outcome: "normalized" as const,
-      value: raw as unknown as PublishImportReplacementResult,
-    });
+    return true;
   }
-  return invalid(port);
+  return false;
 }
 
-function normalizeIdentityEnvelope(
+function isIdentityEnvelope(
   raw: unknown,
-): E0V2Normalized<ApplicationDocumentIdentity> {
-  const port = "readCurrentApplicationDocumentIdentity";
+): raw is ApplicationDocumentIdentity {
   if (
     !isRecord(raw) ||
     !hasExactKeys(raw, ["documentId", "revision"]) ||
     typeof raw["documentId"] !== "string" ||
     !isNonNegativeSafeInteger(raw["revision"])
   ) {
-    return invalid(port);
+    return false;
   }
-  return Object.freeze({
-    outcome: "normalized" as const,
-    value: raw as unknown as ApplicationDocumentIdentity,
-  });
+  return true;
 }
 
-function normalizeMarkerEnvelope(
+function isMarkerEnvelope(
   raw: unknown,
-): E0V2Normalized<PublishCanonicalExportRevisionResult> {
-  const port = "publishCanonicalExportRevision";
-  if (!isRecord(raw)) return invalid(port);
+): raw is PublishCanonicalExportRevisionResult {
+  if (!isRecord(raw)) return false;
   if (raw["ok"] === true) {
     if (
       !hasExactKeys(raw, ["ok", "outcome", "documentId", "revision"]) ||
@@ -303,12 +284,9 @@ function normalizeMarkerEnvelope(
       typeof raw["documentId"] !== "string" ||
       !isNonNegativeSafeInteger(raw["revision"])
     ) {
-      return invalid(port);
+      return false;
     }
-    return Object.freeze({
-      outcome: "normalized" as const,
-      value: raw as unknown as PublishCanonicalExportRevisionResult,
-    });
+    return true;
   }
   if (raw["ok"] === false) {
     if (
@@ -325,14 +303,11 @@ function normalizeMarkerEnvelope(
       typeof raw["observedDocumentId"] !== "string" ||
       !isNonNegativeSafeInteger(raw["observedRevision"])
     ) {
-      return invalid(port);
+      return false;
     }
-    return Object.freeze({
-      outcome: "normalized" as const,
-      value: raw as unknown as PublishCanonicalExportRevisionResult,
-    });
+    return true;
   }
-  return invalid(port);
+  return false;
 }
 
 
@@ -340,27 +315,29 @@ function normalizeMarkerEnvelope(
  * instead fail normalization, without retaining or exposing their payload. */
 function normalizeSafely<T>(
   port: E0V2NormalizedPortName,
-  normalize: () => E0V2Normalized<T>,
+  raw: unknown,
+  accepts: (value: unknown) => value is T,
 ): E0V2Normalized<T> {
   try {
-    return normalize();
+    if (!accepts(raw)) return invalid(port);
+    return Object.freeze({ outcome: "normalized" as const, value: raw });
   } catch {
     return invalid(port);
   }
 }
 
 export function normalizePreparationResult(raw: unknown): E0V2Normalized<PrepareImportReplacementPublicationResult> {
-  return normalizeSafely("prepareImportReplacementPublication", () => normalizePreparationEnvelope(raw));
+  return normalizeSafely("prepareImportReplacementPublication", raw, isPreparationEnvelope);
 }
 
 export function normalizePublicationResult(raw: unknown): E0V2Normalized<PublishImportReplacementResult> {
-  return normalizeSafely("publishImportReplacement", () => normalizePublicationEnvelope(raw));
+  return normalizeSafely("publishImportReplacement", raw, isPublicationEnvelope);
 }
 
 export function normalizeIdentityResult(raw: unknown): E0V2Normalized<ApplicationDocumentIdentity> {
-  return normalizeSafely("readCurrentApplicationDocumentIdentity", () => normalizeIdentityEnvelope(raw));
+  return normalizeSafely("readCurrentApplicationDocumentIdentity", raw, isIdentityEnvelope);
 }
 
 export function normalizeMarkerResult(raw: unknown): E0V2Normalized<PublishCanonicalExportRevisionResult> {
-  return normalizeSafely("publishCanonicalExportRevision", () => normalizeMarkerEnvelope(raw));
+  return normalizeSafely("publishCanonicalExportRevision", raw, isMarkerEnvelope);
 }

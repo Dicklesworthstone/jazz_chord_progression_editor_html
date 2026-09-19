@@ -298,3 +298,62 @@ describe("frozen own-data port envelopes", () => {
   });
 
 });
+
+// These literal cases cover the complete accepted refusal vocabulary, rather
+// than deriving expectations from the producer tuple used by the predicate.
+describe("typed owner refusal preservation", () => {
+  for (const code of [
+    "import.replacement_request_invalid", "import.replacement_request_stale",
+    "import.replacement_wrong_document", "import.replacement_transition_mismatch",
+    "import.replacement_command_id_invalid", "import.replacement_command_label_invalid",
+    "import.replacement_logical_time_invalid", "application.revision_exhausted",
+    "application.sequence_exhausted", "import.candidate_structural_invalid",
+    "import.candidate_semantic_invalid", "import.replacement_history_estimate_failed",
+    "import.replacement_impact_unavailable", "import.replacement_impact_mismatch",
+    "import.confirmation_stale", "import.confirmation_wrong_document",
+    "import.confirmation_impact_mismatch", "import.confirmation_identity_mismatch",
+    "history.nonundoable_confirmation_required", "import.replacement_preparation_busy",
+  ]) {
+    test(`preparation preserves ${code}`, () => {
+      const raw = Object.freeze({ ok: false, code });
+      const result = normalizePreparationResult(raw);
+      expect(result.outcome).toBe("normalized");
+      if (result.outcome !== "normalized") throw new Error("Refusal lost");
+      const observed: unknown = result.value;
+      expect(observed).toBe(raw);
+      expect(Object.isFrozen(result)).toBe(true);
+      expect(normalizePreparationResult(Object.freeze({ ...raw, code: code + ".invalid" })).outcome).toBe("protocol-invalid");
+    });
+  }
+  for (const code of [
+    "import.replacement_preparation_missing", "import.replacement_preparation_stale",
+    "import.replacement_retirement_mismatch",
+  ]) {
+    test(`publication preserves ${code}`, () => {
+      const raw = Object.freeze({
+        ok: false, outcome: "refused", code,
+        identity: Object.freeze({ requestId: 1, documentId: "doc", baseRevision: 0 }),
+        observedDocumentId: "doc", observedRevision: 1, liveForRequest: 0,
+      });
+      const result = normalizePublicationResult(raw);
+      expect(result.outcome).toBe("normalized");
+      if (result.outcome !== "normalized") throw new Error("Refusal lost");
+      const observed: unknown = result.value;
+      expect(observed).toBe(raw);
+      expect(Object.isFrozen(result)).toBe(true);
+      expect(normalizePublicationResult(Object.freeze({ ...raw, code: code + ".invalid" })).outcome).toBe("protocol-invalid");
+    });
+  }
+  for (const code of ["export.marker_publication_stale", "export.marker_publication_failed"]) {
+    test(`marker preserves ${code}`, () => {
+      const raw = Object.freeze({ ok: false, outcome: "refused", code, observedDocumentId: "doc", observedRevision: 1 });
+      const result = normalizeMarkerResult(raw);
+      expect(result.outcome).toBe("normalized");
+      if (result.outcome !== "normalized") throw new Error("Refusal lost");
+      const observed: unknown = result.value;
+      expect(observed).toBe(raw);
+      expect(Object.isFrozen(result)).toBe(true);
+      expect(normalizeMarkerResult(Object.freeze({ ...raw, code: code + ".invalid" })).outcome).toBe("protocol-invalid");
+    });
+  }
+});
