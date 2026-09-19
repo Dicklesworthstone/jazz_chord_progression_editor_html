@@ -197,7 +197,9 @@ for(const failure of ["refusal","throw"] as const)for(const continuation of ["re
  try{
   await service.hear({kind:"trusted-keyboard",trusted:true,sequence:1});
   const ownedId=audio.transportService.readPreviewStatus().previewId;
-  expect(ownedId).not.toBeNull();expect(audio.inspect().engine.previewNonreleasingVoiceCount).toBeGreaterThan(0);
+  expect(ownedId).not.toBeNull();
+  if(ownedId===null)throw new Error("Missing active comping preview identity");
+  expect(audio.inspect().engine.previewNonreleasingVoiceCount).toBeGreaterThan(0);
   await service.stop();expect(service.read().state).toBe("refused");expect(service.read().message).toContain("Use Stop");
   expect(audio.inspect().engine.previewNonreleasingVoiceCount).toBeGreaterThan(0);
   if(continuation==="preparing again"){
