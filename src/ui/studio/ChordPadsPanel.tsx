@@ -9,21 +9,33 @@ const label=(p:Readonly<{step:string;alter:number;octave:number}>)=>`${p.step}${
 export function ChordPadsPanel({ports}:{ports:StudioChordPadsPorts}){
   const [result,setResult]=useState<StudioInspectorResult<StudioPadsView>|null>(null),[notice,setNotice]=useState(""),[held,setHeld]=useState<string|null>(null);
   const owner=useRef<Readonly<{id:number;eventId:string;input:PadInput}>|null>(null),latest=useRef(ports);latest.current=ports;
-  const release=():void=>{const active=owner.current;owner.current=null;setHeld(null);if(active!==null){void latest.current.release(active.id);setNotice("Pad release requested. Instrument tails may decay.");}};
+  const noticeGeneration=useRef(0);
+  const release=(explicit=false):void=>{
+    const active=owner.current;owner.current=null;setHeld(null);
+    if(active===null&&!explicit)return;
+    const attempt=++noticeGeneration.current;
+    setNotice("Releasing pad…");
+    void latest.current.release(active?.id).then(result=>{
+      if(attempt!==noticeGeneration.current)return;
+      setNotice(result.ok?"Pad release accepted. Instrument tails may decay.":`${result.message} Choose Release pads to retry.`);
+    },()=>{
+      if(attempt===noticeGeneration.current)setNotice("Pad release failed. Choose Release pads to retry or use Stop.");
+    });
+  };
   const releaseRef=useRef(release);releaseRef.current=release;
   useEffect(()=>{
     const hidden=()=>{if(document.hidden)releaseRef.current();},blur=()=>{releaseRef.current();};
     document.addEventListener("visibilitychange",hidden);window.addEventListener("blur",blur);
-    return()=>{document.removeEventListener("visibilitychange",hidden);window.removeEventListener("blur",blur);const active=owner.current;owner.current=null;if(active!==null)void latest.current.release(active.id);};
+    return()=>{noticeGeneration.current++;document.removeEventListener("visibilitychange",hidden);window.removeEventListener("blur",blur);const active=owner.current;owner.current=null;if(active!==null)void latest.current.release(active.id);};
   },[]);
   useEffect(()=>{releaseRef.current();},[ports.documentId,ports.revision]);
   const view=result?.ok===true?result.value:null;
   const stale=view!==null&&(view.documentId!==ports.documentId||view.revision!==ports.revision);
   const load=(section:string|null,page:number):void=>{release();setResult(ports.read(section,page));setNotice("");};
   const begin=(source:StudioInspectorSource,input:PadInput):void=>{
-    release();const started=ports.press(source,typeof input==="number"?"pointer":"keyboard",input!=="tap");
+    release();const attempt=++noticeGeneration.current;const started=ports.press(source,typeof input==="number"?"pointer":"keyboard",input!=="tap");
     owner.current={id:started.id,eventId:source.eventId,input};setHeld(input==="tap"?null:source.eventId);setNotice("Preparing these exact notes…");
-    void started.completion.then(r=>{if(owner.current?.id!==started.id)return;setNotice(r.ok?(input==="tap"?"Short tap accepted: up to 1.2 seconds plus the instrument tail.":"Hold accepted: up to 8 seconds; naturally decaying sounds may end sooner."):r.message);if(!r.ok){owner.current=null;setHeld(null);}});
+    void started.completion.then(r=>{if(owner.current?.id!==started.id||attempt!==noticeGeneration.current)return;setNotice(r.ok?(input==="tap"?"Short tap accepted: up to 1.2 seconds plus the instrument tail.":"Hold accepted: up to 8 seconds; naturally decaying sounds may end sooner."):r.message);if(!r.ok){owner.current=null;setHeld(null);}});
   };
   return <details class="studio-pads" onToggle={e=>{if(e.currentTarget.open)load(null,0);else release();}}>
     <summary>Play chord pads</summary>
@@ -47,7 +59,7 @@ export function ChordPadsPanel({ports}:{ports:StudioChordPadsPorts}){
         </button>)}</div>
         <div class="studio-pads__actions"><button type="button" disabled={view.page===0} onClick={()=>{load(view.sectionId,view.page-1);}}>Previous pad page</button><button type="button" disabled={view.page+1>=view.pageCount} onClick={()=>{load(view.sectionId,view.page+1);}}>Next pad page</button></div>
       </>:null}
-      <button type="button" onClick={release}>Release pads</button><p role="status" aria-live="polite">{notice}</p>
+      <button type="button" onClick={()=>{release(true);}}>Release pads</button><p role="status" aria-live="polite">{notice}</p>
     </section>
   </details>;
 }

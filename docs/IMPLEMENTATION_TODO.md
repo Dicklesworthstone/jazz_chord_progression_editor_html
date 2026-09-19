@@ -1,5 +1,16 @@
 # Implementation TODO
 
+## Retry chord-pad release — jcpe-kvak
+
+- [x] Review shipped controller/UI and touch-pad contract; claim one bug, reserve exact files and coordinate.
+- [x] Add real composition/X0/X1 refusal/throw tests for retry, repeated failure, unrelated newer preview and pending replacement; preserve positive voices/ownership/no-mutation controls.
+- [x] Corrected original-source strict RCH baseline10pass/6fail,96 assertions: six failures reproduce lost retirement ownership; existing cases and newer-preview controls pass (`test-results/pad-retire-baseline-corrected-20260919/`). Preserve initial8/8 setup failure: tests incorrectly read timed-plan status for one-shot pads; corrected to capture actual startPreview IDs without relaxing voice assertions.
+- [x] Retain the exact failed retirement identity, cancel pending preparation first and protect newer previews. Show release outcomes and explicit retry, guarding against obsolete UI notices.
+- [x] Strict RCH hz2: `bun test tests/integration/studio-pads.test.ts tests/unit/studio-pads.test.ts tests/integration/studio-comping.test.ts`47pass/0fail,441 assertions; `bun run typecheck` all4 projects, scoped ESLint and `bun run build` pass (`test-results/pad-retire-hz2-20260919/`). Preserve hz4 first run46pass/1fail: unchanged comping MIDI case6284ms against5000ms deadline. Same frozen source on lower-I/O worker passes; I/O is not a proven sole cause. No deadline/assertion/retry changes.
+- [x] Native studio-pads matrix27/27, one attempt each, Chromium149.0.7827.55/Firefox151.0/WebKit26.5,136.651s (`test-results/pad-retire-browser-20260919/`). No skipped/flaky/unexpected/global errors; all27 attachments have no page/console errors or unexpected requests. Actual audio retirement, keyboard/pointer/focus behavior, narrow/wide dark/light layouts and new success feedback pass. UI failure feedback is source/type reviewed; injected refusal/throw coverage uses the real composition/X0/X1 over fake audio platform, not native failure injection.
+- [x] Fresh solo strict RCH hz4 `bun test tests/integration/studio-pads.test.ts`16pass/0fail,126 assertions and guarded build pass (`test-results/pad-retire-review-20260919/`). hz2 replay admission was refused by RCH-I002 before execution; no bypass/local fallback. All three receipts/current1,835 input hashes/364 source mtimes agree. Generated artifacts identical SHA256 `ad5b28ba2ada28adf160ecf9774cc957667c110745f35c82acfe34a54fd7e90c`,8,640,237 bytes; root matched HEAD before root/dist promotion.
+- [x] Close only bounded leaf and commit/push owned source/UI/tests/artifact/TODO/tracker; release exact reservations. Physical-phone/human parent acceptance stays open. No independent reviewer, aggregate release-gate or deployment claim.
+
 ## Checked literal snapshots — jcpe-46gc
 
 - [x] Read H0/T1/architecture/plan/theory guidance; retain np17 ownership and human dependencies; claim one leaf and reserve exact source/test/TODO.

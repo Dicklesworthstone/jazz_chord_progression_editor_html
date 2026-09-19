@@ -64,3 +64,53 @@ test("a newer press cancels pending preparation before either promise resolves",
   await c.controller.releasePad(b.id);expect(audio.inspect().engine.previewNonreleasingVoiceCount).toBe(0);
  }finally{await audio.transportService.submitTransportCommand({commandRequestId:999,payload:{kind:"dispose-transport",reason:"page-teardown"}});}
 },30000);
+
+
+for(const failure of ["refusal","throw"] as const)for(const continuation of ["retry","retry twice","newer preview","preparing again"] as const)test(`pad release retains failed ${failure} ownership: ${continuation}`,async()=>{
+ const f=loopArrangementFixture(),audio=createStudioAudio(createFakeAudioPlatform().platform),releases:string[]=[],starts:string[]=[];
+ let failures=continuation==="retry twice"||continuation==="preparing again"?2:1,holdPreparation=false;
+ let finishPreparation:(()=>void)|undefined,enteredPreparation:(()=>void)|undefined;
+ const held=new Promise<void>(resolve=>{finishPreparation=resolve;}),entered=new Promise<void>(resolve=>{enteredPreparation=resolve;});
+ const port:StudioAudioPort={...audio,
+  async prepareInstrument(...args){if(holdPreparation){enteredPreparation?.();await held;}return audio.prepareInstrument(...args);},
+  startPreview(...args){starts.push(args[1]);return audio.startPreview(...args);},
+  async releasePreview(requestId,previewId){
+   releases.push(previewId);
+   if(failures>0){failures--;if(failure==="throw")throw new Error("Injected pad release failure");return audio.releasePreview(-1,previewId);}
+   return audio.releasePreview(requestId,previewId);
+  },
+ };
+ const c=createStudioCompositionOverState(f.state,f.dependencies,{audio:port}),before=c.readApplicationState();
+ const source={documentId:before.document.id,revision:before.revision,eventId:"loop-event-0"};
+ try{
+  const first=c.controller.pressPad(source,gesture(1),true);expect((await first.completion).ok).toBe(true);
+  const ownedId=starts[0];if(ownedId===undefined)throw new Error("Missing pad preview");
+  expect((await c.controller.releasePad(first.id)).ok).toBe(false);
+  expect(audio.inspect().engine.previewNonreleasingVoiceCount).toBeGreaterThan(0);
+  if(continuation==="preparing again"){
+   holdPreparation=true;const next=c.controller.pressPad(source,gesture(2),true);await entered;
+   const calls=releases.length;await c.controller.releasePad(first.id);expect(releases).toHaveLength(calls);
+   expect((await c.controller.releasePad(next.id)).ok).toBe(true);
+   finishPreparation?.();expect((await next.completion).ok).toBe(false);
+   expect(releases).toEqual([ownedId,ownedId,ownedId]);expect(starts).toEqual([ownedId]);
+   expect(audio.inspect().engine.previewNonreleasingVoiceCount).toBe(0);
+  }else if(continuation==="newer preview"){
+   expect(c.controller.selectEvent(source.eventId).ok).toBe(true);
+   expect((await c.controller.previewInspector(source,{kind:"current"},gesture(2))).ok).toBe(true);
+   const newer=starts.at(-1),calls=releases.length;expect(newer).not.toBe(ownedId);
+   await c.controller.releasePad();expect(releases).toHaveLength(calls);expect(starts.at(-1)).toBe(newer);
+   expect(audio.inspect().engine.previewNonreleasingVoiceCount).toBeGreaterThan(0);
+   await c.controller.releaseInspectorPreview(source);expect(audio.inspect().engine.previewNonreleasingVoiceCount).toBe(0);
+  }else{
+   if(continuation==="retry twice"){
+    expect((await c.controller.releasePad(first.id)).ok).toBe(false);
+    expect(audio.inspect().engine.previewNonreleasingVoiceCount).toBeGreaterThan(0);
+   }
+   expect((await c.controller.releasePad()).ok).toBe(true);
+   expect(releases).toEqual(Array.from({length:continuation==="retry twice"?3:2},()=>ownedId));
+   expect(audio.inspect().engine.previewNonreleasingVoiceCount).toBe(0);
+   const calls=releases.length;await c.controller.releasePad(first.id);expect(releases).toHaveLength(calls);
+  }
+  expect(c.readApplicationState().document).toBe(before.document);expect(c.readApplicationState().revision).toBe(before.revision);
+ }finally{finishPreparation?.();await audio.transportService.submitTransportCommand({commandRequestId:999,payload:{kind:"dispose-transport",reason:"page-teardown"}});}
+},30000);

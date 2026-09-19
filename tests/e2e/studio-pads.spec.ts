@@ -54,7 +54,7 @@ for(const theme of ["light","dark"] as const)for(const width of [320,1280])test(
   await panel.getByRole("button",{name:"Next pad page",exact:true}).click();await page.keyboard.up("Enter");
   await expect(pads).toHaveCount(1);await expect(pads.first()).toContainText("Pad 17");await expect(panel).toContainText("Page 2 of 2 · 17 chords");
   await expect.poll(()=>page.evaluate(()=>window.u5NativeSourceCounts?.())).toMatchObject({sounding:0,futureAttacks:0});
-  await panel.getByRole("button",{name:"Release pads",exact:true}).click();
+  await panel.getByRole("button",{name:"Release pads",exact:true}).click();await expect(panel.getByRole("status")).toContainText("Pad release accepted.");
   expect((await new AxeBuilder({page}).include(".studio-pads").analyze()).violations).toEqual([]);expect(await panel.evaluate(e=>e.scrollWidth<=e.clientWidth)).toBe(true);
   await page.getByText("Play chord pads",{exact:true}).click();expect(await page.locator(".studio-document-status__revision").textContent()).toBe(before);expect(errors).toEqual([]);expect(requests.every(r=>r.allowed)).toBe(true);
  }finally{await info.attach("pads-evidence",{body:JSON.stringify({hash,width,theme,browser:browser.version(),errors,requests,onsets,measurement:"Desktop browser automation; not physical phone latency"}),contentType:"application/json"});}
@@ -74,7 +74,7 @@ test("pad cancellation, real focus loss and repeated click activation",async({pa
   await expect.poll(()=>page.evaluate(()=>window.u5NativeSourceCounts?.().started??0)).toBeGreaterThan(started);await page.keyboard.press("Tab");await page.keyboard.up("Enter");
   await expect.poll(()=>page.evaluate(()=>window.u5NativeSourceCounts?.())).toMatchObject({sounding:0,futureAttacks:0});
   for(let i=0;i<2;i++){started=await page.evaluate(()=>window.u5NativeSourceCounts?.().started??0);await pad.evaluate(e=>{if(e instanceof HTMLElement)e.click();});await expect.poll(()=>page.evaluate(()=>window.u5NativeSourceCounts?.().started??0)).toBeGreaterThan(started);}
-  await panel.getByRole("button",{name:"Release pads",exact:true}).click();await expect.poll(()=>page.evaluate(()=>window.u5NativeSourceCounts?.())).toMatchObject({sounding:0,futureAttacks:0});
+  await panel.getByRole("button",{name:"Release pads",exact:true}).click();await expect(panel.getByRole("status")).toContainText("Pad release accepted.");await expect.poll(()=>page.evaluate(()=>window.u5NativeSourceCounts?.())).toMatchObject({sounding:0,futureAttacks:0});
   expect(errors).toEqual([]);expect(requests).toEqual([]);
  }finally{await info.attach("pads-lifecycle-evidence",{body:JSON.stringify({hash,browser:browser.version(),errors,requests,inputs:"Real mouse/key/focus events; injected pointercancel and programmatic AT-style clicks. No screen-reader or physical-phone claim."}),contentType:"application/json"});}
 });

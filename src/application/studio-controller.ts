@@ -7423,11 +7423,35 @@ function makeStudioComposition(
     return padCache.catalog;
   };
   const readPads=(sectionId:string|null,page:number):StudioInspectorResult<StudioPadsView>=>projectStudioPads(padCatalog(),state.document.id,state.revision,sectionId,page);
-  const releasePad=(id?:number):Promise<StudioInspectorResult<void>>=>{
-    const owner=padOwner;
-    if(owner===null||(id!==undefined&&id!==owner.generation))return Promise.resolve({ok:true,value:undefined});
-    padOwner=null;
-    return owner.generation===pitchSetPreviewGeneration&&owner.generation===previewOrdinal?releasePreviewPitches():Promise.resolve({ok:true,value:undefined});
+  let padRetirement: Readonly<{ generation: number; previewId: string }> | null = null;
+  const releasePad = async (id?: number): Promise<StudioInspectorResult<void>> => {
+    const owner = padOwner;
+    if (id !== undefined && id !== (owner?.generation ?? padRetirement?.generation))
+      return Object.freeze({ ok: true, value: undefined });
+    padOwner = null;
+    if (owner !== null && owner.generation === pitchSetPreviewGeneration && owner.generation === previewOrdinal) {
+      const submitted = previewSubmission?.generation === owner.generation ? previewSubmission : null;
+      if (submitted !== null) padRetirement = submitted;
+      // Cancel a pending attack immediately, but retain any submitted identity
+      // until X1 acknowledges retirement so a refused release can be retried.
+      const result = await releasePreviewPitches();
+      if (submitted !== null) {
+        if (result.ok && padRetirement === submitted) padRetirement = null;
+        return result;
+      }
+      if (!result.ok) return result;
+    }
+    const pending = padRetirement;
+    if (pending !== null) {
+      if (previewSubmission !== pending || audioPort === null) {
+        padRetirement = null;
+      } else {
+        const result = await releaseSubmittedPreview(audioPort, pending);
+        if (result.ok && padRetirement === pending) padRetirement = null;
+        return result;
+      }
+    }
+    return Object.freeze({ ok: true, value: undefined });
   };
   const retirePadIfChanged=():void=>{
     if(padOwner!==null&&(padOwner.source.documentId!==state.document.id||padOwner.source.revision!==state.revision))void releasePad(padOwner.generation);
