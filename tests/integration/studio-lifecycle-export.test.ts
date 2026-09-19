@@ -157,6 +157,36 @@ describe("U5 canonical export through production encoder, registry, A0 CAS and A
     expect(h.composition.readApplicationState().dialogs).toEqual([]);
   });
 
+  for (const hostile of ["accessor", "proxy"] as const) {
+    test(`${hostile} completion settles as failed and permits a fresh successful export`, async () => {
+      let first = true;
+      let accessorReads = 0;
+      const h = harness(request => {
+        const result = delivery(request);
+        if (!first) return { completion: Promise.resolve(result) };
+        first = false;
+        const value = hostile === "accessor"
+          ? Object.defineProperty(result, "outcome", { get() { accessorReads++; throw new Error("UNTRUSTED_ACCESSOR"); } })
+          : new Proxy(result, { getPrototypeOf() { throw new Error("UNTRUSTED_REFLECTION"); } });
+        return { completion: Promise.resolve(value) };
+      });
+      await h.service.openExport();
+      await h.service.deliverCanonicalExport();
+      expect(h.service.getSnapshot().phase).toBe("failed");
+      expect(h.service.getSnapshot().message).toContain("export.delivery_result_invalid");
+      expect(h.composition.readApplicationState().exportRevision).toBeNull();
+      expect(h.recovery.service.inspectRecovery().work.exportBindingsRecorded).toBe(0);
+      expect(accessorReads).toBe(0);
+      h.service.cancelLifecycleDialog();
+      await h.service.openExport();
+      await h.service.deliverCanonicalExport();
+      expect(h.service.getSnapshot().phase).toBe("complete");
+      const state = h.composition.readApplicationState();
+      expect(state.exportRevision).toBe(state.revision);
+      expect(h.recovery.service.inspectRecovery().work.exportBindingsRecorded).toBe(1);
+    });
+  }
+
   for (const bad of ["wrong-bytes", "wrong-artifact", "cleanup", "malformed"] as const) {
     test(`${bad} delivery cannot publish an export marker`, async () => {
       const h = harness((request) => {
