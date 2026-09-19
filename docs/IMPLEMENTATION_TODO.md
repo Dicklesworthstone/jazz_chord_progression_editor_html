@@ -1,5 +1,15 @@
 # Implementation TODO
 
+## Typed browser export capabilities — jcpe-dqge
+
+- [x] Inspect E0 section10, architecture, existing delivery tests and parent cast-policy findings; claim one leaf and reserve exact source/test paths.
+- [x] Replace unchecked global/Blob assertions with structurally checked optional native globals, callable guards whose outputs remain unknown, and an owned ArrayBuffer Blob part. Preserve picker/writer receivers and synchronous activation.
+- [x] Add ordinary/shared sliced-byte snapshot checks and exact native-method receiver checks; existing cancellation, fallback and cleanup tests remain intact.
+- [x] First strict RCH focused tests/types/build pass; lint finds10 errors in the initial implementation. Preserve that failed run in `test-results/export-types-checked-20260919/`; correct the source without lint suppression or assertion weakening.
+- [ ] Run corrected strict RCH focused suite, all TypeScript projects, scoped lint, cast-policy controls and guarded build; record exact counts and residual parent findings.
+- [ ] Fresh solo review and re-execution plus the existing12 native download/activation checks across Chromium, Firefox and WebKit. No physical-device or independent-review claim.
+- [ ] Verify frozen source/mtimes and generated root/dist bytes; commit only owned corrections/artifact/TODO/tracker, push, record final evidence and release reservations. Parent np17 and human gates remain open; no deployment claim for this slice.
+
 ## Deploy committed repairs — jcpe-m6m8
 
 - [x] Recover source/tracker/ownership; confirm both hosts serve the older artifact and Cloudflare modifies some response types. Pin 0a2c284 and preserve peer files.
