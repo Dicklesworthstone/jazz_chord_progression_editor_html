@@ -6,9 +6,10 @@
 - [x] Replace unchecked global/Blob assertions with structurally checked optional native globals, callable guards whose outputs remain unknown, and an owned ArrayBuffer Blob part. Preserve picker/writer receivers and synchronous activation.
 - [x] Add ordinary/shared sliced-byte snapshot checks and exact native-method receiver checks; existing cancellation, fallback and cleanup tests remain intact.
 - [x] First strict RCH focused tests/types/build pass; lint finds10 errors in the initial implementation. Preserve that failed run in `test-results/export-types-checked-20260919/`; correct the source without lint suppression or assertion weakening.
-- [ ] Run corrected strict RCH focused suite, all TypeScript projects, scoped lint, cast-policy controls and guarded build; record exact counts and residual parent findings.
-- [ ] Fresh solo review and re-execution plus the existing12 native download/activation checks across Chromium, Firefox and WebKit. No physical-device or independent-review claim.
-- [ ] Verify frozen source/mtimes and generated root/dist bytes; commit only owned corrections/artifact/TODO/tracker, push, record final evidence and release reservations. Parent np17 and human gates remain open; no deployment claim for this slice.
+- [x] Corrected strict RCH hz4:85 tests/321 assertions, all4 TypeScript projects, scoped lint and guarded build pass. Unchanged cast-policy reports1pass/1fail with9 legacy application findings (down from11); hostile controls pass, original parent stays open. `test-results/export-types-final-20260919/`.
+- [x] Fresh solo delivery replay65 tests/215 assertions; existing12 native download/activation checks pass across Chromium, Firefox and WebKit in16.001s with zero failed/skipped/flaky cases or report errors. Golden downloads, exact cleanup, activation and zero console/page errors asserted. `test-results/export-types-browser-20260919/`; JSON reporter nested its output under that directory. No physical-device or independent-review claim.
+- [x] Final strict RCH guarded rebuild matches SHA256 `344c216f3b457e95b2f776096ae93c8bdb862894da35de3ecb3203ea2bc2fb8d`,8,640,754 bytes. All1,835 input hashes/364 source mtimes unchanged; generated root/dist promoted only after checking prior root against HEAD. `test-results/export-types-rebuild-20260919/`.
+- [ ] Commit/push owned corrections/artifact/TODO/tracker and release reservations. Peer session already committed initial source/tests/tracker as7812b22/1c94681/a25428e; preserve these and land lint correction separately. Parent np17 and human gates remain open; no deployment claim for this slice.
 
 ## Deploy committed repairs — jcpe-m6m8
 
