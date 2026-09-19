@@ -1,6 +1,5 @@
 import {
-  type AutoVoicing,
-  type ChordEvent,
+  makeMidiRange,
   type DocumentId,
   type DomainPath,
   type ParsedChordEvent,
@@ -573,6 +572,15 @@ export const parseJsonData: ParseJsonData = (
   }
 };
 
+/** Validate the fixed default range once; raw numeric literals cannot publish
+ * the domain's MidiPitch brand. Invalid checked-in defaults are a code error. */
+const chartImportAutoVoicing = (() => {
+  const defaults = CHART_IMPORT_DEFAULTS.autoVoicing;
+  const range = makeMidiRange(defaults.range.lowMidi, defaults.range.highMidi);
+  if (!range.ok) throw new Error("E0_CHART_IMPORT_DEFAULT_RANGE_INVALID");
+  return Object.freeze({ ...defaults, range: range.value });
+})();
+
 export const buildChartDocumentCandidate: BuildChartDocumentCandidate = (
   draft: ChartTextDraft,
   idFactory: StableIdFactory,
@@ -669,23 +677,22 @@ export const buildChartDocumentCandidate: BuildChartDocumentCandidate = (
           return makeIdRefusal(["sections", sIdx, "measures", mIdx, "events", eIdx]);
         }
 
-        const autoVoicing = CHART_IMPORT_DEFAULTS.autoVoicing as AutoVoicing;
-        const chordEv: ChordEvent =
-          eDraft.chord.bass === null
-            ? (Object.freeze({
-                id: evId,
-                duration: eDraft.duration,
-                annotation: eDraft.annotation,
-                chord: eDraft.chord,
-                voicing: autoVoicing,
-              }) as unknown as ParsedChordEvent)
-            : (Object.freeze({
-                id: evId,
-                duration: eDraft.duration,
-                annotation: eDraft.annotation,
-                chord: eDraft.chord,
-                voicing: autoVoicing,
-              }) as unknown as ParsedChordEvent);
+        const chord = eDraft.chord;
+        const fields = {
+          id: evId,
+          duration: eDraft.duration,
+          annotation: eDraft.annotation,
+          voicing: chartImportAutoVoicing,
+        };
+        const chordEv: ParsedChordEvent = chord.bass === null
+          ? Object.freeze({
+              ...fields,
+              chord: Object.freeze({ ...chord, bass: null }),
+            })
+          : Object.freeze({
+              ...fields,
+              chord: Object.freeze({ ...chord, bass: chord.bass }),
+            });
         events.push(chordEv);
       }
 

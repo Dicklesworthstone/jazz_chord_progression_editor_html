@@ -1,5 +1,15 @@
 # Implementation TODO
 
+## Typed chart-text chord construction — jcpe-haci
+
+- [x] Read E0 section8.3 and domain parsed/slash voicing construction; claim slice and reserve exact source/test/TODO paths (10954–10956).
+- [x] Replace two double assertions and widened AutoVoicing cast with explicit bass-discriminated frozen chord snapshots. Validate the fixed default range once through the domain makeMidiRange constructor; preserve all literal settings.
+- [x] Add four literal root/slash spelling cases, fractional durations, annotations, IDs and exact text export through the real T0/F3/export pipeline.
+- [x] Preserve initial RCH417/4 and typecheck failure: four new charts omitted required section headers; raw default range lacked branded MidiPitch values. Add section headers without changing assertions and construct the validated range in production. Reports `test-results/chart-chords-first-20260919/`.
+- [x] Preserve second RCH417/4 (`test-results/chart-chords-final-20260919/`): production types pass; new tests incorrectly read published duration.value and widened pitch literals. Correct field access and literal typing, retaining exact rational/spelling/default expectations. No production change after validated-range fix.
+- [x] Corrected strict RCH on hz4:421 tests /2,396 assertions across16 files pass; all4 TypeScript projects, scoped ESLint and guarded build pass. Reports `test-results/chart-chords-corrected-hz4-20260919/`. Unchanged cast policy falls16 to14 findings; hostile controls pass, global gate remains red.
+- [x] Fresh solo replay on ovh-b:16 chart/preview/full-production-loop tests /136 assertions pass, cast policy14 unchanged, guarded build matches SHA256 `a77eaac9978bcce25d8bea6ce74713379f15a7b9633d31ea9a5da9714f7bcbf7` (8,637,438 bytes). Both receipts and current1,835 inputs match; promote root/dist only after root matched HEAD. Reports `test-results/chart-chords-review-ovh-20260919/`. Retain first ovh-b queue timeout; cancel only own queued hz4 review before moving to free ovh-b, verify no orphan job. Close bounded slice and commit/push owned paths; aggregate/human obligations stay open, no independent-human or deployment claim.
+
 ## Typed E0 envelope normalization — jcpe-v0f6
 
 - [x] Inspect remaining cast-policy findings and accepted E0 contract; claim only this bounded slice, leaving np17 and its aggregate obligations open.

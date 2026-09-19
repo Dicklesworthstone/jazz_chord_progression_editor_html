@@ -210,3 +210,43 @@ describe("E0 chart-text golden round trip", () => {
     }
   });
 });
+
+
+describe("chart candidate spelled bass preservation", () => {
+  for (const row of [
+    { symbol: "Cmaj7", root: { step: "C", alter: 0 }, bass: null },
+    { symbol: "C/E", root: { step: "C", alter: 0 }, bass: { step: "E", alter: 0 } },
+    { symbol: "Dbmaj7/Ab", root: { step: "D", alter: -1 }, bass: { step: "A", alter: -1 } },
+    { symbol: "F#7/A#", root: { step: "F", alter: 1 }, bass: { step: "A", alter: 1 } },
+  ] as const) {
+    test(`${row.symbol} retains exact fields through publication and text export`, () => {
+      const text = `@meter 4/4\n[A]\n| ${row.symbol}:3/2 "first" ${row.symbol}:5/2 "second" |\n`;
+      const parsed = parseChartText(text, { mode: "document" }, CHART_IMPORT_PARSE_ACCIDENTAL_STYLE);
+      if (!parsed.ok) throw new Error(JSON.stringify(parsed.diagnostics));
+      const built = buildChartDocumentCandidate(parsed.draft, makeTestIdFactory());
+      if (!built.ok) throw new Error(built.code);
+      const events = built.value.sections[0]?.measures[0]?.events;
+      expect(events?.length).toBe(2);
+      for (const [index, event] of (events ?? []).entries()) {
+        if (event.chord.kind !== "parsed") throw new Error("Expected parsed chord");
+        expect(event.chord.root).toEqual(row.root);
+        expect(event.chord.bass).toEqual(row.bass);
+        expect({ numerator: event.duration.numerator, denominator: event.duration.denominator }).toEqual({ numerator: index === 0 ? 3 : 5, denominator: 2 });
+        expect(event.annotation).toBe(index === 0 ? "first" : "second");
+        expect(String(event.id)).toBe(`event-000${String(index + 1)}`);
+        const observedVoicing: unknown = event.voicing;
+        expect(observedVoicing).toEqual(CHART_IMPORT_DEFAULTS.autoVoicing);
+        expect(Object.isFrozen(event)).toBe(true);
+        expect(Object.isFrozen(event.chord)).toBe(true);
+      }
+      const validated = validateDocumentSemantics(built.value);
+      if (!validated.ok) throw new Error(JSON.stringify(validated));
+      const exportText = createLeadSheetTextExportCoordinator({
+        formatChordSymbol, parseChartText, supportedDocumentProjectionEquals, sanitizeExportFilename,
+      });
+      const exported = exportText({ document: validated.value, accidentalStyle: "ascii", contextualAnalysis: "none" });
+      if (!exported.ok) throw new Error(JSON.stringify(exported.refusal));
+      expect(exported.value.text).toContain(`| ${row.symbol}:3/2 "first" ${row.symbol}:5/2 "second" |`);
+    });
+  }
+});
