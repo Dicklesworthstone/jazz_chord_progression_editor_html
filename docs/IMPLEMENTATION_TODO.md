@@ -11,7 +11,7 @@
 - [x] Fresh solo hz2 replay119tests/529assertions. Native adapter12/12 in16.100s; actual studio JSON export/cancellation/failure12/12 in36.261s at1280/390px across Chromium149.0.7827.55, Firefox151.0, WebKit26.5. No skipped/flaky/unexpected/report errors;12 hash-bound diagnostics have zero console/page errors and only file requests. `test-results/delivery-normalization-browser-hz2-20260919/`.
 - [x] Preserve interrupted hz4 browser run separately: RCH job30027234903327490 cancelled after several minutes with severe IO stalls; Firefox cancellation trace reports Channel closed/target closed. No passing denominator claimed. Exact process absence checked before whole unchanged matrix moved to hz2. Raw logs/traces in `test-results/delivery-normalization-browser-cancelled-20260919/`; original deadlines/assertions/retries untouched.
 - [x] All1,836 input hashes/365 source mtimes unchanged. Final strict RCH hz2 guarded rebuild is identical to hz4/final and hz2/browser builds: SHA256 `f27164fa2aa7b4f0c003c1884c989019e283ee00452d90bed44db08e04131fe7`,8,645,119bytes. Root matched HEAD before guarded artifact promotion to root/dist. `test-results/delivery-normalization-rebuild-20260919/`.
-- [ ] Commit/push owned source/tests/artifact/evidence, close only this leaf and release reservations. Peer integration-regression commit206e589 retained. Human/aggregate obligations remain open; no deployment claim.
+- [x] Implementation/artifact/evidence committed and pushed as311a5dd; peer integration-regression commit206e589 retained. Closed only jcpe-uc4p with exact results and interruption disclosure. Human/aggregate obligations and9legacy cast findings remain open; no deployment claim.
 
 ## Typed browser export capabilities — jcpe-dqge
 
