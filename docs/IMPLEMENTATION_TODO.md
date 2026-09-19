@@ -3,10 +3,10 @@
 ## Deploy export repairs — jcpe-7med
 
 - [x] Claim release leaf; reserve TODO, coordinate browser lane, preserve three peer panels. Pin committed ee3fee3 artifact f27164fa (8,645,119 bytes) and 1,836 input hashes/365 source mtimes.
-- [ ] Reproduce committed artifact with strict RCH guarded build; run unchanged model/quality and native playback gates.
-- [ ] Recheck source and stage exact git-show HTML/image; upload both hosts and poll unmodified response hashes.
-- [ ] Run desktop/phone live JSON export, cancellation, failure and focus checks in all three engines; inspect visual evidence.
-- [ ] Record exact results and limitations, close only this leaf, commit/push TODO/tracker and release reservation.
+- [x] Strict RCH hz4 guarded build and fresh hz2 rebuild reproduce committed SHA256 `f27164fa2aa7b4f0c003c1884c989019e283ee00452d90bed44db08e04131fe7`,8,645,119 bytes. `bun run predeploy:check` passes11 shipping models/9 instruments with zero fail findings and16 retained warnings; native Node26 playback15/15, enforced recovery explicitly vacuous. Reports `test-results/export-release-{gates,rebuild}-20260919/`.
+- [x] All1,836 input hashes/365 source mtimes unchanged. Stage exact ee3fee3 git-show HTML/image; Cloudflare5e608166 and Vercel dpl_EqijmbT4RXpbmZJKk3DWxLjs7iTb READY. Both raw curl HTML/image hashes match on first poll. Image SHA256 b70c9e3cd1f0d56579f7ec1f913a5c239c6b27fa6b67c5202091eb5ecf56af12. Python HTTP response still has injected beacon (+367bytes); jcpe-2nky remains open, no CSP relaxation. Manual orchestration preserves both required deploy gates while executing them through strict RCH.
+- [x] Strict RCH hz2 live checks24/24:12 per host, two original U5 JSON tests at1280/390px across Chromium149.0.7827.55, Firefox151.0 and WebKit26.5. Actual downloads12, exact durable binding, cancellation, injected native URL-allocation failure, chart preservation and focus restoration pass. Both JSON reports show zero skipped/flaky/unexpected/global errors;24 diagnostics have zero console/page errors and only top-level host requests. Durations47.664s/35.687s. Four desktop/phone successful-export screenshots inspected; controls fit and restored Export JSON focus is visible. `test-results/export-release-live-20260919/`.
+- [x] Fresh solo release verification; no independent-person, physical-device, full aggregate or natural malformed-completion injection claim. No failed test, assertion relaxation, retry or deadline change in this release run. Nine legacy cast findings, human acceptance and Cloudflare injection remain open. DCG refused deletion of Vercel-created ignored staging `.env.local`; left excluded from upload/Git, with no alternate deletion attempt. Close only release leaf and commit/push owned TODO/tracker; exact reservation released after commit.
 
 ## Export completion containment — jcpe-uc4p
 
