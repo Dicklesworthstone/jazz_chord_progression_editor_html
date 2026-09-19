@@ -1,5 +1,14 @@
 # Implementation TODO
 
+## Retry inspector audition release — jcpe-j3vf
+
+- [x] Inspect U2 preview contract and current source; claim exact controller/test/artifact/TODO paths and coordinate.
+- [x] Add8 real controller/X1 cases over fake audio platform: refusal/throw crossed with retry, repeated retry, newer preview and new preparation. Preserve voice-count, exact identity and unchanged chart controls.
+- [ ] Run original-source strict RCH baseline and record actual failures.
+- [ ] Retain failed submitted identity under source authority; cancel pending attacks and protect newer owners.
+- [ ] Run focused tests, all types, scoped lint, guarded build and native inspector regressions through RCH.
+- [ ] Fresh replay; verify source hashes/mtimes and artifact; update bead, commit owned paths, preserve broader acceptance gaps.
+
 ## Deploy export repairs — jcpe-7med
 
 - [x] Claim release leaf; reserve TODO, coordinate browser lane, preserve three peer panels. Pin committed ee3fee3 artifact f27164fa (8,645,119 bytes) and 1,836 input hashes/365 source mtimes.

@@ -212,3 +212,53 @@ describe("U2 preview ownership over X1", () => {
     await actions.releaseInspectorPreview(source);
   });
 });
+
+for (const failure of ["refusal", "throw"] as const) for (const continuation of ["retry", "retry twice", "newer preview", "preparing again"] as const) {
+  test(`inspector Release retains failed ${failure} ownership: ${continuation}`, async () => {
+    const real = createStudioAudio(createFakeAudioPlatform().platform), starts: string[] = [], releases: string[] = [];
+    let failures = continuation === "retry twice" || continuation === "preparing again" ? 2 : 1, holdPreparation = false, preparing = false;
+    let finish: () => void = () => { throw new Error("Missing preparation gate"); };
+    const gate = new Promise<void>(resolve => { finish = resolve; });
+    const actions = controller({ ...real,
+      prepareInstrument: async () => { if (holdPreparation) { preparing = true; await gate; } return true; },
+      startPreview: (...args) => { starts.push(args[1]); return real.startPreview(...args); },
+      releasePreview: async (requestId, previewId) => {
+        releases.push(previewId);
+        if (failures > 0) { failures--; if (failure === "throw") throw new Error("Injected release rejection"); return real.releasePreview(-1, previewId); }
+        return real.releasePreview(requestId, previewId);
+      },
+    });
+    const source = view(actions).source, before = view(actions).event, revision = actions.getSnapshot().revision;
+    try {
+      expect((await actions.previewInspector(source, { kind: "current", hold: true }, gesture)).ok).toBe(true);
+      const owned = starts[0]; if (owned === undefined) throw new Error("Missing submitted preview");
+      expect((await actions.releaseInspectorPreview(source)).ok).toBe(false);
+      expect(real.inspect().engine.previewNonreleasingVoiceCount).toBeGreaterThan(0);
+      if (continuation === "newer preview") {
+        expect(actions.previewPitch(62, gesture).ok).toBe(true); await until(() => starts.length === 2);
+        const calls = releases.length;
+        expect((await actions.releaseInspectorPreview(source)).ok).toBe(true);
+        expect(releases).toHaveLength(calls);
+        expect(real.inspect().engine.previewNonreleasingVoiceCount).toBeGreaterThan(0);
+      } else {
+        if (continuation === "retry twice") {
+          expect((await actions.releaseInspectorPreview(source)).ok).toBe(false);
+          expect(real.inspect().engine.previewNonreleasingVoiceCount).toBeGreaterThan(0);
+        }
+        if (continuation === "preparing again") {
+          holdPreparation = true;
+          const next = actions.previewInspector(source, { kind: "current", hold: true }, gesture);
+          await until(() => preparing);
+          expect((await actions.releaseInspectorPreview(source)).ok).toBe(true);
+          finish(); expect(await next).toMatchObject({ ok: false, code: "u2.preview_cancelled" });
+          expect(starts).toHaveLength(1);
+        } else expect((await actions.releaseInspectorPreview(source)).ok).toBe(true);
+        expect(releases).toEqual(Array.from({ length: continuation === "retry twice" || continuation === "preparing again" ? 3 : 2 }, () => owned));
+        expect(real.inspect().engine.previewNonreleasingVoiceCount).toBe(0);
+        expect(actions.getSnapshot().previewStoppable).toBe(false);
+        const calls = releases.length; await actions.releaseInspectorPreview(source); expect(releases).toHaveLength(calls);
+      }
+      expect(view(actions).event).toEqual(before); expect(actions.getSnapshot().revision).toBe(revision);
+    } finally { finish(); await real.transportService.submitTransportCommand({ commandRequestId: 999, payload: { kind: "dispose-transport", reason: "page-teardown" } }); }
+  }, 30000);
+}

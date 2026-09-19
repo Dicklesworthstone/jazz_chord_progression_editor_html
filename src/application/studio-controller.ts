@@ -6421,17 +6421,35 @@ function makeStudioComposition(
     } catch { return previewReleaseFailure("u2.preview_release_failed"); }
   };
 
+  let inspectorRetirement: Readonly<{ source: StudioInspectorSource;
+    submitted: Readonly<{ generation: number; previewId: string }> }> | null = null;
   const releaseInspectorPreview = async (source: StudioInspectorSource): Promise<StudioInspectorResult<void>> => {
+    const matches = (bound: StudioInspectorSource): boolean => bound.documentId === source.documentId
+      && bound.eventId === source.eventId && bound.revision === source.revision;
     const owner = inspectorPreviewOwner;
-    if (owner === null || owner.source.documentId !== source.documentId || owner.source.eventId !== source.eventId || owner.source.revision !== source.revision)
-      return Object.freeze({ ok: true, value: undefined });
-    inspectorPreviewOwner = null;
-    if (owner.generation !== previewOrdinal) return Object.freeze({ ok: true, value: undefined });
-    previewOrdinal += 1; // Invalidates initialize/prepare continuations before retiring submitted voices.
-    if (previewPreparationGeneration === owner.generation) previewPreparationGeneration = null;
-    publishPreviewAvailability();
-    if (audioPort !== null && previewSubmission?.generation === owner.generation)
-      return releaseSubmittedPreview(audioPort, previewSubmission);
+    if (owner !== null && matches(owner.source)) {
+      inspectorPreviewOwner = null;
+      if (owner.generation === previewOrdinal) {
+        // Cancel pending attacks now; keep submitted ownership until X1
+        // acknowledges release so another explicit Release can retry.
+        if (previewSubmission?.generation === owner.generation)
+          inspectorRetirement = Object.freeze({ source: owner.source, submitted: previewSubmission });
+        previewOrdinal += 1;
+        if (previewPreparationGeneration === owner.generation) previewPreparationGeneration = null;
+        publishPreviewAvailability();
+      }
+    }
+    const pending = inspectorRetirement;
+    if (pending !== null && matches(pending.source)) {
+      if (previewSubmission !== pending.submitted || audioPort === null) {
+        // A newer preview or global Stop already retired this identity.
+        if (inspectorRetirement === pending) inspectorRetirement = null;
+      } else {
+        const result = await releaseSubmittedPreview(audioPort, pending.submitted);
+        if (result.ok && inspectorRetirement === pending) inspectorRetirement = null;
+        return result;
+      }
+    }
     return Object.freeze({ ok: true, value: undefined });
   };
 
