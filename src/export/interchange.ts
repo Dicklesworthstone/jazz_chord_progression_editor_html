@@ -497,6 +497,16 @@ type BrowserDeliveryGlobals = Readonly<{
   Blob?: typeof Blob;
 }>;
 
+// Browser rejections are external values. A hostile name accessor must not
+// turn an ordinary picker failure into a rejected delivery completion.
+function isPickerCancellation(error: unknown): boolean {
+  try {
+    return typeof error === "object" && error !== null && "name" in error && error.name === "AbortError";
+  } catch {
+    return false;
+  }
+}
+
 /**
  * The composition-private synchronous start primitive
  * (docs/E0_INTERCHANGE_CONTRACT.md section 10). Before this function
@@ -543,9 +553,27 @@ function startExportDelivery(
     });
   }
 
-  const globalPicker = g.showSaveFilePicker;
-  const pickerOwner = typeof globalPicker === "function" ? g : g.window;
-  const picker = globalPicker ?? pickerOwner?.showSaveFilePicker;
+  let pickerOwner: BrowserDeliveryGlobals | BrowserDeliveryGlobals["window"];
+  let picker: BrowserDeliveryGlobals["showSaveFilePicker"];
+  // Download-only is independent of File System Access, including its probes.
+  if (request.preference === "prefer-file-system-access") {
+    try {
+      const globalPicker = g.showSaveFilePicker;
+      pickerOwner = typeof globalPicker === "function" ? g : g.window;
+      picker = globalPicker ?? pickerOwner?.showSaveFilePicker;
+    } catch {
+      return Object.freeze({
+        completion: Promise.resolve(Object.freeze({
+          ok: false as const,
+          outcome: "failed" as const,
+          code: "export.delivery_capability_failed" as const,
+          channel: "file-system-access" as const,
+          artifact: binding,
+          ...cleanZero,
+        })),
+      });
+    }
+  }
   const mediaType =
     binding.kind === "canonical-json"
       ? CANONICAL_JSON_MEDIA_TYPE
@@ -587,7 +615,18 @@ function startExportDelivery(
           },
         ],
       });
-    } catch {
+    } catch (error) {
+      if (isPickerCancellation(error)) {
+        return Object.freeze({
+          completion: Promise.resolve(Object.freeze({
+            ok: true as const,
+            outcome: "cancelled" as const,
+            channel: "file-system-access" as const,
+            artifact: binding,
+            ...cleanZero,
+          })),
+        });
+      }
       return Object.freeze({
         completion: Promise.resolve(
           Object.freeze({
@@ -606,11 +645,7 @@ function startExportDelivery(
       try {
         handle = await pickerPromise;
       } catch (error) {
-        if (
-          typeof error === "object" &&
-          error !== null &&
-          (error as { name?: unknown }).name === "AbortError"
-        ) {
+        if (isPickerCancellation(error)) {
           return Object.freeze({
             ok: true as const,
             outcome: "cancelled" as const,

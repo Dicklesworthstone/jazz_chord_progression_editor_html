@@ -590,3 +590,63 @@ describe("save-picker owner binding", () => {
     }
   }
 });
+
+
+describe("save-picker capability isolation", () => {
+  for (const entry of ["public", "prepared"] as const) {
+    const start = (preference: "download-only" | "prefer-file-system-access") => entry === "public"
+      ? deliverExportArtifact({ ...publicRequest(), preference })
+      : readCompletion(startPreparedExportDelivery({ ...makeRequest(), preference }));
+    for (const field of ["showSaveFilePicker", "window"] as const) {
+      for (const preference of ["download-only", "prefer-file-system-access"] as const) {
+        test(`${entry} ${preference} isolates a throwing ${field} probe`, async () => {
+          const { log } = scriptBlobGlobals();
+          const descriptor = Object.getOwnPropertyDescriptor(globalThis, field);
+          let probes = 0;
+          Object.defineProperty(globalThis, field, { configurable: true, get: () => {
+            probes += 1;
+            throw new Error("PICKER_PROBE_FAILED");
+          } });
+          try {
+            const pending = start(preference);
+            expect(log).toEqual(preference === "download-only"
+              ? ["create-url", "append", "click", "remove", "revoke-url"] : []);
+            const result: unknown = await pending;
+            expect(result).toMatchObject(preference === "download-only"
+              ? { ok: true, outcome: "handed-off", channel: "object-url-download", objectUrlsCreated: 1, objectUrlsRevoked: 1 }
+              : { ok: false, outcome: "failed", code: "export.delivery_capability_failed", channel: "file-system-access", objectUrlsCreated: 0, objectUrlsRevoked: 0 });
+            expect(result).toMatchObject({ artifact: BINDING, cleanup: "complete", outstandingOwnedResources: 0 });
+            expect(probes).toBe(preference === "download-only" ? 0 : 1);
+          } finally {
+            if (descriptor === undefined) Reflect.deleteProperty(globalThis, field);
+            else Object.defineProperty(globalThis, field, descriptor);
+          }
+        });
+      }
+    }
+    for (const timing of ["throw", "reject"] as const) {
+      for (const errorKind of ["abort", "ordinary", "throwing-name"] as const) {
+        test(`${entry} ${timing} picker ${errorKind} returns a safe terminal`, async () => {
+          const { log } = scriptBlobGlobals();
+          const error = errorKind === "abort" ? new DOMException("Cancelled", "AbortError")
+            : errorKind === "ordinary" ? new Error("PICKER_FAILED")
+              : Object.defineProperty(new Error("HOSTILE_NAME"), "name", { get: () => { throw new Error("NAME_FAILED"); } });
+          g.showSaveFilePicker = () => {
+            log.push("picker");
+            if (timing === "throw") throw error;
+            return Promise.reject(error);
+          };
+          const pending = start("prefer-file-system-access");
+          expect(log).toEqual(["picker"]);
+          const result: unknown = await pending;
+          expect(result).toMatchObject({ ok: errorKind === "abort", outcome: errorKind === "abort" ? "cancelled" : "failed",
+            channel: "file-system-access", artifact: BINDING, cleanup: "complete", objectUrlsCreated: 0,
+            objectUrlsRevoked: 0, outstandingOwnedResources: 0 });
+          if (errorKind !== "abort") expect(result).toMatchObject({ code: timing === "throw"
+            ? "export.delivery_activation_failed" : "export.delivery_capability_failed" });
+          expect(log).toEqual(["picker"]);
+        });
+      }
+    }
+  }
+});
