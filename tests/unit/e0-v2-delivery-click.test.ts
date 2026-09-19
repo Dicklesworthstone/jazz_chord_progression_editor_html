@@ -199,6 +199,51 @@ describe("public export delivery cleanup", () => {
   });
 });
 
+describe("typed browser export boundaries", () => {
+  for (const shared of [false, true]) {
+    test(`Blob preserves only the offered subarray and snapshots ${shared ? "shared" : "ordinary"} bytes`, async () => {
+      const { log } = scriptBlobGlobals();
+      const storage = shared ? new SharedArrayBuffer(9) : new ArrayBuffer(9);
+      const backing = new Uint8Array(storage);
+      backing.set([255, 254, 123, 34, 97, 34, 125, 253, 252]);
+      const bytes = backing.subarray(2, 7);
+      let offered: Blob | undefined;
+      g.URL = {
+        createObjectURL: (blob: Blob) => { offered = blob; log.push("create-url"); return "blob:exact"; },
+        revokeObjectURL: () => { log.push("revoke-url"); },
+      };
+      const envelope = startPreparedExportDelivery({ ...makeRequest(), privateBytes: bytes });
+      expect(log).toEqual(["create-url", "append", "click", "remove", "revoke-url"]);
+      backing.fill(0);
+      if (offered === undefined) throw new Error("Missing offered Blob");
+      expect(Array.from(new Uint8Array(await offered.arrayBuffer()))).toEqual([123, 34, 97, 34, 125]);
+      expect(offered.type).toBe(CANONICAL_JSON_MEDIA_TYPE);
+      expect(await readCompletion(envelope)).toMatchObject({ ok: true, outcome: "handed-off", bytesOffered: 5 });
+    });
+  }
+
+  test("checked picker, handle and writer retain native method receivers", async () => {
+    const { log } = scriptBlobGlobals();
+    const writer = {
+      write(this: unknown, bytes: Uint8Array) {
+        expect(this).toBe(writer); expect(bytes).toBe(BYTES); log.push("write");
+        return Promise.resolve();
+      },
+      close(this: unknown) { expect(this).toBe(writer); log.push("close"); return Promise.resolve(); },
+    };
+    const handle = {
+      createWritable(this: unknown) { expect(this).toBe(handle); return Promise.resolve(writer); },
+    };
+    g.showSaveFilePicker = function (this: unknown) {
+      expect(this).toBe(globalThis); log.push("picker"); return Promise.resolve(handle);
+    };
+    const envelope = startPreparedExportDelivery({ ...makeRequest(), preference: "prefer-file-system-access" });
+    expect(log).toEqual(["picker"]);
+    expect(await readCompletion(envelope)).toMatchObject({ ok: true, outcome: "completed", bytesOffered: 5 });
+    expect(log).toEqual(["picker", "write", "close"]);
+  });
+});
+
 describe("file writer failure cleanup", () => {
   for (const entry of ["public", "prepared"] as const) {
     for (const failedOperation of ["write", "close"] as const) {
