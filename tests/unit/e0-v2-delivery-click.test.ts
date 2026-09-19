@@ -51,9 +51,11 @@ type MutableGlobals = {
   URL?: unknown;
   Blob?: unknown;
   showSaveFilePicker?: unknown;
+  window?: unknown;
 };
 
 const g = globalThis as unknown as MutableGlobals;
+const savedWindowDescriptor = Object.getOwnPropertyDescriptor(globalThis, "window");
 const saved = {
   navigator: g.navigator,
   document: g.document,
@@ -68,6 +70,8 @@ afterEach(() => {
   g.URL = saved.URL;
   g.Blob = saved.Blob;
   g.showSaveFilePicker = saved.showSaveFilePicker;
+  if (savedWindowDescriptor === undefined) Reflect.deleteProperty(globalThis, "window");
+  else Object.defineProperty(globalThis, "window", savedWindowDescriptor);
 });
 
 function scriptBlobGlobals(overrides: Readonly<{
@@ -544,4 +548,45 @@ describe("E0 v2 click driver over the real registry (WF-008)", () => {
     }
     expect(result.deliveryResourceReconciliation).toBe("required");
   });
+});
+
+
+describe("save-picker owner binding", () => {
+  for (const entry of ["public", "prepared"] as const) {
+    for (const location of ["global", "window"] as const) {
+      for (const outcome of ["completed", "cancelled"] as const) {
+        test(`${entry} ${location} picker retains its owner when ${outcome}`, async () => {
+          const { log } = scriptBlobGlobals();
+          const writes: Uint8Array[] = [];
+          const fallback = { showSaveFilePicker: function (this: unknown) { return invoke(this); } };
+          const expectedOwner: unknown = location === "global" ? globalThis : fallback;
+          function invoke(receiver: unknown) {
+            log.push("picker");
+            if (receiver !== expectedOwner) throw new TypeError("Illegal invocation");
+            if (outcome === "cancelled") return Promise.reject(new DOMException("Cancelled", "AbortError"));
+            return Promise.resolve({ createWritable: () => {
+              log.push("open");
+              return Promise.resolve({
+                write: (bytes: Uint8Array) => { log.push("write"); writes.push(bytes); return Promise.resolve(); },
+                close: () => { log.push("close"); return Promise.resolve(); },
+              });
+            } });
+          }
+          g.window = fallback;
+          g.showSaveFilePicker = location === "global"
+            ? function (this: unknown) { return invoke(this); }
+            : undefined;
+          const completion = entry === "public"
+            ? deliverExportArtifact({ ...publicRequest(), preference: "prefer-file-system-access" })
+            : readCompletion(startPreparedExportDelivery({ ...makeRequest(), preference: "prefer-file-system-access" }));
+          expect(log).toEqual(["picker"]);
+          const receipt: unknown = await completion;
+          expect(receipt).toMatchObject({ ok: true, outcome, channel: "file-system-access", cleanup: "complete", outstandingOwnedResources: 0 });
+          expect(log).toEqual(outcome === "completed" ? ["picker", "open", "write", "close"] : ["picker"]);
+          expect(writes.length).toBe(outcome === "completed" ? 1 : 0);
+          if (outcome === "completed") expect(Array.from(writes[0] ?? [])).toEqual(Array.from(BYTES));
+        });
+      }
+    }
+  }
 });

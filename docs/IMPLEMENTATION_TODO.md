@@ -1,5 +1,15 @@
 # Implementation TODO
 
+## Save-picker receiver — jcpe-3rla
+
+- [x] Inspect activation-safe browser adapter and section10 contract; claim bug and reserve source/test/TODO paths10962–10964.
+- [x] Add receiver-sensitive global/window picker cases through public/prepared delivery, success/cancellation, synchronous activation, exact bytes and cleanup.
+- [x] Original-source RCH baseline34pass/8fail,103 assertions: all receiver-sensitive cases fail with activation_failed; all existing delivery controls pass. Reports `test-results/picker-owner-baseline-20260919/`.
+- [x] Capture the global picker once, preserve global/window owner choice and invoke with call(owner); keep activation ordering, channel preference and cleanup.
+- [x] Initial strict RCH62/0 and all types pass; lint rejects redundant null comparison. Replace it with a function check, no suppression. Final `test-results/picker-owner-browser-final-20260919/`: all4 TypeScript projects, scoped lint,62 tests /208 assertions and guarded build pass. Preserve first logs and unchanged14 global cast-policy findings.
+- [x] Native download suite:12/12 across Chromium/Firefox/WebKit, zero skipped/flaky/unexpected/global errors, one worker, explicit required User-Agent. Preserve EDQUOT workspace-copy failure and failed helper upload/parser/RCH-E309 attempt; neither ran tests. Move scratch/helpers to separate /tmp after checking capacity and remote/local helper hashes. No peer cleanup or local fallback.
+- [x] Fresh solo review42/0,123 assertions (`test-results/picker-owner-review-20260919/`). Both final receipts and current1,835 inputs match; guarded artifacts identical SHA256 `aa8b2cc0884693c20157d8a2b61d59dff209e8b7247432b103d1db53fb5bea70`,8,637,477 bytes. Root/dist promoted only after root matched HEAD. Close bounded bug, commit/push owned files and release leases. No native picker-dialog, independent-human, aggregate or deployment claim.
+
 ## Typed chart-text chord construction — jcpe-haci
 
 - [x] Read E0 section8.3 and domain parsed/slash voicing construction; claim slice and reserve exact source/test/TODO paths (10954–10956).

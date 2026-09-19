@@ -543,7 +543,9 @@ function startExportDelivery(
     });
   }
 
-  const picker = g.showSaveFilePicker ?? g.window?.showSaveFilePicker;
+  const globalPicker = g.showSaveFilePicker;
+  const pickerOwner = typeof globalPicker === "function" ? g : g.window;
+  const picker = globalPicker ?? pickerOwner?.showSaveFilePicker;
   const mediaType =
     binding.kind === "canonical-json"
       ? CANONICAL_JSON_MEDIA_TYPE
@@ -567,7 +569,7 @@ function startExportDelivery(
       }>
     >;
     try {
-      pickerPromise = picker({
+      pickerPromise = picker.call(pickerOwner, {
         suggestedName: binding.filename,
         types: [
           {
