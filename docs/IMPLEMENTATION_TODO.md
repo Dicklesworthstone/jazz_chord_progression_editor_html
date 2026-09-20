@@ -1399,8 +1399,10 @@ Statuses below are the campaign-start snapshot. Use br show and br ready before 
 
 - [x] Claim deployment leaf and preserve unrelated component work.
 - [x] Pin committed artifact, 1,842 inputs and source mtimes.
-- [ ] Strict RCH guarded build and model/quality gate.
-- [ ] Native 15-instrument playback gate.
+- [x] Strict RCH hz4 guarded build and model/quality gate: doctor/build/predeploy exit 0; 11 shipping models, 9 instruments, 16 retained warnings; artifact `2facafaf2240e6db0cbf34024bd339e9ec653fd90e4df0d4e61530d588a76754` reproduced exactly.
+- [ ] Native 15-instrument playback gate: **failed 14/15**. Mellow Keys reports Playing but master output peak is 0.00000 (required 0.005); console/page errors are empty. Recovery is explicitly vacuous. Preserve `test-results/legacy-json-release-gates-20260920/{receipt,playback}.json`; strict RCH exited 1. No upload or gate retry.
+- [x] Bounded native diagnosis on the same worker: captured context clock, source-start arguments and analyser samples for Mellow Keys and FM Electric Piano. Mellow Keys was running at clock 0.011609977 for approximately 1.8 seconds before clock progress; first audible sample arrived approximately 1.92 seconds after the first sample. Both diagnostic instruments eventually sounded. Evidence: `test-results/legacy-json-release-diagnose-20260920/diagnostic.log` and receipt. This instrumented two-instrument diagnostic is not release proof and does not establish the cause of the original zero-output failure.
+- [ ] Resolve cold audio-clock/output failure with retained failing evidence and an independently justified correction; do not lengthen or bypass the release gate.
 - [ ] Final guarded rebuild and unchanged-input check.
 - [ ] Upload committed bytes to Cloudflare Pages and Vercel; poll HTML/image hashes.
 - [ ] Real desktop/phone JSON export checks on both hosts; retain diagnostics.
