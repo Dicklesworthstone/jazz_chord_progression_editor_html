@@ -4,9 +4,10 @@
 
 - [x] Read original contract, spec/build receipts and current operator/selector/inspector code; claim existing verification leaf and reserve this TODO.
 - [x] Preserve exact saved pitches, bounded occurrence pairs and existing V1 admission; freeze1,841 inputs and368 source mtimes. No defect identified by source review yet.
-- [ ] Run strict RCH focused operator/controller/inspector tests, four semantic mutants with honest control, full types, scoped lint, boundaries and guarded build.
-- [ ] Run existing real-browser12-cell register matrix across three engines, phone/desktop and light/dark; inspect native audio release and artifact-bound diagnostics.
-- [ ] Record actual results and fix any demonstrated defect. Human musical/usability acceptance remains required; do not substitute same-author automated proof or close the package.
+- [x] Strict RCH hz2:54 tests/556 assertions across six operator/controller/inspector suites; all four semantic mutants killed and honest control passes; full types, scoped lint, source boundaries and guarded build pass. Evidence: `test-results/register-review-20260920/`.
+- [x] Real-browser12/12 in73.059s across Chromium149.0.7827.55/Firefox151.0/WebKit26.5,320x568 and1280x900,light/dark. Zero skipped/flaky/unexpected/global errors; all12 attachments bind committed SHA256a98361533e022eefaeaed0ad344ebc1c1da23f4f65d04406ea2e1ad154f80f6b and contain zero console/page errors or forbidden requests. Native Hear/Release, exact note order/duplicates,28-pair disclosure, unsupported V1 witness, keyboard/Axe/layout and unchanged revision assertions pass.
+- [x] Fresh source review found no demonstrated defect; no production/test/fixture/gate changes. Reproduced deployed artifact; final1,841 input hashes/368 mtimes unchanged. No new feature or deployment claimed.
+- [ ] Human musical/usability acceptance remains required by `docs/REGISTER_OBSERVATIONS.md`; return this same verification leaf open/unassigned with exact automated proof, without closing the package or inventing a substitute acceptance task.
 
 
 ## Deploy MIDI export ownership repair — jcpe-ue9p
