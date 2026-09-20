@@ -1,5 +1,14 @@
 # Implementation TODO
 
+## Deploy MIDI export ownership repair — jcpe-ue9p
+
+- [x] Claim deployment, reserve TODO and coordinate browser lane; pin committed2d241d4 and preserve peer panels.
+- [x] Freeze1,841 committed input hashes and368 source mtimes; artifact SHA256a98361533e022eefaeaed0ad344ebc1c1da23f4f65d04406ea2e1ad154f80f6b,8,646,325bytes.
+- [ ] Strict RCH guarded build, model/quality acceptance and15-instrument native playback gate against those committed bytes.
+- [ ] Recheck inputs/mtimes and fresh guarded rebuild; upload git-show bytes to both hosts and poll HTML/social image hashes.
+- [ ] Real browser desktop/phone boot, MIDI download/cancel, delayed fingerprint and cleanup-error recovery on both hosts; retain diagnostics and known analytics injection separately.
+- [ ] Review evidence, close deployment leaf, commit/push owned tracker/TODO and release reservation. Human/aggregate acceptance remains open.
+
 ## MIDI export dismissal ownership — jcpe-ls5c
 
 - [x] Trace U7 contract and real compact-sheet/service cancellation defect; claim and reserve exact paths.
