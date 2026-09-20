@@ -1,5 +1,14 @@
 # Implementation TODO
 
+## Deploy audition release repairs — jcpe-drbr
+
+- [x] Claim deployment leaf; reserve TODO and coordinate browser lane. Pin ec8448d; preserve three peer-owned panels.
+- [ ] Check committed input bytes and source mtimes; strict RCH fresh guarded build, model/instrument predeploy checks and real Node playback gate.
+- [ ] Final strict RCH rebuild; compare exact committed HTML and image before upload.
+- [ ] Upload exact staged committed bytes to Cloudflare Pages and Vercel; poll both HTML/image hashes.
+- [ ] Real browser checks on both hosts at phone/desktop widths for inspector, note-first and MIDI-source audition; inspect diagnostics and screenshots.
+- [ ] Record exact evidence and remaining obligations; close deployment leaf, commit/push owned TODO/tracker and release reservation.
+
 ## Retry note-first and MIDI-import audition release — jcpe-t3v8
 
 - [x] Reproduce refusal/throw retries in note entry, MIDI pitch sets and MIDI playback plans: strict RCH baseline 6 pass / 18 fail; six cross-panel isolation controls pass.
