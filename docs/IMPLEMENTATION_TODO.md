@@ -1,5 +1,14 @@
 # Implementation TODO
 
+## Retry note-first and MIDI-import audition release — jcpe-t3v8
+
+- [x] Reproduce refusal/throw retries in note entry, MIDI pitch sets and MIDI playback plans: strict RCH baseline 6 pass / 18 fail; six cross-panel isolation controls pass.
+- [x] Keep independent exact-submission retirement ownership for the two panels, while immediately cancelling pending preparations.
+- [x] Strict RCH hz2: 96 focused tests/989 assertions across six suites, all TypeScript projects, scoped ESLint and guarded build pass (`test-results/audition-retire-final-20260919/`).
+- [x] Strict RCH hz2 fresh replay:24 tests/324 assertions. Native note-first exact audio/Manual roundtrip and MIDI source review:12/12 at320/1280px across Chromium149.0.7827.55, Firefox151.0, WebKit26.5 in104.515s. Zero skips/retries/unexpected/global errors; all12 hash-bound diagnostics show zero console/page errors or forbidden requests. MIDI source voice counts4→0 with no future attacks. Note-first export/undo/redo/local recovery preserves exact Manual notes. `test-results/audition-retire-browser-20260919/`.
+- [x] Final strict RCH guarded rebuild matches both earlier builds: SHA256 `a0398a0bbe62b362d5560331710f1b221108869b414a07a52985ac52d68a4e50`,8,645,438bytes. All1,837 input hashes and368 source mtimes unchanged (including three untouched peer panels). Root matched HEAD before guarded artifact promotion; dist is byte-identical. Close only jcpe-t3v8 after exact gate receipts; same-author replay is not independent-person or physical-device acceptance.
+- [ ] Deploy separately with all required committed-byte gates; broader human and package acceptance remains open.
+
 ## Retry inspector audition release — jcpe-j3vf
 
 - [x] Inspect U2 preview contract and current source; claim exact controller/test/artifact/TODO paths and coordinate.

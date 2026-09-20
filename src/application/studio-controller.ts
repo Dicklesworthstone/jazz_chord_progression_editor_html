@@ -7489,6 +7489,36 @@ function makeStudioComposition(
     return Object.freeze({id:generation,completion});
   };
 
+  // Each panel retains only its exact submitted audition after a failed release.
+  // Cancelling preparation clears generation ownership immediately, but must not
+  // discard the submission needed for a retry or transfer it to another panel.
+  const createOwnedPitchSetRelease = () => {
+    let retirement: Readonly<{ generation: number; previewId: string }> | null = null;
+    return async (generation: number | null): Promise<StudioInspectorResult<void>> => {
+      if (generation !== null && generation === pitchSetPreviewGeneration && generation === previewOrdinal) {
+        const submitted = previewSubmission?.generation === generation ? previewSubmission : null;
+        if (submitted !== null) retirement = submitted;
+        const result = await releasePreviewPitches();
+        if (submitted !== null) {
+          if (result.ok && retirement === submitted) retirement = null;
+          return result;
+        }
+        if (!result.ok) return result;
+      }
+      const pending = retirement;
+      if (pending !== null) {
+        if (previewSubmission !== pending || audioPort === null) retirement = null;
+        else {
+          const result = await releaseSubmittedPreview(audioPort, pending);
+          if (result.ok && retirement === pending) retirement = null;
+          return result;
+        }
+      }
+      return Object.freeze({ ok: true, value: undefined });
+    };
+  };
+  const releaseOwnedNoteFirst = createOwnedPitchSetRelease();
+  const releaseOwnedMidiImport = createOwnedPitchSetRelease();
   let noteFirstPreviewOwner:Readonly<{document:AppState["document"];revision:number;generation:number}>|null=null;
   const retireNoteFirstIfChanged=():void=>{
     if(noteFirstPreviewOwner!==null&&(noteFirstPreviewOwner.document!==state.document||noteFirstPreviewOwner.revision!==state.revision))void releaseNoteFirst();
@@ -7503,8 +7533,7 @@ function makeStudioComposition(
   };
   const releaseNoteFirst=():Promise<StudioInspectorResult<void>>=>{
     const generation=noteFirstPreviewOwner?.generation??null;noteFirstPreviewOwner=null;
-    return generation!==null&&generation===pitchSetPreviewGeneration&&generation===previewOrdinal
-      ?releasePreviewPitches():Promise.resolve({ok:true,value:undefined});
+    return releaseOwnedNoteFirst(generation);
   };
 
   let midiImportPreviewGeneration: number | null = null;
@@ -7524,8 +7553,7 @@ function makeStudioComposition(
     release: () => {
       const generation = midiImportPreviewGeneration;
       midiImportPreviewGeneration = null;
-      return generation !== null && generation === pitchSetPreviewGeneration && generation === previewOrdinal
-        ? releasePreviewPitches() : Promise.resolve(Object.freeze({ ok: true, value: undefined }));
+      return releaseOwnedMidiImport(generation);
     },
   });
 
