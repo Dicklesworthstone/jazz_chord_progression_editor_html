@@ -3,9 +3,10 @@
 ## Legacy E0 delivery boundary — jcpe-4po2
 
 - [x] Trace remaining cast-policy sites to unchecked delivery receipts; read E0 sections10–11 and reuse existing normalization design. Claim/reserve exact paths.
-- [ ] Reproduce malformed completion envelopes/receipts, binding/count contradictions, getter execution and mutable retention against real operations/registry, with honest success/cancel/failure/cleanup controls.
-- [ ] Wire existing exact delivery normalizer and descriptor-checked completion envelope; preserve cleanup-unknown refusal and exactly-once registry retirement.
-- [ ] Strict RCH focused E0/export tests, full types/scopedlint/boundaries/build and unchanged cast-policy diagnostics; fresh same-author review.
+- [x] Original-source strict RCH baseline6pass/13fail; all five honest terminal controls pass. Malformed receipts/envelopes incorrectly accepted. Preserve `test-results/legacy-delivery-baseline-20260920/`; split getter/retained-mutation witnesses and strengthen reflection case afterward.
+- [x] Reuse `normalizeExportDelivery` against private binding; require a plain own-data single completion promise, reject getters/custom prototypes, snapshot typed outcomes and retire exactly once. No new normalizer or validator exceptions.
+- [x] Strict RCH hz2 affected E0/export suites, full types, scopedlint, boundaries and guarded build pass in `test-results/legacy-delivery-checked-20260920/`. Earlier runs had only new-fixture type errors (literal widening then branded hash), now corrected; reports fixed/final retained. Unchanged global cast-policy remains1pass/1fail with6 legacy findings vs9; hostile control passes.
+- [ ] Fresh focused replay/native download regression and rebuild; inspect exact receipt counts and unchanged input hashes before artifact promotion.
 - [ ] Commit/push owned paths only after evidence; retain parent aggregate and human obligations. No deployment claim unless required committed-byte gates run.
 
 
