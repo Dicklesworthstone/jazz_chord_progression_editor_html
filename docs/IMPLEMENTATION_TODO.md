@@ -1,5 +1,14 @@
 # Implementation TODO
 
+## Current register and motion review — jcpe-6ujg.13.3
+
+- [x] Read original contract, spec/build receipts and current operator/selector/inspector code; claim existing verification leaf and reserve this TODO.
+- [x] Preserve exact saved pitches, bounded occurrence pairs and existing V1 admission; freeze1,841 inputs and368 source mtimes. No defect identified by source review yet.
+- [ ] Run strict RCH focused operator/controller/inspector tests, four semantic mutants with honest control, full types, scoped lint, boundaries and guarded build.
+- [ ] Run existing real-browser12-cell register matrix across three engines, phone/desktop and light/dark; inspect native audio release and artifact-bound diagnostics.
+- [ ] Record actual results and fix any demonstrated defect. Human musical/usability acceptance remains required; do not substitute same-author automated proof or close the package.
+
+
 ## Deploy MIDI export ownership repair — jcpe-ue9p
 
 - [x] Claim deployment, reserve TODO and coordinate browser lane; pin committed2d241d4 and preserve peer panels.
