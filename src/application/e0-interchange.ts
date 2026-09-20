@@ -1,3 +1,4 @@
+import { normalizeExportDelivery } from "./e0-delivery-normalization";
 import {
   makeMidiRange,
   type DocumentId,
@@ -108,7 +109,7 @@ import type {
   ChartTextDraft,
   SourceRange,
 } from "../theory";
-import type { CanonicalJsonArtifact, ExportDeliveryResult } from "../export";
+import type { CanonicalJsonArtifact } from "../export";
 
 /* Total projection of a C0 legacy-migration refusal into its public shape:
  * the real refusal code always survives; collision ids and raw source stay
@@ -1768,16 +1769,12 @@ export function createE0InterchangeOperations(
           privateBytes: preparedDelivery.privateBytes,
           preference: request.deliveryPreference,
         });
-        if (
-          isPlainRecord(startResult) &&
-          "completion" in startResult &&
-          startResult["completion"] instanceof Promise
-        ) {
-          deliveryCompletion = await startResult["completion"];
-        } else if (startResult instanceof Promise) {
-          deliveryCompletion = await startResult;
-        } else {
-          deliveryCompletion = startResult;
+        // Only an own-data completion promise is an activation-safe envelope.
+        // Never invoke adapter accessors or accept a bare async start result.
+        if (isPlainRecord(startResult) && Reflect.ownKeys(startResult).length === 1) {
+          const field = Object.getOwnPropertyDescriptor(startResult, "completion");
+          const completion: unknown = field !== undefined && "value" in field ? field.value : undefined;
+          if (completion instanceof Promise) deliveryCompletion = await completion;
         }
       } catch {
         deliveryRegistry.finishDelivery(request.preparationId);
@@ -1804,10 +1801,8 @@ export function createE0InterchangeOperations(
 
       deliveryRegistry.finishDelivery(request.preparationId);
 
-      if (
-        !isPlainRecord(deliveryCompletion) ||
-        typeof deliveryCompletion["ok"] !== "boolean"
-      ) {
+      const normalizedDelivery = normalizeExportDelivery(deliveryCompletion, preparedDelivery.binding);
+      if (normalizedDelivery === null) {
         const diagnostic: E0AdapterProtocolDiagnostic & {
           boundary: "export-delivery";
         } = Object.freeze({
@@ -1829,31 +1824,31 @@ export function createE0InterchangeOperations(
         });
       }
 
-      if (deliveryCompletion["outcome"] === "cancelled") {
+      if (normalizedDelivery.outcome === "cancelled") {
         return Object.freeze({
           outcome: "unchanged-cancelled",
-          delivery: deliveryCompletion as unknown as Extract<ExportDeliveryResult, { outcome: "cancelled" }>,
+          delivery: normalizedDelivery,
           a0Publication: null,
           a1Persistence: null,
           durability: "unchanged",
         });
       }
 
-      if (deliveryCompletion["outcome"] === "failed") {
+      if (normalizedDelivery.outcome === "failed") {
         return Object.freeze({
           outcome: "unchanged-failed",
-          delivery: deliveryCompletion as unknown as Extract<ExportDeliveryResult, { outcome: "failed" }>,
+          delivery: normalizedDelivery,
           a0Publication: null,
           a1Persistence: null,
           durability: "unchanged",
         });
       }
 
-      if (deliveryCompletion["outcome"] === "cleanup-failed") {
+      if (normalizedDelivery.outcome === "cleanup-failed") {
         return Object.freeze({
           outcome: "delivery-cleanup-reconciliation-required",
           code: "export.delivery_cleanup_failed",
-          delivery: deliveryCompletion as unknown as Extract<ExportDeliveryResult, { outcome: "cleanup-failed" }>,
+          delivery: normalizedDelivery,
           deliveryResourceReconciliation: "required",
           a0Publication: null,
           a1Persistence: null,
@@ -1861,32 +1856,9 @@ export function createE0InterchangeOperations(
         });
       }
 
-      if (
-        deliveryCompletion["outcome"] !== "completed" &&
-        deliveryCompletion["outcome"] !== "handed-off"
-      ) {
-        const diagnostic: E0AdapterProtocolDiagnostic & {
-          boundary: "export-delivery";
-        } = Object.freeze({
-          boundary: "export-delivery",
-          reason: "invalid-envelope-or-binding",
-          rawResultRetained: false,
-        });
-        return Object.freeze({
-          outcome: "delivery-protocol-invalid",
-          code: "export.delivery_result_invalid",
-          delivery: null,
-          cleanupKnowledge: "unknown",
-          maximumPossibleOutstandingOwnedResources: 4,
-          deliveryResourceReconciliation: "required",
-          protocolDiagnostic: diagnostic,
-          a0Publication: null,
-          a1Persistence: null,
-          durability: "unchanged",
-        });
-      }
-
-      const delivery = deliveryCompletion as MarkerEligibleCanonicalExportDelivery;
+      const delivery: MarkerEligibleCanonicalExportDelivery = Object.freeze({
+        ...normalizedDelivery, artifact: Object.freeze({ ...preparedDelivery.binding }),
+      });
 
       // Settlement stage: A0 publication
       const pubReq: PublishCanonicalExportRevisionRequest = Object.freeze({
