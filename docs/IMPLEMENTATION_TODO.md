@@ -1,5 +1,15 @@
 # Implementation TODO
 
+## Acknowledge MIDI audition stop — jcpe-e6ui
+
+- [x] Trace explicit stop UI: it ignored the asynchronous release result, declared success early and removed retry.
+- [x] Claim/reserve UI, browser harness/spec, TODO and generated artifact; coordinate and preserve peer panels.
+- [ ] Baseline real Preact/root/MIDI decoder with controlled release replies; success, refusal, rejection and stale replacement cases.
+- [ ] Retain Stop while pending/failed; announce success only after acknowledgement; suppress stale replies and cancel timers immediately.
+- [ ] Strict RCH browser proof, focused controller regressions, full types/scoped lint and guarded build.
+- [ ] Native MIDI-source/audition regression checks; final fresh rebuild/hash/mtime audit and owned commit.
+- [ ] Deploy separately; human/aggregate acceptance stays open.
+
 ## Deploy audition release repairs — jcpe-drbr
 
 - [x] Claim deployment leaf; reserve TODO and coordinate browser lane. Pin ec8448d; preserve three peer-owned panels.
