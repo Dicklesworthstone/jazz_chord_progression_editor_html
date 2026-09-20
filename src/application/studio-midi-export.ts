@@ -941,7 +941,9 @@ export function createStudioMidiExport(ports: Readonly<{
     preparationId: StudioMidiExportPreparationId | null,
   ): StudioMidiExportAbandonResult => {
     if (
-      registryState === "empty" ||
+      // Delivery has committed activation. Its completion owns cleanup and the
+      // registry until it settles; cancellation must not free this slot early.
+      registryState !== "ready" ||
       preparationId === null ||
       preparation === null ||
       preparation.preparationId !== preparationId

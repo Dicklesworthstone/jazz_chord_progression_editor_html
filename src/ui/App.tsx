@@ -1850,6 +1850,10 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
     refusal: Readonly<{ code: string; message: string }> | null;
     announcement: string | null;
   }> | null>(null);
+  // A dismissed fingerprint operation may still finish. Only its originating
+  // session may publish the preview; a late success releases its own bytes.
+  const midiExportGeneration = useRef(0);
+  useEffect(() => () => { midiExportGeneration.current += 1; }, []);
   const [midiImportNotice, setMidiImportNotice] = useState<string | null>(null);
   /*
    * Audio schedules the immutable groove plan. This timer only reads its
@@ -1925,7 +1929,8 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
    * replaces the session atomically; the dialog never re-reads mid-flight.
    */
   const openMidiExport = (): void => {
-    if (!actions.midiExportAvailable) return;
+    if (!actions.midiExportAvailable || midiExportSession?.phase === "delivering") return;
+    const generation = ++midiExportGeneration.current;
     /* The frozen U7 accessibility matrix: sheet below the U0 compact
      * breakpoint (640px), modal dialog at and above it. */
     const compact =
@@ -1941,8 +1946,13 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
       announcement: "Preparing the export preview…",
     });
     void actions.midiExportOpenPreview().then((result) => {
+      if (generation !== midiExportGeneration.current) {
+        if (result.ok) actions.midiExportAbandon(result.preparationId);
+        return;
+      }
       if (!result.ok) {
         setMidiExportSession(null);
+        setActiveSheet((current) => (current === "export" ? null : current));
         setUiRefusal(
           Object.freeze({
             heading: "Export preview failed",
@@ -1998,12 +2008,13 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
     const session = midiExportSession;
     if (session === null || session.preparationId === null) return;
     const preparationId = session.preparationId;
+    const generation = midiExportGeneration.current;
     setMidiExportSession(
       Object.freeze({ ...session, phase: "delivering" as const }),
     );
     void actions.midiExportDownload(preparationId).then((result) => {
       setMidiExportSession((current) => {
-        if (current === null) return null;
+        if (current === null || generation !== midiExportGeneration.current || current.preparationId !== preparationId) return current;
         if (result.outcome === "handed-off") {
           return Object.freeze({
             ...current,
@@ -2031,6 +2042,8 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
         }
         return Object.freeze({
           ...current,
+          phase: result.refusal.code === "u7.delivery_cleanup_failed" ? "delivered" as const : "ready" as const,
+          preparationId: result.refusal.code === "u7.delivery_cleanup_failed" ? null : current.preparationId,
           refusal: result.refusal,
           announcement: result.refusal.message,
         });
@@ -2039,6 +2052,8 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
   };
   const closeMidiExport = (): void => {
     const session = midiExportSession;
+    if (session?.phase === "delivering") return;
+    midiExportGeneration.current += 1;
     if (session !== null) {
       actions.midiExportAbandon(session.preparationId);
     }
@@ -2053,8 +2068,7 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
     openMidiExport();
   };
   const focusMidiExportBlocker = (eventId: string): void => {
-    setMidiExportSession(null);
-    setActiveSheet((current) => (current === "export" ? null : current));
+    closeMidiExport();
     actions.selectEvent(eventId);
   };
 

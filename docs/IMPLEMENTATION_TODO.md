@@ -1,5 +1,14 @@
 # Implementation TODO
 
+## MIDI export dismissal ownership — jcpe-ls5c
+
+- [x] Trace U7 contract and real compact-sheet/service cancellation defect; claim and reserve exact paths.
+- [x] Original-source strict RCH baseline:20 U7 passes/3 ownership failures;12/12 browser cells fail at cancelled-hash registry leakage or enabled Close during delivery. Desktop busy was also aria-only, so both surfaces need blocked dismissibility. Evidence: `test-results/midi-dismissal-baseline-20260920/`.
+- [ ] Keep committed delivery owned until completion on phone and desktop; suppress dismissed preview replies and release their prepared bytes.
+- [x] Strict RCH focused units, full typecheck, scoped lint, guarded build and three-engine desktop/phone browser proof. hz2 refused critical memory admission; switched to hz4. Cancelled one queued attempt before execution to finish cleanup handling; subsequent input guard rejected App drift before tests. Initial final run:23 U7 unit passes, scoped lint/build pass,18/18 browser pass; typecheck failed on Playwright reducedMotion option placement. Corrected to contextOptions; no assertion/deadline/retry relaxation. Preserve `test-results/midi-dismissal-final-20260920/`. Repinned1,841 inputs/368 source mtimes; Complete run passed:23 U7 tests/173 assertions, full typecheck, scoped lint, guarded build and24/24 browser cases in101.604s across Chromium149.0.7827.55/Firefox151.0/WebKit26.5. Zero skipped/flaky/unexpected/global errors; all24 source-bound attachments have zero console/page errors or forbidden requests. `test-results/midi-dismissal-complete-20260920/`. Fresh replay:23 units/173 assertions and24/24 browser cases in119.705s, same clean diagnostic counts (`test-results/midi-dismissal-fresh-20260920/`).
+- [x] Fresh same-author review/replay, final strict RCH precommit rebuild and1,841 input hashes/368 source mtimes unchanged. Complete/fresh/rebuild artifacts identical:SHA256a98361533e022eefaeaed0ad344ebc1c1da23f4f65d04406ea2e1ad154f80f6b,8,646,325bytes. Prior root equaled git-showHEAD before generated artifact promotion; root/dist now identical. Evidence: `test-results/midi-dismissal-rebuild-20260920/`. Close only this repair leaf and commit owned paths; no independent-person, aggregate verify or deployment claim.
+- [ ] Production deployment of this artifact remains pending; U7 independent/human acceptance and Cloudflare injection remain open.
+
 ## Deploy MIDI Stop acknowledgement — jcpe-p1ip
 
 - [x] Claim deployment leaf, reserve TODO, coordinate browser lane and pin cab1f38; preserve three peer panels.

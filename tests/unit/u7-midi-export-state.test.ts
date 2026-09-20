@@ -265,3 +265,45 @@ describe("U7 MIDI export workflow state machine (production)", () => {
     expect(service.inspectRegistry().state).toBe("empty");
   });
 });
+
+for (const outcome of ["success", "failure", "bad-cleanup"] as const) {
+  test(`committed delivery retains its registry through dismissal: ${outcome}`, async () => {
+    const scripted = makePorts(readyDocument());
+    let settle: (value: unknown) => void = () => { throw new Error("Delivery not started"); };
+    let fail: (reason: unknown) => void = () => { throw new Error("Delivery not started"); };
+    const service = createStudioMidiExport({
+      ...scripted.ports,
+      startDelivery: () => ({ completion: new Promise((resolve, reject) => { settle = resolve; fail = reject; }) }),
+    });
+    const preview = await service.openPreview();
+    if (!preview.ok || preview.preparationId === null) throw new Error("Expected a ready preview");
+    const id = preview.preparationId;
+    const pending = service.download(id);
+    expect(service.inspectRegistry()).toEqual({ state: "delivering", preparationId: id });
+    expect(service.abandon(id).outcome).toBe("ignored-stale");
+    expect(service.inspectRegistry()).toEqual({ state: "delivering", preparationId: id });
+    const conflict = await service.openPreview();
+    expect(conflict.ok).toBe(false);
+    if (conflict.ok) throw new Error("Overlapping preparation accepted");
+    expect(conflict.refusal.code).toBe("u7.preparation_conflict");
+    expect((await service.download(id)).outcome).toBe("refused");
+    if (outcome === "failure") fail(new Error("Delivery rejected"));
+    else settle({ objectUrlsCreated: 1, objectUrlsRevoked: outcome === "success" ? 1 : 0, outstandingOwnedResources: outcome === "success" ? 0 : 1 });
+    expect((await pending).outcome).toBe(outcome === "success" ? "handed-off" : outcome === "failure" ? "failed" : "refused");
+    if (outcome === "failure") {
+      expect(service.inspectRegistry()).toEqual({ state: "ready", preparationId: id });
+      // A failed handoff can be retried with the original bytes and identity.
+      const retry = service.download(id);
+      settle({ objectUrlsCreated: 1, objectUrlsRevoked: 1, outstandingOwnedResources: 0 });
+      expect((await retry).outcome).toBe("handed-off");
+    }
+    expect(service.inspectRegistry().state).toBe("empty");
+    const next = await service.openPreview();
+    if (!next.ok || next.preparationId === null) throw new Error("Expected fresh export after completion");
+    expect(next.preparationId).toBeGreaterThan(id);
+    expect(service.generate(next.preparationId).outcome).toBe("generated");
+    expect(service.abandon(id).outcome).toBe("ignored-stale");
+    expect(service.inspectRegistry().preparationId).toBe(next.preparationId);
+    expect(service.abandon(next.preparationId).outcome).toBe("abandoned");
+  });
+}

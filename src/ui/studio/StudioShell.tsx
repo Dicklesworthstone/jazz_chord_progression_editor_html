@@ -114,6 +114,7 @@ function MeasureCompletionDialogContent({
  * keystroke inside a dialog into a false stale-owner refusal.
  */
 const DISMISSIBLE = Object.freeze({ kind: "dismissible" } as const);
+const MIDI_DELIVERING = Object.freeze({ kind: "blocked", reason: "Wait for the browser download handoff to finish." } as const);
 
 export function StudioShell({
   inspector,
@@ -739,7 +740,7 @@ export function StudioShell({
             describedBy={[]}
             description="Inspect what the MIDI file will carry, then generate and download it."
             disabled={false}
-            dismissibility={DISMISSIBLE}
+            dismissibility={view.midiExport.state === "delivering" ? MIDI_DELIVERING : DISMISSIBLE}
             focusTargets={{
               triggerId: "studio-export-midi",
               workflowTargetId: null,
@@ -926,7 +927,7 @@ export function StudioShell({
         {activeSheet === null || sheetId === null ? null : (
           <SheetDrawer
             backgroundRootId="studio-shell-background"
-            busy={false}
+            busy={activeSheet === "export" && view.midiExport.state === "delivering"}
             closeLabel={`Close ${sheetTitle}`}
             content={
               activeSheet === "export" ? (
@@ -1006,7 +1007,7 @@ export function StudioShell({
             describedBy={[]}
             description={sheetDescription}
             disabled={false}
-            dismissibility={DISMISSIBLE}
+            dismissibility={activeSheet === "export" && view.midiExport.state === "delivering" ? MIDI_DELIVERING : DISMISSIBLE}
             focusTargets={{
               triggerId: sheetTriggerId,
               workflowTargetId: null,
