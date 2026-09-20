@@ -1394,3 +1394,14 @@ Statuses below are the campaign-start snapshot. Use br show and br ready before 
 - [ ] `jcpe-milestone-advanced-craft-ulj.9.3` — G9/verify: Prove conformance, integration, and evidence (open; P2; unassigned)
 - [ ] `jcpe-dsp-flute-c7-44k1-regime-c4p1` — Flute MIDI 93/96 at 44.1/48 kHz: sub-14-sample jets refuse fractional tuning (regime flips) (open; P4; unassigned)
 - [x] `jcpe-zw47` — Batch local MIDI import: score user-supplied candidate files and auto-select the best (closed; P4; CodexRuntime; 1bd322d)
+
+### jcpe-ev4q — deploy legacy JSON reply normalization
+
+- [x] Claim deployment leaf and preserve unrelated component work.
+- [x] Pin committed artifact, 1,842 inputs and source mtimes.
+- [ ] Strict RCH guarded build and model/quality gate.
+- [ ] Native 15-instrument playback gate.
+- [ ] Final guarded rebuild and unchanged-input check.
+- [ ] Upload committed bytes to Cloudflare Pages and Vercel; poll HTML/image hashes.
+- [ ] Real desktop/phone JSON export checks on both hosts; retain diagnostics.
+- [ ] Record exact results, close leaf and sync tracker.
