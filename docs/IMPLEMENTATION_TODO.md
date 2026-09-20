@@ -4,7 +4,7 @@
 
 - [x] Claim deployment leaf, reserve TODO, coordinate browser lane and pin cab1f38; preserve three peer panels.
 - [x] Freeze1,839 committed input hashes and368 source mtimes.
-- [ ] Strict RCH guarded rebuild, model/quality gates and native15-instrument predeploy playback.
+- [ ] Strict RCH guarded rebuild, model/quality gates and native15-instrument predeploy playback. Initial hz4 run failed because its tmpfs dependency cache was gone; restored checked cached dependencies and preserved `test-results/midi-stop-release-gates-20260920/`. Restored build reproduces committed bytes and model11/quality9 pass. Native playback reported Mellow keys Playing with measured peak0; full run retained before a separate unchanged-gate execution on lower-I/O hz2. No upload until native gate passes.
 - [ ] Recheck source/mtime identity; fresh rebuild; stage only committed HTML and image; upload both hosts.
 - [ ] Poll both hashes; native MIDI audition Stop/Discard at320/1280px across three engines on each host; retain errors/requests/version/hash diagnostics.
 - [ ] Review evidence, close only deployment leaf, commit/push owned tracker/TODO and release reservation. Human/aggregate and Cloudflare injection obligations stay open.
