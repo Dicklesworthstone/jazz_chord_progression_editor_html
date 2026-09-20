@@ -1,5 +1,14 @@
 # Implementation TODO
 
+## Deploy MIDI Stop acknowledgement — jcpe-p1ip
+
+- [x] Claim deployment leaf, reserve TODO, coordinate browser lane and pin cab1f38; preserve three peer panels.
+- [x] Freeze1,839 committed input hashes and368 source mtimes.
+- [ ] Strict RCH guarded rebuild, model/quality gates and native15-instrument predeploy playback.
+- [ ] Recheck source/mtime identity; fresh rebuild; stage only committed HTML and image; upload both hosts.
+- [ ] Poll both hashes; native MIDI audition Stop/Discard at320/1280px across three engines on each host; retain errors/requests/version/hash diagnostics.
+- [ ] Review evidence, close only deployment leaf, commit/push owned tracker/TODO and release reservation. Human/aggregate and Cloudflare injection obligations stay open.
+
 ## Acknowledge MIDI audition stop — jcpe-e6ui
 
 - [x] Trace explicit stop UI: it ignored the asynchronous release result, declared success early and removed retry.
