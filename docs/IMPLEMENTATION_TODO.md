@@ -4,10 +4,10 @@
 
 - [x] Trace explicit stop UI: it ignored the asynchronous release result, declared success early and removed retry.
 - [x] Claim/reserve UI, browser harness/spec, TODO and generated artifact; coordinate and preserve peer panels.
-- [ ] Baseline real Preact/root/MIDI decoder with controlled release replies; success, refusal, rejection and stale replacement cases.
-- [ ] Retain Stop while pending/failed; announce success only after acknowledgement; suppress stale replies and cancel timers immediately.
-- [ ] Strict RCH browser proof, focused controller regressions, full types/scoped lint and guarded build.
-- [ ] Native MIDI-source/audition regression checks; final fresh rebuild/hash/mtime audit and owned commit.
+- [x] Corrected original-source baseline:6 pass/6 fail across Chromium/Firefox/WebKit; refusal/rejection cases reproduce the missing Stop button while release is pending, success/replacement controls pass (`test-results/midi-stop-red-fixed-20260920/`). Preserve the earlier12 setup failures: fake clock selected rendered piano without its renderer; corrected fixture selects real analog-poly through the controller. The first misnamed scratch baseline ran existing tests only and is not defect proof.
+- [x] Retain Stop while pending/failed; announce success only after acknowledgement; suppress stale replies and cancel timers immediately. Source/tests were committed by the concurrent session as69bfc56/230cb95; preserve that history.
+- [x] Strict RCH hz2 final:32 controller tests/423 assertions, full typecheck, scoped ESLint and guarded build pass. Browser27/27 in144.260s:12 controlled-release cases and15 unchanged native MIDI-source/organ/piano audition checks across Chromium149.0.7827.55,Firefox151.0,WebKit26.5; zero skipped/flaky/unexpected/global errors. All12 release attachments bind App SHA8dbd36ebb244d7ee6ede876100527fbf7a8eb71d7e2080976cf2bf753829e90d and have zero errors/requests. Native checks retain exact chart and audio Stop/Discard assertions. `test-results/midi-stop-final-20260920/`. Preserve earlier scoped lint failure, corrected callback syntax; positive active-voice assertion added, no gate relaxation.
+- [x] Fresh strict RCH hz2 rebuild and12/12 regression replay in46.239s; zero skips/flakes/unexpected/global errors (`test-results/midi-stop-fresh-20260920/`). Same-author fresh verification, not independent-person acceptance. Generated root/dist match both earlier builds:SHA2565bd775bcfc587e6a407002790b309029241853c0d7c4ab2fd4e3c606ad65ff72,8,645,682bytes. All1,839 input hashes/368 source mtimes unchanged; prior root equaled git-showHEAD before promotion. Bounded honesty audit found no gate weakening; disclosed setup/invocation/lint failures retained. Commit only owned test corrections/artifact/TODO/tracker; preserve peer panels.
 - [ ] Deploy separately; human/aggregate acceptance stays open.
 
 ## Deploy audition release repairs — jcpe-drbr
