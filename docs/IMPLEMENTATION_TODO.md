@@ -1,5 +1,14 @@
 # Implementation TODO
 
+## Legacy E0 delivery boundary — jcpe-4po2
+
+- [x] Trace remaining cast-policy sites to unchecked delivery receipts; read E0 sections10–11 and reuse existing normalization design. Claim/reserve exact paths.
+- [ ] Reproduce malformed completion envelopes/receipts, binding/count contradictions, getter execution and mutable retention against real operations/registry, with honest success/cancel/failure/cleanup controls.
+- [ ] Wire existing exact delivery normalizer and descriptor-checked completion envelope; preserve cleanup-unknown refusal and exactly-once registry retirement.
+- [ ] Strict RCH focused E0/export tests, full types/scopedlint/boundaries/build and unchanged cast-policy diagnostics; fresh same-author review.
+- [ ] Commit/push owned paths only after evidence; retain parent aggregate and human obligations. No deployment claim unless required committed-byte gates run.
+
+
 ## Current register and motion review — jcpe-6ujg.13.3
 
 - [x] Read original contract, spec/build receipts and current operator/selector/inspector code; claim existing verification leaf and reserve this TODO.
