@@ -1877,15 +1877,28 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
   };
   const midiAuditionTimers = useRef<number[]>([]);
   const midiAuditionGeneration = useRef(0);
-  const cancelMidiAudition = (): void => {
-    midiAuditionGeneration.current += 1;
+  const cancelMidiAudition = (announce = false): void => {
+    const generation = ++midiAuditionGeneration.current;
+    const wasAuditioning = midiAuditioning;
     for (const timer of midiAuditionTimers.current) {
       window.clearTimeout(timer);
     }
     midiAuditionTimers.current = [];
-    void actions.releasePreviewPitches();
-    setMidiAuditioning(false);
-    if (midiAuditioning) setMidiImportNotice("Audition stopped. Your chart is unchanged.");
+    // Invalidate polling immediately, but keep the explicit Stop control until
+    // retirement is acknowledged. A later operation owns its own notice/state.
+    setMidiAuditioning(announce && wasAuditioning);
+    if (announce) setMidiImportNotice("Stopping audition…");
+    void actions.releasePreviewPitches().then(result => {
+      if (!announce || generation !== midiAuditionGeneration.current) return;
+      setMidiAuditioning(!result.ok && wasAuditioning);
+      setMidiImportNotice(result.ok
+        ? "Audition stopped. Your chart is unchanged."
+        : result.message);
+    }, () => {
+      if (!announce || generation !== midiAuditionGeneration.current) return;
+      setMidiAuditioning(wasAuditioning);
+      setMidiImportNotice("Preview release failed. Try Stop again or use the main Stop control.");
+    });
   };
   useEffect(() => () => {
     midiAuditionGeneration.current += 1;
@@ -3167,7 +3180,7 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
           });
         },
         onMidiImportPreviewSource: (choice: number | "all" | null) => {
-          cancelMidiAudition();
+          cancelMidiAudition(choice === null);
           if (choice === null) return;
           if (midiPreview === null || midiSourceReview?.preview !== midiPreview || !midiSourceReview.result.ok) {
             setMidiImportNotice("Choose a current source passage first.");
@@ -3188,7 +3201,7 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
         },
         onMidiImportAudition: () => {
           if (midiAuditioning) {
-            cancelMidiAudition();
+            cancelMidiAudition(true);
             return;
           }
           if (midiPreview === null) return;
