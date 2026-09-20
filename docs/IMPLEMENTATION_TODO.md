@@ -3,11 +3,13 @@
 ## Deploy audition release repairs — jcpe-drbr
 
 - [x] Claim deployment leaf; reserve TODO and coordinate browser lane. Pin ec8448d; preserve three peer-owned panels.
-- [ ] Check committed input bytes and source mtimes; strict RCH fresh guarded build, model/instrument predeploy checks and real Node playback gate.
-- [ ] Final strict RCH rebuild; compare exact committed HTML and image before upload.
-- [ ] Upload exact staged committed bytes to Cloudflare Pages and Vercel; poll both HTML/image hashes.
-- [ ] Real browser checks on both hosts at phone/desktop widths for inspector, note-first and MIDI-source audition; inspect diagnostics and screenshots.
-- [ ] Record exact evidence and remaining obligations; close deployment leaf, commit/push owned TODO/tracker and release reservation.
+- [x] All1,837 inputs matched committed bytes;368 source mtimes frozen including untouched peer panels. Strict RCH hz4 fresh guarded build/predeploy pass:11 shipping models,9 instruments,0 failures/16 retained warnings; native Node26 playback15/15. Recovery row explicitly vacuous, not failure-recovery proof. RCH report transfer timed out after remote exit0; exact reports recovered via rsync without rerunning or relaxing gates (`test-results/audition-release-gates-20260920/`).
+- [x] hz2 had zero admissible slots (strict refusal103); final strict RCH hz4 rebuild passes and matches committed89987ee (runtime ec8448d), SHA256 a0398a0bbe62b362d5560331710f1b221108869b414a07a52985ac52d68a4e50,8,645,438bytes. Peer commits changed only tracker/TODO. Inputs/mtimes rechecked before upload.
+- [x] Staged git-show89987ee bytes only; Cloudflare d84e4f1d and Vercel dpl_2TYekCmchotMYHhzyDnuKQheUDVt READY. Raw curl HTML/image hashes match both hosts on first poll; image b70c9e3cd1f0d56579f7ec1f913a5c239c6b27fa6b67c5202091eb5ecf56af12. Alternate Python HTTP response still contains Cloudflare beacon (+367bytes; SHA e601c70abf762dc19e2d7d2980e97761ab86986bfe12dbecc6fdc636bfce3a21). jcpe-2nky remains open; CSP unchanged. Vercel-created staging env file stays ignored and excluded by upload allowlist.
+- [x] Preserve initial hz4 live failures:15/18 (three WebKit timeouts; disk IO full avg60 45.98%), then17/18 after moving profiles/cache/artifacts to tmpfs (all WebKit passed, one Firefox click timeout). No assertions/timeouts/retries changed. Reports `test-results/audition-release-live{,-ram}-20260920/`; disk pressure alone not proven as complete cause.
+- [x] Recovered hz2 admission with zero IO/memory pressure: Cloudflare18/18,140.837s,all18 diagnostics clean. Wrapper still exited1 because scratch invocation omitted explicit spec filenames and mistakenly triggered the unrelated standalone-offline evidence merger. Preserve `test-results/audition-release-live-hz2-20260920/`; correct only command arguments to name the same three specs.
+- [x] Final strict RCH hz2 command explicitly names all three specs:36/36 live checks,18 per host at320/1280px across Chromium149.0.7827.55,Firefox151.0,WebKit26.5; clean command receipts,zero skipped/flaky/unexpected/global errors. Cloudflare136.384s,Vercel121.648s. All36 hash-bound diagnostics have zero console/page errors or forbidden requests; real audition release, exact JSON/undo/redo/recovery and MIDI-source preservation pass. Four desktop/phone Chromium screenshots inspected: source notes/Stop focus visible and controls fit. `test-results/audition-release-live-final-20260920/`.
+- [x] Final1,837 input hashes/368 source mtimes unchanged; no runtime source edits, assertion/time-limit changes or CSP relaxation. Close only deployment leaf; preserve all failed/harness-error runs and outstanding human/physical-device/aggregate obligations. Commit/push owned TODO/tracker and release exact reservation.
 
 ## Retry note-first and MIDI-import audition release — jcpe-t3v8
 
@@ -16,7 +18,7 @@
 - [x] Strict RCH hz2: 96 focused tests/989 assertions across six suites, all TypeScript projects, scoped ESLint and guarded build pass (`test-results/audition-retire-final-20260919/`).
 - [x] Strict RCH hz2 fresh replay:24 tests/324 assertions. Native note-first exact audio/Manual roundtrip and MIDI source review:12/12 at320/1280px across Chromium149.0.7827.55, Firefox151.0, WebKit26.5 in104.515s. Zero skips/retries/unexpected/global errors; all12 hash-bound diagnostics show zero console/page errors or forbidden requests. MIDI source voice counts4→0 with no future attacks. Note-first export/undo/redo/local recovery preserves exact Manual notes. `test-results/audition-retire-browser-20260919/`.
 - [x] Final strict RCH guarded rebuild matches both earlier builds: SHA256 `a0398a0bbe62b362d5560331710f1b221108869b414a07a52985ac52d68a4e50`,8,645,438bytes. All1,837 input hashes and368 source mtimes unchanged (including three untouched peer panels). Root matched HEAD before guarded artifact promotion; dist is byte-identical. Close only jcpe-t3v8 after exact gate receipts; same-author replay is not independent-person or physical-device acceptance.
-- [ ] Deploy separately with all required committed-byte gates; broader human and package acceptance remains open.
+- [x] Deployed with required committed-byte gates and both-host browser checks under jcpe-drbr; broader human and package acceptance remains open.
 
 ## Retry inspector audition release — jcpe-j3vf
 
