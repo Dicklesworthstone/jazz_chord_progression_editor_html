@@ -31,7 +31,8 @@ for (const outcome of ["success", "refusal", "throw", "replacement"] as const) {
     const revision = await page.evaluate(() => window.midiReleaseProof.revision());
     await button.click();
     await expect(panel).toContainText("Auditioning the first bars");
-    await page.evaluate(() => window.midiReleaseProof.arm());
+    expect(await page.evaluate(() => window.midiReleaseProof.voices())).toBeGreaterThan(0);
+    await page.evaluate(() => { window.midiReleaseProof.arm(); });
     await button.click();
     if (outcome === "replacement") {
       await file.setInputFiles({ name: "replacement.mid", mimeType: "audio/midi", buffer: Buffer.from(batchChordFile({ bars: 4, transpose: 2 })) });

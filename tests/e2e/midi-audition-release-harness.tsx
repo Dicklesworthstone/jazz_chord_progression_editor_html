@@ -15,6 +15,10 @@ const audio = createStudioAudio(createFakeAudioPlatform().platform);
 const created = createStudioComposition({ audio });
 if (!created.ok) throw new Error(created.refusal.code);
 const original = created.composition.controller;
+// This clock-only platform has no rendered piano buffers. Use the real
+// oscillator instrument, whose preparation and release run on this platform.
+const instrument = original.setInstrument("analog-poly");
+if (!instrument.ok) throw new Error("Could not select the proof instrument");
 let armed = false, calls = 0;
 let resolveHeld: ((outcome: Outcome) => void) | null = null;
 const controller: StudioController = { ...original, midiImportPreview: { ...original.midiImportPreview,
