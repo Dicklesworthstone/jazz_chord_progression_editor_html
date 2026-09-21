@@ -276,3 +276,51 @@ with all five plucked refusals and reproduces the fault cascade
 starter-chart playback in Chromium on the build host — nothing about sound
 quality, reference similarity, or register coverage beyond the starter
 chart. Those verdicts live in the model-acceptance ledger above.
+
+
+### Headless Linux audio output
+
+A PulseAudio dummy output can report a running Web Audio context while its
+clock is stalled. On 2026-09-21, a bare oscillator (no application code)
+reproduced approximately two seconds without clock progress on the shared
+sink in three cold samples. A separate daemon without idle suspension still
+stalled. PulseAudio 17's [`module-null-sink` source](https://github.com/pulseaudio/pulseaudio/blob/v17.0/src/modules/module-null-sink.c)
+uses a two-second buffer by default; its supported `norewinds=true` setting
+reduces that buffer to 50 ms. With that setting, three cold samples advanced
+4.44 audio seconds over approximately 4.44 wall seconds between measurements.
+
+For a headless worker with this measured problem, configure a private sink
+on that worker; do not change another suite's shared daemon:
+
+```bash
+JCPE_AUDIO_DIR=$(mktemp -d /dev/shm/jcpe-pulse.XXXXXX)
+DBUS_SESSION_BUS_ADDRESS="unix:path=$JCPE_AUDIO_DIR/no-bus" \
+PULSE_RUNTIME_PATH="$JCPE_AUDIO_DIR" \
+pulseaudio -n --daemonize=yes --use-pid-file=yes --exit-idle-time=-1 \
+  --log-target="file:$JCPE_AUDIO_DIR/server.log" \
+  --load="module-native-protocol-unix socket=$JCPE_AUDIO_DIR/native" \
+  --load="module-null-sink sink_name=jcpe_test rate=44100 channels=2 norewinds=true"
+export JCPE_TEST_PULSE="unix:$JCPE_AUDIO_DIR/native"
+PULSE_SERVER="$JCPE_TEST_PULSE" pactl list sinks
+```
+
+Pass `PULSE_SERVER="$JCPE_TEST_PULSE"` to the real Node/browser process in
+the RCH job. Check native clock progress and retain the output configuration,
+original failure and corrected-run results. This changes the test host's
+buffering, not the product, listen window, audible threshold or acceptance
+rules. A running context or audible impulse buffer alone is not proof that
+the chart sounded. The complete original gate must still pass. The separate
+recovery fixture remains vacuous when no transport refusal occurs.
+
+After the owned jobs finish, stop only this private daemon:
+
+```bash
+PULSE_SERVER="${JCPE_TEST_PULSE:?}" pactl exit
+```
+
+Evidence for the diagnosis is in `test-results/audio-clock-probe-20260921/`
+and `test-results/audio-clock-lowlatency-20260921/`. The unchanged 15-instrument
+release gate then passed in
+`test-results/legacy-json-isolated-release-gates-20260921/`; the earlier
+14/15 failure remains in `test-results/legacy-json-release-gates-20260920/`.
+These are automated build-host measurements, not human listening acceptance.
