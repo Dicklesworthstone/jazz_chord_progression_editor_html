@@ -1,6 +1,7 @@
 import { normalizeExportDelivery } from "./e0-delivery-normalization";
 import {
   makeMidiRange,
+  parseStableId,
   type DocumentId,
   type DomainPath,
   type ParsedChordEvent,
@@ -208,6 +209,47 @@ function isLegacyRetirementRefusalCode(
   return code === "transport.replacement_retirement_unavailable" ||
     code === "transport.replacement_retirement_failed" ||
     code === "transport.replacement_retirement_stale";
+}
+
+/** Snapshot the state-free A0 receipt before any later persistence await. */
+function normalizeLegacyMarkerPublicationReply(
+  raw: unknown,
+  request: PublishCanonicalExportRevisionRequest,
+): PublishCanonicalExportRevisionResult | null {
+  try {
+    if (!isPlainRecord(raw)) return null;
+    const prototype: unknown = Object.getPrototypeOf(raw);
+    if (prototype !== Object.prototype && prototype !== null) return null;
+    const keys = Reflect.ownKeys(raw);
+    if (keys.length !== 4 && keys.length !== 5) return null;
+    const values: Record<string, unknown> = {
+      ok: undefined, outcome: undefined, documentId: undefined, revision: undefined,
+      code: undefined, observedDocumentId: undefined, observedRevision: undefined,
+    };
+    for (const key of keys) {
+      if (typeof key !== "string" || !Object.hasOwn(values, key)) return null;
+      const descriptor = Object.getOwnPropertyDescriptor(raw, key);
+      if (descriptor === undefined || !("value" in descriptor)) return null;
+      const value: unknown = descriptor.value;
+      values[key] = value;
+    }
+    if (keys.length === 4 && values["ok"] === true && values["outcome"] === "published" &&
+        values["documentId"] === request.publication.documentId &&
+        values["revision"] === request.publication.revision) {
+      return Object.freeze({ ok: true, outcome: "published",
+        documentId: request.publication.documentId, revision: request.publication.revision });
+    }
+    if (keys.length !== 5 || values["ok"] !== false || values["outcome"] !== "refused" ||
+        (values["code"] !== "export.marker_publication_stale" && values["code"] !== "export.marker_publication_failed") ||
+        typeof values["observedDocumentId"] !== "string" ||
+        typeof values["observedRevision"] !== "number" || !isNonnegativeSafeInteger(values["observedRevision"])) return null;
+    const id = parseStableId("document", values["observedDocumentId"]);
+    if (!id.ok) return null;
+    return Object.freeze({ ok: false, outcome: "refused", code: values["code"],
+      observedDocumentId: id.value, observedRevision: values["observedRevision"] });
+  } catch {
+    return null;
+  }
 }
 
 /** Normalize the state-free A1 receipt before making any durability claim. */
@@ -1982,7 +2024,8 @@ export function createE0InterchangeOperations(
         });
       }
 
-      if (!isPlainRecord(pubRaw) || typeof pubRaw["ok"] !== "boolean") {
+      const publicationReply = normalizeLegacyMarkerPublicationReply(pubRaw, pubReq);
+      if (publicationReply === null) {
         const diagnostic: E0AdapterProtocolDiagnostic & {
           boundary: "A0-marker-publication";
         } = Object.freeze({
@@ -2004,13 +2047,13 @@ export function createE0InterchangeOperations(
         });
       }
 
-      if (!pubRaw["ok"]) {
+      if (!publicationReply.ok) {
         return Object.freeze({
           outcome: "publication-refused",
           delivery,
           a0Publication: Object.freeze({
             request: pubReq,
-            result: pubRaw as unknown as Extract<PublishCanonicalExportRevisionResult, { ok: false }>,
+            result: publicationReply,
           }),
           a1Persistence: null,
           durability: "unchanged",
@@ -2019,7 +2062,7 @@ export function createE0InterchangeOperations(
 
       const a0Publication = Object.freeze({
         request: pubReq,
-        result: pubRaw as Extract<PublishCanonicalExportRevisionResult, { ok: true }>,
+        result: publicationReply,
       });
 
       // A1 persistence stage
