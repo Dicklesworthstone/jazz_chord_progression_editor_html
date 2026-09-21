@@ -177,8 +177,9 @@ function snapshotLegacyImportReply(
     if (typeof ok !== "boolean") return null;
     const fields = ok ? ["ok", "value"] : retirement ? ["ok", "code", "retirementEffect"] : ["ok", "code"];
     if (Reflect.ownKeys(raw).length !== fields.length) return null;
-    const snapshot: Record<string, unknown> = {};
+    const snapshot: Record<string, unknown> = { ok };
     for (const field of fields) {
+      if (field === "ok") continue;
       const descriptor = Object.getOwnPropertyDescriptor(raw, field);
       if (descriptor === undefined || !("value" in descriptor)) return null;
       const value: unknown = descriptor.value;
