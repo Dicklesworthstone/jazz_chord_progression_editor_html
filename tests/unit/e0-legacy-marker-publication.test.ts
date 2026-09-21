@@ -27,7 +27,7 @@ for(const code of ["export.marker_publication_stale","export.marker_publication_
  const raw=refused(code),s=await setup(()=>raw),r=await s.complete();
  expect(r.outcome).toBe("publication-refused");if(r.outcome!=="publication-refused")throw Error("Wrong outcome");
  const snapshot:unknown=r.a0Publication.result;expect(snapshot).toEqual(raw);expect(snapshot).not.toBe(raw);expect(Object.isFrozen(snapshot)).toBe(true);
- raw.observedDocumentId="changed";expect(r.a0Publication.result.observedDocumentId).toBe("new-document");expect(s.counts()).toEqual({starts:1,publications:1,persistence:0});
+ raw.observedDocumentId="changed";expect<string>(r.a0Publication.result.observedDocumentId).toBe("new-document");expect(s.counts()).toEqual({starts:1,publications:1,persistence:0});
 });
 test("legacy marker snapshots matching published receipt",async()=>{
  let raw=published("",0);const s=await setup((id,revision)=>{raw=published(id,revision);return raw;});const r=await s.complete();
