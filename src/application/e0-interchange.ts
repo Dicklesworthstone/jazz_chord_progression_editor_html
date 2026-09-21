@@ -210,6 +210,39 @@ function isLegacyRetirementRefusalCode(
     code === "transport.replacement_retirement_stale";
 }
 
+/** Normalize the state-free A1 receipt before making any durability claim. */
+function normalizeLegacyPersistenceReply(raw: unknown): QueueCanonicalExportMarkerPersistenceResult | null {
+  try {
+    if (!isPlainRecord(raw)) return null;
+    const prototype: unknown = Object.getPrototypeOf(raw);
+    if (prototype !== Object.prototype && prototype !== null) return null;
+    const keys = Reflect.ownKeys(raw);
+    if (keys.length !== 3 && keys.length !== 4) return null;
+    const values: Record<string, unknown> = { ok: undefined, outcome: undefined, durability: undefined, code: undefined };
+    for (const key of keys) {
+      if (typeof key !== "string" || !Object.hasOwn(values, key)) return null;
+      const descriptor = Object.getOwnPropertyDescriptor(raw, key);
+      if (descriptor === undefined || !("value" in descriptor)) return null;
+      const value: unknown = descriptor.value;
+      values[key] = value;
+    }
+    if (keys.length === 3 && values["ok"] === true && values["outcome"] === "persisted" &&
+        values["durability"] === "recovery-persisted") {
+      return Object.freeze({ ok: true, outcome: "persisted", durability: "recovery-persisted" });
+    }
+    if (keys.length !== 4 || values["ok"] !== false || values["durability"] !== "pending-failed") return null;
+    if (values["outcome"] === "unavailable" && values["code"] === "recovery.marker_persistence_unavailable") {
+      return Object.freeze({ ok: false, outcome: "unavailable", code: "recovery.marker_persistence_unavailable", durability: "pending-failed" });
+    }
+    if (values["outcome"] === "failed" && values["code"] === "recovery.marker_persistence_failed") {
+      return Object.freeze({ ok: false, outcome: "failed", code: "recovery.marker_persistence_failed", durability: "pending-failed" });
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 function projectPublicPath(path: DomainPath): ImportPublicPath {
   const projected: (ImportPublicPathField | "<redacted-field>" | "<invalid-index>" | "<path-truncated>" | number)[] = [];
   for (let i = 0; i < path.length; i++) {
@@ -2082,7 +2115,8 @@ export function createE0InterchangeOperations(
         });
       }
 
-      if (!isPlainRecord(persistRaw) || typeof persistRaw["ok"] !== "boolean") {
+      const persistenceReply = normalizeLegacyPersistenceReply(persistRaw);
+      if (persistenceReply === null) {
         const diagnostic: E0AdapterProtocolDiagnostic & {
           boundary: "A1-marker-persistence";
         } = Object.freeze({
@@ -2106,14 +2140,14 @@ export function createE0InterchangeOperations(
         });
       }
 
-      if (persistRaw["ok"]) {
+      if (persistenceReply.ok) {
         return Object.freeze({
           outcome: "advanced",
           delivery,
           a0Publication,
           a1Persistence: Object.freeze({
             handoff: persistHandoff,
-            result: persistRaw as unknown as Extract<QueueCanonicalExportMarkerPersistenceResult, { ok: true }>,
+            result: persistenceReply,
           }),
           durability: "recovery-persisted",
         });
@@ -2125,7 +2159,7 @@ export function createE0InterchangeOperations(
         a0Publication,
         a1Persistence: Object.freeze({
           handoff: persistHandoff,
-          result: persistRaw as unknown as Extract<QueueCanonicalExportMarkerPersistenceResult, { ok: false }>,
+          result: persistenceReply,
         }),
         durability: "pending-failed",
       });
