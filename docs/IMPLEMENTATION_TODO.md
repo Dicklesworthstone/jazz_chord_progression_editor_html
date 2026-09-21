@@ -1,5 +1,54 @@
 # Implementation TODO
 
+## Reality check — 2026-09-21 (`jcpe-reality-check-september-5h2l`)
+
+This assessment changes no runtime behavior. Full findings and phase-by-phase
+bridge: [REALITY_CHECK.md](REALITY_CHECK.md). Older sections below are dated
+execution history; their failure counts and artifact hashes are not current.
+
+- [x] Read all AGENTS/README; review principal vision plans and actual consumers.
+- [x] Refresh live Beads, ownership and recent commits; preserve peer panels.
+- [x] Strict RCH audit: semantic12pass/18fail; cast1pass/1fail; H0 97pass;
+  X1 contract valid; both required traceability scripts absent. Preserve raw
+  `test-results/reality-check-20260921/` results and1,770-input manifest.
+- [x] Inspect retained current-artifact predeploy and12 hosted browser cases;
+  separate these from aggregate/human acceptance and vacuous recovery.
+- [x] Reconcile all vision campaigns;11 duel build leaves closed, all13 proof
+  leaves/epics open. Do not count process output as product implementation.
+- [x] Refine nine existing Beads; three ambition rounds and five refinement
+  passes retain full scope, dependencies, real-adapter tests and finite oracles.
+- [x] Final graph/source/link/diff verification:647 visible records, no cycles,
+  365 source mtimes unchanged; only report/TODO differ in audited inputs.
+  Assessment-only closeout; no implementation/human gate waived.
+
+Next implementation/proof order (claim only one ready leaf):
+
+- [ ] Complete ready duel verification leaves with real adapters; retain actual
+  physical-phone, camera, guitarist, print, DAW and listening observations.
+- [ ] Finish M1 independent source-note/uncertainty/Undo proof and human review.
+- [ ] Remove remaining e0-interchange:1741 unauthorized document cast through
+  sole F3 publication; retain np17 owner/dependencies and unchanged scanner.
+- [ ] Complete H0 contextual/scale operations after its explicit spec exit;
+  preserve no-key/section-key/custom/selected-realization evidence.
+- [ ] Repair H1 AST spelling and rational-time laws, then implement/prove scoped
+  transposition with explicit Manual/Frozen policy and exact Apply/Undo.
+- [ ] Repair full G2 providers/costs/constraints; adopt completed discovery job
+  service for three audible choices and full More view; prove source/revision,
+  preview, Apply/Undo, recovery and JSON/MIDI equality across actual adapters.
+- [ ] Repair G1 SHA/content binding/rights/query; deliver reviewed D0 corpus
+  within524,288-byte reservation. Only266,571 shell bytes currently remain.
+- [ ] Finish U4/bounded rehearsal, then dropout; key sequence additionally H1.
+- [ ] Complete G0/G3–G9/U6/U9–U11/D1 with independent finite search oracles,
+  measured counters, exact constraints and unambiguous practice grading.
+- [ ] Complete Q0 traceability executables and full unchanged release matrix;
+  reconcile R0 obsolete status/budget prose; retain human/native/PHS gates.
+- [ ] Resolve Cloudflare injection under jcpe-2nky without weakening CSP. Fresh
+  required-UA HTTP response is committed bytes plus367-byte beacon insertion;
+  Vercel matches exactly. Earlier clean browser cases do not close this issue.
+- [ ] Complete branding audit under jcpe-0b8b; preserve compatibility identifiers
+  and reconcile the recorded separate native-name decision explicitly.
+
+
 ## Legacy E0 delivery boundary — jcpe-4po2
 
 - [x] Trace remaining cast-policy sites to unchecked delivery receipts; read E0 sections10–11 and reuse existing normalization design. Claim/reserve exact paths.
