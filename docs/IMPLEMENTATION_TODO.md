@@ -1418,3 +1418,12 @@ Statuses below are the campaign-start snapshot. Use br show and br ready before 
 - [x] Final strict RCH hz2:358tests/1,442assertions across9E0/export suites (39 new boundary cases), full4-project types, scoped ESLint, source policy and guarded build pass. Evidence `test-results/import-refusal-final-20260921/receipt.json`. Initial fixed353-test pass retained alongside the two test-only type/lint errors; both are corrected without weakening assertions.
 - [x] Fresh review adds null-prototype twins, retirementEffect getter refusal and exactly-once discriminant snapshots. All1,844input hashes/368source mtimes stable. Candidate/root/dist/Git all remain SHA256 `2facafaf2240e6db0cbf34024bd339e9ec653fd90e4df0d4e61530d588a76754`; no generated-file change or redeployment needed. Source commits7568ca1/b408cfd and final regression evidence are retained.
 - [x] Parent cast-policy remains open: findings fall6→4 at e0-interchange.ts1666/1980/2116/2128; hostile analyzer control passes. Full success-payload normalization, aggregate/human acceptance and publication-boundary repairs are not claimed by this refusal-only leaf.
+
+### jcpe-rsbx — legacy export persistence receipts
+
+- [x] Claim and reserve the bounded A1 receipt repair.
+- [x] Author19 external-port regression cases:3honest variants, mutation isolation, wrong/missing/extra/inherited/symbol fields, getters, reflection failure, null prototype and rejection.
+- [x] Strict RCH original baseline:2pass/17fail; real operations falsely claim durability or retain raw receipts.
+- [x] Normalize exact own-data persisted/unavailable/failed envelopes into immutable receipts; malformed replies require reconciliation after A0 publication; remove2double assertions.
+- [ ] Focused/wider E0 tests, types, scoped lint, source policy, guarded build and cast-policy diagnostic through RCH.
+- [ ] Fresh review, immutable input checks, explicit commit/push and accurate leaf closure. Parent aggregate and remaining A0 findings stay open.
