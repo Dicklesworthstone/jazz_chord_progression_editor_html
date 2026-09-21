@@ -28,7 +28,7 @@ for(const make of [persisted,unavailable,failed])test(`legacy persistence snapsh
  const raw=make(),s=await setup(()=>raw),result=await s.complete();
  expect(result.outcome).toBe("advanced");expect<string>(result.durability).toBe(raw.durability);
  if(result.outcome!=="advanced")throw Error("Wrong outcome");
- expect<unknown>(result.a1Persistence.result).toEqual(raw);expect(result.a1Persistence.result).not.toBe(raw);expect(Object.isFrozen(result.a1Persistence.result)).toBe(true);
+ const snapshot:unknown=result.a1Persistence.result;expect(snapshot).toEqual(raw);expect(result.a1Persistence.result).not.toBe(raw);expect(Object.isFrozen(result.a1Persistence.result)).toBe(true);
  raw.durability="changed";expect(result.a1Persistence.result.durability).not.toBe("changed");expect(s.counts()).toEqual({publications:1,persistence:1,starts:1});
 });
 const cases:readonly [string,()=>unknown][]=[
