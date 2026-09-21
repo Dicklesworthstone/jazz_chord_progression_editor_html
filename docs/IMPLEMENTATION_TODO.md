@@ -1407,3 +1407,14 @@ Statuses below are the campaign-start snapshot. Use br show and br ready before 
 - [x] Upload exact `git show eb2ad75:jazz_chord_progression_editor.html` bytes: Cloudflare `cabf9a37`, Vercel `dpl_2UcjQz9nwq6WuHBi6UG2tuAADm8C` READY. Both domains match HTML2facafaf and social imageb70c9e3c on the first poll; receipt `.tmp/legacy-json-isolated-release-20260921/host-hashes.json`.
 - [x] Strict RCH real-browser checks:12/12, zero unexpected/skipped/flaky, Chromium149.0.7827.55/Firefox151.0/WebKit26.5 at320/1280px on both hosts. Import independent nested fixture, download twice per case, exact filename and5,606bytes/SHA256 `6e00aecaddd5a522ee1a608f7d3a6c2c35bab408b6b831bbce88b0c7271cc499`, honest handoff status and dialog closure. All24 downloads and all12 clean browser-response HTML hashes match; no application errors or forbidden requests. Reports `test-results/legacy-json-isolated-release-live-20260921/host-{0,1}.json`. No analytics injection observed in these cases; known account-level issuejcpe-2nky stays open, CSP unchanged.
 - [x] Record exact results, close deployment leaf and sync tracker. Aggregate verification, remaining cast findings and human acceptance are separate and remain open; this is solo automated deployment proof.
+
+### jcpe-lbwh — legacy import refusal boundary
+
+- [x] Claim leaf and reserve source, regression and TODO paths.
+- [x] Read accepted E0 preparation/retirement/refusal contract and parent cast-policy issue.
+- [x] Independently author nine honest refusal twins and malformed/getter/coercion/no-effect cases.
+- [x] Correct test-only stopped/ready typo; retained first run is not defect proof. Corrected pre-fix RCH baseline:11pass/23fail across34tests.
+- [x] Snapshot exact own-data result envelopes, reject hostile reflection, validate closed codes and retirementEffect none; remove two as-never coercions.
+- [ ] Focused regression and wider E0 tests, full types, scoped lint, source policy and guarded build through RCH.
+- [ ] Fresh review, stable input/hash check, explicit-path commit and accurate leaf closure.
+- [ ] Preserve parent aggregate/human obligations and remaining publication-boundary findings as open.

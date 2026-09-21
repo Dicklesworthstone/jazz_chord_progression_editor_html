@@ -78,6 +78,8 @@ import {
   type ParseJsonDataResult,
   type PrepareCanonicalExportDeliveryRequest,
   type PrepareCanonicalExportDeliveryResult,
+  type PrepareImportReplacementPublicationResult,
+  type RetireImportReplacementResult,
   type PrepareImportPreview,
   type PrepareImportPreviewDependencies,
   type PrepareImportPreviewRequest,
@@ -158,6 +160,53 @@ function isPlainRecord(
   value: unknown,
 ): value is Readonly<Record<string, unknown>> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/** Snapshot only exact own data fields; never evaluate adapter accessors. */
+function snapshotLegacyImportReply(
+  raw: unknown,
+  retirement: boolean,
+): Readonly<Record<string, unknown>> | null {
+  try {
+    if (!isPlainRecord(raw)) return null;
+    const prototype: unknown = Object.getPrototypeOf(raw);
+    if (prototype !== Object.prototype && prototype !== null) return null;
+    const okDescriptor = Object.getOwnPropertyDescriptor(raw, "ok");
+    if (okDescriptor === undefined || !("value" in okDescriptor)) return null;
+    const ok: unknown = okDescriptor.value;
+    if (typeof ok !== "boolean") return null;
+    const fields = ok ? ["ok", "value"] : retirement ? ["ok", "code", "retirementEffect"] : ["ok", "code"];
+    if (Reflect.ownKeys(raw).length !== fields.length) return null;
+    const snapshot: Record<string, unknown> = {};
+    for (const field of fields) {
+      const descriptor = Object.getOwnPropertyDescriptor(raw, field);
+      if (descriptor === undefined || !("value" in descriptor)) return null;
+      const value: unknown = descriptor.value;
+      snapshot[field] = value;
+    }
+    return Object.freeze(snapshot);
+  } catch {
+    return null;
+  }
+}
+
+function isLegacyPreparationRefusalCode(
+  code: unknown,
+): code is Extract<PrepareImportReplacementPublicationResult, { ok: false }>['code'] {
+  return code === "import.confirmation_stale" ||
+    code === "import.confirmation_wrong_document" ||
+    code === "import.replacement_impact_unavailable" ||
+    code === "import.confirmation_impact_mismatch" ||
+    code === "import.confirmation_identity_mismatch" ||
+    code === "history.nonundoable_confirmation_required";
+}
+
+function isLegacyRetirementRefusalCode(
+  code: unknown,
+): code is Extract<RetireImportReplacementResult, { ok: false }>['code'] {
+  return code === "transport.replacement_retirement_unavailable" ||
+    code === "transport.replacement_retirement_failed" ||
+    code === "transport.replacement_retirement_stale";
 }
 
 function projectPublicPath(path: DomainPath): ImportPublicPath {
@@ -1398,10 +1447,10 @@ export function createE0InterchangeOperations(
         });
       }
 
-      if (
-        !isPlainRecord(prepResRaw) ||
-        typeof prepResRaw["ok"] !== "boolean"
-      ) {
+      const preparationReply = snapshotLegacyImportReply(prepResRaw, false);
+      const preparationCode = preparationReply !== null && isLegacyPreparationRefusalCode(preparationReply["code"])
+        ? preparationReply["code"] : null;
+      if (preparationReply === null || (preparationReply["ok"] === false && preparationCode === null)) {
         const diagnostic: E0AdapterProtocolDiagnostic & {
           boundary: "A0-replacement-preparation";
         } = Object.freeze({
@@ -1428,11 +1477,11 @@ export function createE0InterchangeOperations(
         });
       }
 
-      if (!prepResRaw["ok"]) {
+      if (preparationCode !== null) {
         return Object.freeze({
           ok: false,
           refusal: Object.freeze({
-            code: String(prepResRaw["code"]) as never,
+            code: preparationCode,
             path: Object.freeze([] as const),
           }),
           state: request.currentState,
@@ -1443,7 +1492,7 @@ export function createE0InterchangeOperations(
         });
       }
 
-      const prepared = prepResRaw["value"] as PreparedImportReplacementPublication;
+      const prepared = preparationReply["value"] as PreparedImportReplacementPublication;
 
       let retireResRaw: unknown;
       try {
@@ -1482,10 +1531,11 @@ export function createE0InterchangeOperations(
         });
       }
 
-      if (
-        !isPlainRecord(retireResRaw) ||
-        typeof retireResRaw["ok"] !== "boolean"
-      ) {
+      const retirementReply = snapshotLegacyImportReply(retireResRaw, true);
+      const retirementCode = retirementReply !== null && isLegacyRetirementRefusalCode(retirementReply["code"])
+        ? retirementReply["code"] : null;
+      if (retirementReply === null || (retirementReply["ok"] === false &&
+          (retirementCode === null || retirementReply["retirementEffect"] !== "none"))) {
         const invalidation = dependencies.discardImportReplacementPublication({
           identity,
           reason: "retirement-protocol-invalid",
@@ -1512,7 +1562,7 @@ export function createE0InterchangeOperations(
         });
       }
 
-      if (!retireResRaw["ok"]) {
+      if (retirementCode !== null) {
         const invalidation = dependencies.discardImportReplacementPublication({
           identity,
           reason: "retirement-refused",
@@ -1520,7 +1570,7 @@ export function createE0InterchangeOperations(
         return Object.freeze({
           ok: false,
           refusal: Object.freeze({
-            code: String(retireResRaw["code"]) as never,
+            code: retirementCode,
             path: Object.freeze([] as const),
           }),
           state: request.currentState,
@@ -1531,7 +1581,7 @@ export function createE0InterchangeOperations(
         });
       }
 
-      const rawRetirementEvidence = retireResRaw["value"] as X1ReplacementRetirementEvidence;
+      const rawRetirementEvidence = retirementReply["value"] as X1ReplacementRetirementEvidence;
       const rawReceipt = rawRetirementEvidence.receipt;
       const retirementReceipt: ReplacementRetirementReceipt = Object.freeze({
         requestId: rawReceipt.requestId,
