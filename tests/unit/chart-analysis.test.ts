@@ -316,9 +316,9 @@ describe("deriveChordDetail — tones, guides, resolution, next", () => {
     ];
     for (const [ii, v, sub] of expected) {
       const options = detail(ii, null, null).next;
-      expect(`${ii}: ${options[0]?.symbolText}`).toBe(`${ii}: ${v}`);
+      expect(`${ii}: ${options[0]?.symbolText ?? "none"}`).toBe(`${ii}: ${v}`);
       const tritone = options.find((option) => option.why.startsWith("Tritone sub"));
-      expect(`${ii}: ${tritone?.symbolText}`).toBe(`${ii}: ${sub}`);
+      expect(`${ii}: ${tritone?.symbolText ?? "none"}`).toBe(`${ii}: ${sub}`);
     }
     /* Near-miss: the former +6 offset offered A♭7, the substitute for D7. */
     const inC = detail("Dm7", null, C_MAJOR).next;
@@ -326,6 +326,48 @@ describe("deriveChordDetail — tones, guides, resolution, next", () => {
     expect(sub?.symbolText).toBe("Db7");
     expect(sub?.roman).toBe("♭II7");
     expect(inC.some((option) => option.symbolText === "Ab7")).toBe(false);
+  });
+
+  test("guide tones move to distinct targets and a leap is never called a step", () => {
+    /* Hand-derived: Cmaj7 guides E,B → Em7♭5 guides G,D. E→G and B→D are
+     * both minor thirds (3+3 = 6); E→D + B→G ties on total but has a
+     * major-third leap, and E→D + B→D collapses two voices onto one note. */
+    for (const [semitones, root] of FLAT_NAMES.entries()) {
+      const to = FLAT_NAMES[(semitones + 4) % 12] ?? "E";
+      const resolution = detail(`${root}maj7`, `${to}m7b5`, null).resolution;
+      if (resolution === null) throw new Error(`${root}: no resolution`);
+      const targets = resolution.moves.map((move) => move.toPitchClass);
+      expect(new Set(targets).size).toBe(targets.length);
+      expect(resolution.moves.map((move) => move.distance)).toEqual([3, 3]);
+      expect(resolution.note).toBe("the guide tones leap");
+    }
+    /* Cmaj7 → Am7: E,B → C,G. E→G (3) and B→C (1) total 4 beats E→C + B→G. */
+    const mixed = detail("Cmaj7", "Am7", null).resolution;
+    expect(mixed?.moves.map((move) => [move.fromName, move.toName, move.motion])).toEqual([
+      ["E", "G", "leap"], ["B", "C", "step"],
+    ]);
+    expect(mixed?.note).toBe("1 by step, 1 leaps");
+    /* Near-miss: the ii–V–I law is unchanged in every key. */
+    for (const [semitones, root] of FLAT_NAMES.entries()) {
+      const five = FLAT_NAMES[(semitones + 5) % 12] ?? "G";
+      const one = FLAT_NAMES[(semitones + 10) % 12] ?? "C";
+      expect(detail(`${root}m7`, `${five}7`, null).resolution?.note).toBe("1 held, 1 by step");
+      expect(detail(`${five}7`, `${one}maj7`, null).resolution?.note).toBe("1 held, 1 by step");
+    }
+  });
+
+  test("♭9, ♭13, ♯5 and alt dominants lead with the minor tonic", () => {
+    /* Hand-authored: those colours belong to the minor key's V (A7♭9 → Dm). */
+    expect(detail("A7b9", null, null).next[0]?.symbolText).toBe("Dm7");
+    expect(detail("G7alt", null, null).next[0]?.symbolText).toBe("Cm7");
+    expect(detail("Eb7b13", null, null).next[0]?.symbolText).toBe("Abm7");
+    expect(detail("E7#5", null, null).next[0]?.symbolText).toBe("Am7");
+    /* Near-miss: plain, natural-ninth and ♯9 dominants keep the major tonic first. */
+    expect(detail("A7", null, null).next[0]?.symbolText).toBe("Dmaj7");
+    expect(detail("A9", null, null).next[0]?.symbolText).toBe("Dmaj7");
+    /* Both tonics stay on offer either way. */
+    const symbols = detail("A7b9", null, null).next.map((option) => option.symbolText);
+    expect(symbols).toContain("Dmaj7");
   });
 
   test("next options are identical across calls (determinism)", () => {

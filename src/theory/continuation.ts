@@ -15,6 +15,7 @@ import {
   type LegacyContinuationProviderId,
   type LegacyContinuationResult as ContinuationResult,
 } from "./continuation-contract";
+import { transposeSpelledPitchClass } from "./guide-tones";
 import type { ResolutionOperations } from "./resolution-contract";
 
 /**
@@ -54,6 +55,7 @@ const CATEGORY_ORDER: Readonly<Record<LegacyContinuationCategory, number>> =
 type ContextFacts = Readonly<{
   symbolText: string;
   rootPc: PitchClass;
+  root: SpelledPitchClass;
   isDominant: boolean;
   pitchClasses: readonly PitchClass[];
   contextIndex: number;
@@ -80,6 +82,39 @@ function pc(value: number): number {
 function nameFor(pitchClass: number, keyPc: number): string {
   const table = SHARP_KEYS.has(pc(keyPc)) ? SHARP_NAMES : FLAT_NAMES;
   return table[pc(pitchClass)] ?? "C";
+}
+
+/**
+ * Spell a chord root by interval from a spelled root, so the letter follows
+ * the harmony rather than the key's accidental preference: the ii of E is
+ * F♯, never G♭. Beyond one accidental, fall back to the key-table name.
+ */
+function spelledFrom(
+  root: SpelledPitchClass,
+  scaleSteps: number,
+  semitones: number,
+  keyPc: number,
+): string {
+  const spelled = transposeSpelledPitchClass(root, scaleSteps, semitones);
+  /* The helper clamps beyond two accidentals, so the fallback is named from
+     the exact sounding pitch class, never from the clamped spelling. */
+  return Math.abs(spelled.alter) <= 1
+    ? written(spelled)
+    : nameFor(pitchClassOf(root) + semitones, keyPc);
+}
+
+const LETTER_PCS: Readonly<Record<string, number>> = Object.freeze({
+  C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11,
+});
+
+/** Emitted symbols are ASCII root + accidentals + quality ("G#m7"). */
+function soundingIdentity(symbolText: string): string {
+  const match = /^([A-G])([#b]*)(.*)$/.exec(symbolText);
+  if (match === null) return symbolText;
+  const [, letter = "C", accidentals = "", quality = ""] = match;
+  let rootPc = LETTER_PCS[letter] ?? 0;
+  for (const accidental of accidentals) rootPc += accidental === "#" ? 1 : -1;
+  return `${String(pc(rootPc))}:${quality}`;
 }
 
 const KEY_PITCH_CLASSES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] as const;
@@ -114,7 +149,7 @@ function contextFacts(request: ContinuationRequest, operations: ResolutionOperat
     const realization = selected === null ? resolved.value.realizations[0] : resolved.value.realizations.find(row => row.id === selected);
     if (realization === undefined) { barrier("invalid-selection"); return; }
     facts.push(Object.freeze({
-      symbolText: spec.sourceText, rootPc: pitchClassOf(spec.root),
+      symbolText: spec.sourceText, rootPc: pitchClassOf(spec.root), root: spec.root,
       isDominant: spec.triad === "major" && spec.seventh === "minor",
       contextIndex, realizationId: realization.id,
       pitchClasses: Object.freeze([...realization.pitchClasses]),
@@ -302,10 +337,8 @@ export function deriveContinuationSuggestions(
     // two-five-approach: set up a return to the last chord.
     providersRun += 1;
     {
-      const fivePc = pc(last.rootPc + 7);
-      const twoPc = pc(last.rootPc + 2);
-      const five = nameFor(fivePc, keyPc);
-      const two = nameFor(twoPc, keyPc);
+      const five = spelledFrom(last.root, 4, 7, keyPc);
+      const two = spelledFrom(last.root, 1, 2, keyPc);
       emit(
         "two-five-approach",
         `${five}7`,
@@ -325,8 +358,7 @@ export function deriveContinuationSuggestions(
     // tritone-approach: the chromatic upper-neighbor dominant.
     providersRun += 1;
     {
-      const halfUpPc = pc(last.rootPc + 1);
-      const halfUp = nameFor(halfUpPc, keyPc);
+      const halfUp = spelledFrom(last.root, 1, 1, keyPc);
       emit(
         "tritone-approach",
         `${halfUp}7`,
@@ -351,14 +383,17 @@ export function deriveContinuationSuggestions(
     }
   }
 
-  // Canonical dedupe by symbol text: the earlier provider keeps the claim.
+  // Dedupe by sounding identity — root pitch class plus quality text — so
+  // G♯m7 and A♭m7 from two providers are one option; the earlier provider
+  // keeps the claim and its spelling.
   let dedupeComparisons = 0;
   const seen = new Set<string>();
   const deduped: Candidate[] = [];
   for (const candidate of candidates) {
     dedupeComparisons += 1;
-    if (seen.has(candidate.symbolText)) continue;
-    seen.add(candidate.symbolText);
+    const identity = soundingIdentity(candidate.symbolText);
+    if (seen.has(identity)) continue;
+    seen.add(identity);
     deduped.push(candidate);
   }
 

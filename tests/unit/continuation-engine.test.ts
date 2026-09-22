@@ -43,6 +43,29 @@ describe("the session continuation engine", () => {
     expect(symbols).toContain("Cm7");
   });
 
+  test("approach chords are spelled by interval from the target's letter", () => {
+    /* Hand-authored: ii is a major second above the target, V a perfect
+     * fifth, the chromatic neighbour a minor second — so E's ii is F♯m7,
+     * never G♭m7, whatever accidental the surrounding key prefers. */
+    const cases: readonly (readonly [string, string, string, string])[] = [
+      ["E7#9", "F#m7", "B7", "F7"],
+      ["Db7", "Ebm7", "Ab7", "Ebb7"],
+      ["A7", "Bm7", "E7", "Bb7"],
+      ["Bbmaj7", "Cm7", "F7", "Cb7"],
+    ];
+    for (const [target, two, five, neighbour] of cases) {
+      /* Any provider may hold the claim (dedupe keeps the earlier one); the
+       * spelling must be letter-true whichever provider offers it. */
+      const approaches = derive([target]).suggestions.map((entry) => entry.symbolText);
+      expect(approaches).toContain(two);
+      expect(approaches).toContain(five);
+      /* Beyond one accidental the key-table name is kept (E𝄫7 → D7); a
+       * single-flat C♭7 above B♭ is already letter-true and stays. */
+      const expectedNeighbour = neighbour === "Ebb7" ? "D7" : neighbour;
+      expect(approaches).toContain(expectedNeighbour);
+    }
+  });
+
   test("a maj7 final chord never produces a dominant-resolution option", () => {
     const result = derive(["Dm7", "G7", "Cmaj7"]);
     const providers = result.suggestions.map(

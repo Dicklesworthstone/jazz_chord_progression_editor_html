@@ -544,11 +544,69 @@ function guideTonesOf(resolved: ResolvedChord): readonly GuideTone[] {
   return Object.freeze(tones.slice(0, MAX_CHART_GUIDE_TONE_MOVES));
 }
 
-function resolutionNote(held: number, step: number, total: number): string {
-  if (step > 0 && held > 0) return `${String(held)} held, ${String(step)} by step`;
-  if (step > 0) return "both move by step";
+function resolutionNote(held: number, step: number, leap: number): string {
+  const total = held + step + leap;
   if (held === total) return "both notes are common to each chord";
-  return "the guide tones leap";
+  if (step === total) return "both move by step";
+  if (leap === total) return "the guide tones leap";
+  const parts: string[] = [];
+  if (held > 0) parts.push(`${String(held)} held`);
+  if (step > 0) parts.push(`${String(step)} by step`);
+  if (leap > 0) parts.push(`${String(leap)} ${leap === 1 ? "leaps" : "leap"}`);
+  return parts.join(", ");
+}
+
+function semitoneSpread(from: GuideTone, to: GuideTone): number {
+  const forward = pc(to.pitchClass - from.pitchClass);
+  return Math.min(forward, 12 - forward);
+}
+
+/**
+ * Pair each guide tone with a DISTINCT target guide tone (two voices never
+ * collapse onto one note) at the least total motion; ties prefer the smaller
+ * largest move, then source order. Guide-tone sets hold at most
+ * MAX_CHART_GUIDE_TONE_MOVES members, so every permutation is examined.
+ * When the next chord has fewer guide tones, a voice may share a target.
+ */
+function assignGuideTones(
+  from: readonly GuideTone[],
+  to: readonly GuideTone[],
+): readonly GuideTone[] {
+  if (to.length < from.length) {
+    return from.map((tone) =>
+      to.reduce((best, target) =>
+        semitoneSpread(tone, target) < semitoneSpread(tone, best) ? target : best,
+      ),
+    );
+  }
+  let best: readonly GuideTone[] = [];
+  let bestTotal = Number.POSITIVE_INFINITY;
+  let bestMax = Number.POSITIVE_INFINITY;
+  const visit = (chosen: GuideTone[], used: Set<number>): void => {
+    if (chosen.length === from.length) {
+      const spreads = chosen.map((target, index) =>
+        semitoneSpread(from[index] as GuideTone, target),
+      );
+      const total = spreads.reduce((sum, spread) => sum + spread, 0);
+      const largest = Math.max(...spreads);
+      if (total < bestTotal || (total === bestTotal && largest < bestMax)) {
+        best = [...chosen];
+        bestTotal = total;
+        bestMax = largest;
+      }
+      return;
+    }
+    to.forEach((target, index) => {
+      if (used.has(index)) return;
+      used.add(index);
+      chosen.push(target);
+      visit(chosen, used);
+      chosen.pop();
+      used.delete(index);
+    });
+  };
+  visit([], new Set());
+  return best;
 }
 
 function deriveResolution(
@@ -559,17 +617,10 @@ function deriveResolution(
   const from = guideTonesOf(current);
   const to = guideTonesOf(next);
   if (from.length === 0 || to.length === 0) return null;
-  const moves: ChartGuideToneMove[] = from.map((tone) => {
-    let best = to[0] as GuideTone;
-    let distance = 99;
-    for (const target of to) {
-      const forward = pc(target.pitchClass - tone.pitchClass);
-      const spread = Math.min(forward, 12 - forward);
-      if (spread < distance) {
-        distance = spread;
-        best = target;
-      }
-    }
+  const targets = assignGuideTones(from, to);
+  const moves: ChartGuideToneMove[] = from.map((tone, index) => {
+    const best = targets[index] as GuideTone;
+    const distance = semitoneSpread(tone, best);
     return Object.freeze({
       fromName: tone.name,
       toName: best.name,
@@ -586,10 +637,11 @@ function deriveResolution(
   });
   const held = moves.filter((move) => move.motion === "held").length;
   const step = moves.filter((move) => move.motion === "step").length;
+  const leap = moves.length - held - step;
   return Object.freeze({
     targetSymbol,
     moves: Object.freeze(moves),
-    note: resolutionNote(held, step, moves.length),
+    note: resolutionNote(held, step, leap),
   });
 }
 
@@ -629,6 +681,32 @@ const DOMINANT_OPTIONS: readonly OptionSeed[] = Object.freeze([
     why: "Deceptive: sidestep the tonic and keep moving.",
   }),
 ]);
+
+/* A ♭9, ♭13/♯5 or altered dominant carries the minor key's colour
+   (A7♭9 → Dm): lead with the minor tonic, keep the major and deceptive. */
+const MINOR_COLOURED_DOMINANT_OPTIONS: readonly OptionSeed[] = Object.freeze([
+  Object.freeze({
+    semitones: 5, quality: "m7", lowercase: true, suffix: "7",
+    why: "Resolve down a fifth to the minor tonic its colour points to.",
+  }),
+  Object.freeze({
+    semitones: 5, quality: "maj7", lowercase: false, suffix: "maj7",
+    why: "Or brighten the landing onto the major tonic.",
+  }),
+  DOMINANT_OPTIONS[2] as OptionSeed,
+]);
+
+function hasMinorKeyColour(spec: ChordSpec): boolean {
+  return (
+    spec.colorPolicy === "altered-dominant" ||
+    [...spec.alterations, ...spec.extensions, ...spec.additions].some(
+      (degree) =>
+        (degree.number === 9 && degree.alter === -1) ||
+        (degree.number === 13 && degree.alter === -1) ||
+        (degree.number === 5 && degree.alter === 1),
+    )
+  );
+}
 
 const PREDOMINANT_OPTIONS: readonly OptionSeed[] = Object.freeze([
   Object.freeze({
@@ -682,12 +760,16 @@ function optionTableFor(
   kind: ChartHarmonicKind | null,
   spec: ChordSpec,
 ): readonly OptionSeed[] {
-  if (kind === "dominant") return DOMINANT_OPTIONS;
+  if (kind === "dominant") {
+    return hasMinorKeyColour(spec) ? MINOR_COLOURED_DOMINANT_OPTIONS : DOMINANT_OPTIONS;
+  }
   if (kind === "predominant") return PREDOMINANT_OPTIONS;
   if (kind === "tonic") return TONIC_OPTIONS;
   if (kind === null) {
     /* Unkeyed: the tables are quality-driven, so pick by quality alone. */
-    if (isDominantSpec(spec)) return DOMINANT_OPTIONS;
+    if (isDominantSpec(spec)) {
+      return hasMinorKeyColour(spec) ? MINOR_COLOURED_DOMINANT_OPTIONS : DOMINANT_OPTIONS;
+    }
     if (isMinorSeventhSpec(spec) || isHalfDiminishedSpec(spec)) {
       return PREDOMINANT_OPTIONS;
     }

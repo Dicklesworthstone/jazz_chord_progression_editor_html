@@ -438,8 +438,9 @@ export function ChordDetailPanel({
             {detail.guideToneNames.join("  and  ")}
           </p>
           <p class="studio-chord-detail__fact-note">
-            The third and seventh. These two carry the voice leading into the
-            next chord.
+            {detail.guideToneNames.length === 1
+              ? "With no seventh here, this one tone carries the voice leading into the next chord."
+              : "The third and seventh. These two carry the voice leading into the next chord."}
           </p>
         </section>
       )}
