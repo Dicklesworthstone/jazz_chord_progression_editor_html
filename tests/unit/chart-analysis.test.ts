@@ -303,6 +303,31 @@ describe("deriveChordDetail — tones, guides, resolution, next", () => {
     expect(result.next[0]?.why).toContain("V7");
   });
 
+  test("the tritone-sub option substitutes for the V7, a half step above the target", () => {
+    /* Hand-authored: ii → V is up a perfect fourth; the tritone substitute
+     * sits a diminished fifth from that V, spelled flat-side. Every one of the
+     * twelve ii chords, so the law holds under transposition. Cm7/Fm7 read as
+     * B7/E7, the common enharmonic of C♭7/F♭7. */
+    const expected: readonly (readonly [string, string, string])[] = [
+      ["Dm7", "G7", "Db7"], ["Am7", "D7", "Ab7"], ["Em7", "A7", "Eb7"],
+      ["Bm7", "E7", "Bb7"], ["F#m7", "B7", "F7"], ["C#m7", "F#7", "C7"],
+      ["Gm7", "C7", "Gb7"], ["Cm7", "F7", "B7"], ["Fm7", "Bb7", "E7"],
+      ["Bbm7", "Eb7", "A7"], ["Ebm7", "Ab7", "D7"], ["Abm7", "Db7", "G7"],
+    ];
+    for (const [ii, v, sub] of expected) {
+      const options = detail(ii, null, null).next;
+      expect(`${ii}: ${options[0]?.symbolText}`).toBe(`${ii}: ${v}`);
+      const tritone = options.find((option) => option.why.startsWith("Tritone sub"));
+      expect(`${ii}: ${tritone?.symbolText}`).toBe(`${ii}: ${sub}`);
+    }
+    /* Near-miss: the former +6 offset offered A♭7, the substitute for D7. */
+    const inC = detail("Dm7", null, C_MAJOR).next;
+    const sub = inC.find((option) => option.why.startsWith("Tritone sub"));
+    expect(sub?.symbolText).toBe("Db7");
+    expect(sub?.roman).toBe("♭II7");
+    expect(inC.some((option) => option.symbolText === "Ab7")).toBe(false);
+  });
+
   test("next options are identical across calls (determinism)", () => {
     const first = detail("Cmaj7", null, C_MAJOR);
     const second = detail("Cmaj7", null, C_MAJOR);

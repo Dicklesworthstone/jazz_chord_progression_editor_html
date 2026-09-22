@@ -598,9 +598,11 @@ const OPTION_FLAT_ROOTS: ReadonlySet<string> = new Set([
   "F", "Bb", "Eb", "Ab", "Db",
 ]);
 
-function optionRootName(pitchClass: number): string {
+function optionRootName(pitchClass: number, flatSide: boolean): string {
   const flat = FLAT_NAMES[pc(pitchClass)] ?? "C";
-  return OPTION_FLAT_ROOTS.has(flat) ? flat : (SHARP_NAMES[pc(pitchClass)] ?? "C");
+  return flatSide || OPTION_FLAT_ROOTS.has(flat)
+    ? flat
+    : (SHARP_NAMES[pc(pitchClass)] ?? "C");
 }
 
 type OptionSeed = Readonly<{
@@ -609,6 +611,8 @@ type OptionSeed = Readonly<{
   lowercase: boolean;
   suffix: string;
   why: string;
+  /** Spell the root on the flat side (tritone substitutes: G♭7, not F♯7). */
+  flatSide?: boolean;
 }>;
 
 const DOMINANT_OPTIONS: readonly OptionSeed[] = Object.freeze([
@@ -632,7 +636,10 @@ const PREDOMINANT_OPTIONS: readonly OptionSeed[] = Object.freeze([
     why: "The V7 that completes the ii–V.",
   }),
   Object.freeze({
-    semitones: 6, quality: "7", lowercase: false, suffix: "7",
+    /* The V7 sits a fourth above this ii; its tritone substitute sits a
+       diminished fifth above that V, one half step below the ii root
+       (Dm7 → D♭7 → C). */
+    semitones: -1, quality: "7", lowercase: false, suffix: "7", flatSide: true,
     why: "Tritone sub for that V7 — the bass walks down a half step.",
   }),
   Object.freeze({
@@ -701,7 +708,7 @@ function nextOptionsFor(
   return Object.freeze(
     table.map((seed) => {
       const targetPc = pc(rootPc + seed.semitones);
-      const symbolText = `${optionRootName(targetPc)}${seed.quality}`;
+      const symbolText = `${optionRootName(targetPc, seed.flatSide === true)}${seed.quality}`;
       const roman =
         keyPc === null
           ? null
