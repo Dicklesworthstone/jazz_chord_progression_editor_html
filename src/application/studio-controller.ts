@@ -6309,10 +6309,10 @@ function makeStudioComposition(
         playAlongLoopCache = { document: state.document, sectionId: loopSectionId, enabled: loopEnabled, loop };
       }
       const beat = readPendingRunStartBeat() ?? state.transport.startBeat;
-      return readPlayAlongTimeline(timeline, beat.numerator / beat.denominator, playAlongLoopCache.loop, "Starting position");
+      return readPlayAlongTimeline(timeline, beat, playAlongLoopCache.loop, "Starting position");
     }
     const beat = audioPort.readPlayheadBeat();
-    return readPlayAlongTimeline(timeline, beat.numerator / beat.denominator, service.loop,
+    return readPlayAlongTimeline(timeline, beat, service.loop,
       service.state === "paused" ? "Paused" : "Play along");
   };
 

@@ -270,3 +270,42 @@ test("a real lesson replacement and its Undo cannot resurrect a pending start", 
     expect(exactPosition(inner.readPlayheadBeat())).toEqual([0, 1]);
   } finally { await inner.transportService.submitTransportCommand({ commandRequestId: 999, payload: { kind: "dispose-transport", reason: "page-teardown" } }); }
 }, 30000);
+
+// 41/320 quarter notes is exactly 123 MIDI ticks. Converting to a double
+// and back produces 122.99999999999999, just before the arriving chord.
+test("ready and live cues preserve an exact fractional chord boundary", async () => {
+  const fixture = loopArrangementFixture();
+  const { publishA0Candidate } = await import("../support/a0-application-fixture");
+  const document = publishA0Candidate({ ...fixture.state.document,
+    sections: fixture.state.document.sections.map((section, index) => index !== 0 ? section : {
+      ...section, measures: section.measures.map(measure => ({ ...measure,
+        completion: { kind: "pickup", expectedDuration: { numerator: 41, denominator: 320 }, reason: "Exact boundary witness" },
+        events: measure.events.map(event => ({ ...event, duration: { numerator: 41, denominator: 320 } })),
+      })),
+    }),
+  });
+  const inner = createStudioAudio(createFakeAudioPlatform().platform);
+  const controller = createStudioControllerOverState({ ...fixture.state, document }, fixture.dependencies, { audio: inner });
+  try {
+    expect(controller.playProgression({ kind: "trusted-pointer", trusted: true, sequence: 1 }).ok).toBe(true);
+    await until(() => controller.getSnapshot().transport.status === "playing");
+    expect(controller.stopProgression().ok).toBe(true);
+    await until(() => controller.getSnapshot().transport.status === "ready");
+    for (const [ticks, chord, bar] of [[122, "Cmaj7", 1], [123, "Dm7", 2], [124, "Dm7", 2]] as const) {
+      const position = makeBeatPosition({ numerator: ticks, denominator: 960 });
+      if (!position.ok) throw new Error(position.refusal.code);
+      expect(controller.seekToBeat(position.value).ok).toBe(true);
+      expect(controller.readPlayAlong()).toMatchObject({ current: chord, bar, pulse: 1 });
+    }
+    const boundary = makeBeatPosition({ numerator: 41, denominator: 320 });
+    if (!boundary.ok) throw new Error(boundary.refusal.code);
+    expect(controller.seekToBeat(boundary.value).ok).toBe(true);
+    expect(controller.playProgression({ kind: "trusted-pointer", trusted: true, sequence: 2 }).ok).toBe(true);
+    await until(() => controller.getSnapshot().transport.status === "playing");
+    expect(inner.readPlayheadBeat()).toEqual(boundary.value);
+    expect(controller.readPlayAlong()).toMatchObject({ status: "Play along", current: "Dm7", bar: 2, pulse: 1 });
+    expect(controller.pauseProgression().ok).toBe(true);
+    await until(() => controller.getSnapshot().transport.status === "paused");
+    expect(controller.readPlayAlong()).toMatchObject({ status: "Paused", current: "Dm7", bar: 2, pulse: 1 });
+  } finally { await inner.transportService.submitTransportCommand({ commandRequestId: 999, payload: { kind: "dispose-transport", reason: "page-teardown" } }); }
+}, 30000);

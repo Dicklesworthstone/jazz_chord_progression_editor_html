@@ -54,3 +54,24 @@ test("compound-meter beat counts and short bars use actual durations", () => {
   expect([rest.current,rest.bar,rest.pulse,rest.beatsPerBar]).toEqual(["Rest",2,6,6]);
   expect(readPlayAlongTimeline(cues,4,null,"Playing").current).toBeNull();
 });
+
+
+test("exact rational cues respect loop and chart endpoints without floating round trips", () => {
+  const position = (ticks: number) => {
+    const result = makeBeatPosition({ numerator: ticks, denominator: 960 });
+    if (!result.ok) throw new Error(result.refusal.code);
+    return result.value;
+  };
+  const exactTimeline = { beatsPerBar: 4, beatTicks: 960, spans: [
+    { start: 0, end: 123, measureStart: 0, symbol: "Cmaj7", section: "A", bar: 1 },
+    { start: 123, end: 246, measureStart: 123, symbol: "Dm7", section: "B", bar: 2 },
+  ] };
+  const madeLoop = makeBeatRange(position(123), position(246));
+  if (!madeLoop.ok) throw new Error(madeLoop.refusal.code);
+  expect(readPlayAlongTimeline(exactTimeline, position(122), madeLoop.value, "Playing").current).toBeNull();
+  expect(readPlayAlongTimeline(exactTimeline, position(123), madeLoop.value, "Playing")).toMatchObject({ current: "Dm7", next: "Dm7", pulse: 1 });
+  expect(readPlayAlongTimeline(exactTimeline, position(246), null, "Ready").current).toBeNull();
+  expect(readPlayAlongTimeline(exactTimeline, position(246), madeLoop.value, "Playing").current).toBeNull();
+  // A continuous numeric sample just before a boundary must not be rounded up.
+  expect(readPlayAlongTimeline(exactTimeline, 122.9 / 960, null, "Playing").current).toBe("Cmaj7");
+});

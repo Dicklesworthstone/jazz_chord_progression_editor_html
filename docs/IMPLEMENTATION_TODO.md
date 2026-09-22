@@ -1,5 +1,19 @@
 # Implementation TODO
 
+## Exact play-along boundaries — jcpe-6ujg.1.3 (2026-09-22)
+
+- [x] Claim ready verification leaf; inspect prior proof, exact-time contract and actual selector/controller.
+- [x] Identify 123-tick boundary roundoff through quarter-note floating conversion.
+- [x] Add real-controller regression for preceding/exact/following tick.
+- [x] Strict RCH baseline:26pass/1fail; exact123-tick seek reports previous Cmaj7 instead of arriving Dm7.
+- [x] Preserve rational position through ready/live/paused display selector; retain continuous numeric callers without rounding.
+- [x] RCH hz2 complete:28pass/227 assertions, full typecheck, scoped lint, boundaries and guarded build;6/6 real-audio browser cases (three engines ×320/1280px),0 errors/forbidden requests/skips/flakes.
+- [x] Fresh diff review and1,874 input hashes unchanged; exact rational loop start/end and continuous near-boundary controls retained. Browser artifact983308d34016b90d0f0735500a0baf1a11b958de753aa039aea52cc253a635a8. Evidence: `test-results/play-along-exact-full-20260922/`; browser JSON is nested under its `test-results/play-along-exact-full-20260922/` subdirectory.
+- [x] Retain initial harness failures: partial snapshot omitted root config, then fonts/physical/native inputs; final complete tracked snapshot fixes infrastructure only. No assertion/deadline/retry changes.
+- [ ] Independent-person/physical-phone/U4 acceptance remains open; this is a bounded repair, not full package closure.
+- [ ] Commit owned source/tests and generate release artifact through guarded build; named predeploy/committed-byte delivery gates remain outstanding for this repair. Current tracked artifact and deployed sites are unchanged.
+
+
 ## Reality check — 2026-09-21 (`jcpe-reality-check-september-5h2l`)
 
 This assessment changes no runtime behavior. Full findings and phase-by-phase

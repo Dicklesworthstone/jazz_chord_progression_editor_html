@@ -1,4 +1,4 @@
-import { beatValueToMidiTicks, measureCapacity, MIDI_PPQ, type BeatRange, type ValidatedDocument } from "../domain";
+import { beatValueToMidiTicks, measureCapacity, MIDI_PPQ, type BeatPosition, type BeatRange, type ValidatedDocument } from "../domain";
 
 type Span = Readonly<{
   start: number;
@@ -65,11 +65,14 @@ function findSpan(spans: readonly Span[], tick: number): number {
 
 export function readPlayAlongTimeline(
   timeline: PlayAlongTimeline,
-  quarterBeats: number,
+  position: BeatPosition | number,
   loop: BeatRange | null,
   status: string,
 ): StudioPlayAlongView {
-  const tick = quarterBeats * MIDI_PPQ;
+  // Transport positions are already exact. Do not round-trip through floating
+  // quarter notes: 41/320 * 960 is 122.99999999999999 instead of tick 123.
+  // Numeric display positions retain their continuous, half-open semantics.
+  const tick = typeof position === "number" ? position * MIDI_PPQ : beatValueToMidiTicks(position);
   const loopStart = loop === null ? null : beatValueToMidiTicks(loop.start);
   const loopEnd = loop === null ? null : beatValueToMidiTicks(loop.end);
   const index = Number.isFinite(tick) && (loopStart === null || tick >= loopStart) && (loopEnd === null || tick < loopEnd)
