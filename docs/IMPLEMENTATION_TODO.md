@@ -1,5 +1,17 @@
 # Implementation TODO
 
+## Exact play-along release — jcpe-1tgn (2026-09-22)
+
+- [x] Pin source repair `7587c9c`; freeze 1,874 tracked inputs and source mtimes. Strict RCH guarded build produces artifact commit `9c22a90`, pushed to origin/main.
+- [x] Root, dist and committed HTML match: 8,646,303 bytes, SHA-256 `983308d34016b90d0f0735500a0baf1a11b958de753aa039aea52cc253a635a8`.
+- [x] Strict RCH committed-byte gates: toolchain doctor, guarded build, `bun run predeploy:check` (11 shipping models), instrument quality (9 pass, 16 warnings), original native playback gate (15/15). Enforced recovery gate passes vacuously because no refusal was reproducible; no recovery exercise claimed. Evidence: `test-results/cue-release-gates-20260922/`.
+- [x] Final guarded rebuild and source checks pass before upload. Preserve hz2 critical-memory admission refusal and slow hz4 rebuild; no local fallback. Evidence: `test-results/cue-release-rebuild-20260922/`.
+- [x] Upload committed HTML/image only: Cloudflare deployment `c5855025`; Vercel production `dpl_HSMT7BgVsjXYT6Gz6ZRLcaxaSewm`. Required-UA HTTP polls on both public hosts match committed HTML and image on the first poll.
+- [x] Hosted browser proof: 12/12, no skips/flakes/unexpected failures, Chromium 149.0.7827.55, Firefox 151.0, WebKit 26.5, 320/1280px on each host. Real import/native playback/Pause, exact ticks 122/123/124, unchanged revision, display bounds, Stop and Exit Focus pass. Review all cue/diagnostic attachments and four Chromium screenshots. Evidence: `test-results/cue-release-live-final-20260922/`.
+- [x] Preserve initial six harness failures in `test-results/cue-release-live-20260922/`: MouseEvent integer clientX truncated the requested seek. Correct only synthetic coordinate precision; retain all exact tick/chord assertions, deadlines and zero retries.
+- [x] Final 1,874 input hashes and source mtimes unchanged before this documentation update. Application errors and forbidden requests are zero. Cloudflare browser responses still contain the known blocked analytics injection (response SHA-256 `ed7572d1d7b4665b9a34b6a1ca1575ad31a290479cc5f0dc67e3248bd907682e`); inline application script hashes match, CSP unchanged, and `jcpe-2nky` remains open. Vercel browser bytes match the committed artifact exactly with no console errors.
+- [x] Close only bounded release task; independent-person/physical-phone/U4 and aggregate acceptance remain open on their original tasks. Preserve peer panels and fleet-owned tracker staging.
+
 ## Exact play-along boundaries — jcpe-6ujg.1.3 (2026-09-22)
 
 - [x] Claim ready verification leaf; inspect prior proof, exact-time contract and actual selector/controller.
@@ -11,7 +23,7 @@
 - [x] Fresh diff review and1,874 input hashes unchanged; exact rational loop start/end and continuous near-boundary controls retained. Browser artifact983308d34016b90d0f0735500a0baf1a11b958de753aa039aea52cc253a635a8. Evidence: `test-results/play-along-exact-full-20260922/`; browser JSON is nested under its `test-results/play-along-exact-full-20260922/` subdirectory.
 - [x] Retain initial harness failures: partial snapshot omitted root config, then fonts/physical/native inputs; final complete tracked snapshot fixes infrastructure only. No assertion/deadline/retry changes.
 - [ ] Independent-person/physical-phone/U4 acceptance remains open; this is a bounded repair, not full package closure.
-- [ ] Commit owned source/tests and generate release artifact through guarded build; named predeploy/committed-byte delivery gates remain outstanding for this repair. Current tracked artifact and deployed sites are unchanged.
+- [x] Source/tests committed as `7587c9c`; guarded artifact `9c22a90` deployed and verified on both hosts under `jcpe-1tgn` above.
 
 
 ## Reality check — 2026-09-21 (`jcpe-reality-check-september-5h2l`)
