@@ -4664,6 +4664,14 @@
   padding-block-end: var(--space-1);
 }
 
+/* Key above Transpose in one column: the title's width is unchanged. */
+.studio-paper-head__keys {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
 /* The key block is a control (V2R-11): press to cycle the reviewed ring. */
 button.studio-paper-head__key {
   align-items: flex-start;
@@ -6962,6 +6970,16 @@ li[data-resize-preview]::after {
 .studio-inspector-piano-role { display: block; margin-block-start: .3rem; font-size: .6rem; font-weight: 700; }
 
 .studio-exact-share textarea { width: 100%; box-sizing: border-box; overflow-wrap: anywhere; resize: vertical; font: inherit; }
+
+/* Transpose dialog (jcpe-transpose-workflow-nazh): one interval, a live
+   before/after preview, one undoable Apply. Token-only, like My Charts. */
+.studio-transpose { display: grid; gap: .75rem; min-inline-size: 0; overflow-wrap: anywhere; }
+.studio-transpose p { margin-block: .25rem; }
+.studio-transpose__direction { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0; padding: .5rem .75rem; border: 1px solid var(--border-strong); border-radius: .4rem; }
+.studio-transpose__direction label { display: inline-flex; align-items: center; gap: .35rem; min-block-size: 44px; }
+.studio-transpose select { display: block; inline-size: 100%; min-block-size: 44px; box-sizing: border-box; font: inherit; }
+.studio-transpose__preview { padding: .65rem; background: var(--surface-panel); border: 1px solid var(--border-strong); border-radius: .4rem; }
+.studio-transpose__examples { list-style: none; padding: 0; margin: .35rem 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: .25rem .75rem; font-variant-numeric: tabular-nums; }
 
 .studio-my-charts { display: grid; gap: .75rem; min-inline-size: 0; overflow-wrap: anywhere; }
 .studio-my-charts p, .studio-my-charts h3 { margin-block: .35rem; }

@@ -83,6 +83,8 @@ import type {
   ApplicationTransitionResult,
   DeleteDocumentNodesCommand,
   SetDocumentSettingsCommand,
+  TransposeCommand,
+  DerivedDocumentPatch,
   DocumentNodeRef,
   DuplicateDocumentNodesCommand,
   InsertDocumentNodeCommand,
@@ -105,6 +107,7 @@ import {
   detectChartPhrases,
   parseChordSymbol,
   decodeChordProGrid,
+  makeSpelledInterval,
   resolutionOperations,
   type ChartChordDetail,
   type ChartEventAnalysis,
@@ -112,7 +115,9 @@ import {
   type ChartTextDraft,
   type ContinuationSuggestion,
   type ContinuationContextReading,
+  type SpelledInterval,
 } from "../theory";
+import { transposeChart, type ChartTranspositionRefusal } from "./chart-transposition";
 import {
   MAX_TRANSPORT_PREVIEW_EVENTS,
   MAX_TRANSPORT_PREVIEW_BEATS,
@@ -247,6 +252,8 @@ export const STUDIO_EDIT_REFUSAL_CODES = Object.freeze([
   "u1.key_unknown",
   "u1.meter_invalid",
   "u1.meter_locked_by_content",
+  "u1.transpose_interval_unknown",
+  "u1.transpose_refused",
 ] as const);
 
 /** The reviewed tempo window, in beats per minute. */
@@ -318,7 +325,37 @@ export type StudioControllerAction =
   | "set-instrument"
   | "set-master-volume"
   | "set-key"
-  | "set-meter";
+  | "set-meter"
+  | "transpose-chart";
+
+/** The spelled intervals the Transpose control offers, in menu order. */
+export const STUDIO_TRANSPOSE_INTERVALS = Object.freeze([
+  Object.freeze({ id: "m2", label: "Minor 2nd (1 semitone)", number: 2, quality: "minor" }),
+  Object.freeze({ id: "M2", label: "Major 2nd (2 semitones)", number: 2, quality: "major" }),
+  Object.freeze({ id: "m3", label: "Minor 3rd (3 semitones)", number: 3, quality: "minor" }),
+  Object.freeze({ id: "M3", label: "Major 3rd (4 semitones)", number: 3, quality: "major" }),
+  Object.freeze({ id: "P4", label: "Perfect 4th (5 semitones)", number: 4, quality: "perfect" }),
+  Object.freeze({ id: "A4", label: "Augmented 4th (6 semitones)", number: 4, quality: "augmented" }),
+  Object.freeze({ id: "d5", label: "Diminished 5th (6 semitones)", number: 5, quality: "diminished" }),
+  Object.freeze({ id: "P5", label: "Perfect 5th (7 semitones)", number: 5, quality: "perfect" }),
+  Object.freeze({ id: "m6", label: "Minor 6th (8 semitones)", number: 6, quality: "minor" }),
+  Object.freeze({ id: "M6", label: "Major 6th (9 semitones)", number: 6, quality: "major" }),
+  Object.freeze({ id: "m7", label: "Minor 7th (10 semitones)", number: 7, quality: "minor" }),
+  Object.freeze({ id: "M7", label: "Major 7th (11 semitones)", number: 7, quality: "major" }),
+] as const);
+
+export type StudioTransposeIntervalId = (typeof STUDIO_TRANSPOSE_INTERVALS)[number]["id"];
+
+export type StudioTransposePreview =
+  | Readonly<{
+      ok: true;
+      keyBefore: string | null;
+      keyAfter: string | null;
+      /** Up to the first eight changed chords, in chart order. */
+      examples: readonly Readonly<{ before: string; after: string }>[];
+      changedChordCount: number;
+    }>
+  | Readonly<{ ok: false; message: string }>;
 
 export type StudioControllerRefusal = Readonly<{
   action: StudioControllerAction;
@@ -604,6 +641,25 @@ export interface StudioController {
    */
   readonly setKey: (
     key: Readonly<{ step: string; alter: number; mode: string }> | null,
+  ) => StudioControllerActionResult;
+  /**
+   * Preview a whole-chart transposition without changing anything: the key
+   * and first chords before/after, or the chords that would refuse.
+   */
+  readonly previewTransposeChart: (
+    interval: StudioTransposeIntervalId,
+    direction: "up" | "down",
+  ) => StudioTransposePreview;
+  /**
+   * Transpose the whole chart by one spelled interval as a single Undo step
+   * through A0's revision-bound `transpose` command. Chords move through the
+   * parser-verified spelled transposer; Manual/Frozen notes move exactly;
+   * keys move. A Custom chord, an unspellable result or a note leaving MIDI
+   * refuses the whole change and names the chords — nothing is repaired.
+   */
+  readonly transposeChart: (
+    interval: StudioTransposeIntervalId,
+    direction: "up" | "down",
   ) => StudioControllerActionResult;
   readonly undo: () => StudioControllerActionResult;
   readonly redo: () => StudioControllerActionResult;
@@ -1043,6 +1099,10 @@ const EDIT_RECOVERY_ACTIONS: Readonly<Record<StudioEditRefusalCode, string>> =
     "u1.meter_invalid": "Pick a meter this studio can count, like 4/4 or 3/4.",
     "u1.meter_locked_by_content":
       "Clear the chart first, or start a new chart in the meter you want.",
+    "u1.transpose_interval_unknown":
+      "Pick one of the intervals the Transpose control lists.",
+    "u1.transpose_refused":
+      "Edit the chords named in the message, then transpose again.",
     "u1.selection_empty": "Select at least one chord before this action.",
     "u1.selection_limit": "Select at most 8,192 chords.",
     "u1.target_missing": "Choose a chord, measure, or boundary that still exists.",
@@ -2459,6 +2519,127 @@ function makeStudioComposition(
       patch: Object.freeze({ key: candidate }),
     });
     return apply("set-key", (currentState) =>
+      runDocumentCommand({ command, dependencies, state: currentState }),
+    );
+  };
+
+  const transposeInterval = (
+    id: StudioTransposeIntervalId,
+    direction: "up" | "down",
+  ): SpelledInterval | null => {
+    const row = STUDIO_TRANSPOSE_INTERVALS.find((candidate) => candidate.id === id);
+    if (row === undefined) return null;
+    return makeSpelledInterval(row.number, row.quality, direction);
+  };
+
+  const keyLabel = (key: KeyContext | null): string | null => {
+    if (key === null) return null;
+    const glyphs = key.tonic.alter < 0 ? "♭".repeat(-key.tonic.alter) : "♯".repeat(key.tonic.alter);
+    return `${key.tonic.step}${glyphs} ${key.mode.replace("-", " ")}`;
+  };
+
+  const transposeRefusalMessage = (
+    refusals: readonly ChartTranspositionRefusal[],
+  ): string => {
+    const named = refusals.slice(0, 4).map((refusal) => {
+      const reason =
+        refusal.reason === "custom-chord"
+          ? "is a Custom chord with its own label"
+          : refusal.reason === "pitch-out-of-range"
+            ? "has exact notes that would leave the playable range"
+            : "cannot be spelled in the new key";
+      return `“${refusal.sourceText}” ${reason}`;
+    });
+    const more = refusals.length > 4 ? ` (and ${String(refusals.length - 4)} more)` : "";
+    return `Nothing changed: ${named.join("; ")}${more}.`;
+  };
+
+  const previewTransposeChart = (
+    id: StudioTransposeIntervalId,
+    direction: "up" | "down",
+  ): StudioTransposePreview => {
+    const interval = transposeInterval(id, direction);
+    if (interval === null) {
+      return Object.freeze({ ok: false, message: "Pick one of the listed intervals." });
+    }
+    const result = transposeChart(state.document, interval);
+    if (!result.ok) {
+      return Object.freeze({ ok: false, message: transposeRefusalMessage(result.refusals) });
+    }
+    const after = new Map<string, string>();
+    for (const section of result.candidate.sections) {
+      for (const measure of section.measures) {
+        for (const event of measure.events) after.set(String(event.id), event.chord.sourceText);
+      }
+    }
+    const examples: { before: string; after: string }[] = [];
+    for (const section of state.document.sections) {
+      for (const measure of section.measures) {
+        for (const event of measure.events) {
+          const moved = after.get(String(event.id));
+          if (examples.length < 8 && moved !== undefined && moved !== event.chord.sourceText) {
+            examples.push(Object.freeze({ before: event.chord.sourceText, after: moved }));
+          }
+        }
+      }
+    }
+    return Object.freeze({
+      ok: true,
+      keyBefore: keyLabel(state.document.key),
+      keyAfter: keyLabel(result.candidate.key),
+      examples: Object.freeze(examples),
+      changedChordCount: result.changedEventIds.length,
+    });
+  };
+
+  const transposeChartIntent = (
+    id: StudioTransposeIntervalId,
+    direction: "up" | "down",
+  ): StudioControllerActionResult => {
+    const interval = transposeInterval(id, direction);
+    if (interval === null) {
+      return editRefusal(
+        "transpose-chart",
+        "u1.transpose_interval_unknown",
+        "That interval is not one the Transpose control offers.",
+        ["interval"],
+      );
+    }
+    const result = transposeChart(state.document, interval);
+    if (!result.ok) {
+      return editRefusal(
+        "transpose-chart",
+        "u1.transpose_refused",
+        transposeRefusalMessage(result.refusals),
+        ["sections"],
+      );
+    }
+    if (result.changedIds.length === 0) {
+      return editRefusal(
+        "transpose-chart",
+        "u1.chart_already_empty",
+        "This chart has no chords to transpose.",
+        ["sections"],
+      );
+    }
+    const row = STUDIO_TRANSPOSE_INTERVALS.find((candidate) => candidate.id === id);
+    const command: TransposeCommand = Object.freeze({
+      ...commandEnvelope(
+        "studio-transpose",
+        `Transpose ${direction} ${row?.id ?? id}`,
+      ),
+      kind: "transpose",
+      lawId: `h1-t.spelled-interval.${direction}.${id}`,
+      patch: Object.freeze({
+        baseRevision: state.revision,
+        sourceEventIds: result.changedEventIds,
+        declaredChangedIds: result.changedIds as DerivedDocumentPatch["declaredChangedIds"],
+        candidate: result.candidate,
+        exactTimingPreserved: true,
+        stableIdentityPolicy: "preserve-unmodified-allocate-new-inserts",
+      }),
+    });
+    return apply("transpose-chart", (currentState) =>
       runDocumentCommand({ command, dependencies, state: currentState }),
     );
   };
@@ -7670,6 +7851,8 @@ function makeStudioComposition(
     setInstrument,
     setMasterVolume,
     setKey,
+    previewTransposeChart,
+    transposeChart: transposeChartIntent,
     setTitle,
     undo: () => apply("undo", (current) => undoDocumentCommand({ state: current })),
     redo: () => apply("redo", (current) => redoDocumentCommand({ state: current })),

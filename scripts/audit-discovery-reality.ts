@@ -86,9 +86,14 @@ check("atlas-query-positive", "Eleven-semitone interval matches itself", 1, adap
 check("atlas-query-near-miss", "One-semitone query must not match eleven semitones", 0, adapter.searchByRootIntervals([1]).length);
 
 const majorSecond = makeSpelledInterval(2, "major", "up");
-check("transpose-basic-control", "Transpose a seventh with slash bass", "Dmaj7/F#", transposeChordSymbolByInterval("Cmaj7/E", majorSecond).transposedSymbol);
-check("transpose-six-nine", "Preserve 6/9 and the independent slash bass", "D6/9/F#", transposeChordSymbolByInterval("C6/9/E", majorSecond).transposedSymbol);
-check("transpose-unicode", "Unicode source root must actually transpose", false, transposeChordSymbolByInterval("D♭maj7", majorSecond, "unicode").transposedSymbol === "D♭maj7");
+/* A refusal is never the expected spelling, so it can only fail a probe. */
+function transposedSymbolOrNull(result: ReturnType<typeof transposeChordSymbolByInterval>): string | null {
+  return result.ok ? result.transposedSymbol : null;
+}
+check("transpose-basic-control", "Transpose a seventh with slash bass", "Dmaj7/F#", transposedSymbolOrNull(transposeChordSymbolByInterval("Cmaj7/E", majorSecond)));
+check("transpose-six-nine", "Preserve 6/9 and the independent slash bass", "D6/9/F#", transposedSymbolOrNull(transposeChordSymbolByInterval("C6/9/E", majorSecond)));
+check("transpose-unicode", "Unicode source root must actually transpose", false, transposedSymbolOrNull(transposeChordSymbolByInterval("D♭maj7", majorSecond, "unicode")) === "D♭maj7");
+check("transpose-unicode-exact", "Unicode D♭maj7 up a major second is exactly E♭maj7, not a refusal", "E♭maj7", transposedSymbolOrNull(transposeChordSymbolByInterval("D♭maj7", majorSecond, "unicode")));
 const insertion = evaluateTransformCandidates([event("G7", beat(3))], 0);
 const split = insertion.ok ? insertion.candidates.find((c) => c.family === "secondary-ii-v") : undefined;
 check("transform-exact-duration", "Three beats split into two events must still sum to three", 3, split?.editPlan.operations.reduce((sum, op) => sum + op.duration.numerator / op.duration.denominator, 0));

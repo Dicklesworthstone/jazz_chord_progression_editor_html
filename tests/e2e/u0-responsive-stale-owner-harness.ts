@@ -333,6 +333,7 @@ function ResponsiveStaleOwnerHarness() {
     onRangeCancel: () => undefined,
     onViewModeChange: () => undefined,
     onCycleKey: () => undefined,
+    onOpenTranspose: () => undefined,
     onChartLayoutChange: () => undefined,
     onDismissUiRefusal: () => {
       setUiRefusal(null);

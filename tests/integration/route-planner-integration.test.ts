@@ -7,6 +7,7 @@ import {
   planHarmonicRoutes,
   transposeProgressionByInterval,
 } from "../../src/theory";
+import { transposedChords } from "../support/transposed-chords";
 
 const FIXTURE_DIR = resolve(
   import.meta.dir,
@@ -60,15 +61,15 @@ describe("G3 Comprehensive Conformance and Evidence", () => {
     ];
 
     for (const int of intervals) {
-      const startTrans = transposeProgressionByInterval(["Cmaj7"], { interval: int }).transposedChords[0];
-      const endTrans = transposeProgressionByInterval(["Fmaj7"], { interval: int }).transposedChords[0];
+      const startTrans = transposedChords(transposeProgressionByInterval(["Cmaj7"], { interval: int }))[0];
+      const endTrans = transposedChords(transposeProgressionByInterval(["Fmaj7"], { interval: int }))[0];
 
       if (startTrans && endTrans) {
         const res = planHarmonicRoutes(startTrans, endTrans, { maxSteps: 2 });
         expect(res.ok).toBe(true);
         if (res.ok) {
           expect(res.routes.length).toBeGreaterThanOrEqual(1);
-          const expectedIntermediates = transposeProgressionByInterval(["Gm7", "C7"], { interval: int }).transposedChords;
+          const expectedIntermediates = transposedChords(transposeProgressionByInterval(["Gm7", "C7"], { interval: int }));
           const found = res.routes.find((r) =>
             expectedIntermediates.every((ic) => r.intermediateChords.includes(ic)),
           );

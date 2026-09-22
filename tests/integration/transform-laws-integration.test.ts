@@ -12,6 +12,7 @@ import {
   makeSpelledInterval,
   transposeProgressionByInterval,
 } from "../../src/theory";
+import { transposedChords } from "../support/transposed-chords";
 
 function eventIdOf(wire: string): ChordEventId {
   const res = parseStableId("event", wire);
@@ -95,12 +96,12 @@ describe("H1 Comprehensive Conformance and Evidence", () => {
       );
 
       const result = transposeProgressionByInterval(testCase.sourceChords, { interval });
-      expect(result.transposedChords).toEqual(testCase.expectedTransposedChords);
+      expect(transposedChords(result)).toEqual(testCase.expectedTransposedChords);
 
       // Verify inverse roundtrip
       const inv = invertInterval(interval);
-      const roundtrip = transposeProgressionByInterval(result.transposedChords, { interval: inv });
-      expect(roundtrip.transposedChords).toEqual(testCase.sourceChords);
+      const roundtrip = transposeProgressionByInterval(transposedChords(result), { interval: inv });
+      expect(transposedChords(roundtrip)).toEqual(testCase.sourceChords);
     }
   });
 
@@ -124,7 +125,7 @@ describe("H1 Comprehensive Conformance and Evidence", () => {
 
     for (const int of intervals) {
       const transProg = transposeProgressionByInterval(baseProgression, { interval: int });
-      const events = transProg.transposedChords.map((chord, idx) => ({
+      const events = transposedChords(transProg).map((chord, idx) => ({
         eventId: eventIdOf(`e_${String(idx)}`),
         chordSymbol: chord,
         offsetBeat: beat(idx * 4),

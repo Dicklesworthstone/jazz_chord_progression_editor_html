@@ -680,6 +680,7 @@ export function StudioShell({
               onRangeClear={callbacks.onRangeClear}
               onViewModeChange={callbacks.onViewModeChange}
               onCycleKey={callbacks.onCycleKey}
+              onOpenTranspose={callbacks.onOpenTranspose}
               view={view.chart}
             />
             <HarmonyLens

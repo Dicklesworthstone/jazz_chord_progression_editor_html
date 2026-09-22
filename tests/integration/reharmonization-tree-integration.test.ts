@@ -12,6 +12,7 @@ import {
   makeSpelledInterval,
   transposeProgressionByInterval,
 } from "../../src/theory";
+import { transposedChords } from "../support/transposed-chords";
 
 function eventIdOf(wire: string): ChordEventId {
   const res = parseStableId("event", wire);
@@ -98,7 +99,7 @@ describe("G5 Comprehensive Conformance and Evidence", () => {
     ];
 
     for (const int of intervals) {
-      const trans = transposeProgressionByInterval(baseChords, { interval: int }).transposedChords;
+      const trans = transposedChords(transposeProgressionByInterval(baseChords, { interval: int }));
       const events = trans.map((chord, idx) => ({
         eventId: eventIdOf(`evt_${String(idx)}`),
         chordSymbol: chord,

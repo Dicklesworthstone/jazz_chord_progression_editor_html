@@ -13,6 +13,7 @@ export {
   createStudioComposition,
   createStudioController,
   STUDIO_CONTROLLER_REFUSAL_CODES,
+  STUDIO_TRANSPOSE_INTERVALS,
 } from "./studio-controller";
 export { applicationHistoryRetainedByteEstimator } from "./application-state";
 export { validateDocumentSemantics } from "./document-validation";
@@ -52,6 +53,8 @@ export type {
   StudioQuickEntryToken,
   StudioRailSide,
   StudioRecoveredChordLane,
+  StudioTransposeIntervalId,
+  StudioTransposePreview,
 } from "./studio-controller";
 
 export type { StudioViewModel } from "./studio-view-model";

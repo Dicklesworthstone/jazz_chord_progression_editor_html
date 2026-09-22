@@ -93,6 +93,8 @@ export type ChartWorkspaceProps = Readonly<{
   onViewModeChange: (mode: StudioViewMode) => void;
   /** Cycles the reviewed key ring; one undoable Set-key step (V2R-11). */
   onCycleKey: () => void;
+  /** Opens the whole-chart Transpose dialog. */
+  onOpenTranspose: () => void;
 }>;
 
 /** Reviewed project threshold; a shorter movement stays a tap and a scroll. */
@@ -457,6 +459,7 @@ export function ChartWorkspace({
   onRangeClear,
   onViewModeChange,
   onCycleKey,
+  onOpenTranspose,
 }: ChartWorkspaceProps) {
   /**
    * Raw inline text stays component-local. Escape restores the exact prior
@@ -1686,6 +1689,9 @@ export function ChartWorkspace({
           each press cycles the reviewed ten-key ring as one undoable
           Set-key command, and the roman/phrase surfaces light up with it.
         */}
+        {/* Key and Transpose share one column so the centred title keeps its
+            full width. */}
+        <div class="studio-paper-head__keys">
         <button
           class="studio-paper-head__key"
           data-testid="chart-key-cycle"
@@ -1697,6 +1703,18 @@ export function ChartWorkspace({
           <span class="studio-paper-head__kicker">Key</span>
           <span class="studio-paper-head__value">{view.keyLabel}</span>
         </button>
+        <button
+          class="studio-paper-head__key studio-paper-head__transpose"
+          data-testid="chart-transpose"
+          id="studio-chart-transpose"
+          onClick={onOpenTranspose}
+          title="Transpose the whole chart"
+          type="button"
+        >
+          <span class="studio-paper-head__kicker">Transpose</span>
+          <span class="studio-paper-head__value">Move key</span>
+        </button>
+        </div>
         <div class="studio-paper-head__title">
           <Field
             controlId="studio-document-title"

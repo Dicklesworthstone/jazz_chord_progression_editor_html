@@ -869,6 +869,8 @@ export type StudioShellCallbacks = Readonly<{
   onRangeClear: () => void;
   /** Presentation-only: swaps compact and teaching rendering. */
   onViewModeChange: (mode: StudioViewMode) => void;
+  /** Opens the whole-chart Transpose dialog (presentation only). */
+  onOpenTranspose: () => void;
   /** Cycles the document key ring as one undoable Set-key step (V2R-11). */
   onCycleKey: () => void;
   /** Presentation-only: swaps the sheet and grid layouts (V2R-4). */

@@ -245,8 +245,10 @@ export {
   makeSpelledInterval,
   invertInterval,
   transposePitchByInterval,
+  transposeChordSpecByInterval,
   transposeChordSymbolByInterval,
   transposeProgressionByInterval,
+  transposeSpelledPitchClassExact,
 } from "./spelled-transposition";
 export { h1Operations, type H1Operations } from "./h1-operations";
 

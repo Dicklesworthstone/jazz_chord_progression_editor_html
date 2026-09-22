@@ -1,4 +1,8 @@
 import {
+  SPELLING_STEP_ORDER,
+  makeSpelledPitchClass,
+  pitchClassOf,
+  type ChordSpec,
   type KeyContext,
   type SpelledPitchClass,
 } from "../domain";
@@ -6,17 +10,15 @@ import type { AccidentalStyle } from "./syntax-contract";
 import {
   type IntervalDirection,
   type IntervalQuality,
+  type ChordTranspositionRefusalCode,
   type SpelledInterval,
   type TransposedChordResult,
   type TransposeProgressionOptions,
   type TransposeProgressionResult,
   H1_SPELLED_TRANSPOSITION_SCHEMA,
 } from "./spelled-transposition-contract";
-import { parseChordSymbol } from "./chord-symbol";
-import {
-  spelledPitchClassToString,
-  transposeSpelledPitchClass,
-} from "./guide-tones";
+import { formatChordSymbol, parseChordSymbol } from "./chord-symbol";
+import { transposeSpelledPitchClass } from "./guide-tones";
 
 export function makeSpelledInterval(
   diatonicNumber: number,
@@ -96,6 +98,101 @@ export function transposePitchByInterval(
   return transposeSpelledPitchClass(pitch, steps, semitones);
 }
 
+/**
+ * Exact spelled transposition of one pitch class: the letter moves by the
+ * interval's steps and the accidental is whatever makes the sounding pitch
+ * exact. Beyond a double accidental no spelling exists; return null rather
+ * than clamp to a different pitch.
+ */
+export function transposeSpelledPitchClassExact(
+  pitch: SpelledPitchClass,
+  interval: SpelledInterval,
+): SpelledPitchClass | null {
+  const steps =
+    interval.direction === "down" ? (7 - interval.scaleSteps) % 7 : interval.scaleSteps;
+  const letterIndex = SPELLING_STEP_ORDER.indexOf(pitch.step);
+  const step = SPELLING_STEP_ORDER[(letterIndex + steps) % 7] ?? "C";
+  const natural = pitchClassOf({ step, alter: 0 });
+  const target = pitchClassOf(pitch) + interval.semitones;
+  const alter = ((((target - natural) % 12) + 18) % 12) - 6;
+  if (alter < -2 || alter > 2) return null;
+  const made = makeSpelledPitchClass({ step, alter });
+  return made.ok ? made.value : null;
+}
+
+/** Deterministic deep serialization with sorted keys at every level. */
+function canonicalJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
+  if (value !== null && typeof value === "object") {
+    const record = value as Readonly<Record<string, unknown>>;
+    return `{${Object.keys(record)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${canonicalJson(record[key])}`)
+      .join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
+/** Structural identity of a parsed chord — every nested member — minus its text. */
+function chordMeaning(chord: ChordSpec): string {
+  return canonicalJson({ ...chord, sourceText: null });
+}
+
+function writtenPitchClass(pitch: SpelledPitchClass, unicode: boolean): string {
+  const flat = unicode ? "♭" : "b";
+  const sharp = unicode ? "♯" : "#";
+  return `${pitch.step}${pitch.alter < 0 ? flat.repeat(-pitch.alter) : sharp.repeat(pitch.alter)}`;
+}
+
+/**
+ * Transpose a parsed chord by a spelled interval. Root and slash bass move;
+ * every quality, extension, alteration and omission is relative to the root
+ * and so is unchanged. The result text is accepted only if the T0 parser reads
+ * it back as exactly the transposed chord. The musician's own quality text is
+ * tried first (so "C-7" becomes "D-7"), then the canonical print.
+ */
+export function transposeChordSpecByInterval(
+  chord: ChordSpec,
+  interval: SpelledInterval,
+  accidentalStyle: AccidentalStyle = "ascii",
+):
+  | Readonly<{ ok: true; chord: ChordSpec; text: string }>
+  | Readonly<{ ok: false; code: ChordTranspositionRefusalCode }> {
+  const root = transposeSpelledPitchClassExact(chord.root, interval);
+  const bass =
+    chord.bass === null ? null : transposeSpelledPitchClassExact(chord.bass, interval);
+  if (root === null || (chord.bass !== null && bass === null)) {
+    return Object.freeze({ ok: false, code: "transpose.spelling-overflow" });
+  }
+  const moved: ChordSpec = Object.freeze({ ...chord, root, bass });
+  const expected = chordMeaning(moved);
+  const unicode = /[♭♯𝄫𝄪]/u.test(chord.sourceText);
+  const candidates: string[] = [];
+  const sourceRoot = writtenPitchClass(chord.root, unicode);
+  if (chord.sourceText.startsWith(sourceRoot)) {
+    let rest = chord.sourceText.slice(sourceRoot.length);
+    let fits = true;
+    if (chord.bass !== null && bass !== null) {
+      const sourceBass = `/${writtenPitchClass(chord.bass, unicode)}`;
+      if (rest.endsWith(sourceBass)) {
+        rest = `${rest.slice(0, rest.length - sourceBass.length)}/${writtenPitchClass(bass, unicode)}`;
+      } else {
+        fits = false;
+      }
+    }
+    if (fits) candidates.push(`${writtenPitchClass(root, unicode)}${rest}`);
+  }
+  const canonical = formatChordSymbol(moved, accidentalStyle);
+  if (canonical.ok) candidates.push(canonical.canonicalText);
+  for (const text of candidates) {
+    const reparsed = parseChordSymbol(text, unicode ? "unicode" : accidentalStyle);
+    if (reparsed.ok && chordMeaning(reparsed.chord) === expected) {
+      return Object.freeze({ ok: true, chord: reparsed.chord, text });
+    }
+  }
+  return Object.freeze({ ok: false, code: "transpose.unverified" });
+}
+
 export function transposeChordSymbolByInterval(
   symbol: string,
   interval: SpelledInterval,
@@ -103,50 +200,33 @@ export function transposeChordSymbolByInterval(
 ): TransposedChordResult {
   const parsed = parseChordSymbol(symbol, accidentalStyle);
   if (!parsed.ok) {
-    const dummyPitch: SpelledPitchClass = { step: "C", alter: 0 };
-    return {
+    return Object.freeze({
+      ok: false,
       originalSymbol: symbol,
-      transposedSymbol: symbol,
-      originalRoot: dummyPitch,
-      transposedRoot: dummyPitch,
+      code: "transpose.unparseable",
       accidentalStyle,
-    };
+    });
   }
-
-  const origRoot = parsed.chord.root;
-  const transRoot = transposePitchByInterval(origRoot, interval);
-  const origRootStr = spelledPitchClassToString(origRoot);
-  const transRootStr = spelledPitchClassToString(transRoot);
-
-  let transBass: SpelledPitchClass | null = null;
-  let transBassStr = "";
-  if (parsed.chord.bass) {
-    transBass = transposePitchByInterval(parsed.chord.bass, interval);
-    transBassStr = spelledPitchClassToString(transBass);
+  const moved = transposeChordSpecByInterval(parsed.chord, interval, accidentalStyle);
+  if (!moved.ok) {
+    return Object.freeze({
+      ok: false,
+      originalSymbol: symbol,
+      code: moved.code,
+      accidentalStyle,
+    });
   }
-
-  // Replace root and bass in the source symbol preserving all chord qualities and extensions
-  let transposedSymbol = symbol;
-  if (symbol.startsWith(origRootStr)) {
-    const suffix = symbol.slice(origRootStr.length);
-    if (parsed.chord.bass && suffix.includes("/")) {
-      const parts = suffix.split("/");
-      const chordQualitySuffix = parts[0] ?? "";
-      transposedSymbol = `${transRootStr}${chordQualitySuffix}/${transBassStr}`;
-    } else {
-      transposedSymbol = `${transRootStr}${suffix}`;
-    }
-  }
-
-  return {
+  return Object.freeze({
+    ok: true,
     originalSymbol: symbol,
-    transposedSymbol,
-    originalRoot: origRoot,
-    transposedRoot: transRoot,
+    transposedSymbol: moved.text,
+    transposedChord: moved.chord,
+    originalRoot: parsed.chord.root,
+    transposedRoot: moved.chord.root,
     originalBass: parsed.chord.bass,
-    transposedBass: transBass,
+    transposedBass: moved.chord.bass,
     accidentalStyle,
-  };
+  });
 }
 
 export function transposeProgressionByInterval(
@@ -155,31 +235,45 @@ export function transposeProgressionByInterval(
 ): TransposeProgressionResult {
   const accidentalStyle: AccidentalStyle = options.accidentalStyle ?? "ascii";
   const transposedChords: string[] = [];
+  const refusals: { index: number; code: ChordTranspositionRefusalCode }[] = [];
 
-  for (const chord of chords) {
+  chords.forEach((chord, index) => {
     const res = transposeChordSymbolByInterval(chord, options.interval, accidentalStyle);
-    transposedChords.push(res.transposedSymbol);
-  }
+    if (res.ok) transposedChords.push(res.transposedSymbol);
+    else refusals.push(Object.freeze({ index, code: res.code }));
+  });
 
   let transposedKey: KeyContext | undefined = undefined;
   if (options.sourceKeyContext) {
-    const origTonic = options.sourceKeyContext.tonic;
-    const transTonic = transposePitchByInterval(origTonic, options.interval);
-    transposedKey = {
-      tonic: transTonic,
-      mode: options.sourceKeyContext.mode,
-    };
+    const transTonic = transposeSpelledPitchClassExact(
+      options.sourceKeyContext.tonic,
+      options.interval,
+    );
+    if (transTonic === null) {
+      refusals.push(Object.freeze({ index: -1, code: "transpose.spelling-overflow" }));
+    } else {
+      transposedKey = { tonic: transTonic, mode: options.sourceKeyContext.mode };
+    }
   } else if (options.targetKeyContext) {
     transposedKey = options.targetKeyContext;
   }
 
-  return {
+  if (refusals.length > 0) {
+    return Object.freeze({
+      ok: false,
+      schema: H1_SPELLED_TRANSPOSITION_SCHEMA,
+      interval: options.interval,
+      originalChords: chords,
+      refusals: Object.freeze(refusals),
+    });
+  }
+  return Object.freeze({
+    ok: true,
     schema: H1_SPELLED_TRANSPOSITION_SCHEMA,
     interval: options.interval,
     originalChords: chords,
-    transposedChords,
+    transposedChords: Object.freeze(transposedChords),
     ...(options.sourceKeyContext ? { originalKey: options.sourceKeyContext } : {}),
     ...(transposedKey ? { transposedKey } : {}),
-    isLosslessRoundtrip: true,
-  };
+  });
 }

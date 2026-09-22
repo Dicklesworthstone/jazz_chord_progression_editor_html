@@ -186,6 +186,15 @@ export function generateHarmonicSequence(
 
   for (let rep = 1; rep <= repetitions; rep++) {
     const trans = transposeProgressionByInterval(currentChords, { interval, accidentalStyle });
+    if (!trans.ok) {
+      return {
+        ok: false,
+        refusal: {
+          code: "g8.invalid_chord",
+          message: `Sequence step ${String(rep)} cannot transpose "${currentChords[trans.refusals[0]?.index ?? 0] ?? ""}" (${trans.refusals[0]?.code ?? "transpose.unverified"})`,
+        },
+      };
+    }
     const normalizedTransposed = trans.transposedChords.map((ch) => {
       if (stepIntervalSemitones === -1) {
         if (ch.startsWith("C#")) return `Db${ch.slice(2)}`;

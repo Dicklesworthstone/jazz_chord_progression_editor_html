@@ -1,4 +1,5 @@
 import { ExactShareDialog } from "./studio/ExactShareDialog";
+import { TransposeDialog } from "./studio/TransposeDialog";
 import { MyChartsDialog } from "./studio/MyChartsDialog";
 import type { ComponentChildren } from "preact";
 import { Button } from "./primitives";
@@ -419,6 +420,8 @@ import { DocumentImportDialog } from "./studio/DocumentImportDialog";
 
 export type AppProps = Readonly<{
   onShare?: (() => void) | undefined;
+  /** Opens the root-hosted Transpose dialog beside the shell background. */
+  onOpenTranspose?: (() => void) | undefined;
   documentActions?: ComponentChildren;
   recoveryRegion?: ComponentChildren;
   onDraftInput?: (() => void) | undefined;
@@ -1791,7 +1794,7 @@ function feedbackFromRefusal(
   });
 }
 
-export function App({ snapshot, actions, startupNotice, documentActions, recoveryRegion, onDraftInput, onShare }: AppProps) {
+export function App({ snapshot, actions, startupNotice, documentActions, recoveryRegion, onDraftInput, onShare, onOpenTranspose }: AppProps) {
   const noteFirstActions=actions.noteFirst;
   const padActions=actions.chordPads;
   const [titleDraft, setTitleDraft] = useState(snapshot.title);
@@ -3668,6 +3671,9 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
         onViewModeChange: (mode) => {
           setViewMode(mode);
         },
+        onOpenTranspose: () => {
+          if (onOpenTranspose !== undefined) onOpenTranspose();
+        },
         onCycleKey: () => {
           /* The prototype's reviewed ten-key ring; "No key" precedes C so a
              fresh chart reaches a key in one press and can cycle back off
@@ -3893,6 +3899,7 @@ export function StudioRoot({
     const unsubscribe = myCharts.subscribe(publish); publish(); return unsubscribe;
   }, [myCharts]);
   const [shareView, setShareView] = useState<StudioExactShareView | null>(sharing?.getSnapshot() ?? null);
+  const [transposeOpen, setTransposeOpen] = useState(false);
   useEffect(() => {
     if (sharing == null) return;
     const publish = (): void => { setShareView(sharing.getSnapshot()); };
@@ -3985,6 +3992,7 @@ export function StudioRoot({
       <App
       recoveryRegion={recoveryRegion}
       onShare={sharing?.open}
+      onOpenTranspose={() => { setTransposeOpen(true); }}
       onDraftInput={recoveryBinding?.noteDraftInput}
       documentActions={<>
       {myCharts == null ? null : <Button
@@ -4157,6 +4165,13 @@ export function StudioRoot({
       }}
     />
     {sharing == null || shareView === null ? null : <ExactShareDialog service={sharing} view={shareView} />}
+    {transposeOpen ? <TransposeDialog
+      preview={controller.previewTransposeChart}
+      apply={(interval, direction) => {
+        const result = controller.transposeChart(interval, direction);
+        return result.ok ? null : result.refusal.message;
+      }}
+      onClose={() => { setTransposeOpen(false); }} /> : null}
     {myCharts == null || myChartsView === null ? null : <MyChartsDialog service={myCharts} view={myChartsView} />}
     {lifecycle == null || lifecycleView === null ? null : <LifecycleExportDialog service={lifecycle} view={lifecycleView} />}
     {documentImport == null || importView === null ? null : <DocumentImportDialog service={documentImport} view={importView} />}

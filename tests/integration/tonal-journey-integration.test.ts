@@ -15,6 +15,7 @@ import {
   spelledPitchClassToString,
   transposeProgressionByInterval,
 } from "../../src/theory";
+import { transposedChords } from "../support/transposed-chords";
 
 function eventIdOf(wire: string): ChordEventId {
   const res = parseStableId("event", wire);
@@ -132,7 +133,7 @@ describe("G0 Comprehensive Conformance and Evidence", () => {
 
     for (const int of intervals) {
       const trans = transposeProgressionByInterval(baseProgression, { interval: int });
-      const events = trans.transposedChords.map((chord, idx) => ({
+      const events = transposedChords(trans).map((chord, idx) => ({
         eventId: eventIdOf(`e_${String(idx)}`),
         chordSymbol: chord,
         offsetBeat: beat(idx * 4),
