@@ -12,6 +12,35 @@ response includes its unwanted analytics injection; the earlier DSP/source misma
 closed, and M1 tied-key semantics have been repaired. This replaces that snapshot
 in place. Historical observations remain in Git history, not as current claims.
 
+## 2026-09-22 update (supersedes the rows it names; everything else stands)
+
+A same-day re-check reproduced every finding below (12/18 discovery audit,
+one illegal cast, missing traceability commands) and added four live-product
+defects the earlier pass had not exercised in a browser: altered dominants
+could not be voiced (one silenced the whole chart), the Lens offered A♭7 as
+the tritone sub after Dm7, guide-tone motion collapsed two voices and called
+a leap a step, and exact share links refuse charts over about ten chords.
+The root cause of the stalled musical work was structural: H0/spec was
+blocked only by the whole-aggregate `verify`, which waits on human X0
+listening, so about 98 beads could never become ready.
+
+Since then (commits `b8b655d`..`f463b46`, self-verified, no independent
+reviewer):
+
+- H0/spec now exits on focused gates; the `np17 → 60xy` edge is removed;
+  four stale agent claims were released. The aggregate stays the release gate.
+- Altered dominants play (effective auto-voicing law). Six-degree chords
+  still refuse (V0 six-voice work budget).
+- The tritone sub, guide-tone assignment, minor-colour ordering and
+  approach-chord spelling in the Lens are fixed.
+- Row 17 (transposition) moves from WRONG_APPROACH to PARTIAL: an exact,
+  parser-verified transposer with typed refusals, and a whole-chart
+  Transpose dialog with one Undo. Range/section scope and an audible preview
+  remain (`jcpe-transpose-workflow-nazh`).
+- The discovery audit is now **15 pass / 16 fail** (one probe added, strictly
+  stronger). Share capacity is measured (560 → 108 B/chord with raw
+  DEFLATE) but not built (`jcpe-share-link-capacity-5iec`).
+
 ## Scope and evidence authority
 
 Assessment: `jcpe-reality-check-september-5h2l`, CyanCove. Local baseline
