@@ -18,6 +18,8 @@ import {
   type SectionId,
   type SpelledPitch,
   type SpelledPitchClass,
+  type AutoVoicing,
+  AUTO_VOICE_COUNTS,
 } from "../domain";
 import type { VoicingCandidate } from "../theory";
 import {
@@ -1567,6 +1569,43 @@ function asVoicingCandidate(value: unknown): VoicingCandidate | null {
   return invalidGeneratedCandidateReason(value) === null
     ? (value as VoicingCandidate)
     : null;
+}
+
+/* Adaptive families whose V0 selector gives every mandatory degree a slot. */
+const EFFECTIVE_WIDENING_FAMILIES: ReadonlySet<string> = new Set(["balanced", "open"]);
+
+/**
+ * The only auto policy a generated binding may carry: the stored policy under
+ * the effective auto-voicing law (P0 contract; the application realizes it
+ * through theory/effective-auto-voicing.ts). P0 has no runtime theory
+ * dependency, so it independently re-derives the law from the bound
+ * realization's own required and guide degrees: Balanced/Open widen to the
+ * distinct mandatory-degree count, up to the domain maximum; every other
+ * policy must match exactly. An unknown realization id keeps the stored
+ * policy so the guard stays exact.
+ */
+function expectedGeneratedPolicy(
+  binding: Extract<PlaybackRealizationBinding, { kind: "generated" }>,
+  stored: AutoVoicing,
+): AutoVoicing {
+  if (!EFFECTIVE_WIDENING_FAMILIES.has(stored.family)) return stored;
+  const realization = binding.request.resolved.realizations.find(
+    (candidate) => candidate.id === binding.request.realizationId,
+  );
+  if (realization === undefined) return stored;
+  const mandatory: string[] = [];
+  for (const degree of [...realization.requiredDegrees, ...realization.guideToneDegrees]) {
+    const key = `${String(degree.number)}:${String(degree.alter)}`;
+    if (!mandatory.includes(key)) mandatory.push(key);
+  }
+  const maximum = AUTO_VOICE_COUNTS[AUTO_VOICE_COUNTS.length - 1] ?? 7;
+  if (mandatory.length <= stored.voiceCount || mandatory.length > maximum) {
+    return stored;
+  }
+  return Object.freeze({
+    ...stored,
+    voiceCount: mandatory.length as AutoVoicing["voiceCount"],
+  });
 }
 
 function sameData(left: unknown, right: unknown): boolean {
@@ -3409,7 +3448,10 @@ function validateRealizations(
     if (
       record.event.voicing.mode === "auto" &&
       binding.kind === "generated" &&
-      !sameData(binding.request.policy, record.event.voicing)
+      !sameData(
+        binding.request.policy,
+        expectedGeneratedPolicy(binding, record.event.voicing),
+      )
     ) {
       return realizationFailure(ledger, {
         code: "playback.realization_source_voicing_stale",
@@ -3470,7 +3512,8 @@ function validateRealizations(
         ? invalidGeneratedCandidateForRequestReason(
             candidateValue,
             binding.request,
-            record.event.voicing,
+            /* Already pinned to the effective stored policy above. */
+            binding.request.policy,
           )
         : invalidGeneratedCandidateReason(candidateValue);
     if (reason !== null) {
@@ -3533,7 +3576,14 @@ function validateRealizations(
   for (const record of records) {
     const candidate = generatedCandidateFor(record);
     if (candidate === null || record.event.voicing.mode !== "auto") continue;
-    if (candidate.voices.length !== record.event.voicing.voiceCount) {
+    /* The staleness guard above pinned the request policy to the stored
+       policy under the effective auto-voicing law; the candidate must match
+       that exact note count. */
+    const expectedVoiceCount =
+      record.binding.kind === "generated"
+        ? record.binding.request.policy.voiceCount
+        : record.event.voicing.voiceCount;
+    if (candidate.voices.length !== expectedVoiceCount) {
       return realizationFailure(ledger, {
         code: "playback.generated_candidate_voice_count_mismatch",
         path: frozenPath(
@@ -3544,7 +3594,7 @@ function validateRealizations(
           "voices",
         ),
         eventId: record.eventId,
-        expected: record.event.voicing.voiceCount,
+        expected: expectedVoiceCount,
         received: candidate.voices.length,
       });
     }

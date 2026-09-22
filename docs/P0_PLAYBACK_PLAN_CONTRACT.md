@@ -108,7 +108,17 @@ either:
 or the exact typed `VoicingFailure`.
 
 The request's resolved source chord must structurally equal the current event
-chord. Its V0 policy must structurally equal the current event's Auto voicing.
+chord. Its V0 policy must structurally equal the current event's Auto voicing
+under the effective auto-voicing law (`src/theory/effective-auto-voicing.ts`,
+amended 2026-09-22 for `jcpe-altered-dominant-voicing-1zh8`): for the adaptive
+Balanced and Open families only, the note count is the larger of the stored
+count and the bound realization's distinct required-plus-guide degree count
+(V0 §6.1 step 1), up to the domain maximum of 7. Every other field, and every
+other family, must equal the stored policy exactly; a binding for any policy
+other than that single derived one is stale. The stored policy is never
+rewritten. Without this law the four-note default refused every chord whose
+written alterations need five notes (7alt, 7♭9♭13, 13♭9, 9♯11) and silenced
+its whole chart.
 This is relevant-content freshness, not application-revision equality. A title,
 description, annotation, tempo, duration, section name, or unrelated-event edit
 does not stale an otherwise exact generated binding.
@@ -123,7 +133,7 @@ including:
 - candidate schema, engine, template-table, identity, evidence, and score
   shape;
 - selected realization ID;
-- family and voice count against the exact Auto policy;
+- family and voice count against the exact effective Auto policy;
 - candidate `voices` and `pitches` index alignment;
 - exact spelled-pitch-to-MIDI projection;
 - declared range and bass-policy facts already carried by V0.

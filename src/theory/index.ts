@@ -179,6 +179,10 @@ export {
 } from "./voicing-family-authority";
 export type { VoicingFamilyPlan } from "./voicing-family-authority";
 export { realizeVoicing } from "./voicing-candidates";
+export {
+  effectiveAutoVoicing,
+  mandatoryVoicingDegreeCount,
+} from "./effective-auto-voicing";
 export { voicingCandidateOperations } from "./voicing-operations";
 
 export * from "./voice-assignment-contract";

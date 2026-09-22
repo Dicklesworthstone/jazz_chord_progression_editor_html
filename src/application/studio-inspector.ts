@@ -171,7 +171,9 @@ function choiceId(policy: AutoVoicing): string {
 
 function choice(policy: AutoVoicing, candidate: VoicingCandidate, current: boolean): StudioInspectorChoice {
   return Object.freeze({ id: choiceId(policy),
-    label: `${policy.family} · ${String(policy.voiceCount)} notes`, policy,
+    /* Realized notes: a chord needing more voices than the policy names
+       sounds with enough to hold every written alteration (G7alt: 5). */
+    label: `${policy.family} · ${String(candidate.pitches.length)} notes`, policy,
     pitches: candidate.pitches,
     generatedBy: Object.freeze({ engineVersion: VOICING_ENGINE_VERSION_TAG, family: candidate.family }),
     current,

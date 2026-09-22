@@ -36,6 +36,7 @@ import {
   MAX_PROGRESSION_REQUEST_ID_ASCII_LENGTH,
   VOICING_REQUEST_SCHEMA,
   advanceProgressionOptimization,
+  effectiveAutoVoicing,
   assignVoiceTransition,
   initializeProgressionOptimization,
   initializeVoiceFrame,
@@ -337,7 +338,9 @@ function realizeDocument(document: ValidatedDocument): StudioRealizationResult {
           kind: "auto",
           resolved: resolved.value,
           realizationId: realization.id,
-          policy: voicing,
+          /* The effective note count holds every written alteration (G7alt
+             needs five); P0 re-derives the same policy from the stored one. */
+          policy: effectiveAutoVoicing(realization, voicing),
           quartalContext: null,
         }) as AutoVoicingRequest;
 

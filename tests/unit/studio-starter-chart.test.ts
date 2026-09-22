@@ -155,12 +155,25 @@ describe("the reviewed starter chart", () => {
     expect(failures).toEqual([]);
   });
 
-  test("an unplayable chord's refusal names the chord and its bar", () => {
+  test("an altered dominant plays under the default four-note policy", () => {
+    /* jcpe-altered-dominant-voicing-1zh8: C7alt needs five notes (1, 3, an
+     * altered 5th, ♭7, an altered 9th); the effective auto-voicing law sounds
+     * all of them instead of silencing the chart. */
     const controller = audibleController();
     insertChart(controller, "| C7alt |");
     const played = controller.playProgression(PLAY_GESTURE);
-    if (played.ok) throw new Error("expected the alt chord to refuse");
-    expect(played.refusal.message).toContain("C7alt");
+    if (!played.ok) throw new Error(`C7alt refused: ${played.refusal.code}`);
+    controller.stopProgression();
+  });
+
+  test("an unplayable chord's refusal names the chord and its bar", () => {
+    /* Six mandatory degrees exceed V0's bounded six-voice search budget, so
+     * this chord honestly still has no voicing; the refusal must say which. */
+    const controller = audibleController();
+    insertChart(controller, "| C13b9#11 |");
+    const played = controller.playProgression(PLAY_GESTURE);
+    if (played.ok) throw new Error("expected C13b9#11 to refuse");
+    expect(played.refusal.message).toContain("C13b9#11");
     expect(played.refusal.message).toContain("bar 1");
   });
 

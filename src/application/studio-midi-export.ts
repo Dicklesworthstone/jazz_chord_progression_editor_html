@@ -46,6 +46,7 @@ import {
   type StudioPlaybackRefusal,
 } from "./studio-playback";
 import {
+  effectiveAutoVoicing,
   formatChordSymbol,
   realizeVoicing,
   resolveChord,
@@ -509,7 +510,7 @@ function walkEvents(document: ValidatedDocument): WalkOutcome {
           kind: "auto",
           resolved: resolved.value,
           realizationId: realization.id,
-          policy: voicing,
+          policy: effectiveAutoVoicing(realization, voicing),
           quartalContext: null,
         }) as AutoVoicingRequest;
         const generated = realizeVoicing(request);

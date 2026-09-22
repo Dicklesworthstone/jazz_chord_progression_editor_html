@@ -87,7 +87,12 @@ describe("U2 registered motion and semantic drafts", () => {
     expect(result.value.chord?.alterations).toEqual([{ number: 9, alter: -1 }, { number: 11, alter: 1 }]);
     expect(result.value.detail.structure.degrees.map(degree => degree.pitchClass)).toEqual([8, 0, 3, 6, 9, 2]);
     expect(result.value.detail.structure.alterations).toEqual(["b9", "#11"]);
-    expect(result.value.detail.voicing.activePitches).toEqual([]);
+    /* The draft realizes the re-rooted chord (A♭7♭9♯11 needs five notes
+     * under the effective auto-voicing law): its 3 (C), ♭7 (G♭), ♭9 (B𝄫)
+     * and ♯11 (D) all sound. Hand-derived pitch classes 0, 6, 9, 2. */
+    const sounding = new Set(result.value.detail.voicing.activePitches.map(
+      (pitch) => ((({ C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 } as Record<string, number>)[pitch.step] ?? 0) + pitch.alter + 12) % 12));
+    for (const pitchClass of [0, 6, 9, 2]) expect(sounding.has(pitchClass)).toBe(true);
     expect(state.document.sections[0]?.measures[0]?.events[0]?.chord.sourceText).toBe("G7b9#11");
     expect(readInspectorSymbolDraft(state, source, "?", { root: { step: "A", alter: -1 } }).ok).toBe(false);
   });
