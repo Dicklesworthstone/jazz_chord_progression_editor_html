@@ -6799,9 +6799,11 @@ li[data-resize-preview]::after {
 /* A wrapped header plus recovery used to consume the entire short-phone
  * frame, shrinking the chart scrollport to zero. Let the compact frame
  * scroll above the persistent transport, with enough chart space for a
- * whole chord even when its selection toolbar is open. Recovery keeps its
- * own bounded scroll area, so every explanation and choice stays reachable. */
-@media (max-width: 39.999rem) {
+ * whole chord even when its selection toolbar is open. Short landscape
+ * windows need the same floor: otherwise the chart command bar covers the
+ * title's Apply button. Recovery keeps its own bounded scroll area, so
+ * every explanation and choice stays reachable. */
+@media (max-width: 39.999rem), (max-height: 30rem) {
   .studio-shell__frame {
     overflow-y: auto;
   }

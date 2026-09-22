@@ -1,5 +1,19 @@
 # Implementation TODO
 
+## QR review and short-landscape title repair — jcpe-6ujg.10.3 (2026-09-22)
+
+- [x] Read original spec/build/parent context, QR compression/encoder/ownership/UI and independent vectors; claim ready verification leaf and reserve owned files.
+- [x] Freeze 1,874 tracked inputs and 365 source mtimes; preserve three untracked peer panels.
+- [x] Strict RCH hz4: six focused suites, 72 pass / 565 assertions. Independent QR capacities/matrices, native compression limits, cancellation races and exact-share regression/mutation controls pass.
+- [x] Correct a verification gap: fill+Tab leaves a title draft unapplied. The browser test now clicks Apply title, compares exact exported JSON with only the title changed, independently decodes a second rendered QR and compares its inflated bytes with the new export.
+- [x] Stronger baseline reproduces title Apply occlusion at 844x390 in all three engines and both themes: 15 pass / 6 fail. Retain `test-results/qr-review-final-20260922/` traces/screenshots and green full typecheck/scoped ESLint there. Initial unchanged suite was 19 pass / 2 Chromium timeouts, preserved separately in `test-results/qr-review-20260922/`.
+- [x] Extend existing compact-frame scrolling and minimum workspace height to windows at most 30rem high; retain persistent transport and ordinary desktop layout.
+- [x] Strict RCH guarded build plus explicit `bun scripts/run-playwright.ts test tests/e2e/studio-qr-share.spec.ts --config test-results/qr-review-verified-20260922/playwright.config.ts --workers 1`: 21/21 pass, zero skipped/flaky/unexpected/global errors. Chromium149.0.7827.55, Firefox151.0, WebKit26.5; 320x900/1280x900/844x390, light/dark. All 18 original and 18 updated images independently decode in four rotations; missing quiet-module controls refuse. Three dense/oversized/malformed fallback cases pass. All 21 diagnostic attachments have zero application errors or forbidden requests.
+- [x] Preserve infrastructure failures: ovh admission refusal, stale hz2 executable path/missing Pillow, then hz2 critical memory refusal; no local fallback. Install Pillow on hz4 for existing libzbar decoder. First fixed browser suite passed 21/21 but wrapper exited1 because omitted explicit spec triggered unrelated standalone-evidence merge; corrected invocation above exits0, without changing tests, deadlines, retries or CSP. Earlier result is retained in `test-results/qr-review-fixed-20260922/`.
+- [x] Fresh diff/evidence review; all 1,874 final input hashes / 365 source mtimes unchanged. Two guarded builds agree; promote generated candidate to root/dist, SHA-256 `7de74a9d54642a66ac60a06bb63077d1bc04e31aa31eb4065084d154193f680c`.
+- [ ] Run committed-byte predeploy gates and deploy this layout repair; production still serves the prior exact-cue release.
+- [ ] Physical camera scans and independent usability acceptance remain on this original verification leaf; return it open/unassigned. No full package, aggregate or human acceptance claim.
+
 ## Exact play-along release — jcpe-1tgn (2026-09-22)
 
 - [x] Pin source repair `7587c9c`; freeze 1,874 tracked inputs and source mtimes. Strict RCH guarded build produces artifact commit `9c22a90`, pushed to origin/main.

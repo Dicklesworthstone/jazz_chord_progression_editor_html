@@ -43,7 +43,24 @@ for(const theme of ["light","dark"] as const)for(const [width,height] of [[320,9
   expect((await new AxeBuilder({page}).include("#studio-exact-share-dialog").analyze()).violations).toEqual([]);expect(await page.locator(".studio-exact-share").evaluate(e=>e.scrollWidth<=e.clientWidth)).toBe(true);
   const receiver=await context.newPage();await receiver.setViewportSize({width,height});await receiver.goto(url+link.hash);await expect(receiver.locator("#studio-document-title")).toHaveValue(source.title);const after=await exported(receiver);expect(after).toEqual(before);await receiver.close();
   await page.keyboard.press("Escape");await expect(page.locator("#studio-copy-share-link")).toBeFocused();await expect(image).toHaveCount(0);
-  await page.locator("#studio-document-title").fill("Fresh revision");await page.locator("#studio-document-title").press("Tab");await page.locator("#studio-copy-share-link").click();await expect(image).toHaveCount(0);await page.locator("#studio-exact-share-qr").click();await expect(image).toBeVisible();
+  await page.locator("#studio-document-title").fill("Fresh revision");
+  await page.getByRole("button",{name:"Apply title",exact:true}).click();
+  const updated=await exported(page);
+  expect(compact(updated.toString("utf8"))).toBe(compact(before.toString("utf8")).replace(JSON.stringify(source.title),JSON.stringify("Fresh revision")));
+  await page.locator("#studio-copy-share-link").click();await expect(image).toHaveCount(0);
+  await page.locator("#studio-exact-share-qr").click();await expect(image).toBeVisible();
+  await image.scrollIntoViewIfNeeded();
+  await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>{resolve();}))));
+  const freshBox=await image.boundingBox();if(freshBox===null)throw new Error("No fresh QR geometry");
+  const freshExtent=Number((await image.getAttribute("viewBox"))?.split(" ")[2]),freshModuleSize=freshBox.width/freshExtent;
+  expect(freshBox.height).toBe(freshBox.width);expect(Number.isInteger(freshModuleSize)).toBe(true);expect(freshModuleSize).toBeGreaterThanOrEqual(2);
+  const freshPng=info.outputPath("fresh-exact-qr.png");
+  if(browserName==="webkit")await webkitPixels(page,freshBox,freshPng);else await image.screenshot({path:freshPng,scale:"css"});
+  const freshProof:unknown=JSON.parse(execFileSync("python3",["tests/support/qr-image-proof.py",freshPng,String(4*freshModuleSize),String(freshBox.width)],{encoding:"utf8"}));
+  if(freshProof===null||typeof freshProof!=="object"||!("url"in freshProof)||typeof freshProof.url!=="string")throw new Error("Independent fresh decoder receipt missing");
+  const freshLink=new URL(freshProof.url);expect(freshLink.hash).toMatch(/^#zdoc=3\./u);expect(freshProof.url).not.toBe(parsed.url);
+  expect(inflateSync(Buffer.from(freshLink.hash.slice(8),"base64url")).toString("utf8")).toBe(compact(updated.toString("utf8")));
+  await info.attach("qr-fresh-revision-evidence",{body:JSON.stringify(freshProof),contentType:"application/json"});
   expect(errors).toEqual([]);expect(requests.every(r=>r.allowed)).toBe(true);
   await info.attach("qr-document",{body:after,contentType:"application/json"});
  }finally{await info.attach("qr-evidence",{body:JSON.stringify({hash,width,theme,browser:browser.version(),proof,errors,requests}),contentType:"application/json"});}
