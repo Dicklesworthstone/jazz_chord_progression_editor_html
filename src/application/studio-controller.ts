@@ -35,6 +35,7 @@ import {
   type BeatValue,
   type ChordEvent,
   type ChordEventId,
+  type ProgressionDocumentV2,
   type ChordSpec,
   type InstrumentId,
   type KeyContext,
@@ -118,6 +119,7 @@ import {
   type SpelledInterval,
 } from "../theory";
 import {
+  auditionExcerpt,
   intervalBetweenTonics,
   transposeChart,
   type ChartTranspositionRefusal,
@@ -349,6 +351,11 @@ export const STUDIO_TRANSPOSE_INTERVALS = Object.freeze([
 ] as const);
 
 export type StudioTransposeIntervalId = (typeof STUDIO_TRANSPOSE_INTERVALS)[number]["id"];
+
+/** How the dialog names the move: a listed interval or a target key. */
+export type StudioTransposeBy =
+  | Readonly<{ kind: "interval"; id: StudioTransposeIntervalId }>
+  | Readonly<{ kind: "key"; target: Readonly<{ step: string; alter: number }> }>;
 
 /** Whole chart (moves keys too) or only the selected chords (keys stay). */
 export type StudioTransposeScope = "chart" | "selection";
@@ -688,6 +695,19 @@ export interface StudioController {
     direction: "up" | "down",
     scope?: StudioTransposeScope,
   ) => StudioControllerActionResult;
+  /**
+   * Hear a short excerpt (first four bars, or the bars holding the selection)
+   * as it is now or as the transposition would make it, through the preview
+   * lane. The excerpt is validated and compiled like any chart; the document,
+   * history and transport are untouched.
+   */
+  readonly hearTransposition: (
+    by: StudioTransposeBy,
+    direction: "up" | "down",
+    scope: StudioTransposeScope,
+    which: "original" | "transposed",
+    gesture: StudioAudioGesture,
+  ) => Promise<StudioInspectorResult<void>>;
   readonly undo: () => StudioControllerActionResult;
   readonly redo: () => StudioControllerActionResult;
   readonly setRailCollapsed: (
@@ -2700,6 +2720,35 @@ function makeStudioComposition(
     }
     const accidental = target.alter < 0 ? "♭".repeat(-target.alter) : "♯".repeat(target.alter);
     return transposeBy(interval, scope, `to ${target.step}${accidental}`, `${direction}.to-${target.step}${String(target.alter)}`);
+  };
+
+  const hearTransposition = async (
+    by: StudioTransposeBy,
+    direction: "up" | "down",
+    scope: StudioTransposeScope,
+    which: "original" | "transposed",
+    gesture: StudioAudioGesture,
+  ): Promise<StudioInspectorResult<void>> => {
+    const interval = by.kind === "interval" ? transposeInterval(by.id, direction) : keyTargetInterval(by.target, direction);
+    if (interval === null) return previewFailure("u1.transpose_interval_unknown", "Choose an interval or a different key first.");
+    const selected = selectedEventIds();
+    if (scope === "selection" && selected === null) return previewFailure("u1.selection_empty", "Select the chords to transpose first.");
+    const focus = scope === "selection" ? selected : null;
+    let source: ProgressionDocumentV2 = state.document;
+    if (which === "transposed") {
+      const moved = transposeChart(state.document, interval, focus);
+      if (!moved.ok) return previewFailure("u1.transpose_refused", transposeRefusalMessage(moved.refusals));
+      source = moved.candidate;
+    }
+    const excerpt = auditionExcerpt(source, focus);
+    if (excerpt === null) return previewFailure("u1.chart_already_empty", "This chart has no chords to hear.");
+    const shape = dependencies.decodeDocumentShape(excerpt);
+    if (!shape.ok) return previewFailure("u1.transpose_refused", "That excerpt could not be prepared for listening.");
+    const validated = dependencies.validateDocumentSemantics(shape.value);
+    if (!validated.ok) return previewFailure("u1.transpose_refused", "That excerpt could not be prepared for listening.");
+    const compiled = compileStudioPlaybackPlan(validated.value);
+    if (!compiled.ok) return previewFailure(compiled.refusal.code, compiled.refusal.message);
+    return previewPlaybackPlan(compiled.plan, gesture);
   };
 
   const transposeBy = (
@@ -7966,6 +8015,7 @@ function makeStudioComposition(
     transposeChart: transposeChartIntent,
     previewTransposeToKey,
     transposeChartToKey,
+    hearTransposition,
     setTitle,
     undo: () => apply("undo", (current) => undoDocumentCommand({ state: current })),
     redo: () => apply("redo", (current) => redoDocumentCommand({ state: current })),

@@ -6979,6 +6979,7 @@ li[data-resize-preview]::after {
 .studio-transpose__direction label { display: inline-flex; align-items: center; gap: .35rem; min-block-size: 44px; }
 .studio-transpose select { display: block; inline-size: 100%; min-block-size: 44px; box-sizing: border-box; font: inherit; }
 .studio-transpose__preview { padding: .65rem; background: var(--surface-panel); border: 1px solid var(--border-strong); border-radius: .4rem; }
+.studio-transpose__hear { display: flex; flex-wrap: wrap; gap: .5rem; }
 .studio-transpose__examples { list-style: none; padding: 0; margin: .35rem 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: .25rem .75rem; font-variant-numeric: tabular-nums; }
 
 .studio-my-charts { display: grid; gap: .75rem; min-inline-size: 0; overflow-wrap: anywhere; }

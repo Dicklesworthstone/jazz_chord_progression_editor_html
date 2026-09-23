@@ -214,3 +214,35 @@ export function intervalBetweenTonics(
   return null;
 }
 
+/**
+ * A short audition excerpt of a document: the measures from the first one
+ * containing a focus event (or the chart start) for `bars` measures, capped
+ * so the preview lane's 64-beat bound holds. Sections keep their identity;
+ * empty sections are dropped. Returns null when nothing remains. The result is
+ * an unvalidated candidate: callers validate and compile it like any other.
+ */
+export function auditionExcerpt(
+  document: ProgressionDocumentV2,
+  focus: ReadonlySet<ChordEventId> | null,
+  bars = 4,
+): ProgressionDocumentV2 | null {
+  const measures = document.sections.flatMap((section) =>
+    section.measures.map((measure) => ({ sectionId: section.id, measure })));
+  const start = focus === null ? 0 : Math.max(0, measures.findIndex(({ measure }) =>
+    measure.events.some((event) => focus.has(event.id))));
+  let end = start + bars;
+  if (focus !== null) {
+    let last = start;
+    measures.forEach(({ measure }, index) => {
+      if (measure.events.some((event) => focus.has(event.id))) last = index;
+    });
+    end = Math.max(end, Math.min(last + 1, start + 16));
+  }
+  const kept = new Set(measures.slice(start, end).map(({ measure }) => measure.id));
+  const sections = document.sections
+    .map((section) => ({ ...section, measures: section.measures.filter((measure) => kept.has(measure.id)) }))
+    .filter((section) => section.measures.length > 0);
+  if (sections.length === 0) return null;
+  return Object.freeze({ ...document, sections });
+}
+

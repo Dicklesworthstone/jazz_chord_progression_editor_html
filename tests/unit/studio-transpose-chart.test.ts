@@ -10,7 +10,9 @@
  */
 import { describe, expect, test } from "bun:test";
 
-import { intervalBetweenTonics, transposeChart, transposeSpelledPitchExact } from "../../src/application/chart-transposition";
+import { auditionExcerpt, intervalBetweenTonics, transposeChart, transposeSpelledPitchExact } from "../../src/application/chart-transposition";
+import { createStudioAudio } from "../../src/application/studio-audio";
+import { createFakeAudioPlatform } from "../../src/test-support/fake-audio-platform";
 import { compileStudioPlaybackPlan } from "../../src/application/studio-playback";
 import { validateDocumentSemantics } from "../../src/application/document-validation";
 import { createStudioController } from "../../src/application/runtime";
@@ -153,6 +155,63 @@ describe("Transpose to a named key", () => {
     const noKey = controller.previewTransposeToKey({ step: "D", alter: 0 }, "up");
     expect(noKey.ok).toBe(false);
     if (!noKey.ok) expect(noKey.message).toContain("Set the chart's key first");
+  });
+});
+
+describe("Hear a transposition before applying it", () => {
+  const GESTURE = Object.freeze({ kind: "trusted-pointer", trusted: true, sequence: 1 } as const);
+
+  test("the transposed excerpt sounds every original pitch moved by exactly the interval", () => {
+    const document = musicalDocument([["Dm7"], ["G7"], ["Cmaj7"], ["A7b9"], ["Dm7"], ["G7alt"]]);
+    const original = auditionExcerpt(document, null);
+    const moved = transposeChart(document, makeSpelledInterval(3, "minor", "up"));
+    if (original === null || !moved.ok) throw new Error("excerpt");
+    const transposed = auditionExcerpt(moved.candidate, null);
+    if (transposed === null) throw new Error("excerpt");
+    /* The first four bars only, so the preview lane's 64-beat bound holds. */
+    expect(transposed.sections.flatMap((section) => section.measures)).toHaveLength(4);
+    const plan = (candidate: typeof original) => {
+      const shape = decodeDocumentShape(candidate);
+      if (!shape.ok) throw new Error(JSON.stringify(shape.errors));
+      const valid = validateDocumentSemantics(shape.value);
+      if (!valid.ok) throw new Error(JSON.stringify(valid.errors));
+      const compiled = compileStudioPlaybackPlan(valid.value);
+      if (!compiled.ok) throw new Error(compiled.refusal.code);
+      return compiled.plan.events.map((event) => [...event.midiPitches].map((midi) => midi % 12).sort((a, b) => a - b));
+    };
+    const before = plan(original), after = plan(transposed);
+    expect(after).toHaveLength(before.length);
+    /* Hand law: a minor 3rd adds three semitones to every pitch class. */
+    before.forEach((pcs, index) => {
+      expect(after[index]).toEqual(pcs.map((pc) => (pc + 3) % 12).sort((a, b) => a - b));
+    });
+  });
+
+  test("the selection excerpt starts at the selected bars", () => {
+    const document = musicalDocument([["Dm7"], ["G7"], ["Cmaj7"], ["A7"], ["Dm7"], ["G7"], ["Cmaj7"]]);
+    const focus = new Set([document.sections[0]?.measures[5]?.events[0]?.id].filter((id) => id !== undefined));
+    const excerpt = auditionExcerpt(document, focus);
+    expect(excerpt?.sections.flatMap((section) => section.measures.flatMap((measure) => measure.events.map((event) => event.chord.sourceText))))
+      .toEqual(["G7", "Cmaj7"]);
+  });
+
+  test("auditions reach the real preview lane and never touch the document or history", async () => {
+    const creation = createStudioController({ audio: createStudioAudio(createFakeAudioPlatform().platform) });
+    if (!creation.ok) throw new Error(creation.refusal.code);
+    const controller = creation.controller;
+    const snapshot = controller.getSnapshot();
+    insert(controller, "| Dm7 G7 |", { kind: "measure-start", measureId: snapshot.sections[0]?.measures[0]?.id ?? "" });
+    insert(controller, "| Cmaj7 |", { kind: "section-end", sectionId: snapshot.sections[0]?.id ?? "" });
+    const before = controller.getSnapshot();
+    for (const which of ["original", "transposed"] as const) {
+      const heard = await controller.hearTransposition({ kind: "interval", id: "M2" }, "up", "chart", which, GESTURE);
+      expect(heard.ok ? "ok" : heard.message).toBe("ok");
+    }
+    expect(controller.getSnapshot().revision).toBe(before.revision);
+    expect(controller.getSnapshot().history).toEqual(before.history);
+    expect(symbols(controller)).toBe("Dm7 G7 Cmaj7");
+    const refused = await controller.hearTransposition({ kind: "interval", id: "M2" }, "up", "selection", "transposed", GESTURE);
+    expect(refused.ok).toBe(false);
   });
 });
 

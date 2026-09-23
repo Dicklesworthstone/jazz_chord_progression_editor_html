@@ -420,8 +420,10 @@ import { DocumentImportDialog } from "./studio/DocumentImportDialog";
 
 export type AppProps = Readonly<{
   onShare?: (() => void) | undefined;
-  /** Opens the root-hosted Transpose dialog beside the shell background. */
-  onOpenTranspose?: (() => void) | undefined;
+  /** Opens the root-hosted Transpose dialog beside the shell background; the
+   *  gesture factory keeps one monotonic audio-gesture sequence for its
+   *  audition buttons. */
+  onOpenTranspose?: ((nextGesture: (kind: StudioAudioGesture["kind"]) => StudioAudioGesture) => void) | undefined;
   documentActions?: ComponentChildren;
   recoveryRegion?: ComponentChildren;
   onDraftInput?: (() => void) | undefined;
@@ -3672,7 +3674,7 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
           setViewMode(mode);
         },
         onOpenTranspose: () => {
-          if (onOpenTranspose !== undefined) onOpenTranspose();
+          if (onOpenTranspose !== undefined) onOpenTranspose(nextAudioGesture);
         },
         onCycleKey: () => {
           /* The prototype's reviewed ten-key ring; "No key" precedes C so a
@@ -3899,7 +3901,7 @@ export function StudioRoot({
     const unsubscribe = myCharts.subscribe(publish); publish(); return unsubscribe;
   }, [myCharts]);
   const [shareView, setShareView] = useState<StudioExactShareView | null>(sharing?.getSnapshot() ?? null);
-  const [transposeOpen, setTransposeOpen] = useState(false);
+  const [transposeGesture, setTransposeGesture] = useState<((kind: StudioAudioGesture["kind"]) => StudioAudioGesture) | null>(null);
   useEffect(() => {
     if (sharing == null) return;
     const publish = (): void => { setShareView(sharing.getSnapshot()); };
@@ -3992,7 +3994,7 @@ export function StudioRoot({
       <App
       recoveryRegion={recoveryRegion}
       onShare={sharing?.open}
-      onOpenTranspose={() => { setTransposeOpen(true); }}
+      onOpenTranspose={(nextGesture) => { setTransposeGesture(() => nextGesture); }}
       onDraftInput={recoveryBinding?.noteDraftInput}
       documentActions={<>
       {myCharts == null ? null : <Button
@@ -4165,7 +4167,7 @@ export function StudioRoot({
       }}
     />
     {sharing == null || shareView === null ? null : <ExactShareDialog service={sharing} view={shareView} />}
-    {transposeOpen ? <TransposeDialog
+    {transposeGesture !== null ? <TransposeDialog
       preview={controller.previewTransposeChart}
       apply={(interval, direction, scope) => {
         const result = controller.transposeChart(interval, direction, scope);
@@ -4176,7 +4178,8 @@ export function StudioRoot({
         const result = controller.transposeChartToKey(target, direction, scope);
         return result.ok ? null : result.refusal.message;
       }}
-      onClose={() => { setTransposeOpen(false); }} /> : null}
+      hear={(by, direction, scope, which) => controller.hearTransposition(by, direction, scope, which, transposeGesture("trusted-pointer"))}
+      onClose={() => { void controller.releasePreviewPitches(); setTransposeGesture(null); }} /> : null}
     {myCharts == null || myChartsView === null ? null : <MyChartsDialog service={myCharts} view={myChartsView} />}
     {lifecycle == null || lifecycleView === null ? null : <LifecycleExportDialog service={lifecycle} view={lifecycleView} />}
     {documentImport == null || importView === null ? null : <DocumentImportDialog service={documentImport} view={importView} />}

@@ -3,6 +3,7 @@ import {
   STUDIO_TRANSPOSE_INTERVALS,
   type StudioTransposeIntervalId,
   type StudioTransposePreview,
+  type StudioTransposeBy,
   type StudioTransposeScope,
 } from "../../application/runtime";
 import { Button } from "../primitives";
@@ -30,6 +31,8 @@ export type TransposeDialogProps = Readonly<{
   apply: (interval: StudioTransposeIntervalId, direction: "up" | "down", scope: StudioTransposeScope) => string | null;
   previewToKey: (target: Tonic, direction: "up" | "down", scope: StudioTransposeScope) => StudioTransposePreview;
   applyToKey: (target: Tonic, direction: "up" | "down", scope: StudioTransposeScope) => string | null;
+  /** Audition a short excerpt as it is now or as it would become. */
+  hear: (by: StudioTransposeBy, direction: "up" | "down", scope: StudioTransposeScope, which: "original" | "transposed") => Promise<Readonly<{ ok: boolean; message?: string }>>;
   onClose: () => void;
 }>;
 
@@ -39,7 +42,7 @@ export type TransposeDialogProps = Readonly<{
  * dispatches one undoable application intent. A refusal names the chords
  * that stop it and leaves the chart exactly as it was.
  */
-export function TransposeDialog({ preview, apply, previewToKey, applyToKey, onClose }: TransposeDialogProps) {
+export function TransposeDialog({ preview, apply, previewToKey, applyToKey, hear, onClose }: TransposeDialogProps) {
   const [direction, setDirection] = useState<"up" | "down">("up");
   const [interval, setInterval] = useState<StudioTransposeIntervalId>("M2");
   const [refusal, setRefusal] = useState<string | null>(null);
@@ -55,6 +58,13 @@ export function TransposeDialog({ preview, apply, previewToKey, applyToKey, onCl
     [by, hasKey, previewToKey, tonic, direction, scope, byInterval],
   );
   const onContractRefusal = useCallback(() => { onClose(); }, [onClose]);
+  const [hearing, setHearing] = useState<string | null>(null);
+  const listen = (which: "original" | "transposed"): void => {
+    const request: StudioTransposeBy = by === "key" && hasKey ? { kind: "key", target: tonic } : { kind: "interval", id: interval };
+    void hear(request, direction, scope, which).then((result) => {
+      setHearing(result.ok ? null : result.message ?? "That excerpt could not be played.");
+    });
+  };
   const commit = (): void => {
     const message = by === "key" && hasKey ? applyToKey(tonic, direction, scope) : apply(interval, direction, scope);
     if (message === null) onClose();
@@ -112,6 +122,13 @@ export function TransposeDialog({ preview, apply, previewToKey, applyToKey, onCl
           </ul>}
         </>}
       </div>
+      <div class="studio-transpose__hear">
+        <Button id="studio-transpose-hear-original" label="Hear original" onAction={() => { listen("original"); }}
+          busy={false} disabled={!shown.ok} density="comfortable" describedBy={[]} invalid={false} type="button" variant="secondary" />
+        <Button id="studio-transpose-hear-transposed" label="Hear transposed" onAction={() => { listen("transposed"); }}
+          busy={false} disabled={!shown.ok || shown.changedChordCount === 0} density="comfortable" describedBy={[]} invalid={false} type="button" variant="secondary" />
+      </div>
+      {hearing === null ? null : <p role="alert">{hearing}</p>}
       {refusal === null ? null : <p role="alert">{refusal}</p>}
       <Button id="studio-transpose-apply" label="Transpose" onAction={commit}
         busy={false} disabled={!shown.ok || shown.changedChordCount === 0} density="comfortable"

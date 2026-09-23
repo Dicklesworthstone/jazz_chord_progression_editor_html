@@ -56,6 +56,7 @@ export type {
   StudioTransposeIntervalId,
   StudioTransposePreview,
   StudioTransposeScope,
+  StudioTransposeBy,
 } from "./studio-controller";
 
 export type { StudioViewModel } from "./studio-view-model";
