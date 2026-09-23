@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import { describe, expect, test } from "bun:test";
 import {
   compileAtlasCorpus,
@@ -14,9 +16,18 @@ describe("G1 Atlas Schema and Compiler Engine", () => {
       expect(hash).toBe("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
     });
 
-    test("computes standard SHA-256 for test string", () => {
-      const hash = sha256Sync("Dm7-G7-Cmaj7");
-      expect(hash).toHaveLength(64);
+    test("matches the FIPS 180-2 published vectors", () => {
+      expect(sha256Sync("abc")).toBe("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
+      expect(sha256Sync("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"))
+        .toBe("248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1");
+    });
+
+    test("agrees with node:crypto across padding boundaries and multi-byte UTF-8", () => {
+      /* 55/56/63/64/65 bytes straddle the single-block padding boundary. */
+      const inputs = ["Dm7-G7-Cmaj7", "D♭maj7 → G♭7", "𝄫 double flat", ...[55, 56, 63, 64, 65, 119, 120, 1000].map((n) => "x".repeat(n))];
+      for (const input of inputs) {
+        expect(`${String(input.length)}:${sha256Sync(input)}`).toBe(`${String(input.length)}:${createHash("sha256").update(input, "utf8").digest("hex")}`);
+      }
     });
   });
 

@@ -71,8 +71,14 @@ export function sha256Sync(data: string): string {
     utf8.push(0);
   }
 
-  for (let i = 7; i >= 0; i--) {
-    utf8.push((bitLength >>> (i * 8)) & 0xff);
+  /* Big-endian 64-bit message length. JavaScript shift counts are taken
+     modulo 32, so the high word must be computed arithmetically: shifting
+     by 56 or 48 would silently shift by 24 or 16 and corrupt every
+     non-empty digest. */
+  const highBits = Math.floor(bitLength / 0x1_0000_0000);
+  const lowBits = bitLength >>> 0;
+  for (const word of [highBits, lowBits]) {
+    utf8.push((word >>> 24) & 0xff, (word >>> 16) & 0xff, (word >>> 8) & 0xff, word & 0xff);
   }
 
   const words = new Int32Array(utf8.length / 4);
