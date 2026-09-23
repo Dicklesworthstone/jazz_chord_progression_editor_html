@@ -15,10 +15,21 @@ const FOCUS_TARGETS = Object.freeze({
   workspaceId: "workspace",
 });
 
+/** Key tonics a player asks for, enharmonic pairs included. */
+const TARGET_TONICS = Object.freeze([
+  ["C", 0], ["C", 1], ["D", -1], ["D", 0], ["E", -1], ["E", 0], ["F", 0], ["F", 1],
+  ["G", -1], ["G", 0], ["A", -1], ["A", 0], ["B", -1], ["B", 0], ["C", -1],
+] as const);
+type Tonic = Readonly<{ step: string; alter: number }>;
+const tonicLabel = ([step, alter]: readonly [string, number]): string =>
+  `${step}${alter < 0 ? "♭" : alter > 0 ? "♯" : ""}`;
+
 export type TransposeDialogProps = Readonly<{
   preview: (interval: StudioTransposeIntervalId, direction: "up" | "down", scope: StudioTransposeScope) => StudioTransposePreview;
   /** Applies one undoable transposition; returns a refusal message or null. */
   apply: (interval: StudioTransposeIntervalId, direction: "up" | "down", scope: StudioTransposeScope) => string | null;
+  previewToKey: (target: Tonic, direction: "up" | "down", scope: StudioTransposeScope) => StudioTransposePreview;
+  applyToKey: (target: Tonic, direction: "up" | "down", scope: StudioTransposeScope) => string | null;
   onClose: () => void;
 }>;
 
@@ -28,15 +39,24 @@ export type TransposeDialogProps = Readonly<{
  * dispatches one undoable application intent. A refusal names the chords
  * that stop it and leaves the chart exactly as it was.
  */
-export function TransposeDialog({ preview, apply, onClose }: TransposeDialogProps) {
+export function TransposeDialog({ preview, apply, previewToKey, applyToKey, onClose }: TransposeDialogProps) {
   const [direction, setDirection] = useState<"up" | "down">("up");
   const [interval, setInterval] = useState<StudioTransposeIntervalId>("M2");
   const [refusal, setRefusal] = useState<string | null>(null);
   const [scope, setScope] = useState<StudioTransposeScope>("chart");
-  const shown = useMemo(() => preview(interval, direction, scope), [preview, interval, direction, scope]);
+  const [by, setBy] = useState<"interval" | "key">("interval");
+  const [tonicIndex, setTonicIndex] = useState(4);
+  const tonicPair = TARGET_TONICS[tonicIndex] ?? TARGET_TONICS[0];
+  const tonic: Tonic = useMemo(() => ({ step: tonicPair[0], alter: tonicPair[1] }), [tonicPair]);
+  const byInterval = useMemo(() => preview(interval, direction, scope), [preview, interval, direction, scope]);
+  const hasKey = byInterval.ok && byInterval.keyBefore !== null;
+  const shown = useMemo(
+    () => (by === "key" && hasKey ? previewToKey(tonic, direction, scope) : byInterval),
+    [by, hasKey, previewToKey, tonic, direction, scope, byInterval],
+  );
   const onContractRefusal = useCallback(() => { onClose(); }, [onClose]);
   const commit = (): void => {
-    const message = apply(interval, direction, scope);
+    const message = by === "key" && hasKey ? applyToKey(tonic, direction, scope) : apply(interval, direction, scope);
     if (message === null) onClose();
     else setRefusal(message);
   };
@@ -58,11 +78,27 @@ export function TransposeDialog({ preview, apply, onClose }: TransposeDialogProp
           {value === "chart" ? "Whole chart" : `Selected chords (${String(shown.selectedChordCount)})`}
         </label>)}
       </fieldset>}
-      <label for="studio-transpose-interval">Interval</label>
-      <select id="studio-transpose-interval" value={interval}
-        onChange={(event) => { setInterval(event.currentTarget.value as StudioTransposeIntervalId); setRefusal(null); }}>
-        {STUDIO_TRANSPOSE_INTERVALS.map((row) => <option key={row.id} value={row.id}>{row.label}</option>)}
-      </select>
+      {!hasKey ? null : <fieldset class="studio-transpose__direction">
+        <legend>Transpose</legend>
+        {(["interval", "key"] as const).map((value) => <label key={value}>
+          <input type="radio" name="studio-transpose-by" value={value} checked={by === value}
+            onChange={() => { setBy(value); setRefusal(null); }} />
+          {value === "interval" ? "By interval" : "To key"}
+        </label>)}
+      </fieldset>}
+      {by === "key" && hasKey ? <>
+        <label for="studio-transpose-key">New key</label>
+        <select id="studio-transpose-key" value={String(tonicIndex)}
+          onChange={(event) => { setTonicIndex(Number(event.currentTarget.value)); setRefusal(null); }}>
+          {TARGET_TONICS.map((pair, index) => <option key={index} value={String(index)}>{tonicLabel(pair)}</option>)}
+        </select>
+      </> : <>
+        <label for="studio-transpose-interval">Interval</label>
+        <select id="studio-transpose-interval" value={interval}
+          onChange={(event) => { setInterval(event.currentTarget.value as StudioTransposeIntervalId); setRefusal(null); }}>
+          {STUDIO_TRANSPOSE_INTERVALS.map((row) => <option key={row.id} value={row.id}>{row.label}</option>)}
+        </select>
+      </>}
       <div class="studio-transpose__preview" aria-live="polite">
         {!shown.ok ? <p role="alert">{shown.message}</p> : <>
           <p>{shown.scope === "selection"

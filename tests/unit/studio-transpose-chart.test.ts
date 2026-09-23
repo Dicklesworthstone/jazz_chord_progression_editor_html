@@ -10,13 +10,13 @@
  */
 import { describe, expect, test } from "bun:test";
 
-import { transposeChart, transposeSpelledPitchExact } from "../../src/application/chart-transposition";
+import { intervalBetweenTonics, transposeChart, transposeSpelledPitchExact } from "../../src/application/chart-transposition";
 import { compileStudioPlaybackPlan } from "../../src/application/studio-playback";
 import { validateDocumentSemantics } from "../../src/application/document-validation";
 import { createStudioController } from "../../src/application/runtime";
 import type { StudioController } from "../../src/application/runtime";
 import { decodeDocumentShape, type SpelledPitch } from "../../src/domain";
-import { makeSpelledInterval } from "../../src/theory";
+import { makeSpelledInterval, transposeSpelledPitchClassExact } from "../../src/theory";
 import { musicalDocument } from "../support/studio-voice-leading";
 
 function freshController(): StudioController {
@@ -130,6 +130,32 @@ describe("Transpose selected chords", () => {
   });
 });
 
+describe("Transpose to a named key", () => {
+  test("C major to E♭ moves every chord by a minor 3rd up, or a major 6th down, with the same spellings", () => {
+    for (const direction of ["up", "down"] as const) {
+      const controller = seeded();
+      expect(controller.previewTransposeToKey({ step: "E", alter: -1 }, direction)).toMatchObject({
+        ok: true, keyBefore: "C major", keyAfter: "E♭ major",
+      });
+      expect(controller.transposeChartToKey({ step: "E", alter: -1 }, direction).ok).toBe(true);
+      /* Hand-derived: C→E♭ moves every letter up two steps and three semitones. */
+      expect(symbols(controller)).toBe("Fm7 Bb7 Eb6/9/G Cb7/Eb F♭maj7");
+      expect(controller.getSnapshot().history.undoLabel).toBe("Transpose to E♭");
+    }
+  });
+
+  test("the current key or a chart without a key refuses and changes nothing", () => {
+    const controller = seeded();
+    const revision = controller.getSnapshot().revision;
+    expect(controller.transposeChartToKey({ step: "C", alter: 0 }, "up").ok).toBe(false);
+    expect(controller.getSnapshot().revision).toBe(revision);
+    expect(controller.setKey(null).ok).toBe(true);
+    const noKey = controller.previewTransposeToKey({ step: "D", alter: 0 }, "up");
+    expect(noKey.ok).toBe(false);
+    if (!noKey.ok) expect(noKey.message).toContain("Set the chart's key first");
+  });
+});
+
 describe("Pure chart transposition", () => {
   const pitch = (step: string, alter: number, octave: number) => ({ step, alter, octave }) as SpelledPitch;
 
@@ -163,6 +189,37 @@ describe("Pure chart transposition", () => {
     if (!validated.ok) throw new Error(JSON.stringify(validated.errors));
     const compiled = compileStudioPlaybackPlan(validated.value);
     expect(compiled.ok).toBe(true);
+  });
+
+  test("every spellable pair of the fifteen key tonics lands exactly; only doubly altered pairs refuse", () => {
+    const tonics = [["C", 0], ["C", 1], ["D", -1], ["D", 0], ["E", -1], ["E", 0], ["F", 0], ["F", 1],
+      ["G", -1], ["G", 0], ["A", -1], ["A", 0], ["B", -1], ["B", 0], ["C", -1]] as const;
+    const pc = (step: string, alter: number) => (({ C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 } as Record<string, number>)[step] ?? 0) + alter;
+    for (const [fs, fa] of tonics) for (const [ts, ta] of tonics) for (const direction of ["up", "down"] as const) {
+      const from = { step: fs, alter: fa } as never, to = { step: ts, alter: ta } as never;
+      const interval = intervalBetweenTonics(from, to, direction);
+      if (fs === ts && fa === ta) { expect(interval).toBeNull(); continue; }
+      /* Independent law: the letter distance fixes the interval number; the
+       * pair is spellable only if the semitone excess over the major/perfect
+       * size is a single alteration (C♯ → G♭ up needs a doubly diminished 5th). */
+      const letters = "CDEFGAB", [lo, hi] = direction === "up" ? [[fs, fa], [ts, ta]] as const : [[ts, ta], [fs, fa]] as const;
+      const steps = (letters.indexOf(hi[0]) - letters.indexOf(lo[0]) + 7) % 7;
+      const semis = ((pc(hi[0], hi[1]) - pc(lo[0], lo[1])) % 12 + 12) % 12;
+      const numbers = steps === 0 ? [1, 8] : [steps + 1];
+      const base = [0, 0, 2, 4, 5, 7, 9, 11, 12];
+      const spellable = numbers.some((n) => {
+        const excess = semis - (base[n] ?? 0), perfect = n === 1 || n === 4 || n === 5 || n === 8;
+        return perfect ? Math.abs(excess) <= 1 : excess >= -2 && excess <= 1;
+      });
+      expect(`${fs}${String(fa)}->${ts}${String(ta)} ${direction}: ${String(interval !== null)}`)
+        .toBe(`${fs}${String(fa)}->${ts}${String(ta)} ${direction}: ${String(spellable)}`);
+      if (interval === null) continue;
+      expect(transposeSpelledPitchClassExact(from, interval)).toEqual({ step: ts, alter: ta });
+      /* Sounding distance agrees with the direction, within one octave. */
+      const up = ((pc(ts, ta) - pc(fs, fa)) % 12 + 12) % 12;
+      expect(((interval.semitones % 12) + 12) % 12).toBe(up);
+      expect(direction === "up" ? interval.semitones >= 0 : interval.semitones <= 0).toBe(true);
+    }
   });
 
   test("an unspellable chord refuses the whole chart and names it", () => {

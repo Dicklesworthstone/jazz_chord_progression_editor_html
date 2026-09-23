@@ -4171,6 +4171,11 @@ export function StudioRoot({
         const result = controller.transposeChart(interval, direction, scope);
         return result.ok ? null : result.refusal.message;
       }}
+      previewToKey={controller.previewTransposeToKey}
+      applyToKey={(target, direction, scope) => {
+        const result = controller.transposeChartToKey(target, direction, scope);
+        return result.ok ? null : result.refusal.message;
+      }}
       onClose={() => { setTransposeOpen(false); }} /> : null}
     {myCharts == null || myChartsView === null ? null : <MyChartsDialog service={myCharts} view={myChartsView} />}
     {lifecycle == null || lifecycleView === null ? null : <LifecycleExportDialog service={lifecycle} view={lifecycleView} />}

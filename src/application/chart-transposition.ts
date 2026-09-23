@@ -1,4 +1,5 @@
 import {
+  SPELLING_STEP_ORDER,
   makeSpelledPitch,
   pitchClassOf,
   type ChordEvent,
@@ -6,9 +7,11 @@ import {
   type KeyContext,
   type ProgressionDocumentV2,
   type SpelledPitch,
+  type SpelledPitchClass,
   type ValidatedDocument,
 } from "../domain";
 import {
+  makeSpelledInterval,
   transposeChordSpecByInterval,
   transposeSpelledPitchClassExact,
   type SpelledInterval,
@@ -176,3 +179,38 @@ export function transposeChart(
     changedEventIds: Object.freeze(changedEventIds),
   });
 }
+
+const INTERVAL_BASE_SEMITONES: Readonly<Record<number, number>> = Object.freeze({
+  1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11, 8: 12,
+});
+
+/**
+ * The spelled interval that carries tonic `from` to tonic `to` in the given
+ * direction (C → E♭ up is a minor 3rd; C → C♭ up a diminished octave). The
+ * answer is proven by transposing `from` and requiring exactly `to`; any pair
+ * no single interval spells returns null. Identical tonics return null.
+ */
+export function intervalBetweenTonics(
+  from: SpelledPitchClass,
+  to: SpelledPitchClass,
+  direction: "up" | "down",
+): SpelledInterval | null {
+  if (from.step === to.step && from.alter === to.alter) return null;
+  const [lower, upper] = direction === "up" ? [from, to] : [to, from];
+  const steps =
+    (SPELLING_STEP_ORDER.indexOf(upper.step) - SPELLING_STEP_ORDER.indexOf(lower.step) + 7) % 7;
+  const semitones = (((pitchClassOf(upper) - pitchClassOf(lower)) % 12) + 12) % 12;
+  for (const number of steps === 0 ? [1, 8] : [steps + 1]) {
+    const diff = semitones - (INTERVAL_BASE_SEMITONES[number] ?? 0);
+    const perfect = number === 1 || number === 4 || number === 5 || number === 8;
+    const quality = perfect
+      ? diff === 0 ? "perfect" : diff === 1 ? "augmented" : diff === -1 ? "diminished" : null
+      : diff === 0 ? "major" : diff === -1 ? "minor" : diff === 1 ? "augmented" : diff === -2 ? "diminished" : null;
+    if (quality === null) continue;
+    const interval = makeSpelledInterval(number, quality, direction);
+    const landed = transposeSpelledPitchClassExact(from, interval);
+    if (landed !== null && landed.step === to.step && landed.alter === to.alter) return interval;
+  }
+  return null;
+}
+

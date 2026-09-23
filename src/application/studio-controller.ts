@@ -117,7 +117,11 @@ import {
   type ContinuationContextReading,
   type SpelledInterval,
 } from "../theory";
-import { transposeChart, type ChartTranspositionRefusal } from "./chart-transposition";
+import {
+  intervalBetweenTonics,
+  transposeChart,
+  type ChartTranspositionRefusal,
+} from "./chart-transposition";
 import {
   MAX_TRANSPORT_PREVIEW_EVENTS,
   MAX_TRANSPORT_PREVIEW_BEATS,
@@ -666,6 +670,21 @@ export interface StudioController {
    */
   readonly transposeChart: (
     interval: StudioTransposeIntervalId,
+    direction: "up" | "down",
+    scope?: StudioTransposeScope,
+  ) => StudioControllerActionResult;
+  /** Preview moving the chart from its key to `target` (needs a chart key). */
+  readonly previewTransposeToKey: (
+    target: Readonly<{ step: string; alter: number }>,
+    direction: "up" | "down",
+    scope?: StudioTransposeScope,
+  ) => StudioTransposePreview;
+  /**
+   * Move the chart from its key to `target` in the given direction: the exact
+   * spelled interval between the two tonics, proven by landing on `target`.
+   */
+  readonly transposeChartToKey: (
+    target: Readonly<{ step: string; alter: number }>,
     direction: "up" | "down",
     scope?: StudioTransposeScope,
   ) => StudioControllerActionResult;
@@ -2567,17 +2586,48 @@ function makeStudioComposition(
     return selection.kind === "events" ? new Set(selection.eventIds) : null;
   };
 
+  const keyTargetInterval = (
+    target: Readonly<{ step: string; alter: number }>,
+    direction: "up" | "down",
+  ): SpelledInterval | null => {
+    const key = state.document.key;
+    const tonic = makeSpelledPitchClass({ step: target.step, alter: target.alter });
+    if (key === null || !tonic.ok) return null;
+    return intervalBetweenTonics(key.tonic, tonic.value, direction);
+  };
+
   const previewTransposeChart = (
     id: StudioTransposeIntervalId,
     direction: "up" | "down",
     scope: StudioTransposeScope = "chart",
   ): StudioTransposePreview => {
+    const interval = transposeInterval(id, direction);
+    return interval === null
+      ? Object.freeze({ ok: false, message: "Pick one of the listed intervals.", selectedChordCount: selectedEventIds()?.size ?? 0 })
+      : previewTransposeBy(interval, scope);
+  };
+
+  const previewTransposeToKey = (
+    target: Readonly<{ step: string; alter: number }>,
+    direction: "up" | "down",
+    scope: StudioTransposeScope = "chart",
+  ): StudioTransposePreview => {
+    const interval = keyTargetInterval(target, direction);
+    return interval === null
+      ? Object.freeze({ ok: false, message: state.document.key === null
+          ? "Set the chart's key first, or transpose by an interval."
+          : state.document.key.tonic.step === target.step && state.document.key.tonic.alter === target.alter
+            ? "Choose a different key from the current one."
+            : "No single interval spells that key change in this direction. Try the other direction or the enharmonic key.", selectedChordCount: selectedEventIds()?.size ?? 0 })
+      : previewTransposeBy(interval, scope);
+  };
+
+  const previewTransposeBy = (
+    interval: SpelledInterval,
+    scope: StudioTransposeScope,
+  ): StudioTransposePreview => {
     const selected = selectedEventIds();
     const selectedChordCount = selected?.size ?? 0;
-    const interval = transposeInterval(id, direction);
-    if (interval === null) {
-      return Object.freeze({ ok: false, message: "Pick one of the listed intervals.", selectedChordCount });
-    }
     if (scope === "selection" && selected === null) {
       return Object.freeze({ ok: false, message: "Select the chords to transpose first.", selectedChordCount });
     }
@@ -2627,6 +2677,37 @@ function makeStudioComposition(
         ["interval"],
       );
     }
+    return transposeBy(interval, scope, `${direction} ${id}`, `${direction}.${id}`);
+  };
+
+  const transposeChartToKey = (
+    target: Readonly<{ step: string; alter: number }>,
+    direction: "up" | "down",
+    scope: StudioTransposeScope = "chart",
+  ): StudioControllerActionResult => {
+    const interval = keyTargetInterval(target, direction);
+    if (interval === null) {
+      return editRefusal(
+        "transpose-chart",
+        "u1.transpose_interval_unknown",
+        state.document.key === null
+          ? "Set the chart's key first, or transpose by an interval."
+          : state.document.key.tonic.step === target.step && state.document.key.tonic.alter === target.alter
+            ? "Choose a different key from the current one."
+            : "No single interval spells that key change in this direction. Try the other direction or the enharmonic key.",
+        ["key"],
+      );
+    }
+    const accidental = target.alter < 0 ? "♭".repeat(-target.alter) : "♯".repeat(target.alter);
+    return transposeBy(interval, scope, `to ${target.step}${accidental}`, `${direction}.to-${target.step}${String(target.alter)}`);
+  };
+
+  const transposeBy = (
+    interval: SpelledInterval,
+    scope: StudioTransposeScope,
+    label: string,
+    lawSuffix: string,
+  ): StudioControllerActionResult => {
     const selected = selectedEventIds();
     if (scope === "selection" && selected === null) {
       return editRefusal(
@@ -2653,14 +2734,13 @@ function makeStudioComposition(
         ["sections"],
       );
     }
-    const row = STUDIO_TRANSPOSE_INTERVALS.find((candidate) => candidate.id === id);
     const command: TransposeCommand = Object.freeze({
       ...commandEnvelope(
         "studio-transpose",
-        `Transpose ${scope === "selection" ? "selection " : ""}${direction} ${row?.id ?? id}`,
+        `Transpose ${scope === "selection" ? "selection " : ""}${label}`,
       ),
       kind: "transpose",
-      lawId: `h1-t.spelled-interval.${direction}.${id}`,
+      lawId: `h1-t.spelled-interval.${lawSuffix}`,
       patch: Object.freeze({
         baseRevision: state.revision,
         sourceEventIds: result.changedEventIds,
@@ -7884,6 +7964,8 @@ function makeStudioComposition(
     setKey,
     previewTransposeChart,
     transposeChart: transposeChartIntent,
+    previewTransposeToKey,
+    transposeChartToKey,
     setTitle,
     undo: () => apply("undo", (current) => undoDocumentCommand({ state: current })),
     redo: () => apply("redo", (current) => redoDocumentCommand({ state: current })),
