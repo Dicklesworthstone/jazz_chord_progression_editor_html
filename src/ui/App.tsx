@@ -4167,8 +4167,8 @@ export function StudioRoot({
     {sharing == null || shareView === null ? null : <ExactShareDialog service={sharing} view={shareView} />}
     {transposeOpen ? <TransposeDialog
       preview={controller.previewTransposeChart}
-      apply={(interval, direction) => {
-        const result = controller.transposeChart(interval, direction);
+      apply={(interval, direction, scope) => {
+        const result = controller.transposeChart(interval, direction, scope);
         return result.ok ? null : result.refusal.message;
       }}
       onClose={() => { setTransposeOpen(false); }} /> : null}

@@ -55,6 +55,7 @@ export type {
   StudioRecoveredChordLane,
   StudioTransposeIntervalId,
   StudioTransposePreview,
+  StudioTransposeScope,
 } from "./studio-controller";
 
 export type { StudioViewModel } from "./studio-view-model";

@@ -3,6 +3,7 @@ import {
   STUDIO_TRANSPOSE_INTERVALS,
   type StudioTransposeIntervalId,
   type StudioTransposePreview,
+  type StudioTransposeScope,
 } from "../../application/runtime";
 import { Button } from "../primitives";
 import { Dialog } from "../overlays";
@@ -15,9 +16,9 @@ const FOCUS_TARGETS = Object.freeze({
 });
 
 export type TransposeDialogProps = Readonly<{
-  preview: (interval: StudioTransposeIntervalId, direction: "up" | "down") => StudioTransposePreview;
+  preview: (interval: StudioTransposeIntervalId, direction: "up" | "down", scope: StudioTransposeScope) => StudioTransposePreview;
   /** Applies one undoable transposition; returns a refusal message or null. */
-  apply: (interval: StudioTransposeIntervalId, direction: "up" | "down") => string | null;
+  apply: (interval: StudioTransposeIntervalId, direction: "up" | "down", scope: StudioTransposeScope) => string | null;
   onClose: () => void;
 }>;
 
@@ -31,10 +32,11 @@ export function TransposeDialog({ preview, apply, onClose }: TransposeDialogProp
   const [direction, setDirection] = useState<"up" | "down">("up");
   const [interval, setInterval] = useState<StudioTransposeIntervalId>("M2");
   const [refusal, setRefusal] = useState<string | null>(null);
-  const shown = useMemo(() => preview(interval, direction), [preview, interval, direction]);
+  const [scope, setScope] = useState<StudioTransposeScope>("chart");
+  const shown = useMemo(() => preview(interval, direction, scope), [preview, interval, direction, scope]);
   const onContractRefusal = useCallback(() => { onClose(); }, [onClose]);
   const commit = (): void => {
-    const message = apply(interval, direction);
+    const message = apply(interval, direction, scope);
     if (message === null) onClose();
     else setRefusal(message);
   };
@@ -48,6 +50,14 @@ export function TransposeDialog({ preview, apply, onClose }: TransposeDialogProp
           {value === "up" ? "Up" : "Down"}
         </label>)}
       </fieldset>
+      {shown.selectedChordCount === 0 ? null : <fieldset class="studio-transpose__direction">
+        <legend>What moves</legend>
+        {(["chart", "selection"] as const).map((value) => <label key={value}>
+          <input type="radio" name="studio-transpose-scope" value={value} checked={scope === value}
+            onChange={() => { setScope(value); setRefusal(null); }} />
+          {value === "chart" ? "Whole chart" : `Selected chords (${String(shown.selectedChordCount)})`}
+        </label>)}
+      </fieldset>}
       <label for="studio-transpose-interval">Interval</label>
       <select id="studio-transpose-interval" value={interval}
         onChange={(event) => { setInterval(event.currentTarget.value as StudioTransposeIntervalId); setRefusal(null); }}>
@@ -55,9 +65,11 @@ export function TransposeDialog({ preview, apply, onClose }: TransposeDialogProp
       </select>
       <div class="studio-transpose__preview" aria-live="polite">
         {!shown.ok ? <p role="alert">{shown.message}</p> : <>
-          <p>{shown.keyBefore === null
-            ? "No key is set; only the chords move."
-            : `Key: ${shown.keyBefore} → ${shown.keyAfter ?? shown.keyBefore}`}</p>
+          <p>{shown.scope === "selection"
+            ? "Only the selected chords move; the chart's key stays."
+            : shown.keyBefore === null
+              ? "No key is set; only the chords move."
+              : `Key: ${shown.keyBefore} → ${shown.keyAfter ?? shown.keyBefore}`}</p>
           <p>{`${String(shown.changedChordCount)} ${shown.changedChordCount === 1 ? "chord" : "chords"} will move. Exact notes you entered move with them.`}</p>
           {shown.examples.length === 0 ? null : <ul class="studio-transpose__examples">
             {shown.examples.map((row, index) => <li key={index}>{row.before} → {row.after}</li>)}

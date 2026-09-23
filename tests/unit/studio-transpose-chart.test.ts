@@ -56,7 +56,7 @@ describe("Transpose chart through the controller", () => {
     const revision = controller.getSnapshot().revision;
     const preview = controller.previewTransposeChart("M2", "up");
     expect(preview).toEqual({
-      ok: true, keyBefore: "C major", keyAfter: "D major", changedChordCount: 5,
+      ok: true, scope: "chart", selectedChordCount: 0, keyBefore: "C major", keyAfter: "D major", changedChordCount: 5,
       examples: [
         { before: "Dm7", after: "Em7" }, { before: "G7", after: "A7" },
         { before: "C6/9/E", after: "D6/9/F#" }, { before: "Ab7/C", after: "Bb7/D" },
@@ -95,6 +95,38 @@ describe("Transpose chart through the controller", () => {
     if (!refused.ok) expect(refused.refusal.code).toBe("u1.transpose_interval_unknown");
     expect(controller.getSnapshot().revision).toBe(before.revision);
     expect(symbols(controller)).toBe("Dm7 G7 C6/9/E Ab7/C D♭maj7");
+  });
+});
+
+describe("Transpose selected chords", () => {
+  test("only the selected chords move, the key stays, and one Undo restores them", () => {
+    const controller = seeded();
+    const ids = controller.getSnapshot().sections.flatMap((section) => section.measures.flatMap((measure) => measure.events.map((event) => event.id)));
+    expect(controller.selectEvent(ids[2] ?? "").ok).toBe(true);
+    expect(controller.extendSelectionTo(ids[3] ?? "").ok).toBe(true);
+    const preview = controller.previewTransposeChart("m3", "up", "selection");
+    expect(preview).toMatchObject({ ok: true, scope: "selection", selectedChordCount: 2, changedChordCount: 2,
+      examples: [{ before: "C6/9/E", after: "Eb6/9/G" }, { before: "Ab7/C", after: "Cb7/Eb" }] });
+    const revision = controller.getSnapshot().revision;
+    expect(controller.transposeChart("m3", "up", "selection").ok).toBe(true);
+    /* Hand-derived: up a minor 3rd moves the letter two steps (C→E♭, A♭→C♭). */
+    expect(symbols(controller)).toBe("Dm7 G7 Eb6/9/G Cb7/Eb D♭maj7");
+    expect(controller.getSnapshot().keyLabel).toContain("C");
+    expect(controller.getSnapshot().revision).toBe(revision + 1);
+    expect(controller.getSnapshot().history.undoLabel).toBe("Transpose selection up m3");
+    expect(controller.undo().ok).toBe(true);
+    expect(symbols(controller)).toBe("Dm7 G7 C6/9/E Ab7/C D♭maj7");
+  });
+
+  test("selection scope with nothing selected refuses and changes nothing", () => {
+    const controller = seeded();
+    expect(controller.clearSelection().ok).toBe(true);
+    const revision = controller.getSnapshot().revision;
+    expect(controller.previewTransposeChart("M2", "up", "selection")).toMatchObject({ ok: false, selectedChordCount: 0 });
+    const refused = controller.transposeChart("M2", "up", "selection");
+    expect(refused.ok).toBe(false);
+    if (!refused.ok) expect(refused.refusal.code).toBe("u1.selection_empty");
+    expect(controller.getSnapshot().revision).toBe(revision);
   });
 });
 

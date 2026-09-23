@@ -346,16 +346,22 @@ export const STUDIO_TRANSPOSE_INTERVALS = Object.freeze([
 
 export type StudioTransposeIntervalId = (typeof STUDIO_TRANSPOSE_INTERVALS)[number]["id"];
 
+/** Whole chart (moves keys too) or only the selected chords (keys stay). */
+export type StudioTransposeScope = "chart" | "selection";
+
 export type StudioTransposePreview =
   | Readonly<{
       ok: true;
+      scope: StudioTransposeScope;
+      /** Chords currently selected; 0 hides the selection option. */
+      selectedChordCount: number;
       keyBefore: string | null;
       keyAfter: string | null;
       /** Up to the first eight changed chords, in chart order. */
       examples: readonly Readonly<{ before: string; after: string }>[];
       changedChordCount: number;
     }>
-  | Readonly<{ ok: false; message: string }>;
+  | Readonly<{ ok: false; message: string; selectedChordCount: number }>;
 
 export type StudioControllerRefusal = Readonly<{
   action: StudioControllerAction;
@@ -649,6 +655,7 @@ export interface StudioController {
   readonly previewTransposeChart: (
     interval: StudioTransposeIntervalId,
     direction: "up" | "down",
+    scope?: StudioTransposeScope,
   ) => StudioTransposePreview;
   /**
    * Transpose the whole chart by one spelled interval as a single Undo step
@@ -660,6 +667,7 @@ export interface StudioController {
   readonly transposeChart: (
     interval: StudioTransposeIntervalId,
     direction: "up" | "down",
+    scope?: StudioTransposeScope,
   ) => StudioControllerActionResult;
   readonly undo: () => StudioControllerActionResult;
   readonly redo: () => StudioControllerActionResult;
@@ -2554,17 +2562,28 @@ function makeStudioComposition(
     return `Nothing changed: ${named.join("; ")}${more}.`;
   };
 
+  const selectedEventIds = (): ReadonlySet<ChordEventId> | null => {
+    const selection = state.bookmarks.selection;
+    return selection.kind === "events" ? new Set(selection.eventIds) : null;
+  };
+
   const previewTransposeChart = (
     id: StudioTransposeIntervalId,
     direction: "up" | "down",
+    scope: StudioTransposeScope = "chart",
   ): StudioTransposePreview => {
+    const selected = selectedEventIds();
+    const selectedChordCount = selected?.size ?? 0;
     const interval = transposeInterval(id, direction);
     if (interval === null) {
-      return Object.freeze({ ok: false, message: "Pick one of the listed intervals." });
+      return Object.freeze({ ok: false, message: "Pick one of the listed intervals.", selectedChordCount });
     }
-    const result = transposeChart(state.document, interval);
+    if (scope === "selection" && selected === null) {
+      return Object.freeze({ ok: false, message: "Select the chords to transpose first.", selectedChordCount });
+    }
+    const result = transposeChart(state.document, interval, scope === "selection" ? selected : null);
     if (!result.ok) {
-      return Object.freeze({ ok: false, message: transposeRefusalMessage(result.refusals) });
+      return Object.freeze({ ok: false, message: transposeRefusalMessage(result.refusals), selectedChordCount });
     }
     const after = new Map<string, string>();
     for (const section of result.candidate.sections) {
@@ -2585,6 +2604,8 @@ function makeStudioComposition(
     }
     return Object.freeze({
       ok: true,
+      scope,
+      selectedChordCount,
       keyBefore: keyLabel(state.document.key),
       keyAfter: keyLabel(result.candidate.key),
       examples: Object.freeze(examples),
@@ -2595,6 +2616,7 @@ function makeStudioComposition(
   const transposeChartIntent = (
     id: StudioTransposeIntervalId,
     direction: "up" | "down",
+    scope: StudioTransposeScope = "chart",
   ): StudioControllerActionResult => {
     const interval = transposeInterval(id, direction);
     if (interval === null) {
@@ -2605,7 +2627,16 @@ function makeStudioComposition(
         ["interval"],
       );
     }
-    const result = transposeChart(state.document, interval);
+    const selected = selectedEventIds();
+    if (scope === "selection" && selected === null) {
+      return editRefusal(
+        "transpose-chart",
+        "u1.selection_empty",
+        "Select the chords to transpose first.",
+        ["bookmarks", "selection"],
+      );
+    }
+    const result = transposeChart(state.document, interval, scope === "selection" ? selected : null);
     if (!result.ok) {
       return editRefusal(
         "transpose-chart",
@@ -2626,7 +2657,7 @@ function makeStudioComposition(
     const command: TransposeCommand = Object.freeze({
       ...commandEnvelope(
         "studio-transpose",
-        `Transpose ${direction} ${row?.id ?? id}`,
+        `Transpose ${scope === "selection" ? "selection " : ""}${direction} ${row?.id ?? id}`,
       ),
       kind: "transpose",
       lawId: `h1-t.spelled-interval.${direction}.${id}`,
