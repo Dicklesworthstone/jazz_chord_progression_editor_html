@@ -235,6 +235,19 @@ function splitSymbol(symbolText: string): {
   };
 }
 
+/**
+ * Name the guide tones by their actual roles: a dominant's are the 3 and ♭7,
+ * a sus chord's the 4 and ♭7, a 6/9 chord has only its 3.
+ */
+function guideToneCaption(tones: StudioDetailView["tones"]): string {
+  const roles = tones.filter((tone) => tone.guide && tone.role !== null).map((tone) => tone.role ?? "");
+  if (roles.length === 0) return "These tones carry the voice leading into the next chord.";
+  if (roles.length === 1) {
+    return `The ${roles[0] ?? ""}. With no seventh here, this one tone carries the voice leading into the next chord.`;
+  }
+  return `The ${roles.slice(0, -1).join(", ")} and ${roles.at(-1) ?? ""}. These carry the voice leading into the next chord.`;
+}
+
 export function ChordDetailPanel({
   detail,
   context,
@@ -438,9 +451,7 @@ export function ChordDetailPanel({
             {detail.guideToneNames.join("  and  ")}
           </p>
           <p class="studio-chord-detail__fact-note">
-            {detail.guideToneNames.length === 1
-              ? "With no seventh here, this one tone carries the voice leading into the next chord."
-              : "The third and seventh. These two carry the voice leading into the next chord."}
+            {guideToneCaption(detail.tones)}
           </p>
         </section>
       )}
