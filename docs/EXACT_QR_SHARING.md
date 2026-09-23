@@ -27,7 +27,7 @@ A receiving app needs this v3 reader. Scanning a URL does not install the offlin
 app on an unprepared phone. Until this version ships, an old hosted app may refuse
 v3; keep the current exact link and JSON fallbacks. No deployment is implied.
 
-Limits: existing 6,138 decoded UTF-8 bytes unchanged; compressed input/output
+Limits (decoded ceiling amended 2026-09-22 to 65,536 bytes for compressed exact links, see EXACT_SHARE.md): compressed input/output
 ≤880 bytes; full QR URL ≤1,190 printable ASCII bytes. Validate base64url alphabet,
 length, unused trailing bits and limits before decoding. Native bounded streaming
 inflation cancels on the first chunk that would exceed the decoded limit, refuses

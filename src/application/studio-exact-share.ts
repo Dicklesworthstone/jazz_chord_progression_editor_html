@@ -1,7 +1,7 @@
-import {prepareExactQr,type ExactQr} from "./qr-share";
+import {encodeCompressedShareText,prepareExactQr,type ExactQr} from "./qr-share";
 import type {BoundedCompressionPort} from "../export";
 import type { DialogDescriptor } from "./application-state-contract";
-import { encodeExactShareDocument, exactShareUrl } from "./exact-share";
+import { compactCanonicalShareDocument, encodeExactShareDocument, exactShareUrl } from "./exact-share";
 import type { StudioComposition } from "./studio-controller";
 import type { StudioLifecycleService } from "./studio-lifecycle";
 
@@ -10,7 +10,7 @@ export type StudioExactShareView = Readonly<{
   open: boolean;
   url: string | null;
   revision: number | null;
-  phase: "ready" | "oversized" | "failed" | "copied";
+  phase: "ready" | "preparing" | "oversized" | "failed" | "copied";
   copyPending: boolean;
   qrAvailable:boolean;
   qrPhase:"idle"|"preparing"|"ready"|"refused"|"stale";
@@ -56,6 +56,29 @@ export function createStudioExactShare(options: Readonly<{
     clearQr();publish({qr:null,qrPhase:"idle",qrMessage:null});
     bound = composition.readApplicationState();
     const encoded = encodeExactShareDocument(bound.document);
+    if (!encoded.ok && encoded.code === "share.limit_exceeded" && options.compress !== undefined) {
+      /* Larger charts use the compressed "#zdoc=3." exact link (same DEFLATE
+         format as the QR, bounded by the link's own fragment cap). */
+      const selectedBound = bound, compress = options.compress;
+      publish({ open: true, url: null, revision: bound.revision, phase: "preparing",
+        message: "Preparing a compressed exact link for this larger chart…" });
+      void encodeCompressedShareText(compactCanonicalShareDocument(selectedBound.document), compress).then((packed) => {
+        if (bound !== selectedBound || !current()) return;
+        if (!packed.ok) {
+          publish({ url: null, phase: packed.code === "share.limit_exceeded" ? "oversized" : "failed", message: packed.message });
+          return;
+        }
+        let url: string | null = null;
+        try { url = exactShareUrl(options.readLocation(), packed.value); } catch { /* Offer the exact file below. */ }
+        publish({ url, phase: url === null ? "failed" : "ready",
+          message: url === null ? "An app URL is unavailable. Download exact JSON to share this chart."
+            : message ?? "This larger chart uses a compressed exact link. It opens in current JazzChords.org versions; older versions can use the exact JSON file." });
+      }, () => {
+        if (bound !== selectedBound) return;
+        publish({ url: null, phase: "failed", message: "Compression was unavailable. Download exact JSON to share this chart." });
+      });
+      return;
+    }
     if (!encoded.ok) {
       publish({ open: true, url: null, revision: bound.revision,
         phase: encoded.code === "share.limit_exceeded" ? "oversized" : "failed", message: encoded.message });

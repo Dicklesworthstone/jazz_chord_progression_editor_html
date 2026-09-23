@@ -54,6 +54,21 @@ change between app versions; preserve existing Frozen provenance as data.
   open that notes, annotations, section details and other settings were not
   included by that format. New Share actions never emitv1.
 
+### 2026-09-22 amendment: compressed exact links (`jcpe-share-link-capacity-5iec`)
+
+The 6,138-byte v2 cap admitted only about ten chords (compact canonical JSON
+runs near 560 bytes per chord), so a standard could never be shared by link.
+When the v2 encoder refuses for size, Share now offers the existing `#zdoc=3.`
+format that exact QR already uses: base64url of zlib DEFLATE over the same
+compact canonical text. The browser's native `CompressionStream` is used; no
+package is added. Bounds: canonical text at most 65,536 UTF-8 bytes (the
+inflater cancels on the first chunk beyond it, so a crafted link cannot
+inflate further), compressed payload at most 6,138 bytes so the fragment
+stays within the unchanged 8,192-character cap. Charts that fit v2 still get
+a v2 link, readable by older app versions. Decoded text crosses the same
+E0/F2/F3 boundary as v2. Measured: a real 11-chord chart is 6,166 bytes as
+v2 and 1,195 compressed (about 108 bytes per chord, roughly 50 chords).
+
 ## Application and startup ownership
 
 The composition creates a sharing service over its private current-document

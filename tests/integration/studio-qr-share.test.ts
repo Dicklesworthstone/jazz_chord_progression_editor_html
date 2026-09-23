@@ -4,6 +4,8 @@ import {createStudioBootstrap,createStudioCompositionOverState,createStudioDocum
 import {createStudioExactShare} from "../../src/application/studio-exact-share";
 import {createStudioLifecycle} from "../../src/application/studio-lifecycle";
 import {decodeSharedStartupWithQr,encodeQrShareText} from "../../src/application/qr-share";
+import {compactCanonicalShareDocument} from "../../src/application/exact-share";
+import {musicalDocument} from "../support/studio-voice-leading";
 import {applyExactSharedStartup} from "../../src/application/exact-share-startup";
 import {createRecoveryHarness} from "../support/recovery-test-kit";
 import {createTransportHarness} from "../support/transport-test-kit";
@@ -35,3 +37,21 @@ test("compression refusal retains ordinary copy and JSON workflows",async()=>{
 test("compressed receiver still publishes only through exact E0/F2/F3 validation",async()=>{
  for(const invalid of [false,true]){const h=harness(),before=h.composition.readApplicationState(),text=JSON.stringify(fixture).replace('"numerator":5',invalid?'"numerator":0':'"numerator":5');const wire=await encodeQrShareText(text,native);if(!wire.ok)throw new Error(wire.message);const decoded=await decodeSharedStartupWithQr(wire.value.fragment,bytes=>Promise.resolve(inflateSync(bytes)));if(!decoded.ok||decoded.value.version!==2)throw new Error("Decode failed");const result=await applyExactSharedStartup(h.composition,h.importer,decoded.value.text);expect(result.applied).toBe(!invalid);if(invalid){expect(h.composition.readApplicationState().document).toBe(before.document);expect(h.composition.readApplicationState().history).toBe(before.history);}else{const observed:unknown=h.composition.readApplicationState().document;expect(observed).toEqual(fixture);expect(h.composition.controller.undo().ok).toBe(true);expect(h.composition.readApplicationState().document).toEqual(before.document);}}
 });
+
+/* jcpe-share-link-capacity-5iec: Share offers an exact compressed link for a
+ * chart the plain v2 link cannot carry, and the link reopens the same chart. */
+test("Share falls back to an exact compressed link for a large chart",async()=>{
+ const roots=["C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"],qualities=["m7","7","maj7","m7b5","7b9"];
+ const bars=Array.from({length:20},(_,bar)=>[`${roots[bar%12]??"C"}${qualities[bar%5]??"7"}`,`${roots[(bar+5)%12]??"F"}${qualities[(bar+1)%5]??"7"}`]);
+ const text=compactCanonicalShareDocument(musicalDocument(bars));expect(new TextEncoder().encode(text).length).toBeGreaterThan(6138);
+ const h=harness(),applied=await applyExactSharedStartup(h.composition,h.importer,text);expect(applied).toEqual({applied:true});
+ const source=compactCanonicalShareDocument(h.composition.readApplicationState().document);
+ h.sharing.open();expect(h.sharing.getSnapshot().phase).toBe("preparing");
+ for(let i=0;i<50&&h.sharing.getSnapshot().phase==="preparing";i++)await new Promise(r=>setTimeout(r,10));
+ const view=h.sharing.getSnapshot();expect(view.phase).toBe("ready");expect(view.url).toStartWith("https://jazzchords.org/#zdoc=3.");
+ const fragment=(view.url??"").slice("https://jazzchords.org/".length);
+ expect(await decodeSharedStartupWithQr(fragment,bytes=>Promise.resolve(inflateSync(bytes)))).toEqual({ok:true,value:{version:2,text:source}});
+ const opened=harness();expect(await applyExactSharedStartup(opened.composition,opened.importer,source)).toEqual({applied:true});
+ expect(compactCanonicalShareDocument(opened.composition.readApplicationState().document)).toBe(source);
+});
+

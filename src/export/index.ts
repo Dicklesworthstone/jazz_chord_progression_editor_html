@@ -20,4 +20,4 @@ export {layoutPrintableChart,encodePrintSvg,printTextWidth,wrapPrintText,escapeP
 export {prepareBrowserSvgDownload,prepareBrowserPrintFont,activateBrowserPrint,type PrepareSvgDownload} from "./browser-print";
 
 export {encodeQrAscii,qrByteCapacity,qrModulePath,type QrMatrix,type QrResult,type QrWork} from "./qr-matrix";
-export {compressBrowserBytes,inflateBrowserBytes,type BoundedCompressionPort} from "./browser-compression";
+export {compressBrowserBytes,inflateBrowserBytes,MAX_COMPRESSED_SHARE_PAYLOAD_BYTES,MAX_COMPRESSED_SHARE_TEXT_BYTES,type BoundedCompressionPort} from "./browser-compression";
