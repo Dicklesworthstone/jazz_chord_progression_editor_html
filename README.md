@@ -68,7 +68,7 @@ obligations remain open below.
 | Standalone page | `jazz_chord_progression_editor.html` opens directly from disk; the deployment command stages committed bytes for Cloudflare Pages and its Vercel mirror |
 | Offline runtime | Every script, style, font, sample, and WASM payload is embedded; the hash-based CSP denies all network destinations |
 | Chart authoring | Engraved sheet view and grid edit view over the demo chart; quick entry (`⌘K` / Type changes) for whole charts; per-chord inline editing, exact beat durations, measure/section structure edits, drag moves, range selection, and single-step undo/redo (U1 acceptance E2E) |
-| Transpose | **Transpose** beside Key moves the whole chart, or only the selected chords, with their exact Manual/Frozen notes (and, for the whole chart, the key) by one spelled interval (m2–M7, both A4 and d5), with a preview of the new key and chords and a single Undo. Spelling is exact (6/9, slash bass and Unicode accidentals are kept); Custom chords, unspellable results and notes outside MIDI 0–127 refuse by name instead of being repaired |
+| Transpose | **Transpose** beside Key moves the whole chart, or only the selected chords, with their exact Manual/Frozen notes (and, for the whole chart, the key) by one spelled interval (m2–M7, both A4 and d5) or to a named key (the exact interval between the two tonics, either direction), with a preview of the new key and chords and a single Undo. Spelling is exact (6/9, slash bass and Unicode accidentals are kept); Custom chords, unspellable results and notes outside MIDI 0–127 refuse by name instead of being repaired |
 | Analysis | Literal-first Harmony Lens: chord tones with degrees, chord scale, guide tones, guide-tone motion into the next chord, and plural next-chord options with one-line reasons ("Options, not answers"); roman numerals and phrase brackets on the sheet. Deliberately narrower than the planned H0 evidence-tier engine and says so in source |
 | Exact voicings | Choose and audition alternatives, keep a Frozen realization, or edit up to 16 exact Manual notes in the chord inspector; complete U2 package proof remains open |
 | Start from notes | Enter exact spelled notes or tap the keyboard, compare chord names, hear the voicing and add one Manual bar with one Undo. Custom labels and acknowledged enharmonic names preserve the entered pitches, order and duplicates; oversized pasted notes or labels remain editable and are refused without insertion |
@@ -323,7 +323,7 @@ Local recovery is not cloud backup. Keep JSON copies of important charts; browse
 ## Current limitations
 
 - **Transpose** moves the whole chart or the selected chords by one spelled
-  interval; there is no audible preview or target-key picker yet. Key
+  interval or to a named key; there is no audible preview yet. Key
   selection itself still changes the analysis context only.
 - Chords whose alterations need six notes (for example C13♭9♯11 or
   C9♯11♭13) still cannot be voiced for playback or MIDI export; five-note
