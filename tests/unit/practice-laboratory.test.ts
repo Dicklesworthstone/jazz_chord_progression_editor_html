@@ -105,4 +105,22 @@ describe("G9 Deterministic Chart-to-Practice Laboratory", () => {
       expect(result.refusal.code).toBe("g9.prompts_exceeded");
     }
   });
+
+  test("every prompt offers distinct answers with exactly one correct, in every key", () => {
+    const roots = ["C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
+    for (const root of roots) for (const quality of ["maj7", "m7", "7", "m7b5"]) {
+      const symbol = `${root}${quality}`;
+      const session = createPracticeSession(
+        [{ eventId: eventIdOf(`p_${root.replace("#", "s")}_${quality}`), chordSymbol: symbol }],
+        { seed: 7, maxPrompts: 1 },
+      );
+      if (!session.ok) throw new Error(`${symbol}: session refused`);
+      for (const prompt of session.session.prompts) {
+        const texts = prompt.options.map((option) => option.text);
+        expect(`${symbol}: ${String(new Set(texts).size)}`).toBe(`${symbol}: ${String(texts.length)}`);
+        expect(prompt.options.filter((option) => option.isCorrect)).toHaveLength(1);
+      }
+    }
+  });
 });
+

@@ -19,6 +19,7 @@ import { parseChordSymbol } from "./chord-symbol";
 import {
   extractEventGuideTones,
   spelledPitchClassToString,
+  transposeSpelledPitchClass,
 } from "./guide-tones";
 
 function mulberry32(seed: number): () => number {
@@ -29,6 +30,30 @@ function mulberry32(seed: number): () => number {
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
+}
+
+/**
+ * Three wrong answers for "name the guide tones", built from the chord's own
+ * root, third and fifth so they are plausible, and never equal to the right
+ * answer or to each other (a fixed list once offered "E and B" as both the
+ * correct and an incorrect answer for Cmaj7).
+ */
+function spellingDistractors(
+  chordSymbol: string,
+  correct: string,
+  thirdName: string,
+  accidentalStyle: AccidentalStyle,
+): readonly [string, string, string] {
+  const parsed = parseChordSymbol(chordSymbol, accidentalStyle);
+  const pool: string[] = [];
+  if (parsed.ok) {
+    const root = spelledPitchClassToString(parsed.chord.root);
+    const fifth = spelledPitchClassToString(transposeSpelledPitchClass(parsed.chord.root, 4, 7));
+    pool.push(`${root} and ${fifth}`, `${thirdName} and ${fifth}`, `${root} and ${thirdName}`);
+  }
+  pool.push("E and B", "F and C", "G and D", "A and E");
+  const distinct = [...new Set(pool)].filter((text) => text !== correct);
+  return [distinct[0] ?? "C and G", distinct[1] ?? "D and A", distinct[2] ?? "B and F#"];
 }
 
 export function createPracticeSession(
@@ -91,9 +116,7 @@ export function createPracticeSession(
     const seventhStr = seventhTone ? spelledPitchClassToString(seventhTone.spelledPitchClass) : "None";
 
     const correctSpelling = `${thirdStr} and ${seventhStr}`;
-    const distractor1 = "E and B";
-    const distractor2 = "F and C";
-    const distractor3 = "G and D";
+    const [distractor1, distractor2, distractor3] = spellingDistractors(ev0.chordSymbol, correctSpelling, thirdStr, accidentalStyle);
 
     const spellingOptions: PracticePromptOption[] = [
       { optionId: "opt_correct", text: correctSpelling, isCorrect: true, feedback: "Correct guide tones!" },
@@ -202,9 +225,7 @@ export function createPracticeSession(
     const seventhStr = seventhTone ? spelledPitchClassToString(seventhTone.spelledPitchClass) : "None";
 
     const correctSpelling = `${thirdStr} and ${seventhStr}`;
-    const distractor1 = "E and B";
-    const distractor2 = "F and C";
-    const distractor3 = "G and D";
+    const [distractor1, distractor2, distractor3] = spellingDistractors(ev.chordSymbol, correctSpelling, thirdStr, accidentalStyle);
 
     const spellingOptions: PracticePromptOption[] = [
       { optionId: "opt_correct", text: correctSpelling, isCorrect: true, feedback: "Correct guide tones!" },
