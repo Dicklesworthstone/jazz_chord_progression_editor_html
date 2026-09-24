@@ -37,7 +37,9 @@ describe("G0 Phrase and Cadence Engine", () => {
     const e1 = eventIdOf("e1");
     const e2 = eventIdOf("e2");
     const cad = detectCadence("G7", "Am7", e1, e2);
-    expect(cad).toBeDefined();
+    /* not.toBeNull: toBeDefined() accepted null, so this test passed while
+       the detector missed every deceptive cadence. */
+    expect(cad).not.toBeNull();
     if (cad) {
       expect(cad.cadenceType).toBe("deceptive");
       expect(cad.status).toBe("supported");
@@ -74,5 +76,19 @@ describe("G0 Phrase and Cadence Engine", () => {
     const e2 = eventIdOf("e2");
     const cad = detectCadence("Em7", "A7", e1, e2);
     expect(cad).toBeNull();
+  });
+
+  test("V7 to vi is deceptive in every key; the major-chord near-miss is not", () => {
+    /* Hand-authored: vi sits a whole step above V (G7 -> Am, D7 -> Bm). */
+    const roots = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+    roots.forEach((root, index) => {
+      const vi = roots[(index + 2) % 12] ?? "D";
+      const cad = detectCadence(`${root}7`, `${vi}m`, eventIdOf("a"), eventIdOf("b"));
+      expect(`${root}7->${vi}m: ${cad?.cadenceType ?? "none"}`).toBe(`${root}7->${vi}m: deceptive`);
+      /* Near-miss: the same motion onto a major chord is not deceptive. */
+      expect(detectCadence(`${root}7`, `${vi}maj7`, eventIdOf("a"), eventIdOf("b"))?.cadenceType).not.toBe("deceptive");
+    });
+    /* The old +9 motion (G7 -> Em) is not a deceptive cadence. */
+    expect(detectCadence("G7", "Em", eventIdOf("a"), eventIdOf("b"))?.cadenceType ?? null).not.toBe("deceptive");
   });
 });

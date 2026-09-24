@@ -67,8 +67,9 @@ export function detectCadence(
     };
   }
 
-  // 3. Deceptive Cadence: V7 -> vi (root motion up 9 semitones / down 3 semitones)
-  if (isFromDominant && isToMinor && rootDiff === 9) {
+  // 3. Deceptive Cadence: V7 -> vi, root up a whole step (G7 -> Am). Backdoor
+  //    shares the +2 motion but lands on a major chord, so the two never clash.
+  if (isFromDominant && isToMinor && rootDiff === 2) {
     return {
       cadenceType: "deceptive",
       status: "supported",
