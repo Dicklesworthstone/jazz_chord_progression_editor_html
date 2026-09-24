@@ -266,12 +266,17 @@ export function buildReharmonizationTree(
     lineageLawIds: [],
   };
 
+  /* Report the depth the tree actually reached, never the depth requested:
+     a root whose chords admit no law has depth 0 even when 2 was asked for. */
+  const reachedDepth = (node: ReharmonizationTreeNode): number =>
+    node.children.reduce((deepest, child) => Math.max(deepest, reachedDepth(child)), node.depth);
+
   const tree: ReharmonizationTree = {
     schema: G5_REHARMONIZATION_TREE_SCHEMA,
     baseRevision: options?.baseRevision ?? "rev_0",
     rootNode,
     totalNodes: totalNodesCount,
-    maxDepthReached: maxDepth,
+    maxDepthReached: reachedDepth(rootNode),
   };
 
   return {

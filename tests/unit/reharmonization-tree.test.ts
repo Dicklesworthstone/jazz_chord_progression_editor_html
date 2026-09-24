@@ -102,4 +102,26 @@ describe("G5 Proof-Carrying Reharmonization Tree", () => {
       expect(result.refusal.code).toBe("g5.depth_exceeded");
     }
   });
+
+  test("maxDepthReached reports the depth actually built, never the depth requested", () => {
+    /* A lone Cm7 admits no reharmonization law: depth 0 even when 2 is asked. */
+    const lone = buildReharmonizationTree(
+      [{ eventId: eventIdOf("solo"), chordSymbol: "Cm7", offsetBeat: beat(0), duration: beat(4) }],
+      { maxDepth: 2 },
+    );
+    expect(lone.ok && lone.tree.maxDepthReached).toBe(0);
+    /* A ii-V-I branches: its reported depth equals the deepest node present. */
+    const full = buildReharmonizationTree([
+      { eventId: eventIdOf("d0"), chordSymbol: "Dm7", offsetBeat: beat(0), duration: beat(4) },
+      { eventId: eventIdOf("d1"), chordSymbol: "G7", offsetBeat: beat(4), duration: beat(4) },
+      { eventId: eventIdOf("d2"), chordSymbol: "Cmaj7", offsetBeat: beat(8), duration: beat(4) },
+    ], { maxDepth: 2 });
+    if (!full.ok) throw new Error("tree refused");
+    const deepest = (node: typeof full.tree.rootNode): number =>
+      node.children.reduce((max, child) => Math.max(max, deepest(child)), node.depth);
+    expect(full.tree.maxDepthReached).toBe(deepest(full.tree.rootNode));
+    expect(full.tree.maxDepthReached).toBeGreaterThan(0);
+    expect(full.tree.maxDepthReached).toBeLessThanOrEqual(2);
+  });
 });
+
