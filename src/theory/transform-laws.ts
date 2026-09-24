@@ -339,12 +339,17 @@ export function evaluateTransformCandidates(
     });
   }
 
-  // 3. Secondary ii-V insertion if dominant with >= 2 beats
-  if (isDominant) {
+  // 3. Secondary ii-V insertion: split the dominant into two exact halves.
+  //    (Whole-beat flooring once turned 3 beats into 1 + 1 while claiming 3.)
+  const halfBeatRes = normalizeBeatValue({
+    numerator: targetEvent.duration.numerator,
+    denominator: targetEvent.duration.denominator * 2,
+  });
+  const secondHalfRes = halfBeatRes.ok ? addBeatValues(targetEvent.offsetBeat, halfBeatRes.value) : null;
+  const newTotalRes = halfBeatRes.ok ? addBeatValues(halfBeatRes.value, halfBeatRes.value) : null;
+  if (isDominant && halfBeatRes.ok && secondHalfRes?.ok === true && newTotalRes?.ok === true) {
     workSteps++;
-    const halfDurationNum = Math.floor(targetEvent.duration.numerator / (2 * targetEvent.duration.denominator));
-    const halfBeatRes = normalizeBeatValue({ numerator: Math.max(1, halfDurationNum), denominator: 1 });
-    const halfBeat = halfBeatRes.ok ? halfBeatRes.value : targetEvent.duration;
+    const halfBeat = halfBeatRes.value;
     const iiRoot = transposeSpelledPitchClass(root, 4, 7);
     const iiRootStr = spelledPitchClassToString(iiRoot);
     const iiChordSymbol = `${iiRootStr}m7`;
@@ -360,23 +365,24 @@ export function evaluateTransformCandidates(
       offsetBeat: targetEvent.offsetBeat,
       duration: halfBeat,
     };
-    const addRes = addBeatValues(targetEvent.offsetBeat, halfBeat);
-    const op2Offset = addRes.ok ? addRes.value : targetEvent.offsetBeat;
-
     const op2: TransformEditOperation = {
       kind: "insert",
       targetEventId: targetEvent.eventId,
       originalSymbol: targetEvent.chordSymbol,
       newSymbol: targetEvent.chordSymbol,
-      offsetBeat: op2Offset,
+      offsetBeat: secondHalfRes.value,
       duration: halfBeat,
     };
 
+    const newTotal = newTotalRes.value;
     const editPlan: TransformEditPlan = {
       operations: [op1, op2],
       totalOriginalDuration: targetEvent.duration,
-      totalNewDuration: targetEvent.duration,
-      maintainsTimeBalance: true,
+      totalNewDuration: newTotal,
+      /* Computed, not asserted: the halves must sum to the original. */
+      maintainsTimeBalance:
+        newTotal.numerator * targetEvent.duration.denominator ===
+        targetEvent.duration.numerator * newTotal.denominator,
     };
 
     candidates.push({

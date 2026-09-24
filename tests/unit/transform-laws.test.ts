@@ -122,4 +122,24 @@ describe("H1 Transform Laws Registry and Evaluation", () => {
       }
     });
   });
+
+  test("the secondary ii-V split keeps exact time for any dominant length", () => {
+    /* Hand-derived: each half is exactly half the dominant; the halves sum to it. */
+    for (const [numerator, denominator] of [[1, 1], [3, 1], [4, 1], [3, 2]] as const) {
+      const result = evaluateTransformCandidates(
+        [{ eventId: eventIdOf("dom"), chordSymbol: "G7", offsetBeat: beat(2), duration: beat(numerator, denominator) }],
+        0,
+      );
+      if (!result.ok) throw new Error("refused");
+      const split = result.candidates.find((candidate) => candidate.family === "secondary-ii-v");
+      if (split === undefined) throw new Error("no ii-V candidate");
+      const [first, second] = split.editPlan.operations;
+      expect(first?.duration).toEqual(beat(numerator, denominator * 2));
+      expect(second?.duration).toEqual(beat(numerator, denominator * 2));
+      expect(second?.offsetBeat).toEqual(beat(2 * denominator * 2 + numerator, denominator * 2));
+      expect(split.editPlan.totalNewDuration).toEqual(beat(numerator, denominator));
+      expect(split.editPlan.maintainsTimeBalance).toBe(true);
+    }
+  });
 });
+
