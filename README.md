@@ -2,15 +2,17 @@
 
 An offline, deterministic jazz chord-progression studio designed to turn lead-sheet changes into an explainable, playable, portable chart—without accounts, telemetry, cloud services, or runtime AI.
 
-> **Development status (2026-09-16 UTC):** JazzChords.org is a working editor and
-> playback studio, with substantial recovery, interchange and voicing tools.
-> Exact sharing, My Charts and Focus are included in the build deployed to
-> <https://jazzchords.org> and its Vercel mirror. Full harmonic
-> discovery and release acceptance remain incomplete. The latest predeploy
-> model and instrument checks pass; this release does not claim a complete
-> aggregate `verify` pass. Required X1 human listening evidence remains outstanding.
-> See the [implementation status](docs/IMPLEMENTATION_TODO.md), [reality check](docs/REALITY_CHECK.md)
-> and [limitations](#current-limitations).
+> **Development status (2026-09-23 UTC):** JazzChords.org is a working editor and
+> playback studio with recovery, interchange and voicing tools. The build deployed
+> to <https://jazzchords.org> and its Vercel mirror (artifact `df5daf67…`) adds exact
+> spelled **Transpose** (whole chart or selection, by interval or to a key, with
+> listen-before-apply), playable altered dominants, compressed exact share links
+> for full-length charts and corrected Harmony Lens explanations. Full harmonic
+> discovery and release acceptance remain incomplete: the discovery engines are not
+> wired into the app, six-alteration chords still await a V0 limit amendment, and
+> required X1 human listening evidence is outstanding, so no aggregate `verify`
+> pass is claimed. See the [implementation status](docs/IMPLEMENTATION_TODO.md),
+> [reality check](docs/REALITY_CHECK.md) and [limitations](#current-limitations).
 
 ## Why JazzChords.org
 
