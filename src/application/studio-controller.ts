@@ -5720,9 +5720,12 @@ function makeStudioComposition(
         planRevision: run.planRevision,
       });
       const playhead = port.readPlayheadBeat();
+      /* A loop replays notes behind the playhead, so every looped note may
+       * still be attacked by the new instrument. */
+      const loopArmed = loopSectionId !== null || loopEnabled;
       const preparation = buildPlaybackPreparationPlan(
         performed.events
-          .filter((event) => compareBeatValues(event.startBeat, playhead) >= 0)
+          .filter((event) => loopArmed || compareBeatValues(event.startBeat, playhead) >= 0)
           .map((event) => Object.freeze({
             eventId: event.eventId,
             midiPitches: event.midiPitches,
@@ -5770,12 +5773,23 @@ function makeStudioComposition(
       });
     };
     void (async () => {
+      /*
+       * jcpe-j4hj: the swap is handed to the transport only once EVERY note
+       * the new instrument may still attack is rendered. Shared plucked
+       * recipes refuse an unrendered chord at attack time (no physics render
+       * on the audio scheduler), and X1 latches any mid-run engine refusal
+       * as a fault; swapping after only the leading notes let the playhead
+       * outrun the background render and killed the run. The old instrument
+       * keeps playing while this renders, so the cost is a later swap, never
+       * silence or a dead session.
+       */
       const prepared = await port.prepareInstrument(
         instrumentId,
-        warmNotes,
+        [...warmNotes, ...deferredNotes],
         warmBinding,
       );
       if (!prepared || thisInstrumentRun !== renderAheadRunToken) return;
+      renderAheadCompleted = true;
       const outcome = await port.setInstrument(
         nextTransportRequestId(),
         instrumentId,

@@ -455,7 +455,7 @@ export function transportFailureDetail(code: string): string {
     case "transport.metronome_invalid":
       return "The metronome setting was rejected. Change it and try again.";
     case "transport.engine_refusal":
-      return "The audio engine refused the command. Press Stop, then Play.";
+      return "The audio engine refused the command. Press Play to restart audio.";
     case "transport.interrupted":
       return "The browser interrupted audio. Press Play to resume.";
     case "audio.engine_not_ready":
@@ -485,9 +485,9 @@ export function transportFailureDetail(code: string): string {
     case "audio.retiring_voice_capacity":
     case "audio.retirement_selector_invalid":
     case "audio.retirement_time_invalid":
-      return "The audio engine rejected scheduled notes. Press Stop, then Play.";
+      return "The audio engine rejected scheduled notes. Press Play to restart audio.";
     default:
-      return `Audio failed (${code}). Press Stop, then Play.`;
+      return `Audio failed (${code}). Press Play to restart audio.`;
   }
 }
 

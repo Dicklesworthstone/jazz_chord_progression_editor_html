@@ -619,14 +619,17 @@ export function TransportBar({
             describedBy={["studio-transport-status-detail"]}
             /* U4 §3.1 (l3a.12.2): Play is enabled in unavailable (the first
              * trusted press performs the gesture-gated initialization),
-             * ready, and paused (resumes); disabled while starting, playing,
-             * stopping, or failed — those presses could only refuse. */
+             * ready, paused (resumes) and failed: a fault clears the audio
+             * port's initialized flag, so this trusted press takes X1's
+             * `fault --initialize-transport--> ready` edge and plays
+             * (jcpe-j4hj: disabling it here left a fault recoverable only by
+             * reloading the page). Disabled while starting, playing or
+             * stopping, where a press could only refuse. */
             disabled={
               !canPlay ||
               view.audioState === "starting" ||
               view.audioState === "playing" ||
-              view.audioState === "stopping" ||
-              view.audioState === "failed"
+              view.audioState === "stopping"
             }
             id="studio-transport-play"
             iconId="play"
@@ -690,7 +693,8 @@ export function TransportBar({
                 running ||
                 view.audioState === "paused" ||
                 view.audioState === "ready" ||
-                view.audioState === "unavailable"
+                view.audioState === "unavailable" ||
+                view.audioState === "failed"
               )
             }
             id="studio-transport-restart"

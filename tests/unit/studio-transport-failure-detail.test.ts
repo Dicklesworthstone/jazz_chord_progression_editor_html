@@ -38,6 +38,6 @@ test("every known failure code has a curated cause with a next action", () => {
 test("an unknown future code falls back honestly by naming itself", () => {
   const detail = transportFailureDetail("transport.someday_new");
   expect(detail).toBe(
-    "Audio failed (transport.someday_new). Press Stop, then Play.",
+    "Audio failed (transport.someday_new). Press Play to restart audio.",
   );
 });
