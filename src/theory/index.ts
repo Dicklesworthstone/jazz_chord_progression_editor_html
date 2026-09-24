@@ -165,6 +165,7 @@ export { resolutionOperations } from "./resolution-operations";
 export * from "./analysis-contract";
 export * from "./chord-scales-contract";
 export { deriveLiteralFacts } from "./analysis";
+export { enumerateChordScaleOptions } from "./chord-scales";
 
 export * from "./voicing-candidates-contract";
 export {

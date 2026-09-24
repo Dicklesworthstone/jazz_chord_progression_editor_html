@@ -15,6 +15,8 @@ import {
   MIN_H0_BASE_REVISION,
   type H0BoundedNonEmptyTuple,
   type H0BoundedTuple,
+  type H0ContextPosition,
+  type H0UpstreamContractVersionUnsupportedRefusal,
   type H0LiteralFactsRequest,
   type H0LiteralFactsRequestRefusal,
   type H0LiteralFactsResult,
@@ -98,11 +100,20 @@ function availableIds(source: ResolvedChord): H0BoundedNonEmptyTuple<H0SelectedR
     : Object.freeze([realizations[0].id, realizations[1].id, realizations[2].id, realizations[3].id] as const);
 }
 
-function upstreamRefusal(source: ResolvedChord): H0LiteralFactsRequestRefusal | null {
+/**
+ * The first unsupported T1 pin of one resolved chord, or null. `position`
+ * names the request slot ("source" for literal facts; previous/current/next
+ * for contextual operations) and `path` the field path leading to it.
+ */
+export function h0UpstreamRefusal<Position extends H0ContextPosition | "source">(
+  source: ResolvedChord,
+  position: Position,
+  path: readonly (string | number)[],
+): (H0UpstreamContractVersionUnsupportedRefusal & Readonly<{ position: Position }>) | null {
   if (differentPin(source.schema, RESOLVED_CHORD_SCHEMA)) {
     return {
-      code: "harmony.upstream_contract_version_unsupported", path: Object.freeze(["source", "schema"]),
-      position: "source", component: "resolved-chord-schema",
+      code: "harmony.upstream_contract_version_unsupported", path: Object.freeze([...path, "schema"]),
+      position, component: "resolved-chord-schema",
       expectedId: RESOLVED_CHORD_SCHEMA, expectedVersion: null,
       receivedId: source.schema, receivedVersion: null,
     };
@@ -116,8 +127,8 @@ function upstreamRefusal(source: ResolvedChord): H0LiteralFactsRequestRefusal | 
     if (differentPin(source[pin.idField], pin.id) || differentPin(source[pin.versionField], pin.version)) {
       return {
         code: "harmony.upstream_contract_version_unsupported",
-        path: Object.freeze(["source", differentPin(source[pin.idField], pin.id) ? pin.idField : pin.versionField]),
-        position: "source", component: pin.component, expectedId: pin.id, expectedVersion: pin.version,
+        path: Object.freeze([...path, differentPin(source[pin.idField], pin.id) ? pin.idField : pin.versionField]),
+        position, component: pin.component, expectedId: pin.id, expectedVersion: pin.version,
         receivedId: source[pin.idField], receivedVersion: source[pin.versionField],
       };
     }
@@ -178,7 +189,7 @@ export function deriveLiteralFacts(request: H0LiteralFactsRequest): H0LiteralFac
       minimum: MIN_H0_BASE_REVISION, maximum: MAX_H0_BASE_REVISION,
     });
   }
-  const versionRefusal = upstreamRefusal(source);
+  const versionRefusal = h0UpstreamRefusal(source, "source", ["source"]);
   if (versionRefusal !== null) return inputRefusal(versionRefusal);
   if (selectedRealizationId === null && source.realizations.length > 1) {
     return inputRefusal({
