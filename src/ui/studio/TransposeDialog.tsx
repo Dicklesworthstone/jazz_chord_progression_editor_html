@@ -72,6 +72,14 @@ export function TransposeDialog({ preview, apply, previewToKey, applyToKey, hear
   };
   return <Dialog backgroundRootId="studio-shell-background" busy={false} closeLabel="Cancel transposing"
     content={<div class="studio-transpose">
+      {!hasKey ? null : <fieldset class="studio-transpose__direction">
+        <legend>Transpose</legend>
+        {(["interval", "key"] as const).map((value) => <label key={value}>
+          <input type="radio" name="studio-transpose-by" value={value} checked={by === value}
+            onChange={() => { setBy(value); setRefusal(null); }} />
+          {value === "interval" ? "By interval" : "To key"}
+        </label>)}
+      </fieldset>}
       <fieldset class="studio-transpose__direction">
         <legend>Direction</legend>
         {(["up", "down"] as const).map((value) => <label key={value}>
@@ -86,14 +94,6 @@ export function TransposeDialog({ preview, apply, previewToKey, applyToKey, hear
           <input type="radio" name="studio-transpose-scope" value={value} checked={scope === value}
             onChange={() => { setScope(value); setRefusal(null); }} />
           {value === "chart" ? "Whole chart" : `Selected chords (${String(shown.selectedChordCount)})`}
-        </label>)}
-      </fieldset>}
-      {!hasKey ? null : <fieldset class="studio-transpose__direction">
-        <legend>Transpose</legend>
-        {(["interval", "key"] as const).map((value) => <label key={value}>
-          <input type="radio" name="studio-transpose-by" value={value} checked={by === value}
-            onChange={() => { setBy(value); setRefusal(null); }} />
-          {value === "interval" ? "By interval" : "To key"}
         </label>)}
       </fieldset>}
       {by === "key" && hasKey ? <>
