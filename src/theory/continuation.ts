@@ -160,10 +160,17 @@ function contextFacts(request: ContinuationRequest, operations: ResolutionOperat
   return { facts, barriers: Object.freeze(barriers), examined: window.length };
 }
 
+/* Keys with two common spellings: the context decides which one it is in. */
+const ENHARMONIC_TONICS: Readonly<Record<number, SpelledPitchClass>> = Object.freeze({
+  1: Object.freeze({ step: "C", alter: 1 }),
+  6: Object.freeze({ step: "F", alter: 1 }),
+  11: Object.freeze({ step: "C", alter: -1 }),
+});
+
 function readMajorContext(facts: readonly ContextFacts[], operations: ResolutionOperations):
-  Readonly<{ reading: ContinuationContextReading | null; comparisons: number }> {
+  Readonly<{ reading: ContinuationContextReading | null; comparisons: number; scaleNames: readonly string[] }> {
   const last = facts[facts.length - 1];
-  if (last === undefined) return { reading: null, comparisons: 0 };
+  if (last === undefined) return { reading: null, comparisons: 0, scaleNames: [] };
   let comparisons = 0;
   const scores = KEY_PITCH_CLASSES.map(key => {
     const scale = new Set(MAJOR_SCALE_STEPS.map(step => pc(key + step)));
@@ -178,12 +185,33 @@ function readMajorContext(facts: readonly ContextFacts[], operations: Resolution
   const tied = scores.filter(row => row.score === maximum);
   // Preserve the existing candidate preference, but retain every tied hypothesis.
   const chosen = tied.find(row => row.key === last.rootPc) ?? tied[0];
-  if (chosen === undefined) return { reading: null, comparisons };
-  const keyPc = chosen.key, root = MAJOR_TONICS[keyPc];
-  if (root === undefined) return { reading: null, comparisons };
-  const scaleSpellings = SCALE_DEGREES.map(number => operations.spellChordDegree(root, { number, alter: 0 }));
-  if (scaleSpellings.some(result => !result.ok)) return { reading: null, comparisons };
-  const names = new Set(scaleSpellings.flatMap(result => result.ok ? [written(result.value.spelled)] : []));
+  if (chosen === undefined) return { reading: null, comparisons, scaleNames: [] };
+  const keyPc = chosen.key, defaultRoot = MAJOR_TONICS[keyPc];
+  if (defaultRoot === undefined) return { reading: null, comparisons, scaleNames: [] };
+  /* D♭/C♯, G♭/F♯, B/C♭: prefer the spelling whose scale holds more of the
+     chords' own written notes, so a chart in F♯ reads F♯, not G♭. Ties keep
+     the default table. */
+  const spelledScale = (tonic: SpelledPitchClass): readonly string[] | null => {
+    const names: string[] = [];
+    for (const number of SCALE_DEGREES) {
+      const result = operations.spellChordDegree(tonic, { number, alter: 0 });
+      if (!result.ok) return null;
+      names.push(written(result.value.spelled));
+    }
+    return names;
+  };
+  const writtenContext = facts.flatMap(fact => fact.spellings.map(written));
+  const agreement = (scaleNames: readonly string[]): number =>
+    writtenContext.filter(name => scaleNames.includes(name)).length;
+  let root = defaultRoot, scaleNames = spelledScale(defaultRoot);
+  const alternative = ENHARMONIC_TONICS[keyPc];
+  const alternativeNames = alternative === undefined ? null : spelledScale(alternative);
+  if (alternative !== undefined && alternativeNames !== null &&
+      (scaleNames === null || agreement(alternativeNames) > agreement(scaleNames))) {
+    root = alternative; scaleNames = alternativeNames;
+  }
+  if (scaleNames === null) return { reading: null, comparisons, scaleNames: [] };
+  const names = new Set(scaleNames);
   const scale = new Set(MAJOR_SCALE_STEPS.map(step => pc(keyPc + step)));
   const tones: ContinuationContextTone[] = [];
   for (const fact of facts) fact.pitchClasses.forEach((pitchClass, index) => {
@@ -195,8 +223,8 @@ function readMajorContext(facts: readonly ContextFacts[], operations: Resolution
   });
   const pitchClassMatches = tones.filter(tone => tone.pitchClassContained).length;
   const spellingMatches = tones.filter(tone => tone.spellingContained).length;
-  return Object.freeze({ comparisons, reading: Object.freeze({
-    policy: "major-pitch-overlap@1", keyName: nameFor(keyPc, keyPc), keyPitchClass: keyPc,
+  return Object.freeze({ comparisons, scaleNames: Object.freeze([...scaleNames]), reading: Object.freeze({
+    policy: "major-pitch-overlap@1", keyName: written(root), keyPitchClass: keyPc,
     tiedMajorKeys: Object.freeze(tied.map(row => Object.freeze({ name: nameFor(row.key, row.key), pitchClass: row.key }))),
     toneOccurrences: tones.length, pitchClassMatches, spellingMatches,
     completePitchClassContainment: pitchClassMatches === tones.length,
@@ -313,17 +341,19 @@ export function deriveContinuationSuggestions(
     // diatonic-next: neighbors inside the voted key not already sounded.
     providersRun += 1;
     {
-      const diatonicOrder: readonly (readonly [number, string])[] = [
-        [pc(keyPc + 7), "7"],
-        [pc(keyPc + 2), "m7"],
-        [pc(keyPc + 9), "m7"],
-        [pc(keyPc + 5), "maj7"],
-        [keyPc, "maj7"],
-        [pc(keyPc + 4), "m7"],
+      /* [pitch class, quality, scale degree]: names come from the reading's
+         own spelled scale, so F♯ major offers C♯7, not D♭7. */
+      const diatonicOrder: readonly (readonly [number, string, number])[] = [
+        [pc(keyPc + 7), "7", 5],
+        [pc(keyPc + 2), "m7", 2],
+        [pc(keyPc + 9), "m7", 6],
+        [pc(keyPc + 5), "maj7", 4],
+        [keyPc, "maj7", 1],
+        [pc(keyPc + 4), "m7", 3],
       ];
-      for (const [rootPc, quality] of diatonicOrder) {
+      for (const [rootPc, quality, degree] of diatonicOrder) {
         if (contextRootPcs.has(rootPc)) continue;
-        const name = nameFor(rootPc, keyPc);
+        const name = majorContext.scaleNames[degree - 1] ?? nameFor(rootPc, keyPc);
         emit(
           "diatonic-next",
           `${name}${quality}`,

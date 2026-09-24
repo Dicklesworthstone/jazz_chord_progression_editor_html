@@ -66,6 +66,20 @@ describe("the session continuation engine", () => {
     }
   });
 
+  test("an enharmonic key is read in the spelling the chart itself uses", () => {
+    /* Hand-authored: F#maj7 (F#, A#, C#, E#) sits wholly in F# major and in no
+     * spelling of Gb major, so its first diatonic neighbours (the provider
+     * offers two) are C#7 and G#m7; the Gbmaj7 control keeps Db7 and Abm7. */
+    const sharp = derive(["F#maj7"]);
+    expect(sharp.contextReading?.keyName).toBe("F#");
+    const sharpNext = sharp.suggestions.filter((entry) => entry.explanation.providerId === "diatonic-next").map((entry) => entry.symbolText);
+    expect(sharpNext).toEqual(["C#7", "G#m7"]);
+    const flat = derive(["Gbmaj7"]);
+    expect(flat.contextReading?.keyName).toBe("Gb");
+    const flatNext = flat.suggestions.filter((entry) => entry.explanation.providerId === "diatonic-next").map((entry) => entry.symbolText);
+    expect(flatNext).toEqual(["Db7", "Abm7"]);
+  });
+
   test("a maj7 final chord never produces a dominant-resolution option", () => {
     const result = derive(["Dm7", "G7", "Cmaj7"]);
     const providers = result.suggestions.map(
