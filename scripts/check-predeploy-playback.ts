@@ -651,5 +651,9 @@ main()
   })
   .catch((error: unknown) => {
     process.stderr.write(`playback gate crashed: ${String(error)}\n`);
-    process.exitCode = 2;
+    /* Exit now: the loopback server and any browser from the crashed run keep
+       the event loop alive, and a crash that sets only exitCode hung the
+       deploy for hours (2026-09-23) while reporting nothing. The verdict is
+       unchanged: a crash is exit code 2 and the deploy refuses. */
+    process.exit(2);
   });
