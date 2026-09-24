@@ -217,6 +217,7 @@ export type ChordDetailPanelProps = Readonly<{
   detail: StudioDetailView;
   context: "rail" | "sheet";
   onAddSuggestedChord: (symbolText: string) => void;
+  onHearSuggestedChord: (symbolText: string, anchorEventId: string | null) => Promise<string | null>;
   onPreviewPitch: (midiPitch: number) => void;
   onHearReharmonization: (eventId: string, optionId: string | null) => Promise<string | null>;
   onApplyReharmonization: (eventId: string, optionId: string) => string | null;
@@ -254,6 +255,7 @@ export function ChordDetailPanel({
   detail,
   context,
   onAddSuggestedChord,
+  onHearSuggestedChord,
   onPreviewPitch,
   onHearReharmonization,
   onApplyReharmonization,
@@ -543,6 +545,20 @@ export function ChordDetailPanel({
                       {option.roman}
                     </span>
                   )}
+                  <Button
+                    busy={false}
+                    density="dense"
+                    describedBy={[]}
+                    disabled={false}
+                    id={`studio-detail-hear-${context}-${option.id.replace(/[^a-zA-Z0-9-]/g, "-")}`}
+                    invalid={false}
+                    label={`Hear ${option.symbolText}`}
+                    onAction={() => {
+                      void onHearSuggestedChord(option.symbolText, detail.eventId);
+                    }}
+                    type="button"
+                    variant="secondary"
+                  />
                   <Button
                     busy={false}
                     density="dense"

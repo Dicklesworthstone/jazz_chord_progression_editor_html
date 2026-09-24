@@ -7,6 +7,7 @@ export type HarmonyLensContentProps = Readonly<{
   context: "rail" | "sheet";
   view: StudioHarmonyView;
   onAddSuggestedChord: (symbolText: string) => void;
+  onHearSuggestedChord: (symbolText: string, anchorEventId: string | null) => Promise<string | null>;
   onPreviewPitch: (midiPitch: number) => void;
   onHearReharmonization: (eventId: string, optionId: string | null) => Promise<string | null>;
   onApplyReharmonization: (eventId: string, optionId: string) => string | null;
@@ -18,6 +19,7 @@ export function HarmonyLensContent({
   context,
   view,
   onAddSuggestedChord,
+  onHearSuggestedChord,
   onPreviewPitch,
   onHearReharmonization,
   onApplyReharmonization,
@@ -62,6 +64,7 @@ export function HarmonyLensContent({
           context={context}
           detail={view.detail}
           onAddSuggestedChord={onAddSuggestedChord}
+          onHearSuggestedChord={onHearSuggestedChord}
           onPreviewPitch={onPreviewPitch}
           onHearReharmonization={onHearReharmonization}
           onApplyReharmonization={onApplyReharmonization}
@@ -143,6 +146,20 @@ export function HarmonyLensContent({
                     density="dense"
                     describedBy={[]}
                     disabled={false}
+                    id={`studio-hear-suggestion-${context}-${suggestion.id.replace(/[^a-zA-Z0-9-]/g, "-")}`}
+                    invalid={false}
+                    label={`Hear ${suggestion.symbolText}`}
+                    onAction={() => {
+                      void onHearSuggestedChord(suggestion.symbolText, null);
+                    }}
+                    type="button"
+                    variant="secondary"
+                  />
+                  <Button
+                    busy={false}
+                    density="dense"
+                    describedBy={[]}
+                    disabled={false}
                     id={`studio-add-suggestion-${context}-${suggestion.id.replace(/[^a-zA-Z0-9-]/g, "-")}`}
                     invalid={false}
                     label={`Add ${suggestion.symbolText}`}
@@ -198,6 +215,7 @@ export type HarmonyLensProps = Readonly<{
   view: StudioHarmonyView;
   onCollapsedChange: (collapsed: boolean) => void;
   onAddSuggestedChord: (symbolText: string) => void;
+  onHearSuggestedChord: (symbolText: string, anchorEventId: string | null) => Promise<string | null>;
   onPreviewPitch: (midiPitch: number) => void;
   onHearReharmonization: (eventId: string, optionId: string | null) => Promise<string | null>;
   onApplyReharmonization: (eventId: string, optionId: string) => string | null;
@@ -210,6 +228,7 @@ export function HarmonyLens({
   view,
   onCollapsedChange,
   onAddSuggestedChord,
+  onHearSuggestedChord,
   onPreviewPitch,
   onHearReharmonization,
   onApplyReharmonization,
@@ -238,6 +257,7 @@ export function HarmonyLens({
             context="rail"
             view={view}
             onAddSuggestedChord={onAddSuggestedChord}
+            onHearSuggestedChord={onHearSuggestedChord}
             onPreviewPitch={onPreviewPitch}
             onHearReharmonization={onHearReharmonization}
             onApplyReharmonization={onApplyReharmonization}

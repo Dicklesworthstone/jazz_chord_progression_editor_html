@@ -127,6 +127,7 @@ import {
   type ChartTranspositionRefusal,
 } from "./chart-transposition";
 import { chartScaleOptions, type ChartScaleOptionsView } from "./chart-scale-options";
+import { continuationAudition } from "./chart-continuation-audition";
 import {
   buildChartReharmonization,
   listChartReharmonizations,
@@ -751,6 +752,16 @@ export interface StudioController {
    * for a Custom chord or when no reviewed mapping fits. Read-only.
    */
   readonly readScaleOptions: (eventId: string) => ChartScaleOptionsView | null;
+  /**
+   * Hear a suggested next chord in context: the chord before the anchor, the
+   * anchor (the given chord, or the chart's last chord when null), then the
+   * suggestion, one bar each, through the preview lane. Nothing changes.
+   */
+  readonly hearContinuation: (
+    symbolText: string,
+    anchorEventId: string | null,
+    gesture: StudioAudioGesture,
+  ) => Promise<StudioInspectorResult<void>>;
   /**
    * Hear a short excerpt around the chord as it is (`optionId` null) or as
    * the option would make it, through the preview lane. Nothing changes.
@@ -2886,6 +2897,34 @@ function makeStudioComposition(
     }
     if (!cache.has(eventId)) cache.set(eventId, chartScaleOptions(document, eventId));
     return cache.get(eventId) ?? null;
+  };
+
+  const hearContinuation = async (
+    symbolText: string,
+    anchorEventId: string | null,
+    gesture: StudioAudioGesture,
+  ): Promise<StudioInspectorResult<void>> => {
+    const measureIds: MeasureId[] = [];
+    for (let index = 0; index < 3; index += 1) {
+      const allocated = dependencies.stableIdFactory.next("measure");
+      if (!allocated.ok) return previewFailure("u1.target_missing", "A preview identity could not be allocated.");
+      measureIds.push(allocated.value);
+    }
+    const eventId = dependencies.stableIdFactory.next("event");
+    if (!eventId.ok) return previewFailure("u1.target_missing", "A preview identity could not be allocated.");
+    const built = continuationAudition(state.document, anchorEventId, symbolText, { measureIds, eventId: eventId.value });
+    if (!built.ok) {
+      return previewFailure("u1.target_missing", built.reason === "no-anchor"
+        ? "Add a chord first; the suggestion is heard after it."
+        : "That suggestion could not be prepared for listening.");
+    }
+    const shape = dependencies.decodeDocumentShape(built.document);
+    if (!shape.ok) return previewFailure("u1.target_missing", "That suggestion could not be prepared for listening.");
+    const validated = dependencies.validateDocumentSemantics(shape.value);
+    if (!validated.ok) return previewFailure("u1.target_missing", "That suggestion could not be prepared for listening.");
+    const compiled = compileStudioPlaybackPlan(validated.value);
+    if (!compiled.ok) return previewFailure(compiled.refusal.code, compiled.refusal.message);
+    return previewPlaybackPlan(compiled.plan, gesture);
   };
 
   const readReharmonizations = (eventId: string): StudioReharmonizationView => {
@@ -8241,6 +8280,7 @@ function makeStudioComposition(
     hearTransposition,
     readReharmonizations,
     readScaleOptions,
+    hearContinuation,
     hearReharmonization,
     applyReharmonization,
     setTitle,

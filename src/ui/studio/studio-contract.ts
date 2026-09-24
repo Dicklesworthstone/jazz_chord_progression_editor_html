@@ -775,6 +775,8 @@ export type StudioShellCallbacks = Readonly<{
   onGrooveStyleChange: (styleId: string) => void;
   /** Append one suggested chord through the shared quick-entry path. */
   onAddSuggestedChord: (symbolText: string) => void;
+  /** Hear a suggestion after its anchor chord (null = the chart's last chord); returns a refusal message or null. */
+  onHearSuggestedChord: (symbolText: string, anchorEventId: string | null) => Promise<string | null>;
   /**
    * Preview one pitch from the chord-detail keyboard or a note chip. The
    * owner law (jcpe-v2r-detail-yimm): only in-chord keys ever reach this.

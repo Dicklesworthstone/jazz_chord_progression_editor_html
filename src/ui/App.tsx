@@ -385,6 +385,7 @@ export type AppActions = Readonly<{
   /** H1 reharmonization options; apply is one undoable A0 command. */
   readReharmonizations: StudioController["readReharmonizations"];
   readScaleOptions: StudioController["readScaleOptions"];
+  hearContinuation: StudioController["hearContinuation"];
   hearReharmonization: StudioController["hearReharmonization"];
   applyReharmonization: StudioController["applyReharmonization"];
 }>;
@@ -3089,6 +3090,10 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
             nextAudioGesture("trusted-pointer"),
           );
         },
+        onHearSuggestedChord: (symbolText, anchorEventId) =>
+          actions
+            .hearContinuation(symbolText, anchorEventId, nextAudioGesture("trusted-pointer"))
+            .then((result) => (result.ok ? null : result.message)),
         onHearReharmonization: (eventId, optionId) =>
           actions
             .hearReharmonization(eventId, optionId, nextAudioGesture("trusted-pointer"))
@@ -4167,6 +4172,7 @@ export function StudioRoot({
         readChordDetail: controller.readChordDetail,
         readReharmonizations: controller.readReharmonizations,
         readScaleOptions: controller.readScaleOptions,
+        hearContinuation: controller.hearContinuation,
         hearReharmonization: controller.hearReharmonization,
         applyReharmonization: controller.applyReharmonization,
         splitEventDuration: controller.splitEventDuration,

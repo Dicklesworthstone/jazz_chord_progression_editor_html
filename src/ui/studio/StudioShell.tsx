@@ -688,6 +688,7 @@ export function StudioShell({
               sheetOpen={activeSheet === "harmony"}
               view={view.harmony}
               onAddSuggestedChord={callbacks.onAddSuggestedChord}
+              onHearSuggestedChord={callbacks.onHearSuggestedChord}
               onPreviewPitch={callbacks.onPreviewPitch}
               onHearReharmonization={callbacks.onHearReharmonization}
               onApplyReharmonization={callbacks.onApplyReharmonization}
@@ -1000,6 +1001,7 @@ export function StudioShell({
                   headingId={`${sheetId}-title`}
                   view={view.harmony}
                   onAddSuggestedChord={callbacks.onAddSuggestedChord}
+                  onHearSuggestedChord={callbacks.onHearSuggestedChord}
                   onPreviewPitch={callbacks.onPreviewPitch}
                   onHearReharmonization={callbacks.onHearReharmonization}
                   onApplyReharmonization={callbacks.onApplyReharmonization}
