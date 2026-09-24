@@ -16,6 +16,7 @@ import {
   MAX_G4_SOLUTIONS,
 } from "./harmonization-contract";
 import { parseChordSymbol } from "./chord-symbol";
+import { resolveChord } from "./chord-resolution";
 import {
   spelledPitchClassToString,
   transposeSpelledPitchClass,
@@ -66,6 +67,33 @@ export function harmonizeConstraints(
             message: `Invalid pinned chord: ${slot.pinnedChordSymbol}`,
           },
         };
+      }
+      /* A pin is a hard constraint alongside the slot's bass and melody: it
+         must satisfy them, or the request is unsatisfiable (a pinned Cmaj7
+         cannot sound over a C-sharp bass). The sounding bass is the slash
+         bass when written, otherwise the root. */
+      const soundingBass = pitchClassOf(parsed.chord.bass ?? parsed.chord.root);
+      if (slot.bassPitchClass !== undefined && soundingBass !== slot.bassPitchClass) {
+        return {
+          ok: false,
+          refusal: {
+            code: "g4.unsatisfiable_constraints",
+            message: `Pinned ${slot.pinnedChordSymbol} has bass pitch class ${String(soundingBass)}, not the required ${String(slot.bassPitchClass)}`,
+          },
+        };
+      }
+      if (slot.melodyPitch) {
+        const resolved = resolveChord(parsed.chord);
+        const melodyPc = pitchClassOf({ step: slot.melodyPitch.step, alter: slot.melodyPitch.alter });
+        if (resolved.ok && !resolved.value.realizations[0].pitchClasses.includes(melodyPc)) {
+          return {
+            ok: false,
+            refusal: {
+              code: "g4.unsatisfiable_constraints",
+              message: `Pinned ${slot.pinnedChordSymbol} does not contain the melody note ${slot.melodyPitch.step}`,
+            },
+          };
+        }
       }
       slotCandidateLists.push([slot.pinnedChordSymbol]);
       continue;

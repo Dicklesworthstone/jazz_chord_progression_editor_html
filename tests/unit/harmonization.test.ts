@@ -111,4 +111,26 @@ describe("G4 Constraint Harmonization Workbench", () => {
       expect(result.refusal.code).toBe("g4.slots_exceeded");
     }
   });
+
+  test("a pinned chord must satisfy its slot's bass and melody, or the request refuses", () => {
+    const base = {
+      eventId: eventIdOf("pin"), slotIndex: 0, offsetBeat: beat(0), duration: beat(4),
+      pinnedChordSymbol: "Cmaj7",
+      melodyPitch: { step: "E" as const, alter: 0 as Alteration, octave: 4 },
+    };
+    /* Positive: Cmaj7 over C with melody E. */
+    expect(harmonizeConstraints([{ ...base, bassPitchClass: 0 }]).ok).toBe(true);
+    /* Slash bass is the sounding bass: Cmaj7/E satisfies a bass of E. */
+    expect(harmonizeConstraints([{ ...base, pinnedChordSymbol: "Cmaj7/E", bassPitchClass: 4 }]).ok).toBe(true);
+    /* Near-misses: a C-sharp bass, or a melody F that Cmaj7 does not contain. */
+    for (const conflict of [
+      { ...base, bassPitchClass: 1 },
+      { ...base, melodyPitch: { step: "F" as const, alter: 0 as Alteration, octave: 4 } },
+    ]) {
+      const result = harmonizeConstraints([conflict]);
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.refusal.code).toBe("g4.unsatisfiable_constraints");
+    }
+  });
 });
+
