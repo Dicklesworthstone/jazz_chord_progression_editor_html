@@ -463,6 +463,134 @@ export function evaluateTransformCandidates(
     });
   }
 
+  /* The remaining laws all hang on the chord that follows the target. */
+  const next = followingParsed?.ok === true ? followingParsed.chord : null;
+  const nextSymbol = events[targetIndex + 1]?.chordSymbol ?? "";
+  /** An exact spelling, or null when the letter would need a triple accidental. */
+  const spelledAt = (from: typeof root, steps: number, semitones: number): string | null => {
+    const spelled = transposeSpelledPitchClass(from, steps, semitones);
+    return pitchClassOf(spelled) === (pitchClassOf(from) + semitones + 120) % 12
+      ? spelledPitchClassToString(spelled)
+      : null;
+  };
+  /** Of two spellings of one pitch, the one with fewer accidentals (the first on a tie). */
+  const plainer = (from: typeof root, semitones: number, steps: number, otherSteps: number): string | null => {
+    const first = transposeSpelledPitchClass(from, steps, semitones);
+    const other = transposeSpelledPitchClass(from, otherSteps, semitones);
+    const pick = Math.abs(other.alter) < Math.abs(first.alter) ? { spelled: other, steps: otherSteps } : { spelled: first, steps };
+    return spelledAt(from, pick.steps, semitones);
+  };
+  /** Keep the target for one exact half and give the other half to a new chord. */
+  const splitWith = (
+    newSymbol: string,
+    newFirst: boolean,
+  ): TransformEditPlan | null => {
+    if (!halfBeatRes.ok || secondHalfRes?.ok !== true || newTotalRes?.ok !== true) return null;
+    const half = halfBeatRes.value;
+    const [firstSymbol, secondSymbol] = newFirst
+      ? [newSymbol, targetEvent.chordSymbol]
+      : [targetEvent.chordSymbol, newSymbol];
+    const newTotal = newTotalRes.value;
+    return {
+      operations: [
+        { kind: "split", targetEventId: targetEvent.eventId, originalSymbol: targetEvent.chordSymbol,
+          newSymbol: firstSymbol, offsetBeat: targetEvent.offsetBeat, duration: half },
+        { kind: "insert", targetEventId: targetEvent.eventId, originalSymbol: targetEvent.chordSymbol,
+          newSymbol: secondSymbol, offsetBeat: secondHalfRes.value, duration: half },
+      ],
+      totalOriginalDuration: targetEvent.duration,
+      totalNewDuration: newTotal,
+      maintainsTimeBalance:
+        newTotal.numerator * targetEvent.duration.denominator ===
+        targetEvent.duration.numerator * newTotal.denominator,
+    };
+  };
+  const pushCandidate = (
+    lawId: TransformLawId,
+    family: TransformLawFamily,
+    idStem: string,
+    title: string,
+    explanation: string,
+    editPlan: TransformEditPlan,
+    voiceLeadingScore: number,
+    harmonicTensionDelta: number,
+  ): void => {
+    workSteps++;
+    const transformedProgression = [...originalProgression];
+    transformedProgression.splice(targetIndex, 1, ...editPlan.operations.map((op) => op.newSymbol));
+    candidates.push({
+      candidateId: `cand_${idStem}_${String(targetIndex)}`, lawId, family, title,
+      targetEventId: targetEvent.eventId, originalProgression, transformedProgression, editPlan,
+      voiceLeadingScore, harmonicTensionDelta, explanation,
+    });
+  };
+  const nextIsMajorTonic = next !== null && next.triad === "major" && next.seventh !== "minor";
+
+  // 5. Backdoor: a V7 resolving up a fourth to a major chord may be replaced
+  //    by bVII7 of that chord (G7 -> Cmaj7 becomes Bb7 -> Cmaj7).
+  if (isDominant && next !== null && nextIsMajorTonic &&
+    pitchClassOf(next.root) === (pitchClassOf(root) + 5) % 12) {
+    const flatSeven = spelledAt(next.root, 6, 10);
+    if (flatSeven !== null) {
+      const symbol = `${flatSeven}7`;
+      pushCandidate("law.backdoor.resolution", "backdoor-dominant", "backdoor",
+        `Backdoor dominant (${symbol} for ${targetEvent.chordSymbol})`,
+        `${symbol} is the flat-seven dominant of ${nextSymbol}: it reaches the same chord from a whole step below instead of a fifth above.`,
+        { operations: [{ kind: "replace", targetEventId: targetEvent.eventId, originalSymbol: targetEvent.chordSymbol,
+          newSymbol: symbol, offsetBeat: targetEvent.offsetBeat, duration: targetEvent.duration }],
+        totalOriginalDuration: targetEvent.duration, totalNewDuration: targetEvent.duration, maintainsTimeBalance: true },
+        85, 2);
+    }
+  }
+
+  // 6. Passing diminished: a major chord moving up a whole step to a minor
+  //    chord gives its second half to the diminished chord a half step above
+  //    it (Cmaj7 Dm7 becomes Cmaj7 C#dim7 Dm7): the bass rises by half steps.
+  if (isMajor && next !== null && next.triad === "minor" &&
+    pitchClassOf(next.root) === (pitchClassOf(root) + 2) % 12) {
+    // #I (C -> C#), unless a raised letter needs more accidentals (F# -> G, not F##).
+    const sharpOne = plainer(root, 1, 0, 1);
+    const plan = sharpOne === null ? null : splitWith(`${sharpOne}dim7`, false);
+    if (sharpOne !== null && plan !== null) {
+      pushCandidate("law.diminished.passing-sharp-one", "diminished-passing", "passing_dim",
+        `Passing diminished (${sharpOne}dim7 into ${nextSymbol})`,
+        `${targetEvent.chordSymbol} gives its second half to ${sharpOne}dim7, so the bass climbs by half steps into ${nextSymbol}.`,
+        plan, 88, 2);
+    }
+  }
+
+  // 7. Dominant chain: a dominant not already prepared by the chord a fifth
+  //    above gives its first half to its own dominant (G7 becomes D7 G7).
+  const preparedFromAFifth = previousParsed?.ok === true &&
+    pitchClassOf(previousParsed.chord.root) === (pitchClassOf(root) + 7) % 12;
+  if (isDominant && !preparedFromAFifth) {
+    const fifth = spelledAt(root, 4, 7);
+    const plan = fifth === null ? null : splitWith(`${fifth}7`, true);
+    if (fifth !== null && plan !== null) {
+      pushCandidate("law.dominant-chain.cycle", "dominant-chain", "dominant_chain",
+        `Add its own dominant (${fifth}7 -> ${targetEvent.chordSymbol})`,
+        `${fifth}7 is the dominant of ${targetEvent.chordSymbol}; putting it first extends the chain of dominants one link back around the cycle of fifths.`,
+        plan, 85, 2);
+    }
+  }
+
+  // 8. Chromatic approach: the chord gives its first half to the dominant a
+  //    half step above it, which slides down into it (G7 becomes Ab7 G7),
+  //    unless the chord before already does exactly that.
+  const approachedAlready = previousParsed?.ok === true &&
+    pitchClassOf(previousParsed.chord.root) === (pitchClassOf(root) + 1) % 12;
+  if (!approachedAlready) {
+    // A minor 2nd above (G -> Ab), unless that letter needs more (Db -> D, not Ebb).
+    const above = plainer(root, 1, 1, 0);
+    const plan = above === null ? null : splitWith(`${above}7`, true);
+    if (above !== null && plan !== null) {
+      pushCandidate("law.chromatic.half-step-above", "chromatic-approach", "chromatic_above",
+        `Chromatic approach (${above}7 into ${targetEvent.chordSymbol})`,
+        `${above}7 sits a half step above ${targetEvent.chordSymbol} and slides down into it.`,
+        plan, 80, 3);
+    }
+  }
+
   const maxCandidates = options?.maxCandidates ?? 10;
 
   return {

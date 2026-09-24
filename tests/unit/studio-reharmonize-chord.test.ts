@@ -60,17 +60,19 @@ const afterOf = (controller: StudioController, symbol: string) => {
 describe("Reharmonization options for one chord", () => {
   test("each chord offers only what its law and neighbours support", () => {
     const controller = controllerWith("| Dm7 G7 | Cmaj7 | A7 |");
-    // Dm7 before G7 (a fourth up) may become D7; G7 already has its ii, so only the sub.
-    expect(afterOf(controller, "Dm7")).toEqual(["D7"]);
-    expect(afterOf(controller, "G7")).toEqual(["Db7"]);
-    expect(afterOf(controller, "Cmaj7")).toEqual(["Cm7"]);
-    // A7 after Cmaj7 has no ii yet: the sub, or Em7 then A7 in the same bar.
-    expect(afterOf(controller, "A7")).toEqual(["Eb7", "Em7 A7"]);
+    // Dm7 before G7 (a fourth up) may become D7, or be approached from Eb7.
+    expect(afterOf(controller, "Dm7")).toEqual(["D7", "Eb7 Dm7"]);
+    // G7 already has its ii and its fifth above: the sub, the backdoor Bb7, or Ab7 into it.
+    expect(afterOf(controller, "G7")).toEqual(["Db7", "Bb7", "Ab7 G7"]);
+    expect(afterOf(controller, "Cmaj7")).toEqual(["Cm7", "Db7 Cmaj7"]);
+    // A7 after Cmaj7: the sub, its ii, its own dominant, or Bb7 into it.
+    expect(afterOf(controller, "A7")).toEqual(["Eb7", "Em7 A7", "E7 A7", "Bb7 A7"]);
   });
 
   test("a ♭-spelled chart gets ♭-spelled options", () => {
     const controller = controllerWith("| D♭7 |");
-    expect(afterOf(controller, "D♭7")).toEqual(["G7", "A♭m7 D♭7"]);
+    // The approach from above is D7, not E𝄫7.
+    expect(afterOf(controller, "D♭7")).toEqual(["G7", "A♭m7 D♭7", "A♭7 D♭7", "D7 D♭7"]);
   });
 
   test("reading options changes nothing", () => {
@@ -144,6 +146,21 @@ describe("Applying a reharmonization", () => {
     expect(bar2.map((event) => [event.symbolText, event.durationBeatLabel])).toEqual([["Em7", "1/1"], ["A7", "1/1"], ["D7", "2/1"]]);
   });
 
+  test("a chord added after the original keeps the original's identity first", () => {
+    const controller = controllerWith("| Cmaj7 | Dm7 |");
+    const cId = eventIdOf(controller, "Cmaj7");
+    const view = controller.readReharmonizations(cId);
+    const passing = view.ok ? view.options.find((option) => option.lawId === "law.diminished.passing-sharp-one") : undefined;
+    if (passing === undefined) throw new Error("no passing diminished");
+    expect(passing.after).toEqual(["Cmaj7", "C#dim7"]);
+    expect(controller.applyReharmonization(cId, passing.id).ok).toBe(true);
+    const bar1 = controller.getSnapshot().sections[0]?.measures[0]?.events ?? [];
+    expect(bar1.map((event) => [event.symbolText, event.durationBeatLabel])).toEqual([["Cmaj7", "2/1"], ["C#dim7", "2/1"]]);
+    expect(bar1[0]?.id).toBe(cId);
+    expect(controller.undo().ok).toBe(true);
+    expect(symbols(controller)).toBe("Cmaj7 Dm7");
+  });
+
   test("an unknown option or a missing chord refuses and changes nothing", () => {
     const controller = controllerWith("| Dm7 G7 | Cmaj7 |");
     const before = controller.getSnapshot();
@@ -210,9 +227,10 @@ describe("Pure reharmonization candidates", () => {
         }
       }
     }
-    // Dm7: D7; G7: Db7; Cmaj7: Cm7; A7: Eb7 and Em7-A7; F: Fm.
-    expect(built).toBe(6);
-  }, 60_000);
+    // Dm7: D7, Eb7; G7: Db7, Bb7, Ab7; Cmaj7: Cm7, Db7; A7: Eb7, Em7, E7, Bb7; F: Fm, Gb7.
+    expect(built).toBe(13);
+    // Thirteen full plan compiles: bounded work, slow only on a loaded machine.
+  }, 180_000);
 
   test("an inserted ID that already exists refuses rather than colliding", () => {
     const document = musicalDocument([["Cmaj7"], ["A7"]]);

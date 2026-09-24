@@ -21,8 +21,9 @@ import {
  *
  * The laws read a flat event list and return edit plans; this module owns the
  * document side. It offers only the plans it can realize EXACTLY — a
- * one-chord replacement, or a split of one chord into its related ii plus the
- * original at exact halves — and builds the candidate document for A0's
+ * one-chord replacement, or a split of one chord into exact halves where the
+ * original keeps one half and a new chord (a related ii, its own dominant, a
+ * passing diminished or a chromatic approach) takes the other — and builds the candidate document for A0's
  * `apply-reharmonization` command, which revalidates it independently.
  *
  * Manual and Frozen voicings are stored exact pitches; a new chord symbol
@@ -114,10 +115,13 @@ function realizable(
 ): ChartReharmonizationKind | null {
   const ops = candidate.editPlan.operations;
   if (ops.length === 1 && ops[0]?.kind === "replace") return "replace";
+  // A split keeps the original chord in exactly one of its two halves.
+  const keeps = ops.filter((op) => op.newSymbol === op.originalSymbol).length;
   if (
     ops.length === 2 &&
     ops[0]?.kind === "split" &&
     ops[1]?.kind === "insert" &&
+    keeps === 1 &&
     candidate.editPlan.maintainsTimeBalance
   ) {
     return "split-insert";
@@ -157,7 +161,8 @@ function evaluate(document: ProgressionDocumentV2, eventId: string): Readonly<{
     const kind = realizable(candidate);
     if (kind === null) return [];
     const ops = candidate.editPlan.operations;
-    const first = inChartStyle(ops[0]?.newSymbol ?? "", unicode);
+    // The original keeps the chart's own text; a new chord is spelled in its style.
+    const shown = ops.map((op) => (op.newSymbol === op.originalSymbol ? original : inChartStyle(op.newSymbol, unicode)));
     const option: ChartReharmonizationOption = Object.freeze({
       id: candidate.candidateId,
       lawId: candidate.lawId,
@@ -166,7 +171,7 @@ function evaluate(document: ProgressionDocumentV2, eventId: string): Readonly<{
       title: candidate.title.replace(/\s*\(.*\)$/, ""),
       explanation: candidate.explanation,
       before: Object.freeze([original]),
-      after: Object.freeze(kind === "replace" ? [first] : [first, original]),
+      after: Object.freeze(shown),
     });
     return [Object.freeze({ option, candidate })];
   });
@@ -225,18 +230,19 @@ export function buildChartReharmonization(
     events = [replaced];
     changedIds = [target.id];
   } else {
-    const inserted = ops[0];
-    const kept = ops[1];
-    if (inserted === undefined || kept === undefined || newEventId === null) return { ok: false, reason: "unbuildable" };
-    if (locate(document, newEventId).at !== null) return { ok: false, reason: "unbuildable" };
-    const firstDuration = makeBeatDuration(inserted.duration);
-    const secondDuration = makeBeatDuration(kept.duration);
-    if (!firstDuration.ok || !secondDuration.ok) return { ok: false, reason: "unbuildable" };
-    const ii = eventWith(newEventId, row.option.after[0] ?? "", firstDuration.value, "");
-    // The original keeps its identity, symbol and annotation; only its length halves.
-    const second: ChordEvent = { ...target, duration: secondDuration.value };
-    if (ii === null) return { ok: false, reason: "unbuildable" };
-    events = [ii, second];
+    if (newEventId === null || locate(document, newEventId).at !== null) return { ok: false, reason: "unbuildable" };
+    const built: ChordEvent[] = [];
+    for (const [index, op] of ops.entries()) {
+      const duration = makeBeatDuration(op.duration);
+      if (!duration.ok) return { ok: false, reason: "unbuildable" };
+      // The original keeps its identity, symbol and annotation; only its length halves.
+      const event = op.newSymbol === op.originalSymbol
+        ? { ...target, duration: duration.value }
+        : eventWith(newEventId, row.option.after[index] ?? "", duration.value, "");
+      if (event === null) return { ok: false, reason: "unbuildable" };
+      built.push(event);
+    }
+    events = built;
     // The inserted event is new, the target's length and place changed, and
     // every later event in the measure moved one position.
     const measure = document.sections[at.sectionIndex]?.measures[at.measureIndex];
@@ -267,6 +273,6 @@ export function buildChartReharmonization(
     changedIds: Object.freeze(changedIds),
     sourceEventIds: Object.freeze([target.id]),
     exactTimingPreserved: row.option.kind === "replace",
-    focusEventIds: Object.freeze(row.option.kind === "replace" ? [target.id] : [newEventId ?? target.id, target.id]),
+    focusEventIds: Object.freeze(newEventId === null || row.option.kind === "replace" ? [target.id] : [newEventId, target.id]),
   });
 }

@@ -119,6 +119,58 @@ describe("H1 Transform Laws Registry and Evaluation", () => {
       expect(subFor("C7")).toBe("Gb7");
     });
 
+    describe("laws that read the following chord", () => {
+      const run = (symbols: readonly string[], target: number) => {
+        const result = evaluateTransformCandidates(symbols.map((chordSymbol, index) => ({
+          eventId: eventIdOf(`e${String(index)}`), chordSymbol, offsetBeat: beat(index * 4), duration: beat(4),
+        })), target);
+        if (!result.ok) throw new Error(result.refusal.code);
+        return (lawId: string) => result.candidates.find((c) => c.lawId === lawId);
+      };
+
+      test("backdoor: V7 resolving up a fourth to a major chord becomes that chord's bVII7", () => {
+        expect(run(["G7", "Cmaj7"], 0)("law.backdoor.resolution")?.transformedProgression).toEqual(["Bb7", "Cmaj7"]);
+        // Transposed: Bb7 -> Ebmaj7 gives Db7; E7 -> A gives G7.
+        expect(run(["Bb7", "Ebmaj7"], 0)("law.backdoor.resolution")?.transformedProgression[0]).toBe("Db7");
+        expect(run(["E7", "A"], 0)("law.backdoor.resolution")?.transformedProgression[0]).toBe("G7");
+        // Near misses: resolving to a minor chord, to another dominant, or not up a fourth.
+        expect(run(["G7", "Cm7"], 0)("law.backdoor.resolution")).toBeUndefined();
+        expect(run(["G7", "C7"], 0)("law.backdoor.resolution")).toBeUndefined();
+        expect(run(["G7", "Dmaj7"], 0)("law.backdoor.resolution")).toBeUndefined();
+      });
+
+      test("passing diminished: I moving up a whole step to minor ii gets #Idim7 in its second half", () => {
+        const plan = run(["Cmaj7", "Dm7"], 0)("law.diminished.passing-sharp-one")?.editPlan;
+        expect(plan?.operations.map((op) => [op.newSymbol, `${String(op.offsetBeat.numerator)}/${String(op.offsetBeat.denominator)}`, `${String(op.duration.numerator)}/${String(op.duration.denominator)}`]))
+          .toEqual([["Cmaj7", "0/1", "2/1"], ["C#dim7", "2/1", "2/1"]]);
+        expect(plan?.maintainsTimeBalance).toBe(true);
+        expect(run(["Ebmaj7", "Fm7"], 0)("law.diminished.passing-sharp-one")?.transformedProgression).toEqual(["Ebmaj7", "Edim7", "Fm7"]);
+        expect(run(["F#", "G#m7"], 0)("law.diminished.passing-sharp-one")?.transformedProgression).toEqual(["F#", "Gdim7", "G#m7"]);
+        // Near misses: the next chord is major, or a whole step down.
+        expect(run(["Cmaj7", "D7"], 0)("law.diminished.passing-sharp-one")).toBeUndefined();
+        expect(run(["Cmaj7", "Bbm7"], 0)("law.diminished.passing-sharp-one")).toBeUndefined();
+      });
+
+      test("dominant chain: an unprepared dominant gets its own dominant first", () => {
+        expect(run(["Cmaj7", "A7"], 1)("law.dominant-chain.cycle")?.transformedProgression).toEqual(["Cmaj7", "E7", "A7"]);
+        expect(run(["Ab7"], 0)("law.dominant-chain.cycle")?.transformedProgression).toEqual(["Eb7", "Ab7"]);
+        // Near miss: already prepared from a fifth above (Dm7 G7, D7 G7).
+        expect(run(["Dm7", "G7"], 1)("law.dominant-chain.cycle")).toBeUndefined();
+        expect(run(["D7", "G7"], 1)("law.dominant-chain.cycle")).toBeUndefined();
+      });
+
+      test("chromatic approach: the chord's first half becomes the dominant a half step above it", () => {
+        expect(run(["G7", "Cmaj7"], 0)("law.chromatic.half-step-above")?.transformedProgression).toEqual(["Ab7", "G7", "Cmaj7"]);
+        // Transposed and spelled from the target's letter: B7 is approached from C7, F#m7 from G7.
+        expect(run(["B7"], 0)("law.chromatic.half-step-above")?.transformedProgression).toEqual(["C7", "B7"]);
+        expect(run(["F#m7"], 0)("law.chromatic.half-step-above")?.transformedProgression).toEqual(["G7", "F#m7"]);
+        expect(run(["Db7"], 0)("law.chromatic.half-step-above")?.transformedProgression).toEqual(["D7", "Db7"]);
+        // Near miss: the chord before already approaches it from a half step above.
+        expect(run(["Ab7", "G7"], 1)("law.chromatic.half-step-above")).toBeUndefined();
+        expect(run(["Dm7", "G7"], 1)("law.chromatic.half-step-above")).toBeDefined();
+      });
+    });
+
     test("a plain major triad borrows a plain minor triad, not an added seventh", () => {
       const result = evaluateTransformCandidates([
         { eventId: eventIdOf("e0"), chordSymbol: "F", offsetBeat: beat(0), duration: beat(4) },
