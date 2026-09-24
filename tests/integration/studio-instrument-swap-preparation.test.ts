@@ -65,3 +65,41 @@ test("a looped run renders every note of the plan before the new instrument take
     await inner.transportService.submitTransportCommand({ commandRequestId: 1000, payload: { kind: "dispose-transport", reason: "page-teardown" } });
   }
 }, 60_000);
+
+test("Play with a cache-only plucked instrument renders the whole run before the transport starts", async () => {
+  const inner = createStudioAudio(createFakeAudioPlatform().platform);
+  const log: { kind: "prepare" | "play"; notes?: number; plan?: PlaybackPlan }[] = [];
+  const audio: StudioAudioPort = {
+    ...inner,
+    prepareInstrument: async (...args) => {
+      const done = await inner.prepareInstrument(...args);
+      log.push({ kind: "prepare", notes: args[1].length, ...(args[2] ? { plan: args[2].plan } : {}) });
+      return done;
+    },
+    play: (...args) => {
+      log.push({ kind: "play", plan: args[1].plan });
+      return inner.play(...args);
+    },
+  };
+  const created = createStudioController({ audio });
+  if (!created.ok) throw new Error(created.refusal.code);
+  const controller = created.controller;
+  try {
+    expect(seedStarterChart(controller).seeded).toBe(true);
+    expect(controller.setInstrument("ukulele").ok).toBe(true);
+    expect(controller.playProgression(gesture).ok).toBe(true);
+    await until(() => log.some((entry) => entry.kind === "play"));
+    const playIndex = log.findIndex((entry) => entry.kind === "play");
+    const plan = log[playIndex]?.plan;
+    if (plan === undefined) throw new Error("play carried no plan");
+    const voices = plan.events.reduce((sum, event) => sum + event.midiPitches.length, 0);
+    // Every voice the run can attack was rendered before Play, and nothing
+    // is left for a background render to race the playhead with.
+    const before = log.slice(0, playIndex).filter((entry) => entry.kind === "prepare");
+    expect(before.reduce((sum, entry) => sum + (entry.notes ?? 0), 0)).toBe(voices);
+    await until(() => controller.getSnapshot().transport.status === "playing");
+    expect(log.slice(playIndex + 1).filter((entry) => entry.kind === "prepare")).toEqual([]);
+  } finally {
+    await inner.transportService.submitTransportCommand({ commandRequestId: 1000, payload: { kind: "dispose-transport", reason: "page-teardown" } });
+  }
+}, 60_000);

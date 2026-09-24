@@ -133,6 +133,7 @@ import {
   type ChartReharmonizationOption,
 } from "./chart-reharmonization";
 import {
+  AUDIO_INSTRUMENT_RECIPES,
   MAX_TRANSPORT_PREVIEW_EVENTS,
   MAX_TRANSPORT_PREVIEW_BEATS,
   type TransportCommandOutcome,
@@ -212,6 +213,21 @@ function maximumPreparedVoicesPerEvent(instrumentId: InstrumentId): number {
   }
   return Number.MAX_SAFE_INTEGER;
 }
+
+/*
+ * jcpe-j4hj: shared plucked recipes render each chord as one physical body
+ * and X0 refuses an unrendered one at attack time rather than run physics on
+ * the audio scheduler; X1 latches that refusal as a run fault. For these
+ * instruments every note a run can attack is rendered BEFORE the transport
+ * may attack it: background render-ahead can lose the race to the playhead
+ * on a slow or busy device. Derived from the recipe table, never a list.
+ */
+const CACHE_ONLY_INSTRUMENT_IDS: ReadonlySet<string> = new Set(
+  AUDIO_INSTRUMENT_RECIPES.flatMap((recipe) =>
+    recipe.synthesis === "rendered" && recipe.renderer.algorithmId.startsWith("changes.dsp.plucked-")
+      ? [recipe.id]
+      : []),
+);
 
 const TITLE_COMMAND_INTERVAL_MS = 1_001;
 const MAX_TITLE_COMMAND_ORDINAL = Math.floor(
@@ -6014,10 +6030,15 @@ function makeStudioComposition(
       startBeat,
     );
     if (!expectation.ok) return expectation;
-    const preparedNotes = preparation.plan.leadingVoices;
-    const deferredNotes = Object.freeze(
-      preparation.plan.deferredGroups.flatMap((group) => group.voices),
-    );
+    const allDeferred = preparation.plan.deferredGroups.flatMap((group) => group.voices);
+    const cacheOnly = CACHE_ONLY_INSTRUMENT_IDS.has(instrumentId);
+    /* Cache-only instruments render the whole run before Play; the others
+     * warm a leading prefix and render the rest ahead of the playhead, with
+     * the engine's per-note render as the safety net. */
+    const preparedNotes = cacheOnly
+      ? Object.freeze([...preparation.plan.leadingVoices, ...allDeferred])
+      : preparation.plan.leadingVoices;
+    const deferredNotes = Object.freeze(cacheOnly ? [] : allDeferred);
     const thisRenderAheadRun = ++renderAheadRunToken;
     /* jcpe-v2r-loop-seek-ukk6: seek/loop may only address this exact Play,
      * not merely another request for the same unchanged document revision. */
