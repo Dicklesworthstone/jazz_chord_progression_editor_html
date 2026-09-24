@@ -12,6 +12,30 @@ response includes its unwanted analytics injection; the earlier DSP/source misma
 closed, and M1 tied-key semantics have been repaired. This replaces that snapshot
 in place. Historical observations remain in Git history, not as current claims.
 
+## 2026-09-24 update (supersedes the rows it names; everything else stands)
+
+Self-verified by the implementing session, no independent reviewer; each
+item is live on both hosts unless stated.
+
+- Row 6 / H0: `enumerateChordScaleOptions` is implemented against the
+  unchanged contract (`19d7544`; 35 seed, 15 declaration and 312 root cells
+  replayed) and the chord detail lists plural scale options (`f873bb0`).
+  `analyzeChordInContext` is still absent: two context-reading fixture rows
+  contradict the rule table (recorded on qqy.2.2 for the spec owner). The
+  discovery audit is **30 pass / 1 fail**.
+- H1: all eight registered law families with fixture cases generate
+  candidates (`1e7b252`), and "Reharmonize this chord" (hear original / hear
+  option / apply with one Undo, `28ac476`) now delivers September idea 7's
+  compare-and-apply loop for single-chord variations.
+- September idea 5: every suggested next chord can be heard in context
+  before it is added (`c707279`).
+- Audio: a mid-run instrument change or Play with a plucked instrument no
+  longer faults the run, and any fault recovers with Play (`jcpe-j4hj`,
+  `53cea18`/`e9a9017`); plucked Play starts on a provably safe prefix
+  (`jcpe-70yb`, `4a7bdd4`).
+- Still open and unchanged: G5 tree fixture names nonexistent law IDs
+  (ulj.5), the cast-policy decision (np17), U0 evidence hashes, U7.
+
 ## 2026-09-22/23 update (supersedes the rows it names; everything else stands)
 
 A same-day re-check reproduced every finding below (12/18 discovery audit,
