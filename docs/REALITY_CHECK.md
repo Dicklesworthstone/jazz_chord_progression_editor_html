@@ -12,7 +12,7 @@ response includes its unwanted analytics injection; the earlier DSP/source misma
 closed, and M1 tied-key semantics have been repaired. This replaces that snapshot
 in place. Historical observations remain in Git history, not as current claims.
 
-## 2026-09-22 update (supersedes the rows it names; everything else stands)
+## 2026-09-22/23 update (supersedes the rows it names; everything else stands)
 
 A same-day re-check reproduced every finding below (12/18 discovery audit,
 one illegal cast, missing traceability commands) and added four live-product
@@ -37,9 +37,21 @@ reviewer):
   parser-verified transposer with typed refusals, and a whole-chart
   Transpose dialog with one Undo. Range/section scope and an audible preview
   remain (`jcpe-transpose-workflow-nazh`).
-- The discovery audit is now **15 pass / 16 fail** (one probe added, strictly
-  stronger). Share capacity is measured (560 → 108 B/chord with raw
-  DEFLATE) but not built (`jcpe-share-link-capacity-5iec`).
+- The discovery audit is now **29 pass / 2 fail** (one probe added, strictly
+  stronger). Every reproduced engine defect is fixed with hand-authored
+  tests: SHA-256 length suffix, Atlas digest/rights/manifest/query (G1),
+  deceptive cadence (G0), ii–V exact split (H1), pin conflicts (G4),
+  reached tree depth (G5), rhythm delay/anticipation/merge and exact grid
+  refusal (G7), sequence steps and pure-triad P/L/R (G8), distinct practice
+  answers (G9). The two remaining failures are H0's unbuilt contextual and
+  chord-scale operations. These engines are still not wired into the app.
+- Compressed exact share links, selection and to-key transposition with
+  listen-before-apply, role-named guide tones and the alt-reading note are
+  live (2026-09-23, artifacts `df5daf67…` then `6241746d…`).
+- Decisions recorded, not taken unilaterally: six-alteration chords need a
+  V0 raw-candidate cap amendment (`jcpe-v0-raw-candidate-cap-jhs6`, measured
+  need 117–153 vs 96); the last illegal cast sits in the unused E0 v1
+  factory (`np17`, recommendation recorded).
 
 ## Scope and evidence authority
 
