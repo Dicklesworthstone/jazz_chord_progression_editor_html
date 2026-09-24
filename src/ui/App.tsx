@@ -907,6 +907,7 @@ function detailViewFrom(
       ),
     ),
     guideToneNames: raw.guideToneNames,
+    readingNote: raw.readingNote,
     resolution:
       raw.resolution === null
         ? null

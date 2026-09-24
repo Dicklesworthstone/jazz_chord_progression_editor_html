@@ -378,6 +378,8 @@ export type StudioDetailView = Readonly<{
   scaleSentence: string | null;
   tones: readonly StudioDetailToneView[];
   guideToneNames: readonly string[];
+  /** Which of several valid realizations the tones show (7alt); null otherwise. */
+  readingNote: string | null;
   resolution: StudioDetailResolutionView | null;
   next: readonly StudioDetailNextView[];
 }>;

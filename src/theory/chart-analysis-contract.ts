@@ -176,6 +176,11 @@ export type ChartChordDetail = Readonly<{
   tones: readonly ChartToneView[];
   /** Display names of the guide tones ("F  and  B"), already joined. */
   guideToneNames: readonly string[];
+  /**
+   * When the symbol has several equally valid realizations (7alt has four),
+   * which one the tones show and that others exist; null otherwise.
+   */
+  readingNote: string | null;
   resolution: ChartGuideToneResolution | null;
   next: readonly ChartNextOption[];
 }>;

@@ -820,6 +820,7 @@ export function deriveChordDetail(
       analysis,
       tones: Object.freeze([]),
       guideToneNames: Object.freeze([]),
+      readingNote: null,
       resolution: null,
       next: Object.freeze([]),
     });
@@ -854,6 +855,19 @@ export function deriveChordDetail(
     tones.filter((tone) => tone.guide).map((tone) => tone.name),
   );
 
+  /* 7alt resolves to four readings (♭9 or ♯9 with ♭5 or ♯5); say which one
+     the tones show rather than presenting it as the only meaning. */
+  const alternatives = resolved.realizations.length;
+  const alteredRoles = (realization.degrees ?? [])
+    .filter((degree) => degree.alter !== 0 && degree.number !== 7)
+    .map(roleLabel);
+  const readingNote =
+    alternatives > 1 && isParsed(request.current)
+      ? `One of ${String(alternatives)} readings of ${request.current.sourceText}${
+          alteredRoles.length > 0 ? `: these tones take ${alteredRoles.join(" and ")}` : ""
+        }. The others pair the altered notes differently.`
+      : null;
+
   let resolution: ChartChordDetail["resolution"] = null;
   if (request.next !== null && isParsed(request.next.spec)) {
     const nextResolved = operations.resolveChord(request.next.spec);
@@ -876,6 +890,7 @@ export function deriveChordDetail(
     analysis,
     tones: Object.freeze(tones),
     guideToneNames,
+    readingNote,
     resolution,
     next,
   });

@@ -330,6 +330,9 @@ export function ChordDetailPanel({
           : `${detail.functionSentence}.`}
       </p>
 
+      {detail.readingNote === null ? null : (
+        <p class="studio-chord-detail__fact-note">{detail.readingNote}</p>
+      )}
       <section class="studio-chord-detail__tones" aria-label="Chord tones">
         <p class="studio-kicker">Notes — hover to hear</p>
         <div class="studio-chord-detail__chips">

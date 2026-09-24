@@ -370,6 +370,16 @@ describe("deriveChordDetail — tones, guides, resolution, next", () => {
     expect(symbols).toContain("Dmaj7");
   });
 
+  test("an ambiguous alt symbol says which of its readings the tones show", () => {
+    /* 7alt pairs ♭9 or ♯9 with ♭5 or ♯5: four readings; T1 lists ♭9/♭5 first. */
+    const alt = detail("G7alt", null, null);
+    expect(alt.readingNote).toContain("One of 4 readings of G7alt");
+    expect(alt.readingNote).toContain("♭5 and ♭9");
+    /* Near-misses: a fully written chord has one reading and no note. */
+    expect(detail("G7", null, null).readingNote).toBeNull();
+    expect(detail("G7b9", null, null).readingNote).toBeNull();
+  });
+
   test("next options are identical across calls (determinism)", () => {
     const first = detail("Cmaj7", null, C_MAJOR);
     const second = detail("Cmaj7", null, C_MAJOR);
