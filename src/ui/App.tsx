@@ -2078,8 +2078,8 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
         }
         return Object.freeze({
           ...current,
-          phase: result.refusal.code === "u7.delivery_cleanup_failed" ? "delivered" as const : "ready" as const,
-          preparationId: result.refusal.code === "u7.delivery_cleanup_failed" ? null : current.preparationId,
+          phase: result.delivered ? "delivered" as const : "ready" as const,
+          preparationId: result.delivered ? null : current.preparationId,
           refusal: result.refusal,
           announcement: result.refusal.message,
         });

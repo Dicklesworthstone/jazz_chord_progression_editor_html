@@ -197,7 +197,14 @@ export type StudioMidiExportDownloadResult =
     }>
   | Readonly<{ outcome: "failed" }>
   | Readonly<{ outcome: "stale"; code: "u7.revision_stale" }>
-  | Readonly<{ outcome: "refused"; refusal: StudioMidiExportRefusal }>;
+  | Readonly<{
+      outcome: "refused";
+      refusal: StudioMidiExportRefusal;
+      /** True when the file already reached the browser (only its cleanup
+       * could not be proven), so callers show it as delivered without
+       * reading refusal codes. */
+      delivered: boolean;
+    }>;
 
 export type StudioMidiExportAbandonResult = Readonly<{
   outcome: "abandoned" | "ignored-stale";
@@ -248,6 +255,7 @@ export function studioMidiExportUnwiredGenerate(): StudioMidiExportGenerateResul
 export function studioMidiExportUnwiredDownload(): StudioMidiExportDownloadResult {
   return Object.freeze({
     outcome: "refused" as const,
+    delivered: false,
     refusal: Object.freeze({
       code: "u7.preparation_missing" as const,
       message: "This build has no MIDI export service wired.",
@@ -863,6 +871,7 @@ export function createStudioMidiExport(ports: Readonly<{
     ) {
       return Object.freeze({
         outcome: "refused" as const,
+        delivered: false,
         refusal: Object.freeze({
           code: "u7.preparation_missing" as const,
           message: "The file was already taken; generate it again to download once more.",
@@ -919,6 +928,7 @@ export function createStudioMidiExport(ports: Readonly<{
       abandonRegistry();
       return Object.freeze({
         outcome: "refused" as const,
+        delivered: true,
         refusal: Object.freeze({
           code: "u7.delivery_cleanup_failed" as const,
           message:

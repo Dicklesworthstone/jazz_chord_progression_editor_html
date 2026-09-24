@@ -36,3 +36,24 @@ test("U5-LIFE-018: the real composition's MIDI delivery preserves canonical mark
   expect(after.bookmarks).toBe(before.bookmarks);
   expect(service.inspectRegistry().state).toBe("empty");
 });
+
+test("a download whose cleanup cannot be proven reports delivered, and a second download does not", async () => {
+  // The file reaches the browser, but one object URL stays outstanding.
+  const created = createStudioComposition({
+    midiExportHashBytes: bytes => Promise.resolve(createHash("sha256").update(bytes).digest("hex")),
+    midiExportDelivery: () => ({ completion: Promise.resolve({ objectUrlsCreated: 1, objectUrlsRevoked: 0, outstandingOwnedResources: 1 }) }),
+  });
+  if (!created.ok) throw new Error("BOOTSTRAP_FAILED");
+  const { composition } = created;
+  expect(seedStarterChart(composition.controller).seeded).toBe(true);
+  const service = composition.midiExport;
+  if (service === null) throw new Error("MIDI_SERVICE_UNWIRED");
+  const preview = await service.openPreview();
+  if (!preview.ok || preview.preparationId === null) throw new Error("MIDI_PREVIEW_NOT_READY");
+  expect(service.generate(preview.preparationId).outcome).toBe("generated");
+  const first = await service.download(preview.preparationId);
+  // Callers learn "delivered" from the result, never by reading refusal codes.
+  expect(first.outcome === "refused" ? first.delivered : "not refused").toBe(true);
+  const second = await service.download(preview.preparationId);
+  expect(second.outcome === "refused" ? second.delivered : "not refused").toBe(false);
+});
