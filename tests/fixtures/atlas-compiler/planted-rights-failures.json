@@ -10,7 +10,7 @@
         "commitAllowed": false,
         "expressionBytePolicy": "reject",
         "sourceEvidence": "Unchecked web scraping upload",
-        "payloadHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        "payloadHash": "da98671ab68e831ef2f2f3a1cea945309ebfcf033ca0078304a286352207a946"
       },
       "expectedRejection": "g1.quarantined_source"
     },
@@ -23,7 +23,7 @@
         "commitAllowed": true,
         "expressionBytePolicy": "embed-full",
         "sourceEvidence": "Copyrighted sheet music book",
-        "payloadHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        "payloadHash": "73ab543af192b99a1dc7852916a77241a0827a65a13a980d8c5ea463fb4fc2ec"
       },
       "expectedRejection": "g1.rights_violation"
     },

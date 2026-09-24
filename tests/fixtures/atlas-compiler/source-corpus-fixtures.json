@@ -12,7 +12,7 @@
         "expressionBytePolicy": "embed-full",
         "sourceEvidence": "Historical jazz standard harmonic sequence (Public Domain composition, traditional chord progression)",
         "authorOrSource": "Traditional Jazz Vocabulary",
-        "payloadHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        "payloadHash": "05a8445db31f0e068f796cb609f14aa4f243c67ab83d8891841e17c78c3500db"
       },
       "practiceMetadata": {
         "genre": "swing",
@@ -33,7 +33,7 @@
         "expressionBytePolicy": "embed-full",
         "sourceEvidence": "George Gershwin I Got Rhythm contrafact progression (Public Domain harmonic template)",
         "authorOrSource": "Standard Jazz Contrafact Foundation",
-        "payloadHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        "payloadHash": "b81ab5729f0f1ab0525b84d7e244e46fa6ef28d13fb92e02c45b20640fe6a901"
       },
       "practiceMetadata": {
         "genre": "bebop",
@@ -54,7 +54,7 @@
         "expressionBytePolicy": "embed-full",
         "sourceEvidence": "Modal jazz improvisation practice pattern",
         "authorOrSource": "Modal Studio Corpus",
-        "payloadHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        "payloadHash": "68b044dbf8ec8d9845a614c04860892c674353919de391362ea813a40dc641cb"
       },
       "practiceMetadata": {
         "genre": "modal",

@@ -18,10 +18,14 @@ export function makeAtlasQueryAdapter(
   }
 
   function searchByRootIntervals(deltas: readonly number[]): readonly AtlasCompiledEntry[] {
-    const deltaStr = deltas.join(",");
+    /* Contiguous, element-exact match: interval 1 must not match inside 11
+       as a text substring would. */
     return compiledPayload.entries.filter((e) => {
-      const entryDeltaStr = e.fingerprints.rootIntervalDeltas.join(",");
-      return entryDeltaStr.includes(deltaStr);
+      const entryDeltas = e.fingerprints.rootIntervalDeltas;
+      for (let start = 0; start + deltas.length <= entryDeltas.length; start++) {
+        if (deltas.every((delta, offset) => entryDeltas[start + offset] === delta)) return true;
+      }
+      return false;
     });
   }
 

@@ -251,14 +251,12 @@ export function compileAtlasCorpus(
       continue;
     }
 
-    // 2. Payload Hash Integrity Check (skip dummy sha256 empty hash or verify match)
+    // 2. Payload integrity: the declared digest must be the SHA-256 of the
+    //    payload, exactly. (It once rejected only digests starting "000000"
+    //    and waved through the empty-string digest, so almost any wrong
+    //    digest passed.)
     const computedHash = sha256Sync(entry.chords.join("-"));
-    const emptyHash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
-    if (
-      entry.provenance.payloadHash !== emptyHash &&
-      entry.provenance.payloadHash !== computedHash &&
-      entry.provenance.payloadHash.startsWith("000000")
-    ) {
+    if (entry.provenance.payloadHash !== computedHash) {
       rejectionRecords.push({
         entryId: entry.entryId,
         reasonCode: "g1.hash_mismatch",
@@ -309,7 +307,8 @@ export function compileAtlasCorpus(
     compiledEntries.push({
       entryId: entry.entryId,
       title: entry.title,
-      chords: entry.chords,
+      /* Fingerprint-only rights keep structure, never the expression itself. */
+      chords: entry.provenance.expressionBytePolicy === "fingerprint-only" ? [] : entry.chords,
       totalBeats,
       ...(entry.defaultKeyContext ? { defaultKeyContext: entry.defaultKeyContext } : {}),
       fingerprints,
@@ -326,7 +325,9 @@ export function compileAtlasCorpus(
     totalPublicDomain,
     totalPermissive,
     totalOriginal,
-    compiledPayloadHash: sha256Sync(compiledEntries.map((e) => e.entryId).join(",")),
+    /* Bind the whole compiled payload, not just its IDs: changing any
+       musical content must change the manifest digest. */
+    compiledPayloadHash: sha256Sync(JSON.stringify(compiledEntries)),
   };
 
   const compiled: CompiledAtlasPayload = {

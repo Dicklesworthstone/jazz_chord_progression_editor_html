@@ -54,7 +54,7 @@ describe("G1 Atlas Schema and Compiler Engine", () => {
             commitAllowed: true,
             expressionBytePolicy: "embed-full",
             sourceEvidence: "Standard cadence template",
-            payloadHash: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            payloadHash: "6bce5bffd4b5886aa5274d2d9183ecff0f9781489659ad00407e1baec55154e9",
           },
           practiceMetadata: {
             genre: "swing",
@@ -88,7 +88,7 @@ describe("G1 Atlas Schema and Compiler Engine", () => {
             commitAllowed: false,
             expressionBytePolicy: "reject",
             sourceEvidence: "Unknown source",
-            payloadHash: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            payloadHash: "6bce5bffd4b5886aa5274d2d9183ecff0f9781489659ad00407e1baec55154e9",
           },
           practiceMetadata: {
             genre: "bebop",
@@ -116,7 +116,7 @@ describe("G1 Atlas Schema and Compiler Engine", () => {
             commitAllowed: true,
             expressionBytePolicy: "embed-full",
             sourceEvidence: "Copyrighted book",
-            payloadHash: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            payloadHash: "6bce5bffd4b5886aa5274d2d9183ecff0f9781489659ad00407e1baec55154e9",
           },
           practiceMetadata: {
             genre: "ballad",
@@ -147,7 +147,7 @@ describe("G1 Atlas Schema and Compiler Engine", () => {
             commitAllowed: true,
             expressionBytePolicy: "embed-full",
             sourceEvidence: "Standard template",
-            payloadHash: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            payloadHash: "6bce5bffd4b5886aa5274d2d9183ecff0f9781489659ad00407e1baec55154e9",
           },
           practiceMetadata: {
             genre: "swing",
@@ -166,7 +166,7 @@ describe("G1 Atlas Schema and Compiler Engine", () => {
             commitAllowed: true,
             expressionBytePolicy: "embed-full",
             sourceEvidence: "Standard contrafact",
-            payloadHash: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            payloadHash: "6c1b71e518c8594ad248012d85da9fb8510ccab6a413d6aff38a556a741f0fae",
           },
           practiceMetadata: {
             genre: "bebop",
@@ -192,4 +192,52 @@ describe("G1 Atlas Schema and Compiler Engine", () => {
       expect(intervalMatches[0]?.entryId).toBe("atlas_entry_bop_1");
     });
   });
+
+  describe("integrity, rights and query laws", () => {
+    const entry = (chords: string[], overrides: Partial<AtlasSourceEntry["provenance"]> = {}): AtlasSourceEntry => ({
+      entryId: `law_${chords.join("_").toLowerCase()}`,
+      title: "Law fixture",
+      chords,
+      durationBeats: chords.map(() => 4),
+      provenance: {
+        rightsClass: "internal-original",
+        commitAllowed: true,
+        expressionBytePolicy: "embed-full",
+        sourceEvidence: "Original law fixture",
+        payloadHash: createHash("sha256").update(chords.join("-")).digest("hex"),
+        ...overrides,
+      },
+      practiceMetadata: { genre: "swing", suggestedTempoBpmRange: [100, 120], difficulty: "beginner", keyAreaTags: [] },
+    });
+
+    test("any digest other than the payload's own SHA-256 is rejected", () => {
+      expect(compileAtlasCorpus([entry(["C", "B"])]).compiled.entries).toHaveLength(1);
+      for (const payloadHash of ["f".repeat(64), createHash("sha256").update("").digest("hex"), "0".repeat(64)]) {
+        const result = compileAtlasCorpus([entry(["C", "B"], { payloadHash })]);
+        expect(result.compiled.entries).toHaveLength(0);
+        expect(result.rejections.records[0]?.reasonCode).toBe("g1.hash_mismatch");
+      }
+    });
+
+    test("fingerprint-only entries keep their fingerprints but never the chords", () => {
+      const compiled = compileAtlasCorpus([entry(["Dm7", "G7"], { rightsClass: "protected-fingerprint-only", expressionBytePolicy: "fingerprint-only" })]).compiled;
+      expect(compiled.entries[0]?.chords).toEqual([]);
+      expect(compiled.entries[0]?.fingerprints.rootIntervalDeltas).toEqual([5]);
+      expect(JSON.stringify(compiled)).not.toContain("Dm7");
+    });
+
+    test("the manifest digest changes whenever the musical payload changes", () => {
+      const first = compileAtlasCorpus([entry(["C", "B"])]).compiled.manifest.compiledPayloadHash;
+      expect(compileAtlasCorpus([entry(["C", "B"])]).compiled.manifest.compiledPayloadHash).toBe(first);
+      expect(compileAtlasCorpus([{ ...entry(["Dm7", "G7"]), entryId: "law_c_b" }]).compiled.manifest.compiledPayloadHash).not.toBe(first);
+    });
+
+    test("interval queries match whole intervals, not text fragments", () => {
+      /* C -> B is 11 semitones up; a query for 1 must not match it, 11 must. */
+      const adapter = makeAtlasQueryAdapter(compileAtlasCorpus([entry(["C", "B"])]).compiled);
+      expect(adapter.searchByRootIntervals([1])).toHaveLength(0);
+      expect(adapter.searchByRootIntervals([11])).toHaveLength(1);
+    });
+  });
 });
+
