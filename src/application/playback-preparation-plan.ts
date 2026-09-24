@@ -116,3 +116,34 @@ export function buildPlaybackPreparationPlan(
     plan: Object.freeze({ leadingGroups, deferredGroups, leadingVoices }),
   });
 }
+
+export type RenderFrontierInput = Readonly<{
+  /** Music seconds from the run's start covered by rendered groups. */
+  frontierSeconds: number;
+  /** Music seconds of one pass: start position to plan end (or loop end). */
+  runSeconds: number;
+  /** Measured render cost: wall seconds spent per music second rendered. */
+  wallSecondsPerMusicSecond: number;
+  /** Multiplier (>= 1) on the measured cost for playback-time contention. */
+  safetyFactor: number;
+  /** Music seconds the frontier must always stay ahead of the playhead. */
+  marginSeconds: number;
+}>;
+
+/**
+ * jcpe-70yb: may a cache-only run start now and never overtake its own
+ * chronological render? After the start the playhead is at `t` and the render
+ * frontier at `f + t / k` (k = cost with safety). The frontier must stay at
+ * least `margin` ahead until it reaches the end, which happens at
+ * `t = k (T - f)`; the binding point is that last instant, so the condition is
+ * `f >= ((k - 1) T + margin) / k`, and never less than `margin`. A fully
+ * rendered pass always may start. Invalid measurements never permit a start.
+ */
+export function renderFrontierAllowsStart(input: RenderFrontierInput): boolean {
+  const { frontierSeconds: f, runSeconds: total, marginSeconds: margin } = input;
+  if (f >= total) return true;
+  const cost = input.wallSecondsPerMusicSecond * input.safetyFactor;
+  if (!Number.isFinite(cost) || cost <= 0 || !Number.isFinite(f) || !Number.isFinite(total)) return false;
+  const required = Math.max(margin, ((cost - 1) * total + margin) / cost);
+  return f >= required;
+}

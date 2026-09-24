@@ -66,18 +66,22 @@ test("a looped run renders every note of the plan before the new instrument take
   }
 }, 60_000);
 
-test("Play with a cache-only plucked instrument renders the whole run before the transport starts", async () => {
-  const inner = createStudioAudio(createFakeAudioPlatform().platform);
-  const log: { kind: "prepare" | "play"; notes?: number; plan?: PlaybackPlan }[] = [];
+test("Play with a cache-only plucked instrument starts on a safe prefix and never attacks an unrendered chord", async () => {
+  const fake = createFakeAudioPlatform();
+  const inner = createStudioAudio(fake.platform);
+  const prepared: string[] = [];
+  const run: { playAt: number | null } = { playAt: null };
+  const statuses: string[] = [];
+  inner.subscribe((notification) => statuses.push(notification.status));
   const audio: StudioAudioPort = {
     ...inner,
     prepareInstrument: async (...args) => {
       const done = await inner.prepareInstrument(...args);
-      log.push({ kind: "prepare", notes: args[1].length, ...(args[2] ? { plan: args[2].plan } : {}) });
+      for (const note of args[1]) prepared.push(`${note.eventId ?? ""}:${String(note.voiceOrdinal ?? 0)}`);
       return done;
     },
     play: (...args) => {
-      log.push({ kind: "play", plan: args[1].plan });
+      run.playAt = prepared.length;
       return inner.play(...args);
     },
   };
@@ -88,18 +92,24 @@ test("Play with a cache-only plucked instrument renders the whole run before the
     expect(seedStarterChart(controller).seeded).toBe(true);
     expect(controller.setInstrument("ukulele").ok).toBe(true);
     expect(controller.playProgression(gesture).ok).toBe(true);
-    await until(() => log.some((entry) => entry.kind === "play"));
-    const playIndex = log.findIndex((entry) => entry.kind === "play");
-    const plan = log[playIndex]?.plan;
-    if (plan === undefined) throw new Error("play carried no plan");
-    const voices = plan.events.reduce((sum, event) => sum + event.midiPitches.length, 0);
-    // Every voice the run can attack was rendered before Play, and nothing
-    // is left for a background render to race the playhead with.
-    const before = log.slice(0, playIndex).filter((entry) => entry.kind === "prepare");
-    expect(before.reduce((sum, entry) => sum + (entry.notes ?? 0), 0)).toBe(voices);
     await until(() => controller.getSnapshot().transport.status === "playing");
-    expect(log.slice(playIndex + 1).filter((entry) => entry.kind === "prepare")).toEqual([]);
+    // Drive audio time through the whole run while render-ahead proceeds.
+    const context = fake.contexts[0];
+    if (context === undefined) throw new Error("no audio context");
+    let seconds = 0;
+    while (seconds < 120 && !(statuses.includes("playing") && statuses.at(-1) === "ready") && !statuses.includes("failed")) {
+      seconds += 0.1;
+      context.setCurrentTime(seconds);
+      await new Promise((resolve) => setTimeout(resolve, 15));
+    }
+    expect(statuses).not.toContain("failed");
+    expect(statuses.at(-1)).toBe("ready");
+    // Every voice was rendered exactly once; Play began on a prefix only.
+    expect(new Set(prepared).size).toBe(prepared.length);
+    expect(run.playAt).not.toBeNull();
+    expect(run.playAt ?? 0).toBeGreaterThan(0);
+    expect(run.playAt ?? 0).toBeLessThan(prepared.length);
   } finally {
     await inner.transportService.submitTransportCommand({ commandRequestId: 1000, payload: { kind: "dispose-transport", reason: "page-teardown" } });
   }
-}, 60_000);
+}, 120_000);

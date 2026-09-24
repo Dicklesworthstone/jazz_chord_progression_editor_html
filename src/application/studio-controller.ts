@@ -142,7 +142,7 @@ import {
   type DryPianoRenderPort,
 } from "../audio";
 import type { StudioAudioGesture, StudioAudioPort } from "./studio-audio";
-import { buildPlaybackPreparationPlan } from "./playback-preparation-plan";
+import { buildPlaybackPreparationPlan, renderFrontierAllowsStart } from "./playback-preparation-plan";
 import {
   compileStudioPlaybackPlan,
   performStudioPlaybackRange,
@@ -6032,13 +6032,55 @@ function makeStudioComposition(
     if (!expectation.ok) return expectation;
     const allDeferred = preparation.plan.deferredGroups.flatMap((group) => group.voices);
     const cacheOnly = CACHE_ONLY_INSTRUMENT_IDS.has(instrumentId);
-    /* Cache-only instruments render the whole run before Play; the others
-     * warm a leading prefix and render the rest ahead of the playhead, with
-     * the engine's per-note render as the safety net. */
-    const preparedNotes = cacheOnly
-      ? Object.freeze([...preparation.plan.leadingVoices, ...allDeferred])
-      : preparation.plan.leadingVoices;
-    const deferredNotes = Object.freeze(cacheOnly ? [] : allDeferred);
+    const preparedNotes = preparation.plan.leadingVoices;
+    /* Non-cache-only instruments warm a leading prefix and render the rest
+     * ahead of the playhead, with the engine's per-note render as the safety
+     * net. Cache-only instruments have no such net; see prepareBeforeStart. */
+    let deferredNotes: readonly (typeof preparedNotes)[number][] = Object.freeze(allDeferred);
+    /*
+     * jcpe-j4hj / jcpe-70yb: a cache-only (shared plucked) instrument's
+     * unrendered chord is refused at attack time and X1 faults the run. Render
+     * chronological chunks, measure the render cost, and start only once
+     * renderFrontierAllowsStart proves the background render (the remaining
+     * groups, in order) can never be overtaken by the playhead. A 3x safety
+     * factor and a 4 s frontier margin cover playback-time contention (1.5x
+     * and 2 s faulted once in 360 live swaps when unrelated CPU load started
+     * mid-run). The remaining groups become the render-ahead.
+     */
+    const prepareBeforeStart = async (): Promise<boolean> => {
+      if (!cacheOnly) return port.prepareInstrument(instrumentId, preparedNotes, binding);
+      const groups = [...preparation.plan.leadingGroups, ...preparation.plan.deferredGroups];
+      const ticksByEvent = new Map(performance.events.map((event) => [String(event.eventId), event.startTick]));
+      const secondsPerTick = 60 / (performance.tempoBpm * PLAYBACK_PLAN_MIDI_PPQ);
+      const runStartTick = (startBeat.numerator * PLAYBACK_PLAN_MIDI_PPQ) / startBeat.denominator;
+      const runEndTick = performance.loopTicks?.end ?? performance.totalTicks;
+      const runSeconds = Math.max(0, (runEndTick - runStartTick) * secondsPerTick);
+      const groupSeconds = (index: number): number => {
+        const group = groups[index];
+        if (group === undefined) return runSeconds;
+        return Math.max(0, ((ticksByEvent.get(group.eventId) ?? runStartTick) - runStartTick) * secondsPerTick);
+      };
+      const started = Date.now();
+      let next = 0;
+      while (next < groups.length) {
+        // One chunk: at least one group, then up to two more music seconds.
+        const chunkStart = next;
+        const horizon = groupSeconds(chunkStart) + 2;
+        while (next < groups.length && (next === chunkStart || groupSeconds(next) < horizon)) next += 1;
+        const chunk = groups.slice(chunkStart, next).flatMap((group) => group.voices);
+        if (!(await port.prepareInstrument(instrumentId, chunk, binding))) return false;
+        if (thisRenderAheadRun !== renderAheadRunToken) break;
+        const frontier = groupSeconds(next);
+        const cost = (Date.now() - started) / 1000 / Math.max(frontier, 0.25);
+        if (renderFrontierAllowsStart({
+          frontierSeconds: frontier, runSeconds, wallSecondsPerMusicSecond: cost,
+          safetyFactor: 3, marginSeconds: 4,
+        })) break;
+      }
+      deferredNotes = Object.freeze(groups.slice(next).flatMap((group) => group.voices));
+      renderAheadCompleted = deferredNotes.length === 0;
+      return true;
+    };
     const thisRenderAheadRun = ++renderAheadRunToken;
     /* jcpe-v2r-loop-seek-ukk6: seek/loop may only address this exact Play,
      * not merely another request for the same unchanged document revision. */
@@ -6151,11 +6193,7 @@ function makeStudioComposition(
         const setInstrumentRequestId = nextTransportRequestId();
         const playRequestId = nextTransportRequestId();
         expectTransport("play-progression", playRequestId, "starting", startBeat);
-        const prepared = await port.prepareInstrument(
-          instrumentId,
-          preparedNotes,
-          binding,
-        );
+        const prepared = await prepareBeforeStart();
         if (!prepared) {
           clearActiveRunIfMatches(
             binding.documentId,
@@ -6223,11 +6261,7 @@ function makeStudioComposition(
       const setInstrumentRequestId = nextTransportRequestId();
       const playRequestId = nextTransportRequestId();
       expectTransport("play-progression", playRequestId, "starting", startBeat);
-      const prepared = await port.prepareInstrument(
-        instrumentId,
-        preparedNotes,
-        binding,
-      );
+      const prepared = await prepareBeforeStart();
       if (!prepared) {
         clearActiveRunIfMatches(
           binding.documentId,
