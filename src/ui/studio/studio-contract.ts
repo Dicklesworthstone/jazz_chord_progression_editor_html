@@ -369,6 +369,18 @@ export type StudioDetailNextView = Readonly<{
   why: string;
 }>;
 
+/** One H0 chord-scale option for the selected chord. */
+export type StudioDetailScaleView = Readonly<{
+  id: string;
+  name: string;
+  /** Only "exact" options are unconditional; others carry a caveat. */
+  exact: boolean;
+  notes: string;
+  tensions: string | null;
+  clashes: readonly string[];
+  caveat: string | null;
+}>;
+
 /** One H1 reharmonization option for the selected chord. */
 export type StudioDetailReharmonizationView = Readonly<{
   id: string;
@@ -395,6 +407,10 @@ export type StudioDetailView = Readonly<{
   resolution: StudioDetailResolutionView | null;
   next: readonly StudioDetailNextView[];
   reharmonizations: readonly StudioDetailReharmonizationView[];
+  /** Plural H0 chord-scale options; empty when none fits (the scale sentence remains). */
+  scales: readonly StudioDetailScaleView[];
+  /** True when several scales fit equally well and none is preferred. */
+  scalesPlural: boolean;
   /** Why no options are offered (stored notes, Custom chord); null otherwise. */
   reharmonizeNote: string | null;
 }>;

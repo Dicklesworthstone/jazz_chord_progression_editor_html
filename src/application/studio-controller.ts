@@ -126,6 +126,7 @@ import {
   transposeChart,
   type ChartTranspositionRefusal,
 } from "./chart-transposition";
+import { chartScaleOptions, type ChartScaleOptionsView } from "./chart-scale-options";
 import {
   buildChartReharmonization,
   listChartReharmonizations,
@@ -728,6 +729,12 @@ export interface StudioController {
    * minor borrow). Read-only; Manual/Frozen and Custom chords offer none.
    */
   readonly readReharmonizations: (eventId: string) => StudioReharmonizationView;
+  /**
+   * Plural chord-scale options for one chord from H0's
+   * enumerateChordScaleOptions, under the chord's section or chart key. Null
+   * for a Custom chord or when no reviewed mapping fits. Read-only.
+   */
+  readonly readScaleOptions: (eventId: string) => ChartScaleOptionsView | null;
   /**
    * Hear a short excerpt around the chord as it is (`optionId` null) or as
    * the option would make it, through the preview lane. Nothing changes.
@@ -2852,6 +2859,18 @@ function makeStudioComposition(
           : reason === "event-missing"
             ? "That chord is no longer part of this chart."
             : "This chord could not be reharmonized.";
+
+  const scaleOptionsCache = new WeakMap<object, Map<string, ChartScaleOptionsView | null>>();
+  const readScaleOptions = (eventId: string): ChartScaleOptionsView | null => {
+    const document = state.document;
+    let cache = scaleOptionsCache.get(document);
+    if (cache === undefined) {
+      cache = new Map();
+      scaleOptionsCache.set(document, cache);
+    }
+    if (!cache.has(eventId)) cache.set(eventId, chartScaleOptions(document, eventId));
+    return cache.get(eventId) ?? null;
+  };
 
   const readReharmonizations = (eventId: string): StudioReharmonizationView => {
     const listed = listChartReharmonizations(state.document, eventId);
@@ -8152,6 +8171,7 @@ function makeStudioComposition(
     transposeChartToKey,
     hearTransposition,
     readReharmonizations,
+    readScaleOptions,
     hearReharmonization,
     applyReharmonization,
     setTitle,

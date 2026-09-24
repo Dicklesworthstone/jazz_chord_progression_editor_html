@@ -453,7 +453,34 @@ export function ChordDetailPanel({
 
       <SpectrumCanvas detail={detail} hoverMidi={hoverMidi} />
 
-      {detail.scaleSentence === null ? null : (
+      {detail.scales.length > 0 ? (
+        <section class="studio-chord-detail__next" data-testid={`detail-scales-${context}`}>
+          <p class="studio-kicker">{detail.scales.length > 1 ? "Scales that fit" : "Scale that fits"}</p>
+          <p class="studio-chord-detail__fact-note">
+            {detail.scalesPlural
+              ? "Several scales fit equally well; none is the answer."
+              : "Spelled from the chord's root, so each note keeps its degree."}
+          </p>
+          <ul class="studio-chord-detail__next-list">
+            {detail.scales.map((scale) => (
+              <li key={scale.id} class="studio-chord-detail__next-row">
+                <div class="studio-chord-detail__next-head">
+                  <span class="studio-chord-detail__next-symbol">{scale.name}</span>
+                  {scale.exact ? null : <span class="studio-chord-detail__next-roman">possible</span>}
+                </div>
+                <p class="studio-chord-detail__fact-value">{scale.notes}</p>
+                {scale.tensions === null ? null : (
+                  <p class="studio-chord-detail__next-why">Tensions: {scale.tensions}</p>
+                )}
+                {scale.clashes.map((clash) => (
+                  <p key={clash} class="studio-chord-detail__next-why">{clash}.</p>
+                ))}
+                {scale.caveat === null ? null : <p class="studio-chord-detail__fact-note">{scale.caveat}</p>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : detail.scaleSentence === null ? null : (
         <section class="studio-chord-detail__fact">
           <p class="studio-kicker">Scale to play over it</p>
           <p class="studio-chord-detail__fact-value">{detail.scaleSentence}</p>

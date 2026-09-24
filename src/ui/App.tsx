@@ -384,6 +384,7 @@ export type AppActions = Readonly<{
   readChordDetail: (eventId: string) => StudioChordDetailView | null;
   /** H1 reharmonization options; apply is one undoable A0 command. */
   readReharmonizations: StudioController["readReharmonizations"];
+  readScaleOptions: StudioController["readScaleOptions"];
   hearReharmonization: StudioController["hearReharmonization"];
   applyReharmonization: StudioController["applyReharmonization"];
 }>;
@@ -876,6 +877,7 @@ function selectedChordView(
 function detailViewFrom(
   read: (eventId: string) => StudioChordDetailView | null,
   readReharmonizations: AppActions["readReharmonizations"],
+  readScaleOptions: AppActions["readScaleOptions"],
   snapshot: StudioViewModel,
 ): StudioDetailView | null {
   const selectedIds = snapshot.bookmarks.selectedEventIds;
@@ -896,6 +898,7 @@ function detailViewFrom(
   }
   if (symbolText.length === 0) return null;
   const reharmonized = readReharmonizations(targetId);
+  const scales = readScaleOptions(targetId);
   return Object.freeze({
     eventId: targetId,
     place,
@@ -955,6 +958,11 @@ function detailViewFrom(
         : [],
     ),
     reharmonizeNote: reharmonized.ok ? null : reharmonized.message,
+    scales: Object.freeze((scales?.options ?? []).map((option) => Object.freeze({
+      id: option.id, name: option.name, exact: option.strength === "exact", notes: option.notes,
+      tensions: option.tensions, clashes: option.clashes, caveat: option.caveat,
+    }))),
+    scalesPlural: scales?.plural ?? false,
   });
 }
 
@@ -2473,7 +2481,7 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
    * selection for an ambiguous altered chord.
    */
   const continuation = actions.readContinuationSuggestions();
-  const detailView = detailViewFrom(actions.readChordDetail, actions.readReharmonizations, snapshot);
+  const detailView = detailViewFrom(actions.readChordDetail, actions.readReharmonizations, actions.readScaleOptions, snapshot);
 
   /**
    * The one insertion path, shared by typing, the demo chips, the library
@@ -4158,6 +4166,7 @@ export function StudioRoot({
         readSectionPhrases: controller.readSectionPhrases,
         readChordDetail: controller.readChordDetail,
         readReharmonizations: controller.readReharmonizations,
+        readScaleOptions: controller.readScaleOptions,
         hearReharmonization: controller.hearReharmonization,
         applyReharmonization: controller.applyReharmonization,
         splitEventDuration: controller.splitEventDuration,
