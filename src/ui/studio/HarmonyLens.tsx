@@ -8,6 +8,8 @@ export type HarmonyLensContentProps = Readonly<{
   view: StudioHarmonyView;
   onAddSuggestedChord: (symbolText: string) => void;
   onPreviewPitch: (midiPitch: number) => void;
+  onHearReharmonization: (eventId: string, optionId: string | null) => Promise<string | null>;
+  onApplyReharmonization: (eventId: string, optionId: string) => string | null;
   onEditChord?: (() => void) | undefined;
 }>;
 
@@ -17,6 +19,8 @@ export function HarmonyLensContent({
   view,
   onAddSuggestedChord,
   onPreviewPitch,
+  onHearReharmonization,
+  onApplyReharmonization,
   onEditChord,
 }: HarmonyLensContentProps) {
   const factsHeadingId = `${headingId}-facts`;
@@ -59,6 +63,8 @@ export function HarmonyLensContent({
           detail={view.detail}
           onAddSuggestedChord={onAddSuggestedChord}
           onPreviewPitch={onPreviewPitch}
+          onHearReharmonization={onHearReharmonization}
+          onApplyReharmonization={onApplyReharmonization}
         />
       ) : view.selected === null ? (
         <div class="studio-harmony-empty">
@@ -193,6 +199,8 @@ export type HarmonyLensProps = Readonly<{
   onCollapsedChange: (collapsed: boolean) => void;
   onAddSuggestedChord: (symbolText: string) => void;
   onPreviewPitch: (midiPitch: number) => void;
+  onHearReharmonization: (eventId: string, optionId: string | null) => Promise<string | null>;
+  onApplyReharmonization: (eventId: string, optionId: string) => string | null;
   onEditChord?: (() => void) | undefined;
 }>;
 
@@ -203,6 +211,8 @@ export function HarmonyLens({
   onCollapsedChange,
   onAddSuggestedChord,
   onPreviewPitch,
+  onHearReharmonization,
+  onApplyReharmonization,
   onEditChord,
 }: HarmonyLensProps) {
   const headingId = "studio-harmony-heading";
@@ -229,6 +239,8 @@ export function HarmonyLens({
             view={view}
             onAddSuggestedChord={onAddSuggestedChord}
             onPreviewPitch={onPreviewPitch}
+            onHearReharmonization={onHearReharmonization}
+            onApplyReharmonization={onApplyReharmonization}
             onEditChord={onEditChord}
           />
         )}

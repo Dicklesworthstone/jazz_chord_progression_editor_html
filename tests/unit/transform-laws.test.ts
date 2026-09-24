@@ -82,6 +82,51 @@ describe("H1 Transform Laws Registry and Evaluation", () => {
       }
     });
 
+    test("no secondary dominant unless the next chord's root is a fourth above", () => {
+      const lawsFor = (symbols: readonly string[]) => {
+        const events = symbols.map((chordSymbol, index) => ({
+          eventId: eventIdOf(`e${String(index)}`), chordSymbol, offsetBeat: beat(index * 4), duration: beat(4),
+        }));
+        const result = evaluateTransformCandidates(events, 0);
+        return result.ok ? result.candidates.map((c) => c.lawId) : [];
+      };
+      expect(lawsFor(["Dm7", "G7"])).toContain("law.secondary-dominant.v-of-v");
+      // Near misses: D7 does not tonicize C, and a final Dm7 has nothing to tonicize.
+      expect(lawsFor(["Dm7", "Cmaj7"])).not.toContain("law.secondary-dominant.v-of-v");
+      expect(lawsFor(["Dm7"])).not.toContain("law.secondary-dominant.v-of-v");
+      // Transposed: Ebm7 -> Ab7 still qualifies, spelled from the source root.
+      const eb = evaluateTransformCandidates([
+        { eventId: eventIdOf("e0"), chordSymbol: "Ebm7", offsetBeat: beat(0), duration: beat(4) },
+        { eventId: eventIdOf("e1"), chordSymbol: "Ab7", offsetBeat: beat(4), duration: beat(4) },
+      ], 0);
+      expect(eb.ok && eb.candidates.find((c) => c.lawId === "law.secondary-dominant.v-of-v")?.transformedProgression[0]).toBe("Eb7");
+    });
+
+    test("the tritone substitute takes the plainer of its two spellings", () => {
+      const subFor = (symbol: string) => {
+        const result = evaluateTransformCandidates([
+          { eventId: eventIdOf("e0"), chordSymbol: symbol, offsetBeat: beat(0), duration: beat(4) },
+        ], 0);
+        return result.ok ? result.candidates.find((c) => c.lawId === "law.tritone-sub.primary")?.transformedProgression[0] : undefined;
+      };
+      // Hand-derived: six semitones away, spelled with the fewest accidentals.
+      expect(subFor("G7")).toBe("Db7");
+      expect(subFor("Ab7")).toBe("D7");
+      expect(subFor("Db7")).toBe("G7");
+      expect(subFor("F#7")).toBe("C7");
+      expect(subFor("B7")).toBe("F7");
+      expect(subFor("E7")).toBe("Bb7");
+      expect(subFor("C7")).toBe("Gb7");
+    });
+
+    test("a plain major triad borrows a plain minor triad, not an added seventh", () => {
+      const result = evaluateTransformCandidates([
+        { eventId: eventIdOf("e0"), chordSymbol: "F", offsetBeat: beat(0), duration: beat(4) },
+      ], 0);
+      const borrow = result.ok ? result.candidates.find((c) => c.lawId === "law.modal-interchange.subdominant-minor") : undefined;
+      expect(borrow?.transformedProgression[0]).toBe("Fm");
+    });
+
     test("generates modal interchange candidate for subdominant IV chord Fmaj7", () => {
       const events = [
         { eventId: eventIdOf("e1"), chordSymbol: "Fmaj7", offsetBeat: beat(0), duration: beat(4) },

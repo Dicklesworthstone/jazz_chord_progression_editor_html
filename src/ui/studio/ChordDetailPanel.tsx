@@ -218,6 +218,8 @@ export type ChordDetailPanelProps = Readonly<{
   context: "rail" | "sheet";
   onAddSuggestedChord: (symbolText: string) => void;
   onPreviewPitch: (midiPitch: number) => void;
+  onHearReharmonization: (eventId: string, optionId: string | null) => Promise<string | null>;
+  onApplyReharmonization: (eventId: string, optionId: string) => string | null;
 }>;
 
 /** Split an engraved symbol into root letter, accidental glyphs, and rest. */
@@ -253,8 +255,11 @@ export function ChordDetailPanel({
   context,
   onAddSuggestedChord,
   onPreviewPitch,
+  onHearReharmonization,
+  onApplyReharmonization,
 }: ChordDetailPanelProps) {
   const [hoverMidi, setHoverMidi] = useState<number | null>(null);
+  const [reharmonizeMessage, setReharmonizeMessage] = useState<string | null>(null);
   const chordPitchClasses = new Set(
     detail.tones.map((tone) => tone.pitchClass),
   );
@@ -267,6 +272,14 @@ export function ChordDetailPanel({
     lastSymbol.current = detail.symbolText;
     if (hoverMidi !== null) setHoverMidi(null);
   }
+  const lastEventId = useRef(detail.eventId);
+  if (lastEventId.current !== detail.eventId) {
+    lastEventId.current = detail.eventId;
+    if (reharmonizeMessage !== null) setReharmonizeMessage(null);
+  }
+  const hear = (optionId: string | null): void => {
+    void onHearReharmonization(detail.eventId, optionId).then(setReharmonizeMessage);
+  };
 
   const strike = (midi: number): void => {
     setHoverMidi(midi);
@@ -522,6 +535,82 @@ export function ChordDetailPanel({
               </li>
             ))}
           </ul>
+        </section>
+      )}
+
+      {detail.reharmonizations.length === 0 && detail.reharmonizeNote === null ? null : (
+        <section class="studio-chord-detail__next" data-testid={`detail-reharmonize-${context}`}>
+          <p class="studio-kicker">Reharmonize this chord</p>
+          {detail.reharmonizeNote !== null ? (
+            <p class="studio-chord-detail__fact-note">{detail.reharmonizeNote}</p>
+          ) : (
+            <>
+              <p class="studio-chord-detail__fact-note">
+                Hear each option in place, then apply it; Undo restores the original.
+              </p>
+              <Button
+                busy={false}
+                density="dense"
+                describedBy={[]}
+                disabled={false}
+                id={`studio-reharmonize-hear-original-${context}`}
+                invalid={false}
+                label={`Hear ${detail.symbolText} as written`}
+                onAction={() => {
+                  hear(null);
+                }}
+                type="button"
+                variant="secondary"
+              />
+              <ul class="studio-chord-detail__next-list">
+                {detail.reharmonizations.map((option) => {
+                  const slug = option.id.replace(/[^a-zA-Z0-9-]/g, "-");
+                  return (
+                    <li key={option.id} class="studio-chord-detail__next-row">
+                      <div class="studio-chord-detail__next-head">
+                        <span class="studio-chord-detail__next-symbol">
+                          {option.before} → {option.after}
+                        </span>
+                        <span class="studio-chord-detail__next-roman">{option.title}</span>
+                      </div>
+                      <p class="studio-chord-detail__next-why">{option.explanation}</p>
+                      <div class="studio-chord-detail__next-head">
+                        <Button
+                          busy={false}
+                          density="dense"
+                          describedBy={[]}
+                          disabled={false}
+                          id={`studio-reharmonize-hear-${context}-${slug}`}
+                          invalid={false}
+                          label={`Hear ${option.after}`}
+                          onAction={() => {
+                            hear(option.id);
+                          }}
+                          type="button"
+                          variant="secondary"
+                        />
+                        <Button
+                          busy={false}
+                          density="dense"
+                          describedBy={[]}
+                          disabled={false}
+                          id={`studio-reharmonize-apply-${context}-${slug}`}
+                          invalid={false}
+                          label={`Use ${option.after}`}
+                          onAction={() => {
+                            setReharmonizeMessage(onApplyReharmonization(detail.eventId, option.id));
+                          }}
+                          type="button"
+                          variant="primary"
+                        />
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+              {reharmonizeMessage === null ? null : <p role="alert">{reharmonizeMessage}</p>}
+            </>
+          )}
         </section>
       )}
     </div>

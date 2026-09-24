@@ -289,6 +289,8 @@ function ResponsiveStaleOwnerHarness() {
     onGrooveStyleChange: () => undefined,
     onLoadLibraryEntry: () => undefined,
     onAddSuggestedChord: () => undefined,
+    onHearReharmonization: () => Promise.resolve(null),
+    onApplyReharmonization: () => null,
     onPreviewPitch: () => undefined,
     onCompletionDialogOpenChange: () => undefined,
     onDeclareMeasureCompletion: () => undefined,

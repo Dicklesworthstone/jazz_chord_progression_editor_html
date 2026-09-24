@@ -263,7 +263,12 @@ export function evaluateTransformCandidates(
   // 1. Tritone substitution if dominant
   if (isDominant) {
     workSteps++;
-    const tritoneRoot = transposeSpelledPitchClass(root, 4, 6);
+    /* The tritone is a diminished 5th (G7 -> Db7) or an augmented 4th
+       (Ab7 -> D7); take the spelling with fewer accidentals, never Ebb7. */
+    const diminishedFifth = transposeSpelledPitchClass(root, 4, 6);
+    const augmentedFourth = transposeSpelledPitchClass(root, 3, 6);
+    const tritoneRoot =
+      Math.abs(augmentedFourth.alter) < Math.abs(diminishedFifth.alter) ? augmentedFourth : diminishedFifth;
     const tritoneRootStr = spelledPitchClassToString(tritoneRoot);
     const subChordSymbol = `${tritoneRootStr}7`;
 
@@ -290,7 +295,7 @@ export function evaluateTransformCandidates(
       candidateId: `cand_tritone_sub_${String(targetIndex)}`,
       lawId: "law.tritone-sub.primary",
       family: "tritone-substitute",
-      title: `Tritone Substitution (${subChordSymbol} for ${targetEvent.chordSymbol})`,
+      title: `Tritone substitute (${subChordSymbol} for ${targetEvent.chordSymbol})`,
       targetEventId: targetEvent.eventId,
       originalProgression,
       transformedProgression,
@@ -301,8 +306,16 @@ export function evaluateTransformCandidates(
     });
   }
 
-  // 2. Secondary dominant if minor ii chord
-  if (isMinor) {
+  // 2. Secondary dominant if minor ii chord. The D7 only tonicizes what
+  //    follows when that chord's root is a fourth above (Dm7 G7 -> D7 G7);
+  //    before anything else "tonicizing the upcoming chord" would be false.
+  const followingParsed = targetIndex + 1 < events.length
+    ? parseChordSymbol(events[targetIndex + 1]?.chordSymbol ?? "", accidentalStyle)
+    : null;
+  const resolvesUpAFourth =
+    followingParsed?.ok === true &&
+    pitchClassOf(followingParsed.chord.root) === (pitchClassOf(root) + 5) % 12;
+  if (isMinor && resolvesUpAFourth) {
     workSteps++;
     const rootStr = spelledPitchClassToString(root);
     const secDomSymbol = `${rootStr}7`;
@@ -329,7 +342,7 @@ export function evaluateTransformCandidates(
       candidateId: `cand_sec_dom_${String(targetIndex)}`,
       lawId: "law.secondary-dominant.v-of-v",
       family: "secondary-dominant",
-      title: `Secondary Dominant (${secDomSymbol} for ${targetEvent.chordSymbol})`,
+      title: `Secondary dominant (${secDomSymbol} for ${targetEvent.chordSymbol})`,
       targetEventId: targetEvent.eventId,
       originalProgression,
       transformedProgression,
@@ -412,7 +425,8 @@ export function evaluateTransformCandidates(
   if (isMajor) {
     workSteps++;
     const rootStr = spelledPitchClassToString(root);
-    const subMinorSymbol = `${rootStr}m7`;
+    /* A plain triad borrows a plain minor triad; a seventh chord keeps its seventh. */
+    const subMinorSymbol = seventh === null ? `${rootStr}m` : `${rootStr}m7`;
     const transformedProgression = [...originalProgression];
     transformedProgression[targetIndex] = subMinorSymbol;
 

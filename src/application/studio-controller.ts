@@ -71,6 +71,7 @@ import {
 } from "./application-state-helpers";
 import {
   acceptTransportNotification,
+  beginApplicationRequest,
   redoDocumentCommand,
   reduceEphemeralIntent,
   runDocumentCommand,
@@ -85,6 +86,7 @@ import type {
   DeleteDocumentNodesCommand,
   SetDocumentSettingsCommand,
   TransposeCommand,
+  ApplyReharmonizationCommand,
   DerivedDocumentPatch,
   DocumentNodeRef,
   DuplicateDocumentNodesCommand,
@@ -124,6 +126,11 @@ import {
   transposeChart,
   type ChartTranspositionRefusal,
 } from "./chart-transposition";
+import {
+  buildChartReharmonization,
+  listChartReharmonizations,
+  type ChartReharmonizationOption,
+} from "./chart-reharmonization";
 import {
   MAX_TRANSPORT_PREVIEW_EVENTS,
   MAX_TRANSPORT_PREVIEW_BEATS,
@@ -260,6 +267,7 @@ export const STUDIO_EDIT_REFUSAL_CODES = Object.freeze([
   "u1.meter_locked_by_content",
   "u1.transpose_interval_unknown",
   "u1.transpose_refused",
+  "u1.reharmonize_unavailable",
 ] as const);
 
 /** The reviewed tempo window, in beats per minute. */
@@ -332,7 +340,13 @@ export type StudioControllerAction =
   | "set-master-volume"
   | "set-key"
   | "set-meter"
-  | "transpose-chart";
+  | "transpose-chart"
+  | "apply-reharmonization";
+
+/** Reharmonization options for one chord, from the H1 transform laws. */
+export type StudioReharmonizationView =
+  | Readonly<{ ok: true; targetSymbol: string; options: readonly ChartReharmonizationOption[] }>
+  | Readonly<{ ok: false; message: string }>;
 
 /** The spelled intervals the Transpose control offers, in menu order. */
 export const STUDIO_TRANSPOSE_INTERVALS = Object.freeze([
@@ -708,6 +722,27 @@ export interface StudioController {
     which: "original" | "transposed",
     gesture: StudioAudioGesture,
   ) => Promise<StudioInspectorResult<void>>;
+  /**
+   * Reharmonization options for one chord from the H1 transform laws
+   * (tritone substitute, related ii insertion, secondary dominant, parallel
+   * minor borrow). Read-only; Manual/Frozen and Custom chords offer none.
+   */
+  readonly readReharmonizations: (eventId: string) => StudioReharmonizationView;
+  /**
+   * Hear a short excerpt around the chord as it is (`optionId` null) or as
+   * the option would make it, through the preview lane. Nothing changes.
+   */
+  readonly hearReharmonization: (
+    eventId: string,
+    optionId: string | null,
+    gesture: StudioAudioGesture,
+  ) => Promise<StudioInspectorResult<void>>;
+  /**
+   * Apply one option as a single Undo step through A0's revision-bound
+   * `apply-reharmonization` command; the request slot opens and the command
+   * commits in one transition, so no other edit can interleave.
+   */
+  readonly applyReharmonization: (eventId: string, optionId: string) => StudioControllerActionResult;
   readonly undo: () => StudioControllerActionResult;
   readonly redo: () => StudioControllerActionResult;
   readonly setRailCollapsed: (
@@ -1150,6 +1185,8 @@ const EDIT_RECOVERY_ACTIONS: Readonly<Record<StudioEditRefusalCode, string>> =
       "Pick one of the intervals the Transpose control lists.",
     "u1.transpose_refused":
       "Edit the chords named in the message, then transpose again.",
+    "u1.reharmonize_unavailable":
+      "Choose a chord with an Auto voicing, then pick one of its listed options.",
     "u1.selection_empty": "Select at least one chord before this action.",
     "u1.selection_limit": "Select at most 8,192 chords.",
     "u1.target_missing": "Choose a chord, measure, or boundary that still exists.",
@@ -2802,6 +2839,104 @@ function makeStudioComposition(
     return apply("transpose-chart", (currentState) =>
       runDocumentCommand({ command, dependencies, state: currentState }),
     );
+  };
+
+
+  const reharmonizeUnavailableMessage = (reason: string): string =>
+    reason === "stored-voicing"
+      ? "This chord keeps exact stored notes; switch it to an Auto voicing to reharmonize it."
+      : reason === "custom-chord"
+        ? "A Custom chord has no parsed harmony to reharmonize."
+        : reason === "option-missing"
+          ? "That option no longer applies to this chord."
+          : reason === "event-missing"
+            ? "That chord is no longer part of this chart."
+            : "This chord could not be reharmonized.";
+
+  const readReharmonizations = (eventId: string): StudioReharmonizationView => {
+    const listed = listChartReharmonizations(state.document, eventId);
+    return listed.ok
+      ? listed
+      : Object.freeze({ ok: false, message: reharmonizeUnavailableMessage(listed.reason) });
+  };
+
+  /** Allocate the inserted chord's ID only when a split needs one. */
+  const reharmonizationEventId = (eventId: string, optionId: string): ChordEventId | null | "failed" => {
+    const listed = listChartReharmonizations(state.document, eventId);
+    const option = listed.ok ? listed.options.find((row) => row.id === optionId) : undefined;
+    if (option?.kind !== "split-insert") return null;
+    const allocated = dependencies.stableIdFactory.next("event");
+    return allocated.ok ? allocated.value : "failed";
+  };
+
+  const hearReharmonization = async (
+    eventId: string,
+    optionId: string | null,
+    gesture: StudioAudioGesture,
+  ): Promise<StudioInspectorResult<void>> => {
+    let source: ProgressionDocumentV2 = state.document;
+    const focus = new Set<ChordEventId>();
+    const location = documentIndex.events.get(eventId);
+    if (location === undefined) return previewFailure("u1.target_missing", "That chord is no longer part of this chart.");
+    focus.add(location.id);
+    if (optionId !== null) {
+      const newId = reharmonizationEventId(eventId, optionId);
+      if (newId === "failed") return previewFailure("u1.reharmonize_unavailable", "A new chord identity could not be allocated.");
+      const built = buildChartReharmonization(state.document, eventId, optionId, newId);
+      if (!built.ok) return previewFailure("u1.reharmonize_unavailable", reharmonizeUnavailableMessage(built.reason));
+      source = built.candidate;
+      for (const id of built.focusEventIds) focus.add(id);
+    }
+    const excerpt = auditionExcerpt(source, focus, 2);
+    if (excerpt === null) return previewFailure("u1.chart_already_empty", "This chart has no chords to hear.");
+    const shape = dependencies.decodeDocumentShape(excerpt);
+    if (!shape.ok) return previewFailure("u1.reharmonize_unavailable", "That excerpt could not be prepared for listening.");
+    const validated = dependencies.validateDocumentSemantics(shape.value);
+    if (!validated.ok) return previewFailure("u1.reharmonize_unavailable", "That excerpt could not be prepared for listening.");
+    const compiled = compileStudioPlaybackPlan(validated.value);
+    if (!compiled.ok) return previewFailure(compiled.refusal.code, compiled.refusal.message);
+    return previewPlaybackPlan(compiled.plan, gesture);
+  };
+
+  const applyReharmonization = (eventId: string, optionId: string): StudioControllerActionResult => {
+    const newId = reharmonizationEventId(eventId, optionId);
+    if (newId === "failed") {
+      return editRefusal("apply-reharmonization", "u1.reharmonize_unavailable",
+        "A new chord identity could not be allocated.", ["eventId"]);
+    }
+    const built = buildChartReharmonization(state.document, eventId, optionId, newId);
+    if (!built.ok) {
+      return editRefusal("apply-reharmonization", "u1.reharmonize_unavailable",
+        reharmonizeUnavailableMessage(built.reason), ["eventId"]);
+    }
+    const envelope = commandEnvelope("studio-reharmonize", `Reharmonize: ${built.option.after.join(" ")} for ${built.option.before.join(" ")}`);
+    return apply("apply-reharmonization", (current) => {
+      const requestId = Math.max(current.nextSequence, ...current.pendingRequests.map((row) => row.id + 1));
+      const begun = beginApplicationRequest({
+        state: current,
+        request: { kind: "reharmonization-search", id: requestId, documentId: current.document.id,
+          baseRevision: current.revision, status: "running" },
+      });
+      if (!begun.ok) return begun;
+      const command: ApplyReharmonizationCommand = Object.freeze({
+        ...envelope,
+        kind: "apply-reharmonization",
+        branchId: built.option.id,
+        transformationIds: Object.freeze([built.option.lawId] as const),
+        requestId,
+        patch: Object.freeze({
+          baseRevision: current.revision,
+          sourceEventIds: built.sourceEventIds,
+          declaredChangedIds: built.changedIds as DerivedDocumentPatch["declaredChangedIds"],
+          candidate: built.candidate,
+          exactTimingPreserved: built.exactTimingPreserved,
+          stableIdentityPolicy: "preserve-unmodified-allocate-new-inserts",
+        }),
+      });
+      const ran = runDocumentCommand({ command, dependencies, state: begun.state });
+      // A refused command must not leave the request slot open.
+      return ran.ok ? ran : { ...ran, state: Object.freeze({ ...ran.state, pendingRequests: current.pendingRequests }) };
+    });
   };
 
   /**
@@ -8016,6 +8151,9 @@ function makeStudioComposition(
     previewTransposeToKey,
     transposeChartToKey,
     hearTransposition,
+    readReharmonizations,
+    hearReharmonization,
+    applyReharmonization,
     setTitle,
     undo: () => apply("undo", (current) => undoDocumentCommand({ state: current })),
     redo: () => apply("redo", (current) => redoDocumentCommand({ state: current })),

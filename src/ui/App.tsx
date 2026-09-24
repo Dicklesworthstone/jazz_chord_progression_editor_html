@@ -382,6 +382,10 @@ export type AppActions = Readonly<{
   readEventAnalysis: (eventId: string) => StudioEventAnalysisView | null;
   readSectionPhrases: (sectionId: string) => StudioSectionPhrasesView | null;
   readChordDetail: (eventId: string) => StudioChordDetailView | null;
+  /** H1 reharmonization options; apply is one undoable A0 command. */
+  readReharmonizations: StudioController["readReharmonizations"];
+  hearReharmonization: StudioController["hearReharmonization"];
+  applyReharmonization: StudioController["applyReharmonization"];
 }>;
 
 const QUICK_ENTRY_MAX_CODE_POINTS = 4_096;
@@ -871,6 +875,7 @@ function selectedChordView(
  */
 function detailViewFrom(
   read: (eventId: string) => StudioChordDetailView | null,
+  readReharmonizations: AppActions["readReharmonizations"],
   snapshot: StudioViewModel,
 ): StudioDetailView | null {
   const selectedIds = snapshot.bookmarks.selectedEventIds;
@@ -890,7 +895,9 @@ function detailViewFrom(
     }
   }
   if (symbolText.length === 0) return null;
+  const reharmonized = readReharmonizations(targetId);
   return Object.freeze({
+    eventId: targetId,
     place,
     symbolText,
     roman: raw.analysis.roman,
@@ -934,6 +941,20 @@ function detailViewFrom(
         }),
       ),
     ),
+    reharmonizations: Object.freeze(
+      reharmonized.ok
+        ? reharmonized.options.map((option) =>
+            Object.freeze({
+              id: option.id,
+              title: option.title,
+              before: option.before.join(" "),
+              after: option.after.join(" "),
+              explanation: option.explanation,
+            }),
+          )
+        : [],
+    ),
+    reharmonizeNote: reharmonized.ok ? null : reharmonized.message,
   });
 }
 
@@ -2452,7 +2473,7 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
    * selection for an ambiguous altered chord.
    */
   const continuation = actions.readContinuationSuggestions();
-  const detailView = detailViewFrom(actions.readChordDetail, snapshot);
+  const detailView = detailViewFrom(actions.readChordDetail, actions.readReharmonizations, snapshot);
 
   /**
    * The one insertion path, shared by typing, the demo chips, the library
@@ -3059,6 +3080,14 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
             midiPitch,
             nextAudioGesture("trusted-pointer"),
           );
+        },
+        onHearReharmonization: (eventId, optionId) =>
+          actions
+            .hearReharmonization(eventId, optionId, nextAudioGesture("trusted-pointer"))
+            .then((result) => (result.ok ? null : result.message)),
+        onApplyReharmonization: (eventId, optionId) => {
+          const result = actions.applyReharmonization(eventId, optionId);
+          return result.ok ? null : `${result.refusal.message} ${result.refusal.recoveryAction}`;
         },
         onMidiImportChooseFile: (files) => {
           cancelMidiAudition();
@@ -4128,6 +4157,9 @@ export function StudioRoot({
         readEventAnalysis: controller.readEventAnalysis,
         readSectionPhrases: controller.readSectionPhrases,
         readChordDetail: controller.readChordDetail,
+        readReharmonizations: controller.readReharmonizations,
+        hearReharmonization: controller.hearReharmonization,
+        applyReharmonization: controller.applyReharmonization,
         splitEventDuration: controller.splitEventDuration,
         splitSection: controller.splitSection,
         stopProgression: controller.stopProgression,

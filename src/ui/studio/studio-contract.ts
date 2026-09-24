@@ -369,7 +369,19 @@ export type StudioDetailNextView = Readonly<{
   why: string;
 }>;
 
+/** One H1 reharmonization option for the selected chord. */
+export type StudioDetailReharmonizationView = Readonly<{
+  id: string;
+  title: string;
+  /** "G7" → "D♭7", or "A7" → "Em7 A7" for a ii insertion. */
+  before: string;
+  after: string;
+  explanation: string;
+}>;
+
 export type StudioDetailView = Readonly<{
+  /** The selected chord's stable ID, for actions on it. */
+  eventId: string;
   /** "Bar 2 · 4 beats · C major" — composed from real view-model fields. */
   place: string;
   symbolText: string;
@@ -382,6 +394,9 @@ export type StudioDetailView = Readonly<{
   readingNote: string | null;
   resolution: StudioDetailResolutionView | null;
   next: readonly StudioDetailNextView[];
+  reharmonizations: readonly StudioDetailReharmonizationView[];
+  /** Why no options are offered (stored notes, Custom chord); null otherwise. */
+  reharmonizeNote: string | null;
 }>;
 
 export type StudioHarmonyView = Readonly<{
@@ -749,6 +764,10 @@ export type StudioShellCallbacks = Readonly<{
    * owner law (jcpe-v2r-detail-yimm): only in-chord keys ever reach this.
    */
   onPreviewPitch: (midiPitch: number) => void;
+  /** Hear the chord's bars as they are (null) or with one option; returns a refusal message or null. */
+  onHearReharmonization: (eventId: string, optionId: string | null) => Promise<string | null>;
+  /** Apply one option as one Undo step; returns a refusal message or null. */
+  onApplyReharmonization: (eventId: string, optionId: string) => string | null;
   onQuickEntryDraftChange: (value: string) => void;
   onQuickEntryInsert: () => void;
   /**

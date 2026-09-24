@@ -689,6 +689,8 @@ export function StudioShell({
               view={view.harmony}
               onAddSuggestedChord={callbacks.onAddSuggestedChord}
               onPreviewPitch={callbacks.onPreviewPitch}
+              onHearReharmonization={callbacks.onHearReharmonization}
+              onApplyReharmonization={callbacks.onApplyReharmonization}
               onEditChord={openInspector}
               onCollapsedChange={(collapsed) => {
                 callbacks.onRailCollapsedChange("harmony", collapsed);
@@ -999,6 +1001,8 @@ export function StudioShell({
                   view={view.harmony}
                   onAddSuggestedChord={callbacks.onAddSuggestedChord}
                   onPreviewPitch={callbacks.onPreviewPitch}
+                  onHearReharmonization={callbacks.onHearReharmonization}
+                  onApplyReharmonization={callbacks.onApplyReharmonization}
                   onEditChord={openInspector}
                 />
               )

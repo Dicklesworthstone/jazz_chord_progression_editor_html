@@ -110,6 +110,8 @@ function RailFocusHarness() {
       collapsed: harmonyCollapsed,
       sheetOpen: false,
       onAddSuggestedChord: () => undefined,
+      onHearReharmonization: () => Promise.resolve(null),
+      onApplyReharmonization: () => null,
       onCollapsedChange: setHarmonyCollapsed,
       view: HARMONY_VIEW,
     }),

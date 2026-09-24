@@ -55,6 +55,7 @@ export type {
   StudioRecoveredChordLane,
   StudioTransposeIntervalId,
   StudioTransposePreview,
+  StudioReharmonizationView,
   StudioTransposeScope,
   StudioTransposeBy,
 } from "./studio-controller";
