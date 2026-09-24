@@ -43,7 +43,15 @@ export function applyNeoRiemannianTransform(
   }
 
   const chord = parsed.chord;
-  if (chord.seventh !== null || (chord.triad !== "major" && chord.triad !== "minor")) {
+  /* A pure triad only: any sixth, seventh, extension, addition, alteration,
+     omission or slash bass would be silently dropped by P/L/R (Cadd9 -> Cm
+     loses its ninth), so such chords refuse. */
+  const pureTriad =
+    (chord.triad === "major" || chord.triad === "minor") &&
+    chord.seventh === null && chord.sixth === null && chord.bass === null &&
+    chord.extensions.length === 0 && chord.additions.length === 0 &&
+    chord.alterations.length === 0 && chord.omissions.length === 0;
+  if (!pureTriad) {
     return {
       ok: false,
       refusal: {

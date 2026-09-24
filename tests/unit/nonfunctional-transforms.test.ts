@@ -107,5 +107,16 @@ describe("G8 Nonfunctional Transforms and Sequences", () => {
       if (!refused.ok) expect(refused.refusal.code).toBe("g8.unsupported_op");
     }
   });
+
+  test("P/L/R apply only to pure triads; coloured chords refuse instead of losing notes", () => {
+    /* Hand-authored near-misses: each carries a note P/L/R would delete. */
+    for (const symbol of ["Cadd9", "C6", "C/E", "Cm(add9)", "Csus4", "C7"]) {
+      const result = applyNeoRiemannianTransform(symbol, "P");
+      expect(`${symbol}: ${result.ok ? "applied" : result.refusal.code}`).toBe(`${symbol}: g8.ineligible_sonority`);
+    }
+    /* Positive controls: plain triads still transform. */
+    expect(applyNeoRiemannianTransform("C", "P").ok).toBe(true);
+    expect(applyNeoRiemannianTransform("Am", "R").ok).toBe(true);
+  });
 });
 
