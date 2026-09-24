@@ -3,6 +3,7 @@ import {
   type ChordEventId,
   addBeatValues,
   normalizeBeatValue,
+  pitchClassOf,
 } from "../domain";
 import type { AccidentalStyle } from "./syntax-contract";
 import {
@@ -347,10 +348,17 @@ export function evaluateTransformCandidates(
   });
   const secondHalfRes = halfBeatRes.ok ? addBeatValues(targetEvent.offsetBeat, halfBeatRes.value) : null;
   const newTotalRes = halfBeatRes.ok ? addBeatValues(halfBeatRes.value, halfBeatRes.value) : null;
-  if (isDominant && halfBeatRes.ok && secondHalfRes?.ok === true && newTotalRes?.ok === true) {
+  const iiRoot = transposeSpelledPitchClass(root, 4, 7);
+  /* Skip when the related ii already precedes this dominant (Dm7 G7): the
+     insertion would only repeat it. */
+  const previousParsed = targetIndex > 0 ? parseChordSymbol(events[targetIndex - 1]?.chordSymbol ?? "", accidentalStyle) : null;
+  const iiAlreadyPrecedes =
+    previousParsed?.ok === true &&
+    pitchClassOf(previousParsed.chord.root) === pitchClassOf(iiRoot) &&
+    previousParsed.chord.triad === "minor";
+  if (isDominant && !iiAlreadyPrecedes && halfBeatRes.ok && secondHalfRes?.ok === true && newTotalRes?.ok === true) {
     workSteps++;
     const halfBeat = halfBeatRes.value;
-    const iiRoot = transposeSpelledPitchClass(root, 4, 7);
     const iiRootStr = spelledPitchClassToString(iiRoot);
     const iiChordSymbol = `${iiRootStr}m7`;
 
@@ -428,14 +436,16 @@ export function evaluateTransformCandidates(
       candidateId: `cand_modal_interchange_${String(targetIndex)}`,
       lawId: "law.modal-interchange.subdominant-minor",
       family: "modal-interchange",
-      title: `Subdominant Minor Modal Interchange (${subMinorSymbol})`,
+      /* No key is known here, so this is honestly a parallel-minor borrow;
+         it is the classic "subdominant minor" only when the chord is IV. */
+      title: `Parallel minor borrow (${subMinorSymbol} for ${targetEvent.chordSymbol})`,
       targetEventId: targetEvent.eventId,
       originalProgression,
       transformedProgression,
       editPlan,
       voiceLeadingScore: 90,
       harmonicTensionDelta: 2,
-      explanation: `Replaces ${targetEvent.chordSymbol} with parallel minor subdominant ${subMinorSymbol}.`,
+      explanation: `Borrows the minor colour of the same root: ${subMinorSymbol} for ${targetEvent.chordSymbol}. On a IV chord this is the classic subdominant minor.`,
     });
   }
 

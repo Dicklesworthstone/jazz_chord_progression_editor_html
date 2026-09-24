@@ -141,5 +141,18 @@ describe("H1 Transform Laws Registry and Evaluation", () => {
       expect(split.editPlan.maintainsTimeBalance).toBe(true);
     }
   });
+
+  test("no ii-V insertion when the related ii already precedes the dominant", () => {
+    const at = (symbol: string, offset: number) =>
+      ({ eventId: eventIdOf(`g_${symbol.toLowerCase()}_${String(offset)}`), chordSymbol: symbol, offsetBeat: beat(offset), duration: beat(4) });
+    const families = (events: Parameters<typeof evaluateTransformCandidates>[0], index: number) => {
+      const result = evaluateTransformCandidates(events, index);
+      return result.ok ? result.candidates.map((candidate) => candidate.family) : [];
+    };
+    /* Dm7 G7: the ii is already there, so no insertion is offered. */
+    expect(families([at("Dm7", 0), at("G7", 4)], 1)).not.toContain("secondary-ii-v");
+    /* Near-miss: Fmaj7 G7 has no ii before G7, so the insertion is offered. */
+    expect(families([at("Fmaj7", 0), at("G7", 4)], 1)).toContain("secondary-ii-v");
+  });
 });
 
