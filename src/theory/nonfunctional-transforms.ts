@@ -1,3 +1,4 @@
+import type { IntervalQuality } from "./spelled-transposition-contract";
 import {
   type SpelledPitchClass,
 } from "../domain";
@@ -166,20 +167,27 @@ export function generateHarmonicSequence(
 
   const accidentalStyle: AccidentalStyle = options?.accidentalStyle ?? "ascii";
 
-  // Map semitone interval to SpelledInterval
-  let interval = makeSpelledInterval(2, "major", "up");
-  if (stepIntervalSemitones === -1) interval = makeSpelledInterval(2, "minor", "down");
-  else if (stepIntervalSemitones === -2) interval = makeSpelledInterval(2, "major", "down");
-  else if (stepIntervalSemitones === -3) interval = makeSpelledInterval(3, "minor", "down");
-  else if (stepIntervalSemitones === -4) interval = makeSpelledInterval(3, "major", "down");
-  else if (stepIntervalSemitones === -5) interval = makeSpelledInterval(4, "perfect", "down");
-  else if (stepIntervalSemitones === -7) interval = makeSpelledInterval(5, "perfect", "down");
-  else if (stepIntervalSemitones === 1) interval = makeSpelledInterval(2, "minor", "up");
-  else if (stepIntervalSemitones === 2) interval = makeSpelledInterval(2, "major", "up");
-  else if (stepIntervalSemitones === 3) interval = makeSpelledInterval(3, "minor", "up");
-  else if (stepIntervalSemitones === 4) interval = makeSpelledInterval(3, "major", "up");
-  else if (stepIntervalSemitones === 5) interval = makeSpelledInterval(4, "perfect", "up");
-  else if (stepIntervalSemitones === 7) interval = makeSpelledInterval(5, "perfect", "up");
+  // Map the semitone step to its spelled interval. Every size within an octave
+  // has one entry (0 repeats the motif; the tritone reads as an augmented 4th);
+  // anything else refuses rather than silently becoming a major 2nd.
+  const SPELLED_STEPS: Readonly<Record<number, readonly [number, IntervalQuality]>> = {
+    0: [1, "perfect"], 1: [2, "minor"], 2: [2, "major"], 3: [3, "minor"], 4: [3, "major"],
+    5: [4, "perfect"], 6: [4, "augmented"], 7: [5, "perfect"], 8: [6, "minor"],
+    9: [6, "major"], 10: [7, "minor"], 11: [7, "major"],
+  };
+  const spelledStep = Number.isInteger(stepIntervalSemitones)
+    ? SPELLED_STEPS[Math.abs(stepIntervalSemitones)]
+    : undefined;
+  if (spelledStep === undefined) {
+    return {
+      ok: false,
+      refusal: {
+        code: "g8.unsupported_op",
+        message: `A sequence step of ${String(stepIntervalSemitones)} semitones is outside the supported -11..11 range`,
+      },
+    };
+  }
+  const interval = makeSpelledInterval(spelledStep[0], spelledStep[1], stepIntervalSemitones < 0 ? "down" : "up");
 
   const generatedProgression: string[] = [...motifChords];
   let currentChords = [...motifChords];

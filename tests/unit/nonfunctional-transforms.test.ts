@@ -91,4 +91,21 @@ describe("G8 Nonfunctional Transforms and Sequences", () => {
       expect(res.refusal.code).toBe("g8.sequence_exceeded");
     }
   });
+
+  test("every step size within an octave is spelled; zero repeats and wider steps refuse", () => {
+    /* Hand-derived: 0 keeps C; a tritone up reads as an augmented 4th (C -> F#);
+     * a minor 3rd down moves Dm7 to Bm7. */
+    const zero = generateHarmonicSequence(["C"], 0, 1);
+    expect(zero.ok && zero.sequence.generatedProgression).toEqual(["C", "C"]);
+    const tritone = generateHarmonicSequence(["C"], 6, 1);
+    expect(tritone.ok && tritone.sequence.generatedProgression).toEqual(["C", "F#"]);
+    const third = generateHarmonicSequence(["Dm7"], -3, 1);
+    expect(third.ok && third.sequence.generatedProgression).toEqual(["Dm7", "Bm7"]);
+    for (const step of [12, -12, 1.5]) {
+      const refused = generateHarmonicSequence(["C"], step, 1);
+      expect(refused.ok).toBe(false);
+      if (!refused.ok) expect(refused.refusal.code).toBe("g8.unsupported_op");
+    }
+  });
 });
+
