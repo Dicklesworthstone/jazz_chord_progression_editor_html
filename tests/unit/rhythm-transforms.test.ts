@@ -99,4 +99,25 @@ describe("G7 Rhythm Transforms and Tension Curve", () => {
       expect(res2.refusal.code).toBe("g7.empty_events");
     }
   });
+
+  test("delay, anticipation and merge move time exactly or refuse", () => {
+    const ev = (id: string, chord: string, offset: number, length: number) =>
+      ({ eventId: eventIdOf(id), chordSymbol: chord, offsetBeat: beat(offset), duration: beat(length) });
+    /* Delay by one: beat 4 -> 5; anticipation by one: beat 4 -> 3. */
+    const delayed = applyRhythmTransform([ev("a", "C", 4, 4)], "delay", { shiftDelta: beat(1) });
+    expect(delayed.ok && delayed.result.transformedEvents[0]?.offsetBeat).toEqual(beat(5));
+    expect(delayed.ok && delayed.result.totalBeats).toEqual(beat(9));
+    const early = applyRhythmTransform([ev("a", "C", 4, 4)], "anticipation", { shiftDelta: beat(1) });
+    expect(early.ok && early.result.transformedEvents[0]?.offsetBeat).toEqual(beat(3));
+    /* Anticipating the first beat would fall before the chart: refuse. */
+    expect(applyRhythmTransform([ev("a", "C", 0, 4)], "anticipation", { shiftDelta: beat(1) }).ok).toBe(false);
+    /* Merge joins consecutive repeats only: C C G -> C(8) G(4). */
+    const merged = applyRhythmTransform([ev("a", "C", 0, 4), ev("b", "C", 4, 4), ev("c", "G", 8, 4)], "merge");
+    expect(merged.ok && merged.result.transformedEvents.map((e) => [e.chordSymbol, e.duration.numerator / e.duration.denominator])).toEqual([["C", 8], ["G", 4]]);
+    /* Diminution past the finest supported grid refuses instead of keeping 1/960. */
+    const tiny = applyRhythmTransform([{ ...ev("a", "C", 0, 1), duration: beat(1, 960) }], "diminution");
+    expect(tiny.ok).toBe(false);
+    if (!tiny.ok) expect(tiny.refusal.code).toBe("g7.invalid_duration");
+  });
 });
+

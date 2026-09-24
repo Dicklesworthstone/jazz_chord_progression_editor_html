@@ -3,6 +3,7 @@ import {
   type ChordEventId,
   addBeatValues,
   normalizeBeatValue,
+  subtractBeatValues,
   parseStableId,
 } from "../domain";
 import type { AccidentalStyle } from "./syntax-contract";
@@ -20,6 +21,10 @@ import {
 } from "./rhythm-transforms-contract";
 import { parseChordSymbol } from "./chord-symbol";
 
+const RHYTHM_TRANSFORM_KINDS: readonly RhythmTransformKind[] = [
+  "anticipation", "delay", "split", "merge", "augmentation", "diminution", "metric-displacement",
+];
+
 function eventIdOf(wire: string): ChordEventId {
   const res = parseStableId("event", wire);
   if (!res.ok) throw new Error(`Invalid event id: ${wire}`);
@@ -32,12 +37,20 @@ function beat(numerator: number, denominator = 1): BeatValue {
   return res.value;
 }
 
-function scaleBeat(dur: BeatValue, multNum: number, multDen: number): BeatValue {
-  const num = dur.numerator * multNum;
-  const den = dur.denominator * multDen;
-  const res = normalizeBeatValue({ numerator: num, denominator: den });
-  if (res.ok) return res.value;
-  return dur;
+/** Exact scaling; null when the result leaves the supported beat grid. */
+function scaleBeat(dur: BeatValue, multNum: number, multDen: number): BeatValue | null {
+  const res = normalizeBeatValue({ numerator: dur.numerator * multNum, denominator: dur.denominator * multDen });
+  return res.ok ? res.value : null;
+}
+
+function addBeat(left: BeatValue, right: BeatValue): BeatValue | null {
+  const res = addBeatValues(left, right);
+  return res.ok ? res.value : null;
+}
+
+function subtractBeat(left: BeatValue, right: BeatValue): BeatValue | null {
+  const res = subtractBeatValues(left, right);
+  return res.ok && res.value.numerator >= 0 ? res.value : null;
 }
 
 export function computeTensionCurve(
@@ -179,97 +192,71 @@ export function applyRhythmTransform(
     };
   }
 
+  /* Untyped callers: an unknown kind refuses instead of falling through. */
+  if (!(RHYTHM_TRANSFORM_KINDS as readonly string[]).includes(transformKind)) {
+    return {
+      ok: false,
+      refusal: { code: "g7.unsupported_transform", message: `Unsupported rhythm transform ${transformKind}` },
+    };
+  }
   const transformedEvents: TransformedEvent[] = [];
   let currentOffset: BeatValue = beat(0);
   let workSteps = 0;
   const shiftDelta: BeatValue = options?.shiftDelta ?? beat(1);
+  /* Exact rational time or an explicit refusal: no arithmetic failure may
+     keep the old value and still report success. */
+  const unrepresentable = (what: string): G7TransformResult => ({
+    ok: false,
+    refusal: { code: "g7.invalid_duration", message: `${what} is outside the supported exact beat grid` },
+  });
+  const push = (eventId: ChordEventId, chordSymbol: string, offsetBeat: BeatValue, duration: BeatValue): boolean => {
+    transformedEvents.push({ eventId, chordSymbol, offsetBeat, duration });
+    const end = addBeat(offsetBeat, duration);
+    if (end === null) return false;
+    if (end.numerator * currentOffset.denominator > currentOffset.numerator * end.denominator) currentOffset = end;
+    return true;
+  };
 
-  if (transformKind === "diminution") {
-    // Halve duration of each chord
-    for (let i = 0; i < events.length; i++) {
-      workSteps++;
-      const ev = events[i];
-      if (!ev) continue;
-      const newDuration = scaleBeat(ev.duration, 1, 2);
-
-      transformedEvents.push({
-        eventId: ev.eventId,
-        chordSymbol: ev.chordSymbol,
-        offsetBeat: currentOffset,
-        duration: newDuration,
-      });
-
-      const addRes = addBeatValues(currentOffset, newDuration);
-      currentOffset = addRes.ok ? addRes.value : currentOffset;
-    }
-  } else if (transformKind === "augmentation") {
-    // Double duration of each chord
-    for (let i = 0; i < events.length; i++) {
-      workSteps++;
-      const ev = events[i];
-      if (!ev) continue;
-      const newDuration = scaleBeat(ev.duration, 2, 1);
-
-      transformedEvents.push({
-        eventId: ev.eventId,
-        chordSymbol: ev.chordSymbol,
-        offsetBeat: currentOffset,
-        duration: newDuration,
-      });
-
-      const addRes = addBeatValues(currentOffset, newDuration);
-      currentOffset = addRes.ok ? addRes.value : currentOffset;
-    }
-  } else if (transformKind === "split") {
-    // Split each event into 2 equal parts
-    for (let i = 0; i < events.length; i++) {
-      workSteps++;
-      const ev = events[i];
-      if (!ev) continue;
-      const halfDur = scaleBeat(ev.duration, 1, 2);
-
-      // Part 1
-      transformedEvents.push({
-        eventId: ev.eventId,
-        chordSymbol: ev.chordSymbol,
-        offsetBeat: currentOffset,
-        duration: halfDur,
-      });
-      const add1 = addBeatValues(currentOffset, halfDur);
-      currentOffset = add1.ok ? add1.value : currentOffset;
-
-      // Part 2
-      transformedEvents.push({
-        eventId: eventIdOf(`split_${ev.eventId}_part2`),
-        chordSymbol: ev.chordSymbol,
-        offsetBeat: currentOffset,
-        duration: halfDur,
-      });
-      const add2 = addBeatValues(currentOffset, halfDur);
-      currentOffset = add2.ok ? add2.value : currentOffset;
-    }
-  } else if (transformKind === "anticipation" || transformKind === "metric-displacement") {
+  if (transformKind === "diminution" || transformKind === "augmentation" || transformKind === "split") {
+    /* Re-lay the events end to end from beat 0 at their new lengths. */
+    let cursor: BeatValue = beat(0);
     for (const ev of events) {
       workSteps++;
-      const shiftRes = addBeatValues(ev.offsetBeat, shiftDelta);
-      const newOffset = shiftRes.ok ? shiftRes.value : ev.offsetBeat;
-      transformedEvents.push({
-        eventId: ev.eventId,
-        chordSymbol: ev.chordSymbol,
-        offsetBeat: newOffset,
-        duration: ev.duration,
-      });
+      const scaled = transformKind === "augmentation" ? scaleBeat(ev.duration, 2, 1) : scaleBeat(ev.duration, 1, 2);
+      if (scaled === null) return unrepresentable(`The ${transformKind} of ${ev.chordSymbol}`);
+      const parts = transformKind === "split" ? [ev.eventId, eventIdOf(`split_${ev.eventId}_part2`)] : [ev.eventId];
+      for (const id of parts) {
+        if (!push(id, ev.chordSymbol, cursor, scaled)) return unrepresentable("The transformed timeline");
+        const next = addBeat(cursor, scaled);
+        if (next === null) return unrepresentable("The transformed timeline");
+        cursor = next;
+      }
+    }
+  } else if (transformKind === "delay" || transformKind === "metric-displacement" || transformKind === "anticipation") {
+    /* Delay and displacement move every event later by shiftDelta;
+       anticipation moves it earlier and refuses before beat 0. */
+    for (const ev of events) {
+      workSteps++;
+      const moved = transformKind === "anticipation" ? subtractBeat(ev.offsetBeat, shiftDelta) : addBeat(ev.offsetBeat, shiftDelta);
+      if (moved === null) return unrepresentable(`Shifting ${ev.chordSymbol}`);
+      if (!push(ev.eventId, ev.chordSymbol, moved, ev.duration)) return unrepresentable("The shifted timeline");
     }
   } else {
-    // Default pass-through
+    /* Merge consecutive repeats of the same chord into one event whose
+       duration is their exact sum; distinct neighbours are left as they are. */
     for (const ev of events) {
       workSteps++;
-      transformedEvents.push({
-        eventId: ev.eventId,
-        chordSymbol: ev.chordSymbol,
-        offsetBeat: ev.offsetBeat,
-        duration: ev.duration,
-      });
+      const previous = transformedEvents[transformedEvents.length - 1];
+      if (previous !== undefined && previous.chordSymbol === ev.chordSymbol) {
+        const joined = addBeat(previous.duration, ev.duration);
+        if (joined === null) return unrepresentable(`Merging ${ev.chordSymbol}`);
+        transformedEvents[transformedEvents.length - 1] = { ...previous, duration: joined };
+        const end = addBeat(previous.offsetBeat, joined);
+        if (end === null) return unrepresentable("The merged timeline");
+        currentOffset = end;
+      } else if (!push(ev.eventId, ev.chordSymbol, ev.offsetBeat, ev.duration)) {
+        return unrepresentable("The merged timeline");
+      }
     }
   }
 
