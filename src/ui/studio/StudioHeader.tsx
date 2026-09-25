@@ -198,26 +198,13 @@ export function StudioHeader({
         <span>{chartFocus ? "Exit focus" : "Focus chart"}</span>
       </button>
 
+      {/*
+        Everyday history commands come first in DOM and visual order, then
+        the revision, then document actions (My Charts, new/import/export):
+        on phones this row scrolls horizontally, and Undo/Share must be on
+        screen without scrolling while keyboard order still matches.
+      */}
       <div class="studio-document-actions">
-        {documentActions}
-        {/*
-          The revision counter alone: the retired "Not exported" pill named
-          an export feature this build does not have, which read as jargon
-          to strangers. The live-region container stays for the contract's
-          shell-region inventory and for revision announcements.
-        */}
-        <div
-          class="studio-document-status"
-          id="document-status"
-          aria-label="Document status"
-          aria-live="polite"
-          aria-atomic="true"
-          role="status"
-        >
-          <span class="studio-document-status__revision">
-            {view.revisionLabel}
-          </span>
-        </div>
         <div
           class="studio-history-actions"
           id="document-menu"
@@ -334,6 +321,25 @@ export function StudioHeader({
             {view.shareFeedback?.message ?? ""}
           </span>
         </div>
+        {/*
+          The revision counter alone: the retired "Not exported" pill named
+          an export feature this build does not have, which read as jargon
+          to strangers. The live-region container stays for the contract's
+          shell-region inventory and for revision announcements.
+        */}
+        <div
+          class="studio-document-status"
+          id="document-status"
+          aria-label="Document status"
+          aria-live="polite"
+          aria-atomic="true"
+          role="status"
+        >
+          <span class="studio-document-status__revision">
+            {view.revisionLabel}
+          </span>
+        </div>
+        {documentActions}
       </div>
     </header>
   );

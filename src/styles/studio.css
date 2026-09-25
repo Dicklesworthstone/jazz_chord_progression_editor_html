@@ -2788,6 +2788,42 @@
   }
 }
 
+/*
+ * Phone header (<40rem): the document commands (My Charts, new/import/
+ * export, revision, Undo/Redo/Clear/Share/Export MIDI) are one horizontally
+ * scrolling toolbar row instead of four wrapped rows, so a first phone visit
+ * reaches the chart. Every control stays visible, focusable, in DOM and tab
+ * order, and in the accessibility tree; nothing is hidden or renamed.
+ */
+@media (max-width: 39.999rem) {
+  .studio-document-actions {
+    display: flex;
+    order: 2;
+    flex-basis: 100%;
+    flex-wrap: nowrap;
+    align-items: center;
+    /* Start-aligned: an end-aligned overflowing flex row pushes its first
+       items before the scroll origin, where no scroll can reach them. */
+    justify-content: flex-start;
+    gap: var(--space-2);
+    min-inline-size: 0;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+    padding-block-end: var(--space-1);
+  }
+
+  .studio-document-actions > * {
+    flex: none;
+  }
+
+  .studio-document-actions .studio-history-actions {
+    order: 0;
+    flex-basis: auto;
+    flex-wrap: nowrap;
+  }
+}
+
 .studio-quick-entry__palette-roots .ui-button,
 .studio-quick-entry__palette-qualities .ui-button {
   font-family: var(--font-chord);
@@ -5284,6 +5320,18 @@ button.studio-paper-head__key:focus-visible {
 
 @media (max-width: 55.999rem) {
   .studio-transport__meter {
+    display: none;
+  }
+}
+
+/*
+ * At 320px the controls, the 4.5rem readout and Sound settings need ~352px:
+ * Sound settings (instrument, groove, tempo, volume) was pushed 32px off
+ * screen. Below 22.5rem the readout yields - the chart itself highlights
+ * the sounding chord - so every control stays on screen.
+ */
+@media (max-width: 22.499rem) {
+  .studio-transport__now {
     display: none;
   }
 }
