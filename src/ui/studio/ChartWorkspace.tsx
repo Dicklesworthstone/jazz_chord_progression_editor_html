@@ -1825,7 +1825,7 @@ export function ChartWorkspace({
       </div>
 
       <header class="studio-chart__header">
-        <div>
+        <div class="studio-chart__title">
           <p class="studio-kicker">Lead sheet</p>
           <h2 id="studio-chart-heading">Chart workspace</h2>
           <p class="studio-chart__selection" data-testid="chart-selection-status">

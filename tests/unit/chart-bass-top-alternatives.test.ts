@@ -101,7 +101,7 @@ describe("through the controller", () => {
     const inspector = controller.readInspector(eventId);
     const voicing = inspector.ok ? inspector.value.event.voicing : null;
     expect(voicing?.mode).toBe("manual");
-    expect(voicing !== null && voicing.mode !== "auto" ? voicing.pitches : null).toEqual(first.pitches);
+    expect<readonly unknown[] | null>(voicing !== null && voicing.mode !== "auto" ? voicing.pitches : null).toEqual(first.pitches);
     expect(controller.undo().ok).toBe(true);
     expect(controller.getSnapshot().sections[0]?.measures[0]?.events[0]?.symbolText).toBe("Dm7");
     // An alternative that is not on the list refuses and changes nothing.

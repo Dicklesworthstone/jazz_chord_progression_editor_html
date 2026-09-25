@@ -69,7 +69,7 @@ describe("continuation audition", () => {
     const compiled = compileStudioPlaybackPlan(valid.value);
     if (!compiled.ok) throw new Error("compile");
     // G2 F3 B3 D4 = MIDI 43 53 59 62, in order.
-    expect(compiled.plan.events[1]?.midiPitches).toEqual([43, 53, 59, 62]);
+    expect<readonly number[] | undefined>(compiled.plan.events[1]?.midiPitches).toEqual([43, 53, 59, 62]);
     expect([...new Set(compiled.plan.events[2]?.midiPitches.map((midi) => midi % 12))].sort((a, b) => a - b)).toEqual([0, 4, 7, 9]);
   });
 

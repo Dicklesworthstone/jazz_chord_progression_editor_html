@@ -91,6 +91,36 @@ function requestForCase(seed: SeedCase): H0ChordScaleRequest {
   return build(chordSpec(source.symbol), frameFor("contextId" in seed ? seed.contextId : undefined), selection, declaration);
 }
 
+type ExpectedClash = Readonly<{ tension: string; chordTone: string }>;
+
+/** One fixture option row; fields are compared as the fixture's plain strings. */
+type ExpectedOption = Partial<Readonly<{
+  family: string;
+  mappingRuleId: string;
+  strength: string;
+  containedChordDegrees: readonly string[];
+  availableTensions: readonly string[];
+  clashes: readonly ExpectedClash[];
+  exceptions: readonly string[];
+}>>;
+
+type ExpectedCase = Partial<Readonly<{
+  refusal: Readonly<{ code: string }>;
+  orderedOptions: readonly ExpectedOption[];
+  selectedRealizationPreserved: boolean;
+  disposition: string;
+  uniqueScaleClaim: boolean;
+  forbiddenFamilies: readonly string[];
+  forbiddenExactFamilies: readonly string[];
+  forbiddenMappingRuleIds: readonly string[];
+  clashes: readonly ExpectedClash[];
+  suspendedExceptionApplied: boolean;
+  matches: readonly Readonly<{ chordDegree: string; scaleDegree: string }>[];
+  clashRecordRetained: ExpectedClash;
+  exceptionRetained: string;
+  availableTensionRetained: string;
+}>>;
+
 function options(result: H0ChordScaleResult) {
   if (!result.ok) throw new Error(`refused ${result.refusal.code}`);
   return result.value.options;
@@ -105,71 +135,71 @@ describe("independent chord-scale cases", () => {
       // Inputs are never mutated, and the same input replays byte-identically.
       expect(JSON.stringify(request)).toBe(before);
       expect(JSON.stringify(enumerateChordScaleOptions(request))).toBe(JSON.stringify(result));
-      const expected = seed.expected as Record<string, unknown>;
-      if ("refusal" in expected) {
-        expect(result.ok ? "ok" : result.refusal.code).toBe((expected.refusal as { code: string }).code);
+      const expected = seed.expected as ExpectedCase;
+      if (expected.refusal !== undefined) {
+        expect(result.ok ? "ok" : result.refusal.code).toBe(expected.refusal.code);
         return;
       }
       const found = options(result);
-      if ("orderedOptions" in expected) {
-        const wanted = expected.orderedOptions as readonly Record<string, unknown>[];
-        expect(found.map((option) => option.family)).toEqual(wanted.map((row) => row.family));
+      if (expected.orderedOptions !== undefined) {
+        const wanted = expected.orderedOptions;
+        expect<(string | undefined)[]>(found.map((option) => option.family)).toEqual(wanted.map((row) => row.family));
         wanted.forEach((row, index) => {
           const option = found[index];
           if (option === undefined) throw new Error("missing option");
-          if ("mappingRuleId" in row) expect(option.mappingRuleId).toBe(row.mappingRuleId as string);
-          if ("strength" in row) expect(option.strength).toBe(row.strength as string);
-          if ("containedChordDegrees" in row) expect(option.containment.containedChordDegrees.map(token)).toEqual(row.containedChordDegrees);
-          if ("availableTensions" in row) {
+          if (row.mappingRuleId !== undefined) expect<string>(option.mappingRuleId).toBe(row.mappingRuleId);
+          if (row.strength !== undefined) expect<string>(option.strength).toBe(row.strength);
+          if (row.containedChordDegrees !== undefined) expect(option.containment.containedChordDegrees.map(token)).toEqual([...row.containedChordDegrees]);
+          if (row.availableTensions !== undefined) {
             expect(option.tensions.filter((tension) => tension.availability === "available").map((tension) => token(tension.degree)))
-              .toEqual(row.availableTensions);
+              .toEqual([...row.availableTensions]);
           }
-          if ("clashes" in row) {
+          if (row.clashes !== undefined) {
             expect(option.minorNinthClashes.map((clash) => ({ tension: token(clash.tensionDegree), chordTone: token(clash.chordToneDegree) })))
-              .toEqual(row.clashes);
+              .toEqual([...row.clashes]);
           }
-          if ("exceptions" in row) expect(option.exceptions.map((exception) => exception.id)).toEqual(row.exceptions);
-          if (expected.selectedRealizationPreserved === true) expect(option.selectedRealizationId).toBe(request.current.selectedRealizationId ?? "");
+          if (row.exceptions !== undefined) expect<string[]>(option.exceptions.map((exception) => exception.id)).toEqual([...row.exceptions]);
+          if (expected.selectedRealizationPreserved === true) expect<string>(option.selectedRealizationId).toBe(request.current.selectedRealizationId ?? "");
         });
       }
-      if ("disposition" in expected && result.ok) expect(result.value.disposition).toBe(expected.disposition as string);
+      if (expected.disposition !== undefined && result.ok) expect<string>(result.value.disposition).toBe(expected.disposition);
       if (expected.uniqueScaleClaim === false) expect(found.length).toBeGreaterThan(1);
-      for (const family of (expected.forbiddenFamilies ?? []) as string[]) {
-        expect(found.map((option) => option.family)).not.toContain(family);
+      for (const family of expected.forbiddenFamilies ?? []) {
+        expect<string[]>(found.map((option) => option.family)).not.toContain(family);
       }
-      for (const family of (expected.forbiddenExactFamilies ?? []) as string[]) {
-        expect(found.filter((option) => option.strength === "exact").map((option) => option.family)).not.toContain(family);
+      for (const family of expected.forbiddenExactFamilies ?? []) {
+        expect<string[]>(found.filter((option) => option.strength === "exact").map((option) => option.family)).not.toContain(family);
       }
-      for (const ruleId of (expected.forbiddenMappingRuleIds ?? []) as string[]) {
-        expect(found.map((option) => option.mappingRuleId)).not.toContain(ruleId);
+      for (const ruleId of expected.forbiddenMappingRuleIds ?? []) {
+        expect<string[]>(found.map((option) => option.mappingRuleId)).not.toContain(ruleId);
       }
-      if ("clashes" in expected) {
+      if (expected.clashes !== undefined) {
         const all = found.flatMap((option) => option.minorNinthClashes.map((clash) => ({
           tension: token(clash.tensionDegree), chordTone: token(clash.chordToneDegree), exception: clash.exceptionApplied,
         })));
-        for (const clash of expected.clashes as { tension: string; chordTone: string }[]) {
+        for (const clash of expected.clashes) {
           const match = all.find((row) => row.tension === clash.tension && row.chordTone === clash.chordTone);
           expect(match === undefined ? "absent" : "present").toBe("present");
           if (expected.suspendedExceptionApplied === false) expect(match?.exception).toBe(false);
         }
       }
-      if ("matches" in expected) {
+      if (expected.matches !== undefined) {
         // Compound tensions are contained by same-alteration simple degrees only.
         const mixolydian = found.find((option) => option.mappingRuleId === "h0.scale.mixolydian");
         const scale = mixolydian?.degrees.map(token) ?? [];
-        for (const match of expected.matches as { chordDegree: string; scaleDegree: string }[]) {
+        for (const match of expected.matches) {
           expect(mixolydian?.containment.containedChordDegrees.map(token)).toContain(match.chordDegree);
           expect(scale).toContain(match.scaleDegree);
           expect(scale).not.toContain(match.chordDegree);
         }
       }
-      if ("clashRecordRetained" in expected) {
-        const retained = expected.clashRecordRetained as { tension: string; chordTone: string };
+      if (expected.clashRecordRetained !== undefined) {
+        const retained = expected.clashRecordRetained;
         const option = found.find((row) => row.exceptions.some((exception) => exception.id === expected.exceptionRetained));
         expect(option?.minorNinthClashes.map((clash) => [token(clash.tensionDegree), token(clash.chordToneDegree), clash.exceptionApplied]))
           .toContainEqual([retained.tension, retained.chordTone, true]);
         expect(option?.tensions.filter((tension) => tension.availability === "available").map((tension) => token(tension.degree)))
-          .toContain(expected.availableTensionRetained as string);
+          .toContain(expected.availableTensionRetained ?? "");
       }
     });
   }

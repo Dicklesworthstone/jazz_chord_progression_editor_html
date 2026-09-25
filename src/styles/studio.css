@@ -4968,6 +4968,48 @@ button.studio-paper-head__key:focus-visible {
   opacity: 0.35;
 }
 
+/*
+ * Kicker, heading and selection share one baseline: stacked, they cost 59px
+ * of paper above the music, and at 1280x800 no chord reached the screen.
+ */
+.studio-chart__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: var(--space-2);
+}
+
+.studio-section__identity > div {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+/*
+ * Wide enough to wrap: the title takes its own line and the five edit
+ * commands fit one row at the 1280 chart column (536px needed vs 522px
+ * before). Every control stays visible at its full label.
+ */
+@media (min-width: 40rem) {
+  .studio-chart__header {
+    row-gap: var(--space-1);
+    padding-inline: var(--space-2);
+  }
+
+  .studio-chart__title {
+    flex: 1 1 100%;
+  }
+
+  .studio-chart__edit-actions .ui-button,
+  .studio-chart__view-actions .ui-button {
+    padding-inline: calc(var(--space-2) - 2px);
+  }
+
+  .studio-chart-summary .ui-key-value-list__item {
+    padding-inline: var(--space-2);
+  }
+}
+
 /* Two chords sharing a bar step down so neither crowds the barline. */
 .studio-measure__chords {
   gap: var(--space-1);
@@ -5320,6 +5362,40 @@ button.studio-paper-head__key:focus-visible {
 
 @media (max-width: 55.999rem) {
   .studio-transport__meter {
+    display: none;
+  }
+}
+
+/*
+ * Between the inline-settings breakpoint and 100rem the row asked for more
+ * than it had: at 1280 the controls, readout, meter and settings needed
+ * 1384px of a 1248px row, so the audio status shrank to 0px ("Audio off"
+ * invisible) and the volume fader was pushed off screen. The decorative
+ * level meter and status glyph yield first and the gaps tighten; below
+ * 80rem the readout yields too (the chart highlights the sounding chord).
+ * No control leaves the row.
+ */
+@media (min-width: 71.875rem) and (max-width: 99.999rem) {
+  .studio-transport__row {
+    gap: var(--space-3);
+  }
+
+  .studio-transport__meter,
+  .studio-transport__status-icon {
+    display: none;
+  }
+
+  .studio-transport__settings:not(.studio-sound-settings) {
+    gap: var(--space-2);
+  }
+
+  .studio-transport__settings:not(.studio-sound-settings) .studio-transport__select select {
+    max-inline-size: 8rem;
+  }
+}
+
+@media (min-width: 71.875rem) and (max-width: 79.999rem) {
+  .studio-transport__now {
     display: none;
   }
 }
