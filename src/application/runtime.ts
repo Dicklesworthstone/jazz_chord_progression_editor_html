@@ -215,3 +215,4 @@ export type {StudioNoteFirstGuitarView} from "./studio-guitar";
 export { reviewMidiImportSource, sourceReviewPitches } from "./studio-midi-source-review";
 export type { MidiImportSpanKey, MidiSourceReview, MidiSourceReviewResult } from "./studio-midi-source-review";
 export type { ChartScaleOptionsView, ChartScaleOptionView } from "./chart-scale-options";
+export type { BassTopAlternative } from "./chart-bass-top-alternatives";

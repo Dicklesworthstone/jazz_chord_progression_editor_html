@@ -381,6 +381,16 @@ export type StudioDetailScaleView = Readonly<{
   caveat: string | null;
 }>;
 
+/** One chord that keeps the selected chord's sounding bass and top notes. */
+export type StudioDetailBassTopView = Readonly<{
+  /** `bass-top:<symbol>`, routed by the reharmonization callbacks. */
+  id: string;
+  symbol: string;
+  voicingText: string;
+  sharedTones: number;
+  innerMovement: number;
+}>;
+
 /** One H1 reharmonization option for the selected chord. */
 export type StudioDetailReharmonizationView = Readonly<{
   id: string;
@@ -413,6 +423,11 @@ export type StudioDetailView = Readonly<{
   scalesPlural: boolean;
   /** Why no options are offered (stored notes, Custom chord); null otherwise. */
   reharmonizeNote: string | null;
+  /**
+   * Chords that keep this chord's exact sounding bass and top notes (idea 13).
+   * Hear/Apply reuse the reharmonization callbacks with `bass-top:` ids.
+   */
+  bassTop: readonly StudioDetailBassTopView[];
 }>;
 
 export type StudioHarmonyView = Readonly<{

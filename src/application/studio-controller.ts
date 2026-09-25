@@ -129,6 +129,12 @@ import {
 import { chartScaleOptions, type ChartScaleOptionsView } from "./chart-scale-options";
 import { continuationAudition } from "./chart-continuation-audition";
 import {
+  bassTopAlternatives,
+  buildBassTopAlternative,
+  type BassTopAlternative,
+  type SoundingNote,
+} from "./chart-bass-top-alternatives";
+import {
   buildChartReharmonization,
   listChartReharmonizations,
   type ChartReharmonizationOption,
@@ -752,6 +758,16 @@ export interface StudioController {
    * for a Custom chord or when no reviewed mapping fits. Read-only.
    */
   readonly readScaleOptions: (eventId: string) => ChartScaleOptionsView | null;
+  /** Chords keeping this chord's exact sounding bass and top notes (idea 13). */
+  readonly readBassTopAlternatives: (eventId: string) => readonly BassTopAlternative[];
+  /** Hear the chord (symbol null) or an alternative in place; nothing changes. */
+  readonly hearBassTopAlternative: (
+    eventId: string,
+    symbol: string | null,
+    gesture: StudioAudioGesture,
+  ) => Promise<StudioInspectorResult<void>>;
+  /** Replace the chord with an alternative, stored as exact notes; one Undo step. */
+  readonly applyBassTopAlternative: (eventId: string, symbol: string) => StudioControllerActionResult;
   /**
    * Hear a suggested next chord in context: the chord before the anchor, the
    * anchor (the given chord, or the chart's last chord when null), then the
@@ -2961,6 +2977,83 @@ function makeStudioComposition(
       source = built.candidate;
       for (const id of built.focusEventIds) focus.add(id);
     }
+    return hearAroundEvents(source, focus, gesture);
+  };
+
+  /*
+   * September idea 13, one chord at a time: chords that keep this chord's
+   * exact sounding bass and top notes (see chart-bass-top-alternatives). The
+   * sounding notes come from the same compiled plan playback uses.
+   */
+  const soundingPlanCache = new WeakMap<object, ReadonlyMap<string, readonly SoundingNote[]>>();
+  const soundingNotes = (eventId: string): readonly SoundingNote[] | null => {
+    const document = state.document;
+    let byEvent = soundingPlanCache.get(document);
+    if (byEvent === undefined) {
+      const compiled = compileStudioPlaybackPlan(document);
+      const map = new Map<string, readonly SoundingNote[]>();
+      if (compiled.ok) {
+        for (const event of compiled.plan.events) {
+          const notes: SoundingNote[] = [];
+          for (const [index, midi] of event.midiPitches.entries()) {
+            const pitch = event.pitches[index];
+            // Spelling and pitch are index-aligned; a gap means no reading, not a guess.
+            if (pitch === undefined) { notes.length = 0; break; }
+            notes.push(Object.freeze({ midi, pitch: Object.freeze({ step: pitch.step, alter: pitch.alter }) }));
+          }
+          if (notes.length > 0) map.set(String(event.eventId), Object.freeze(notes));
+        }
+      }
+      byEvent = map;
+      soundingPlanCache.set(document, byEvent);
+    }
+    return byEvent.get(eventId) ?? null;
+  };
+  const readBassTopAlternatives = (eventId: string): readonly BassTopAlternative[] => {
+    const location = documentIndex.events.get(eventId);
+    const notes = soundingNotes(eventId);
+    if (location === undefined || notes === null || location.event.chord.kind !== "parsed") return Object.freeze([]);
+    return bassTopAlternatives(notes, location.event.chord.sourceText);
+  };
+  const bassTopCandidate = (eventId: string, symbol: string): ProgressionDocumentV2 | string => {
+    const location = documentIndex.events.get(eventId);
+    const alternative = readBassTopAlternatives(eventId).find((row) => row.symbol === symbol);
+    if (location === undefined || alternative === undefined) return "That alternative no longer applies to this chord.";
+    const shape = dependencies.decodeDocumentShape(buildBassTopAlternative(state.document, location.id, alternative));
+    if (!shape.ok) return "That alternative could not be prepared.";
+    const validated = dependencies.validateDocumentSemantics(shape.value);
+    return validated.ok ? validated.value : "That alternative could not be prepared.";
+  };
+  const hearBassTopAlternative = async (
+    eventId: string,
+    symbol: string | null,
+    gesture: StudioAudioGesture,
+  ): Promise<StudioInspectorResult<void>> => {
+    const location = documentIndex.events.get(eventId);
+    if (location === undefined) return previewFailure("u1.target_missing", "That chord is no longer part of this chart.");
+    const source = symbol === null ? state.document : bassTopCandidate(eventId, symbol);
+    if (typeof source === "string") return previewFailure("u1.reharmonize_unavailable", source);
+    return hearAroundEvents(source, new Set([location.id]), gesture);
+  };
+  const applyBassTopAlternative = (eventId: string, symbol: string): StudioControllerActionResult => {
+    const location = documentIndex.events.get(eventId);
+    const candidate = bassTopCandidate(eventId, symbol);
+    if (location === undefined || typeof candidate === "string") {
+      return editRefusal("apply-reharmonization", "u1.reharmonize_unavailable",
+        typeof candidate === "string" ? candidate : "That chord is no longer part of this chart.", ["eventId"]);
+    }
+    return commitReharmonization(`Same bass and top: ${symbol} for ${location.event.chord.sourceText}`,
+      `bass-top:${symbol}`, "u2.keep-bass-top", {
+        candidate, changedIds: [location.id], sourceEventIds: [location.id], exactTimingPreserved: true,
+      });
+  };
+
+  /** Hear a two-bar excerpt of a (candidate) document around the focus chords. */
+  const hearAroundEvents = async (
+    source: ProgressionDocumentV2,
+    focus: ReadonlySet<ChordEventId>,
+    gesture: StudioAudioGesture,
+  ): Promise<StudioInspectorResult<void>> => {
     const excerpt = auditionExcerpt(source, focus, 2);
     if (excerpt === null) return previewFailure("u1.chart_already_empty", "This chart has no chords to hear.");
     const shape = dependencies.decodeDocumentShape(excerpt);
@@ -2983,7 +3076,28 @@ function makeStudioComposition(
       return editRefusal("apply-reharmonization", "u1.reharmonize_unavailable",
         reharmonizeUnavailableMessage(built.reason), ["eventId"]);
     }
-    const envelope = commandEnvelope("studio-reharmonize", `Reharmonize: ${built.option.after.join(" ")} for ${built.option.before.join(" ")}`);
+    return commitReharmonization(
+      `Reharmonize: ${built.option.after.join(" ")} for ${built.option.before.join(" ")}`,
+      built.option.id, built.option.lawId, built,
+    );
+  };
+
+  /**
+   * One Undo step through A0's apply-reharmonization: the request slot opens
+   * and the command commits in one transition; a refusal closes the slot.
+   */
+  const commitReharmonization = (
+    label: string,
+    branchId: string,
+    lawId: string,
+    built: Readonly<{
+      candidate: ProgressionDocumentV2;
+      changedIds: readonly string[];
+      sourceEventIds: readonly ChordEventId[];
+      exactTimingPreserved: boolean;
+    }>,
+  ): StudioControllerActionResult => {
+    const envelope = commandEnvelope("studio-reharmonize", label);
     return apply("apply-reharmonization", (current) => {
       const requestId = Math.max(current.nextSequence, ...current.pendingRequests.map((row) => row.id + 1));
       const begun = beginApplicationRequest({
@@ -2995,8 +3109,8 @@ function makeStudioComposition(
       const command: ApplyReharmonizationCommand = Object.freeze({
         ...envelope,
         kind: "apply-reharmonization",
-        branchId: built.option.id,
-        transformationIds: Object.freeze([built.option.lawId] as const),
+        branchId,
+        transformationIds: Object.freeze([lawId] as const),
         requestId,
         patch: Object.freeze({
           baseRevision: current.revision,
@@ -8280,6 +8394,9 @@ function makeStudioComposition(
     hearTransposition,
     readReharmonizations,
     readScaleOptions,
+    readBassTopAlternatives,
+    hearBassTopAlternative,
+    applyBassTopAlternative,
     hearContinuation,
     hearReharmonization,
     applyReharmonization,

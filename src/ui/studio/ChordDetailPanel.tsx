@@ -656,6 +656,62 @@ export function ChordDetailPanel({
           )}
         </section>
       )}
+
+      {detail.bassTop.length === 0 ? null : (
+        <section class="studio-chord-detail__next" data-testid={`detail-bass-top-${context}`}>
+          <p class="studio-kicker">Same bass and top note</p>
+          <p class="studio-chord-detail__fact-note">
+            Other chords under the notes you hear at the bottom and top. Use stores the notes shown exactly; Undo restores the original.
+          </p>
+          <ul class="studio-chord-detail__next-list">
+            {detail.bassTop.map((option) => {
+              const slug = option.id.replace(/[^a-zA-Z0-9-]/g, "-");
+              return (
+                <li key={option.id} class="studio-chord-detail__next-row">
+                  <div class="studio-chord-detail__next-head">
+                    <span class="studio-chord-detail__next-symbol">{option.symbol}</span>
+                  </div>
+                  <p class="studio-chord-detail__fact-value">{option.voicingText}</p>
+                  <p class="studio-chord-detail__next-why">
+                    {`Shares ${String(option.sharedTones)} notes with ${detail.symbolText}; inner voices move ${String(option.innerMovement)} ${option.innerMovement === 1 ? "semitone" : "semitones"}.`}
+                  </p>
+                  <div class="studio-chord-detail__next-head">
+                    <Button
+                      busy={false}
+                      density="dense"
+                      describedBy={[]}
+                      disabled={false}
+                      id={`studio-bass-top-hear-${context}-${slug}`}
+                      invalid={false}
+                      label={`Hear ${option.symbol}`}
+                      onAction={() => {
+                        hear(option.id);
+                      }}
+                      type="button"
+                      variant="secondary"
+                    />
+                    <Button
+                      busy={false}
+                      density="dense"
+                      describedBy={[]}
+                      disabled={false}
+                      id={`studio-bass-top-use-${context}-${slug}`}
+                      invalid={false}
+                      label={`Use ${option.symbol}`}
+                      onAction={() => {
+                        setReharmonizeMessage(onApplyReharmonization(detail.eventId, option.id));
+                      }}
+                      type="button"
+                      variant="primary"
+                    />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          {reharmonizeMessage === null ? null : <p role="alert">{reharmonizeMessage}</p>}
+        </section>
+      )}
     </div>
   );
 }

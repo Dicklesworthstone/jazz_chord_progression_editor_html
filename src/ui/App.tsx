@@ -385,6 +385,9 @@ export type AppActions = Readonly<{
   /** H1 reharmonization options; apply is one undoable A0 command. */
   readReharmonizations: StudioController["readReharmonizations"];
   readScaleOptions: StudioController["readScaleOptions"];
+  readBassTopAlternatives: StudioController["readBassTopAlternatives"];
+  hearBassTopAlternative: StudioController["hearBassTopAlternative"];
+  applyBassTopAlternative: StudioController["applyBassTopAlternative"];
   hearContinuation: StudioController["hearContinuation"];
   hearReharmonization: StudioController["hearReharmonization"];
   applyReharmonization: StudioController["applyReharmonization"];
@@ -875,10 +878,14 @@ function selectedChordView(
  * Analysis honesty carries through: a non-analyzed outcome keeps its stated
  * sentence and a null roman renders as nothing.
  */
+/** Detail option ids routed to the keep-bass-and-top intents (idea 13). */
+const BASS_TOP_PREFIX = "bass-top:";
+
 function detailViewFrom(
   read: (eventId: string) => StudioChordDetailView | null,
   readReharmonizations: AppActions["readReharmonizations"],
   readScaleOptions: AppActions["readScaleOptions"],
+  readBassTopAlternatives: AppActions["readBassTopAlternatives"],
   snapshot: StudioViewModel,
 ): StudioDetailView | null {
   const selectedIds = snapshot.bookmarks.selectedEventIds;
@@ -959,6 +966,13 @@ function detailViewFrom(
         : [],
     ),
     reharmonizeNote: reharmonized.ok ? null : reharmonized.message,
+    bassTop: Object.freeze(readBassTopAlternatives(targetId).map((alternative) => Object.freeze({
+      id: `${BASS_TOP_PREFIX}${alternative.symbol}`,
+      symbol: alternative.symbol,
+      voicingText: alternative.voicingText,
+      sharedTones: alternative.sharedTones,
+      innerMovement: alternative.innerMovement,
+    }))),
     scales: Object.freeze((scales?.options ?? []).map((option) => Object.freeze({
       id: option.id, name: option.name, exact: option.strength === "exact", notes: option.notes,
       tensions: option.tensions, clashes: option.clashes, caveat: option.caveat,
@@ -2482,7 +2496,7 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
    * selection for an ambiguous altered chord.
    */
   const continuation = actions.readContinuationSuggestions();
-  const detailView = detailViewFrom(actions.readChordDetail, actions.readReharmonizations, actions.readScaleOptions, snapshot);
+  const detailView = detailViewFrom(actions.readChordDetail, actions.readReharmonizations, actions.readScaleOptions, actions.readBassTopAlternatives, snapshot);
 
   /**
    * The one insertion path, shared by typing, the demo chips, the library
@@ -3095,11 +3109,14 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
             .hearContinuation(symbolText, anchorEventId, nextAudioGesture("trusted-pointer"))
             .then((result) => (result.ok ? null : result.message)),
         onHearReharmonization: (eventId, optionId) =>
-          actions
-            .hearReharmonization(eventId, optionId, nextAudioGesture("trusted-pointer"))
+          (optionId?.startsWith(BASS_TOP_PREFIX) === true
+            ? actions.hearBassTopAlternative(eventId, optionId.slice(BASS_TOP_PREFIX.length), nextAudioGesture("trusted-pointer"))
+            : actions.hearReharmonization(eventId, optionId, nextAudioGesture("trusted-pointer")))
             .then((result) => (result.ok ? null : result.message)),
         onApplyReharmonization: (eventId, optionId) => {
-          const result = actions.applyReharmonization(eventId, optionId);
+          const result = optionId.startsWith(BASS_TOP_PREFIX)
+            ? actions.applyBassTopAlternative(eventId, optionId.slice(BASS_TOP_PREFIX.length))
+            : actions.applyReharmonization(eventId, optionId);
           return result.ok ? null : `${result.refusal.message} ${result.refusal.recoveryAction}`;
         },
         onMidiImportChooseFile: (files) => {
@@ -4172,6 +4189,9 @@ export function StudioRoot({
         readChordDetail: controller.readChordDetail,
         readReharmonizations: controller.readReharmonizations,
         readScaleOptions: controller.readScaleOptions,
+        readBassTopAlternatives: controller.readBassTopAlternatives,
+        hearBassTopAlternative: controller.hearBassTopAlternative,
+        applyBassTopAlternative: controller.applyBassTopAlternative,
         hearContinuation: controller.hearContinuation,
         hearReharmonization: controller.hearReharmonization,
         applyReharmonization: controller.applyReharmonization,
