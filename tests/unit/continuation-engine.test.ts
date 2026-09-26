@@ -80,6 +80,36 @@ describe("the session continuation engine", () => {
     expect(flatNext).toEqual(["Db7", "Abm7"]);
   });
 
+  test("a minor ii–V or a minor-coloured dominant leads with the minor home", () => {
+    /* Hand-authored: in every key, iiø7 V7 (the ii a fifth above V) and a
+     * lone V7♭9 put the minor tonic first and keep the major one second. */
+    const roots = ["C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
+    const fifthAbove = ["G", "Ab", "A", "Bb", "B", "C", "C#", "D", "Eb", "E", "F", "F#"];
+    const secondAbove = ["D", "Eb", "E", "F", "F#", "G", "G#", "A", "Bb", "B", "C", "C#"];
+    roots.forEach((tonic, index) => {
+      const five = fifthAbove[index] ?? "", two = secondAbove[index] ?? "";
+      for (const context of [[`${two}m7b5`, `${five}7`], [`${five}7b9`]]) {
+        const homes = derive(context).suggestions
+          .filter((entry) => entry.explanation.providerId === "dominant-resolution")
+          .map((entry) => entry.symbolText);
+        expect([context.join(" "), homes]).toEqual([context.join(" "), [`${tonic}m7`, `${tonic}maj7`]]);
+      }
+    });
+    const minorTwoFive = derive(["Dm7b5", "G7"]).suggestions[0];
+    expect(minorTwoFive?.explanation.sentence).toContain("Dm7b5 G7 is a minor ii–V");
+  });
+
+  test("near misses keep the major home first", () => {
+    /* A minor-seventh ii, a half-diminished chord that is not the ii of
+     * this V, and a ♯9 (which also colours major blues) all stay major-first. */
+    for (const context of [["Dm7", "G7"], ["Em7b5", "G7"], ["G7#9"], ["Dm7b5", "C7"]]) {
+      const homes = derive(context).suggestions
+        .filter((entry) => entry.explanation.providerId === "dominant-resolution")
+        .map((entry) => entry.symbolText);
+      expect([context.join(" "), homes[0]?.endsWith("maj7")]).toEqual([context.join(" "), true]);
+    }
+  });
+
   test("a maj7 final chord never produces a dominant-resolution option", () => {
     const result = derive(["Dm7", "G7", "Cmaj7"]);
     const providers = result.suggestions.map(

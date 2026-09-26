@@ -15,6 +15,7 @@ import {
   type LegacyContinuationProviderId,
   type LegacyContinuationResult as ContinuationResult,
 } from "./continuation-contract";
+import { hasMinorKeyColour } from "./chart-analysis";
 import { transposeSpelledPitchClass } from "./guide-tones";
 import type { ResolutionOperations } from "./resolution-contract";
 
@@ -57,6 +58,9 @@ type ContextFacts = Readonly<{
   rootPc: PitchClass;
   root: SpelledPitchClass;
   isDominant: boolean;
+  /** ♭9, ♭13/♯5 or alt: the colour of a minor key's V (A7♭9 → Dm). */
+  minorColoured: boolean;
+  isHalfDiminished: boolean;
   pitchClasses: readonly PitchClass[];
   contextIndex: number;
   realizationId: string;
@@ -151,6 +155,8 @@ function contextFacts(request: ContinuationRequest, operations: ResolutionOperat
     facts.push(Object.freeze({
       symbolText: spec.sourceText, rootPc: pitchClassOf(spec.root), root: spec.root,
       isDominant: spec.triad === "major" && spec.seventh === "minor",
+      minorColoured: hasMinorKeyColour(spec),
+      isHalfDiminished: spec.triad === "diminished" && spec.seventh === "minor",
       contextIndex, realizationId: realization.id,
       pitchClasses: Object.freeze([...realization.pitchClasses]),
       degrees: Object.freeze(realization.degrees.map(degree => Object.freeze({ ...degree }))),
@@ -288,22 +294,44 @@ export function deriveContinuationSuggestions(
     // dominant-resolution: a dominant tends down a fifth; offer both homes.
     providersRun += 1;
     if (last.isDominant) {
-      const targetPc = pc(last.rootPc + 5);
-      const target = nameFor(targetPc, keyPc);
-      emit(
-        "dominant-resolution",
-        `${target}maj7`,
-        "resolve",
-        `${last.symbolText} is a dominant seventh, and dominants tend to fall a fifth: ${target}maj7 receives it as a major home.`,
-        [last.symbolText],
-      );
-      emit(
-        "dominant-resolution",
-        `${target}m7`,
-        "resolve",
-        `${last.symbolText} is a dominant seventh, and dominants tend to fall a fifth: ${target}m7 receives it as a minor home.`,
-        [last.symbolText],
-      );
+      /* Spelled a fourth above the dominant's own root: C♯7 lands on F♯. */
+      const target = spelledFrom(last.root, 3, 5, keyPc);
+      /* A minor ii–V (Dm7♭5 G7) or a minor-coloured dominant (G7♭9) points
+         to the minor tonic, so that home leads; the major one stays offered. */
+      const previous = facts[facts.length - 2];
+      const halfDiminishedTwo =
+        previous !== undefined && previous.isHalfDiminished && pc(previous.rootPc + 5) === pc(last.rootPc);
+      const majorHome = (): void => {
+        emit(
+          "dominant-resolution",
+          `${target}maj7`,
+          "resolve",
+          `${last.symbolText} is a dominant seventh, and dominants tend to fall a fifth: ${target}maj7 receives it as a major home.`,
+          [last.symbolText],
+        );
+      };
+      if (halfDiminishedTwo || last.minorColoured) {
+        const reason = halfDiminishedTwo
+          ? `${previous.symbolText} ${last.symbolText} is a minor ii–V`
+          : `${last.symbolText} carries a minor key's colour`;
+        emit(
+          "dominant-resolution",
+          `${target}m7`,
+          "resolve",
+          `${reason}, so it points down a fifth to a minor home: ${target}m7.`,
+          halfDiminishedTwo ? [previous.symbolText, last.symbolText] : [last.symbolText],
+        );
+        majorHome();
+      } else {
+        majorHome();
+        emit(
+          "dominant-resolution",
+          `${target}m7`,
+          "resolve",
+          `${last.symbolText} is a dominant seventh, and dominants tend to fall a fifth: ${target}m7 receives it as a minor home.`,
+          [last.symbolText],
+        );
+      }
     }
 
     // turnaround: continue an in-flight I–vi(–ii) chain toward its V.

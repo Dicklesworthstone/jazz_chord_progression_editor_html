@@ -356,6 +356,25 @@ describe("deriveChordDetail — tones, guides, resolution, next", () => {
     }
   });
 
+  test("a half-diminished ii leads with the V7♭9 of the minor ii–V", () => {
+    /* Hand-authored, all twelve roots: iiø7 → V7♭9 a fourth up, the plain V7
+     * second; keyed or unkeyed. Roots follow the Lens's common-name table
+     * (D♭, not C♯). Near-miss: a minor-seventh ii keeps plain V7. */
+    const pairs: readonly (readonly [string, string])[] = [
+      ["Dm7b5", "G"], ["Am7b5", "D"], ["Em7b5", "A"], ["Bm7b5", "E"],
+      ["F#m7b5", "B"], ["C#m7b5", "F#"], ["G#m7b5", "Db"], ["Gm7b5", "C"],
+      ["Cm7b5", "F"], ["Fm7b5", "Bb"], ["Bbm7b5", "Eb"], ["Ebm7b5", "Ab"],
+    ];
+    for (const [ii, five] of pairs) {
+      const options = detail(ii, null, null).next.map((option) => option.symbolText);
+      expect([ii, options.slice(0, 2)]).toEqual([ii, [`${five}7b9`, `${five}7`]]);
+    }
+    const keyed = detail("Dm7b5", null, C_MAJOR).next[0];
+    expect(keyed?.symbolText).toBe("G7b9");
+    expect(keyed?.why).toContain("minor ii–V");
+    expect(detail("Dm7", null, null).next[0]?.symbolText).toBe("G7");
+  });
+
   test("♭9, ♭13, ♯5 and alt dominants lead with the minor tonic", () => {
     /* Hand-authored: those colours belong to the minor key's V (A7♭9 → Dm). */
     expect(detail("A7b9", null, null).next[0]?.symbolText).toBe("Dm7");

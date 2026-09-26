@@ -696,7 +696,7 @@ const MINOR_COLOURED_DOMINANT_OPTIONS: readonly OptionSeed[] = Object.freeze([
   DOMINANT_OPTIONS[2] as OptionSeed,
 ]);
 
-function hasMinorKeyColour(spec: ChordSpec): boolean {
+export function hasMinorKeyColour(spec: ChordSpec): boolean {
   return (
     spec.colorPolicy === "altered-dominant" ||
     [...spec.alterations, ...spec.extensions, ...spec.additions].some(
@@ -724,6 +724,20 @@ const PREDOMINANT_OPTIONS: readonly OptionSeed[] = Object.freeze([
     semitones: 5, quality: "7b9", lowercase: false, suffix: "7",
     why: "Darker dominant. The ♭9 tightens the pull.",
   }),
+]);
+
+/* A half-diminished ii belongs to a minor ii–V, whose V customarily
+   carries the ♭9 (Dm7♭5 → G7♭9 → Cm): that V leads, the plain V7 follows. */
+const HALF_DIMINISHED_TWO_OPTIONS: readonly OptionSeed[] = Object.freeze([
+  Object.freeze({
+    semitones: 5, quality: "7b9", lowercase: false, suffix: "7",
+    why: "The V7♭9 that completes the minor ii–V.",
+  }),
+  Object.freeze({
+    semitones: 5, quality: "7", lowercase: false, suffix: "7",
+    why: "Or a plain V7, lighter than the minor-key ♭9.",
+  }),
+  PREDOMINANT_OPTIONS[1] as OptionSeed,
 ]);
 
 const TONIC_OPTIONS: readonly OptionSeed[] = Object.freeze([
@@ -763,16 +777,17 @@ function optionTableFor(
   if (kind === "dominant") {
     return hasMinorKeyColour(spec) ? MINOR_COLOURED_DOMINANT_OPTIONS : DOMINANT_OPTIONS;
   }
-  if (kind === "predominant") return PREDOMINANT_OPTIONS;
+  if (kind === "predominant") {
+    return isHalfDiminishedSpec(spec) ? HALF_DIMINISHED_TWO_OPTIONS : PREDOMINANT_OPTIONS;
+  }
   if (kind === "tonic") return TONIC_OPTIONS;
   if (kind === null) {
     /* Unkeyed: the tables are quality-driven, so pick by quality alone. */
     if (isDominantSpec(spec)) {
       return hasMinorKeyColour(spec) ? MINOR_COLOURED_DOMINANT_OPTIONS : DOMINANT_OPTIONS;
     }
-    if (isMinorSeventhSpec(spec) || isHalfDiminishedSpec(spec)) {
-      return PREDOMINANT_OPTIONS;
-    }
+    if (isHalfDiminishedSpec(spec)) return HALF_DIMINISHED_TWO_OPTIONS;
+    if (isMinorSeventhSpec(spec)) return PREDOMINANT_OPTIONS;
     if (isMajorTonicSpec(spec)) return TONIC_OPTIONS;
   }
   return DEFAULT_OPTIONS;
