@@ -91,8 +91,8 @@ export type ChartWorkspaceProps = Readonly<{
   onRangeCancel: () => void;
   onRangeClear: () => void;
   onViewModeChange: (mode: StudioViewMode) => void;
-  /** Cycles the reviewed key ring; one undoable Set-key step (V2R-11). */
-  onCycleKey: () => void;
+  /** Sets or clears the document key; one undoable Set-key step. */
+  onSetKey: (key: Readonly<{ step: string; alter: number; mode: string }> | null) => void;
   /** Opens the whole-chart Transpose dialog. */
   onOpenTranspose: () => void;
 }>;
@@ -407,6 +407,30 @@ function phraseLaneMarks(
     });
 }
 
+type KeyChoice = Readonly<{ value: string; label: string; step: string; alter: number; mode: string }>;
+
+/* The fifteen conventionally written major keys and their relative minors,
+   in circle-of-fifths order. Value = "step/alter/mode", the view's keyChoice. */
+const KEY_CHOICES: readonly KeyChoice[] = Object.freeze(
+  ([
+    ["C", 0, "A", 0], ["G", 0, "E", 0], ["D", 0, "B", 0], ["A", 0, "F", 1], ["E", 0, "C", 1],
+    ["B", 0, "G", 1], ["F", 1, "D", 1], ["C", 1, "A", 1], ["F", 0, "D", 0], ["B", -1, "G", 0],
+    ["E", -1, "C", 0], ["A", -1, "F", 0], ["D", -1, "B", -1], ["G", -1, "E", -1], ["C", -1, "A", -1],
+  ] as const).flatMap(([majorStep, majorAlter, minorStep, minorAlter]) => {
+    const choice = (step: string, alter: number, mode: string, name: string): KeyChoice => Object.freeze({
+      value: `${step}/${String(alter)}/${mode}`,
+      label: `${step}${alter < 0 ? "♭" : alter > 0 ? "♯" : ""} ${name}`,
+      step, alter, mode,
+    });
+    return [choice(majorStep, majorAlter, "major", "major"), choice(minorStep, minorAlter, "natural-minor", "minor")];
+  }),
+);
+
+function parseKeyChoice(value: string): Readonly<{ step: string; alter: number; mode: string }> {
+  const [step = "C", alter = "0", mode = "major"] = value.split("/");
+  return { step, alter: Number(alter), mode };
+}
+
 export function ChartWorkspace({
   view,
   document: documentView,
@@ -458,7 +482,7 @@ export function ChartWorkspace({
   onRangeCancel,
   onRangeClear,
   onViewModeChange,
-  onCycleKey,
+  onSetKey,
   onOpenTranspose,
 }: ChartWorkspaceProps) {
   /**
@@ -1692,17 +1716,35 @@ export function ChartWorkspace({
         {/* Key and Transpose share one column so the centred title keeps its
             full width. */}
         <div class="studio-paper-head__keys">
-        <button
-          class="studio-paper-head__key"
-          data-testid="chart-key-cycle"
-          id="studio-chart-key"
-          onClick={onCycleKey}
-          title="Change key"
-          type="button"
-        >
+        <label class="studio-paper-head__key studio-paper-head__key-picker" for="studio-chart-key">
           <span class="studio-paper-head__kicker">Key</span>
-          <span class="studio-paper-head__value">{view.keyLabel}</span>
-        </button>
+          <select
+            class="studio-paper-head__value studio-paper-head__key-select"
+            data-testid="chart-key-select"
+            id="studio-chart-key"
+            onChange={(event) => {
+              const value = event.currentTarget.value;
+              onSetKey(value === "" ? null : parseKeyChoice(value));
+            }}
+            title="Set the chart's key"
+            value={view.keyChoice}
+          >
+            <option value="">No key</option>
+            {KEY_CHOICES.some((choice) => choice.value === view.keyChoice) || view.keyChoice === "" ? null : (
+              <option value={view.keyChoice}>{view.keyLabel}</option>
+            )}
+            <optgroup label="Major">
+              {KEY_CHOICES.filter((choice) => choice.mode === "major").map((choice) => (
+                <option key={choice.value} value={choice.value}>{choice.label}</option>
+              ))}
+            </optgroup>
+            <optgroup label="Minor">
+              {KEY_CHOICES.filter((choice) => choice.mode !== "major").map((choice) => (
+                <option key={choice.value} value={choice.value}>{choice.label}</option>
+              ))}
+            </optgroup>
+          </select>
+        </label>
         <button
           class="studio-paper-head__key studio-paper-head__transpose"
           data-testid="chart-transpose"

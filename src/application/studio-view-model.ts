@@ -199,6 +199,8 @@ export type StudioViewModel = Readonly<{
   meterLabel: string;
   tempoBpm: number;
   keyLabel: string;
+  /** The key as "step/alter/mode" ("" for no key), for the key picker. */
+  keyChoice: string;
   instrumentId: InstrumentId;
   instrumentLabel: string;
   masterVolume: number;
@@ -730,6 +732,8 @@ export function selectStudioViewModel(
     meterLabel: `${String(state.document.meter.beatsPerBar)}/${String(state.document.meter.beatUnit)}`,
     tempoBpm: state.document.tempoBpm,
     keyLabel: keyLabel(state.document.key),
+    keyChoice: state.document.key === null ? ""
+      : `${state.document.key.tonic.step}/${String(state.document.key.tonic.alter)}/${state.document.key.mode}`,
     instrumentId: state.document.playback.instrumentId,
     instrumentLabel: instrumentLabel(state.document.playback.instrumentId),
     masterVolume: state.document.playback.masterVolume,

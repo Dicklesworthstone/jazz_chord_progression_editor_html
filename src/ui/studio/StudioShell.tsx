@@ -679,7 +679,7 @@ export function StudioShell({
               onRangeCancel={callbacks.onRangeCancel}
               onRangeClear={callbacks.onRangeClear}
               onViewModeChange={callbacks.onViewModeChange}
-              onCycleKey={callbacks.onCycleKey}
+              onSetKey={callbacks.onSetKey}
               onOpenTranspose={callbacks.onOpenTranspose}
               view={view.chart}
             />

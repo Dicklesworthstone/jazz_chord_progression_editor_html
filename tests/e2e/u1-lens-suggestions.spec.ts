@@ -53,4 +53,31 @@ test.describe("Lens continuation options", () => {
     await expect(section).toContainText("After G7");
     expectCleanDiagnostics(diagnostics);
   });
+
+  test("the key picker sets a minor key the Lens reads, clears it, and undoes", async ({
+    page,
+  }) => {
+    const diagnostics = captureDiagnostics(page);
+    await openStudio(page);
+    await typeAndInsert(page, "| Cm7 Fm7 |");
+    await expect(cards(page)).toHaveCount(2);
+
+    const key = page.getByRole("combobox", { name: "Key" });
+    await expect(key).toHaveValue("");
+    await key.selectOption({ label: "C minor" });
+    await expect(key).toHaveValue("C/0/natural-minor");
+
+    // In C minor, Cm7 is the tonic and leads to the key's own iv.
+    await cards(page).nth(0).click();
+    const detail = page.locator(".studio-chord-detail").first();
+    await expect(detail.locator(".studio-chord-detail__roman")).toHaveText("i7");
+    await expect(detail).toContainText("the minor home");
+    await expect(page.locator('[id^="studio-detail-hear-"]').first()).toHaveText(/Fm7/);
+
+    await key.selectOption({ label: "No key" });
+    await expect(key).toHaveValue("");
+    await page.locator("#studio-undo").click();
+    await expect(key).toHaveValue("C/0/natural-minor");
+    expectCleanDiagnostics(diagnostics);
+  });
 });

@@ -473,3 +473,68 @@ describe("deriveChordDetail — tones, guides, resolution, next", () => {
     for (const option of result.next) expect(option.roman).toBeNull();
   });
 });
+
+describe("minor keys — the key's own chords read as its own", () => {
+  const C_MINOR = keyOf("C", 0, "natural-minor");
+  const F_SHARP_MINOR = keyOf("F", 1, "natural-minor");
+  const next = (symbol: string, key: KeyContext) =>
+    detail(symbol, null, key).next.map((option) => `${option.symbolText} ${option.roman ?? "-"}`);
+
+  test("i is the tonic, iv the predominant, and the next options stay in the key", () => {
+    /* Hand-authored C minor: i → iv, iiø7, ♭VI; iv → V7, i, ♭VII7. */
+    const tonic = analyze("Cm7", C_MINOR);
+    expect([tonic.kind, tonic.roman, tonic.scaleSentence]).toEqual(["tonic", "i7", "C Aeolian"]);
+    expect(tonic.functionSentence).toContain("minor home");
+    expect(next("Cm7", C_MINOR)).toEqual(["Fm7 iv7", "Dm7b5 iiø7", "Abmaj7 ♭VImaj7"]);
+    const four = analyze("Fm7", C_MINOR);
+    expect([four.kind, four.scaleSentence]).toEqual(["predominant", "F Dorian"]);
+    expect(next("Fm7", C_MINOR)).toEqual(["G7 V7", "Cm7 i7", "Bb7 ♭VII7"]);
+    expect(analyze("Cm6", C_MINOR).kind).toBe("tonic");
+  });
+
+  test("V7 resolves to the minor tonic, deceptively to ♭VI, and v is Phrygian", () => {
+    expect(next("G7", C_MINOR)).toEqual(["Cm7 i7", "Abmaj7 ♭VImaj7", "Cmaj7 Imaj7"]);
+    const five = analyze("Gm7", C_MINOR);
+    expect([five.roman, five.scaleSentence]).toEqual(["v7", "G Phrygian"]);
+    expect(next("Gm7", C_MINOR)[0]).toBe("Cm7 i7");
+  });
+
+  test("♭III and ♭VI are diatonic, not borrowed", () => {
+    for (const symbol of ["Ebmaj7", "Abmaj7"]) {
+      const sentence = analyze(symbol, C_MINOR).functionSentence;
+      expect([symbol, sentence.includes("diatonic"), sentence.includes("Borrowed")]).toEqual([symbol, true, false]);
+    }
+    expect(analyze("Abmaj7", C_MINOR).scaleSentence).toBe("A♭ Lydian");
+    expect(next("Abmaj7", C_MINOR)).toEqual(["G7 V7", "Dm7b5 iiø7", "Fm7 iv7"]);
+  });
+
+  test("the leading-tone diminished resolves up to the tonic of either mode", () => {
+    expect(analyze("Bdim7", C_MINOR).functionSentence).toContain("leading-tone");
+    expect(next("Bdim7", C_MINOR)[0]).toBe("Cm7 i7");
+    expect(next("Bdim7", C_MAJOR)[0]).toBe("Cmaj7 Imaj7");
+    /* A passing diminished (C♯°7 → Dm7) leads with the minor landing. */
+    expect(detail("C#dim7", null, C_MAJOR).next[0]?.symbolText).toBe("Dm7");
+  });
+
+  test("transposition: F♯ minor spells its own letters", () => {
+    expect(next("F#m7", F_SHARP_MINOR)).toEqual(["Bm7 iv7", "G#m7b5 iiø7", "Dmaj7 ♭VImaj7"]);
+    expect(next("C#7", F_SHARP_MINOR)[0]).toBe("F#m7 i7");
+    expect(next("Dmaj7", F_SHARP_MINOR)).toEqual(["C#7 V7", "G#m7b5 iiø7", "Bm7 iv7"]);
+    /* Harmonic minor is still a minor key. */
+    expect(analyze("Am7", keyOf("A", 0, "harmonic-minor")).kind).toBe("tonic");
+  });
+
+  test("a root on the key's own degree takes the key's letter, even from an enharmonic chord", () => {
+    /* Hand-authored: A♭7 written in A major points at the key's iii, C♯m7
+     * (not D♭m7); D♯maj7 written in C minor lifts to the key's ♭VI, A♭. */
+    expect(next("Ab7", keyOf("A", 0, "major"))[0]).toBe("C#m7 iii7");
+    expect(next("D#maj7", C_MINOR)[0]).toBe("Abmaj7 ♭VImaj7");
+  });
+
+  test("near misses: the same chords in C major keep their major-key reading", () => {
+    expect(analyze("Cm7", C_MAJOR).kind).not.toBe("tonic");
+    expect(analyze("Abmaj7", C_MAJOR).functionSentence).toContain("Borrowed");
+    expect(next("G7", C_MAJOR)[0]).toBe("Cmaj7 Imaj7");
+    expect(next("Cmaj7", C_MAJOR)[0]).not.toBe("Fm7 iv7");
+  });
+});

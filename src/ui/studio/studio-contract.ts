@@ -183,11 +183,11 @@ export type StudioChartView = Readonly<{
   chordCountLabel: string;
   /**
    * V2R-2 engraved chart header: the document key and tempo, stated on the
-   * paper beside the title. The key block is read-only presentation — no
-   * set-key command surface exists yet, so offering an editor here would
-   * promise an edit the application cannot land.
+   * paper beside the title; the key picker beside it sets it.
    */
   keyLabel: string;
+  /** The key as "step/alter/mode" ("" for no key): the picker's value. */
+  keyChoice: string;
   tempoLabel: string;
   /**
    * True while the seeded starter chart is untouched (title still the seed's
@@ -925,8 +925,8 @@ export type StudioShellCallbacks = Readonly<{
   onViewModeChange: (mode: StudioViewMode) => void;
   /** Opens the whole-chart Transpose dialog (presentation only). */
   onOpenTranspose: () => void;
-  /** Cycles the document key ring as one undoable Set-key step (V2R-11). */
-  onCycleKey: () => void;
+  /** Sets (or clears) the document key as one undoable Set-key step. */
+  onSetKey: (key: Readonly<{ step: string; alter: number; mode: string }> | null) => void;
   /** Presentation-only: swaps the sheet and grid layouts (V2R-4). */
   onChartLayoutChange: (layout: StudioChartLayout) => void;
 }>;

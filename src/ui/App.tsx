@@ -1571,6 +1571,7 @@ function viewFromSnapshot(
       measureCountLabel: countLabel(snapshot.measureCount, "measure"),
       chordCountLabel: countLabel(chordCount, "chord"),
       keyLabel: snapshot.keyLabel,
+      keyChoice: snapshot.keyChoice,
       tempoLabel: `${String(snapshot.tempoBpm)} BPM`,
       /*
        * Untouched seed: the title is still the starter chart's and the
@@ -3736,24 +3737,8 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
         onOpenTranspose: () => {
           if (onOpenTranspose !== undefined) onOpenTranspose(nextAudioGesture);
         },
-        onCycleKey: () => {
-          /* The prototype's reviewed ten-key ring; "No key" precedes C so a
-             fresh chart reaches a key in one press and can cycle back off
-             the ring only by undo. */
-          const ring: readonly (readonly [string, number])[] = [
-            ["C", 0], ["F", 0], ["B", -1], ["E", -1], ["A", -1],
-            ["D", -1], ["G", 0], ["D", 0], ["A", 0], ["E", 0],
-          ];
-          const label = snapshot.keyLabel;
-          const index = ring.findIndex(([step, alter]) => {
-            const accidental = alter === -1 ? "b" : "";
-            return label === `${step}${accidental} major`;
-          });
-          const next = ring[(index + 1) % ring.length];
-          if (next === undefined) return;
-          recordEditResult(
-            actions.setKey({ step: next[0], alter: next[1], mode: "major" }),
-          );
+        onSetKey: (key) => {
+          recordEditResult(actions.setKey(key));
         },
         onChartLayoutChange: (layout) => {
           setChartLayout(layout);

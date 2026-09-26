@@ -279,6 +279,7 @@ export function analyzeChartEvent(
   const rootPc = pitchClassOf(current.root);
   const degree = pc(rootPc - keyPc);
   const roman = romanFor(key, current);
+  const minorKey = key.mode !== "major";
 
   let kind: ChartHarmonicKind = "colour";
   let sentence = "Colour chord";
@@ -296,7 +297,8 @@ export function analyzeChartEvent(
        * ii, iii, or vi is written lowercase because the chord it tonicizes
        * is minor there — the conventional "V7/ii" reading. */
       const targetDistance = pc(rootPc + 5 - keyPc);
-      const minorTargets = new Set([2, 4, 9]);
+      /* In a minor key the minor degrees are i, iv and v (iiø aside). */
+      const minorTargets = new Set(minorKey ? [0, 5, 7] : [2, 4, 9]);
       const target = pcNumeral(targetDistance, minorTargets.has(targetDistance));
       sentence = `Secondary dominant — the V7 of ${target}`;
     }
@@ -304,7 +306,27 @@ export function analyzeChartEvent(
     kind = "predominant";
     sentence = "Half-diminished — usually the ii of a minor ii–V";
   } else if (isDiminishedSpec(current)) {
-    sentence = "Diminished — passing chord or dominant substitute";
+    sentence = degree === 11
+      ? "vii°7 — the leading-tone diminished, standing in for the V7♭9"
+      : "Diminished — passing chord or dominant substitute";
+  } else if (current.triad === "minor" && minorKey) {
+    /* A minor key's own minor chords: i is home, iv the subdominant, v a
+       dominant without the leading tone. */
+    kind = degree === 0 ? "tonic" : degree === 5 || degree === 2 ? "predominant" : "colour";
+    sentence =
+      degree === 0
+        ? "Tonic — the minor home"
+        : degree === 5
+          ? "iv — the minor subdominant"
+          : degree === 7
+            ? "v — a minor dominant, no leading tone"
+            : degree === 2
+              ? "Predominant — the ii of a ii–V"
+              : "Minor colour";
+    if (current.seventh !== "major") {
+      keyedScale = current.sixth !== null || degree === 5 || degree === 2 ? "Dorian"
+        : degree === 7 ? "Phrygian" : "Aeolian";
+    }
   } else if (current.triad === "minor") {
     kind = degree === 2 ? "predominant" : "colour";
     sentence =
@@ -320,16 +342,25 @@ export function analyzeChartEvent(
     current.triad === "major" &&
     (current.seventh === "major" || current.sixth !== null)
   ) {
-    kind = degree === 0 ? "tonic" : "colour";
-    sentence =
-      degree === 0
+    kind = degree === 0 && !minorKey ? "tonic" : "colour";
+    sentence = minorKey
+      ? degree === 3
+        ? "♭III — the relative major, diatonic in this key"
+        : degree === 8
+          ? "♭VI — the submediant, diatonic in this key"
+          : degree === 0
+            ? "The parallel major — a brightened tonic"
+            : degree === 5
+              ? "IV — borrowed from Dorian"
+              : "Major colour"
+      : degree === 0
         ? "Tonic — home"
         : degree === 5
           ? "Subdominant — lifts away from home"
           : degree === 8 || degree === 3 || degree === 10
             ? "Borrowed from the parallel minor"
             : "Major colour";
-    keyedScale = hasSharpEleven(current) || degree === 5 ? "Lydian" : "Ionian";
+    keyedScale = hasSharpEleven(current) || degree === 5 || (minorKey && degree === 8) ? "Lydian" : "Ionian";
   } else if (isSuspendedSpec(current)) {
     sentence = "Suspended — the third is withheld";
     keyedScale = "Mixolydian";
@@ -651,7 +682,7 @@ const OPTION_FLAT_ROOTS: ReadonlySet<string> = new Set([
 
 /* Letter steps for the option intervals: up a fourth is three letters,
    a major second one, a major sixth five (B7 → deceptive C♯m7, never D♭m7). */
-const INTERVAL_LETTER_STEPS: Readonly<Record<number, number>> = Object.freeze({ 2: 1, 5: 3, 9: 5 });
+const INTERVAL_LETTER_STEPS: Readonly<Record<number, number>> = Object.freeze({ 1: 1, 2: 1, 5: 3, 6: 3, 7: 4, 8: 5, 9: 5, 11: 6 });
 
 function intervalRoot(root: SpelledPitchClass, semitones: number): SpelledPitchClass | null {
   const steps = INTERVAL_LETTER_STEPS[semitones];
@@ -662,13 +693,17 @@ function intervalRoot(root: SpelledPitchClass, semitones: number): SpelledPitchC
 
 /* A root on a degree of a major key takes that key's own letter: the iii
    of A is C♯, never D♭. Null off the scale or past one accidental. */
+/* A minor key's letters: natural minor, plus the raised seventh (the
+   leading tone, B in C minor) on the same seventh letter. */
+const MINOR_DEGREE_SEMITONES = Object.freeze([0, 2, 3, 5, 7, 8, 10] as const);
+
 function keyedRoot(pitchClass: number, key: KeyContext | null): SpelledPitchClass | null {
-  if (key === null || key.mode !== "major") return null;
-  const index = MAJOR_DEGREE_SEMITONES.indexOf(
-    pc(pitchClass - pitchClassOf(key.tonic)) as (typeof MAJOR_DEGREE_SEMITONES)[number],
-  );
+  if (key === null) return null;
+  const distance = pc(pitchClass - pitchClassOf(key.tonic));
+  const scale: readonly number[] = key.mode === "major" ? MAJOR_DEGREE_SEMITONES : MINOR_DEGREE_SEMITONES;
+  const index = key.mode !== "major" && distance === 11 ? 6 : scale.indexOf(distance);
   if (index < 0) return null;
-  const spelled = transposeSpelledPitchClass(key.tonic, index, MAJOR_DEGREE_SEMITONES[index] ?? 0);
+  const spelled = transposeSpelledPitchClass(key.tonic, index, distance);
   return Math.abs(spelled.alter) > 1 ? null : spelled;
 }
 
@@ -795,6 +830,81 @@ const TONIC_OPTIONS: readonly OptionSeed[] = Object.freeze([
   }),
 ]);
 
+/* A minor key's own chords (Cm7 in C minor): lean to iv, start the minor
+   ii–V, or lift to ♭VI. */
+const MINOR_TONIC_OPTIONS: readonly OptionSeed[] = Object.freeze([
+  Object.freeze({
+    semitones: 5, quality: "m7", lowercase: true, suffix: "7",
+    why: "iv — lean toward the minor subdominant.",
+  }),
+  Object.freeze({
+    semitones: 2, quality: "m7b5", lowercase: true, suffix: "ø7",
+    why: "iiø7 — start the minor ii–V back home.",
+  }),
+  Object.freeze({
+    semitones: 8, quality: "maj7", lowercase: false, suffix: "maj7",
+    why: "♭VI — a warm lift to the submediant.",
+  }),
+]);
+
+const MINOR_SUBDOMINANT_OPTIONS: readonly OptionSeed[] = Object.freeze([
+  Object.freeze({
+    semitones: 2, quality: "7", lowercase: false, suffix: "7",
+    why: "V7 — iv steps up to the dominant.",
+  }),
+  Object.freeze({
+    semitones: 7, quality: "m7", lowercase: true, suffix: "7",
+    why: "Straight home to the minor tonic, a plagal close.",
+  }),
+  Object.freeze({
+    semitones: 5, quality: "7", lowercase: false, suffix: "7",
+    why: "♭VII7 — the backdoor dominant.",
+  }),
+]);
+
+const MINOR_KEY_DOMINANT_OPTIONS: readonly OptionSeed[] = Object.freeze([
+  Object.freeze({
+    semitones: 5, quality: "m7", lowercase: true, suffix: "7",
+    why: "Resolve down a fifth to this key's minor tonic.",
+  }),
+  Object.freeze({
+    semitones: 1, quality: "maj7", lowercase: false, suffix: "maj7",
+    why: "Deceptive: step up a half step to ♭VI instead of home.",
+  }),
+  Object.freeze({
+    semitones: 5, quality: "maj7", lowercase: false, suffix: "maj7",
+    why: "Or brighten the landing to the parallel major.",
+  }),
+]);
+
+/* ♭VI in a minor key (A♭maj7 in C minor) leans toward the dominant. */
+const MINOR_SUBMEDIANT_OPTIONS: readonly OptionSeed[] = Object.freeze([
+  Object.freeze({
+    semitones: 11, quality: "7", lowercase: false, suffix: "7",
+    why: "V7 — ♭VI slides down a half step to the dominant.",
+  }),
+  Object.freeze({
+    semitones: 6, quality: "m7b5", lowercase: true, suffix: "ø7",
+    why: "iiø7 — go home through the minor ii–V.",
+  }),
+  Object.freeze({
+    semitones: 9, quality: "m7", lowercase: true, suffix: "7",
+    why: "iv — fall back to the minor subdominant.",
+  }),
+]);
+
+/* A diminished seventh resolves up a half step (B°7 → C, C♯°7 → Dm7). */
+const DIMINISHED_OPTIONS: readonly OptionSeed[] = Object.freeze([
+  Object.freeze({
+    semitones: 1, quality: "m7", lowercase: true, suffix: "7",
+    why: "Resolve up a half step onto a minor chord.",
+  }),
+  Object.freeze({
+    semitones: 1, quality: "maj7", lowercase: false, suffix: "maj7",
+    why: "Or up a half step onto a major chord.",
+  }),
+]);
+
 const DEFAULT_OPTIONS: readonly OptionSeed[] = Object.freeze([
   Object.freeze({
     semitones: 5, quality: "maj7", lowercase: false, suffix: "maj7",
@@ -840,10 +950,22 @@ function nextOptionsFor(
 ): readonly ChartNextOption[] {
   const rootPc = pitchClassOf(spec.root);
   const keyPc = key === null ? null : pitchClassOf(key.tonic);
+  const minorKey = key !== null && key.mode !== "major";
+  const degree = keyPc === null ? null : pc(rootPc - keyPc);
   const minorTarget =
     kind === "dominant" && key?.mode === "major" && keyPc !== null &&
     !hasMinorKeyColour(spec) && [2, 4, 9].includes(pc(rootPc + 5 - keyPc));
-  const table = (minorTarget ? MINOR_TARGET_DOMINANT_OPTIONS : optionTableFor(kind, spec))
+  const minorKeyTable =
+    !minorKey ? null
+      : kind === "tonic" ? MINOR_TONIC_OPTIONS
+        : kind === "predominant" && degree === 5 && isMinorSeventhSpec(spec) ? MINOR_SUBDOMINANT_OPTIONS
+          : degree === 7 && (kind === "dominant" || isMinorSeventhSpec(spec)) ? MINOR_KEY_DOMINANT_OPTIONS
+            : degree === 8 && isMajorTonicSpec(spec) ? MINOR_SUBMEDIANT_OPTIONS
+              : null;
+  const diminishedTable = isDiminishedSpec(spec)
+    ? key?.mode === "major" && degree === 11 ? [DIMINISHED_OPTIONS[1], DIMINISHED_OPTIONS[0]] as OptionSeed[] : DIMINISHED_OPTIONS
+    : null;
+  const table = (minorKeyTable ?? diminishedTable ?? (minorTarget ? MINOR_TARGET_DOMINANT_OPTIONS : optionTableFor(kind, spec)))
     .slice(0, MAX_CHART_NEXT_OPTIONS);
   const kindLabel = kind ?? "unkeyed";
   return Object.freeze(

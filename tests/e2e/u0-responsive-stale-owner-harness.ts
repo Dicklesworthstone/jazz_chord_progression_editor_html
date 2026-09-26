@@ -103,6 +103,7 @@ const BASE_VIEW: Omit<StudioShellView, "layout"> = Object.freeze({
     measureCountLabel: "1 measure",
     chordCountLabel: "0 chords",
     keyLabel: "No key",
+    keyChoice: "",
     tempoLabel: "105 BPM",
     isSeededDemo: false,
     rovingFocusId: null,
@@ -335,7 +336,7 @@ function ResponsiveStaleOwnerHarness() {
     onRangeDraftCommit: () => undefined,
     onRangeCancel: () => undefined,
     onViewModeChange: () => undefined,
-    onCycleKey: () => undefined,
+    onSetKey: () => undefined,
     onOpenTranspose: () => undefined,
     onChartLayoutChange: () => undefined,
     onDismissUiRefusal: () => {

@@ -4708,25 +4708,30 @@
   gap: var(--space-1);
 }
 
-/* The key block is a control (V2R-11): press to cycle the reviewed ring. */
-button.studio-paper-head__key {
+/* The key block is a picker: the engraved value itself is a native select
+   (No key, fifteen major and fifteen minor keys), one undoable Set-key. */
+.studio-paper-head__key-picker {
   align-items: flex-start;
+  cursor: pointer;
+}
+
+.studio-paper-head__key-select {
+  appearance: none;
+  max-inline-size: 100%;
+  margin: calc(-1 * var(--space-1));
+  padding: var(--space-1);
   border: 0;
   border-radius: var(--radius-xs);
   background: transparent;
-  padding: var(--space-1);
-  margin: calc(-1 * var(--space-1));
-  margin-block-end: 0;
-  text-align: start;
-  cursor: pointer;
   color: inherit;
+  cursor: pointer;
 }
 
-button.studio-paper-head__key:hover {
+.studio-paper-head__key-select:hover {
   background: var(--line-1);
 }
 
-button.studio-paper-head__key:focus-visible {
+.studio-paper-head__key-select:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
   outline-offset: var(--focus-offset);
 }
