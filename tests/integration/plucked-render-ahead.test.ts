@@ -94,7 +94,10 @@ test("initialization ready cannot dispatch the tail and render-ahead preserves c
       inner.setInstrument(commandRequestId, mellowKeys.value),
   });
   const controller = eventBoundaryController(port);
-  expect(controller.setInstrument("dreadnought-guitar").ok).toBe(true);
+  /* The leading-budget + render-ahead path is the one every rendered
+   * instrument takes except the cache-only plucked recipes, which prepare
+   * chronological chunks before Play instead (jcpe-70yb, tested below). */
+  expect(controller.setInstrument("concert-grand").ok).toBe(true);
   expect(controller.playProgression(GESTURE).ok).toBe(true);
 
   await until(() => prepareCalls.length === 1);
@@ -152,6 +155,62 @@ test("initialization ready cannot dispatch the tail and render-ahead preserves c
     plan.events.slice(4).map((event) => event.eventId),
   );
 
+  expect(controller.stopProgression().ok).toBe(true);
+});
+
+test("a cache-only plucked Play prepares whole events in chronological chunks, one at a time", async () => {
+  /* jcpe-70yb: shared plucked recipes prepare chronological chunks before
+   * Play and hand the rest to render-ahead. Whatever the chunk sizes, every
+   * call holds whole events, no event is prepared twice, the calls walk the
+   * plan in order, and no second call is issued while the first is pending. */
+  const inner = createStudioAudio(createFakeAudioPlatform().platform);
+  const mellowKeys = makeInstrumentId("mellow-keys");
+  if (!mellowKeys.ok) throw new Error("MELLOW_KEYS_ID_REFUSED");
+  const prepareCalls: PrepareCall[] = [];
+  let releaseFirst = (): void => {
+    throw new Error("FIRST_CHUNK_GATE_UNINITIALIZED");
+  };
+  const firstGate = new Promise<void>((resolve) => {
+    releaseFirst = resolve;
+  });
+  const port: StudioAudioPort = Object.freeze({
+    ...inner,
+    prepareInstrument: async (_instrumentId, notes, binding) => {
+      prepareCalls.push(Object.freeze({ notes, binding }));
+      if (prepareCalls.length === 1) await firstGate;
+      return true;
+    },
+    setInstrument: (commandRequestId) =>
+      inner.setInstrument(commandRequestId, mellowKeys.value),
+  });
+  const controller = eventBoundaryController(port);
+  expect(controller.setInstrument("dreadnought-guitar").ok).toBe(true);
+  expect(controller.playProgression(GESTURE).ok).toBe(true);
+  await until(() => prepareCalls.length === 1);
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  expect(prepareCalls).toHaveLength(1);
+
+  const plan = prepareCalls[0]?.binding?.plan;
+  if (plan === undefined) throw new Error("CHUNK_BINDING_ABSENT");
+  const voices = new Map(plan.events.map((event) => [String(event.eventId), event.midiPitches.length]));
+  releaseFirst();
+  const covered = (): number =>
+    new Set(prepareCalls.flatMap((call) => call.notes.map((note) => note.eventId))).size;
+  await until(() => covered() === plan.events.length);
+
+  const order: string[] = [];
+  for (const call of prepareCalls) {
+    const counts = new Map<string, number>();
+    for (const note of call.notes) {
+      if (note.eventId === undefined) throw new Error("PREPARED_EVENT_ID_ABSENT");
+      counts.set(note.eventId, (counts.get(note.eventId) ?? 0) + 1);
+    }
+    for (const [eventId, count] of counts) {
+      expect<(string | number | undefined)[]>([eventId, count]).toEqual([eventId, voices.get(eventId)]);
+      order.push(eventId);
+    }
+  }
+  expect(order).toEqual(plan.events.map((event) => String(event.eventId)));
   expect(controller.stopProgression().ok).toBe(true);
 });
 
@@ -239,7 +298,7 @@ test("a stale Play failure cannot clear a newer run of the same document revisio
   expect(controller.stopProgression().ok).toBe(true);
 });
 
-test("a live physical instrument switch warms complete future events and its deferred horizon", async () => {
+test("a live physical instrument switch renders every future event, whole, in one preparation", async () => {
   const inner = createStudioAudio(createFakeAudioPlatform().platform);
   const mellowKeys = makeInstrumentId("mellow-keys");
   const switchPlayhead = makeBeatPosition({ numerator: 4, denominator: 1 });
@@ -271,21 +330,31 @@ test("a live physical instrument switch warms complete future events and its def
   prepareCalls.length = 0;
 
   expect(controller.setInstrument("dreadnought-guitar").ok).toBe(true);
+  /* jcpe-j4hj (53cea18): the swap is handed to the transport only once every
+   * note the new instrument may still attack is rendered, so the switch is
+   * ONE preparation of every future event - the old leading + deferred split
+   * let the playhead outrun the background render and fault the run. */
   await until(() =>
-    prepareCalls.filter(({ instrumentId }) =>
-      instrumentId === "dreadnought-guitar"
-    ).length === 2
+    prepareCalls.some(({ instrumentId }) => instrumentId === "dreadnought-guitar")
   );
-  const [leading, deferred] = prepareCalls.filter(({ instrumentId }) =>
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  const switched = prepareCalls.filter(({ instrumentId }) =>
     instrumentId === "dreadnought-guitar"
   );
-  if (leading?.binding === undefined || deferred === undefined) {
+  expect(switched).toHaveLength(1);
+  const [leading] = switched;
+  if (leading?.binding === undefined) {
     throw new Error("LIVE_INSTRUMENT_PREPARATION_MISSING");
   }
   const planEvents = new Map(
     leading.binding.plan.events.map((event) => [String(event.eventId), event]),
   );
-  for (const call of [leading, deferred]) {
+  // Exactly the events at or after the playhead, each as a whole event.
+  const futureEventIds = leading.binding.plan.events
+    .filter((event) => compareBeatValues(event.startBeat, switchPlayhead.value) >= 0)
+    .map((event) => String(event.eventId));
+  expect([...new Set(leading.notes.map((note) => note.eventId))]).toEqual(futureEventIds);
+  for (const call of [leading]) {
     const counts = new Map<string, number>();
     for (const note of call.notes) {
       if (note.eventId === undefined || note.gateSeconds === undefined) {
@@ -301,7 +370,6 @@ test("a live physical instrument switch warms complete future events and its def
     }
   }
   expect(leading.notes.length).toBeGreaterThan(0);
-  expect(deferred.notes.length).toBeGreaterThan(0);
   expect(controller.stopProgression().ok).toBe(true);
 });
 
@@ -381,7 +449,8 @@ test("a preview that supersedes render-ahead restarts the exact deferred event g
     seeded: true,
     reason: "seeded",
   });
-  expect(controller.setInstrument("dreadnought-guitar").ok).toBe(true);
+  // The leading-budget + render-ahead path (cache-only plucked recipes prepare before Play).
+  expect(controller.setInstrument("concert-grand").ok).toBe(true);
   expect(controller.playProgression(GESTURE).ok).toBe(true);
   await until(() => prepareCalls.length === 2);
 
