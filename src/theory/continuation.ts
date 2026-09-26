@@ -61,6 +61,8 @@ type ContextFacts = Readonly<{
   /** ♭9, ♭13/♯5 or alt: the colour of a minor key's V (A7♭9 → Dm). */
   minorColoured: boolean;
   isHalfDiminished: boolean;
+  /** A major triad without a minor seventh (C, C6, Cmaj7): a major tonic. */
+  isMajorTonic: boolean;
   pitchClasses: readonly PitchClass[];
   contextIndex: number;
   realizationId: string;
@@ -157,6 +159,7 @@ function contextFacts(request: ContinuationRequest, operations: ResolutionOperat
       isDominant: spec.triad === "major" && spec.seventh === "minor",
       minorColoured: hasMinorKeyColour(spec),
       isHalfDiminished: spec.triad === "diminished" && spec.seventh === "minor",
+      isMajorTonic: spec.triad === "major" && spec.seventh !== "minor",
       contextIndex, realizationId: realization.id,
       pitchClasses: Object.freeze([...realization.pitchClasses]),
       degrees: Object.freeze(realization.degrees.map(degree => Object.freeze({ ...degree }))),
@@ -189,8 +192,12 @@ function readMajorContext(facts: readonly ContextFacts[], operations: Resolution
   });
   const maximum = Math.max(...scores.map(row => row.score));
   const tied = scores.filter(row => row.score === maximum);
-  // Preserve the existing candidate preference, but retain every tied hypothesis.
-  const chosen = tied.find(row => row.key === last.rootPc) ?? tied[0];
+  /* Ties go to the key the passage opens on (a chart usually starts on its
+     tonic: Fmaj7 D7 reads F, not C), then the key of the last root; every
+     tied hypothesis is still retained and reported. */
+  const first = facts[0];
+  const chosen = tied.find(row => row.key === first?.rootPc && first.isMajorTonic)
+    ?? tied.find(row => row.key === last.rootPc) ?? tied[0];
   if (chosen === undefined) return { reading: null, comparisons, scaleNames: [] };
   const keyPc = chosen.key, defaultRoot = MAJOR_TONICS[keyPc];
   if (defaultRoot === undefined) return { reading: null, comparisons, scaleNames: [] };
@@ -320,6 +327,18 @@ export function deriveContinuationSuggestions(
           "resolve",
           `${reason}, so it points down a fifth to a minor home: ${target}m7.`,
           halfDiminishedTwo ? [previous.symbolText, last.symbolText] : [last.symbolText],
+        );
+        majorHome();
+      } else if ([2, 4, 9].includes(pc(last.rootPc + 5 - keyPc))) {
+        /* A secondary dominant of ii, iii or vi (A7 in C → Dm7): the target
+           is a minor degree of the reading, so its diatonic m7 leads. */
+        const degree = { 2: "ii", 4: "iii", 9: "vi" }[pc(last.rootPc + 5 - keyPc)] ?? "";
+        emit(
+          "dominant-resolution",
+          `${target}m7`,
+          "resolve",
+          `${last.symbolText} is the V of ${target}m7, the ${degree} of ${keyName} major under this reading: it falls a fifth onto that minor chord.`,
+          [last.symbolText],
         );
         majorHome();
       } else {

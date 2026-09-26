@@ -33,6 +33,7 @@ import type {
   ResolvedChord,
 } from "./resolution-contract";
 import { containedChartScale, type ChartScaleFamily } from "./chart-scale-containment";
+import { transposeSpelledPitchClass } from "./guide-tones";
 
 /**
  * Deterministic chart annotation from literal chord facts.
@@ -650,6 +651,19 @@ const OPTION_FLAT_ROOTS: ReadonlySet<string> = new Set([
   "F", "Bb", "Eb", "Ab", "Db",
 ]);
 
+/* A root on a degree of a major key takes that key's own letter: the iii
+   of A is C♯, never D♭. Null off the scale or past one accidental. */
+function keyedRootName(pitchClass: number, key: KeyContext | null): string | null {
+  if (key === null || key.mode !== "major") return null;
+  const index = MAJOR_DEGREE_SEMITONES.indexOf(
+    pc(pitchClass - pitchClassOf(key.tonic)) as (typeof MAJOR_DEGREE_SEMITONES)[number],
+  );
+  if (index < 0) return null;
+  const spelled = transposeSpelledPitchClass(key.tonic, index, MAJOR_DEGREE_SEMITONES[index] ?? 0);
+  if (Math.abs(spelled.alter) > 1) return null;
+  return `${spelled.step}${spelled.alter < 0 ? "b" : spelled.alter > 0 ? "#" : ""}`;
+}
+
 function optionRootName(pitchClass: number, flatSide: boolean): string {
   const flat = FLAT_NAMES[pc(pitchClass)] ?? "C";
   return flatSide || OPTION_FLAT_ROOTS.has(flat)
@@ -692,6 +706,20 @@ const MINOR_COLOURED_DOMINANT_OPTIONS: readonly OptionSeed[] = Object.freeze([
   Object.freeze({
     semitones: 5, quality: "maj7", lowercase: false, suffix: "maj7",
     why: "Or brighten the landing onto the major tonic.",
+  }),
+  DOMINANT_OPTIONS[2] as OptionSeed,
+]);
+
+/* A secondary dominant of ii, iii or vi in the key (A7 in C → Dm7): the
+   diatonic minor chord it points at leads; the major landing stays. */
+const MINOR_TARGET_DOMINANT_OPTIONS: readonly OptionSeed[] = Object.freeze([
+  Object.freeze({
+    semitones: 5, quality: "m7", lowercase: true, suffix: "7",
+    why: "Resolve down a fifth to the key's own minor chord it is the V of.",
+  }),
+  Object.freeze({
+    semitones: 5, quality: "maj7", lowercase: false, suffix: "maj7",
+    why: "Or land on a major chord there, outside the key.",
   }),
   DOMINANT_OPTIONS[2] as OptionSeed,
 ]);
@@ -799,13 +827,19 @@ function nextOptionsFor(
   key: KeyContext | null,
 ): readonly ChartNextOption[] {
   const rootPc = pitchClassOf(spec.root);
-  const table = optionTableFor(kind, spec).slice(0, MAX_CHART_NEXT_OPTIONS);
   const keyPc = key === null ? null : pitchClassOf(key.tonic);
+  const minorTarget =
+    kind === "dominant" && key?.mode === "major" && keyPc !== null &&
+    !hasMinorKeyColour(spec) && [2, 4, 9].includes(pc(rootPc + 5 - keyPc));
+  const table = (minorTarget ? MINOR_TARGET_DOMINANT_OPTIONS : optionTableFor(kind, spec))
+    .slice(0, MAX_CHART_NEXT_OPTIONS);
   const kindLabel = kind ?? "unkeyed";
   return Object.freeze(
     table.map((seed) => {
       const targetPc = pc(rootPc + seed.semitones);
-      const symbolText = `${optionRootName(targetPc, seed.flatSide === true)}${seed.quality}`;
+      const root = (seed.flatSide === true ? null : keyedRootName(targetPc, key))
+        ?? optionRootName(targetPc, seed.flatSide === true);
+      const symbolText = `${root}${seed.quality}`;
       const roman =
         keyPc === null
           ? null

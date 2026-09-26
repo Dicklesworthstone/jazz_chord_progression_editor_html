@@ -102,12 +102,49 @@ describe("the session continuation engine", () => {
   test("near misses keep the major home first", () => {
     /* A minor-seventh ii, a half-diminished chord that is not the ii of
      * this V, and a ♯9 (which also colours major blues) all stay major-first. */
-    for (const context of [["Dm7", "G7"], ["Em7b5", "G7"], ["G7#9"], ["Dm7b5", "C7"]]) {
+    for (const context of [["Dm7", "G7"], ["Em7b5", "G7"], ["G7#9"], ["Bm7b5", "G7"]]) {
       const homes = derive(context).suggestions
         .filter((entry) => entry.explanation.providerId === "dominant-resolution")
         .map((entry) => entry.symbolText);
       expect([context.join(" "), homes[0]?.endsWith("maj7")]).toEqual([context.join(" "), true]);
     }
+  });
+
+  test("a secondary dominant of ii, iii or vi leads with that diatonic minor chord", () => {
+    /* Hand-authored, all twelve keys: Imaj7 VI7 → ii (A7 → Dm7 in C),
+     * Imaj7 III7 → vi, Imaj7 VII7 → iii; the major home stays second. */
+    const rows: readonly (readonly [string, string, string, string])[] = [
+      ["C", "A7", "E7", "B7"], ["Db", "Bb7", "F7", "C7"], ["D", "B7", "F#7", "C#7"],
+      ["Eb", "C7", "G7", "D7"], ["E", "C#7", "G#7", "D#7"], ["F", "D7", "A7", "E7"],
+      ["F#", "D#7", "A#7", "E#7"], ["G", "E7", "B7", "F#7"], ["Ab", "F7", "C7", "G7"],
+      ["A", "F#7", "C#7", "G#7"], ["Bb", "G7", "D7", "A7"], ["B", "G#7", "D#7", "A#7"],
+    ];
+    const targets: Readonly<Record<string, string>> = {
+      A7: "D", E7: "A", B7: "E", Bb7: "Eb", F7: "Bb", C7: "F", "F#7": "B", "C#7": "F#",
+      G7: "C", D7: "G", "G#7": "C#", "D#7": "G#", "A#7": "D#", "E#7": "A#",
+    };
+    for (const [tonic, ...dominants] of rows) {
+      for (const dominant of dominants) {
+        const target = targets[dominant] ?? "";
+        const homes = derive([`${tonic}maj7`, dominant]).suggestions
+          .filter((entry) => entry.explanation.providerId === "dominant-resolution")
+          .map((entry) => entry.symbolText);
+        expect([`${tonic}maj7 ${dominant}`, homes]).toEqual([`${tonic}maj7 ${dominant}`, [`${target}m7`, `${target}maj7`]]);
+      }
+    }
+    expect(derive(["Cmaj7", "A7"]).suggestions[0]?.explanation.sentence).toContain("the ii of C major");
+    /* Near-miss: V7/V and a non-diatonic target keep the major home first. */
+    expect(derive(["Cmaj7", "D7"]).suggestions[0]?.symbolText).toBe("Gmaj7");
+    expect(derive(["Fmaj7", "Bb7"]).suggestions[0]?.symbolText).toBe("Ebmaj7");
+  });
+
+  test("a tied key reading goes to the major tonic the passage opens on", () => {
+    /* Hand-authored: Fmaj7 D7 fits F and C major equally (only F♯ is
+     * outside either); opening on Fmaj7 makes F the reading. A dominant
+     * opening does not claim the key. */
+    expect(derive(["Fmaj7", "D7"]).contextReading?.keyName).toBe("F");
+    expect(derive(["Fmaj7", "D7"]).contextReading?.tiedMajorKeys.map((key) => key.name)).toContain("C");
+    expect(derive(["F7", "D7"]).contextReading?.keyName).not.toBe("F");
   });
 
   test("a maj7 final chord never produces a dominant-resolution option", () => {

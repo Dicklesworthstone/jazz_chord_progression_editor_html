@@ -356,6 +356,29 @@ describe("deriveChordDetail — tones, guides, resolution, next", () => {
     }
   });
 
+  test("a secondary dominant of ii, iii or vi leads with the key's own minor chord", () => {
+    /* Hand-authored: VI7 → ii7, III7 → vi7, VII7 → iii7, in C, E♭ and A. */
+    const cases: readonly (readonly [KeyContext, string, string, string])[] = [
+      [C_MAJOR, "A7", "Dm7", "ii7"], [C_MAJOR, "E7", "Am7", "vi7"], [C_MAJOR, "B7", "Em7", "iii7"],
+      [E_FLAT_MAJOR, "C7", "Fm7", "ii7"], [E_FLAT_MAJOR, "G7", "Cm7", "vi7"], [E_FLAT_MAJOR, "D7", "Gm7", "iii7"],
+      [keyOf("A", 0, "major"), "F#7", "Bm7", "ii7"], [keyOf("A", 0, "major"), "C#7", "F#m7", "vi7"],
+      [keyOf("A", 0, "major"), "G#7", "C#m7", "iii7"],
+    ];
+    for (const [key, dominant, target, roman] of cases) {
+      const [first, second] = detail(dominant, null, key).next;
+      expect([dominant, first?.symbolText, first?.roman]).toEqual([dominant, target, roman]);
+      expect([dominant, second?.symbolText.endsWith("maj7")]).toEqual([dominant, true]);
+    }
+    expect(detail("A7", null, C_MAJOR).next[0]?.why).toContain("the V of");
+    /* Near misses: V7/V, the key's own V7 and I7 keep the major landing first;
+     * a ♭9 keeps its minor-colour reason; unkeyed has no key to be diatonic to. */
+    expect(detail("D7", null, C_MAJOR).next[0]?.symbolText).toBe("Gmaj7");
+    expect(detail("G7", null, C_MAJOR).next[0]?.symbolText).toBe("Cmaj7");
+    expect(detail("C7", null, C_MAJOR).next[0]?.symbolText).toBe("Fmaj7");
+    expect(detail("A7b9", null, C_MAJOR).next[0]?.why).toContain("colour");
+    expect(detail("A7", null, null).next[0]?.symbolText).toBe("Dmaj7");
+  });
+
   test("a half-diminished ii leads with the V7♭9 of the minor ii–V", () => {
     /* Hand-authored, all twelve roots: iiø7 → V7♭9 a fourth up, the plain V7
      * second; keyed or unkeyed. Roots follow the Lens's common-name table
