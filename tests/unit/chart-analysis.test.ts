@@ -379,13 +379,24 @@ describe("deriveChordDetail — tones, guides, resolution, next", () => {
     expect(detail("A7", null, null).next[0]?.symbolText).toBe("Dmaj7");
   });
 
+  test("option roots are spelled by interval from the chord, and the numeral follows the letter", () => {
+    /* Hand-authored: a fourth above G♯ is C♯, a major second above B is C♯
+     * (the deceptive vi of E), a fourth above A♭ is D♭. In C, C♯ is ♯i. */
+    expect(detail("G#7", null, null).next.map((option) => option.symbolText)).toContain("C#maj7");
+    expect(detail("Ab7", null, null).next.map((option) => option.symbolText)).toContain("Dbmaj7");
+    const deceptive = detail("B7", null, C_MAJOR).next.find((option) => option.why.startsWith("Deceptive"));
+    expect([deceptive?.symbolText, deceptive?.roman]).toEqual(["C#m7", "♯i7"]);
+    /* Near-miss: the tritone sub keeps its flat-side common name. */
+    expect(detail("Dm7", null, C_MAJOR).next.find((option) => option.why.startsWith("Tritone sub"))?.symbolText).toBe("Db7");
+  });
+
   test("a half-diminished ii leads with the V7♭9 of the minor ii–V", () => {
     /* Hand-authored, all twelve roots: iiø7 → V7♭9 a fourth up, the plain V7
-     * second; keyed or unkeyed. Roots follow the Lens's common-name table
-     * (D♭, not C♯). Near-miss: a minor-seventh ii keeps plain V7. */
+     * second; keyed or unkeyed. Roots are spelled a fourth above the ii
+     * (G♯ → C♯, never D♭). Near-miss: a minor-seventh ii keeps plain V7. */
     const pairs: readonly (readonly [string, string])[] = [
       ["Dm7b5", "G"], ["Am7b5", "D"], ["Em7b5", "A"], ["Bm7b5", "E"],
-      ["F#m7b5", "B"], ["C#m7b5", "F#"], ["G#m7b5", "Db"], ["Gm7b5", "C"],
+      ["F#m7b5", "B"], ["C#m7b5", "F#"], ["G#m7b5", "C#"], ["Gm7b5", "C"],
       ["Cm7b5", "F"], ["Fm7b5", "Bb"], ["Bbm7b5", "Eb"], ["Ebm7b5", "Ab"],
     ];
     for (const [ii, five] of pairs) {

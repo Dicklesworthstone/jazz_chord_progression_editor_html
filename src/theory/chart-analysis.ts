@@ -193,23 +193,21 @@ function pcNumeral(distance: number, lowercase: boolean): string {
  * for two accidentals falls back to the flat-preferred pitch-class table.
  */
 function romanFor(key: KeyContext, spec: ChordSpec): string {
+  return `${spelledNumeral(key, spec.root, isLowercaseSpec(spec))}${suffixFor(spec)}`;
+}
+
+function spelledNumeral(key: KeyContext, root: SpelledPitchClass, lowercase: boolean): string {
   const tonicIndex = SPELLING_STEP_ORDER.indexOf(key.tonic.step);
-  const rootIndex = SPELLING_STEP_ORDER.indexOf(spec.root.step);
-  const lowercase = isLowercaseSpec(spec);
-  const suffix = suffixFor(spec);
-  const actual = pc(pitchClassOf(spec.root) - pitchClassOf(key.tonic));
-  if (tonicIndex < 0 || rootIndex < 0) {
-    return `${pcNumeral(actual, lowercase)}${suffix}`;
-  }
+  const rootIndex = SPELLING_STEP_ORDER.indexOf(root.step);
+  const actual = pc(pitchClassOf(root) - pitchClassOf(key.tonic));
+  if (tonicIndex < 0 || rootIndex < 0) return pcNumeral(actual, lowercase);
   const degreeIndex = (rootIndex - tonicIndex + 7) % 7;
   const expected = MAJOR_DEGREE_SEMITONES[degreeIndex] ?? 0;
   const delta = ((actual - expected + 18) % 12) - 6;
-  if (delta < -2 || delta > 2) {
-    return `${pcNumeral(actual, lowercase)}${suffix}`;
-  }
+  if (delta < -2 || delta > 2) return pcNumeral(actual, lowercase);
   const numeral = NUMERALS[degreeIndex] ?? "I";
   const cased = lowercase ? numeral.toLowerCase() : numeral;
-  return `${alterGlyphs(delta)}${cased}${suffix}`;
+  return `${alterGlyphs(delta)}${cased}`;
 }
 
 /* ------------------------------------------------------------- analysis */
@@ -651,17 +649,31 @@ const OPTION_FLAT_ROOTS: ReadonlySet<string> = new Set([
   "F", "Bb", "Eb", "Ab", "Db",
 ]);
 
+/* Letter steps for the option intervals: up a fourth is three letters,
+   a major second one, a major sixth five (B7 → deceptive C♯m7, never D♭m7). */
+const INTERVAL_LETTER_STEPS: Readonly<Record<number, number>> = Object.freeze({ 2: 1, 5: 3, 9: 5 });
+
+function intervalRoot(root: SpelledPitchClass, semitones: number): SpelledPitchClass | null {
+  const steps = INTERVAL_LETTER_STEPS[semitones];
+  if (steps === undefined) return null;
+  const spelled = transposeSpelledPitchClass(root, steps, semitones);
+  return Math.abs(spelled.alter) > 1 ? null : spelled;
+}
+
 /* A root on a degree of a major key takes that key's own letter: the iii
    of A is C♯, never D♭. Null off the scale or past one accidental. */
-function keyedRootName(pitchClass: number, key: KeyContext | null): string | null {
+function keyedRoot(pitchClass: number, key: KeyContext | null): SpelledPitchClass | null {
   if (key === null || key.mode !== "major") return null;
   const index = MAJOR_DEGREE_SEMITONES.indexOf(
     pc(pitchClass - pitchClassOf(key.tonic)) as (typeof MAJOR_DEGREE_SEMITONES)[number],
   );
   if (index < 0) return null;
   const spelled = transposeSpelledPitchClass(key.tonic, index, MAJOR_DEGREE_SEMITONES[index] ?? 0);
-  if (Math.abs(spelled.alter) > 1) return null;
-  return `${spelled.step}${spelled.alter < 0 ? "b" : spelled.alter > 0 ? "#" : ""}`;
+  return Math.abs(spelled.alter) > 1 ? null : spelled;
+}
+
+function asciiName(pitch: SpelledPitchClass): string {
+  return `${pitch.step}${pitch.alter < 0 ? "b".repeat(-pitch.alter) : "#".repeat(pitch.alter)}`;
 }
 
 function optionRootName(pitchClass: number, flatSide: boolean): string {
@@ -837,13 +849,16 @@ function nextOptionsFor(
   return Object.freeze(
     table.map((seed) => {
       const targetPc = pc(rootPc + seed.semitones);
-      const root = (seed.flatSide === true ? null : keyedRootName(targetPc, key))
-        ?? optionRootName(targetPc, seed.flatSide === true);
-      const symbolText = `${root}${seed.quality}`;
+      /* Spelled roots (the key's letter, else by interval from this chord's
+         root) name the option and its numeral alike; tritone subs keep the
+         flat-side common name. */
+      const spelled = seed.flatSide === true ? null
+        : keyedRoot(targetPc, key) ?? intervalRoot(spec.root, seed.semitones);
+      const symbolText = `${spelled === null ? optionRootName(targetPc, seed.flatSide === true) : asciiName(spelled)}${seed.quality}`;
       const roman =
-        keyPc === null
+        key === null || keyPc === null
           ? null
-          : `${pcNumeral(pc(targetPc - keyPc), seed.lowercase)}${seed.suffix}`;
+          : `${spelled === null ? pcNumeral(pc(targetPc - keyPc), seed.lowercase) : spelledNumeral(key, spelled, seed.lowercase)}${seed.suffix}`;
       return Object.freeze({
         id: `${kindLabel}:${symbolText}`,
         symbolText,
