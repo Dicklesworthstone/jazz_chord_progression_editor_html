@@ -7,6 +7,7 @@ import {
   type PitchClass,
   type SpelledPitchClass,
   type KeyContext,
+  type KeyMode,
 } from "../domain";
 import type { AccidentalStyle } from "./syntax-contract";
 
@@ -60,6 +61,12 @@ export type ContinuationRequest = Readonly<{
   context: readonly (ChordSpec | CustomChordSpec)[];
   /** Aligned to context, before the explicit last-four window is taken. */
   selectedRealizationIds?: readonly (string | null)[];
+  /**
+   * The key the chart declares where the context ends (a section override
+   * or the document key). When present the reading is that key, never a
+   * pitch-overlap guess; absent or null keeps the overlap reading.
+   */
+  key?: KeyContext | null;
 }>;
 
 export type ContinuationContextBarrier = Readonly<{
@@ -79,9 +86,14 @@ export type ContinuationContextTone = Readonly<{
   spellingContained: boolean;
 }>;
 
-/** A finite major-scale overlap reading, never a declared or persisted key. */
+/**
+ * The key the suggestions reason in: the chart's declared key when it has
+ * one, else a finite major-scale overlap reading (never persisted).
+ */
 export type ContinuationContextReading = Readonly<{
-  policy: "major-pitch-overlap@1";
+  policy: "major-pitch-overlap@1" | "declared-key@1";
+  /** "major" for every overlap reading; the declared key's own mode otherwise. */
+  keyMode: KeyMode;
   keyName: string;
   keyPitchClass: PitchClass;
   tiedMajorKeys: readonly Readonly<{ name: string; pitchClass: PitchClass }>[];
@@ -93,7 +105,7 @@ export type ContinuationContextReading = Readonly<{
   outsideSpellings: readonly string[];
   enharmonicSpellings: readonly string[];
   tones: readonly ContinuationContextTone[];
-  keyDeclared: false;
+  keyDeclared: boolean;
 }>;
 
 export type ContinuationWorkEvidence = Readonly<{

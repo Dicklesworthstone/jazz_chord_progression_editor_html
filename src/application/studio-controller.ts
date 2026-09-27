@@ -7501,14 +7501,18 @@ function makeStudioComposition(
     if (cached !== undefined && cached.eventIds.every((id, index) =>
       (selectedRealizations?.get(id) ?? null) === cached.selections[index])) return cached.view;
     const window: ChordEvent[] = [];
+    // The key declared where the context ends: that section's override, else the chart's.
+    let declaredKey = document.key;
     for (const section of document.sections) for (const measure of section.measures) for (const event of measure.events) {
       window.push(event);
+      declaredKey = section.keyOverride ?? document.key;
       if (window.length > MAX_CONTINUATION_CONTEXT_EVENTS) window.shift();
     }
     const selections = Object.freeze(window.map(event => selectedRealizations?.get(event.id) ?? null));
     const last = window[window.length - 1];
     const result = deriveContinuationSuggestions({
       context: Object.freeze(window.map(event => event.chord)), selectedRealizationIds: selections,
+      key: declaredKey,
     }, resolutionOperations);
     const barrier = result.contextBarriers[result.contextBarriers.length - 1];
     const barrierReason = barrier?.reason === "custom-chord" ? "its pitches do not define a chord function"

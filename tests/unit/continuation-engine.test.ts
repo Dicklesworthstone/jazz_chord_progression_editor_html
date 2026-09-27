@@ -5,7 +5,7 @@
  */
 import { describe, expect, test } from "bun:test";
 
-import type { ChordSpec } from "../../src/domain";
+import { makeSpelledPitchClass, type ChordSpec, type KeyContext } from "../../src/domain";
 import {
   CONTINUATION_PROVIDER_IDS,
   MAX_CONTINUATION_PER_PROVIDER,
@@ -21,12 +21,21 @@ function mustParse(sourceText: string): ChordSpec {
   return parsed.chord;
 }
 
-function derive(symbols: readonly string[]) {
+function derive(symbols: readonly string[], key?: KeyContext | null) {
   return deriveContinuationSuggestions(
-    { context: symbols.map(mustParse) },
+    { context: symbols.map(mustParse), ...(key === undefined ? {} : { key }) },
     resolutionOperations,
   );
 }
+
+function keyOf(step: string, alter: number, mode: KeyContext["mode"]): KeyContext {
+  const tonic = makeSpelledPitchClass({ step, alter });
+  if (!tonic.ok) throw new Error(`test tonic did not construct: ${step}`);
+  return Object.freeze({ tonic: tonic.value, mode });
+}
+
+const providerSymbols = (result: ReturnType<typeof derive>, providerId: string): string[] =>
+  result.suggestions.filter((entry) => entry.explanation.providerId === providerId).map((entry) => entry.symbolText);
 
 describe("the session continuation engine", () => {
   test("after Dm7 G7 the first option resolves G7 to Cmaj7 and says why", () => {
@@ -145,6 +154,31 @@ describe("the session continuation engine", () => {
     expect(derive(["Fmaj7", "D7"]).contextReading?.keyName).toBe("F");
     expect(derive(["Fmaj7", "D7"]).contextReading?.tiedMajorKeys.map((key) => key.name)).toContain("C");
     expect(derive(["F7", "D7"]).contextReading?.keyName).not.toBe("F");
+  });
+
+  test("a declared minor key is the reading: its own diatonic chords, said plainly", () => {
+    /* Hand-authored: Cm7 Fm7 declared in C minor reasons in C minor (V7 and
+     * iiø7 first), where the undeclared overlap guess reads E♭ major. */
+    const cMinor = keyOf("C", 0, "natural-minor");
+    const declared = derive(["Cm7", "Fm7"], cMinor);
+    expect(declared.contextReading).toMatchObject({ policy: "declared-key@1", keyDeclared: true, keyName: "C", keyMode: "natural-minor" });
+    expect(providerSymbols(declared, "diatonic-next")).toEqual(["G7", "Dm7b5"]);
+    expect(declared.suggestions.find((entry) => entry.explanation.providerId === "diatonic-next")?.explanation.sentence)
+      .toContain("C minor is the chart's declared key");
+    const guessed = derive(["Cm7", "Fm7"]);
+    expect(guessed.contextReading).toMatchObject({ policy: "major-pitch-overlap@1", keyDeclared: false, keyName: "Eb" });
+    expect(providerSymbols(guessed, "diatonic-next")).not.toContain("Dm7b5");
+    /* V7 in the declared minor key resolves to its minor tonic first. */
+    const home = derive(["Cm7", "G7"], cMinor).suggestions[0];
+    expect([home?.symbolText, home?.explanation.sentence.includes("the i of C minor")]).toEqual(["Cm7", true]);
+  });
+
+  test("a declared key overrides the overlap tie-break, transposes, and null means undeclared", () => {
+    /* Fmaj7 D7 ties F and C; declared C major wins over the opening-tonic rule. */
+    expect(derive(["Fmaj7", "D7"], keyOf("C", 0, "major")).contextReading?.keyName).toBe("C");
+    expect(derive(["Fmaj7", "D7"]).contextReading?.keyName).toBe("F");
+    expect(providerSymbols(derive(["F#m7", "Bm7"], keyOf("F", 1, "natural-minor")), "diatonic-next")).toEqual(["C#7", "G#m7b5"]);
+    expect(JSON.stringify(derive(["Dm7", "G7"], null))).toBe(JSON.stringify(derive(["Dm7", "G7"])));
   });
 
   test("a maj7 final chord never produces a dominant-resolution option", () => {

@@ -75,4 +75,18 @@ describe("readContinuationSuggestions", () => {
     const view = controller.readContinuationSuggestions();
     expect(view.afterLabel).toBe("Em7");
   });
+
+  test("the chart's declared key is the reading; clearing it returns to the overlap guess", () => {
+    /* Hand-authored: Cm7 Fm7 guesses E♭ major; declared C minor offers the
+     * minor key's own G7 and Dm7♭5, and says the key is declared. */
+    const controller = freshController();
+    insertChart(controller, "| Cm7 Fm7 |");
+    expect(controller.readContinuationSuggestions().contextReading?.keyDeclared).toBe(false);
+    expect(controller.setKey({ step: "C", alter: 0, mode: "natural-minor" }).ok).toBe(true);
+    const declared = controller.readContinuationSuggestions();
+    expect(declared.contextReading).toMatchObject({ keyDeclared: true, keyName: "C", keyMode: "natural-minor" });
+    expect(declared.suggestions.map((entry) => entry.symbolText)).toContain("Dm7b5");
+    expect(controller.setKey(null).ok).toBe(true);
+    expect(controller.readContinuationSuggestions().contextReading?.keyDeclared).toBe(false);
+  });
 });

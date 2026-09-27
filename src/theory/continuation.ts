@@ -1,4 +1,4 @@
-import { pitchClassOf, type ChordDegree, type PitchClass, type SpelledPitchClass } from "../domain";
+import { pitchClassOf, type ChordDegree, type KeyContext, type KeyMode, type PitchClass, type SpelledPitchClass } from "../domain";
 
 import {
   CONTINUATION_ENGINE_VERSION,
@@ -224,8 +224,29 @@ function readMajorContext(facts: readonly ContextFacts[], operations: Resolution
     root = alternative; scaleNames = alternativeNames;
   }
   if (scaleNames === null) return { reading: null, comparisons, scaleNames: [] };
+  return buildReading(facts, {
+    keyPc, root, steps: MAJOR_SCALE_STEPS, scaleNames, policy: "major-pitch-overlap@1", mode: "major",
+    tied: tied.map(row => row.key), keyDeclared: false, comparisons,
+  });
+}
+
+type ReadingSpec = Readonly<{
+  keyPc: PitchClass;
+  root: SpelledPitchClass;
+  steps: readonly number[];
+  scaleNames: readonly string[];
+  policy: ContinuationContextReading["policy"];
+  mode: KeyMode;
+  tied: readonly PitchClass[];
+  keyDeclared: boolean;
+  comparisons: number;
+}>;
+
+function buildReading(facts: readonly ContextFacts[], spec: ReadingSpec):
+  Readonly<{ reading: ContinuationContextReading; comparisons: number; scaleNames: readonly string[] }> {
+  const { keyPc, root, scaleNames, tied, comparisons } = spec;
   const names = new Set(scaleNames);
-  const scale = new Set(MAJOR_SCALE_STEPS.map(step => pc(keyPc + step)));
+  const scale = new Set(spec.steps.map(step => pc(keyPc + step)));
   const tones: ContinuationContextTone[] = [];
   for (const fact of facts) fact.pitchClasses.forEach((pitchClass, index) => {
     const spelling = fact.spellings[index], degree = fact.degrees[index];
@@ -237,18 +258,47 @@ function readMajorContext(facts: readonly ContextFacts[], operations: Resolution
   const pitchClassMatches = tones.filter(tone => tone.pitchClassContained).length;
   const spellingMatches = tones.filter(tone => tone.spellingContained).length;
   return Object.freeze({ comparisons, scaleNames: Object.freeze([...scaleNames]), reading: Object.freeze({
-    policy: "major-pitch-overlap@1", keyName: written(root), keyPitchClass: keyPc,
-    tiedMajorKeys: Object.freeze(tied.map(row => Object.freeze({ name: nameFor(row.key, row.key), pitchClass: row.key }))),
+    policy: spec.policy, keyMode: spec.mode, keyName: written(root), keyPitchClass: keyPc,
+    tiedMajorKeys: Object.freeze(tied.map(key => Object.freeze({ name: nameFor(key, key), pitchClass: key }))),
     toneOccurrences: tones.length, pitchClassMatches, spellingMatches,
     completePitchClassContainment: pitchClassMatches === tones.length,
     completeSpelledContainment: spellingMatches === tones.length,
     outsideSpellings: Object.freeze([...new Set(tones.filter(tone => !tone.pitchClassContained).map(tone => written(tone.spelling)))]),
     enharmonicSpellings: Object.freeze([...new Set(tones.filter(tone => tone.pitchClassContained && !tone.spellingContained).map(tone => written(tone.spelling)))]),
-    tones: Object.freeze(tones), keyDeclared: false,
+    tones: Object.freeze(tones), keyDeclared: spec.keyDeclared,
   }) });
 }
 
+/* Scale steps per declared mode; minor keys spell from their own letters. */
+const MODE_STEPS: Readonly<Record<KeyMode, readonly number[]>> = Object.freeze({
+  "major": MAJOR_SCALE_STEPS,
+  "natural-minor": Object.freeze([0, 2, 3, 5, 7, 8, 10]),
+  "harmonic-minor": Object.freeze([0, 2, 3, 5, 7, 8, 11]),
+  "melodic-minor": Object.freeze([0, 2, 3, 5, 7, 9, 11]),
+});
+
+/* The chart declares its key: reason in it, and say so. */
+function readDeclaredContext(facts: readonly ContextFacts[], key: KeyContext):
+  Readonly<{ reading: ContinuationContextReading; comparisons: number; scaleNames: readonly string[] }> {
+  const steps = MODE_STEPS[key.mode];
+  const scaleNames = steps.map((semitones, index) => written(transposeSpelledPitchClass(key.tonic, index, semitones)));
+  const comparisons = facts.reduce((total, fact) => total + fact.pitchClasses.length, 0);
+  return buildReading(facts, {
+    keyPc: pitchClassOf(key.tonic), root: key.tonic, steps, scaleNames, policy: "declared-key@1",
+    mode: key.mode, tied: [], keyDeclared: true, comparisons,
+  });
+}
+
+function modeLabel(mode: KeyMode): string {
+  return mode === "major" ? "major" : mode === "natural-minor" ? "minor" : mode.replace("-", " ");
+}
+
 function contextSentence(reading: ContinuationContextReading): string {
+  if (reading.keyDeclared) {
+    return `${reading.keyName} ${modeLabel(reading.keyMode)} is the chart's declared key: ${String(reading.pitchClassMatches)} of ${String(reading.toneOccurrences)} chord tones match its scale by pitch class; ${String(reading.spellingMatches)} match its spelling.`
+      + (reading.outsideSpellings.length > 0 ? ` Outside it: ${reading.outsideSpellings.join(", ")}.` : "")
+      + (reading.enharmonicSpellings.length > 0 ? ` Different spellings: ${reading.enharmonicSpellings.join(", ")}.` : "");
+  }
   const otherKeys = reading.tiedMajorKeys.filter(key => key.pitchClass !== reading.keyPitchClass).map(key => `${key.name} major`);
   return `${reading.keyName} major is one possible reading: ${String(reading.pitchClassMatches)} of ${String(reading.toneOccurrences)} chord tones match by pitch class; ${String(reading.spellingMatches)} match the scale's spelling.`
     + (reading.outsideSpellings.length > 0 ? ` Outside it: ${reading.outsideSpellings.join(", ")}.` : "")
@@ -262,7 +312,9 @@ export function deriveContinuationSuggestions(
 ): ContinuationResult {
   const captured = contextFacts(request, operations);
   const facts = captured.facts;
-  const majorContext = readMajorContext(facts, operations);
+  const majorContext = request.key !== undefined && request.key !== null && facts.length > 0
+    ? readDeclaredContext(facts, request.key)
+    : readMajorContext(facts, operations);
   const last = facts[facts.length - 1];
 
   const candidates: Candidate[] = [];
@@ -296,6 +348,7 @@ export function deriveContinuationSuggestions(
   if (last !== undefined && majorContext.reading !== null) {
     const keyPc = majorContext.reading.keyPitchClass;
     const keyName = majorContext.reading.keyName;
+    const minorKey = majorContext.reading.keyMode !== "major";
     const contextRootPcs = new Set(facts.map((fact) => pc(fact.rootPc)));
 
     // dominant-resolution: a dominant tends down a fifth; offer both homes.
@@ -329,15 +382,15 @@ export function deriveContinuationSuggestions(
           halfDiminishedTwo ? [previous.symbolText, last.symbolText] : [last.symbolText],
         );
         majorHome();
-      } else if ([2, 4, 9].includes(pc(last.rootPc + 5 - keyPc))) {
+      } else if ((minorKey ? [0, 5, 7] : [2, 4, 9]).includes(pc(last.rootPc + 5 - keyPc))) {
         /* A secondary dominant of ii, iii or vi (A7 in C → Dm7): the target
            is a minor degree of the reading, so its diatonic m7 leads. */
-        const degree = { 2: "ii", 4: "iii", 9: "vi" }[pc(last.rootPc + 5 - keyPc)] ?? "";
+        const degree = { 0: "i", 2: "ii", 4: "iii", 5: "iv", 7: "v", 9: "vi" }[pc(last.rootPc + 5 - keyPc)] ?? "";
         emit(
           "dominant-resolution",
           `${target}m7`,
           "resolve",
-          `${last.symbolText} is the V of ${target}m7, the ${degree} of ${keyName} major under this reading: it falls a fifth onto that minor chord.`,
+          `${last.symbolText} is the V of ${target}m7, the ${degree} of ${keyName} ${modeLabel(majorContext.reading.keyMode)} under this reading: it falls a fifth onto that minor chord.`,
           [last.symbolText],
         );
         majorHome();
@@ -390,14 +443,23 @@ export function deriveContinuationSuggestions(
     {
       /* [pitch class, quality, scale degree]: names come from the reading's
          own spelled scale, so F♯ major offers C♯7, not D♭7. */
-      const diatonicOrder: readonly (readonly [number, string, number])[] = [
-        [pc(keyPc + 7), "7", 5],
-        [pc(keyPc + 2), "m7", 2],
-        [pc(keyPc + 9), "m7", 6],
-        [pc(keyPc + 5), "maj7", 4],
-        [keyPc, "maj7", 1],
-        [pc(keyPc + 4), "m7", 3],
-      ];
+      const diatonicOrder: readonly (readonly [number, string, number])[] = minorKey
+        ? [
+          [pc(keyPc + 7), "7", 5],
+          [pc(keyPc + 2), "m7b5", 2],
+          [pc(keyPc + 8), "maj7", 6],
+          [pc(keyPc + 5), "m7", 4],
+          [keyPc, "m7", 1],
+          [pc(keyPc + 3), "maj7", 3],
+        ]
+        : [
+          [pc(keyPc + 7), "7", 5],
+          [pc(keyPc + 2), "m7", 2],
+          [pc(keyPc + 9), "m7", 6],
+          [pc(keyPc + 5), "maj7", 4],
+          [keyPc, "maj7", 1],
+          [pc(keyPc + 4), "m7", 3],
+        ];
       for (const [rootPc, quality, degree] of diatonicOrder) {
         if (contextRootPcs.has(rootPc)) continue;
         const name = majorContext.scaleNames[degree - 1] ?? nameFor(rootPc, keyPc);
