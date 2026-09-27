@@ -21,6 +21,12 @@ const TARGET_TONICS = Object.freeze([
   ["C", 0], ["C", 1], ["D", -1], ["D", 0], ["E", -1], ["E", 0], ["F", 0], ["F", 1],
   ["G", -1], ["G", 0], ["A", -1], ["A", 0], ["B", -1], ["B", 0], ["C", -1],
 ] as const);
+/* Minor keys are written on other tonics: G♯, D♯ and A♯ minor (five to
+   seven sharps), never D♭, G♭ or C♭ minor. */
+const MINOR_TARGET_TONICS = Object.freeze([
+  ["C", 0], ["C", 1], ["D", 0], ["D", 1], ["E", -1], ["E", 0], ["F", 0], ["F", 1],
+  ["G", 0], ["G", 1], ["A", -1], ["A", 0], ["A", 1], ["B", -1], ["B", 0],
+] as const);
 type Tonic = Readonly<{ step: string; alter: number }>;
 const tonicLabel = ([step, alter]: readonly [string, number]): string =>
   `${step}${alter < 0 ? "♭" : alter > 0 ? "♯" : ""}`;
@@ -49,10 +55,11 @@ export function TransposeDialog({ preview, apply, previewToKey, applyToKey, hear
   const [scope, setScope] = useState<StudioTransposeScope>("chart");
   const [by, setBy] = useState<"interval" | "key">("interval");
   const [tonicIndex, setTonicIndex] = useState(4);
-  const tonicPair = TARGET_TONICS[tonicIndex] ?? TARGET_TONICS[0];
-  const tonic: Tonic = useMemo(() => ({ step: tonicPair[0], alter: tonicPair[1] }), [tonicPair]);
   const byInterval = useMemo(() => preview(interval, direction, scope), [preview, interval, direction, scope]);
   const hasKey = byInterval.ok && byInterval.keyBefore !== null;
+  const tonics = byInterval.ok && byInterval.keyBefore?.includes("minor") === true ? MINOR_TARGET_TONICS : TARGET_TONICS;
+  const tonicPair = tonics[tonicIndex] ?? tonics[0];
+  const tonic: Tonic = useMemo(() => ({ step: tonicPair[0], alter: tonicPair[1] }), [tonicPair]);
   const shown = useMemo(
     () => (by === "key" && hasKey ? previewToKey(tonic, direction, scope) : byInterval),
     [by, hasKey, previewToKey, tonic, direction, scope, byInterval],
@@ -100,7 +107,7 @@ export function TransposeDialog({ preview, apply, previewToKey, applyToKey, hear
         <label for="studio-transpose-key">New key</label>
         <select id="studio-transpose-key" value={String(tonicIndex)}
           onChange={(event) => { setTonicIndex(Number(event.currentTarget.value)); setRefusal(null); }}>
-          {TARGET_TONICS.map((pair, index) => <option key={index} value={String(index)}>{tonicLabel(pair)}</option>)}
+          {tonics.map((pair, index) => <option key={index} value={String(index)}>{tonicLabel(pair)}</option>)}
         </select>
       </> : <>
         <label for="studio-transpose-interval">Interval</label>
