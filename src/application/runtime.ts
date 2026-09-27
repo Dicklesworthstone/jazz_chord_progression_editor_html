@@ -37,6 +37,7 @@ export type {
   StudioCompositionCreationResult,
   StudioChordDetailView,
   StudioContinuationView,
+  StudioKeySuggestion,
   StudioController,
   StudioEventAnalysisView,
   StudioSectionPhrasesView,

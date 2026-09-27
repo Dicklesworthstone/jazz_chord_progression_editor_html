@@ -44,6 +44,7 @@ import {
   type StudioAudioGesture,
   type StudioChordDetailView,
   type StudioContinuationView,
+  type StudioKeySuggestion,
   type StudioController,
   type StudioEventAnalysisView,
   type StudioSectionPhrasesView,
@@ -378,6 +379,7 @@ export type AppActions = Readonly<{
   readTransportAnalysisFrame: () => StudioAnalysisFrame | null;
   readEventPitchClasses: (eventId: string) => readonly number[] | null;
   readContinuationSuggestions: () => StudioContinuationView;
+  readKeySuggestion?: () => StudioKeySuggestion | null;
   /** Display-only chart annotation reads (jcpe-v2-redesign-z323). */
   readEventAnalysis: (eventId: string) => StudioEventAnalysisView | null;
   readSectionPhrases: (sectionId: string) => StudioSectionPhrasesView | null;
@@ -1510,6 +1512,7 @@ function viewFromSnapshot(
   midiImport: StudioMidiImportView,
   midiExport: StudioMidiExportView,
   romanForEvent: (eventId: string) => string | null,
+  keySuggestion: StudioKeySuggestion | null = null,
 ): StudioShellView {
   const {
     titleDraft,
@@ -1722,6 +1725,7 @@ function viewFromSnapshot(
     midiExport,
     harmony: Object.freeze({
       selectedChordLabel: null,
+      keySuggestion,
       selected: selectedChordView(snapshot),
       detail,
       selectionStatusLabel: chordCount === 0
@@ -2631,7 +2635,8 @@ export function App({ snapshot, actions, startupNotice, documentActions, recover
       selected: candidate.ordinal === midiSelectedOrdinal,
       canInspect: candidate.preview !== null,
     })),
-  } }, midiExportView(midiExportSession), (eventId) => actions.readEventAnalysis(eventId)?.roman ?? null);
+  } }, midiExportView(midiExportSession), (eventId) => actions.readEventAnalysis(eventId)?.roman ?? null,
+  actions.readKeySuggestion?.() ?? null);
 
   /*
    * jcpe-7she: the independent ear compares what the tap heard with the
@@ -4169,6 +4174,7 @@ export function StudioRoot({
         readTransportAnalysisFrame: controller.readTransportAnalysisFrame,
         readEventPitchClasses: controller.readEventPitchClasses,
         readContinuationSuggestions: controller.readContinuationSuggestions,
+        readKeySuggestion: controller.readKeySuggestion,
         readEventAnalysis: controller.readEventAnalysis,
         readSectionPhrases: controller.readSectionPhrases,
         readChordDetail: controller.readChordDetail,

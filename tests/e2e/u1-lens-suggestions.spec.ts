@@ -54,6 +54,24 @@ test.describe("Lens continuation options", () => {
     expectCleanDiagnostics(diagnostics);
   });
 
+  test("a keyless chart is offered the key it fits; using it sets the key, undoably", async ({
+    page,
+  }) => {
+    const diagnostics = captureDiagnostics(page);
+    await openStudio(page);
+    await typeAndInsert(page, "| Dm7 G7 | Cmaj7 |");
+    const offer = page.getByTestId("key-suggestion-rail");
+    await offer.scrollIntoViewIfNeeded();
+    await expect(offer).toContainText("These chords fit C major best");
+    await offer.getByRole("button", { name: "Use C major" }).click();
+    await expect(page.getByRole("combobox", { name: "Key" })).toHaveValue("C/0/major");
+    await expect(page.getByTestId("key-suggestion-rail")).toHaveCount(0);
+    await page.locator("#studio-undo").click();
+    await expect(page.getByRole("combobox", { name: "Key" })).toHaveValue("");
+    await expect(page.getByTestId("key-suggestion-rail")).toBeVisible();
+    expectCleanDiagnostics(diagnostics);
+  });
+
   test("the key picker sets a minor key the Lens reads, clears it, and undoes", async ({
     page,
   }) => {

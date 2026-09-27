@@ -191,3 +191,26 @@ export type DeriveChordDetailRequest = Readonly<{
   next: Readonly<{ spec: ChordSpec | CustomChordSpec; symbolText: string }> | null;
   key: KeyContext | null;
 }>;
+
+/**
+ * A key the whole chart fits best, offered when the chart declares none: the
+ * major/natural-minor scale that holds the most chord tones, relative pairs
+ * split by the tonic chord the chart opens or closes on. A suggestion only -
+ * nothing is set until the musician chooses it.
+ */
+export type EstimateChartKeyRequest = Readonly<{
+  chords: readonly (ChordSpec | CustomChordSpec)[];
+}>;
+
+export type ChartKeyEstimate = Readonly<{
+  key: KeyContext;
+  /** "E♭ major", "C minor". */
+  label: string;
+  /** Chord tones inside the key's scale, of all chord tones counted. */
+  matchedTones: number;
+  totalTones: number;
+  /** Other keys with exactly the same fit (relative keys aside). */
+  tiedLabels: readonly string[];
+  /** Why this key: best scale fit, or a blues (opens and closes on one I7). */
+  reason: "scale-fit" | "blues";
+}>;

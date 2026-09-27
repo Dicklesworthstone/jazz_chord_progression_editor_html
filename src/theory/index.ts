@@ -218,6 +218,7 @@ export {
   analyzeChartEvent,
   deriveChordDetail,
   detectChartPhrases,
+  estimateChartKey,
 } from "./chart-analysis";
 export {
   chartAnalysisOperations,

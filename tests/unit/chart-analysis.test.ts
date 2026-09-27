@@ -16,6 +16,7 @@ import {
   analyzeChartEvent,
   deriveChordDetail,
   detectChartPhrases,
+  estimateChartKey,
   parseChordSymbol,
   resolutionOperations,
 } from "../../src/theory";
@@ -536,5 +537,50 @@ describe("minor keys — the key's own chords read as its own", () => {
     expect(analyze("Abmaj7", C_MAJOR).functionSentence).toContain("Borrowed");
     expect(next("G7", C_MAJOR)[0]).toBe("Cmaj7 Imaj7");
     expect(next("Cmaj7", C_MAJOR)[0]).not.toBe("Fm7 iv7");
+  });
+});
+
+describe("estimateChartKey — the key a keyless chart fits best", () => {
+  const estimate = (text: string) =>
+    estimateChartKey({ chords: text.split(" ").map(mustParse) }, resolutionOperations);
+
+  test("ii–V–I lands on its tonic in all twelve keys", () => {
+    /* Hand-authored: ii7 V7 Imaj7 in each key, spelled the usual way. */
+    const rows: readonly (readonly [string, string])[] = [
+      ["Dm7 G7 Cmaj7", "C major"], ["Ebm7 Ab7 Dbmaj7", "D♭ major"], ["Em7 A7 Dmaj7", "D major"],
+      ["Fm7 Bb7 Ebmaj7", "E♭ major"], ["F#m7 B7 Emaj7", "E major"], ["Gm7 C7 Fmaj7", "F major"],
+      ["G#m7 C#7 F#maj7", "F♯ major"], ["Am7 D7 Gmaj7", "G major"], ["Bbm7 Eb7 Abmaj7", "A♭ major"],
+      ["Bm7 E7 Amaj7", "A major"], ["Cm7 F7 Bbmaj7", "B♭ major"], ["C#m7 F#7 Bmaj7", "B major"],
+    ];
+    for (const [text, label] of rows) {
+      const result = estimate(text);
+      expect([text, result?.label, result?.reason]).toEqual([text, label, "scale-fit"]);
+      expect(result?.matchedTones).toBe(result?.totalTones);
+    }
+  });
+
+  test("the closing tonic, else the opening one, decides relative major or minor", () => {
+    expect(estimate("Cm7 Fm7 Bb7 Ebmaj7")?.label).toBe("E♭ major");
+    expect(estimate("Dm7b5 G7b9 Cm7")?.label).toBe("C minor");
+    expect(estimate("Am7 Dm7 E7 Am7")?.label).toBe("A minor");
+    /* Near-miss: a turnaround ends on V, so the opening Cmaj7 decides. */
+    expect(estimate("Cmaj7 Am7 Dm7 G7")?.label).toBe("C major");
+    expect(estimate("Cmaj7 Am7 Dm7 G7")?.key).toEqual({ tonic: { step: "C", alter: 0 }, mode: "major" });
+  });
+
+  test("a chart that opens and closes on one dominant seventh is a blues in that key", () => {
+    const blues = estimate("F7 Bb7 F7 C7 Bb7 F7");
+    expect([blues?.label, blues?.reason, blues?.tiedLabels]).toEqual(["F major", "blues", []]);
+    /* Near-miss: two chords are not a form. */
+    expect(estimate("F7 F7")?.reason).toBe("scale-fit");
+  });
+
+  test("the tonic keeps the chart's spelling, ties are named, and nothing readable returns null", () => {
+    expect(estimate("F#maj7 C#7 F#maj7")?.label).toBe("F♯ major");
+    expect(estimate("Gbmaj7 Db7 Gbmaj7")?.label).toBe("G♭ major");
+    /* C and G major hold the same six tones of Cmaj7 G7; C opens and closes. */
+    const tie = estimate("Cmaj7 G7 Cmaj7");
+    expect(tie?.label).toBe("C major");
+    expect(estimateChartKey({ chords: [] }, resolutionOperations)).toBeNull();
   });
 });

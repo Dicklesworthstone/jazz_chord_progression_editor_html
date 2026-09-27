@@ -12,6 +12,8 @@ export type HarmonyLensContentProps = Readonly<{
   onHearReharmonization: (eventId: string, optionId: string | null) => Promise<string | null>;
   onApplyReharmonization: (eventId: string, optionId: string) => string | null;
   onEditChord?: (() => void) | undefined;
+  /** Sets the chart key offered by `view.keySuggestion` (one undoable step). */
+  onUseSuggestedKey?: ((key: Readonly<{ step: string; alter: number; mode: string }>) => void) | undefined;
 }>;
 
 export function HarmonyLensContent({
@@ -24,6 +26,7 @@ export function HarmonyLensContent({
   onHearReharmonization,
   onApplyReharmonization,
   onEditChord,
+  onUseSuggestedKey,
 }: HarmonyLensContentProps) {
   const factsHeadingId = `${headingId}-facts`;
   const continuationHeadingId = `${headingId}-continuation`;
@@ -52,6 +55,25 @@ export function HarmonyLensContent({
           tone="info"
         />
       </div>
+
+      {view.keySuggestion !== null && onUseSuggestedKey !== undefined ? (
+        <div class="studio-key-suggestion" data-testid={`key-suggestion-${context}`}>
+          <p>
+            <strong>No key is set.</strong> {view.keySuggestion.sentence} With a key, the
+            Lens names each chord's roman numeral and function.
+          </p>
+          <button
+            type="button"
+            class="studio-inspector-button"
+            id={`studio-use-key-${context}`}
+            onClick={() => {
+              if (view.keySuggestion !== null) onUseSuggestedKey(view.keySuggestion.key);
+            }}
+          >
+            Use {view.keySuggestion.label}
+          </button>
+        </div>
+      ) : null}
 
       {view.selected !== null && onEditChord !== undefined ? (
         <button type="button" class="studio-inspector-button" id={`studio-edit-chord-${context}`} onClick={onEditChord}>
@@ -220,6 +242,8 @@ export type HarmonyLensProps = Readonly<{
   onHearReharmonization: (eventId: string, optionId: string | null) => Promise<string | null>;
   onApplyReharmonization: (eventId: string, optionId: string) => string | null;
   onEditChord?: (() => void) | undefined;
+  /** Sets the chart key offered by `view.keySuggestion` (one undoable step). */
+  onUseSuggestedKey?: ((key: Readonly<{ step: string; alter: number; mode: string }>) => void) | undefined;
 }>;
 
 export function HarmonyLens({
@@ -233,6 +257,7 @@ export function HarmonyLens({
   onHearReharmonization,
   onApplyReharmonization,
   onEditChord,
+  onUseSuggestedKey,
 }: HarmonyLensProps) {
   const headingId = "studio-harmony-heading";
 
@@ -262,6 +287,7 @@ export function HarmonyLens({
             onHearReharmonization={onHearReharmonization}
             onApplyReharmonization={onApplyReharmonization}
             onEditChord={onEditChord}
+            onUseSuggestedKey={onUseSuggestedKey}
           />
         )}
         <button

@@ -432,6 +432,12 @@ export type StudioDetailView = Readonly<{
 
 export type StudioHarmonyView = Readonly<{
   selectedChordLabel: null;
+  /** For a chart with no key: the key its chords fit best, to offer (null otherwise). */
+  keySuggestion: Readonly<{
+    key: Readonly<{ step: string; alter: number; mode: string }>;
+    label: string;
+    sentence: string;
+  }> | null;
   selectionStatusLabel: string;
   emptyTitle: string;
   emptyDescription: string;

@@ -107,6 +107,7 @@ import {
   analyzeChartEvent,
   deriveChordDetail,
   deriveContinuationSuggestions,
+  estimateChartKey,
   detectChartPhrases,
   parseChordSymbol,
   decodeChordProGrid,
@@ -481,6 +482,13 @@ export type StudioInsertionPlan = Readonly<{
  * the chart has no chord yet — in which case the suggestion list is
  * empty and the surface shows nothing rather than inventing an opening.
  */
+/** A key to offer a chart that declares none (display-only until chosen). */
+export type StudioKeySuggestion = Readonly<{
+  key: Readonly<{ step: string; alter: number; mode: string }>;
+  label: string;
+  sentence: string;
+}>;
+
 export type StudioContinuationView = Readonly<{
   afterLabel: string | null;
   suggestions: readonly ContinuationSuggestion[];
@@ -1158,6 +1166,12 @@ export interface StudioController {
    * a document edit or changed relevant selection recomputes without mutation.
    */
   readonly readContinuationSuggestions: (selectedRealizations?: ReadonlyMap<string, string>) => StudioContinuationView;
+  /**
+   * For a chart that declares no key: the key its chords fit best, with a
+   * one-sentence reason, so the Lens can offer it. Null once a key is set or
+   * when no chord tone is readable. Memoized on the frozen document.
+   */
+  readonly readKeySuggestion: () => StudioKeySuggestion | null;
   /**
    * Display-only roman/function/scale reading of one event against the
    * document key. Memoized on the frozen document object like the
@@ -7495,6 +7509,25 @@ function makeStudioComposition(
     selections: readonly (string | null)[];
     view: StudioContinuationView;
   }>>();
+  const keySuggestionCache = new WeakMap<object, StudioKeySuggestion | null>();
+  const readKeySuggestion: StudioController["readKeySuggestion"] = () => {
+    const document = state.document;
+    if (document.key !== null) return null;
+    if (keySuggestionCache.has(document)) return keySuggestionCache.get(document) ?? null;
+    const chords = document.sections.flatMap((section) =>
+      section.measures.flatMap((measure) => measure.events.map((event) => event.chord)));
+    const estimate = estimateChartKey({ chords }, resolutionOperations);
+    const suggestion: StudioKeySuggestion | null = estimate === null ? null : Object.freeze({
+      key: Object.freeze({ step: estimate.key.tonic.step, alter: estimate.key.tonic.alter, mode: estimate.key.mode }),
+      label: estimate.label,
+      sentence: estimate.reason === "blues"
+        ? `The chart opens and closes on the same dominant seventh, like a blues in ${estimate.label.replace(" major", "")}.`
+        : `These chords fit ${estimate.label} best: ${String(estimate.matchedTones)} of ${String(estimate.totalTones)} chord tones are in its scale.`
+          + (estimate.tiedLabels.length > 0 ? ` ${estimate.tiedLabels.join(", ")} fit${estimate.tiedLabels.length === 1 ? "s" : ""} as well.` : ""),
+    });
+    keySuggestionCache.set(document, suggestion);
+    return suggestion;
+  };
   const readContinuationSuggestions: StudioController["readContinuationSuggestions"] = (selectedRealizations) => {
     const document = state.document;
     const cached = continuationCache.get(document);
@@ -8328,6 +8361,7 @@ function makeStudioComposition(
     readTransportAnalysisFrame,
     readEventPitchClasses,
     readContinuationSuggestions,
+    readKeySuggestion,
     readEventAnalysis,
     readSectionPhrases,
     readChordDetail,

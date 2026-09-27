@@ -169,6 +169,7 @@ const BASE_VIEW: Omit<StudioShellView, "layout"> = Object.freeze({
   }),
   harmony: Object.freeze({
     selectedChordLabel: null,
+    keySuggestion: null,
     selected: null,
     detail: null,
     selectionStatusLabel: "No chord events in this chart",

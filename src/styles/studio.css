@@ -15,6 +15,9 @@
 .studio-inspector-summary strong { font-size: 1.5rem; }
 .studio-inspector-actions, .studio-inspector-fields { display: flex; flex-wrap: wrap; gap: .5rem; }
 .studio-inspector-button { min-block-size: 44px; padding: .5rem .75rem; border: 1px solid var(--border-strong); border-radius: .4rem; background: var(--surface-elevated); color: var(--text-primary); cursor: pointer; }
+/* A chart with no key: the key its chords fit best, offered, never set silently. */
+.studio-key-suggestion { display: grid; gap: var(--space-2); padding: var(--space-3); border: var(--border-width) solid var(--border-default); border-radius: var(--radius-md); background: var(--surface-panel); }
+.studio-key-suggestion p { margin: 0; font-size: var(--text-sm); color: var(--text-primary); }
 .studio-inspector-button:disabled { opacity: .55; cursor: default; }
 .studio-inspector button:focus-visible, .studio-inspector input:focus-visible, .studio-inspector textarea:focus-visible, .studio-inspector select:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 3px; }
 .studio-inspector label { display: grid; gap: .25rem; min-inline-size: 0; margin-block: .5rem; }

@@ -17,6 +17,8 @@ import {
   MAX_CHART_PHRASES_PER_SECTION,
   MAX_CHART_PHRASE_EVENTS,
   type AnalyzeChartEventRequest,
+  type ChartKeyEstimate,
+  type EstimateChartKeyRequest,
   type ChartChordDetail,
   type ChartEventAnalysis,
   type ChartGuideToneMove,
@@ -1079,5 +1081,92 @@ export function deriveChordDetail(
     readingNote,
     resolution,
     next,
+  });
+}
+
+/* ---------------------------------------------------------- key estimate */
+
+const ESTIMATE_MAJOR_TONICS: readonly SpelledPitchClass[] = Object.freeze([
+  { step: "C", alter: 0 }, { step: "D", alter: -1 }, { step: "D", alter: 0 }, { step: "E", alter: -1 },
+  { step: "E", alter: 0 }, { step: "F", alter: 0 }, { step: "G", alter: -1 }, { step: "G", alter: 0 },
+  { step: "A", alter: -1 }, { step: "A", alter: 0 }, { step: "B", alter: -1 }, { step: "B", alter: 0 },
+] as SpelledPitchClass[]);
+const ESTIMATE_MINOR_TONICS: readonly SpelledPitchClass[] = Object.freeze([
+  { step: "C", alter: 0 }, { step: "C", alter: 1 }, { step: "D", alter: 0 }, { step: "E", alter: -1 },
+  { step: "E", alter: 0 }, { step: "F", alter: 0 }, { step: "F", alter: 1 }, { step: "G", alter: 0 },
+  { step: "G", alter: 1 }, { step: "A", alter: 0 }, { step: "B", alter: -1 }, { step: "B", alter: 0 },
+] as SpelledPitchClass[]);
+
+/**
+ * The key the chart fits best, for a chart that declares none. Every chord
+ * tone counts (custom chords by their literal pitches); relative major and
+ * minor share a scale, so the tonic chord the chart opens on - else closes
+ * on - decides between them, else major. The tonic keeps the chart's own
+ * written spelling when a chord root has it. Null when no tone is readable.
+ */
+export function estimateChartKey(
+  request: EstimateChartKeyRequest,
+  operations: ResolutionOperations,
+): ChartKeyEstimate | null {
+  const tones: number[] = [];
+  const written = new Map<number, SpelledPitchClass>();
+  type Root = Readonly<{ pc: number; majorTonic: boolean; minorTonic: boolean; dominant: boolean }>;
+  const roots: Root[] = [];
+  for (const chord of request.chords) {
+    if (!isParsed(chord)) {
+      for (const pitch of chord.pitchNames) tones.push(pitchClassOf(pitch));
+      continue;
+    }
+    const resolved = operations.resolveChord(chord);
+    if (!resolved.ok) continue;
+    tones.push(...resolved.value.realizations[0].pitchClasses);
+    const rootPc = pitchClassOf(chord.root);
+    if (!written.has(rootPc) && Math.abs(chord.root.alter) <= 1) written.set(rootPc, chord.root);
+    roots.push(Object.freeze({
+      pc: rootPc,
+      majorTonic: chord.triad === "major" && chord.seventh !== "minor",
+      minorTonic: chord.triad === "minor",
+      dominant: isDominantSpec(chord),
+    }));
+  }
+  if (tones.length === 0) return null;
+  const scores = Array.from({ length: 12 }, (_, tonic) => {
+    const scale = new Set(MAJOR_DEGREE_SEMITONES.map((step) => pc(tonic + step)));
+    return tones.filter((tone) => scale.has(tone)).length;
+  });
+  const best = Math.max(...scores);
+  const tied = scores.flatMap((score, tonic) => (score === best ? [tonic] : []));
+  type Pick = Readonly<{ majorTonic: number; minor: boolean }>;
+  const pickFrom = (root: Root | undefined): Pick | null => {
+    if (root === undefined) return null;
+    for (const tonic of tied) {
+      if (root.majorTonic && root.pc === tonic) return { majorTonic: tonic, minor: false };
+      if (root.minorTonic && root.pc === pc(tonic + 9)) return { majorTonic: tonic, minor: true };
+    }
+    return null;
+  };
+  /* A chart that opens and closes on the same dominant seventh is a blues
+     in that key (F7 ... F7), whatever the scale overlap says. */
+  const first = roots[0], last = roots[roots.length - 1];
+  const bluesRoot = roots.length >= 3 && first?.dominant === true && last?.dominant === true &&
+    first.pc === last.pc ? first : null;
+  const blues = bluesRoot !== null;
+  const pick: Pick = bluesRoot !== null ? { majorTonic: bluesRoot.pc, minor: false }
+    : pickFrom(last) ?? pickFrom(first) ?? { majorTonic: tied[0] ?? 0, minor: false };
+  const tonicPc = pick.minor ? pc(pick.majorTonic + 9) : pick.majorTonic;
+  const tonic = written.get(tonicPc)
+    ?? (pick.minor ? ESTIMATE_MINOR_TONICS : ESTIMATE_MAJOR_TONICS)[tonicPc]
+    ?? { step: "C", alter: 0 };
+  const label = `${displayName(tonic)} ${pick.minor ? "minor" : "major"}`;
+  const tiedLabels = (blues ? [] : tied)
+    .filter((tonicOfTie) => tonicOfTie !== pick.majorTonic)
+    .map((tonicOfTie) => `${displayName(ESTIMATE_MAJOR_TONICS[tonicOfTie] ?? tonic)} major`);
+  return Object.freeze({
+    key: Object.freeze({ tonic, mode: pick.minor ? "natural-minor" : "major" }),
+    label,
+    matchedTones: scores[pick.majorTonic] ?? best,
+    totalTones: tones.length,
+    tiedLabels: Object.freeze(tiedLabels),
+    reason: blues ? "blues" : "scale-fit",
   });
 }

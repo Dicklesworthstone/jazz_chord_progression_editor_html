@@ -90,3 +90,26 @@ describe("readContinuationSuggestions", () => {
     expect(controller.readContinuationSuggestions().contextReading?.keyDeclared).toBe(false);
   });
 });
+
+describe("readKeySuggestion", () => {
+  test("a keyless chart is offered the key it fits best; a set key withdraws the offer", () => {
+    /* Hand-authored: | Dm7 G7 | Cmaj7 | fits C major, all tones in scale. */
+    const controller = freshController();
+    expect(controller.readKeySuggestion()).toBeNull();
+    insertChart(controller, "| Dm7 G7 | Cmaj7 |");
+    const suggestion = controller.readKeySuggestion();
+    expect(suggestion?.key).toEqual({ step: "C", alter: 0, mode: "major" });
+    expect(suggestion?.label).toBe("C major");
+    expect(suggestion?.sentence).toBe("These chords fit C major best: 12 of 12 chord tones are in its scale.");
+    expect(controller.readKeySuggestion()).toBe(suggestion);
+    expect(controller.setKey({ step: "C", alter: 0, mode: "major" }).ok).toBe(true);
+    expect(controller.readKeySuggestion()).toBeNull();
+  });
+
+  test("a blues says why it is offered", () => {
+    const controller = freshController();
+    insertChart(controller, "| F7 | Bb7 | F7 | C7 | F7 |");
+    expect(controller.readKeySuggestion()?.sentence)
+      .toBe("The chart opens and closes on the same dominant seventh, like a blues in F.");
+  });
+});

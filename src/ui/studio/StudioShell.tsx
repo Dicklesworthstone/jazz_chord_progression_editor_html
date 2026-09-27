@@ -714,6 +714,7 @@ export function StudioShell({
               onHearReharmonization={callbacks.onHearReharmonization}
               onApplyReharmonization={callbacks.onApplyReharmonization}
               onEditChord={openInspector}
+              onUseSuggestedKey={callbacks.onSetKey}
               onCollapsedChange={(collapsed) => {
                 callbacks.onRailCollapsedChange("harmony", collapsed);
               }}
@@ -1058,6 +1059,7 @@ export function StudioShell({
                   onHearReharmonization={callbacks.onHearReharmonization}
                   onApplyReharmonization={callbacks.onApplyReharmonization}
                   onEditChord={openInspector}
+                  onUseSuggestedKey={callbacks.onSetKey}
                 />
               )
             }
