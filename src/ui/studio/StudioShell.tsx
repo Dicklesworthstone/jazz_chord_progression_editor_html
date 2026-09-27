@@ -351,6 +351,9 @@ export function StudioShell({
    * exist (V=grid V2R-4, I=detail V2R-7, ?=tour V2R-11).
    */
   const [commandLaneOpen, setCommandLaneOpen] = useState(false);
+  /* Print and audio export live in their own dialog: inside "Type the
+     changes" nobody looking for Print or a WAV would ever find them. */
+  const [printAudioOpen, setPrintAudioOpen] = useState(false);
   const [chartFocus, setChartFocus] = useState(false);
   const [followPlayback, setFollowPlayback] = useState(false);
   const exitFollow = useRef(false);
@@ -562,7 +565,25 @@ export function StudioShell({
               pendingFocusScroll.current = root === null ? null : captureChartFocusScroll(root);
               setChartFocus(current => !current);
             }}
-            documentActions={documentActions}
+            documentActions={<>
+              {documentActions}
+              {printCharts == null && wav == null ? null : (
+                <Button
+                  busy={false}
+                  density="comfortable"
+                  describedBy={[]}
+                  disabled={false}
+                  id="studio-open-print-audio"
+                  invalid={false}
+                  label="Print & audio"
+                  onAction={() => {
+                    setPrintAudioOpen(true);
+                  }}
+                  type="button"
+                  variant="secondary"
+                />
+              )}
+            </>}
             view={view.document}
             callbacks={shellCallbacks}
             chartLayout={view.chart.layout}
@@ -850,8 +871,6 @@ export function StudioShell({
               {chordPads === undefined ? null : <ChordPadsPanel ports={chordPads} />}
               {noteFirst === undefined ? null : <NoteFirstPanel ports={noteFirst} />}
               {songbook == null ? null : <SongbookPanel service={songbook} />}
-              {printCharts == null ? null : <PrintChartPanel service={printCharts} />}
-              {wav == null ? null : <WavExportPanel service={wav} />}
               {comping == null ? null : <CompingPanel ports={comping} />}
               <CommandLaneContent
                 quickEntry={view.quickEntry}
@@ -884,6 +903,39 @@ export function StudioShell({
             }}
             open
             title="Type the changes"
+          />
+        ) : null}
+        {printAudioOpen && !completionDialogOpen ? (
+          <Dialog
+            backgroundRootId="studio-shell-background"
+            busy={false}
+            closeLabel="Close print and audio"
+            content={
+              <>
+                {printCharts == null ? null : <PrintChartPanel service={printCharts} />}
+                {wav == null ? null : <WavExportPanel service={wav} />}
+              </>
+            }
+            density="comfortable"
+            describedBy={[]}
+            description="Print the chart on paper, or download a short piano recording of it. Neither changes the chart."
+            disabled={false}
+            dismissibility={DISMISSIBLE}
+            focusTargets={{
+              triggerId: "studio-open-print-audio",
+              workflowTargetId: null,
+              workspaceId: "workspace",
+            }}
+            id="studio-print-audio"
+            initialFocus="heading"
+            initialFocusId={null}
+            invalid={false}
+            onContractRefusal={callbacks.onUiContractRefusal}
+            onDismiss={() => {
+              setPrintAudioOpen(false);
+            }}
+            open
+            title="Print & audio"
           />
         ) : null}
         {view.chart.completionDialog.open && view.chart.editRefusal !== null ? (

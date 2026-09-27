@@ -22,12 +22,12 @@ for(const width of [320,1280])for(const prepared of [false,true])test(`changing 
  try{
   await page.setViewportSize({width,height:900});await page.goto(url);
   const importChart=async(value:typeof chart)=>{await page.locator("#studio-import-chart").click();await page.locator("#studio-import-file").setInputFiles({name:"piano.changes.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify(value))});await page.locator("#studio-import-commit").click();await page.locator("#studio-import-confirm").click();await expect(page.locator("#studio-document-title")).toHaveValue(value.title);};
-  const open=async()=>{await page.locator("#studio-open-command-lane").click();await page.getByText("Download piano audio",{exact:true}).click();};
+  const open=async()=>{await page.locator("#studio-open-print-audio").click();await page.getByText("Download piano audio",{exact:true}).click();};
   await importChart(chart);await observeNativeSources(page);await open();
   const panel=page.getByRole("region",{name:"Dry piano WAV"}),passage=panel.getByRole("combobox",{name:"Piano passage"}),excerpt=panel.getByRole("checkbox",{name:"Choose specific bars"}),prepare=panel.getByRole("button",{name:"Prepare piano WAV",exact:true}),download=panel.getByRole("button",{name:"Download piano WAV",exact:true});
   await passage.selectOption("excerpt-later");await excerpt.check();await panel.getByRole("combobox",{name:"Number of bars"}).selectOption("1");await panel.getByRole("spinbutton",{name:"First bar"}).fill("3");
   if(prepared){await prepare.click();await expect(download).toBeEnabled();}
-  await page.getByRole("button",{name:"Close the command lane",exact:true}).click();
+  await page.getByRole("button",{name:"Close print and audio",exact:true}).click();
   await importChart({...chart,id:"another-piano-chart",title:"Replacement piano chart",sections:[{...section,id:"excerpt-later",name:"Replacement section",measures:[sounding("replacement-1"),sounding("replacement-2")]}]});
   const revision=await page.locator(".studio-document-status__revision").textContent();await open();
   await expect(passage).toHaveValue("");await expect(excerpt).not.toBeChecked();await expect(panel).toContainText("2 bars in this passage");await expect(download).toBeDisabled();
@@ -47,7 +47,7 @@ for(const theme of ["light","dark"] as const)for(const width of [320,1280])test(
   await page.locator("#studio-import-chart").click();await page.locator("#studio-import-file").setInputFiles({name:"piano.changes.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify(chart))});await page.locator("#studio-import-commit").click();await page.locator("#studio-import-confirm").click();
   await expect(page.locator("#studio-document-title")).toHaveValue(chart.title);const revision=await page.locator(".studio-document-status__revision").textContent();await observeNativeSources(page);
   await page.evaluate(()=>{let created=0;const Native=window.AudioContext;window.AudioContext=new Proxy(Native,{construct(target,args,newTarget){created++;document.documentElement.dataset["wavAudioContexts"]=String(created);const context:unknown=Reflect.construct(target,args,newTarget);if(!(context instanceof Native))throw new Error("Invalid native context");return context;}});document.documentElement.dataset["wavAudioContexts"]="0";});
-  await page.locator("#studio-open-command-lane").click();const summary=page.getByText("Download piano audio",{exact:true});await summary.focus();await page.keyboard.press("Enter");
+  await page.locator("#studio-open-print-audio").click();const summary=page.getByText("Download piano audio",{exact:true});await summary.focus();await page.keyboard.press("Enter");
   const panel=page.getByRole("region",{name:"Dry piano WAV"}),prepare=panel.getByRole("button",{name:"Prepare piano WAV",exact:true}),downloadButton=panel.getByRole("button",{name:"Download piano WAV",exact:true});
   await expect(panel).toBeVisible();await prepare.click();await expect(panel).toContainText("Choose a whole chart or section of 1–4 bars");await expect(downloadButton).toBeDisabled();
   await panel.getByRole("checkbox",{name:"Choose specific bars"}).check();

@@ -31,7 +31,7 @@ for(const paper of ["a4","letter"] as const)for(const width of [320,1280])test(`
  page.on("pageerror",e=>errors.push(e.message));page.on("console",m=>{if(m.type()==="error")errors.push(m.text());});await page.route("**/*",async route=>{const allowed=route.request().isNavigationRequest()&&route.request().url()===url;requests.push({url:route.request().url(),allowed});if(allowed)await route.continue();else await route.abort();});
  try{
   await page.emulateMedia({colorScheme:width===320?"dark":"light"});await page.setViewportSize({width,height:900});await page.goto(url);await page.locator("#studio-import-chart").click();await page.locator("#studio-import-file").setInputFiles({name:"print.changes.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify(chart))});await page.locator("#studio-import-commit").click();await page.locator("#studio-import-confirm").click();await expect(page.locator("#studio-document-title")).toHaveValue(chart.title);
-  const before=await page.locator(".studio-document-status__revision").textContent();await page.locator("#studio-open-command-lane").click();await page.getByText("Print chord chart",{exact:true}).click();const panel=page.getByRole("region",{name:"Printable chord chart"});await panel.getByRole("combobox",{name:"Paper",exact:true}).selectOption(paper);await panel.getByRole("button",{name:"Prepare print preview",exact:true}).click();await expect(panel).toContainText("2 pages ready");
+  const before=await page.locator(".studio-document-status__revision").textContent();await page.locator("#studio-open-print-audio").click();await page.getByText("Print chord chart",{exact:true}).click();const panel=page.getByRole("region",{name:"Printable chord chart"});await panel.getByRole("combobox",{name:"Paper",exact:true}).selectOption(paper);await panel.getByRole("button",{name:"Prepare print preview",exact:true}).click();await expect(panel).toContainText("2 pages ready");
   const svg=panel.locator("svg");expect(await svg.locator("text").evaluateAll(elements=>elements.every(e=>{if(!(e instanceof SVGGraphicsElement))return false;const box=e.getBBox();const parent=e.ownerSVGElement;if(parent===null||box.x<0||box.x+box.width>parent.viewBox.baseVal.width||box.y+box.height>parent.viewBox.baseVal.height)return false;const cell=[...parent.querySelectorAll("rect[data-source-id]")].find(r=>r.getAttribute("data-source-id")===e.getAttribute("data-source-id"));if(!(cell instanceof SVGRectElement))return true;return box.x>=cell.x.baseVal.value&&box.x+box.width<=cell.x.baseVal.value+cell.width.baseVal.value-1&&box.y+box.height<=cell.y.baseVal.value+cell.height.baseVal.value-1;}))).toBe(true);
   expect((await new AxeBuilder({page}).include(".studio-print-tool").analyze()).violations).toEqual([]);expect(await panel.evaluate(e=>e.scrollWidth<=e.clientWidth)).toBe(true);
   const pending=page.waitForEvent("download");await panel.getByRole("button",{name:"Download page SVG",exact:true}).click();const download=await pending;expect(await download.failure()).toBeNull();const bytes=readFileSync(await download.path()),text=bytes.toString("utf8");expect(download.suggestedFilename()).toBe(`JazzChords.org-${paper}-page-1.svg`);
@@ -42,7 +42,7 @@ for(const paper of ["a4","letter"] as const)for(const width of [320,1280])test(`
   if(browserName==="chromium"){await page.evaluate(()=>{window.addEventListener("beforeprint",()=>{document.documentElement.dataset["nativePrintSeen"]="yes";},{once:true});});await panel.getByRole("button",{name:"Print all pages",exact:true}).click();await expect(page.locator("html")).toHaveAttribute("data-native-print-seen","yes");}
   await page.emulateMedia({media:"print"});await expect(page.locator(".studio-print-only svg")).toHaveCount(2);await expect(page.locator("#studio-shell-background")).toBeHidden();
   if(browserName==="chromium"){const pdf=await page.pdf({preferCSSPageSize:true,printBackground:true,displayHeaderFooter:false});await info.attach(`native-${paper}-pdf`,{body:pdf,contentType:"application/pdf"});const pdfPath=info.outputPath(`native-${paper}.pdf`);writeFileSync(pdfPath,pdf);const proof=verifyNativePrintPdf(pdfPath,paper);await info.attach("native-pdf-proof",{body:JSON.stringify(proof),contentType:"application/json"});}
-  await page.emulateMedia({media:"screen"});await expect(panel).toBeVisible();await expect(page.locator(".studio-shell-notice")).toHaveCount(0);await expect(panel.locator("svg")).toHaveCount(1);await panel.getByRole("button",{name:"Close print preview",exact:true}).click();await expect(panel.locator("svg")).toHaveCount(0);await expect(page.locator(".studio-print-only")).toHaveCount(0);await page.getByRole("button",{name:"Close the command lane",exact:true}).click();await expect(page.locator("#studio-open-command-lane")).toBeFocused();await expect(page.locator(".studio-shell-notice")).toHaveCount(0);expect(await page.locator(".studio-document-status__revision").textContent()).toBe(before);expect(errors).toEqual([]);expect(requests.every(r=>r.allowed)).toBe(true);
+  await page.emulateMedia({media:"screen"});await expect(panel).toBeVisible();await expect(page.locator(".studio-shell-notice")).toHaveCount(0);await expect(panel.locator("svg")).toHaveCount(1);await panel.getByRole("button",{name:"Close print preview",exact:true}).click();await expect(panel.locator("svg")).toHaveCount(0);await expect(page.locator(".studio-print-only")).toHaveCount(0);await page.getByRole("button",{name:"Close print and audio",exact:true}).click();await expect(page.locator("#studio-open-print-audio")).toBeFocused();await expect(page.locator(".studio-shell-notice")).toHaveCount(0);expect(await page.locator(".studio-document-status__revision").textContent()).toBe(before);expect(errors).toEqual([]);expect(requests.every(r=>r.allowed)).toBe(true);
   await info.attach("standalone-chart-svg",{body:bytes,contentType:"image/svg+xml"});
  }finally{await info.attach("print-evidence",{body:JSON.stringify({hash,paper,width,theme:width===320?"dark":"light",browser:browser.version(),errors,requests}),contentType:"application/json"});}
 });
@@ -61,7 +61,7 @@ async function exportPrintSource(page:Page):Promise<Buffer>{
  await page.getByRole("button",{name:"Close JSON export",exact:true}).click();return bytes;
 }
 async function openPrintTool(page:Page){
- await page.locator("#studio-open-command-lane").click();await page.getByText("Print chord chart",{exact:true}).click();
+ await page.locator("#studio-open-print-audio").click();await page.getByText("Print chord chart",{exact:true}).click();
  return page.getByRole("region",{name:"Printable chord chart"});
 }
 for(const paper of ["a4","letter"] as const)for(const width of [320,1280])test(`print selected page and current source ${paper} ${String(width)}px`,async({page,browser,browserName},info)=>{
@@ -96,14 +96,14 @@ for(const paper of ["a4","letter"] as const)for(const width of [320,1280])test(`
   expect(decoded.bars).toEqual(Array.from({length:count},(_v,i)=>`print-bar-${String(49-count+i)}`));expect(decoded.text).toContain("2 / 2");
   await expect(panel.getByRole("button",{name:"Download page SVG",exact:true})).toBeDisabled();
   await expect(page.locator(".studio-print-only svg")).toHaveCount(2);
-  await page.getByRole("button",{name:"Close the command lane",exact:true}).click();expect(await exportPrintSource(page)).toEqual(before);
+  await page.getByRole("button",{name:"Close print and audio",exact:true}).click();expect(await exportPrintSource(page)).toEqual(before);
   await page.locator("#studio-document-title").fill("Revised print title");
   await expect(page.locator(".studio-print-only svg")).toHaveCount(2);await page.locator("#studio-apply-title").click();
   await expect(page.locator(".studio-print-only")).toHaveCount(0);panel=await openPrintTool(page);
   await expect(panel.locator("svg")).toHaveCount(0);await expect(panel.getByRole("button",{name:"Print all pages",exact:true})).toBeDisabled();
   await expect(panel.getByRole("button",{name:"Download page SVG",exact:true})).toBeDisabled();
   await panel.getByRole("button",{name:"Prepare print preview",exact:true}).click();await expect(panel.locator("svg text").filter({hasText:"Revised print title"})).toHaveCount(1);
-  await page.getByRole("button",{name:"Close the command lane",exact:true}).click();
+  await page.getByRole("button",{name:"Close print and audio",exact:true}).click();
   const replacement={...chart,title:"Replacement print title",sections:chart.sections.map(s=>({...s,name:"Replacement exact notes",measures:s.measures.map(m=>({...m,events:m.events.map(e=>({...e,chord:{...e.chord,sourceText:"F7",label:"F7",pitchNames:[{step:"F",alter:0}]},voicing:{...e.voicing,pitches:[{step:"F",alter:0,octave:4}]}}))}))}))};
   await importPrintChart(page,replacement);await expect(page.locator(".studio-print-only")).toHaveCount(0);
   const replacementSource=await exportPrintSource(page);panel=await openPrintTool(page);await expect(panel.locator("svg")).toHaveCount(0);
@@ -116,7 +116,7 @@ for(const paper of ["a4","letter"] as const)for(const width of [320,1280])test(`
   expect(text).toContain("Replacement print title");expect(text).not.toContain("Revised print title");expect(text.filter(t=>t==="F7 [4/1 q]")).toHaveLength(49-count);expect(text.some(t=>t.includes("Dbmaj7"))).toBe(false);
   expect(await panel.evaluate(e=>e.scrollWidth<=e.clientWidth)).toBe(true);
   if(browserName==="chromium"){await panel.scrollIntoViewIfNeeded();await page.screenshot({path:info.outputPath("current-print-preview.png")});}
-  await page.getByRole("button",{name:"Close the command lane",exact:true}).click();expect(await exportPrintSource(page)).toEqual(replacementSource);
+  await page.getByRole("button",{name:"Close print and audio",exact:true}).click();expect(await exportPrintSource(page)).toEqual(replacementSource);
   expect(errors).toEqual([]);expect(requests.every(r=>r.allowed)).toBe(true);
   await info.attach("selected-page-svg",{body:second,contentType:"image/svg+xml"});await info.attach("replacement-page-svg",{body:current,contentType:"image/svg+xml"});
  }finally{await info.attach("print-current-source-evidence",{body:JSON.stringify({hash,paper,width,browser:browser.version(),errors,requests}),contentType:"application/json"});}
@@ -132,7 +132,7 @@ test("print the fitting weight-400 title and refuse its one-character near miss"
   let panel=await openPrintTool(page);await panel.getByRole("combobox",{name:"Paper",exact:true}).selectOption("a4");
   await panel.getByRole("button",{name:"Prepare print preview",exact:true}).click();await expect(panel).toContainText("2 pages ready");
   await expect(panel.locator("svg text").filter({hasText:"W".repeat(33)})).toHaveCount(1);await verifyPrintedWidths(page,".studio-print-tool svg");
-  await page.getByRole("button",{name:"Close the command lane",exact:true}).click();await page.locator("#studio-document-title").fill("W".repeat(34));await page.locator("#studio-apply-title").click();
+  await page.getByRole("button",{name:"Close print and audio",exact:true}).click();await page.locator("#studio-document-title").fill("W".repeat(34));await page.locator("#studio-apply-title").click();
   panel=await openPrintTool(page);await panel.getByRole("button",{name:"Prepare print preview",exact:true}).click();
   await expect(panel).toContainText("Title is too wide for a single print line.");await expect(panel.locator("svg")).toHaveCount(0);await expect(page.locator(".studio-print-only")).toHaveCount(0);
   await expect(panel.getByRole("button",{name:"Print all pages",exact:true})).toBeDisabled();await expect(page.locator("#studio-document-title")).toHaveValue("W".repeat(34));
