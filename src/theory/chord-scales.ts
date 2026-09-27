@@ -292,16 +292,16 @@ function declarationDefect(
  * The one checked publication point for an option. The contract's option type
  * correlates `orderKey` with `strength` and `family` per member of a 12x4
  * distributed union, which the compiler cannot follow through runtime values.
- * Those correlations and the index alignment of the degree tuples are checked
- * here before the single assertion; nothing else in this module is cast.
+ * The input type checks every other field. Rank correlation and index alignment
+ * are checked here before narrowing to the public option type.
  */
-function publishOption(option: Readonly<{
-  strength: H0EvidenceTier;
-  family: H0ChordScaleFamily;
+function publishOption(option: Omit<
+  H0ChordScaleOption,
+  "orderKey" | "spelledPitchNames" | "pitchClasses"
+> & Readonly<{
   orderKey: readonly [number, number];
-  degrees: readonly unknown[];
-  spelledPitchNames: readonly unknown[];
-  pitchClasses: readonly unknown[];
+  spelledPitchNames: readonly SpelledPitchClass[];
+  pitchClasses: readonly PitchClass[];
 }>): H0ChordScaleOption {
   if (option.orderKey[0] !== H0_EVIDENCE_TIER_RANKS[option.strength] ||
     option.orderKey[1] !== H0_CHORD_SCALE_FAMILY_RANKS[option.family] ||
@@ -309,7 +309,7 @@ function publishOption(option: Readonly<{
     option.pitchClasses.length !== option.degrees.length) {
     throw new Error("H0 chord-scale option failed its publication check");
   }
-  return Object.freeze(option) as unknown as H0ChordScaleOption;
+  return Object.freeze(option) as H0ChordScaleOption;
 }
 
 type Evaluation =
