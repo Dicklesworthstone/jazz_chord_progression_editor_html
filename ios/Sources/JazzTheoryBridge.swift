@@ -38,6 +38,18 @@ struct JazzContinuationOption: Equatable, Identifiable {
     var id: String { candidate.id }
 }
 
+struct JazzSongbookEvent: Decodable, Equatable {
+    let symbol: String
+    let quarters: Int
+}
+
+struct JazzSongbookGrid: Decodable, Equatable {
+    let title: String
+    let tempo: Int?
+    let comments: Int
+    let bars: [[JazzSongbookEvent]]
+}
+
 enum JazzTheoryBridgeIssue: LocalizedError, Equatable {
     case unavailable(String)
     case refused(String)
@@ -57,6 +69,8 @@ final class JazzTheoryBridge {
     private static let requestSchema = "frankenjazz.native-continuation-request.v1"
     private static let responseSchema = "frankenjazz.native-continuation-response.v1"
     private static let engineSchema = "changes.continuation-result.v1"
+    private static let songbookRequestSchema = "frankenjazz.native-songbook-request.v1"
+    private static let songbookResponseSchema = "frankenjazz.native-songbook-response.v1"
     private static let maximumResponseBytes = 128_000
     private static let categories: Set<String> = [
         "smooth", "functional", "colorful", "exploratory", "resolve",
@@ -148,6 +162,41 @@ final class JazzTheoryBridge {
         return .success(candidates.sorted { $0.rank < $1.rank })
     }
 
+    func songbookPreview(_ source: String) -> Result<JazzSongbookGrid, JazzTheoryBridgeIssue> {
+        guard let context else { return .failure(.unavailable(loadIssue ?? "Missing JavaScriptCore context.")) }
+        guard source.utf8.count <= 16_384 else {
+            return .failure(.refused("Use a UTF-8 songbook of at most 16,384 bytes."))
+        }
+        let request: [String: Any] = ["schema": Self.songbookRequestSchema, "source": source]
+        guard let data = try? JSONSerialization.data(withJSONObject: request),
+              let raw = String(data: data, encoding: .utf8) else { return .failure(.malformed) }
+        context.exception = nil
+        guard let bridge = context.objectForKeyedSubscript("FrankenJazzTheoryBridge"),
+              let value = bridge.invokeMethod("songbook", withArguments: [raw]),
+              context.exception == nil,
+              let response = value.toString(),
+              let responseData = response.data(using: .utf8),
+              responseData.count <= Self.maximumResponseBytes,
+              let envelope = try? JSONDecoder().decode(SongbookEnvelope.self, from: responseData),
+              envelope.schema == Self.songbookResponseSchema else { return .failure(.malformed) }
+        guard envelope.ok else {
+            guard let message = envelope.message, message.count <= 500,
+                  let line = envelope.line, (0...512).contains(line) else { return .failure(.malformed) }
+            return .failure(.refused("Line \(line): \(message)"))
+        }
+        guard let grid = envelope.grid,
+              !grid.title.isEmpty, grid.title.count <= 256,
+              grid.tempo.map({ (20...400).contains($0) }) ?? true,
+              (0...512).contains(grid.comments),
+              (1...128).contains(grid.bars.count),
+              grid.bars.reduce(0, { $0 + $1.count }) <= 512,
+              grid.bars.allSatisfy({ bar in
+                  (1...4).contains(bar.count) && bar.reduce(0) { $0 + $1.quarters } == 4 &&
+                      bar.allSatisfy { !$0.symbol.isEmpty && $0.symbol.count <= 64 && (1...4).contains($0.quarters) }
+              }) else { return .failure(.malformed) }
+        return .success(grid)
+    }
+
     private static func isValid(_ candidate: JazzContinuationCandidate) -> Bool {
         !candidate.candidateID.isEmpty && candidate.candidateID.count <= 256
             && !candidate.chordSymbol.isEmpty && candidate.chordSymbol.count <= 128
@@ -171,5 +220,13 @@ final class JazzTheoryBridge {
         let workSteps: Int?
         let candidates: [JazzContinuationCandidate]?
         let refusal: Refusal?
+    }
+
+    private struct SongbookEnvelope: Decodable {
+        let schema: String
+        let ok: Bool
+        let grid: JazzSongbookGrid?
+        let line: Int?
+        let message: String?
     }
 }

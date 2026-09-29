@@ -103,6 +103,8 @@ final class JazzStudioStore: ObservableObject {
     @Published private(set) var revision = 0
     @Published private(set) var continuationOptions: [JazzContinuationOption] = []
     @Published private(set) var continuationIssue: String?
+    @Published private(set) var songbookPreview: JazzSongbookGrid?
+    @Published private(set) var songbookIssue: String?
     @Published private(set) var loopedSectionID: UUID?
     @Published private(set) var waveExportState: JazzWaveExportState = .idle
     @Published private(set) var compingRecipe = JazzCompingRecipe.presets[0].recipe
@@ -126,6 +128,7 @@ final class JazzStudioStore: ObservableObject {
     private var audioChanges: AnyCancellable?
     private let recovery: JazzRecoveryStore
     private let theoryBridge: JazzTheoryBridge
+    private var songbookPreviewBinding: (chartID: UUID, revision: Int, source: String)?
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
 
@@ -1462,7 +1465,88 @@ final class JazzStudioStore: ObservableObject {
         finishStateChange(notice: notice)
     }
 
+    func clearSongbookPreview() {
+        songbookPreview = nil
+        songbookIssue = nil
+        songbookPreviewBinding = nil
+    }
+
+    func previewSongbook(_ source: String) {
+        clearSongbookPreview()
+        switch theoryBridge.songbookPreview(source) {
+        case let .failure(issue):
+            songbookIssue = issue.localizedDescription
+        case let .success(grid):
+            if let refusal = songbookDestinationRefusal(grid) {
+                songbookIssue = refusal
+            } else {
+                songbookPreview = grid
+                songbookPreviewBinding = (chart.id, revision, source)
+            }
+        }
+    }
+
+    @discardableResult
+    func addPreviewedSongbook(source: String, acknowledgedQuarterCells: Bool) -> Bool {
+        guard acknowledgedQuarterCells else {
+            songbookIssue = "Acknowledge that each grid cell is one quarter-note beat before adding."
+            return false
+        }
+        guard let binding = songbookPreviewBinding,
+              binding.chartID == chart.id, binding.revision == revision,
+              binding.source == source, let grid = songbookPreview else {
+            clearSongbookPreview()
+            songbookIssue = "The source or chart changed. Preview the grid again."
+            return false
+        }
+        if let refusal = songbookDestinationRefusal(grid) {
+            songbookIssue = refusal
+            return false
+        }
+        var next = chart
+        let added = grid.bars.map { bar in
+            JazzMeasure(chords: bar.map {
+                JazzChordEvent(symbol: $0.symbol, beats: Double($0.quarters))
+            })
+        }
+        guard let first = added.first else { songbookIssue = "The grid is empty."; return false }
+        var sections = chart.sections ?? []
+        if sections.isEmpty, let originalStart = chart.measures.first?.id {
+            sections.append(JazzChartSection(name: "Original chart", startMeasureID: originalStart))
+        }
+        sections.append(JazzChartSection(name: grid.title, startMeasureID: first.id))
+        next.measures += added
+        next.sections = sections
+        next.updatedAt = Date()
+        do { try JazzDocumentValidator.validate(next) }
+        catch { songbookIssue = "The expanded grid does not fit this chart: \(error.localizedDescription)"; return false }
+        clearSongbookPreview()
+        commit(next, notice: "Added “\(grid.title)” as one section. One Undo removes it.")
+        return true
+    }
+
+    private func songbookDestinationRefusal(_ grid: JazzSongbookGrid) -> String? {
+        guard grid.title.count <= 120 else { return "This chart supports section names of at most 120 characters." }
+        if let tempo = grid.tempo, Double(tempo) != chart.tempoBPM {
+            return "The song specifies \(tempo) BPM; this chart is \(Int(chart.tempoBPM)) BPM. Match the chart tempo and preview again."
+        }
+        if chart.measures.count + grid.bars.count > JazzTheory.maximumMeasures {
+            return "The expanded grid would exceed the chart’s 512-bar limit."
+        }
+        if (chart.sections?.count ?? 0) + (chart.sections?.isEmpty == false ? 1 : 2) > 64 {
+            return "The chart’s 64-section limit has been reached."
+        }
+        if let symbol = grid.bars.flatMap({ $0 }).first(where: { JazzTheory.parseChord($0.symbol, in: chart.key) == nil })?.symbol {
+            return "The native chart cannot play \(symbol). The chart is unchanged."
+        }
+        return nil
+    }
+
     private func finishStateChange(notice: String?) {
+        if songbookPreviewBinding != nil {
+            clearSongbookPreview()
+            songbookIssue = "The chart changed. Preview the songbook grid again."
+        }
         invalidateWaveExport(publishIdle: true)
         revision += 1
         canUndo = !undoStack.isEmpty

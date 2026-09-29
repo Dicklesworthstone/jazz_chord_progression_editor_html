@@ -5,10 +5,66 @@ import {
   type ChordEventId,
 } from "../../src/domain";
 import { generateContextualContinuations } from "../../src/theory/contextual-continuation";
+import { decodeChordProGrid } from "../../src/theory/chordpro-grid";
+import { formatChordSymbol } from "../../src/theory/chord-symbol";
 
 const REQUEST_SCHEMA = "frankenjazz.native-continuation-request.v1";
 const RESPONSE_SCHEMA = "frankenjazz.native-continuation-response.v1";
 const MAX_REQUEST_CHARACTERS = 16_384;
+const SONGBOOK_REQUEST_SCHEMA = "frankenjazz.native-songbook-request.v1";
+const SONGBOOK_RESPONSE_SCHEMA = "frankenjazz.native-songbook-response.v1";
+
+// JavaScriptCore has Uint8Array but no TextEncoder. The shared parser uses
+// TextEncoder only for its strict byte budget, so provide that operation here.
+if (typeof globalThis.TextEncoder === "undefined") {
+  Object.defineProperty(globalThis, "TextEncoder", {
+    value: class {
+      encode(input = ""): Uint8Array {
+        const bytes: number[] = [];
+        for (const point of input) {
+          let value = point.codePointAt(0) ?? 0xfffd;
+          if (value >= 0xd800 && value <= 0xdfff) value = 0xfffd;
+          if (value < 0x80) bytes.push(value);
+          else if (value < 0x800) bytes.push(0xc0 | (value >> 6), 0x80 | (value & 63));
+          else if (value < 0x10000) bytes.push(0xe0 | (value >> 12), 0x80 | ((value >> 6) & 63), 0x80 | (value & 63));
+          else bytes.push(0xf0 | (value >> 18), 0x80 | ((value >> 12) & 63), 0x80 | ((value >> 6) & 63), 0x80 | (value & 63));
+        }
+        return Uint8Array.from(bytes);
+      }
+    },
+  });
+}
+
+function songbook(raw: unknown): string {
+  const refuse = (message: string, line = 0): string => JSON.stringify({
+    schema: SONGBOOK_RESPONSE_SCHEMA, ok: false, message, line,
+  });
+  try {
+    if (typeof raw !== "string" || raw.length > 20_000) return refuse("Songbook request is too large.");
+    const request: unknown = JSON.parse(raw);
+    if (typeof request !== "object" || request === null || Array.isArray(request)) return refuse("Invalid songbook request.");
+    const record = request as Record<string, unknown>;
+    if (record["schema"] !== SONGBOOK_REQUEST_SCHEMA || typeof record["source"] !== "string") return refuse("Invalid songbook request.");
+    const decoded = decodeChordProGrid(record["source"]);
+    if (!decoded.ok) return refuse(decoded.message, decoded.line);
+    const bars = [];
+    for (const bar of decoded.grid.bars) {
+      const events = [];
+      for (const event of bar) {
+        const formatted = formatChordSymbol(event.chord, "ascii");
+        if (!formatted.ok) return refuse("A parsed chord could not be formatted exactly.");
+        events.push({ symbol: formatted.canonicalText, quarters: event.quarters });
+      }
+      bars.push(events);
+    }
+    return JSON.stringify({
+      schema: SONGBOOK_RESPONSE_SCHEMA, ok: true,
+      grid: { title: decoded.grid.title, tempo: decoded.grid.tempo, comments: decoded.grid.comments, bars },
+    });
+  } catch {
+    return refuse("The songbook parser could not read this source.");
+  }
+}
 
 type NativeRequest = Readonly<{
   schema: typeof REQUEST_SCHEMA;
@@ -100,5 +156,5 @@ Object.defineProperty(globalThis, "FrankenJazzTheoryBridge", {
   configurable: false,
   enumerable: true,
   writable: false,
-  value: Object.freeze({ continuations }),
+  value: Object.freeze({ continuations, songbook }),
 });

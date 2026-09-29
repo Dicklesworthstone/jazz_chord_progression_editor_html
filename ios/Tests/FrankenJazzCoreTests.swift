@@ -3778,6 +3778,68 @@ final class FrankenJazzCoreTests: XCTestCase {
     }
 
     @MainActor
+    func testBundledSongbookBridgeExpandsCellsSlashAndRepeatAndRefusesHostileSource() throws {
+        let bridge = JazzTheoryBridge()
+        let grid = try bridge.songbookPreview("""
+        {title: Blue walk}
+        {time: 4/4}
+        {tempo: 120}
+        {start_of_grid}
+        | C7 . / G7 | % . . . |
+        {end_of_grid}
+        """).get()
+        XCTAssertEqual(grid.title, "Blue walk")
+        XCTAssertEqual(grid.tempo, 120)
+        XCTAssertEqual(grid.bars.count, 2)
+        XCTAssertEqual(grid.bars[0].map(\.symbol), ["C7", "C7", "G7"])
+        XCTAssertEqual(grid.bars[0].map(\.quarters), [2, 1, 1])
+        XCTAssertEqual(grid.bars[1], grid.bars[0])
+        XCTAssertEqual(bridge.songbookPreview("{title: Bad}\n{time: 4/4}\n{start_of_grid}\n| C7 . . . |\n{include: secret}\n{end_of_grid}"),
+                       .failure(.refused("Line 5: Unsupported directive. Lyrics, includes, configuration, extra metadata and grid properties are not imported.")))
+        XCTAssertEqual(bridge.songbookPreview(String(repeating: "é", count: 8_193)),
+                       .failure(.refused("Use a UTF-8 songbook of at most 16,384 bytes.")))
+    }
+
+    @MainActor
+    func testSongbookAdditionIsValidatedBoundedAndSingleUndoableSection() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FrankenJazzSongbookTests-" + UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let recovery = JazzRecoveryStore(directory: directory)
+        let original = JazzChart(title: "Original", tempoBPM: 120,
+                                 measures: try JazzTheory.parseChart("| Dm7 G7 |").measures)
+        recovery.save(original)
+        let store = JazzStudioStore(recovery: recovery)
+        let recovered = store.chart
+        let source = "{title: Blue walk}\n{time: 4/4}\n{tempo: 120}\n{start_of_grid}\n| C7 . F7 . |\n{end_of_grid}"
+        store.previewSongbook(source)
+        XCTAssertEqual(store.songbookPreview?.bars.count, 1)
+        XCTAssertFalse(store.addPreviewedSongbook(source: source, acknowledgedQuarterCells: false))
+        XCTAssertEqual(store.chart, recovered)
+        XCTAssertFalse(store.addPreviewedSongbook(source: source + " ", acknowledgedQuarterCells: true))
+        XCTAssertEqual(store.chart, recovered)
+        store.previewSongbook(source)
+        store.updateTitle("Edited")
+        XCTAssertFalse(store.addPreviewedSongbook(source: source, acknowledgedQuarterCells: true))
+        XCTAssertEqual(store.chart.measures.count, 1)
+        store.previewSongbook(source)
+        XCTAssertTrue(store.addPreviewedSongbook(source: source, acknowledgedQuarterCells: true))
+        XCTAssertEqual(store.chart.measures.count, 2)
+        XCTAssertEqual(store.chart.sections?.map(\.name), ["Original chart", "Blue walk"])
+        XCTAssertEqual(store.chart.measures.last?.chords.map(\.symbol), ["C7", "F7"])
+        XCTAssertEqual(store.chart.measures.last?.chords.map(\.beats), [2, 2])
+        XCTAssertEqual(store.chart.instrument, original.instrument)
+        XCTAssertEqual(store.chart.tempoBPM, original.tempoBPM)
+        store.undo()
+        XCTAssertEqual(store.chart.measures.count, 1)
+        XCTAssertEqual(store.chart.sections, original.sections)
+        store.previewSongbook(source.replacingOccurrences(of: "120", with: "121"))
+        XCTAssertNil(store.songbookPreview)
+        XCTAssertTrue(store.songbookIssue?.contains("121 BPM") == true)
+    }
+
+    @MainActor
     func testContinuationApplyIsSingleStepUndoableAndRejectsStaleOptions() throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("FrankenJazzContinuationTests-" + UUID().uuidString, isDirectory: true)

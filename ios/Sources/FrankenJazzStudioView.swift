@@ -3530,6 +3530,15 @@ private struct DocumentCenterView: View {
                                     .frame(maxWidth: .infinity)
                             }
                             .buttonStyle(JazzPrimaryButtonStyle(tint: JazzTheme.cyan))
+                            NavigationLink { SongbookImportView(store: store) } label: {
+                                Label("Add a ChordPro songbook grid", systemImage: "music.note.list")
+                                    .frame(maxWidth: .infinity, minHeight: 44)
+                            }
+                            .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.cyan))
+                            .accessibilityIdentifier("open-songbook-grid")
+                            Text("Adds a titled 4/4 grid as a new section after a full preview. Your current chart, sound, and settings stay in place.")
+                                .font(.system(size: JazzTheme.size(10.5), design: .rounded))
+                                .foregroundStyle(JazzTheme.secondary)
                             Button { store.importPastedText(UIPasteboard.general.string) } label: {
                                 Label("Paste chart text or JSON", systemImage: "doc.on.clipboard")
                                     .frame(maxWidth: .infinity, minHeight: 44)
@@ -3672,6 +3681,124 @@ private struct DocumentCenterView: View {
     private func durationLabel(_ seconds: Double) -> String {
         let total = max(0, Int(seconds.rounded()))
         return String(format: "%d:%02d", total / 60, total % 60)
+    }
+}
+
+private struct SongbookImportView: View {
+    @ObservedObject var store: JazzStudioStore
+    @Environment(\.dismiss) private var dismiss
+    @State private var source = ""
+    @State private var acknowledged = false
+    @State private var importingFile = false
+    @State private var fileIssue: String?
+
+    var body: some View {
+        ZStack {
+            JazzForgeBackground()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    JazzSectionLabel(number: "09A", title: "Songbook grid", tint: JazzTheme.cyan)
+                    Text("Paste or open one titled ChordPro grid. Each cell becomes one quarter-note beat; dots extend a chord, slashes rearticulate it, and % repeats the preceding bar.")
+                        .foregroundStyle(JazzTheme.secondary)
+                    Button { importingFile = true } label: {
+                        Label("Open a ChordPro file", systemImage: "folder.badge.plus")
+                            .frame(maxWidth: .infinity, minHeight: 44)
+                    }
+                    .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.cyan))
+                    TextEditor(text: $source)
+                        .frame(minHeight: 175)
+                        .scrollContentBackground(.hidden)
+                        .padding(8)
+                        .background(JazzTheme.panel, in: RoundedRectangle(cornerRadius: 12))
+                        .accessibilityLabel("ChordPro grid source")
+                        .accessibilityIdentifier("songbook-source")
+                        .onChange(of: source) { _, _ in
+                            store.clearSongbookPreview()
+                            acknowledged = false
+                            fileIssue = nil
+                        }
+                    Text("Example: {title: Blues}\n{time: 4/4}\n{start_of_grid}\n| C7 . F7 . | Bb7 . . . |\n{end_of_grid}")
+                        .font(.system(.caption, design: .monospaced))
+                        .foregroundStyle(JazzTheme.secondary)
+                        .textSelection(.enabled)
+                    Button { store.previewSongbook(source); acknowledged = false } label: {
+                        Label("Preview every expanded bar", systemImage: "eye")
+                            .frame(maxWidth: .infinity, minHeight: 44)
+                    }
+                    .buttonStyle(JazzPrimaryButtonStyle(tint: JazzTheme.cyan))
+                    .accessibilityIdentifier("preview-songbook-grid")
+                    if let issue = fileIssue ?? store.songbookIssue {
+                        Text(issue).foregroundStyle(JazzTheme.brass).accessibilityIdentifier("songbook-issue")
+                    }
+                    if let grid = store.songbookPreview {
+                        Text("\(grid.title) · \(grid.bars.count) bars · \(grid.bars.flatMap { $0 }.count) chord events")
+                            .font(.headline)
+                            .foregroundStyle(JazzTheme.text)
+                        if let tempo = grid.tempo {
+                            Text("Source tempo: \(tempo) BPM; current chart: \(Int(store.chart.tempoBPM)) BPM")
+                                .foregroundStyle(JazzTheme.secondary)
+                        }
+                        if grid.comments > 0 {
+                            Text("\(grid.comments) comment line\(grid.comments == 1 ? "" : "s") omitted; lyrics are never imported.")
+                                .foregroundStyle(JazzTheme.secondary)
+                        }
+                        ForEach(Array(grid.bars.enumerated()), id: \.offset) { offset, bar in
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Bar \(offset + 1)").font(.caption).foregroundStyle(JazzTheme.secondary)
+                                Text(bar.map { "\($0.symbol) (\($0.quarters))" }.joined(separator: "  ·  "))
+                                    .font(.system(.body, design: .monospaced))
+                                    .foregroundStyle(JazzTheme.text)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(10)
+                            .background(JazzTheme.panel, in: RoundedRectangle(cornerRadius: 10))
+                        }
+                        Toggle("I understand each grid cell is one quarter-note beat", isOn: $acknowledged)
+                            .tint(JazzTheme.cyan)
+                        Button {
+                            if store.addPreviewedSongbook(source: source, acknowledgedQuarterCells: acknowledged) { dismiss() }
+                        } label: {
+                            Label("Add as one section", systemImage: "plus.square.on.square")
+                                .frame(maxWidth: .infinity, minHeight: 44)
+                        }
+                        .buttonStyle(JazzPrimaryButtonStyle(tint: JazzTheme.emerald))
+                        .disabled(!acknowledged)
+                        .accessibilityIdentifier("add-songbook-section")
+                    }
+                }
+                .frame(maxWidth: 570)
+                .padding(18)
+                .frame(maxWidth: .infinity)
+            }
+            .scrollIndicators(.hidden)
+        }
+        .navigationTitle("Add songbook")
+        .fileImporter(isPresented: $importingFile, allowedContentTypes: [.item], allowsMultipleSelection: false) { result in
+            guard case let .success(urls) = result, let url = urls.first else { return }
+            let chartID = store.chart.id
+            let revision = store.revision
+            Task {
+                let loaded = await Task.detached(priority: .userInitiated) { () -> String? in
+                    guard ["cho", "chordpro", "crd", "pro", "txt"].contains(url.pathExtension.lowercased()) else { return nil }
+                    let access = url.startAccessingSecurityScopedResource()
+                    defer { if access { url.stopAccessingSecurityScopedResource() } }
+                    guard let size = try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize,
+                          size <= 16_384,
+                          let data = try? Data(contentsOf: url), data.count <= 16_384 else { return nil }
+                    return String(data: data, encoding: .utf8)
+                }.value
+                guard store.chart.id == chartID, store.revision == revision else {
+                    fileIssue = "The chart changed while opening the file. Choose it again."
+                    return
+                }
+                guard let loaded else {
+                    fileIssue = "Choose a UTF-8 .cho, .chordpro, .crd, .pro, or .txt file of at most 16,384 bytes."
+                    return
+                }
+                source = loaded
+            }
+        }
     }
 }
 
