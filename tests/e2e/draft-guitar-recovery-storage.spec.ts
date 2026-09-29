@@ -53,7 +53,7 @@ for(const width of [320,1280])test(`note-first exact audio and Manual bar roundt
     await expect.poll(()=>page.evaluate(()=>window.u5NativeSourceCounts?.().futureAttacks??-1)).toBe(0);
     expect(await panel.evaluate(e=>e.scrollWidth<=e.clientWidth)).toBe(true);
     await panel.getByRole("button",{name:"Add bar from notes",exact:true}).click();await expect(panel).toContainText("Added one bar");
-    await page.getByRole("button",{name:"Close the command lane",exact:true}).click();
+    await page.getByRole("button",{name:"Close chord entry",exact:true}).click();
     const after=await exported(page),first=after.document.sections[0],oldFirst=before.document.sections[0];
     expect(first?.measures.length).toBe((oldFirst?.measures.length??0)+1);
     const inserted=first?.measures.at(-1)?.events[0];expect(inserted?.chord.sourceText).toBe("C6/A");

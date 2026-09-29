@@ -34,7 +34,7 @@ for(const theme of ["light","dark"] as const)for(const width of [320,1280])test(
   await expect(panel).toContainText("1 comment lines omitted");await expect(panel.getByRole("button",{name:"Add song as new section",exact:true})).toBeDisabled();
   expect((await new AxeBuilder({page}).include(".studio-songbook").analyze()).violations).toEqual([]);expect(await panel.evaluate(e=>e.scrollWidth<=e.clientWidth)).toBe(true);
   await panel.getByRole("checkbox").check();await panel.getByRole("button",{name:"Add song as new section",exact:true}).click();await expect(panel.getByRole("status")).toContainText("Added the song as one new section");
-  await page.getByRole("button",{name:"Close the command lane",exact:true}).click();const after=await exported(page),section=after.document.sections.at(-1);expect(after.document.sections.slice(0,-1)).toEqual(before.document.sections);expect(after.document.sections.length).toBe(before.document.sections.length+1);expect(section?.name).toBe("Flat-side study");expect(section?.measures.map(m=>m.events.map(e=>[e.chord.sourceText,e.duration.numerator/e.duration.denominator]))).toEqual(fixture.positive[0]?.bars);
+  await page.getByRole("button",{name:"Close chord entry",exact:true}).click();const after=await exported(page),section=after.document.sections.at(-1);expect(after.document.sections.slice(0,-1)).toEqual(before.document.sections);expect(after.document.sections.length).toBe(before.document.sections.length+1);expect(section?.name).toBe("Flat-side study");expect(section?.measures.map(m=>m.events.map(e=>[e.chord.sourceText,e.duration.numerator/e.duration.denominator]))).toEqual(fixture.positive[0]?.bars);
   expect(after.document.title).toBe(before.document.title);expect(after.document.tempoBpm).toBe(before.document.tempoBpm);
   await page.locator("#studio-undo").click();expect((await exported(page)).document).toEqual(before.document);await page.locator("#studio-redo").click();expect((await exported(page)).document).toEqual(after.document);
   await page.locator("#studio-open-command-lane").click();await page.getByText("Import a ChordPro grid",{exact:true}).click();await panel.getByRole("button",{name:"Use example grid",exact:true}).click();await panel.getByRole("button",{name:"Preview songbook",exact:true}).click();await expect(panel).toContainText("My turnaround");await panel.getByRole("button",{name:"Close songbook preview",exact:true}).click();await expect(panel.getByLabel("ChordPro text",{exact:true})).toHaveValue("");
@@ -67,12 +67,12 @@ for(const width of [320,1280])test(`songbook paste retains the complete validati
   await expect(panel.getByRole("status")).toContainText("Source exceeds");
   await expect(input).toHaveValue("");await expect(panel.getByRole("button",{name:"Add song as new section",exact:true})).toHaveCount(0);
   await expect(panel.getByRole("button",{name:"Preview songbook",exact:true})).toBeDisabled();
-  await page.getByRole("button",{name:"Close the command lane",exact:true}).click();expect((await exported(page)).document).toEqual(before.document);
+  await page.getByRole("button",{name:"Close chord entry",exact:true}).click();expect((await exported(page)).document).toEqual(before.document);
   await page.locator("#studio-open-command-lane").click();await page.getByText("Import a ChordPro grid",{exact:true}).click();
   await input.focus();await page.keyboard.insertText(exactSource);await panel.getByRole("button",{name:"Preview songbook",exact:true}).click();
   await expect(panel.getByRole("button",{name:"Add song as new section",exact:true})).toBeDisabled();
   await panel.getByRole("checkbox").check();await panel.getByRole("button",{name:"Add song as new section",exact:true}).click();
-  await page.getByRole("button",{name:"Close the command lane",exact:true}).click();const after=await exported(page);
+  await page.getByRole("button",{name:"Close chord entry",exact:true}).click();const after=await exported(page);
   expect(after.document.sections.slice(0,-1)).toEqual(before.document.sections);
   expect(after.document.sections.at(-1)?.measures.map(m=>m.events.map(e=>[e.chord.sourceText,e.duration.numerator/e.duration.denominator]))).toEqual(fixture.positive[0]?.bars);
   await page.locator("#studio-undo").click();expect((await exported(page)).document).toEqual(before.document);

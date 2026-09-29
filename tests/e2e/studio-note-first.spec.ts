@@ -47,7 +47,7 @@ for(const width of [320,1280])test(`note-first exact audio and Manual bar roundt
     expect(await panel.evaluate(e=>e.scrollWidth<=e.clientWidth)).toBe(true);
     await panel.getByRole("button",{name:"Add bar from notes",exact:true}).click();await expect(panel).toContainText("Added one bar");
     await expect(panel.getByLabel("Voicing notes")).toBeFocused();
-    await page.getByRole("button",{name:"Close the command lane",exact:true}).click();
+    await page.getByRole("button",{name:"Close chord entry",exact:true}).click();
     const after=await exported(page),first=after.document.sections[0],oldFirst=before.document.sections[0];
     expect(first?.measures.length).toBe((oldFirst?.measures.length??0)+1);
     const inserted=first?.measures.at(-1)?.events[0];expect(inserted?.chord.sourceText).toBe("C6/A");
@@ -105,7 +105,7 @@ for(const width of [320,1280])for(const field of ["notes","Custom label"] as con
     expect(await page.evaluate(()=>window.u5NativeSourceCounts?.().started??-1)).toBe(0);
     expect(await panel.evaluate(e=>e.scrollWidth<=e.clientWidth)).toBe(true);
     await panel.getByRole("button",{name:"Add bar from notes",exact:true}).click();await expect(panel).toContainText("Added one bar");await expect(notes).toBeFocused();
-    await page.getByRole("button",{name:"Close the command lane",exact:true}).click();const after=await exported(page),section=after.document.sections[0],event=section?.measures.at(-1)?.events[0];
+    await page.getByRole("button",{name:"Close chord entry",exact:true}).click();const after=await exported(page),section=after.document.sections[0],event=section?.measures.at(-1)?.events[0];
     expect(section?.measures.length).toBe((before.document.sections[0]?.measures.length??0)+1);
     expect(event?.chord.sourceText).toBe(field==="notes"?"C6/A":label);
     const pitches=field==="notes"?[{step:"A",alter:0,octave:3},{step:"C",alter:0,octave:4},{step:"E",alter:0,octave:4},{step:"G",alter:0,octave:4},{step:"A",alter:0,octave:3}]
@@ -142,7 +142,7 @@ for(const width of [320,1280])for(const reading of ["custom","enharmonic"] as co
     }
     const add=panel.getByRole("button",{name:"Add bar from notes",exact:true});await add.focus();await page.keyboard.press("Enter");
     await expect(panel).toContainText("Added one bar");await expect(notes).toBeFocused();await expect(notes).toHaveValue("");
-    await page.getByRole("button",{name:"Close the command lane",exact:true}).click();
+    await page.getByRole("button",{name:"Close chord entry",exact:true}).click();
     const after=await exported(page),event=after.document.sections[0]?.measures.at(-1)?.events[0];
     expect(event?.chord.kind).toBe("custom");if(event?.chord.kind!=="custom")throw new Error("Expected Custom chord");
     expect(event.chord.label).toBe(label);expect(event.chord.sourceText).toBe(label);

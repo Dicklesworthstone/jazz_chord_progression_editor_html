@@ -40,7 +40,7 @@ for(const colorScheme of ["light","dark"] as const)for(const {width,height} of [
   await panel.getByLabel("Open recipe file").setInputFiles({name:"too-large.json",mimeType:"application/json",buffer:Buffer.alloc(2049,32)});await expect(panel).toContainText("at most 2,048 bytes");
   await panel.getByLabel("Open recipe file").setInputFiles({name:"saved-recipe.json",mimeType:"application/json",buffer:Buffer.from(json)});await expect(panel).toContainText("Valid recipe preview");await panel.getByRole("button",{name:"Apply recipe to session",exact:true}).click();await expect(panel.locator('.studio-comping__grid [aria-pressed="true"]')).toHaveCount(2);
   expect(await panel.evaluate(e=>e.scrollWidth<=e.clientWidth)).toBe(true);const axe=await new AxeBuilder({page}).include(".studio-comping").analyze();expect(axe.violations).toEqual([]);
-  await page.getByRole("button",{name:"Close the command lane",exact:true}).click();expect(await page.locator(".studio-document-status__revision").textContent()).toBe(before);
+  await page.getByRole("button",{name:"Close chord entry",exact:true}).click();expect(await page.locator(".studio-document-status__revision").textContent()).toBe(before);
   expect(errors).toEqual([]);expect(requests.every(r=>r.allowed)).toBe(true);
   await info.attach("rhythm-midi",{body:midiBytes,contentType:"audio/midi"});await info.attach("rhythm-recipe",{body:json,contentType:"application/json"});
  }finally{await info.attach("rhythm-evidence",{body:JSON.stringify({hash,width,height,colorScheme,browser:browser.version(),errors,requests}),contentType:"application/json"});}
@@ -87,15 +87,15 @@ for(const width of [320,1280])for(const scenario of ["whole recipe","new chart p
    const pending=page.waitForEvent("download");await panel.getByRole("button",{name:"Download rhythm recipe",exact:true}).click();const recipe=await pending;expect(await recipe.failure()).toBeNull();const bytes=readFileSync(await recipe.path());expect(JSON.parse(bytes.toString("utf8"))).toEqual(desired);
    await info.attach("whole-recipe-download",{body:bytes,contentType:"application/json"});
    expect(await panel.evaluate(e=>e.scrollWidth<=e.clientWidth)).toBe(true);
-   await page.getByRole("button",{name:"Close the command lane",exact:true}).click();expect(await chartBytes(page)).toEqual(before);
+   await page.getByRole("button",{name:"Close chord entry",exact:true}).click();expect(await chartBytes(page)).toEqual(before);
   }else{
    const first=fixture.sections[0],second=fixture.sections[1];if(first===undefined||second===undefined)throw new Error("Missing authored sections");
    const chart={...fixture,id:"comping-replacement-chart",title:"Replacement comping chart",sections:[first,{...second,measures:first.measures.map((m,i)=>({...m,id:`replacement-measure-${String(i)}`,events:m.events.map((e,j)=>({...e,id:`replacement-event-${String(j)}`}))}))}]};
    await observeNativeSources(page);let panel=await openRhythm(page);await panel.getByRole("combobox",{name:"Passage",exact:true}).selectOption(first.id);await panel.getByRole("button",{name:"Charleston",exact:true}).click();await panel.getByLabel("Maximum note length").selectOption("120");
    await panel.getByRole("button",{name:"Prepare rhythm MIDI",exact:true}).click();await expect(panel).toContainText("2 attacks · 8 note occurrences");
-   await page.getByRole("button",{name:"Close the command lane",exact:true}).click();await page.locator("#studio-document-title").fill("Same chart renamed");await page.locator("#studio-document-title").press("Tab");
+   await page.getByRole("button",{name:"Close chord entry",exact:true}).click();await page.locator("#studio-document-title").fill("Same chart renamed");await page.locator("#studio-document-title").press("Tab");
    panel=await openRhythm(page);await expect(panel.getByRole("combobox",{name:"Passage",exact:true})).toHaveValue(first.id);await expect(panel.getByLabel("Maximum note length")).toHaveValue("120");
-   await page.getByRole("button",{name:"Close the command lane",exact:true}).click();
+   await page.getByRole("button",{name:"Close chord entry",exact:true}).click();
    await page.locator("#studio-import-chart").click();await page.locator("#studio-import-file").setInputFiles({name:"another-chart.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify(chart))});await page.locator("#studio-import-commit").click();await page.locator("#studio-import-confirm").click();
    await expect(page.locator("#studio-document-title")).toHaveValue(chart.title);const before=await chartBytes(page);panel=await openRhythm(page);
    await expect(panel.getByRole("combobox",{name:"Passage",exact:true})).toHaveValue("");await expect(panel.getByLabel("Maximum note length")).toHaveValue("120");await expect(panel.locator('.studio-comping__grid [aria-pressed="true"]')).toHaveCount(2);
@@ -107,7 +107,7 @@ for(const width of [320,1280])for(const scenario of ["whole recipe","new chart p
    const pending=page.waitForEvent("download");await panel.getByRole("button",{name:"Download rhythm MIDI",exact:true}).click();const midi=await pending;expect(await midi.failure()).toBeNull();const bytes=readFileSync(await midi.path());expect(createHash("sha256").update(bytes).digest("hex")).toBe(digest);
    const expected=[0,1440,3840,5280].flatMap(t=>[false,true].flatMap(off=>[49,49,49,64].map(p=>[2,t+(off?120:0),off?128:144,p,off?0:t%3840===0?112:80])));
    expect(rhythmMessages(bytes)).toEqual(expected);await info.attach("replacement-rhythm-midi",{body:bytes,contentType:"audio/midi"});
-   expect(await panel.evaluate(e=>e.scrollWidth<=e.clientWidth)).toBe(true);await page.getByRole("button",{name:"Close the command lane",exact:true}).click();expect(await chartBytes(page)).toEqual(before);
+   expect(await panel.evaluate(e=>e.scrollWidth<=e.clientWidth)).toBe(true);await page.getByRole("button",{name:"Close chord entry",exact:true}).click();expect(await chartBytes(page)).toEqual(before);
   }
   expect(errors).toEqual([]);expect(requests.every(r=>r.allowed)).toBe(true);
  }finally{await info.attach("comping-input-evidence",{body:JSON.stringify({hash,width,scenario,browser:browser.version(),errors,requests,nativeSources:await page.evaluate(()=>window.u5NativeSourceCounts?.()??null),measurement:"Native browser automation; not physical phone or human listening proof"}),contentType:"application/json"});}

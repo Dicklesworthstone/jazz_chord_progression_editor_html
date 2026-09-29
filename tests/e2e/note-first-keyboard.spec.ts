@@ -34,7 +34,7 @@ for(const [width,theme] of [[320,"dark"],[1280,"light"]] as const)test(`tactile 
   await panel.getByRole("radio",{name:/C6\/A — exact spelling/}).check();await panel.getByLabel("Add one full bar to").selectOption({index:1});
   await panel.getByRole("button",{name:"Hear exact notes",exact:true}).click();await expect.poll(()=>page.evaluate(()=>window.u5NativeSourceCounts?.().started??0)).toBeGreaterThan(0);
   await panel.getByRole("button",{name:"Release notes",exact:true}).click();await expect.poll(()=>page.evaluate(()=>window.u5NativeSourceCounts?.().futureAttacks??-1)).toBe(0);
-  await panel.getByRole("button",{name:"Add bar from notes",exact:true}).click();await expect(panel).toContainText("Added one bar");await page.getByRole("button",{name:"Close the command lane",exact:true}).click();
+  await panel.getByRole("button",{name:"Add bar from notes",exact:true}).click();await expect(panel).toContainText("Added one bar");await page.getByRole("button",{name:"Close chord entry",exact:true}).click();
   const after=await exported(page),event=after.document.sections[0]?.measures.at(-1)?.events[0];
   expect(event?.voicing).toEqual({mode:"manual",bassPolicy:"included",pitches:[{step:"A",alter:0,octave:3},{step:"C",alter:0,octave:4},{step:"E",alter:0,octave:4},{step:"G",alter:0,octave:4},{step:"A",alter:0,octave:3}]});
   await page.locator("#studio-undo").click();expect((await exported(page)).document).toEqual(before.document);await page.locator("#studio-redo").click();expect((await exported(page)).document).toEqual(after.document);

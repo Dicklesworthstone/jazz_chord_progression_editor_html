@@ -866,7 +866,7 @@ export function StudioShell({
           <Dialog
             backgroundRootId="studio-shell-background"
             busy={false}
-            closeLabel="Close the command lane"
+            closeLabel="Close chord entry"
             content={
               <>
               {chordPads === undefined ? null : <ChordPadsPanel ports={chordPads} />}
