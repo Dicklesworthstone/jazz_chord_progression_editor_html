@@ -40,13 +40,17 @@ function songbook(raw: unknown): string {
     schema: SONGBOOK_RESPONSE_SCHEMA, ok: false, message, line,
   });
   try {
-    if (typeof raw !== "string" || raw.length > 20_000) return refuse("Songbook request is too large.");
+    // JSON can escape each UTF-8 source byte as six ASCII characters.
+    if (typeof raw !== "string" || raw.length > 100_000) return refuse("Songbook request is too large.");
     const request: unknown = JSON.parse(raw);
     if (typeof request !== "object" || request === null || Array.isArray(request)) return refuse("Invalid songbook request.");
     const record = request as Record<string, unknown>;
     if (record["schema"] !== SONGBOOK_REQUEST_SCHEMA || typeof record["source"] !== "string") return refuse("Invalid songbook request.");
     const decoded = decodeChordProGrid(record["source"]);
-    if (!decoded.ok) return refuse(decoded.message, decoded.line);
+    if (!decoded.ok) return JSON.stringify({
+      schema: SONGBOOK_RESPONSE_SCHEMA, ok: false,
+      message: decoded.message, line: decoded.line, evidence: decoded.evidence,
+    });
     const bars = [];
     for (const bar of decoded.grid.bars) {
       const events = [];
@@ -60,6 +64,7 @@ function songbook(raw: unknown): string {
     return JSON.stringify({
       schema: SONGBOOK_RESPONSE_SCHEMA, ok: true,
       grid: { title: decoded.grid.title, tempo: decoded.grid.tempo, comments: decoded.grid.comments, bars },
+      evidence: decoded.evidence,
     });
   } catch {
     return refuse("The songbook parser could not read this source.");

@@ -50,6 +50,16 @@ struct JazzSongbookGrid: Decodable, Equatable {
     let bars: [[JazzSongbookEvent]]
 }
 
+struct JazzSongbookEvidence: Decodable, Equatable {
+    let bytes: Int
+    let lines: Int
+    let tokens: Int
+    let symbols: Int
+    let bars: Int
+    let events: Int
+    let termination: String
+}
+
 enum JazzTheoryBridgeIssue: LocalizedError, Equatable {
     case unavailable(String)
     case refused(String)
@@ -184,12 +194,19 @@ final class JazzTheoryBridge {
                   let line = envelope.line, (0...512).contains(line) else { return .failure(.malformed) }
             return .failure(.refused("Line \(line): \(message)"))
         }
-        guard let grid = envelope.grid,
+        guard let grid = envelope.grid, let evidence = envelope.evidence,
               !grid.title.isEmpty, grid.title.count <= 256,
               grid.tempo.map({ (20...400).contains($0) }) ?? true,
               (0...512).contains(grid.comments),
               (1...128).contains(grid.bars.count),
               grid.bars.reduce(0, { $0 + $1.count }) <= 512,
+              (0...16_384).contains(evidence.bytes),
+              (1...512).contains(evidence.lines),
+              (0...2_048).contains(evidence.tokens),
+              (0...512).contains(evidence.symbols),
+              evidence.bars == grid.bars.count,
+              evidence.events == grid.bars.reduce(0, { $0 + $1.count }),
+              evidence.termination == "complete",
               grid.bars.allSatisfy({ bar in
                   (1...4).contains(bar.count) && bar.reduce(0) { $0 + $1.quarters } == 4 &&
                       bar.allSatisfy { !$0.symbol.isEmpty && $0.symbol.count <= 64 && (1...4).contains($0.quarters) }
@@ -228,5 +245,6 @@ final class JazzTheoryBridge {
         let grid: JazzSongbookGrid?
         let line: Int?
         let message: String?
+        let evidence: JazzSongbookEvidence?
     }
 }

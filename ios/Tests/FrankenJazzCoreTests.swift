@@ -3798,6 +3798,27 @@ final class FrankenJazzCoreTests: XCTestCase {
                        .failure(.refused("Line 5: Unsupported directive. Lyrics, includes, configuration, extra metadata and grid properties are not imported.")))
         XCTAssertEqual(bridge.songbookPreview(String(repeating: "é", count: 8_193)),
                        .failure(.refused("Use a UTF-8 songbook of at most 16,384 bytes.")))
+        XCTAssertEqual(bridge.songbookPreview(String(repeating: "\n", count: 10_000)),
+                       .failure(.refused("Line 0: Use at most 512 lines.")),
+                       "JSON escape inflation must not supersede the source parser's own refusal.")
+    }
+
+    @MainActor
+    func testSongbookBridgeRejectsForgedExpansionEvidence() {
+        let bridge = JazzTheoryBridge(script: """
+        globalThis.FrankenJazzTheoryBridge = {
+          songbook: function(_) {
+            return JSON.stringify({
+              schema: "frankenjazz.native-songbook-response.v1", ok: true,
+              grid: { title: "Forged", tempo: null, comments: 0,
+                      bars: [[{ symbol: "C7", quarters: 4 }]] },
+              evidence: { bytes: 42, lines: 4, tokens: 5, symbols: 1,
+                          bars: 2, events: 1, termination: "complete" }
+            });
+          }
+        };
+        """)
+        XCTAssertEqual(bridge.songbookPreview("x"), .failure(.malformed))
     }
 
     @MainActor
