@@ -656,6 +656,53 @@ final class FrankenJazzUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Uptempo swing"].exists)
     }
 
+    func testSongbookGridRequiresAcknowledgmentAndAddsOneUndoableSection() throws {
+        let title = app.textFields["Chart title"].value as? String
+        let tempo = app.textFields["Tempo"].value as? String
+        app.buttons["Document actions"].firstMatch.tap()
+        let route = app.buttons["open-songbook-grid"]
+        XCTAssertTrue(route.waitForExistence(timeout: 3))
+        route.tap()
+        let source = app.textViews["songbook-source"]
+        XCTAssertTrue(source.waitForExistence(timeout: 3))
+        source.tap()
+        source.typeText("{title: Pocket Blues}\n{time: 4/4}\n{start_of_grid}\n| C7 . F7 . | Bb7 . . . |\n{end_of_grid}")
+        let doneTyping = app.buttons["songbook-dismiss-keyboard"]
+        XCTAssertTrue(doneTyping.waitForExistence(timeout: 3))
+        doneTyping.tap()
+        XCTAssertFalse(app.keyboards.firstMatch.exists)
+        let preview = app.buttons["preview-songbook-grid"]
+        for _ in 0..<6 where !preview.isHittable { app.swipeUp() }
+        preview.tap()
+        let addSection = app.buttons["add-songbook-section"]
+        for _ in 0..<8 where !addSection.isHittable { app.swipeUp() }
+        XCTAssertTrue(addSection.exists)
+        XCTAssertFalse(addSection.isEnabled, "Preview alone must not authorize insertion.")
+        XCTAssertTrue(app.staticTexts["Pocket Blues · 2 bars · 3 chord events"].exists)
+        XCTAssertTrue(app.staticTexts["C7 (2)  ·  F7 (2)"].exists)
+        XCTAssertTrue(app.staticTexts["Bb7 (4)"].exists)
+        let acknowledgment = app.switches["songbook-quarter-cell-acknowledgment"]
+        XCTAssertTrue(acknowledgment.isHittable)
+        acknowledgment.tap()
+        XCTAssertTrue(addSection.isEnabled)
+        let proof = XCTAttachment(screenshot: app.screenshot())
+        proof.name = "FrankenJazz songbook preview and acknowledgment"
+        proof.lifetime = .keepAlways
+        add(proof)
+        addSection.tap()
+        XCTAssertTrue(app.navigationBars["Chart files"].waitForExistence(timeout: 3))
+        app.buttons["Done"].tap()
+        XCTAssertEqual(app.textFields["Chart title"].value as? String, title)
+        XCTAssertEqual(app.textFields["Tempo"].value as? String, tempo)
+        let section = app.textFields.matching(NSPredicate(format: "value == 'Pocket Blues'")).firstMatch
+        for _ in 0..<12 where !section.isHittable { app.swipeUp() }
+        XCTAssertTrue(section.exists)
+        for _ in 0..<12 where !app.buttons["undo-chart-change"].isHittable { app.swipeDown() }
+        app.buttons["undo-chart-change"].tap()
+        XCTAssertFalse(app.buttons["undo-chart-change"].isEnabled)
+        XCTAssertTrue(app.buttons["redo-chart-change"].isEnabled)
+    }
+
     func testDocumentCenterExposesHonestMIDIImportBoundary() throws {
         let documentActions = app.buttons["Document actions"].firstMatch
         XCTAssertTrue(documentActions.waitForExistence(timeout: 3))

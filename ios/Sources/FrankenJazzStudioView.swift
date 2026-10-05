@@ -3691,6 +3691,7 @@ private struct SongbookImportView: View {
     @State private var acknowledged = false
     @State private var importingFile = false
     @State private var fileIssue: String?
+    @FocusState private var sourceFocused: Bool
 
     var body: some View {
         ZStack {
@@ -3706,6 +3707,7 @@ private struct SongbookImportView: View {
                     }
                     .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.cyan))
                     TextEditor(text: $source)
+                        .focused($sourceFocused)
                         .frame(minHeight: 175)
                         .scrollContentBackground(.hidden)
                         .padding(8)
@@ -3721,7 +3723,11 @@ private struct SongbookImportView: View {
                         .font(.system(.caption, design: .monospaced))
                         .foregroundStyle(JazzTheme.secondary)
                         .textSelection(.enabled)
-                    Button { store.previewSongbook(source); acknowledged = false } label: {
+                    Button {
+                        sourceFocused = false
+                        store.previewSongbook(source)
+                        acknowledged = false
+                    } label: {
                         Label("Preview every expanded bar", systemImage: "eye")
                             .frame(maxWidth: .infinity, minHeight: 44)
                     }
@@ -3756,6 +3762,7 @@ private struct SongbookImportView: View {
                         }
                         Toggle("I understand each grid cell is one quarter-note beat", isOn: $acknowledged)
                             .tint(JazzTheme.cyan)
+                            .accessibilityIdentifier("songbook-quarter-cell-acknowledgment")
                         Button {
                             if store.addPreviewedSongbook(source: source, acknowledgedQuarterCells: acknowledged) { dismiss() }
                         } label: {
@@ -3774,6 +3781,13 @@ private struct SongbookImportView: View {
             .scrollIndicators(.hidden)
         }
         .navigationTitle("Add songbook")
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done typing") { sourceFocused = false }
+                    .accessibilityIdentifier("songbook-dismiss-keyboard")
+            }
+        }
         .fileImporter(isPresented: $importingFile, allowedContentTypes: [.item], allowsMultipleSelection: false) { result in
             guard case let .success(urls) = result, let url = urls.first else { return }
             let chartID = store.chart.id
