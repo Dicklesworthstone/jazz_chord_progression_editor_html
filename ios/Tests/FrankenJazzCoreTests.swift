@@ -641,6 +641,9 @@ final class FrankenJazzCoreTests: XCTestCase {
 
         await store.importFile(file)
 
+        XCTAssertEqual(store.chart, before)
+        XCTAssertTrue(store.confirmImportPreview(try XCTUnwrap(store.importPreview).id))
+
         XCTAssertEqual(store.chart.title, "Rhythm Changes")
         XCTAssertEqual(store.chart.sections?.map(\.name), ["A", "B"])
         XCTAssertEqual(store.chart.sections?.map(\.annotation), ["Head", ""])
@@ -665,6 +668,10 @@ final class FrankenJazzCoreTests: XCTestCase {
 
         store.isDocumentPresented = true
         store.importPastedText("[A] \"Pocket\"\n| Dm7 G7 | Cmaj7 |")
+
+        XCTAssertEqual(store.chart, beforeText)
+        XCTAssertTrue(store.isDocumentPresented)
+        XCTAssertTrue(store.confirmImportPreview(try XCTUnwrap(store.importPreview).id))
 
         XCTAssertEqual(store.chart.title, "Pasted chart")
         XCTAssertEqual(store.chart.chartText, "[A] \"Pocket\"\n| Dm7 G7 | Cmaj7 |")
@@ -691,12 +698,62 @@ final class FrankenJazzCoreTests: XCTestCase {
         store.isDocumentPresented = true
         store.importPastedText(json)
 
+        XCTAssertEqual(store.chart, beforeJSON)
+        XCTAssertTrue(store.confirmImportPreview(try XCTUnwrap(store.importPreview).id))
+
         XCTAssertEqual(store.chart, manual)
         XCTAssertEqual(store.selectedMIDIPitches, [41, 55, 59, 62, 65])
         XCTAssertFalse(store.isDocumentPresented)
         XCTAssertEqual(store.notice, "Pasted chart JSON as “Clipboard voicings”.")
         store.undo()
         XCTAssertEqual(store.chart, beforeJSON)
+    }
+
+    @MainActor
+    func testImportPreviewCancelStaleAndSupersededRequestsNeverReplaceChart() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FrankenJazzImportPreview-" + UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let recovery = JazzRecoveryStore(directory: directory)
+        let store = JazzStudioStore(recovery: recovery)
+        store.newChart()
+        let original = store.chart
+        let revision = store.revision
+        let selection = store.selectedChordID
+        let undo = store.canUndo
+        let redo = store.canRedo
+        let recovered = recovery.load()
+        XCTAssertNotNil(recovered, "The refusal test must protect a real persisted chart, not two nil reads.")
+        store.importPastedText("| Dm7 G7 | Cmaj7 |")
+        let cancelledID = try XCTUnwrap(store.importPreview).id
+        XCTAssertEqual(store.chart, original)
+        XCTAssertEqual(store.revision, revision)
+        XCTAssertEqual(store.selectedChordID, selection)
+        XCTAssertEqual(store.canUndo, undo)
+        XCTAssertEqual(store.canRedo, redo)
+        XCTAssertEqual(recovery.load(), recovered)
+        store.cancelImportPreview()
+        XCTAssertFalse(store.confirmImportPreview(cancelledID))
+        XCTAssertEqual(store.chart, original)
+
+        store.importPastedText("| F7 |")
+        let supersededID = try XCTUnwrap(store.importPreview).id
+        store.importPastedText("| Bb7 |")
+        let latestID = try XCTUnwrap(store.importPreview).id
+        XCTAssertFalse(store.confirmImportPreview(supersededID))
+        XCTAssertEqual(store.importPreview?.id, latestID)
+        store.transpose(1)
+        let edited = store.chart
+        XCTAssertFalse(store.confirmImportPreview(latestID))
+        XCTAssertEqual(store.chart, edited)
+        XCTAssertNil(store.importPreview)
+
+        store.importPastedText("| C7 |")
+        let invalidatedID = try XCTUnwrap(store.importPreview).id
+        store.importPastedText("{broken JSON")
+        XCTAssertNil(store.importPreview)
+        XCTAssertFalse(store.confirmImportPreview(invalidatedID))
+        XCTAssertEqual(store.chart, edited)
     }
 
     @MainActor
@@ -3191,6 +3248,9 @@ final class FrankenJazzCoreTests: XCTestCase {
 
         await store.importFile(url)
 
+        XCTAssertEqual(store.chart, before)
+        XCTAssertTrue(try XCTUnwrap(store.importPreview).notice.contains("MIDI repair ledger"))
+        XCTAssertTrue(store.confirmImportPreview(try XCTUnwrap(store.importPreview).id))
         XCTAssertEqual(store.chart.chartText, "| Cmaj7 |")
         XCTAssertTrue(store.notice?.contains("MIDI repair ledger") == true)
         store.undo()
@@ -3259,6 +3319,8 @@ final class FrankenJazzCoreTests: XCTestCase {
         try MIDIFileWriter.makeFile(chart: source).write(to: url, options: .atomic)
 
         await store.importFile(url)
+        XCTAssertEqual(store.chart, beforeImport)
+        XCTAssertTrue(store.confirmImportPreview(try XCTUnwrap(store.importPreview).id))
         XCTAssertEqual(store.chart.chartText, "| Fmaj7 Gm7 | C7 |")
         XCTAssertTrue(store.notice?.contains("editable chords from MIDI") == true)
         XCTAssertTrue(store.chart.measures.flatMap(\.chords).allSatisfy { $0.manualMIDIPitches != nil })

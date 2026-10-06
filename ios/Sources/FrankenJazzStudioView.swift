@@ -3545,8 +3545,8 @@ private struct DocumentCenterView: View {
                             }
                             .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.emerald))
                             .accessibilityIdentifier("paste-chart-import")
-                            .accessibilityHint("Reads the clipboard only after this button is activated and replaces the chart as one undoable action.")
-                            Text("Paste is read only after you tap. A valid paste becomes one undoable chart replacement; refused text leaves the current chart unchanged.")
+                            .accessibilityHint("Reads the clipboard only after this button is activated, then previews the chart before you confirm replacement.")
+                            Text("Paste is read only after you tap. Preview first, then confirm one undoable chart replacement. Cancel or refused text leaves the current chart unchanged.")
                                 .font(.system(size: JazzTheme.size(10.5), design: .rounded))
                                 .foregroundStyle(JazzTheme.secondary)
                             Text("MIDI chord stacks become editable 4/4 symbols with exact Manual pitches. Common DAW retriggers, stray note-offs, open notes, and missing end markers are repaired and reported; structural corruption, another meter, an out-of-range/oversized stack, or no nameable harmony is refused instead of guessed.")
@@ -3611,6 +3611,40 @@ private struct DocumentCenterView: View {
             .scrollIndicators(.hidden)
         }
         .navigationTitle("Chart files")
+        .sheet(item: Binding(
+            get: { store.importPreview },
+            set: { if $0 == nil { store.cancelImportPreview() } }
+        )) { preview in
+            NavigationStack {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        Text(preview.chart.title).font(.title2.bold())
+                        Text("\(preview.chart.measures.count) bars · \(preview.chart.measures.flatMap(\.chords).count) chord events · \(Int(preview.chart.tempoBPM)) BPM")
+                        Text("Replaces “\(preview.replacedTitle)”. One Undo restores your current chart.")
+                        Text(preview.notice)
+                            .accessibilityIdentifier("import-preview-details")
+                        Text(preview.chart.chartText)
+                            .font(.system(.body, design: .monospaced))
+                            .textSelection(.enabled)
+                        Button("Replace current chart") { store.confirmImportPreview(preview.id) }
+                            .buttonStyle(JazzPrimaryButtonStyle(tint: JazzTheme.emerald))
+                            .accessibilityIdentifier("confirm-chart-import")
+                    }
+                    .frame(maxWidth: 570, alignment: .leading)
+                    .padding(20)
+                    .frame(maxWidth: .infinity)
+                }
+                .foregroundStyle(JazzTheme.text)
+                .background(JazzForgeBackground())
+                .navigationTitle("Preview import")
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") { store.cancelImportPreview() }
+                            .accessibilityIdentifier("cancel-chart-import")
+                    }
+                }
+            }
+        }
         .task {
             for kind in ExportKind.allCases {
                 if let url = store.exportURL(kind: kind) { exportURLs[kind] = url }

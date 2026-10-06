@@ -1,4 +1,5 @@
 import XCTest
+import UIKit
 
 final class FrankenJazzUITests: XCTestCase {
     private var app: XCUIApplication!
@@ -701,6 +702,49 @@ final class FrankenJazzUITests: XCTestCase {
         app.buttons["undo-chart-change"].tap()
         XCTAssertFalse(app.buttons["undo-chart-change"].isEnabled)
         XCTAssertTrue(app.buttons["redo-chart-change"].isEnabled)
+    }
+
+    func testPastedImportPreviewsCancelsAndConfirmsWithoutEarlyReplacement() throws {
+        func allowTestChartPasteIfRequested() {
+            // The app is waiting for the system clipboard decision, so query SpringBoard,
+            // not the blocked application's accessibility tree, to answer this prompt.
+            let alert = XCUIApplication(bundleIdentifier: "com.apple.springboard").alerts.firstMatch
+            if alert.waitForExistence(timeout: 3),
+               alert.staticTexts.matching(NSPredicate(format: "label CONTAINS 'FrankenJazzUITests-Runner'")).count > 0,
+               alert.buttons["Allow Paste"].exists {
+                alert.buttons["Allow Paste"].tap()
+            }
+        }
+        let originalTitle = try XCTUnwrap(app.textFields["Chart title"].value as? String)
+        UIPasteboard.general.string = "[Imported]\n| Dm7 G7 | Cmaj7 |"
+        app.buttons["Document actions"].firstMatch.tap()
+        let paste = app.buttons["paste-chart-import"]
+        XCTAssertTrue(paste.waitForExistence(timeout: 3))
+        paste.tap()
+        allowTestChartPasteIfRequested()
+        let confirm = app.buttons["confirm-chart-import"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["Preview import"].exists)
+        XCTAssertTrue(app.staticTexts["Pasted chart"].exists)
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'Replaces'")).firstMatch.exists)
+        app.buttons["cancel-chart-import"].tap()
+        XCTAssertTrue(paste.waitForExistence(timeout: 3))
+        app.buttons["Done"].tap()
+        XCTAssertEqual(app.textFields["Chart title"].value as? String, originalTitle)
+        XCTAssertFalse(app.buttons["undo-chart-change"].isEnabled)
+        app.buttons["Document actions"].firstMatch.tap()
+        paste.tap()
+        allowTestChartPasteIfRequested()
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5))
+        let proof = XCTAttachment(screenshot: app.screenshot())
+        proof.name = "FrankenJazz chart replacement preview"
+        proof.lifetime = .keepAlways
+        add(proof)
+        confirm.tap()
+        XCTAssertTrue(app.textFields["Chart title"].waitForExistence(timeout: 3))
+        XCTAssertEqual(app.textFields["Chart title"].value as? String, "Pasted chart")
+        app.buttons["undo-chart-change"].tap()
+        XCTAssertEqual(app.textFields["Chart title"].value as? String, originalTitle)
     }
 
     func testDocumentCenterExposesHonestMIDIImportBoundary() throws {

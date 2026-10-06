@@ -5,6 +5,15 @@ import UniformTypeIdentifiers
 
 let jazzMaximumImportBytes = 2_000_000
 
+struct JazzImportPreview: Identifiable {
+    let id = UUID()
+    let chart: JazzChart
+    let notice: String
+    let replacedTitle: String
+    fileprivate let chartID: UUID
+    fileprivate let token: JazzImportFence.Token
+}
+
 /// Monotonic ownership for asynchronous document reads. File-provider reads
 /// can finish in any order; only the newest request may publish, and an edit
 /// made while a read is in flight invalidates that request as well.
@@ -105,6 +114,7 @@ final class JazzStudioStore: ObservableObject {
     @Published private(set) var continuationIssue: String?
     @Published private(set) var songbookPreview: JazzSongbookGrid?
     @Published private(set) var songbookIssue: String?
+    @Published private(set) var importPreview: JazzImportPreview?
     @Published private(set) var loopedSectionID: UUID?
     @Published private(set) var waveExportState: JazzWaveExportState = .idle
     @Published private(set) var compingRecipe = JazzCompingRecipe.presets[0].recipe
@@ -1280,6 +1290,7 @@ final class JazzStudioStore: ObservableObject {
     }
 
     func importFile(_ url: URL) async {
+        importPreview = nil
         let importToken = importFence.claim(revision: revision)
         let accessed = url.startAccessingSecurityScopedResource()
         defer { if accessed { url.stopAccessingSecurityScopedResource() } }
@@ -1315,11 +1326,10 @@ final class JazzStudioStore: ObservableObject {
                 importNotice = "Imported “\(imported.title)”."
             }
             try JazzDocumentValidator.validate(imported)
+            try Task.checkCancellation()
             guard importFence.owns(importToken, currentRevision: revision) else { return }
-            commit(imported, notice: importNotice)
-            draftText = imported.chartText
-            selectedChordID = imported.measures.first?.chords.first?.id
-            isDocumentPresented = false
+            importPreview = JazzImportPreview(chart: imported, notice: importNotice,
+                                              replacedTitle: chart.title, chartID: chart.id, token: importToken)
         } catch is CancellationError {
             return
         } catch {
@@ -1332,6 +1342,7 @@ final class JazzStudioStore: ObservableObject {
     /// pasteboard. JSON-looking input is never reinterpreted as chord text
     /// after a JSON failure; malformed portable copies must fail closed.
     func importPastedText(_ text: String?) {
+        importPreview = nil
         let importToken = importFence.claim(revision: revision)
         do {
             guard let text, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
@@ -1351,14 +1362,36 @@ final class JazzStudioStore: ObservableObject {
             }
             try JazzDocumentValidator.validate(imported)
             guard importFence.owns(importToken, currentRevision: revision) else { return }
-            commit(imported, notice: "Pasted \(sourceDescription) as “\(imported.title)”.")
-            draftText = imported.chartText
-            selectedChordID = imported.measures.first?.chords.first?.id
-            isDocumentPresented = false
+            importPreview = JazzImportPreview(
+                chart: imported, notice: "Pasted \(sourceDescription) as “\(imported.title)”.",
+                replacedTitle: chart.title, chartID: chart.id, token: importToken
+            )
         } catch {
             guard importFence.owns(importToken, currentRevision: revision) else { return }
             notice = "Paste refused: \(error.localizedDescription)"
         }
+    }
+
+    func cancelImportPreview() {
+        importFence.invalidatePendingRequest()
+        importPreview = nil
+    }
+
+    @discardableResult
+    func confirmImportPreview(_ id: UUID) -> Bool {
+        guard let preview = importPreview, preview.id == id else { return false }
+        guard preview.chartID == chart.id,
+              importFence.owns(preview.token, currentRevision: revision) else {
+            cancelImportPreview()
+            notice = "The chart changed. Preview the import again before replacing it."
+            return false
+        }
+        cancelImportPreview()
+        commit(preview.chart, notice: preview.notice)
+        draftText = preview.chart.chartText
+        selectedChordID = preview.chart.measures.first?.chords.first?.id
+        isDocumentPresented = false
+        return true
     }
 
     /// Opens an exact kept snapshot through the studio's single document
