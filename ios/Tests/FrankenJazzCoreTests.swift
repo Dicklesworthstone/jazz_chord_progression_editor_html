@@ -569,6 +569,91 @@ final class FrankenJazzCoreTests: XCTestCase {
     }
 
     @MainActor
+    func testTransposeMovesStoredVoicingsIntoPlaybackMIDIAndRecovery() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FrankenJazzTransposeNotes-" + UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let recovery = JazzRecoveryStore(directory: directory)
+        let measures = [JazzMeasure(chords: [
+            JazzChordEvent(symbol: "Cmaj7", beats: 2, annotation: "Keep doubling", manualMIDIPitches: [72, 60, 64, 60]),
+            JazzChordEvent(symbol: "G7/B", beats: 2, frozenMIDIPitches: [47, 53, 59, 65])
+        ])]
+        let section = JazzChartSection(name: "A", startMeasureID: measures[0].id)
+        recovery.save(JazzChart(title: "Exact transpose", key: .c, measures: measures, sections: [section]))
+        let store = JazzStudioStore(recovery: recovery)
+        let original = store.chart
+        let selection = store.selectedChordID
+        let revision = store.revision
+
+        store.transpose(2)
+
+        XCTAssertEqual(store.chart.key, .d)
+        XCTAssertEqual(store.chart.measures[0].chords.map(\.symbol), ["Dmaj7", "A7/C#"])
+        XCTAssertEqual(store.chart.measures[0].chords[0].manualMIDIPitches, [74, 62, 66, 62])
+        XCTAssertEqual(store.chart.measures[0].chords[1].frozenMIDIPitches, [49, 55, 61, 67])
+        XCTAssertEqual(JazzTheory.compilePlayback(store.chart).map(\.midiPitches), [[74, 62, 66, 62], [49, 55, 61, 67]])
+        XCTAssertEqual(
+            noteOnPitches(in: MIDIFileWriter.makeFile(chart: store.chart)).sorted(),
+            [49, 55, 61, 62, 62, 66, 67, 74]
+        )
+        XCTAssertEqual(store.chart.measures[0].chords.map(\.id), original.measures[0].chords.map(\.id))
+        XCTAssertEqual(store.chart.measures[0].chords.map(\.beats), [2, 2])
+        XCTAssertEqual(store.chart.measures[0].chords[0].annotation, "Keep doubling")
+        XCTAssertEqual(store.chart.sections, original.sections)
+        XCTAssertEqual(store.selectedChordID, selection)
+        XCTAssertEqual(store.revision, revision + 1)
+        var restored = try XCTUnwrap(recovery.load())
+        // The existing recovery format stores ISO-8601 dates to whole seconds.
+        XCTAssertEqual(restored.updatedAt.timeIntervalSince1970, floor(store.chart.updatedAt.timeIntervalSince1970))
+        restored.updatedAt = store.chart.updatedAt
+        XCTAssertEqual(restored, store.chart)
+        let transposed = store.chart
+        store.undo()
+        XCTAssertEqual(store.chart, original)
+        store.redo()
+        XCTAssertEqual(store.chart, transposed)
+        store.transpose(-2)
+        XCTAssertEqual(store.chart.measures, original.measures)
+        XCTAssertEqual(store.chart.key, original.key)
+    }
+
+    @MainActor
+    func testTransposeRangeRefusalPreservesEntireDocumentAndHistory() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FrankenJazzTransposeRange-" + UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        for (pitch, delta) in [(108, 1), (21, -1)] {
+            let recovery = JazzRecoveryStore(directory: directory)
+            recovery.save(JazzChart(title: "Range refusal", measures: [JazzMeasure(chords: [
+                JazzChordEvent(symbol: "Dm7", beats: 2),
+                JazzChordEvent(symbol: "Cmaj7", beats: 2, manualMIDIPitches: [pitch])
+            ])]))
+            let store = JazzStudioStore(recovery: recovery)
+            XCTAssertEqual(store.chart.measures[0].chords[1].manualMIDIPitches, [pitch])
+            store.updateVoicing(.spread)
+            store.undo()
+            XCTAssertTrue(store.canRedo)
+            let original = store.chart
+            let revision = store.revision
+            let selection = store.selectedChordID
+            let draft = store.draftText
+            for distance in [delta, delta > 0 ? Int.max : Int.min] {
+                store.transpose(distance)
+                XCTAssertEqual(store.chart, original)
+                XCTAssertEqual(store.revision, revision)
+                XCTAssertEqual(store.selectedChordID, selection)
+                XCTAssertEqual(store.draftText, draft)
+                XCTAssertFalse(store.canUndo)
+                XCTAssertTrue(store.canRedo)
+                XCTAssertEqual(recovery.load(), original)
+                XCTAssertTrue(store.notice?.hasPrefix("Transpose refused:") == true)
+            }
+        }
+    }
+
+    @MainActor
     func testSectionTransposeIsScopedUndoableAndKeepsExactVoicings() throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("FrankenJazzSectionTransposeTests-" + UUID().uuidString, isDirectory: true)
@@ -599,6 +684,7 @@ final class FrankenJazzCoreTests: XCTestCase {
         let before = store.chart
         let revision = store.revision
 
+        store.transposesStoredVoicings = false
         store.transposeSection(sectionB.id, semitones: 1)
 
         XCTAssertEqual(store.chart.key, .c)
@@ -621,6 +707,44 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertEqual(store.chart, after)
         XCTAssertEqual(store.revision, afterRevision)
         XCTAssertEqual(store.notice, "That section no longer has any changes to transpose.")
+    }
+
+    @MainActor
+    func testSectionTransposeMovesOnlyItsStoredNotesAndRefusesFrozenOverflow() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FrankenJazzSectionNotes-" + UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let measures = [
+            JazzMeasure(chords: [JazzChordEvent(symbol: "Cmaj7", manualMIDIPitches: [108])]),
+            JazzMeasure(chords: [JazzChordEvent(symbol: "G7/B", manualMIDIPitches: [47, 53, 59, 65])]),
+            JazzMeasure(chords: [JazzChordEvent(symbol: "Cmaj7", frozenMIDIPitches: [107])])
+        ]
+        let section = JazzChartSection(name: "B", startMeasureID: measures[1].id)
+        let recovery = JazzRecoveryStore(directory: directory)
+        recovery.save(JazzChart(title: "Scoped exact notes", key: .c, measures: measures, sections: [section]))
+        let store = JazzStudioStore(recovery: recovery)
+        let before = store.chart
+        store.transposeSection(section.id, semitones: 1)
+        XCTAssertEqual(store.chart.key, .c)
+        XCTAssertEqual(store.chart.measures[0], before.measures[0], "An unselected C8 must not block this section")
+        XCTAssertEqual(store.chart.measures[1].chords[0].manualMIDIPitches, [48, 54, 60, 66])
+        XCTAssertEqual(store.chart.measures[2].chords[0].frozenMIDIPitches, [108])
+        XCTAssertEqual(
+            JazzTheory.compilePlayback(store.chart).dropFirst().map(\.midiPitches),
+            [[48, 54, 60, 66], [108]]
+        )
+        XCTAssertEqual(store.chart.sections, before.sections)
+        let after = store.chart
+        let revision = store.revision
+        store.transposeSection(section.id, semitones: 1)
+        XCTAssertEqual(store.chart, after, "A later Frozen overflow must also roll back the earlier Manual change")
+        XCTAssertEqual(store.revision, revision)
+        XCTAssertTrue(store.notice?.hasPrefix("Transpose refused:") == true)
+        store.undo()
+        XCTAssertEqual(store.chart, before, "The refused edit must not add an Undo entry")
+        store.redo()
+        XCTAssertEqual(store.chart, after)
     }
 
     @MainActor
@@ -3615,6 +3739,7 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertEqual(noteOnPitches(in: MIDIFileWriter.makeFile(chart: store.chart)).sorted(), moved.sorted())
 
         store.updateVoicing(.spread)
+        store.transposesStoredVoicings = false
         store.transpose(2)
         XCTAssertEqual(store.selectedChord?.symbol, "Dmaj7")
         XCTAssertEqual(store.selectedMIDIPitches, moved)
@@ -3709,6 +3834,7 @@ final class FrankenJazzCoreTests: XCTestCase {
         XCTAssertEqual(store.selectedMIDIPitches, automatic, "A chart-family change must not rewrite a frozen event")
         XCTAssertEqual(JazzTheory.compilePlayback(store.chart).first?.midiPitches, automatic)
 
+        store.transposesStoredVoicings = false
         store.transpose(2)
         XCTAssertEqual(store.selectedChord?.symbol, "Dmaj7")
         XCTAssertEqual(store.selectedChord?.frozenMIDIPitches, automatic)

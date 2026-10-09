@@ -73,6 +73,7 @@ struct FrankenJazzApp: App {
                 )
             }
             CommandMenu("Harmony") {
+                Toggle("Transpose Stored Notes", isOn: $store.transposesStoredVoicings)
                 Button("Transpose Up a Semitone") { store.transpose(1) }
                     .keyboardShortcut(.upArrow, modifiers: [.command, .option])
                 Button("Transpose Down a Semitone") { store.transpose(-1) }

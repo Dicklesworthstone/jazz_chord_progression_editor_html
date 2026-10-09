@@ -119,6 +119,13 @@ final class JazzStudioStore: ObservableObject {
     @Published private(set) var waveExportState: JazzWaveExportState = .idle
     @Published private(set) var compingRecipe = JazzCompingRecipe.presets[0].recipe
     @Published var selectedCompingSectionID: UUID?
+    @Published var transposesStoredVoicings = true
+
+    var hasStoredVoicings: Bool {
+        chart.measures.contains { measure in
+            measure.chords.contains { $0.manualMIDIPitches != nil || $0.frozenMIDIPitches != nil }
+        }
+    }
 
     let audio = JazzAudioEngine()
     let myCharts: JazzMyChartsStore
@@ -636,26 +643,15 @@ final class JazzStudioStore: ObservableObject {
                 $0.frozenMIDIPitches != nil || $0.manualMIDIPitches != nil
             }.count
         }
-        let preferFlats = chart.key.prefersFlats
-        audio.stop()
-        mutate { chart in
-            for measureIndex in measureIndices {
-                for chordIndex in chart.measures[measureIndex].chords.indices {
-                    let old = chart.measures[measureIndex].chords[chordIndex].symbol
-                    chart.measures[measureIndex].chords[chordIndex].symbol = JazzTheory.transpose(
-                        symbol: old,
-                        semitones: semitones,
-                        preferFlats: preferFlats
-                    )
-                }
-            }
+        guard let next = transposedChart(semitones: semitones, measureIndices: measureIndices, movesKey: false) else {
+            return
         }
+        audio.stop()
+        mutate { $0 = next }
         let distance = abs(semitones)
         let direction = semitones > 0 ? "up" : "down"
-        let storedNotice = storedCount == 0
-            ? ""
-            : " \(storedCount) stored voicing\(storedCount == 1 ? "" : "s") stayed at its exact pitches."
-        notice = "Transposed section \(section.name) \(direction) \(distance) semitone\(distance == 1 ? "" : "s")." + storedNotice
+        notice = "Transposed section \(section.name) \(direction) \(distance) semitone\(distance == 1 ? "" : "s")."
+            + storedTransposeNotice(count: storedCount)
     }
 
     func sectionStarting(at measureID: UUID) -> JazzChartSection? {
@@ -910,31 +906,71 @@ final class JazzStudioStore: ObservableObject {
 
     func transpose(_ semitones: Int) {
         guard semitones != 0 else { return }
+        guard let next = transposedChart(
+            semitones: semitones,
+            measureIndices: Array(chart.measures.indices),
+            movesKey: true
+        ) else {
+            return
+        }
         let storedCount = chart.measures.flatMap(\.chords).filter {
             $0.frozenMIDIPitches != nil || $0.manualMIDIPitches != nil
         }.count
         audio.stop()
-        mutate { chart in
-            let keyPitch = chart.key.pitchClass + semitones
-            if let newKey = JazzKey.allCases.first(where: { $0.pitchClass == (keyPitch % 12 + 12) % 12 }) {
-                chart.key = newKey
-            }
-            for measureIndex in chart.measures.indices {
-                for chordIndex in chart.measures[measureIndex].chords.indices {
-                    let old = chart.measures[measureIndex].chords[chordIndex].symbol
-                    chart.measures[measureIndex].chords[chordIndex].symbol = JazzTheory.transpose(symbol: old, semitones: semitones, preferFlats: chart.key.prefersFlats)
-                }
-            }
-        }
+        mutate { $0 = next }
         draftText = chart.chartText
         draftState = .current
         let direction = semitones > 0
             ? "Transposed up \(semitones) semitone\(semitones == 1 ? "" : "s")."
             : "Transposed down \(-semitones) semitone\(-semitones == 1 ? "" : "s")."
-        let storedNotice = storedCount == 0
-            ? ""
-            : " \(storedCount) stored voicing\(storedCount == 1 ? "" : "s") stayed at its exact pitches."
-        notice = direction + storedNotice
+        notice = direction + storedTransposeNotice(count: storedCount)
+    }
+
+    /// Prepare every change before retiring playback or publishing one undoable edit.
+    /// Explicit transposition moves exact voicings without regenerating, sorting,
+    /// deduplicating, or folding their notes into a different register.
+    private func transposedChart(semitones: Int, measureIndices: [Int], movesKey: Bool) -> JazzChart? {
+        guard (-127...127).contains(semitones) else {
+            notice = "Transpose refused: use an interval between -127 and 127 semitones."
+            return nil
+        }
+        var next = chart
+        if movesKey {
+            let pitchClass = (chart.key.pitchClass + semitones % 12 + 12) % 12
+            if let key = JazzKey.allCases.first(where: { $0.pitchClass == pitchClass }) {
+                next.key = key
+            }
+        }
+        for measureIndex in measureIndices {
+            for chordIndex in next.measures[measureIndex].chords.indices {
+                var chord = next.measures[measureIndex].chords[chordIndex]
+                if transposesStoredVoicings {
+                    let manual = chord.manualMIDIPitches?.map { $0 + semitones }
+                    let frozen = chord.frozenMIDIPitches?.map { $0 + semitones }
+                    guard (manual ?? []).allSatisfy(JazzDocumentValidator.storedVoicingPitchRange.contains),
+                          (frozen ?? []).allSatisfy(JazzDocumentValidator.storedVoicingPitchRange.contains) else {
+                        notice = "Transpose refused: \(chord.symbol) in bar \(measureIndex + 1)"
+                            + " would move stored notes outside A0–C8. Use a smaller interval or choose symbols only."
+                        return nil
+                    }
+                    chord.manualMIDIPitches = manual
+                    chord.frozenMIDIPitches = frozen
+                }
+                chord.symbol = JazzTheory.transpose(
+                    symbol: chord.symbol,
+                    semitones: semitones,
+                    preferFlats: next.key.prefersFlats
+                )
+                next.measures[measureIndex].chords[chordIndex] = chord
+            }
+        }
+        return next
+    }
+
+    private func storedTransposeNotice(count: Int) -> String {
+        guard count > 0 else { return "" }
+        let action = transposesStoredVoicings ? "moved with the chord symbols" : "stayed at its exact pitches"
+        return " \(count) stored voicing\(count == 1 ? "" : "s") \(action)."
     }
 
     func select(_ chord: JazzChordEvent, showInspector: Bool = false) {

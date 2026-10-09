@@ -408,6 +408,18 @@ private struct ChartEditorView: View {
                     .accessibilityIdentifier("transpose-chart-up")
                     .accessibilityLabel("Transpose up one semitone")
                 }
+                if store.hasStoredVoicings {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Toggle("Transpose stored notes", isOn: $store.transposesStoredVoicings)
+                            .tint(JazzTheme.cyan)
+                            .accessibilityIdentifier("transpose-stored-notes")
+                        Text(store.transposesStoredVoicings
+                             ? "Manual and Frozen notes move with the chord symbols."
+                             : "Symbols only: Manual and Frozen notes keep their saved pitches.")
+                            .font(.caption)
+                            .foregroundStyle(JazzTheme.secondary)
+                    }
+                }
                 if let sections = store.chart.sections, !sections.isEmpty {
                     VStack(spacing: 12) {
                         ForEach(store.chart.sectionGroups) { group in
@@ -905,6 +917,8 @@ private struct NativeSectionHeader: View {
             .accessibilityValue(section.voiceLeadingBoundary.label)
 
             Menu {
+                Toggle("Transpose stored notes", isOn: $store.transposesStoredVoicings)
+                Divider()
                 Button { store.transposeSection(section.id, semitones: -1) } label: {
                     Label("Down one semitone", systemImage: "arrow.down")
                 }
@@ -918,7 +932,9 @@ private struct NativeSectionHeader: View {
             }
             .accessibilityIdentifier("section-transpose-\(section.id.uuidString)")
             .accessibilityLabel("Transpose section \(section.name)")
-            .accessibilityHint("Changes only this section; exact stored voicings stay at their saved pitches.")
+            .accessibilityHint(store.transposesStoredVoicings
+                               ? "Changes only this section, including its Manual and Frozen notes."
+                               : "Changes only this section's symbols; stored notes keep their saved pitches.")
 
             Button { store.toggleSectionLoop(section.id) } label: {
                 Image(systemName: "repeat")

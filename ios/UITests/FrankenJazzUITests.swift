@@ -964,4 +964,55 @@ final class FrankenJazzUITests: XCTestCase {
         automatic.tap()
         XCTAssertTrue(app.staticTexts["Automatic · Balanced"].waitForExistence(timeout: 3))
     }
+
+    private func firstStoredVoiceLabel() -> String {
+        let voice = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Edit voice 1,'")).firstMatch
+        for _ in 0..<4 where !voice.isHittable { app.swipeUp() }
+        XCTAssertTrue(voice.waitForExistence(timeout: 3))
+        XCTAssertTrue(voice.isHittable)
+        return voice.label
+    }
+
+    func testStoredNoteTransposeChoiceAndUndoWithoutPlayingAudio() throws {
+        let chord = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Measure 1,'")).firstMatch
+        XCTAssertTrue(chord.waitForExistence(timeout: 3))
+        chord.tap()
+        let freeze = app.buttons["Freeze exact voicing"]
+        for _ in 0..<4 where !freeze.isHittable { app.swipeUp() }
+        XCTAssertTrue(freeze.isHittable)
+        freeze.tap()
+        let originalPitch = firstStoredVoiceLabel()
+        app.buttons["Done"].tap()
+
+        let mode = app.switches["transpose-stored-notes"]
+        XCTAssertTrue(mode.waitForExistence(timeout: 3))
+        XCTAssertTrue(mode.isHittable)
+        XCTAssertEqual(mode.value as? String, "1")
+        let originalChord = chord.label
+        let up = app.buttons["transpose-chart-up"]
+        up.tap()
+        XCTAssertNotEqual(chord.label, originalChord)
+        chord.tap()
+        XCTAssertNotEqual(firstStoredVoiceLabel(), originalPitch)
+        app.buttons["Done"].tap()
+
+        app.buttons["undo-chart-change"].tap()
+        XCTAssertEqual(chord.label, originalChord)
+        chord.tap()
+        XCTAssertEqual(firstStoredVoiceLabel(), originalPitch)
+        app.buttons["Done"].tap()
+        mode.tap()
+        XCTAssertEqual(mode.value as? String, "0")
+        XCTAssertTrue(app.staticTexts["Symbols only: Manual and Frozen notes keep their saved pitches."].exists)
+        up.tap()
+        XCTAssertNotEqual(chord.label, originalChord)
+        chord.tap()
+        XCTAssertEqual(firstStoredVoiceLabel(), originalPitch)
+        app.buttons["Done"].tap()
+
+        let proof = XCTAttachment(screenshot: app.screenshot())
+        proof.name = "FrankenJazz stored-note transposition choice on iPhone"
+        proof.lifetime = .keepAlways
+        add(proof)
+    }
 }
