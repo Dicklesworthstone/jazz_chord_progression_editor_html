@@ -191,7 +191,7 @@ private struct ChartEditorView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: compact ? 12 : 14) {
+            VStack(spacing: compact ? 8 : 14) {
                 if compact { JazzAppIdentity(compact: true).frame(maxWidth: .infinity, alignment: .leading) }
                 documentHeader
                 settingsStrip
@@ -210,7 +210,7 @@ private struct ChartEditorView: View {
     }
 
     private var documentHeader: some View {
-        JazzPanel(accent: JazzTheme.brass, padding: compact ? 14 : 16) {
+        JazzPanel(accent: JazzTheme.brass, padding: compact ? 10 : 16) {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .firstTextBaseline) {
                     JazzSectionLabel(number: "01", title: "The chart", tint: JazzTheme.brass)
@@ -333,14 +333,17 @@ private struct ChartEditorView: View {
 
     private var chartCanvas: some View {
         JazzPanel(accent: JazzTheme.emerald, padding: compact ? 11 : 14) {
-            VStack(alignment: .leading, spacing: 11) {
-                HStack {
-                    JazzSectionLabel(number: "02", title: "Lead sheet", tint: JazzTheme.emerald)
-                    Spacer()
+            VStack(alignment: .leading, spacing: compact ? 8 : 11) {
+                JazzSectionLabel(number: "02", title: "Lead sheet", tint: JazzTheme.emerald)
+                LazyVGrid(
+                    columns: [GridItem(.adaptive(minimum: compact ? 100 : 155), spacing: 8)],
+                    alignment: .leading,
+                    spacing: 8
+                ) {
                     Button { store.isAuthoredCompingPresented = true } label: {
-                        Label(compact ? "Comp" : "Author comping", systemImage: "circle.grid.3x3.fill")
-                            .lineLimit(1)
-                            .frame(minHeight: 44)
+                        Label(compact ? "Comping" : "Author comping", systemImage: "circle.grid.3x3.fill")
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, minHeight: 44)
                     }
                     .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.brass))
                     .accessibilityIdentifier("open-authored-comping")
@@ -348,8 +351,8 @@ private struct ChartEditorView: View {
                     .accessibilityHint("Opens the original sixteen-step session rhythm tool")
                     Button { store.isChordPadsPresented = true } label: {
                         Label(compact ? "Pads" : "Play chord pads", systemImage: "square.grid.3x3.fill")
-                            .lineLimit(1)
-                            .frame(minHeight: 44)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, minHeight: 44)
                     }
                     .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.emerald))
                     .accessibilityIdentifier("open-chord-pads")
@@ -357,8 +360,8 @@ private struct ChartEditorView: View {
                     .accessibilityHint("Opens every chart change as a touchable exact-voicing pad")
                     Button { store.isNoteFirstPresented = true } label: {
                         Label(compact ? "Notes" : "Start from notes", systemImage: "pianokeys")
-                            .lineLimit(1)
-                            .frame(minHeight: 44)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, minHeight: 44)
                     }
                     .buttonStyle(JazzSecondaryButtonStyle(tint: JazzTheme.cyan))
                     .accessibilityIdentifier("open-note-first")

@@ -30,6 +30,7 @@
 		9EE58EDFAC86B08170A29FA5 /* FrankenJazzStudioView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FA325F7DCBDACFF4927C2CD /* FrankenJazzStudioView.swift */; };
 		A7AF84CA4CC91FAE0A730DA0 /* JazzMyChartsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AFF381CC146E03742F91A28 /* JazzMyChartsTests.swift */; };
 		B081518AC1AF93724F01D61A /* FrankenJazzTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EEEB0929ABCA3C303443F4B /* FrankenJazzTheme.swift */; };
+		B21625AE2962A3A708C916D8 /* FrankenJazzTransposeUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A3C38114C57A05E46529AE1 /* FrankenJazzTransposeUITests.swift */; };
 		BD2C0B696CE48E2464C26B05 /* JazzAudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5107E1D753E6FDBF3E25BB15 /* JazzAudioEngine.swift */; };
 		BDA6B3D0463084169E782FD9 /* FrankenJazzUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B0098B8D5669EE9A7C05387 /* FrankenJazzUITests.swift */; };
 		C139B748DFB9760EF83509D4 /* JazzConvolutionDSP.mm in Sources */ = {isa = PBXBuildFile; fileRef = C43162340C735FD0AF228E2D /* JazzConvolutionDSP.mm */; };
@@ -87,6 +88,7 @@
 		8D15469F2F1D8BBEB20A0719 /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
 		90ECA58A8489643B260B4ACA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		98BBBEC7A8F2B138F43DC722 /* JazzLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JazzLibrary.swift; sourceTree = "<group>"; };
+		9A3C38114C57A05E46529AE1 /* FrankenJazzTransposeUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrankenJazzTransposeUITests.swift; sourceTree = "<group>"; };
 		A8FD8DAA43854C47916963F1 /* vibraphone-samples.pcm */ = {isa = PBXFileReference; path = "vibraphone-samples.pcm"; sourceTree = "<group>"; };
 		B00E0AF4D238A1950AACF6F9 /* piano-attack-index.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "piano-attack-index.json"; sourceTree = "<group>"; };
 		BA804229AB340DD8AC479702 /* FrankenJazzDSP.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = FrankenJazzDSP.xcframework; sourceTree = "<group>"; };
@@ -130,6 +132,7 @@
 		14AEC3E99EA27F279D2C4312 /* UITests */ = {
 			isa = PBXGroup;
 			children = (
+				9A3C38114C57A05E46529AE1 /* FrankenJazzTransposeUITests.swift */,
 				0B0098B8D5669EE9A7C05387 /* FrankenJazzUITests.swift */,
 			);
 			path = UITests;
@@ -403,6 +406,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B21625AE2962A3A708C916D8 /* FrankenJazzTransposeUITests.swift in Sources */,
 				BDA6B3D0463084169E782FD9 /* FrankenJazzUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
