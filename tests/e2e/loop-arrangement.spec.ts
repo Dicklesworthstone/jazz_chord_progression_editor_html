@@ -10,7 +10,7 @@ declare global { interface Window { __JCPE_LOOP__: LoopArrangementBrowserApi } }
 const path = resolve(process.env["JCPE_LOOP_HARNESS"] ?? "test-results/loop-arrangement/index.html");
 const html = readFileSync(path), sha256 = createHash("sha256").update(html).digest("hex");
 test.use({ screenshot: "off" });
-const userAgent = "OpenAI File Downloader, XaiImageApiFetch/1.0";
+const userAgent = "jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)";
 let server: Server, httpUrl: string;
 test.beforeAll(async () => {
   server = createServer((request, response) => {

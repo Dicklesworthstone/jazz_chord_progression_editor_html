@@ -10,7 +10,7 @@ import fontAdvances from "../fixtures/printable-charts/font-advances.json" with 
 const artifact=resolve(process.env["JCPE_PRINT_ARTIFACT"]??"jazz_chord_progression_editor.html"),url=pathToFileURL(artifact).href,hash=createHash("sha256").update(readFileSync(artifact)).digest("hex");
 const section=fixture.sections[0],measure=section?.measures[0],event=measure?.events[0];if(!section||!measure||!event)throw new Error("Fixture");
 const chart={...fixture,title:"Print exact Dbmaj7",sections:[{...section,name:"Forty nine bars",measures:Array.from({length:49},(_v,i)=>({...measure,id:`print-bar-${String(i)}`,completion:{kind:"complete"},events:[{...event,id:`print-event-${String(i)}`,duration:{numerator:4,denominator:1},chord:{kind:"custom",sourceText:"Dbmaj7",label:"Dbmaj7",pitchNames:[{step:"D",alter:-1}],bass:null},voicing:{mode:"manual",bassPolicy:"included",pitches:[{step:"D",alter:-1,octave:4}]}}]}))}]};
-test.use({userAgent:"OpenAI File Downloader, XaiImageApiFetch/1.0",contextOptions:{reducedMotion:"reduce"}});
+test.use({userAgent:"jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)",contextOptions:{reducedMotion:"reduce"}});
 async function verifyPrintedWidths(page:Page,selector:string):Promise<void>{
  const widths=await page.locator(`${selector} text`).evaluateAll(elements=>elements.map(element=>{
   if(!(element instanceof SVGTextElement))throw new Error("Expected SVG text");

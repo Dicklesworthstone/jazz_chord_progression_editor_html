@@ -9,7 +9,7 @@ import { createHash } from "node:crypto";
 import type {} from "./midi-export-dismissal-harness";
 let directory: string, url: string;
 const sourceHashes: Record<string, string> = {};
-test.use({ userAgent: "OpenAI File Downloader, XaiImageApiFetch/1.0", contextOptions: { reducedMotion: "reduce" } });
+test.use({ userAgent: "jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)", contextOptions: { reducedMotion: "reduce" } });
 test.beforeAll(async () => {
   directory = await mkdtemp(join(tmpdir(), "jcpe-midi-dismissal-"));
   await promisify(execFile)("bun", ["build", "--target=browser", "--outdir", directory, "tests/e2e/midi-export-dismissal-harness.tsx"]);

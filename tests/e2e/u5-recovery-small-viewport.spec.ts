@@ -35,7 +35,7 @@ for (const cell of [
 ]) {
   test.describe(`U5 recovered chart space ${String(cell.width)}x${String(cell.height)} ${cell.hasTouch ? "touch" : "pointer"}`, () => {
     test.use({ viewport: { width: cell.width, height: cell.height }, hasTouch: cell.hasTouch,
-      userAgent: "OpenAI File Downloader, XaiImageApiFetch/1.0" });
+      userAgent: "jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)" });
 
     test("recovery leaves room for a whole chord and preserves reachable choices, focus and exact JSON", async ({ page, browser }, info) => {
       const errors: string[] = []; const requests: string[] = [];

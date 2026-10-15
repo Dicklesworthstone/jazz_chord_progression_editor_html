@@ -7,7 +7,7 @@ import { pathToFileURL } from "node:url";
 const artifact = resolve("jazz_chord_progression_editor.html");
 const hash = createHash("sha256").update(readFileSync(artifact)).digest("hex");
 const url = pathToFileURL(artifact).href;
-test.use({ userAgent: "OpenAI File Downloader, XaiImageApiFetch/1.0", contextOptions: { reducedMotion: "reduce" } });
+test.use({ userAgent: "jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)", contextOptions: { reducedMotion: "reduce" } });
 
 async function contained(dialog: Locator): Promise<void> {
   const geometry = await dialog.evaluate(element => ({ width: element.clientWidth, content: element.scrollWidth, scroll: element.scrollLeft }));

@@ -9,7 +9,7 @@ import {
   expectCleanDiagnostics,
 } from "./u1-chart-kit";
 
-test.use({ userAgent: "OpenAI File Downloader, XaiImageApiFetch/1.0" });
+test.use({ userAgent: "jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)" });
 
 /**
  * M0 needs the real seeded studio unwound to empty history, not a mouse

@@ -10,7 +10,7 @@ const artifactHash = createHash("sha256").update(readFileSync(artifactPath)).dig
 const url = pathToFileURL(artifactPath).href;
 const fixture = resolve("tests/fixtures/interchange/goldens/nested.changes.json");
 const expectedDocument: unknown = JSON.parse(readFileSync(fixture, "utf8"));
-test.use({ userAgent: "OpenAI File Downloader, XaiImageApiFetch/1.0", contextOptions: { reducedMotion: "reduce" } });
+test.use({ userAgent: "jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)", contextOptions: { reducedMotion: "reduce" } });
 
 async function boot(page: Page) {
   const errors: string[] = [], requests: { url: string; allowed: boolean }[] = [];

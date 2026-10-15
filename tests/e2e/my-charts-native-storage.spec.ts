@@ -7,7 +7,7 @@ import { join, resolve } from "node:path";
 
 let server: Server, base: string, root: string;
 let errors: string[], requests: { url: string; userAgent: string | undefined; allowed: boolean }[];
-test.use({ userAgent: "OpenAI File Downloader, XaiImageApiFetch/1.0" });
+test.use({ userAgent: "jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)" });
 test.beforeAll(async () => {
   root = await mkdtemp(join(tmpdir(), "my-charts-native-source-probes-"));
   execFileSync("bun", [resolve("tests/support/build-my-charts-storage-probes.ts"), root], { cwd: process.cwd(), stdio: "pipe" });
@@ -35,7 +35,7 @@ test.beforeEach(async ({ context, page }) => {
 test.afterEach(async ({ browser }, info) => {
   await info.attach("native-storage-environment", { contentType: "application/json", body: JSON.stringify({ browser: browser.version(), errors, requests,
     sources: JSON.parse(await readFile(join(root, "source-report.json"), "utf8")) as unknown }) });
-  expect(errors).toEqual([]); expect(requests.every(row => row.allowed && row.userAgent === "OpenAI File Downloader, XaiImageApiFetch/1.0")).toBe(true);
+  expect(errors).toEqual([]); expect(requests.every(row => row.allowed && row.userAgent === "jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)")).toBe(true);
 });
 for (const name of ["populated-cas", "empty-aba", "failed-remove", "record-limit", "generation-limit"] as const) {
   test(`real adapter satisfies the independent ${name} law`, async ({ page }, info) => {
@@ -54,7 +54,7 @@ for (const [variant, name, law] of [
 ] as const) test(`unchanged native law rejects actual ${variant} source fault`, async ({ page, browser }, info) => {
   // A second context supplies the honest baseline immediately before this
   // mutant; neither variant inherits a database from the other.
-  const clean = await browser.newContext({ userAgent: "OpenAI File Downloader, XaiImageApiFetch/1.0" });
+  const clean = await browser.newContext({ userAgent: "jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)" });
   let baseline: unknown;
   try {
     await clean.route("**/*", async route => {

@@ -12,7 +12,7 @@ if(base===undefined||measure===undefined||event===undefined)throw new Error("Mis
 const pitches=[{step:"C",alter:0,octave:4},{step:"C",alter:0,octave:4},{step:"E",alter:0,octave:4}];
 const document={...fixture,title:"Touch pad fixtures",sections:[{...base,name:"Seventeen pads",measures:Array.from({length:17},(_v,i)=>({...measure,id:`pad-bar-${String(i)}`,completion:{kind:"complete"},events:[{...event,id:`pad-event-${String(i)}`,duration:{numerator:4,denominator:1},chord:{kind:"custom",sourceText:`Pad ${String(i+1)}`,label:`Pad ${String(i+1)}`,pitchNames:pitches.map(p=>({step:p.step,alter:p.alter})),bass:null},voicing:{mode:"manual",bassPolicy:"included",pitches}}]}))}]};
 const url=fileUrl;
-test.use({userAgent:"OpenAI File Downloader, XaiImageApiFetch/1.0",contextOptions:{reducedMotion:"reduce"}});
+test.use({userAgent:"jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)",contextOptions:{reducedMotion:"reduce"}});
 for(const [ownerKey,otherKey] of [["Space","Enter"],["Enter","Space"],["Enter","NumpadEnter"],["NumpadEnter","Enter"]] as const)test(`pad releases only its owning key: ${ownerKey} held across ${otherKey}`,async({page,browser},info)=>{
  const errors:string[]=[],requests:string[]=[],phases:{phase:string;counts:unknown}[]=[];
  page.on("pageerror",e=>errors.push(e.message));page.on("console",m=>{if(m.type()==="error")errors.push(m.text());});

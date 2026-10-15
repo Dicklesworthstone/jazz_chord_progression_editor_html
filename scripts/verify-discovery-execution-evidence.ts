@@ -108,7 +108,7 @@ async function inspectBrowserEvidence(): Promise<number> {
     requireTrue(array(at(evidence, "consoleMessages")).every(row => !["error", "warning"].includes(String(at(row, "type")))), `Console errors: ${key}`);
     const requests = array(at(evidence, "requests"));
     requireTrue(requests.length === 1 && at(requests[0], "method") === "GET" && at(requests[0], "url") === "https://discovery.evidence.localhost/" &&
-      at(requests[0], "userAgent") === "OpenAI File Downloader, XaiImageApiFetch/1.0", `Unexpected request: ${key}`);
+      at(requests[0], "userAgent") === "jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)", `Unexpected request: ${key}`);
     const observations = array(at(evidence, "observations"));
     const phase = (name: string): unknown => {
       const rows = observations.filter(row => at(row, "phase") === name); requireTrue(rows.length === 1, `Missing/duplicate ${name}: ${key}`);

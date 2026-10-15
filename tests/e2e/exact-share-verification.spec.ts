@@ -8,7 +8,7 @@ import { createHash } from "node:crypto";
 import fixture from "../fixtures/exact-share/document.changes.json" with { type: "json" };
 import { observeNativeSources } from "../support/u5-native-audio";
 
-const UA = "OpenAI File Downloader, XaiImageApiFetch/1.0";
+const UA = "jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)";
 const artifactPath = resolve("jazz_chord_progression_editor.html"), bytes = readFileSync(artifactPath);
 const artifactHash = createHash("sha256").update(bytes).digest("hex");
 const fragment = '#zdoc=2.' + Buffer.from(JSON.stringify(fixture)).toString('base64url');

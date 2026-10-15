@@ -50,7 +50,7 @@ async function observeMasterOutput(page: Page) {
   });
 }
 
-test.use({userAgent:"OpenAI File Downloader, XaiImageApiFetch/1.0",contextOptions:{reducedMotion:"reduce"}});
+test.use({userAgent:"jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)",contextOptions:{reducedMotion:"reduce"}});
 for (const width of [320,1280]) test(`play along through real audio at ${String(width)}px`,async ({page,browser},info) => {
   await page.setViewportSize({width,height:800});
   const errors:string[]=[],requests:{url:string;allowed:boolean}[]=[];

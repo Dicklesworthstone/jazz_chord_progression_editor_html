@@ -18,7 +18,7 @@ function artifactUrl(): string {
 }
 
 /** Legacy-v1 reading and current exact sharing through the native UI. */
-test.use({ userAgent: "OpenAI File Downloader, XaiImageApiFetch/1.0" });
+test.use({ userAgent: "jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)" });
 test.describe("share links", () => {
   test("a share link opens as the shared chart with tempo and groove", async ({
     page,

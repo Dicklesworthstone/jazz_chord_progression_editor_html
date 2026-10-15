@@ -9,7 +9,7 @@ import { batchChordFile } from "../support/midi-batch-fixtures";
 // Exact independent M0 golden: C major at 0..480; Dm7 at 480..960,
 // source channel 4, velocity 80. Dm7 also admits F6/D.
 const source = Buffer.from("4D546864000000060000000101E04D54726B0000004800FF510307A12000FF58040402180800933C6400406400436483603C0000400000430000FF51030F424000933E5000415000455000485083603E0000410000450000480000FF2F00", "hex");
-test.use({ userAgent: "OpenAI File Downloader, XaiImageApiFetch/1.0", contextOptions: { reducedMotion: "reduce" } });
+test.use({ userAgent: "jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)", contextOptions: { reducedMotion: "reduce" } });
 for (const width of [320, 1280]) test(`M1 source review preserves notes and owns preview at ${String(width)}px`, async ({ page, browser }, info) => {
   const diagnostics = captureDiagnostics(page);
   const requests: string[] = [];

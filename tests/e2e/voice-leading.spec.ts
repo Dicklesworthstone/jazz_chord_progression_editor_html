@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { parseSmfBytes } from "../support/midi-export-test-kit";
 
-test.use({ userAgent: "OpenAI File Downloader, XaiImageApiFetch/1.0" });
+test.use({ userAgent: "jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)" });
 
 type AudioObservation = { starts: number; ended: number; nonzeroBuffers: number };
 declare global {

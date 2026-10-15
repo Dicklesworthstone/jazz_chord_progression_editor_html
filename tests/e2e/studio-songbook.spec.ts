@@ -15,7 +15,7 @@ const boundedLines=[source];
 let padding=16384-source.length;
 while(padding>0){const length=Math.min(padding,1000);boundedLines.push("#"+"x".repeat(length-2));padding-=length;}
 const exactSource=boundedLines.join("\n");
-test.use({userAgent:"OpenAI File Downloader, XaiImageApiFetch/1.0",contextOptions:{reducedMotion:"reduce"}});
+test.use({userAgent:"jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)",contextOptions:{reducedMotion:"reduce"}});
 async function exported(page:Page){
  await page.locator("#studio-export-json").click();const pending=page.waitForEvent("download");await page.locator("#studio-lifecycle-download").click();const download=await pending;expect(await download.failure()).toBeNull();const bytes=readFileSync(await download.path());const json:unknown=JSON.parse(bytes.toString("utf8"));const decoded=decodeDocumentShape(json);if(!decoded.ok)throw new Error(JSON.stringify(decoded.errors));await page.getByRole("button",{name:"Close JSON export",exact:true}).click();return {document:decoded.value,bytes};
 }

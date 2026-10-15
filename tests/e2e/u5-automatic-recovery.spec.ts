@@ -11,7 +11,7 @@ declare global { interface Window {
   u5ReleaseRecoveryProbe?: () => void;
 } }
 
-test.use({ userAgent: "OpenAI File Downloader, XaiImageApiFetch/1.0" });
+test.use({ userAgent: "jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)" });
 const artifact = pathToFileURL(join(process.cwd(), "jazz_chord_progression_editor.html")).href;
 const artifactSha256 = createHash("sha256").update(readFileSync(new URL(artifact))).digest("hex");
 const fixture = join(process.cwd(), "tests/fixtures/interchange/goldens/nested.changes.json");

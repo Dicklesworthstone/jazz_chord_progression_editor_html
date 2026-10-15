@@ -10,7 +10,7 @@ import type {} from "./u5-history-limit-harness";
 
 let directory: string;
 let scriptSha256: string;
-test.use({ userAgent: "OpenAI File Downloader, XaiImageApiFetch/1.0" });
+test.use({ userAgent: "jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)" });
 test.beforeAll(async () => {
   directory = await mkdtemp(join(tmpdir(), "jcpe-u5-history-native-"));
   await promisify(execFile)(process.env["BUN_BINARY"] ?? "bun", ["build", "--target=browser", "--outdir", directory,

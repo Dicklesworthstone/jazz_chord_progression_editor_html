@@ -9,7 +9,7 @@ import { typeAndInsert } from "./u1-chart-kit";
 const artifactPath = resolve("jazz_chord_progression_editor.html");
 const artifact = readFileSync(artifactPath);
 const artifactHash = createHash("sha256").update(artifact).digest("hex");
-const userAgent = "OpenAI File Downloader, XaiImageApiFetch/1.0";
+const userAgent = "jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)";
 let server: Server;
 let httpUrl: string;
 test.beforeAll(async () => {

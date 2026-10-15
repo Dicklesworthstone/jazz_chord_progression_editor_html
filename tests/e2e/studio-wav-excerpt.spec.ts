@@ -14,7 +14,7 @@ const chart={...fixture,title:"Choose later bars from a longer chart",tempoBpm:1
  {...section,id:"excerpt-first",name:"First three",measures:[sounding("bar-1"),sounding("bar-2"),sounding("bar-3")]},
  {...section,id:"excerpt-later",name:"Later three",measures:[sounding("bar-4"),{...measure,id:"bar-5",completion:{kind:"empty"},events:[]},sounding("bar-6")]}
 ]};
-test.use({userAgent:"OpenAI File Downloader, XaiImageApiFetch/1.0",contextOptions:{reducedMotion:"reduce"}});
+test.use({userAgent:"jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)",contextOptions:{reducedMotion:"reduce"}});
 for(const width of [320,1280])for(const prepared of [false,true])test(`changing charts resets WAV choices ${String(width)}px prepared=${String(prepared)}`,async({page,browser},info)=>{
  const errors:string[]=[],requests:string[]=[];
  page.on("pageerror",e=>errors.push(e.message));page.on("console",m=>{if(m.type()==="error")errors.push(m.text());});

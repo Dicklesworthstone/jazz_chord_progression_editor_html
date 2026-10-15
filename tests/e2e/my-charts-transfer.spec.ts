@@ -8,7 +8,7 @@ import { pathToFileURL } from "node:url";
 import fixture from "../fixtures/exact-share/document.changes.json" with { type: "json" };
 import { observeNativeSources } from "../support/u5-native-audio";
 
-const ua = "OpenAI File Downloader, XaiImageApiFetch/1.0";
+const ua = "jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)";
 const path = resolve("jazz_chord_progression_editor.html"), artifact = readFileSync(path), fileUrl = pathToFileURL(path).href;
 const artifactHash = createHash("sha256").update(artifact).digest("hex");
 const share = (title = fixture.title) => `#zdoc=2.${Buffer.from(JSON.stringify({ ...fixture, title })).toString("base64url")}`;

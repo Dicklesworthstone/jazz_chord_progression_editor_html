@@ -18,7 +18,7 @@ const start = bytes.lastIndexOf("function ", position);
 const frame = /^function ([A-Za-z_$][A-Za-z0-9_$]*)\(/u.exec(bytes.slice(start))?.[1];
 if (frame === undefined) throw new Error("ATTACK_ADMISSION_FRAME_MISSING");
 
-test.use({ userAgent: "OpenAI File Downloader, XaiImageApiFetch/1.0" });
+test.use({ userAgent: "jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)" });
 for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) {
   test.describe(`native attack admission ${String(viewport.width)}px`, () => {
     test.use({ viewport });

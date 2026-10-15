@@ -21,7 +21,7 @@ const document={...fixture,title:"Exact guitar fixtures",sections:fixture.sectio
   return {...section,measures};
 })};
 const url=fileUrl+"#zdoc=2."+Buffer.from(JSON.stringify(document)).toString("base64url");
-test.use({userAgent:"OpenAI File Downloader, XaiImageApiFetch/1.0",contextOptions:{reducedMotion:"reduce"}});
+test.use({userAgent:"jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)",contextOptions:{reducedMotion:"reduce"}});
 async function open(page:Page,width:number,height:number){
   if(width===320)await page.locator(height<600?"#studio-transport-open-harmony":"#studio-open-harmony-sheet").click();
   await page.getByRole("button",{name:"Choose voicing / Edit chord",exact:true}).click();

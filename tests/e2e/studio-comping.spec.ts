@@ -8,7 +8,7 @@ import fixture from "../fixtures/exact-share/document.changes.json" with {type:"
 import {observeNativeSources} from "../support/u5-native-audio";
 const artifact=resolve(process.env["JCPE_COMPING_ARTIFACT"]??"jazz_chord_progression_editor.html"),fileUrl=pathToFileURL(artifact).href;
 const hash=createHash("sha256").update(readFileSync(artifact)).digest("hex"),url=fileUrl+"#zdoc=2."+Buffer.from(JSON.stringify(fixture)).toString("base64url");
-test.use({userAgent:"OpenAI File Downloader, XaiImageApiFetch/1.0",contextOptions:{reducedMotion:"reduce"}});
+test.use({userAgent:"jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)",contextOptions:{reducedMotion:"reduce"}});
 for(const colorScheme of ["light","dark"] as const)for(const {width,height} of [{width:320,height:568},{width:320,height:900},{width:1280,height:900}])test(`authored rhythm audio, recipe and MIDI at ${String(width)}x${String(height)} ${colorScheme}`,async({page,browser},info)=>{
  const errors:string[]=[],requests:{url:string;allowed:boolean}[]=[];
  page.on("pageerror",e=>errors.push(e.message));page.on("console",m=>{if(m.type()==="error")errors.push(m.text());});

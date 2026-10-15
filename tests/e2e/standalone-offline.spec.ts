@@ -228,7 +228,7 @@ async function runOfflineCell(
   };
 
   const context = await browser.newContext({
-    userAgent: "OpenAI File Downloader, XaiImageApiFetch/1.0",
+    userAgent: "jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)",
     bypassCSP: false,
     serviceWorkers: "block",
   });

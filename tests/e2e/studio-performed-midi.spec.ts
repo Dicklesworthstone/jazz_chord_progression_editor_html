@@ -6,7 +6,7 @@ import { pathToFileURL } from "node:url";
 const artifact=resolve(process.env["JCPE_PERFORMED_ARTIFACT"]??"jazz_chord_progression_editor.html");
 const url=pathToFileURL(artifact).href;
 const artifactHash=createHash("sha256").update(readFileSync(artifact)).digest("hex");
-test.use({userAgent:"OpenAI File Downloader, XaiImageApiFetch/1.0",contextOptions:{reducedMotion:"reduce"}});
+test.use({userAgent:"jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)",contextOptions:{reducedMotion:"reduce"}});
 for(const width of [320,1280])test(`performed section MIDI downloads exact bytes at ${String(width)}px`,async({page,browser},info)=>{
  const errors:string[]=[],requests:{url:string;allowed:boolean}[]=[];
  page.on("pageerror",e=>errors.push(e.message));page.on("console",m=>{if(m.type()==="error")errors.push(m.text());});

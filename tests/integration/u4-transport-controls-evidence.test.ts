@@ -36,7 +36,7 @@ const HARNESS_SHA256_ENV = "JCPE_U4_EVIDENCE_HARNESS_SHA256";
 const INPUT_DIGEST_ENV = "JCPE_U4_EVIDENCE_INPUT_DIGEST";
 const HARNESS_DOCUMENT_URL = "https://u4-transport.evidence.localhost/";
 const STATUS_POLL_TIMEOUT_MS = 15_000;
-const USER_AGENT = "OpenAI File Downloader, XaiImageApiFetch/1.0";
+const USER_AGENT = "jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)";
 test.use({ userAgent: USER_AGENT });
 
 const CHART_TEXT = "| Cmaj7 | Fmaj7 | Dm7 G7 | Cmaj7 | Em7 A7 | Dm7 G7 | Cmaj7 | Cmaj7 |";

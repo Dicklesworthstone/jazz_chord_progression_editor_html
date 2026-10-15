@@ -11,7 +11,7 @@ const artifact=resolve(process.env["JCPE_QR_ARTIFACT"]??"jazz_chord_progression_
 const first=fixture.sections[0],measure=first?.measures[0],event=measure?.events[0];if(first===undefined||measure===undefined||event===undefined)throw new Error("Missing reviewed exact fixture");
 const small={...fixture,title:"Exact pocket voicing",description:"",sections:[{...first,annotation:"",measures:[{...measure,events:[{...event,annotation:"",duration:{numerator:4,denominator:1}}]}]}]};
 const compact=(text:string):string=>text.replace(/"(?:\\.|[^"\\])*"|\s+/gu,token=>token.startsWith('"')?token:"");
-test.use({userAgent:"OpenAI File Downloader, XaiImageApiFetch/1.0",contextOptions:{reducedMotion:"reduce"}});
+test.use({userAgent:"jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)",contextOptions:{reducedMotion:"reduce"}});
 // Playwright 1.61.1's WebKit screenshot preparation injects `body {}`,
 // violating the app's hash CSP. Ask the same live WebKit target for pixels
 // directly; no DOM/style mutation, CSP bypass, error filtering, or SVG repaint.

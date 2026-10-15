@@ -8,7 +8,7 @@ import {decodeDocumentShape} from "../../src/domain";
 import {observeNativeSources} from "../support/u5-native-audio";
 const artifact=resolve(process.env["JCPE_KEYBOARD_ARTIFACT"]??"jazz_chord_progression_editor.html"),url=pathToFileURL(artifact).href;
 const hash=createHash("sha256").update(readFileSync(artifact)).digest("hex");
-test.use({userAgent:"OpenAI File Downloader, XaiImageApiFetch/1.0",hasTouch:true,contextOptions:{reducedMotion:"reduce"}});
+test.use({userAgent:"jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)",hasTouch:true,contextOptions:{reducedMotion:"reduce"}});
 async function exported(page:Page){
  await page.locator("#studio-export-json").click();const pending=page.waitForEvent("download");await page.locator("#studio-lifecycle-download").click();const d=await pending;expect(await d.failure()).toBeNull();
  const bytes=readFileSync(await d.path()),decoded=decodeDocumentShape(JSON.parse(bytes.toString("utf8")));if(!decoded.ok)throw new Error(JSON.stringify(decoded.errors));

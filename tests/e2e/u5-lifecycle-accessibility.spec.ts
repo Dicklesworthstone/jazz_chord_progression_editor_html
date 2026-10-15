@@ -8,7 +8,7 @@ import { pathToFileURL } from "node:url";
 const artifact = pathToFileURL(resolve("jazz_chord_progression_editor.html")).href;
 const artifactSha256 = createHash("sha256").update(readFileSync(new URL(artifact))).digest("hex");
 const diagnostics = new WeakMap<Page, { errors: string[]; requests: string[] }>();
-test.use({ userAgent: "OpenAI File Downloader, XaiImageApiFetch/1.0" });
+test.use({ userAgent: "jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)" });
 test.beforeEach(async ({ page }) => {
   const observed = { errors: [] as string[], requests: [] as string[] };
   diagnostics.set(page, observed);

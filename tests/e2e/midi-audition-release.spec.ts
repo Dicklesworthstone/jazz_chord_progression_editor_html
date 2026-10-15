@@ -8,7 +8,7 @@ import { createHash } from "node:crypto";
 import { batchChordFile } from "../support/midi-batch-fixtures";
 import type {} from "./midi-audition-release-harness";
 let directory: string, sourceHash: string;
-test.use({ viewport: { width: 1280, height: 900 }, userAgent: "OpenAI File Downloader, XaiImageApiFetch/1.0" });
+test.use({ viewport: { width: 1280, height: 900 }, userAgent: "jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)" });
 test.beforeAll(async () => {
   directory = await mkdtemp(join(tmpdir(), "jcpe-midi-release-"));
   await promisify(execFile)("bun", ["build", "--target=browser", "--outdir", directory, "tests/e2e/midi-audition-release-harness.tsx"]);

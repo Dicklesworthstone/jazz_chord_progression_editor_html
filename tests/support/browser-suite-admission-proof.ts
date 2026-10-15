@@ -127,7 +127,7 @@ test("two production bootstraps admit exactly one real Playwright CLI suite", as
     });`);
   await writeFile(config, `export default ${JSON.stringify({ testDir: run, testMatch: "admission-native.spec.ts",
     outputDir: resolve(run, "actual-cli-output"), workers: 1, retries: 0, timeout: 15_000, reporter: [["json", { outputFile: report }]],
-    use: { userAgent: "OpenAI File Downloader, XaiImageApiFetch/1.0", headless: true } })};`);
+    use: { userAgent: "jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)", headless: true } })};`);
   const invoke = async () => {
     const child = spawn(node.path, [productionRunner, resolve(root, "node_modules/@playwright/test/cli.js"), "test", "--config", config],
       { cwd: root, stdio: ["ignore", "pipe", "pipe"] });

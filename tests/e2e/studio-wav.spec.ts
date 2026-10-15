@@ -10,7 +10,7 @@ const artifact=resolve(process.env["JCPE_WAV_ARTIFACT"]??"jazz_chord_progression
 const section=fixture.sections[0],measure=section?.measures[0],event=measure?.events[0];if(section===undefined||measure===undefined||event===undefined)throw new Error("Missing document fixture");
 const pitches=[{step:"C",alter:0,octave:4},{step:"C",alter:0,octave:4}];
 const chart={...fixture,title:"Dry piano with leading silence",tempoBpm:120,sections:[{...section,name:"Piano passage",measures:[{...measure,id:"wav-rest",completion:{kind:"empty"},events:[]},{...measure,completion:{kind:"complete"},events:[{...event,duration:{numerator:4,denominator:1},chord:{kind:"custom",sourceText:"Two Cs",label:"Two Cs",pitchNames:[{step:"C",alter:0}],bass:null},voicing:{mode:"manual",bassPolicy:"included",pitches}}]}]}]};
-test.use({userAgent:"OpenAI File Downloader, XaiImageApiFetch/1.0",contextOptions:{reducedMotion:"reduce"}});
+test.use({userAgent:"jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)",contextOptions:{reducedMotion:"reduce"}});
 for(const theme of ["light","dark"] as const)for(const width of [320,1280])test(`dry piano native WAV ${theme} ${String(width)}px`,async({page,browser},info)=>{
  const errors:string[]=[],requests:{url:string;allowed:boolean}[]=[];let renderMs=0;
  page.on("pageerror",e=>errors.push(e.message));page.on("console",m=>{if(m.type()==="error")errors.push(m.text());});

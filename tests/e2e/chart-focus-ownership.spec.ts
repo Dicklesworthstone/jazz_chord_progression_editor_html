@@ -8,7 +8,7 @@ const artifactPath = resolve(process.env["JCPE_FOCUS_ARTIFACT"] ?? "jazz_chord_p
 const artifactHash = createHash("sha256").update(readFileSync(artifactPath)).digest("hex");
 const url = pathToFileURL(artifactPath).href;
 declare global { interface Window { chartFocusGlobalListeners?: () => readonly string[] } }
-test.use({ viewport: { width: 1440, height: 1000 }, userAgent: "OpenAI File Downloader, XaiImageApiFetch/1.0", contextOptions: { reducedMotion: "reduce" } });
+test.use({ viewport: { width: 1440, height: 1000 }, userAgent: "jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)", contextOptions: { reducedMotion: "reduce" } });
 
 test("repeated presentation changes retain native global listener and chart ownership", async ({ page, browser }, info) => {
   const errors: string[] = [], requests: string[] = [];

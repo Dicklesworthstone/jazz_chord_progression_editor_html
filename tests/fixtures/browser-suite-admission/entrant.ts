@@ -39,7 +39,7 @@ try {
       }>; };
     };
     const browser = await chromium.launch();
-    const page = await browser.newPage({ userAgent: "OpenAI File Downloader, XaiImageApiFetch/1.0" });
+    const page = await browser.newPage({ userAgent: "jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)" });
     await page.goto("data:text/html,<title>Real admission fixture</title>");
     emit("browser", { title: await page.title() });
     await waitForRelease();

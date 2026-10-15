@@ -8,7 +8,7 @@ import { pathToFileURL } from "node:url";
 import { reopenWithConflictingChart } from "../support/u5-conflicting-startup";
 
 declare global { interface Window { u5RestoreImportOwner?: () => void } }
-test.use({ userAgent: "OpenAI File Downloader, XaiImageApiFetch/1.0" });
+test.use({ userAgent: "jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)" });
 const artifact = pathToFileURL(join(process.cwd(), "jazz_chord_progression_editor.html")).href;
 const fixture = join(process.cwd(), "tests/fixtures/interchange/goldens/nested.changes.json");
 const canonical = readFileSync(fixture, "utf8");

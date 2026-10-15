@@ -9,7 +9,7 @@ type Announcement = Readonly<{ kind: "focus" | "status" | "alert"; text: string 
 declare global { interface Window { u5Announcements?: readonly Announcement[]; u5StopAnnouncements?: () => void } }
 const artifact = pathToFileURL(resolve("jazz_chord_progression_editor.html")).href;
 const artifactSha256 = createHash("sha256").update(readFileSync(new URL(artifact))).digest("hex");
-test.use({ userAgent: "OpenAI File Downloader, XaiImageApiFetch/1.0" });
+test.use({ userAgent: "jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)" });
 
 for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) for (const format of ["json", "text"] as const) {
   test.describe(`U5 export announcements ${format} ${String(viewport.width)}px`, () => {

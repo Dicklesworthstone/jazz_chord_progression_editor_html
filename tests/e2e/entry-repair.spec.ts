@@ -52,7 +52,7 @@ async function selection(page: Page, testId: string) {
 for (const mode of ["file", "http"] as const) {
   for (const viewport of [{ width: 1440, height: 1000 }, { width: 320, height: 568 }, { width: 390, height: 844 }]) {
     test.describe(`${mode} ${String(viewport.width)}px entry repair`, () => {
-      test.use({ viewport, hasTouch: viewport.width < 600, userAgent: "OpenAI File Downloader, XaiImageApiFetch/1.0", contextOptions: { reducedMotion: "reduce" } });
+      test.use({ viewport, hasTouch: viewport.width < 600, userAgent: "jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)", contextOptions: { reducedMotion: "reduce" } });
 
       for (const workflow of ["cancel", "commit"] as const) {
         test(`${workflow}: exact multiline source and atomic history`, async ({ page, context, browser }, info) => {
@@ -119,7 +119,7 @@ for (const mode of ["file", "http"] as const) {
 }
 
 test.describe("entry repair keyboard ownership", () => {
-  test.use({ viewport: { width: 1440, height: 1000 }, userAgent: "OpenAI File Downloader, XaiImageApiFetch/1.0" });
+  test.use({ viewport: { width: 1440, height: 1000 }, userAgent: "jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)" });
   for (const surface of ["command", "library"] as const) {
     test(`${surface}: stale spans and composition never publish or dismiss`, async ({ page }) => {
       await blankStudio(page, pathToFileURL(artifactPath).href);

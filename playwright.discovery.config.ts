@@ -10,7 +10,7 @@ export default defineConfig({
   fullyParallel: false, forbidOnly: true, failOnFlakyTests: true, retries: 0, workers: 1,
   timeout: 60_000, globalTimeout: 600_000, expect: { timeout: 10_000 },
   reporter: [["line"], ["json", { outputFile: resolve(directory, "playwright-results.json") }]],
-  use: { userAgent: "OpenAI File Downloader, XaiImageApiFetch/1.0", bypassCSP: false,
+  use: { userAgent: "jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)", bypassCSP: false,
     serviceWorkers: "block", locale: "en-US", timezoneId: "UTC",
     actionTimeout: 10_000, navigationTimeout: 15_000, trace: "retain-on-failure", screenshot: "only-on-failure" },
   projects: ["chromium", "firefox", "webkit"].map(name => ({ name, use: { browserName: name as "chromium" | "firefox" | "webkit" } })),

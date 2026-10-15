@@ -6,7 +6,7 @@ import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-test.use({ userAgent: "OpenAI File Downloader, XaiImageApiFetch/1.0" });
+test.use({ userAgent: "jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)" });
 declare global { interface Window { u5PendingResume?: { entered: boolean; release: () => void } } }
 const artifact = pathToFileURL(join(process.cwd(), "jazz_chord_progression_editor.html")).href;
 const artifactSha256 = createHash("sha256").update(readFileSync(new URL(artifact))).digest("hex");

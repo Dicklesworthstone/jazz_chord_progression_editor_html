@@ -20,7 +20,7 @@ const hash = (text: string): string => createHash("sha256").update(text).digest(
 // rule by its exact hash in THIS harness only; no console errors are filtered.
 const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-${hash(code)}' 'wasm-unsafe-eval'; style-src 'sha256-${hash(style)}' 'sha256-${hash("body {}")}' ; style-src-attr 'none'; img-src data:; connect-src 'none'"><link rel="icon" href="data:,"><title>Discovery execution proof</title><style>${style}</style></head><body><script>${code}</script></body></html>`;
 const url = "https://discovery.evidence.localhost/";
-const agent = "OpenAI File Downloader, XaiImageApiFetch/1.0";
+const agent = "jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)";
 type Snapshot = ReturnType<DiscoveryBrowserApi["snapshot"]>;
 const snapshot = async (page: Page): Promise<Snapshot> => await page.evaluate(() => window.__JCPE_DISCOVERY__.snapshot());
 const scenarios = ["apply-undo", "edit-during-search", "stop-during-search", "edit-during-retirement", "stop-during-retirement"] as const;

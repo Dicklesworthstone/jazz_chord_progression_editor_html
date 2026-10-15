@@ -16,7 +16,7 @@ const fixtureHash = createHash("sha256").update(readFileSync(resolve("tests/fixt
 const fragment = `#zdoc=2.${Buffer.from(JSON.stringify(fixture)).toString("base64url")}`;
 let server: Server, httpUrl: string;
 let errors: string[], requests: { url: string; allowed: boolean }[];
-test.use({ userAgent: "OpenAI File Downloader, XaiImageApiFetch/1.0", contextOptions: { reducedMotion: "reduce" } });
+test.use({ userAgent: "jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)", contextOptions: { reducedMotion: "reduce" } });
 test.beforeAll(async () => {
   server = createServer((_request, response) => { response.writeHead(200, { "Content-Type": "text/html; charset=utf-8" }); response.end(artifact); });
   await new Promise<void>(done => { server.listen(0,"127.0.0.1",done); });

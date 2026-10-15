@@ -12,7 +12,7 @@ const repaired = '; 🎷 é\n| D♭maj7:2 G7:2 |';
 
 for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }]) {
   test.describe(`entry repair acceptance ${String(viewport.width)}px`, () => {
-    test.use({ viewport, hasTouch: true, contextOptions: { reducedMotion: "reduce" }, userAgent: "OpenAI File Downloader, XaiImageApiFetch/1.0" });
+    test.use({ viewport, hasTouch: true, contextOptions: { reducedMotion: "reduce" }, userAgent: "jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)" });
     test("reduced keyboard space preserves source selection, usable Cancel and the chart", async ({ page, context, browser }, info) => {
       const errors: string[] = [];
       const requests: { url: string; allowed: boolean }[] = [];

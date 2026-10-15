@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { batchChordFile } from "../support/midi-batch-fixtures";
 import { captureDiagnostics, expectCleanDiagnostics, openStudio } from "./u1-chart-kit";
 
-test.use({ userAgent: "OpenAI File Downloader, XaiImageApiFetch/1.0" });
+test.use({ userAgent: "jazzchords-e2e (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)" });
 for (const width of [1280, 390]) {
   test(`local candidate comparison, explicit Add and Undo at ${String(width)}px`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 900 });

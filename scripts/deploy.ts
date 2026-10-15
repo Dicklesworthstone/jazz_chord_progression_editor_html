@@ -256,7 +256,10 @@ async function main(): Promise<void> {
       for (let attempt = 1; attempt <= POLL_ATTEMPTS; attempt += 1) {
         const response = await fetch(host, {
           redirect: "follow",
-          headers: { "User-Agent": "OpenAI File Downloader, XaiImageApiFetch/1.0" },
+          headers: {
+            "User-Agent":
+              "jazzchords-deploy-check (+https://github.com/Dicklesworthstone/jazz_chord_progression_editor_html)",
+          },
         });
         served = sha256Hex(new Uint8Array(await response.arrayBuffer()));
         if (served === artifactSha256) break;
